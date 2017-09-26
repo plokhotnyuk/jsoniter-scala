@@ -12,11 +12,12 @@ Features and limitations:
 - Fully support of UTF-8 encoding (other are only supported if all characters greater than 127 are hex encoded)
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Options & immutable Scala collections as class fields are supported
-- Enums & BigInt, BigDecimal are supported
+- Enums, BigInt & BigDecimal are supported
 - Up to 64 required fields are supported for case classes
 - Doesn't serialize null values, default values, empty options and empty collections
 - Doesn't parse and serialize values of fields annotated as transient or if them are not defined in constructor
 - Need to materialize manually all case classes used in nested structures
+- Key names can be overridden by field annotation
 - TODO: parsing of primitive types & enums from strings
 - TODO: serialization of chars & enums to strings
 - TODO: efficient specialized list & sets for ints & longs

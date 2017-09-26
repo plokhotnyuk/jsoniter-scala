@@ -38,7 +38,7 @@ class CodecBenchmark {
   require(readAnyRefsJsoniter() == anyRefsObj)
   require(readIterablesJackson() == iterablesObj)
   require(readIterablesJsoniter() == iterablesObj)
-  //FIXME: Jackson instantiate Map instead of HashMap
+  //FIXME: Jackson-module-scala instantiates Map instead of HashMap
   // require(readMapsJackson() == mapsObj)
   require(readMapsJsoniter() == mapsObj)
   require(readPrimitivesJackson() == primitivesObj)
@@ -49,7 +49,7 @@ class CodecBenchmark {
   require(util.Arrays.equals(writeIterablesJsoniter(), iterablesJson))
   require(util.Arrays.equals(writeMapsJackson(), mapsJson))
   require(util.Arrays.equals(writeMapsJsoniter(), mapsJson))
-  //FIXME: by default Jackson store Char as String, while Jsoniter store it as Int
+  //FIXME: by default Jackson stores Char as String, while Jsoniter stores it as Int
   // require(util.Arrays.equals(writePrimitivesJackson(), primitivesJson))
   require(util.Arrays.equals(writePrimitivesJsoniter(), primitivesJson))
 
