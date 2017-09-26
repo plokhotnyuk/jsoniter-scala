@@ -17,7 +17,7 @@ Features and limitations:
 - Doesn't serialize null values, default values, empty options and empty collections
 - Doesn't parse and serialize values of fields annotated as transient or if them are not defined in constructor
 - Need to materialize manually all case classes used in nested structures
-- TODO: parsing primitive types & enums from strings
+- TODO: parsing of primitive types & enums from strings
 - TODO: serialization of chars & enums to strings
 - TODO: efficient specialized list & sets for ints & longs
 
@@ -92,5 +92,7 @@ Acknowledges
 =============
 
 [Jsoniter Java](https://github.com/json-iterator/java)
+
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros)
+
 [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
