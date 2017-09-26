@@ -20,7 +20,7 @@ Features and limitations:
 - Key names can be overridden by field annotation
 - TODO: parsing of primitive types & enums from strings
 - TODO: serialization of chars & enums to strings
-- TODO: efficient specialized list & sets for ints & longs
+- TODO: efficient specialized immutable list & set for Int & Long primitive types
 
 
 How to use
@@ -85,7 +85,7 @@ Run benchmarks
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*CodecBenchmark.*' >results.txt
 ```
 
-Currently ./result.txt contains results for the following environment:
+Currently `./results.txt` contains results for the following environment:
 Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_112-b15 64-bit
 
 
