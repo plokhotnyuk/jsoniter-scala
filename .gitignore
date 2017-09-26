@@ -1,0 +1,26 @@
+# Sbt
+target/
+
+# Idea
+.idea/
+*.iml
+*.ipr
+*.iws
+.buildpath
+
+# Eclipse
+.project
+.classpath
+.settings
+.scala_dependencies
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+
+# Emacs
+*~
+*#
+.#*
+.ensime
+TAGS
