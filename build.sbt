@@ -4,7 +4,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
   .settings(
     crossScalaVersions := Seq("2.12.3", "2.11.11"),
     inThisBuild(Seq(
-      organization := "com.github.plokhotnyuk",
+      organization := "com.github.plokhotnyuk.jsoniter-scala",
       scalaVersion := "2.12.3",
       startYear := Some(2017),
       organizationName := "Sizmek, Inc.",

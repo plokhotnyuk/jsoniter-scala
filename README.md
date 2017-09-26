@@ -1,9 +1,9 @@
 # Jsoniter Scala
 
-Macros that generate `com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces in compile time,
+Macros that generates `com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces in compile time,
 based on compile time reflection.
 
-Main goal is to provide static code generation for Scala case classes, standard types and collections
+Main goal is to provide a static code generation for Scala case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
 Features and limitations:
@@ -34,7 +34,7 @@ sbt clean +publishLocal
 Add the library to your dependencies list
 
 ```scala
-libraryDependencies += "com.github.plokhotnyuk" %% "jsoniter-scala" % "0.1-SNAPSHOT"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.1-SNAPSHOT"
 ```
 
 Generate some serializers for your case classes
