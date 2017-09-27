@@ -7,7 +7,6 @@ lazy val `jsoniter-scala` = project.in(file("."))
       organization := "com.github.plokhotnyuk.jsoniter-scala",
       scalaVersion := "2.12.3",
       startYear := Some(2017),
-      organizationName := "Sizmek, Inc.",
       organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
       homepage := Some(url("http://github.com/plokhotnyuk/jsoniter-scala")),
       licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))

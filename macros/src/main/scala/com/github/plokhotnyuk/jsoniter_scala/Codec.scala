@@ -168,7 +168,7 @@ object Codec {
                 decodeError(in, "expect [ or n")
             }"""
 
-      def genReadMap(empty: Tree, newBuilder: Tree, readKV: Tree, result: Tree = q"buf.result()"): Tree =
+      def genReadMap(empty: Tree, newBuilder: Tree, readKV: Tree, result: Tree = q"buf"): Tree =
         q"""nextToken(in) match {
               case '{' =>
                 if (nextToken(in) == '}') $empty
@@ -212,20 +212,18 @@ object Codec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
-            q"""buf = buf + ((readObjectFieldAsString(in).toInt, ${genReadField(tpe1)}))""",
-            q"buf")
+            q"""buf = buf.updated(readObjectFieldAsString(in).toInt, ${genReadField(tpe1)})""")
         } else if (tpe <:< typeOf[LongMap[_]]) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
-            q"""buf = buf + ((readObjectFieldAsString(in).toLong, ${genReadField(tpe1)}))""",
-            q"buf")
+            q"""buf = buf.updated(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
         } else if (tpe <:< typeOf[Map[_, _]]) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
-          genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"val buf = $comp.newBuilder[$tpe1, $tpe2]",
-            q"""buf += ((${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)}))""")
+          genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"var buf = $comp.empty[$tpe1, $tpe2]",
+            q"""buf = buf.updated(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
         } else if (tpe <:< typeOf[BitSet]) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.newBuilder", q"buf += in.readInt()")
@@ -259,9 +257,9 @@ object Codec {
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
             var first = true
-            $m.foreach { case (k, v) =>
+            $m.foreach { kv =>
               first = writeSep(out, first)
-              out.writeObjectField(k.toString)
+              out.writeObjectField(kv._1.toString)
               $writeKV
             }
             out.writeObjectEnd()"""
@@ -286,11 +284,11 @@ object Codec {
         } else if (tpe <:< typeOf[Option[_]]) {
           genWriteVal(q"$m.get", typeArg1(tpe))
         } else if (tpe <:< typeOf[IntMap[_]]) {
-          genWriteMap(m, genWriteVal(q"v", typeArg1(tpe)))
+          genWriteMap(m, genWriteVal(q"kv._2", typeArg1(tpe)))
         } else if (tpe <:< typeOf[LongMap[_]]) {
-          genWriteMap(m, genWriteVal(q"v", typeArg1(tpe)))
+          genWriteMap(m, genWriteVal(q"kv._2", typeArg1(tpe)))
         } else if (tpe <:< typeOf[Map[_, _]]) {
-          genWriteMap(m, genWriteVal(q"v", typeArg2(tpe)))
+          genWriteMap(m, genWriteVal(q"kv._2", typeArg2(tpe)))
         } else if (tpe <:< typeOf[BitSet]) {
           genWriteArray(m, q"out.writeVal(x)")
         } else if (tpe <:< typeOf[Iterable[_]]) {

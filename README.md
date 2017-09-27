@@ -71,7 +71,7 @@ For more features & examples, please, check out
 How to develop
 ==============
 
-Feel free to ask questions by opening issues (Gitter chat is coming), or contribute by pull requesting (code or/and tests are highly appreciated)
+Feel free to ask questions by opening issues (Gitter chat is coming), or contribute by creating pull requests (code or/and tests are highly appreciated)
 
 Run tests and check coverage
 
