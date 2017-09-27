@@ -14,8 +14,7 @@ Features and limitations:
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
 - Full support of UTF-8 encoding (others are only supported if all characters are less than 128)
 - Case classes should be defined as a top-level class or directly inside of another class or object
-- Options & immutable Scala collections as class fields are supported
-- Enums, BigInt & BigDecimal are supported
+- Enums, BigInt, BigDecimal, Options & Scala collections as class fields are supported
 - Up to 64 required fields are supported for case classes
 - Doesn't serialize null values, default values, empty options and empty collections
 - Doesn't parse and serialize values of fields annotated as transient or if them are not defined in constructor

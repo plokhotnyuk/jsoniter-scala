@@ -9,6 +9,7 @@ import com.jsoniter.{CodegenAccess, JsonIterator}
 
 import scala.annotation.meta.field
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
+import scala.collection.mutable
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -84,31 +85,19 @@ object Codec {
       def default(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe) {
           q"false"
-        } else if (tpe =:= definitions.ByteTpe) {
+        } else if (tpe =:= definitions.ByteTpe || tpe =:= definitions.CharTpe || tpe =:= definitions.ShortTpe ||
+          tpe =:= definitions.IntTpe || tpe =:= definitions.LongTpe || tpe =:= definitions.DoubleTpe ||
+          tpe =:= definitions.FloatTpe) {
           q"0"
-        } else if (tpe =:= definitions.CharTpe) {
-          q"0"
-        } else if (tpe =:= definitions.ShortTpe) {
-          q"0"
-        } else if (tpe =:= definitions.IntTpe) {
-          q"0"
-        } else if (tpe =:= definitions.LongTpe) {
-          q"0L"
-        } else if (tpe =:= definitions.DoubleTpe) {
-          q"0.0"
-        } else if (tpe =:= definitions.FloatTpe) {
-          q"0.0f"
         } else if (isValueClass(tpe)) {
           q"null.asInstanceOf[$tpe]"
         } else if (tpe <:< typeOf[Option[_]]) {
           q"None"
-        } else if (tpe <:< typeOf[IntMap[_]]) {
+        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[LongMap[_]]) {
-          q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[Map[_, _]]) {
+        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[BitSet]) {
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) {
           q"${companion(tpe)}.empty"
         } else if (tpe <:< typeOf[Iterable[_]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
@@ -214,17 +203,31 @@ object Codec {
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
             q"""buf = buf.updated(readObjectFieldAsString(in).toInt, ${genReadField(tpe1)})""")
+        } else if (tpe <:< typeOf[mutable.LongMap[_]]) {
+          val tpe1 = typeArg1(tpe)
+          val comp = companion(tpe)
+          genReadMap(q"$comp.empty[$tpe1]", q"val buf = $comp.empty[$tpe1]",
+            q"""buf.update(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
         } else if (tpe <:< typeOf[LongMap[_]]) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
             q"""buf = buf.updated(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
+        } else if (tpe <:< typeOf[mutable.Map[_, _]]) {
+          val tpe1 = typeArg1(tpe)
+          val tpe2 = typeArg2(tpe)
+          val comp = companion(tpe)
+          genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"val buf = $comp.empty[$tpe1, $tpe2]",
+            q"""buf.update(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
         } else if (tpe <:< typeOf[Map[_, _]]) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"var buf = $comp.empty[$tpe1, $tpe2]",
             q"""buf = buf.updated(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
+        } else if (tpe <:< typeOf[mutable.BitSet]) {
+          val comp = companion(tpe)
+          genReadArray(q"$comp.empty", q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
         } else if (tpe <:< typeOf[BitSet]) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.newBuilder", q"buf += in.readInt()")
@@ -266,39 +269,19 @@ object Codec {
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.ByteTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.CharTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.ShortTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.IntTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.LongTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.DoubleTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= definitions.FloatTpe) {
+        if (tpe <:< definitions.AnyValTpe) {
           q"out.writeVal($m)"
         } else if (tpe <:< typeOf[Option[_]]) {
           genWriteVal(q"$m.get", typeArg1(tpe))
-        } else if (tpe <:< typeOf[IntMap[_]]) {
+        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) {
           genWriteMap(m, genWriteVal(q"kv._2", typeArg1(tpe)))
-        } else if (tpe <:< typeOf[LongMap[_]]) {
-          genWriteMap(m, genWriteVal(q"kv._2", typeArg1(tpe)))
-        } else if (tpe <:< typeOf[Map[_, _]]) {
+        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           genWriteMap(m, genWriteVal(q"kv._2", typeArg2(tpe)))
-        } else if (tpe <:< typeOf[BitSet]) {
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) {
           genWriteArray(m, q"out.writeVal(x)")
         } else if (tpe <:< typeOf[Iterable[_]]) {
           genWriteArray(m, genWriteVal(q"x", typeArg1(tpe)))
-        } else if (tpe =:= typeOf[String]) {
-          q"out.writeVal($m)"
-        } else if (tpe =:= typeOf[BigInt]) {
-          q"out.writeRaw($m.toString)"
-        } else if (tpe =:= typeOf[BigDecimal]) {
+        } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           q"out.writeRaw($m.toString)"
         } else if (tpe <:< typeOf[Enumeration#Value]) {
           q"out.writeVal($m.id)"
@@ -307,40 +290,16 @@ object Codec {
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
-        if (tpe =:= definitions.BooleanTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.ByteTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.CharTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.ShortTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.IntTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.LongTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.DoubleTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (tpe =:= definitions.FloatTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
-        } else if (isValueClass(tpe)) {
+        if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
+        } else if (tpe <:< definitions.AnyValTpe) {
+          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
         } else if (tpe <:< typeOf[Option[_]]) {
           q"if ($m != null && $m.isDefined) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
-        } else if (tpe <:< typeOf[Map[_, _]]) {
-          q"if ($m != null && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
-        } else if (tpe <:< typeOf[BitSet]) {
+        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"if ($m != null && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else if (tpe <:< typeOf[Iterable[_]]) {
           q"if ($m != null && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
-        } else if (tpe =:= typeOf[String]) {
-          q"if ($m != null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
-        } else if (tpe =:= typeOf[BigInt]) {
-          q"if ($m != null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
-        } else if (tpe =:= typeOf[BigDecimal]) {
-          q"if ($m != null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
-        } else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"if ($m != null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
         } else {
           q"if ($m != null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
         }
