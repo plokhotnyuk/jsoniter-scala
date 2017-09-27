@@ -65,7 +65,7 @@ scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
 For more features & examples, please, check out
-[CodecSpec](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/src/test/scala/com/plokhotnyuk/jsoniter_scala/CodecSpec.scala)
+[CodecSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/CodecSpec.scala)
 
 
 How to develop
@@ -85,7 +85,7 @@ Run benchmarks
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*CodecBenchmark.*' >results.txt
 ```
 
-Currently `./results.txt` contains results for the following environment:
+Currently [./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) contains results for the following environment:
 Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_112-b15 64-bit
 
 
