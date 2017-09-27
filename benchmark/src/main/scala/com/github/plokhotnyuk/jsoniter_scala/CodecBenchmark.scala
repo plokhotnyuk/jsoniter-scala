@@ -1,6 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.util
 import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
@@ -18,40 +17,22 @@ import scala.collection.immutable.{HashMap, Map}
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class CodecBenchmark {
-  private val jacksonMapper = new ObjectMapper with ScalaObjectMapper {
+  val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
-  private val anyRefsCodec = materialize[AnyRefs]
-  private val iterablesCodec = materialize[Iterables]
-  private val mapsCodec = materialize[Maps]
-  private val primitivesCodec = materialize[Primitives]
-  private val anyRefsJson = """{"s":"s","bd":1,"os":"os"}""".getBytes
-  private val iterablesJson = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
-  private val mapsJson = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
-  private val primitivesJson = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes
-  private val anyRefsObj = AnyRefs("s", 1, Some("os"))
-  private val iterablesObj = Iterables(List("1", "2", "3"), Set(4, 5, 6), List(Set(1, 2), Set()))
-  private val mapsObj = Maps(HashMap("1" -> 1.1, "2" -> 2.2), Map(1 -> HashMap(3L -> 3.3), 2 -> HashMap.empty[Long, Double]))
-  private val primitivesObj = Primitives(1, 2, 3, 4, bl = true, 'V', 1.1, 2.2f)
-  require(readAnyRefsJackson() == anyRefsObj)
-  require(readAnyRefsJsoniter() == anyRefsObj)
-  require(readIterablesJackson() == iterablesObj)
-  require(readIterablesJsoniter() == iterablesObj)
-  //FIXME: Jackson-module-scala instantiates Map instead of HashMap
-  // require(readMapsJackson() == mapsObj)
-  require(readMapsJsoniter() == mapsObj)
-  require(readPrimitivesJackson() == primitivesObj)
-  require(readPrimitivesJsoniter() == primitivesObj)
-  require(util.Arrays.equals(writeAnyRefsJackson(), anyRefsJson))
-  require(util.Arrays.equals(writeAnyRefsJsoniter(), anyRefsJson))
-  require(util.Arrays.equals(writeIterablesJackson(), iterablesJson))
-  require(util.Arrays.equals(writeIterablesJsoniter(), iterablesJson))
-  require(util.Arrays.equals(writeMapsJackson(), mapsJson))
-  require(util.Arrays.equals(writeMapsJsoniter(), mapsJson))
-  //FIXME: by default Jackson stores Char as String, while Jsoniter stores it as Int
-  // require(util.Arrays.equals(writePrimitivesJackson(), primitivesJson))
-  require(util.Arrays.equals(writePrimitivesJsoniter(), primitivesJson))
+  val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
+  val iterablesCodec: Codec[Iterables] = materialize[Iterables]
+  val mapsCodec: Codec[Maps] = materialize[Maps]
+  val primitivesCodec: Codec[Primitives] = materialize[Primitives]
+  val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
+  val iterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
+  val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
+  val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes
+  val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
+  val iterablesObj: Iterables = Iterables(List("1", "2", "3"), Set(4, 5, 6), List(Set(1, 2), Set()))
+  val mapsObj: Maps = Maps(HashMap("1" -> 1.1, "2" -> 2.2), Map(1 -> HashMap(3L -> 3.3), 2 -> HashMap.empty[Long, Double]))
+  val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, 'V', 1.1, 2.2f)
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)

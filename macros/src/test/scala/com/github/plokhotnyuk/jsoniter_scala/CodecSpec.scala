@@ -11,7 +11,7 @@ import scala.collection.immutable._
 case class KeyOverridden(@key("new_key") oldKey: String) //FIXME: fail tests when move to end of source file
 
 class CodecSpec extends WordSpec with Matchers {
-  "Jsoniter" should {
+  "Codec" should {
     "serialize and deserialize primitives" in {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
