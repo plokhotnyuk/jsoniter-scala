@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.util
-
 import org.scalatest.{Matchers, WordSpec}
 
 class CodecBenchmarkSpec extends WordSpec with Matchers {
@@ -9,26 +7,28 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
   
   "CodecBenchmark" should {
     "deserialize properly" in {
-      assert(benchmark.readAnyRefsJackson() == benchmark.anyRefsObj)
-      assert(benchmark.readAnyRefsJsoniter() == benchmark.anyRefsObj)
-      assert(benchmark.readIterablesJackson() == benchmark.iterablesObj)
-      assert(benchmark.readIterablesJsoniter() == benchmark.iterablesObj)
+      benchmark.readAnyRefsJackson() shouldBe benchmark.anyRefsObj
+      benchmark.readAnyRefsJsoniter() shouldBe benchmark.anyRefsObj
+      benchmark.readIterablesJackson() shouldBe benchmark.iterablesObj
+      benchmark.readIterablesJsoniter() shouldBe benchmark.iterablesObj
       //FIXME: Jackson-module-scala instantiates Map instead of HashMap
-      // assert(benchmark.readMapsJackson() == benchmark.mapsObj)
-      assert(benchmark.readMapsJsoniter() == benchmark.mapsObj)
-      assert(benchmark.readPrimitivesJackson() == benchmark.primitivesObj)
-      assert(benchmark.readPrimitivesJsoniter() == benchmark.primitivesObj)
+      // benchmark.readMapsJackson() shouldBe benchmark.mapsObj
+      benchmark.readMapsJsoniter() shouldBe benchmark.mapsObj
+      benchmark.readPrimitivesJackson() shouldBe benchmark.primitivesObj
+      benchmark.readPrimitivesJsoniter() shouldBe benchmark.primitivesObj
     }
     "serialize properly" in {
-      assert(util.Arrays.equals(benchmark.writeAnyRefsJackson(), benchmark.anyRefsJson))
-      assert(util.Arrays.equals(benchmark.writeAnyRefsJsoniter(), benchmark.anyRefsJson))
-      assert(util.Arrays.equals(benchmark.writeIterablesJackson(), benchmark.iterablesJson))
-      assert(util.Arrays.equals(benchmark.writeIterablesJsoniter(), benchmark.iterablesJson))
-      assert(util.Arrays.equals(benchmark.writeMapsJackson(), benchmark.mapsJson))
-      assert(util.Arrays.equals(benchmark.writeMapsJsoniter(), benchmark.mapsJson))
+      toString(benchmark.writeAnyRefsJackson()) shouldBe toString(benchmark.anyRefsJson)
+      toString(benchmark.writeAnyRefsJsoniter()) shouldBe toString(benchmark.anyRefsJson)
+      toString(benchmark.writeIterablesJackson()) shouldBe toString(benchmark.iterablesJson)
+      toString(benchmark.writeIterablesJsoniter()) shouldBe toString(benchmark.iterablesJson)
+      toString(benchmark.writeMapsJackson()) shouldBe toString(benchmark.mapsJson)
+      toString(benchmark.writeMapsJsoniter()) shouldBe toString(benchmark.mapsJson)
       //FIXME: by default Jackson stores Char as String, while Jsoniter stores it as Int
-      // assert(util.Arrays.equals(benchmark.writePrimitivesJackson(), benchmark.primitivesJson))
-      assert(util.Arrays.equals(benchmark.writePrimitivesJsoniter(), benchmark.primitivesJson))
+      // toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
+      toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)
     }
   }
+
+  def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
 }

@@ -64,8 +64,7 @@ class CodecSpec extends WordSpec with Matchers {
         """{"camelCase":"VVV","snake_case":"XXX"}""".getBytes)
     }
     "serialize and deserialize indented JSON" in {
-      JsoniterSpi.setCurrentConfig((new Config.Builder).indentionStep(2).build)
-      try {
+      withConfig(_.indentionStep(2)) {
         verifySerDeser(materialize[Indented], Indented("VVV", List("X", "Y", "Z")),
           """{
             |  "f1": "VVV",
@@ -75,14 +74,12 @@ class CodecSpec extends WordSpec with Matchers {
             |    "Z"
             |  ]
             |}""".stripMargin.getBytes)
-      } finally JsoniterSpi.setCurrentConfig(JsoniterSpi.getDefaultConfig)
+      }
     }
     "serialize and deserialize UTF-8 keys and values without hex encoding" in {
-      val currentConfig = JsoniterSpi.getCurrentConfig
-      JsoniterSpi.setCurrentConfig((new Config.Builder).escapeUnicode(false).build)
-      try {
+      withConfig(_.escapeUnicode(false)) {
         verifySerDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""".getBytes("UTF-8"))
-      } finally JsoniterSpi.setCurrentConfig(currentConfig)
+      }
     }
     "serialize and deserialize with keys overridden by annotation" in {
       verifySerDeser(materialize[KeyOverridden], KeyOverridden("VVV"), """{"new_key":"VVV"}""".getBytes)
@@ -127,6 +124,12 @@ class CodecSpec extends WordSpec with Matchers {
     //FIXME: Failing when launched by 'sbt test'
     //codec.read(new ByteArrayInputStream(json)) shouldBe obj
     codec.read(json) shouldBe obj
+  }
+
+  def withConfig(configBuilder: Config.Builder => Config.Builder)(f: => Unit): Unit = {
+    val currentConfig = JsoniterSpi.getCurrentConfig
+    JsoniterSpi.setCurrentConfig(configBuilder(new Config.Builder).build)
+    try f finally JsoniterSpi.setCurrentConfig(currentConfig)
   }
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
