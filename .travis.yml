@@ -1,0 +1,15 @@
+# by default Travis uses JDK 8u31, which is much too old for Scala 2.12 (versions before 8u102 have issues - https://issues.scala-lang.org/browse/SI-9828)
+dist: trusty
+sudo: false
+
+language: scala
+
+scala:
+  - 2.11.11
+  - 2.12.3
+
+jdk: oraclejdk8
+
+script: sbt ++$TRAVIS_SCALA_VERSION clean coverage test
+
+after_success: sbt ++$TRAVIS_SCALA_VERSION coverageReport #TODO: coveralls
