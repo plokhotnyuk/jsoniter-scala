@@ -12,7 +12,7 @@ to get maximum performance of JSON parsing & serialization.
 Features and limitations:
 - JSON parsing from `Array[Byte]` or `java.io.InputStream` using `com.jsoniter.JsonIterator`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
-- Fully support of UTF-8 encoding (other are only supported if all characters greater than 127 are hex encoded)
+- Full support of UTF-8 encoding (others are only supported if all characters are less than 128)
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Options & immutable Scala collections as class fields are supported
 - Enums, BigInt & BigDecimal are supported

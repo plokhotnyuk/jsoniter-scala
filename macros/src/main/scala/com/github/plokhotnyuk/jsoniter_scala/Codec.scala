@@ -4,7 +4,7 @@ import java.io.{InputStream, OutputStream}
 
 import com.jsoniter.output.{JsonStream, JsonStreamPool}
 import com.jsoniter.spi.JsoniterSpi._
-import com.jsoniter.spi.{Decoder, Encoder}
+import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
 import com.jsoniter.{CodegenAccess, JsonIterator}
 
 import scala.annotation.meta.field
@@ -16,6 +16,7 @@ import scala.reflect.macros.blackbox
 class key(key: String) extends scala.annotation.StaticAnnotation
 
 abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
+  JsoniterSpi.setDefaultConfig((new Config.Builder).escapeUnicode(false).build)
   addNewEncoder(getCurrentConfig.getEncoderCacheKey(cls), this)
   addNewDecoder(getCurrentConfig.getDecoderCacheKey(cls), this)
 
@@ -359,7 +360,8 @@ object Codec {
           str
         }).getOrElse(m.name.toString)
 
-      def hashCode(m: MethodSymbol): Int = CodegenAccess.calcHash(keyName(m))
+      def hashCode(m: MethodSymbol): Int =
+        CodegenAccess.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
       val comp = tpe.typeSymbol.companion

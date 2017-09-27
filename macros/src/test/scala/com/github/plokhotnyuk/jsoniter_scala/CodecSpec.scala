@@ -77,9 +77,7 @@ class CodecSpec extends WordSpec with Matchers {
       }
     }
     "serialize and deserialize UTF-8 keys and values without hex encoding" in {
-      withConfig(_.escapeUnicode(false)) {
-        verifySerDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""".getBytes("UTF-8"))
-      }
+      verifySerDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""".getBytes("UTF-8"))
     }
     "serialize and deserialize with keys overridden by annotation" in {
       verifySerDeser(materialize[KeyOverridden], KeyOverridden("VVV"), """{"new_key":"VVV"}""".getBytes)
