@@ -1,3 +1,6 @@
+[![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala)
+[![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
+
 # Jsoniter Scala
 
 Macros that generates `com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces in compile time,
@@ -23,8 +26,7 @@ Features and limitations:
 - TODO: efficient specialized immutable list & set for Int & Long primitive types
 
 
-How to use
-===========
+# How to use
 
 Build and publish locally (release to Sonatype repo is coming)
 
@@ -68,8 +70,7 @@ For more features & examples, please, check out
 [CodecSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/CodecSpec.scala)
 
 
-How to develop
-==============
+# How to develop
 
 Feel free to ask questions by opening issues (Gitter chat is coming), or contribute by creating pull requests (code or/and tests are highly appreciated)
 
@@ -89,8 +90,7 @@ Currently [./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/mas
 Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_112-b15 64-bit
 
 
-Acknowledges
-=============
+# Acknowledges
 
 [Jsoniter Java](https://github.com/json-iterator/java)
 
