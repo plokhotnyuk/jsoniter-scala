@@ -54,9 +54,9 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize mutable maps" in {
       verifySerDeser(materialize[MutableMaps],
-        MutableMaps(mutable.HashMap("1" -> BigInt("11")), mutable.SortedMap(1L -> 1.1f, 2L -> 2.2f),
+        MutableMaps(mutable.HashMap("1" -> BigInt("11")), mutable.Map(1L -> 1.1f),
           mutable.OpenHashMap(1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2 -> mutable.LinkedHashMap())),
-        """{"ms":{"1":11},"mi":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes)
+        """{"ms":{"1":11},"mi":{"1":1.1},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes)
     }
     "serialize and deserialize immutable maps" in {
       verifySerDeser(materialize[ImmutableMaps],
@@ -179,7 +179,7 @@ case class MutableIterables(l: mutable.MutableList[String], s: mutable.Set[BigIn
 
 case class ImmutableIterables(l: List[String], s: Set[BigInt], ls: IndexedSeq[Set[Int]])
 
-case class MutableMaps(ms: mutable.HashMap[String, BigInt], mi: mutable.SortedMap[Long, Float], mm: mutable.OpenHashMap[Int, mutable.LinkedHashMap[Short, Double]])
+case class MutableMaps(ms: mutable.HashMap[String, BigInt], mi: mutable.Map[Long, Float], mm: mutable.OpenHashMap[Int, mutable.LinkedHashMap[Short, Double]])
 
 case class ImmutableMaps(ms: HashMap[String, BigInt], mi: SortedMap[Long, Float], mm: Map[Int, Map[Short, Double]])
 
