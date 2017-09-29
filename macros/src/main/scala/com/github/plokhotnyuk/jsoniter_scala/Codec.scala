@@ -330,12 +330,12 @@ object Codec {
       val module = comp.asModule
       val apply = module.typeSignature.decl(TermName("apply")).asMethod
       // FIXME: handling only default val params from the first list because subsequent might depend on previous params
-      val params = apply.paramLists.head.map(_.asTerm).zipWithIndex
-      val defaults = params.collect {
+      val params = apply.paramLists.head.map(_.asTerm)
+      val defaults = params.zipWithIndex.collect {
         case (p, i) if p.isParamWithDefault => p.name.toString -> q"$module.${TermName("apply$default$" + (i + 1))}"
       }.toMap
       val required = params.collect {
-        case (p, _) if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
+        case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
       }
       if (required.size > 64) c.abort(c.enclosingPosition, s"More than 64 required fields in: '$tpe'.")
       val members = tpe.members.collect {

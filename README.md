@@ -12,17 +12,17 @@ to get maximum performance of JSON parsing & serialization.
 Features and limitations:
 - JSON parsing from `Array[Byte]` or `java.io.InputStream` using `com.jsoniter.JsonIterator`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
-- Full support of UTF-8 encoding (others are only supported if all characters are less than 128)
+- Support of UTF-8 encoding, except parsing of hex encoded field names
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, BigInt, BigDecimal, Options & Scala collections as class fields are supported
 - Up to 64 required fields are supported for case classes
-- Doesn't serialize null values, default values, empty options and empty collections
+- Doesn't serialize null values, default values, empty options & collections
 - Doesn't parse and serialize values of fields annotated as transient or if them are not defined in constructor
 - Need to materialize manually all case classes used in nested structures
 - Key names can be overridden by field annotation
-- TODO: parsing of primitive types & enums from strings
-- TODO: serialization of chars & enums to strings
-- TODO: efficient specialized immutable list & set for Int & Long primitive types
+- Configurable indenting of output
+- TODO: configurable by field annotations custom encoder(s)/decoder(s) for fields and their type parameter(s)
+- TODO: efficient specialized immutable list & set for primitive types
 
 
 # How to use
