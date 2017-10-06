@@ -13,9 +13,9 @@ to get maximum performance of JSON parsing & serialization.
 Features and limitations:
 - JSON parsing from `Array[Byte]` or `java.io.InputStream` using `com.jsoniter.JsonIterator`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
-- Support of UTF-8 encoding, except parsing of hex encoded field names
+- Support of UTF-8 encoding (except parsing of hex encoded field names)
 - Case classes should be defined as a top-level class or directly inside of another class or object
-- Enums, BigInt, BigDecimal, Options & Scala collections as class fields are supported
+- Enums, `BigInt`, `BigDecimal`, `Option` & Scala collections as class fields are supported
 - Up to 64 required fields are supported for case classes
 - Doesn't serialize null values, default values, empty options & collections
 - Doesn't parse and serialize values of fields annotated as transient or if them are not defined in constructor
@@ -24,19 +24,19 @@ Features and limitations:
 - Configurable indenting of output
 - TODO: configurable by field annotations custom encoder(s)/decoder(s) for fields and their type parameter(s)
 - TODO: efficient specialized immutable list & set for primitive types
-- TODO: throw exception instead of replacing invalid bytes by placeholder character
+- TODO: throw exception instead of replacing invalid bytes by placeholder character(s)
 
 # How to use
 
 Build and publish locally (release to Sonatype repo is coming)
 
-```
+```sh
 sbt clean +publishLocal
 ```
 
 Add the library to your dependencies list
 
-```scala
+```sbt
 libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.1-SNAPSHOT"
 ```
 
@@ -51,7 +51,7 @@ val userCodec = Codec.materialize[User]
 ```
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.Codec` which implements both
-`com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces for your User.
+`com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces for your `User`.
 
 Now you can use it:
 
@@ -62,7 +62,7 @@ userCodec.write(User(name = "John"))
 
 To see generated code add the following line to your sbt build file
 
-```scala
+```sbt
 scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
@@ -76,13 +76,13 @@ Feel free to ask questions by opening issues (Gitter chat is coming), or contrib
 
 Run tests and check coverage
 
-```
+```sh
 sbt clean +coverage +test +coverageReport
 ```
 
 Run benchmarks
 
-```
+```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*CodecBenchmark.*' >results.txt
 ```
 
