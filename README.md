@@ -24,7 +24,7 @@ Features and limitations:
 - Configurable indenting of output
 - TODO: configurable by field annotations custom encoder(s)/decoder(s) for fields and their type parameter(s)
 - TODO: efficient specialized immutable list & set for primitive types
-- TODO: throw exception instead of replacing invalid bytes by placeholder character(s)
+- TODO: throw exception instead of replacing by placeholder character(s) during parsing invalid UTF-8 bytes
 
 # How to use
 
