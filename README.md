@@ -1,4 +1,5 @@
 [![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala)
+[![license](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
 
 # Jsoniter Scala
@@ -23,7 +24,7 @@ Features and limitations:
 - Configurable indenting of output
 - TODO: configurable by field annotations custom encoder(s)/decoder(s) for fields and their type parameter(s)
 - TODO: efficient specialized immutable list & set for primitive types
-
+- TODO: throw exception instead of replacing invalid bytes by placeholder character
 
 # How to use
 
