@@ -120,8 +120,20 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "throw exception in case of missing required fields detected during deserialization" in {
       assert(intercept[Exception] {
-        verifyDeser(materialize[Required], Required("VVV", 0, None), """{"req1":"VVV"}""".getBytes)
-      }.getMessage.contains("""decode: missing required field(s) "req2""""))
+        val obj = Required(
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+          10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+          20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+          30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+          40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+          50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+          60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+          70, 71, 72, 78, 74, 75, 76, 77, 78, 79,
+          80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+          90, 91, 92, 93, 94, 95, 96, 97, 98, 99)
+        verifyDeser(materialize[Required], obj,
+          """{"r00":0,"r10":10,"r20":20,"r30":30,"r40":40,"r50":50,"r60":60,"r70":70,"r80":80,"r90":90}""".getBytes)
+      }.getMessage.contains("""decode: missing required field(s) "r01", "r02", "r03", "r04", "r05", "r06", "r07", "r08", "r09", "r11", "r12", "r13", "r14", "r15", "r16", "r17", "r18", "r19", "r21", "r22", "r23", "r24", "r25", "r26", "r27", "r28", "r29", "r31", "r32", "r33", "r34", "r35", "r36", "r37", "r38", "r39", "r41", "r42", "r43", "r44", "r45", "r46", "r47", "r48", "r49", "r51", "r52", "r53", "r54", "r55", "r56", "r57", "r58", "r59", "r61", "r62", "r63", "r64", "r65", "r66", "r67", "r68", "r69", "r71", "r72", "r73", "r74", "r75", "r76", "r77", "r78", "r79", "r81", "r82", "r83", "r84", "r85", "r86", "r87", "r88", "r89", "r91", "r92", "r93", "r94", "r95", "r96", "r97", "r98", "r99""""))
     }
   }
 
@@ -207,4 +219,13 @@ case class EmptyIterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 
 case class Unknown()
 
-case class Required(req1: String, req2: Int, opt: Option[String])
+case class Required(r00: Int, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
+                    r10: Int, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
+                    r20: Int, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
+                    r30: Int, r31: Int, r32: Int, r33: Int, r34: Int, r35: Int, r36: Int, r37: Int, r38: Int, r39: Int,
+                    r40: Int, r41: Int, r42: Int, r43: Int, r44: Int, r45: Int, r46: Int, r47: Int, r48: Int, r49: Int,
+                    r50: Int, r51: Int, r52: Int, r53: Int, r54: Int, r55: Int, r56: Int, r57: Int, r58: Int, r59: Int,
+                    r60: Int, r61: Int, r62: Int, r63: Int, r64: Int, r65: Int, r66: Int, r67: Int, r68: Int, r69: Int,
+                    r70: Int, r71: Int, r72: Int, r73: Int, r74: Int, r75: Int, r76: Int, r77: Int, r78: Int, r79: Int,
+                    r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
+                    r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)

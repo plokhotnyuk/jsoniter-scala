@@ -16,7 +16,7 @@ Features and limitations:
 - Support of UTF-8 encoding (except parsing of hex encoded field names)
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option` & Scala collections as class fields are supported
-- Up to 64 required fields are supported for case classes
+- Required fields are supported for case classes
 - Doesn't serialize null values, default values, empty options & collections
 - Doesn't parse and serialize values of fields annotated as transient or if them are not defined in constructor
 - Need to materialize manually all case classes used in nested structures

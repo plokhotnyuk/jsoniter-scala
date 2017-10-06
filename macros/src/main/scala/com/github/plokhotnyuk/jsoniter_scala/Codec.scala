@@ -8,6 +8,7 @@ import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
 import com.jsoniter.{CodegenAccess, JsonIterator}
 
 import scala.annotation.meta.field
+import scala.collection.breakOut
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
 import scala.collection.mutable
 import scala.language.experimental.macros
@@ -39,12 +40,12 @@ abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
     } finally JsonStreamPool.returnJsonStream(stream)
   }
 
-  private[jsoniter_scala] def reqFieldError(in: JsonIterator, reqFields: Array[String], req: Long): Nothing = {
+  private[jsoniter_scala] def reqFieldError(in: JsonIterator, reqFields: Array[String], reqs: Long*): Nothing = {
     val sb = new StringBuilder(64)
     val l = reqFields.length
     var i = 0
     while (i < l) {
-      if ((req & (1L << i)) != 0) {
+      if ((reqs(i >> 6) & (1L << i)) != 0) {
         sb.append(if (sb.isEmpty) "missing required field(s) " else ", ").append('"').append(reqFields(i)).append('"')
       }
       i += 1
@@ -145,15 +146,15 @@ object Codec {
                 if (nextToken(in) == ']') $empty
                 else {
                   unreadByte(in)
-                  $newBuilder
+                  ..$newBuilder
                   do {
-                    $readVal
+                    ..$readVal
                   } while (nextToken(in) == ',')
-                  $result
+                  ..$result
                 }
               case 'n' =>
                 skipFixedBytes(in, 3)
-                $empty
+                ..$empty
               case _ =>
                 decodeError(in, "expect [ or n")
             }"""
@@ -164,18 +165,40 @@ object Codec {
                 if (nextToken(in) == '}') $empty
                 else {
                   unreadByte(in)
-                  $newBuilder
+                  ..$newBuilder
                   do {
-                    $readKV
+                    ..$readKV
                   } while (nextToken(in) == ',')
-                  $result
+                  ..$result
                 }
               case 'n' =>
                 skipFixedBytes(in, 3)
-                $empty
+                ..$empty
               case _ =>
                 decodeError(in, "expect { or n")
             }"""
+
+      var decoderIds = 0L
+      val decoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
+
+      def withDecoderFor(tpe: Type)(f: => Tree): Tree = {
+        val decoderName = decoders.getOrElseUpdate(tpe, {
+          val name = TermName(s"d${decoderIds += 1; decoderIds}")
+          val decoder = q"""private def $name(in: JsonIterator): $tpe = $f"""
+          (name, decoder)})._1
+        q"$decoderName(in)"
+      }
+
+      var encoderIds = 0L
+      val encoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
+
+      def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
+        val encoderName = encoders.getOrElseUpdate(tpe, {
+          val name = TermName(s"e${encoderIds += 1; encoderIds}")
+          val encoder = q"""private def $name(out: JsonStream, x: $tpe): Unit = $f"""
+          (name, encoder)})._1
+        q"$encoderName(out, $arg)"
+      }
 
       def genReadField(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe) {
@@ -198,40 +221,40 @@ object Codec {
           q"new $tpe(${genReadField(valueClassValueType(tpe))})"
         } else if (tpe <:< typeOf[Option[_]]) {
           q"Option(${genReadField(typeArg1(tpe))})"
-        } else if (tpe <:< typeOf[IntMap[_]]) {
+        } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
             q"""buf = buf.updated(readObjectFieldAsString(in).toInt, ${genReadField(tpe1)})""")
-        } else if (tpe <:< typeOf[mutable.LongMap[_]]) {
+        } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"val buf = $comp.empty[$tpe1]",
             q"""buf.update(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
-        } else if (tpe <:< typeOf[LongMap[_]]) {
+        } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
             q"""buf = buf.updated(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
-        } else if (tpe <:< typeOf[mutable.Map[_, _]]) {
+        } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"val buf = $comp.empty[$tpe1, $tpe2]",
             q"""buf.update(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
-        } else if (tpe <:< typeOf[Map[_, _]]) {
+        } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"var buf = $comp.empty[$tpe1, $tpe2]",
             q"""buf = buf.updated(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
-        } else if (tpe <:< typeOf[mutable.BitSet]) {
+        } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
-        } else if (tpe <:< typeOf[BitSet]) {
+        } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.newBuilder", q"buf += in.readInt()")
-        } else if (tpe <:< typeOf[Iterable[_]]) {
+        } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadArray(q"$comp.empty[$tpe1]", q"val buf = $comp.newBuilder[$tpe1]",
@@ -252,20 +275,13 @@ object Codec {
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
             var first = true
-            $m.foreach { x =>
-              first = writeSep(out, first)
-              $writeVal
-            }
+            $m.foreach { x => first = writeSep(out, first); ..$writeVal }
             out.writeArrayEnd()"""
 
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
             var first = true
-            $m.foreach { kv =>
-              first = writeSep(out, first)
-              out.writeObjectField(kv._1.toString)
-              $writeKV
-            }
+            $m.foreach { kv => first = writeSep(out, first); out.writeObjectField(kv._1.toString); ..$writeKV }
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
@@ -273,14 +289,14 @@ object Codec {
           q"out.writeVal($m)"
         } else if (tpe <:< typeOf[Option[_]]) {
           genWriteVal(q"$m.get", typeArg1(tpe))
-        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) {
-          genWriteMap(m, genWriteVal(q"kv._2", typeArg1(tpe)))
-        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
-          genWriteMap(m, genWriteVal(q"kv._2", typeArg2(tpe)))
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) {
-          genWriteArray(m, q"out.writeVal(x)")
-        } else if (tpe <:< typeOf[Iterable[_]]) {
-          genWriteArray(m, genWriteVal(q"x", typeArg1(tpe)))
+        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) withEncoderFor(tpe, m) {
+          genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe)))
+        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(tpe, m) {
+          genWriteMap(q"x", genWriteVal(q"kv._2", typeArg2(tpe)))
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(tpe, m) {
+          genWriteArray(q"x", q"out.writeVal(x)")
+        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(tpe, m) {
+          genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe)))
         } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           q"out.writeRaw($m.toString)"
         } else if (tpe <:< typeOf[Enumeration#Value]) {
@@ -295,28 +311,28 @@ object Codec {
         } else if (tpe <:< definitions.AnyValTpe) {
           q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
         } else if (tpe <:< typeOf[Option[_]]) {
-          q"if ($m != null && $m.isDefined) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
+          q"if (($m ne null) && $m.isDefined) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
-          q"if ($m != null && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
+          q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else if (tpe <:< typeOf[Iterable[_]]) {
-          q"if ($m != null && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
+          q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else {
-          q"if ($m != null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
+          q"if ($m ne null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
         }
 
       val tpe = weakTypeOf[A]
       if (!tpe.typeSymbol.asClass.isCaseClass) c.abort(c.enclosingPosition, s"'$tpe' must be a case class.")
-      val annotations = tpe.members.collect {
+      val annotations: Map[Symbol, Set[Annotation]] = tpe.members.collect {
         case m: TermSymbol if m.annotations.nonEmpty => (m.getter, m.annotations.toSet)
-      }.toMap
+      }(breakOut)
 
       def nonTransient(m: MethodSymbol): Boolean =
         !annotations.get(m).exists(_.exists(_.tree.tpe <:< c.weakTypeOf[transient]))
 
       def keyName(m: MethodSymbol): String =
         annotations.get(m).flatMap(_.collectFirst { case a if a.tree.tpe <:< c.weakTypeOf[key] =>
-          val Literal(Constant(str: String)) = a.tree.children.tail.head
-          str
+          val Literal(Constant(key: String)) = a.tree.children.tail.head
+          key
         }).getOrElse(m.name.toString)
 
       def hashCode(m: MethodSymbol): Int =
@@ -331,23 +347,26 @@ object Codec {
       val apply = module.typeSignature.decl(TermName("apply")).asMethod
       // FIXME: handling only default val params from the first list because subsequent might depend on previous params
       val params = apply.paramLists.head.map(_.asTerm)
-      val defaults = params.zipWithIndex.collect {
-        case (p, i) if p.isParamWithDefault => p.name.toString -> q"$module.${TermName("apply$default$" + (i + 1))}"
-      }.toMap
+      val defaults: Map[String, Tree] = params.zipWithIndex.collect {
+        case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
+      }(breakOut)
       val required = params.collect {
         case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
       }
-      if (required.size > 64) c.abort(c.enclosingPosition, s"More than 64 required fields in: '$tpe'.")
-      val members = tpe.members.collect {
+      val members: Seq[MethodSymbol] = tpe.members.collect {
         case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
-      }.toSeq.reverse
+      }(breakOut).reverse
       val readVars = members.map { m =>
         q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, default(methodType(m)))}"
       }
-      val bitmasks = required.zipWithIndex.map { case (r, i) => (r, q"req &= ${~(1L << i)}")}.toMap
+      val bitmasks: Map[String, Tree] = required.zipWithIndex.map {
+        case (r, i) => (r, q"${TermName(s"req${i >> 6}")} &= ${~(1L << i)}")
+      }(breakOut)
       val readFields = members.map { m =>
-        val bitmask = bitmasks.getOrElse(m.name.toString, EmptyTree)
-        cq"${hashCode(m)} => $bitmask; ${TermName(s"_${m.name}")} = ${genReadField(methodType(m))}"
+        cq"""${hashCode(m)} =>
+            ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
+            ${TermName(s"_${m.name}")} = ${genReadField(methodType(m))}
+          """
       } :+ cq"_ => in.skip()"
       val readParams = members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")
       val writeFields = members.map { m =>
@@ -357,17 +376,28 @@ object Codec {
           case None => writeField
         }
       }
+      val reqVarNum = required.size
+      val lastReqVarIndex = reqVarNum >> 6
+      val lastReqVarBits = (1L << reqVarNum) - 1
+      val reqVarNames = (0 to lastReqVarIndex).map(i => TermName(s"req$i"))
+      val reqVars =
+        if (lastReqVarBits == 0) Nil
+        else reqVarNames.dropRight(1).map(n => q"var $n: Long = -1") :+ q"var ${reqVarNames.last}: Long = $lastReqVarBits"
+      val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
+      val checkReqVarsAndConstruct =
+        if (lastReqVarBits == 0) q"new $tpe(..$readParams)"
+        else q"if ($checkReqVars) new $tpe(..$readParams) else reqFieldError(in, reqFields, ..$reqVarNames)"
       val tree =
         q"""import com.jsoniter.CodegenAccess._
-
+            import com.jsoniter.JsonIterator
+            import com.jsoniter.output.JsonStream
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe](classOf[$tpe]) {
               private val reqFields: Array[String] = Array(..$required)
-
-              override def decode(in: com.jsoniter.JsonIterator): AnyRef =
+              override def decode(in: JsonIterator): AnyRef =
                 nextToken(in) match {
                   case '{' =>
                     ..$readVars
-                    var req = ${(1L << required.size) - 1}
+                    ..$reqVars
                     if (nextToken(in).!=('}')) {
                       unreadByte(in)
                       do {
@@ -376,22 +406,22 @@ object Codec {
                         }
                       } while (nextToken(in) == ',')
                     }
-                    if (req == 0) new $tpe(..$readParams)
-                    else reqFieldError(in, reqFields, req)
+                    ..$checkReqVarsAndConstruct
                   case 'n' =>
                     skipFixedBytes(in, 3)
                     null
                   case _ =>
                     decodeError(in, "expect { or n")
                 }
-
-              override def encode(obj: AnyRef, out: com.jsoniter.output.JsonStream): Unit = {
+              override def encode(obj: AnyRef, out: JsonStream): Unit = {
                 out.writeObjectStart()
                 val x = obj.asInstanceOf[$tpe]
                 var first = true
                 ..$writeFields
                 out.writeObjectEnd()
               }
+              ..${decoders.map { case (_, d) => d._2 }}
+              ..${encoders.map { case (_, e) => e._2 }}
             }"""
       if (c.settings.contains("print-codecs")) c.info(c.enclosingPosition, s"Generated codec for type '$tpe':\n${showCode(tree)}", force = true)
       c.Expr[Codec[A]](tree)
