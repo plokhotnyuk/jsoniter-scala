@@ -355,8 +355,12 @@ object Codec {
       val readVars = members.map { m =>
         q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, default(methodType(m)))}"
       }
+      val reqVarNum = required.size
+      val lastReqVarIndex = reqVarNum >> 6
+      val lastReqVarBits = (1L << reqVarNum) - 1
+      val reqVarNames = (0 to lastReqVarIndex).map(i => TermName(s"req$i"))
       val bitmasks: Map[String, Tree] = required.zipWithIndex.map {
-        case (r, i) => (r, q"${TermName(s"req${i >> 6}")} &= ${~(1L << i)}")
+        case (r, i) => (r, q"${reqVarNames(i >> 6)} &= ${~(1L << i)}")
       }(breakOut)
       val readFields = members.map { m =>
         cq"""${hashCode(m)} =>
@@ -364,7 +368,6 @@ object Codec {
             ${TermName(s"_${m.name}")} = ${genReadField(methodType(m))}
           """
       } :+ cq"_ => in.skip()"
-      val readParams = members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")
       val writeFields = members.map { m =>
         val writeField = genWriteField(q"x.$m", methodType(m), keyName(m))
         defaults.get(m.name.toString) match {
@@ -372,17 +375,14 @@ object Codec {
           case None => writeField
         }
       }
-      val reqVarNum = required.size
-      val lastReqVarIndex = reqVarNum >> 6
-      val lastReqVarBits = (1L << reqVarNum) - 1
-      val reqVarNames = (0 to lastReqVarIndex).map(i => TermName(s"req$i"))
       val reqVars =
         if (lastReqVarBits == 0) Nil
         else reqVarNames.dropRight(1).map(n => q"var $n: Long = -1") :+ q"var ${reqVarNames.last}: Long = $lastReqVarBits"
       val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
+      val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
       val checkReqVarsAndConstruct =
-        if (lastReqVarBits == 0) q"new $tpe(..$readParams)"
-        else q"if ($checkReqVars) new $tpe(..$readParams) else reqFieldError(in, reqFields, ..$reqVarNames)"
+        if (lastReqVarBits == 0) construct
+        else q"if ($checkReqVars) $construct else reqFieldError(in, reqFields, ..$reqVarNames)"
       val tree =
         q"""import com.jsoniter.CodegenAccess._
             import com.jsoniter.JsonIterator
