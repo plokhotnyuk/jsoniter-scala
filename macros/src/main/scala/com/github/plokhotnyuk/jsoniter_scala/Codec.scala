@@ -178,27 +178,23 @@ object Codec {
                 decodeError(in, "expect { or n")
             }"""
 
-      var decoderIds = 0L
       val decoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
 
-      def withDecoderFor(tpe: Type)(f: => Tree): Tree = {
-        val decoderName = decoders.getOrElseUpdate(tpe, {
-          val name = TermName(s"d${decoderIds += 1; decoderIds}")
-          val decoder = q"""private def $name(in: JsonIterator): $tpe = $f"""
-          (name, decoder)})._1
-        q"$decoderName(in)"
-      }
+      def withDecoderFor(tpe: Type)(f: => Tree): Tree =
+        q"""${decoders.getOrElseUpdate(tpe, {
+          val impl = f
+          val name = TermName(s"d${decoders.size}")
+          val tree = q"""private def $name(in: JsonIterator): $tpe = $impl"""
+          (name, tree)})._1}(in)"""
 
-      var encoderIds = 0L
       val encoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
 
-      def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
-        val encoderName = encoders.getOrElseUpdate(tpe, {
-          val name = TermName(s"e${encoderIds += 1; encoderIds}")
-          val encoder = q"""private def $name(out: JsonStream, x: $tpe): Unit = $f"""
-          (name, encoder)})._1
-        q"$encoderName(out, $arg)"
-      }
+      def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree =
+        q"""${encoders.getOrElseUpdate(tpe, {
+          val impl = f
+          val name = TermName(s"e${encoders.size}")
+          val encoder = q"""private def $name(out: JsonStream, x: $tpe): Unit = $impl"""
+          (name, encoder)})._1}(out, $arg)"""
 
       def genReadField(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe) {
