@@ -349,12 +349,6 @@ object Codec {
       val required = params.collect {
         case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
       }
-      val members: Seq[MethodSymbol] = tpe.members.collect {
-        case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
-      }(breakOut).reverse
-      val readVars = members.map { m =>
-        q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, default(methodType(m)))}"
-      }
       val reqVarNum = required.size
       val lastReqVarIndex = reqVarNum >> 6
       val lastReqVarBits = (1L << reqVarNum) - 1
@@ -362,6 +356,20 @@ object Codec {
       val bitmasks: Map[String, Tree] = required.zipWithIndex.map {
         case (r, i) => (r, q"${reqVarNames(i >> 6)} &= ${~(1L << i)}")
       }(breakOut)
+      val reqVars =
+        if (lastReqVarBits == 0) Nil
+        else reqVarNames.dropRight(1).map(n => q"var $n: Long = -1") :+ q"var ${reqVarNames.last}: Long = $lastReqVarBits"
+      val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
+      val members: Seq[MethodSymbol] = tpe.members.collect {
+        case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
+      }(breakOut).reverse
+      val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
+      val checkReqVarsAndConstruct =
+        if (lastReqVarBits == 0) construct
+        else q"if ($checkReqVars) $construct else reqFieldError(in, reqFields, ..$reqVarNames)"
+      val readVars = members.map { m =>
+        q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, default(methodType(m)))}"
+      }
       val readFields = members.map { m =>
         cq"""${hashCode(m)} =>
             ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
@@ -375,14 +383,6 @@ object Codec {
           case None => writeField
         }
       }
-      val reqVars =
-        if (lastReqVarBits == 0) Nil
-        else reqVarNames.dropRight(1).map(n => q"var $n: Long = -1") :+ q"var ${reqVarNames.last}: Long = $lastReqVarBits"
-      val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
-      val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
-      val checkReqVarsAndConstruct =
-        if (lastReqVarBits == 0) construct
-        else q"if ($checkReqVars) $construct else reqFieldError(in, reqFields, ..$reqVarNames)"
       val tree =
         q"""import com.jsoniter.CodegenAccess._
             import com.jsoniter.JsonIterator
@@ -392,8 +392,8 @@ object Codec {
               override def decode(in: JsonIterator): AnyRef =
                 nextToken(in) match {
                   case '{' =>
-                    ..$readVars
                     ..$reqVars
+                    ..$readVars
                     if (nextToken(in).!=('}')) {
                       unreadByte(in)
                       do {
