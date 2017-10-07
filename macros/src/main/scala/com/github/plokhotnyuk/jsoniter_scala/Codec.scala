@@ -359,6 +359,9 @@ object Codec {
       val reqVars =
         if (lastReqVarBits == 0) Nil
         else reqVarNames.dropRight(1).map(n => q"var $n: Long = -1") :+ q"var ${reqVarNames.last}: Long = $lastReqVarBits"
+      val reqFields =
+        if (lastReqVarBits == 0) EmptyTree
+        else q"private val reqFields: Array[String] = Array(..$required)"
       val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
       val members: Seq[MethodSymbol] = tpe.members.collect {
         case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
@@ -388,7 +391,7 @@ object Codec {
             import com.jsoniter.JsonIterator
             import com.jsoniter.output.JsonStream
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe](classOf[$tpe]) {
-              private val reqFields: Array[String] = Array(..$required)
+              ..$reqFields
               override def decode(in: JsonIterator): AnyRef =
                 nextToken(in) match {
                   case '{' =>
