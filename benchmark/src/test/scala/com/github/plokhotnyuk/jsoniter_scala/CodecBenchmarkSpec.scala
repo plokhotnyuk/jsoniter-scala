@@ -9,15 +9,18 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
     "deserialize properly" in {
       benchmark.readAnyRefsJackson() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsJsoniter() shouldBe benchmark.anyRefsObj
+      //FIXME: Jackson-module-scala doesn`t support parsing of bitsets
+      //benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
+      benchmark.readBitSetsJsoniter() shouldBe benchmark.bitSetsObj
       benchmark.readIterablesJackson() shouldBe benchmark.iterablesObj
       benchmark.readIterablesJsoniter() shouldBe benchmark.iterablesObj
-      //FIXME: Jackson-module-scala instantiates Map instead of HashMap
+      //FIXME: Jackson-module-scala parse keys as String
       // benchmark.readMapsJackson() shouldBe benchmark.mapsObj
       benchmark.readMapsJsoniter() shouldBe benchmark.mapsObj
-      //FIXME: Jackson-module-scala instantiates Map instead of HashMap
+      //FIXME: Jackson-module-scala parse keys as String
       //benchmark.readMutableMapsJackson() shouldBe benchmark.mutableMapsObj
       benchmark.readMutableMapsJsoniter() shouldBe benchmark.mutableMapsObj
-      //FIXME: Jackson-module-scala doesn`t support serialization of Int & Long maps
+      //FIXME: Jackson-module-scala doesn`t support parsing of Int & Long maps
       //benchmark.readIntAndLongMapsJackson() shouldBe benchmark.intAndLongMapsObj
       benchmark.readIntAndLongMapsJsoniter() shouldBe benchmark.intAndLongMapsObj
       benchmark.readPrimitivesJackson() shouldBe benchmark.primitivesObj
@@ -26,6 +29,8 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
     "serialize properly" in {
       toString(benchmark.writeAnyRefsJackson()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeAnyRefsJsoniter()) shouldBe toString(benchmark.anyRefsJson)
+      toString(benchmark.writeBitSetsJackson()) shouldBe toString(benchmark.bitSetsJson)
+      toString(benchmark.writeBitSetsJsoniter()) shouldBe toString(benchmark.bitSetsJson)
       toString(benchmark.writeIterablesJackson()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeIterablesJsoniter()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeMapsJackson()) shouldBe toString(benchmark.mapsJson)
@@ -40,5 +45,5 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
     }
   }
 
-  def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
+  def toString(json: Array[Byte]): String = new String(json, "UTF-8")
 }
