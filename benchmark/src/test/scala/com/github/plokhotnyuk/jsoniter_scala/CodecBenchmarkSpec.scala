@@ -14,6 +14,12 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       //FIXME: Jackson-module-scala instantiates Map instead of HashMap
       // benchmark.readMapsJackson() shouldBe benchmark.mapsObj
       benchmark.readMapsJsoniter() shouldBe benchmark.mapsObj
+      //FIXME: Jackson-module-scala instantiates Map instead of HashMap
+      //benchmark.readMutableMapsJackson() shouldBe benchmark.mutableMapsObj
+      benchmark.readMutableMapsJsoniter() shouldBe benchmark.mutableMapsObj
+      //FIXME: Jackson-module-scala doesn`t support serialization of Int & Long maps
+      //benchmark.readIntAndLongMapsJackson() shouldBe benchmark.intAndLongMapsObj
+      benchmark.readIntAndLongMapsJsoniter() shouldBe benchmark.intAndLongMapsObj
       benchmark.readPrimitivesJackson() shouldBe benchmark.primitivesObj
       benchmark.readPrimitivesJsoniter() shouldBe benchmark.primitivesObj
     }
@@ -24,6 +30,10 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeIterablesJsoniter()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeMapsJackson()) shouldBe toString(benchmark.mapsJson)
       toString(benchmark.writeMapsJsoniter()) shouldBe toString(benchmark.mapsJson)
+      toString(benchmark.writeMutableMapsJackson()) shouldBe toString(benchmark.mutableMapsJson)
+      toString(benchmark.writeMutableMapsJsoniter()) shouldBe toString(benchmark.mutableMapsJson)
+      toString(benchmark.writeIntAndLongMapsJackson()) shouldBe toString(benchmark.intAndLongMapsJson)
+      toString(benchmark.writeIntAndLongMapsJsoniter()) shouldBe toString(benchmark.intAndLongMapsJson)
       //FIXME: by default Jackson stores Char as String, while Jsoniter stores it as Int
       // toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)

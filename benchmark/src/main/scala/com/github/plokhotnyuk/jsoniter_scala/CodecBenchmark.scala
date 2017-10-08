@@ -8,7 +8,8 @@ import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
 import org.openjdk.jmh.annotations._
 
-import scala.collection.immutable.{HashMap, Map}
+import scala.collection.immutable.{HashMap, IntMap, LongMap, Map}
+import scala.collection.mutable
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
@@ -24,14 +25,22 @@ class CodecBenchmark {
   val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
   val iterablesCodec: Codec[Iterables] = materialize[Iterables]
   val mapsCodec: Codec[Maps] = materialize[Maps]
+  val mutableMapsCodec: Codec[MutableMaps] = materialize[MutableMaps]
+  val intAndLongMapsCodec: Codec[IntAndLongMaps] = materialize[IntAndLongMaps]
   val primitivesCodec: Codec[Primitives] = materialize[Primitives]
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val iterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
   val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
+  val mutableMapsJson: Array[Byte] = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
+  val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val iterablesObj: Iterables = Iterables(List("1", "2", "3"), Set(4, 5, 6), List(Set(1, 2), Set()))
   val mapsObj: Maps = Maps(HashMap("1" -> 1.1, "2" -> 2.2), Map(1 -> HashMap(3L -> 3.3), 2 -> HashMap.empty[Long, Double]))
+  val mutableMapsObj: MutableMaps = MutableMaps(mutable.HashMap("1" -> 1.1, "2" -> 2.2),
+    mutable.Map(1 -> mutable.OpenHashMap(3L -> 3.3), 2 -> mutable.OpenHashMap.empty[Long, Double]))
+  val intAndLongMapsObj: IntAndLongMaps = IntAndLongMaps(IntMap(1 -> 1.1, 2 -> 2.2),
+    mutable.LongMap(1L -> LongMap(3L -> 3.3), 2L -> LongMap.empty[Double]))
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, 'V', 1.1, 2.2f)
 
   @Benchmark
@@ -51,6 +60,21 @@ class CodecBenchmark {
 
   @Benchmark
   def readMapsJsoniter(): Maps = mapsCodec.read(mapsJson)
+
+  @Benchmark
+  def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJson)
+
+  @Benchmark
+  def readMutableMapsJsoniter(): MutableMaps = mutableMapsCodec.read(mutableMapsJson)
+
+//FIXME: Jackson-module-scala doesn`t support serialization of Int & Long maps
+/*
+  @Benchmark
+  def readIntAndLongMapsJackson(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](intAndLongMapsJson)
+*/
+
+  @Benchmark
+  def readIntAndLongMapsJsoniter(): IntAndLongMaps = intAndLongMapsCodec.read(intAndLongMapsJson)
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -77,6 +101,18 @@ class CodecBenchmark {
   def writeMapsJsoniter(): Array[Byte] = mapsCodec.write(mapsObj)
 
   @Benchmark
+  def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
+
+  @Benchmark
+  def writeMutableMapsJsoniter(): Array[Byte] = mutableMapsCodec.write(mutableMapsObj)
+
+  @Benchmark
+  def writeIntAndLongMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intAndLongMapsObj)
+
+  @Benchmark
+  def writeIntAndLongMapsJsoniter(): Array[Byte] = intAndLongMapsCodec.write(intAndLongMapsObj)
+
+  @Benchmark
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
 
   @Benchmark
@@ -88,5 +124,9 @@ case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
 case class Iterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 
 case class Maps(m: HashMap[String, Double], mm: Map[Int, HashMap[Long, Double]])
+
+case class MutableMaps(m: mutable.HashMap[String, Double], mm: mutable.Map[Int, mutable.OpenHashMap[Long, Double]])
+
+case class IntAndLongMaps(m: IntMap[Double], mm: mutable.LongMap[LongMap[Double]])
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
