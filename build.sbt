@@ -30,7 +30,7 @@ lazy val macros = project
       "com.jsoniter" % "jsoniter" % "0.9.15",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.javassist" % "javassist" % "3.21.0-GA" % Optional,
-      "org.scalatest" %% "scalatest" % "3.0.3" % Test
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
   )
 
@@ -40,6 +40,6 @@ lazy val benchmark = project
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.1",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.2.27",
-      "org.scalatest" %% "scalatest" % "3.0.3" % Test
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
   ).dependsOn(macros)
