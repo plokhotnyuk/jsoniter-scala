@@ -29,15 +29,15 @@ abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
   def write(obj: A, out: OutputStream): Unit = JsonStream.serialize(obj, out)
 
   def write(obj: A): Array[Byte] = {
-    val stream = JsonStreamPool.borrowJsonStream
+    val out = JsonStreamPool.borrowJsonStream
     try {
-      stream.reset(null)
-      stream.writeVal(cls, obj)
-      val buf = stream.buffer()
-      val out = new Array[Byte](buf.len)
-      System.arraycopy(buf.data, 0, out, 0, buf.len)
-      out
-    } finally JsonStreamPool.returnJsonStream(stream)
+      out.reset(null)
+      out.writeVal(cls, obj)
+      val buf = out.buffer()
+      val array = new Array[Byte](buf.len)
+      System.arraycopy(buf.data, 0, array, 0, buf.len)
+      array
+    } finally JsonStreamPool.returnJsonStream(out)
   }
 
   private[jsoniter_scala] def reqFieldError(in: JsonIterator, reqFields: Array[String], reqs: Long*): Nothing = {
@@ -54,6 +54,62 @@ abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
   }
 
   private[jsoniter_scala] def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
+
+  private[jsoniter_scala] def readObjectFieldAsBoolean(in: JsonIterator): Boolean = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readBoolean()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
+
+  private[jsoniter_scala] def readObjectFieldAsInt(in: JsonIterator): Int = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readInt()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
+
+  private[jsoniter_scala] def readObjectFieldAsLong(in: JsonIterator): Long = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readLong()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
+
+  private[jsoniter_scala] def readObjectFieldAsFloat(in: JsonIterator): Float = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readFloat()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
+
+  private[jsoniter_scala] def readObjectFieldAsDouble(in: JsonIterator): Double = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readDouble()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
+
+  private[jsoniter_scala] def readObjectFieldAsBigInt(in: JsonIterator): BigInt = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readBigInteger()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
+
+  private[jsoniter_scala] def readObjectFieldAsBigDecimal(in: JsonIterator): BigDecimal = {
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    val x = in.readBigDecimal()
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    x
+  }
 
   private[jsoniter_scala] def writeSep(out: JsonStream, first: Boolean): Boolean = {
     if (first) out.writeIndention()
@@ -106,38 +162,38 @@ object Codec {
           q"null"
         }
 
-      def genString2T(tpe: Type, s: Tree): Tree =
+      def genReadKey(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe) {
-          q"$s.toBoolean"
+          q"readObjectFieldAsBoolean(in)"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"$s.toByte"
+          q"readObjectFieldAsInt(in).toByte"
         } else if (tpe =:= definitions.CharTpe) {
-          q"$s.toInt.toChar"
+          q"readObjectFieldAsInt(in).toChar"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"$s.toShort"
+          q"readObjectFieldAsInt(in).toShort"
         } else if (tpe =:= definitions.IntTpe) {
-          q"$s.toInt"
+          q"readObjectFieldAsInt(in)"
         } else if (tpe =:= definitions.LongTpe) {
-          q"$s.toLong"
+          q"readObjectFieldAsLong(in)"
         } else if (tpe =:= definitions.DoubleTpe) {
-          q"$s.toDouble"
+          q"readObjectFieldAsDouble(in)"
         } else if (tpe =:= definitions.FloatTpe) {
-          q"$s.toFloat"
+          q"readObjectFieldAsFloat(in)"
         } else if (isValueClass(tpe)) {
-          q"new $tpe(${genString2T(valueClassValueType(tpe), s)})"
+          q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
         } else if (tpe <:< typeOf[Option[_]]) {
-          q"Option(${genString2T(typeArg1(tpe), s)})"
+          q"Option(${genReadKey(typeArg1(tpe))})"
         } else if (tpe =:= typeOf[String]) {
-          q"$s"
+          q"readObjectFieldAsString(in)"
         } else if (tpe =:= typeOf[BigInt]) {
-          q"BigInt($s)"
+          q"readObjectFieldAsBigInt(in)"
         } else if (tpe =:= typeOf[BigDecimal]) {
-          q"BigDecimal($s)"
+          q"readObjectFieldAsBigDecimal(in)"
         } else if (tpe <:< typeOf[Enumeration#Value]) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"$enumSymbol.apply($s.toInt)"
+          q"$enumSymbol.apply(readObjectFieldAsInt(in))"
         } else {
-          q"new $tpe($s)"
+          q"new $tpe(readObjectFieldAsString(in))"
         }
 
       def genReadArray(empty: Tree, newBuilder: Tree, readVal: Tree, result: Tree = q"buf.result()"): Tree =
@@ -219,29 +275,29 @@ object Codec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
-            q"buf = buf.updated(readObjectFieldAsString(in).toInt, ${genReadField(tpe1)})")
+            q"buf = buf.updated(readObjectFieldAsInt(in), ${genReadField(tpe1)})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"val buf = $comp.empty[$tpe1]",
-            q"buf.update(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})")
+            q"buf.update(readObjectFieldAsLong(in), ${genReadField(tpe1)})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
-            q"buf = buf.updated(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})")
+            q"buf = buf.updated(readObjectFieldAsLong(in), ${genReadField(tpe1)})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"val buf = $comp.empty[$tpe1, $tpe2]",
-            q"buf.update(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})")
+            q"buf.update(${genReadKey(tpe1)}, ${genReadField(tpe2)})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"var buf = $comp.empty[$tpe1, $tpe2]",
-            q"buf = buf.updated(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})")
+            q"buf = buf.updated(${genReadKey(tpe1)}, ${genReadField(tpe2)})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
