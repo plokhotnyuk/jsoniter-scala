@@ -184,8 +184,7 @@ object Codec {
         q"""${decoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"d${decoders.size}")
-          val tree = q"""private def $name(in: JsonIterator): $tpe = $impl"""
-          (name, tree)})._1}(in)"""
+          (name, q"private def $name(in: JsonIterator): $tpe = $impl")})._1}(in)"""
 
       val encoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
 
@@ -193,8 +192,7 @@ object Codec {
         q"""${encoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"e${encoders.size}")
-          val encoder = q"""private def $name(out: JsonStream, x: $tpe): Unit = $impl"""
-          (name, encoder)})._1}(out, $arg)"""
+          (name, q"private def $name(out: JsonStream, x: $tpe): Unit = $impl")})._1}(out, $arg)"""
 
       def genReadField(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe) {
@@ -221,29 +219,29 @@ object Codec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
-            q"""buf = buf.updated(readObjectFieldAsString(in).toInt, ${genReadField(tpe1)})""")
+            q"buf = buf.updated(readObjectFieldAsString(in).toInt, ${genReadField(tpe1)})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"val buf = $comp.empty[$tpe1]",
-            q"""buf.update(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
+            q"buf.update(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1]", q"var buf = $comp.empty[$tpe1]",
-            q"""buf = buf.updated(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})""")
+            q"buf = buf.updated(readObjectFieldAsString(in).toLong, ${genReadField(tpe1)})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"val buf = $comp.empty[$tpe1, $tpe2]",
-            q"""buf.update(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
+            q"buf.update(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"$comp.empty[$tpe1, $tpe2]", q"var buf = $comp.empty[$tpe1, $tpe2]",
-            q"""buf = buf.updated(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})""")
+            q"buf = buf.updated(${genString2T(tpe1, q"readObjectFieldAsString(in)")}, ${genReadField(tpe2)})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
@@ -376,8 +374,7 @@ object Codec {
       val readFields = members.map { m =>
         cq"""${hashCode(m)} =>
             ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
-            ${TermName(s"_${m.name}")} = ${genReadField(methodType(m))}
-          """
+            ${TermName(s"_${m.name}")} = ${genReadField(methodType(m))}"""
       } :+ cq"_ => in.skip()"
       val writeFields = members.map { m =>
         val writeField = genWriteField(q"x.$m", methodType(m), keyName(m))
