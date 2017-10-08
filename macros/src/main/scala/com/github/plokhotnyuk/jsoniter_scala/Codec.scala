@@ -56,58 +56,58 @@ abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
   private[jsoniter_scala] def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
 
   private[jsoniter_scala] def readObjectFieldAsBoolean(in: JsonIterator): Boolean = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readBoolean()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
   private[jsoniter_scala] def readObjectFieldAsInt(in: JsonIterator): Int = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readInt()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
   private[jsoniter_scala] def readObjectFieldAsLong(in: JsonIterator): Long = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readLong()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
   private[jsoniter_scala] def readObjectFieldAsFloat(in: JsonIterator): Float = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readFloat()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
   private[jsoniter_scala] def readObjectFieldAsDouble(in: JsonIterator): Double = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readDouble()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
   private[jsoniter_scala] def readObjectFieldAsBigInt(in: JsonIterator): BigInt = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readBigInteger()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
   private[jsoniter_scala] def readObjectFieldAsBigDecimal(in: JsonIterator): BigDecimal = {
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+    readParentheses(in)
     val x = in.readBigDecimal()
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
+    readParentheses(in)
+    nextColon(in)
     x
   }
 
@@ -116,6 +116,12 @@ abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
     else out.writeMore()
     false
   }
+
+  private def readParentheses(in: JsonIterator): Unit =
+    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
+
+  private def nextColon(in: JsonIterator): Unit =
+    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
 }
 
 object Codec {
