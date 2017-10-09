@@ -43,31 +43,37 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize mutable iterables" in {
       verifySerDeser(materialize[MutableIterables],
-        MutableIterables(mutable.MutableList("1", "2", "3"), mutable.Set(BigInt(4)),
-          mutable.ArraySeq(mutable.LinkedHashSet(1, 2), mutable.LinkedHashSet())),
-        """{"l":["1","2","3"],"s":[4],"ls":[[1,2],[]]}""".getBytes)
+        MutableIterables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
+          mutable.ArrayBuffer(mutable.Set(BigInt(4)), mutable.Set.empty[BigInt]),
+          mutable.ArraySeq(mutable.LinkedHashSet(5, 6), mutable.LinkedHashSet.empty[Int]),
+          mutable.Buffer(mutable.HashSet(7.7, 8.8)),
+          mutable.ListBuffer(mutable.TreeSet(9L, 10L)),
+          mutable.IndexedSeq(mutable.ArrayStack(11.11f, 12.12f))),
+        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]]}""".getBytes)
     }
     "serialize and deserialize immutable iterables" in {
       verifySerDeser(materialize[ImmutableIterables],
-        ImmutableIterables(List("1", "2", "3"), Set(BigInt(4), BigInt(5), BigInt(6)), IndexedSeq(Set(1, 2), Set())),
-        """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes)
+        ImmutableIterables(List(ListSet("1", "2", "3")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
+          IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(10L, 11L)),
+        """{"l":[["1","2","3"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[10,11]}""".getBytes)
     }
     "serialize and deserialize mutable maps" in {
       verifySerDeser(materialize[MutableMaps],
         MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
           mutable.Map(1.1f -> mutable.SortedMap(BigInt(2) -> "2")),
           mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
-        """{"ms":{"true":{"1.1":1}},"mi":{"1.1":{"2":"2"}},"mm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
+        """{"hm":{"true":{"1.1":1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
     }
     "serialize and deserialize immutable maps" in {
       verifySerDeser(materialize[ImmutableMaps],
-        ImmutableMaps(HashMap("1" -> BigInt("11")), SortedMap(1L -> 1.1f, 2L -> 2.2f), Map(1 -> Map(3.toShort -> 3.3), 2 -> Map())),
-        """{"ms":{"1":11},"mi":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes)
+        ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap(2 -> 2), "3" -> ListMap(3 -> 3)),
+          SortedMap(4L -> TreeMap(4.4 -> 4.4f), 5L -> TreeMap.empty[Double, Float])),
+        """{"m":{"1":1.1},"hm":{"2":{"2":2},"3":{"3":3}},"sm":{"4":{"4.4":4.4},"5":{}}}""".getBytes)
     }
     "serialize and deserialize mutable long maps" in {
-      verifySerDeser(materialize[MutableIntLongMaps],
-        MutableIntLongMaps(mutable.LongMap(1L -> 1.1), mutable.LongMap(3L -> "33")),
-        """{"im":{"1":1.1},"lm":{"3":"33"}}""".getBytes)
+      verifySerDeser(materialize[MutableLongMaps],
+        MutableLongMaps(mutable.LongMap(1L -> 1.1), mutable.LongMap(3L -> "33")),
+        """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""".getBytes)
     }
     "serialize and deserialize immutable int and long maps" in {
       verifySerDeser(materialize[ImmutableIntLongMaps],
@@ -199,16 +205,24 @@ case class ValueClassTypes(uid: UserId, oid: OrderId)
 
 case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]])
 
-case class MutableIterables(l: mutable.MutableList[String], s: mutable.Set[BigInt], ls: mutable.ArraySeq[mutable.LinkedHashSet[Int]])
+case class MutableIterables(ml: mutable.MutableList[mutable.SortedSet[String]],
+                            ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
+                            as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
+                            b: mutable.Buffer[mutable.HashSet[Double]],
+                            lb: mutable.ListBuffer[mutable.TreeSet[Long]],
+                            is: mutable.IndexedSeq[mutable.ArrayStack[Float]])
 
-case class ImmutableIterables(l: List[String], s: Set[BigInt], ls: IndexedSeq[Set[Int]])
+case class ImmutableIterables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
+                              is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]], v: Vector[Long])
 
-case class MutableMaps(ms: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]], mi: mutable.Map[Float, mutable.SortedMap[BigInt, String]],
-                       mm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
+case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
+                       m: mutable.Map[Float, mutable.SortedMap[BigInt, String]],
+                       ohm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
 
-case class ImmutableMaps(ms: HashMap[String, BigInt], mi: SortedMap[Long, Float], mm: Map[Int, Map[Short, Double]])
+case class ImmutableMaps(m: Map[Int, Double], hm: HashMap[String, ListMap[Int, BigInt]],
+                         sm: SortedMap[Long, TreeMap[Double, Float]])
 
-case class MutableIntLongMaps(im: mutable.LongMap[Double], lm: mutable.LongMap[String])
+case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])
 
 case class ImmutableIntLongMaps(im: IntMap[Double], lm: LongMap[String])
 
