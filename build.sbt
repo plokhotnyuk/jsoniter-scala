@@ -40,6 +40,7 @@ lazy val benchmark = project
   .settings(
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.1",
+      "com.typesafe.play" %% "play-json" % "2.6.6",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.2.27",
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
