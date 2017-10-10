@@ -201,7 +201,7 @@ object CodecBase {
     while (i < limit && { ch = buf(i); i += 1; ch != '"' }) {
       hash ^= (ch & 0xFF)
       hash *= 1609587929392839161L
-      hash ^= hash >> 47
+      hash ^= hash >>> 47
     }
     in.head = i
     if (IterImpl.readByte(in) != ':' && IterImpl.nextToken(in) != ':') throw in.reportError("readObjectFieldAsHash", "expect :")
