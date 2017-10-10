@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import com.jsoniter.{CodecBase, CodegenAccess, JsonIterator}
+import com.jsoniter.{CodecBase, JsonIterator}
 
 import scala.annotation.meta.field
 import scala.collection.breakOut
@@ -281,8 +281,8 @@ object Codec {
           key
         }).getOrElse(m.name.toString)
 
-      def hashCode(m: MethodSymbol): Int =
-        CodegenAccess.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
+      def hashCode(m: MethodSymbol): Long =
+        CodecBase.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
       val comp = tpe.typeSymbol.companion
@@ -337,6 +337,7 @@ object Codec {
       }
       val tree =
         q"""import com.jsoniter.CodegenAccess._
+            import com.jsoniter.CodecBase
             import com.jsoniter.JsonIterator
             import com.jsoniter.output.JsonStream
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
@@ -349,7 +350,7 @@ object Codec {
                     if (nextToken(in).!=('}')) {
                       unreadByte(in)
                       do {
-                        readObjectFieldAsHash(in) match {
+                        CodecBase.readObjectFieldAsHash(in) match {
                           case ..$readFields
                         }
                       } while (nextToken(in) == ',')

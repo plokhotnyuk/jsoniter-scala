@@ -188,3 +188,24 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
     else out.write('"'.toByte, ':'.toByte)
   }
 }
+
+object CodecBase {
+  // FIXME add decoding of hex coded characters
+  def readObjectFieldAsHash(in: JsonIterator): Long = { // use 64-bit hash to minimize collisions in field name switch
+    if (IterImpl.readByte(in) != '"' && IterImpl.nextToken(in) != '"') throw in.reportError("readObjectFieldAsHash", "expect \"")
+    val limit = in.tail
+    val buf = in.buf
+    var i = in.head
+    var hash: Long = -8796714831421723037L
+    var ch = 0
+    while (i < limit && { ch = buf(i); ch != '"' }) {
+      hash ^= (ch & 0xFF)
+      hash *= 1609587929392839161L
+      hash ^= hash >> 47
+      i += 1
+    }
+    in.head = i
+    if (IterImpl.readByte(in) != ':' && IterImpl.nextToken(in) != ':') throw in.reportError("readObjectFieldAsHash", "expect :")
+    hash
+  }
+}
