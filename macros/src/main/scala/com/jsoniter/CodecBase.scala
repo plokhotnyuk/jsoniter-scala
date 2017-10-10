@@ -198,11 +198,10 @@ object CodecBase {
     var i = in.head
     var hash: Long = -8796714831421723037L
     var ch = 0
-    while (i < limit && { ch = buf(i); ch != '"' }) {
+    while (i < limit && { ch = buf(i); i += 1; ch != '"' }) {
       hash ^= (ch & 0xFF)
       hash *= 1609587929392839161L
       hash ^= hash >> 47
-      i += 1
     }
     in.head = i
     if (IterImpl.readByte(in) != ':' && IterImpl.nextToken(in) != ':') throw in.reportError("readObjectFieldAsHash", "expect :")
