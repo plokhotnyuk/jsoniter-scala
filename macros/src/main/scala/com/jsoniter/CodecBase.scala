@@ -190,7 +190,7 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  // FIXME add decoding of hex coded characters
+  // FIXME add decoding of escaped JSON characters
   def readObjectFieldAsHash(in: JsonIterator): Long = { // use 64-bit hash to minimize collisions in field name switch
     if (IterImpl.readByte(in) != '"' && IterImpl.nextToken(in) != '"') throw in.reportError("readObjectFieldAsHash", "expect \"")
     val limit = in.tail
