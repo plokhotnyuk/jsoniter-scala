@@ -190,21 +190,63 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  // FIXME add decoding of escaped JSON characters
-  def readObjectFieldAsHash(in: JsonIterator): Long = { // use 64-bit hash to minimize collisions in field name switch
-    if (IterImpl.readByte(in) != '"' && IterImpl.nextToken(in) != '"') throw in.reportError("readObjectFieldAsHash", "expect \"")
+  def readObjectFieldAsHash(in: JsonIterator): Long = try {
+    if (IterImpl.readByte(in) != '"' && IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
     val limit = in.tail
     val buf = in.buf
     var i = in.head
     var hash: Long = -8796714831421723037L
-    var ch = 0
-    while (i < limit && { ch = buf(i); i += 1; ch != '"' }) {
-      hash ^= (ch & 0xFF)
-      hash *= 1609587929392839161L
-      hash ^= hash >>> 47
+    var b = 0
+    while (i < limit && { b = buf(i); i += 1; b != '"' }) hash = {
+      if (b == '\\') {
+        b = buf(i)
+        i += 1
+        b match {
+          case 'b' => mix(hash, '\b')
+          case 't' => mix(hash, '\t')
+          case 'n' => mix(hash, '\n')
+          case 'f' => mix(hash, '\f')
+          case '"' => mix(hash, '"')
+          case '/' => mix(hash, '/')
+          case '\\' => mix(hash, '\\')
+          case 'u' =>
+            val c1 = ((IterImplString.translateHex(buf(i)) << 12) +
+              (IterImplString.translateHex(buf(i + 1)) << 8) +
+              (IterImplString.translateHex(buf(i + 2)) << 4) +
+              IterImplString.translateHex(buf(i +3))).toChar
+            i += 4
+            if (c1 < 128) mix(hash, c1)
+            else if (c1  < 2048) mix(mix(hash, 0xC0 | (c1 >> 6)), 0x80 | (c1 & 0x3F))
+            else if (!Character.isHighSurrogate(c1)) {
+              if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
+              mix(mix(mix(hash, 0xE0 | (c1 >> 12)), 0x80 | ((c1 >> 6) & 0x3F)), 0x80 | (c1 & 0x3F))
+            } else if (buf(i) == '\\' && buf(i + 1) == 'u') {
+              val c2 = ((IterImplString.translateHex(buf(i + 2)) << 12) +
+                (IterImplString.translateHex(buf(i + 3)) << 8) +
+                (IterImplString.translateHex(buf(i + 4)) << 4) +
+                IterImplString.translateHex(buf(i + 5))).toChar
+              i += 6
+              if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
+              val uc = Character.toCodePoint(c1, c2)
+              mix(mix(mix(mix(hash, 0xF0 | (uc >> 18)), 0x80 | ((uc >> 12) & 0x3F)), 0x80 | ((uc >> 6) & 0x3F)), 0x80 | (uc & 0x3F))
+            } else readObjectFieldAsHashError(in, "invalid escape sequence")
+          case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
+        }
+      } else mix(hash, b)
     }
     in.head = i
-    if (IterImpl.readByte(in) != ':' && IterImpl.nextToken(in) != ':') throw in.reportError("readObjectFieldAsHash", "expect :")
+    if (IterImpl.readByte(in) != ':' && IterImpl.nextToken(in) != ':') readObjectFieldAsHashError(in, "expect :")
     hash
+  } catch {
+    case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid escape sequence")
   }
+
+  private def mix(h: Long, b: Int): Long = { // use 64-bit hash to minimize collisions in field name switch
+    val h1 = h ^ (b & 0xFF)
+    val h2 = h1 * 1609587929392839161L
+    h2 ^ h2 >>> 47
+  }
+
+  private def readObjectFieldAsHashError(in: JsonIterator, msg: String): Nothing =
+    throw in.reportError("readObjectFieldAsHash", msg)
 }

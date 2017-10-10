@@ -1,6 +1,6 @@
 [![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala)
-[![license](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
+[![license](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 # Jsoniter Scala
 
@@ -13,7 +13,7 @@ to get maximum performance of JSON parsing & serialization.
 Features and limitations:
 - JSON parsing from `Array[Byte]` or `java.io.InputStream` using `com.jsoniter.JsonIterator`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
-- Support of UTF-8 encoding (except parsing of hex encoded field names)
+- Support of UTF-8 encoding (including parsing of hex encoded JSON field names, keys & values)
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option` & Scala collections as class fields are supported
 - Required fields are supported for case classes
