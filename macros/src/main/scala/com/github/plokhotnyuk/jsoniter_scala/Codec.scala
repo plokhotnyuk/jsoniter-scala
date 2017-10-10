@@ -1,11 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.io.{InputStream, OutputStream}
-
-import com.jsoniter.output.{JsonStream, JsonStreamPool}
-import com.jsoniter.spi.JsoniterSpi._
-import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
-import com.jsoniter.{CodegenAccess, JsonIterator}
+import com.jsoniter.{CodecBase, CodegenAccess, JsonIterator}
 
 import scala.annotation.meta.field
 import scala.collection.breakOut
@@ -17,112 +12,7 @@ import scala.reflect.macros.blackbox
 @field
 class key(key: String) extends scala.annotation.StaticAnnotation
 
-abstract class Codec[A](val cls: Class[A]) extends Encoder with Decoder {
-  JsoniterSpi.setDefaultConfig((new Config.Builder).escapeUnicode(false).build)
-  addNewEncoder(getCurrentConfig.getEncoderCacheKey(cls), this)
-  addNewDecoder(getCurrentConfig.getDecoderCacheKey(cls), this)
-
-  def read(in: InputStream, bufSize: Int = 1024): A = JsonIterator.parse(in, bufSize).read(cls)
-
-  def read(buf: Array[Byte]): A = JsonIterator.deserialize(buf, cls)
-
-  def write(obj: A, out: OutputStream): Unit = JsonStream.serialize(obj, out)
-
-  def write(obj: A): Array[Byte] = {
-    val out = JsonStreamPool.borrowJsonStream
-    try {
-      out.reset(null)
-      out.writeVal(cls, obj)
-      val buf = out.buffer()
-      val array = new Array[Byte](buf.len)
-      System.arraycopy(buf.data, 0, array, 0, buf.len)
-      array
-    } finally JsonStreamPool.returnJsonStream(out)
-  }
-
-  private[jsoniter_scala] def reqFieldError(in: JsonIterator, reqFields: Array[String], reqs: Long*): Nothing = {
-    val sb = new StringBuilder(64)
-    val l = reqFields.length
-    var i = 0
-    while (i < l) {
-      if ((reqs(i >> 6) & (1L << i)) != 0) {
-        sb.append(if (sb.isEmpty) "missing required field(s) " else ", ").append('"').append(reqFields(i)).append('"')
-      }
-      i += 1
-    }
-    decodeError(in, sb.toString())
-  }
-
-  private[jsoniter_scala] def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
-
-  private[jsoniter_scala] def readObjectFieldAsBoolean(in: JsonIterator): Boolean = {
-    readParentheses(in)
-    val x = in.readBoolean()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def readObjectFieldAsInt(in: JsonIterator): Int = {
-    readParentheses(in)
-    val x = in.readInt()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def readObjectFieldAsLong(in: JsonIterator): Long = {
-    readParentheses(in)
-    val x = in.readLong()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def readObjectFieldAsFloat(in: JsonIterator): Float = {
-    readParentheses(in)
-    val x = in.readFloat()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def readObjectFieldAsDouble(in: JsonIterator): Double = {
-    readParentheses(in)
-    val x = in.readDouble()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def readObjectFieldAsBigInt(in: JsonIterator): BigInt = {
-    readParentheses(in)
-    val x = in.readBigInteger()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def readObjectFieldAsBigDecimal(in: JsonIterator): BigDecimal = {
-    readParentheses(in)
-    val x = in.readBigDecimal()
-    readParentheses(in)
-    nextColon(in)
-    x
-  }
-
-  private[jsoniter_scala] def writeSep(out: JsonStream, first: Boolean): Boolean = {
-    if (first) out.writeIndention()
-    else out.writeMore()
-    false
-  }
-
-  private def readParentheses(in: JsonIterator): Unit =
-    if (CodegenAccess.readByte(in) != '"') decodeError(in, "expect \"")
-
-  private def nextColon(in: JsonIterator): Unit =
-    if (CodegenAccess.nextToken(in) != ':') decodeError(in, "expect :")
-}
+abstract class Codec[A](implicit m: Manifest[A]) extends CodecBase[A]
 
 object Codec {
   def materialize[A]: Codec[A] = macro Impl.materialize[A]
@@ -337,7 +227,7 @@ object Codec {
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
             var first = true
-            $m.foreach { kv => first = writeSep(out, first); out.writeObjectField(kv._1.toString); ..$writeKV }
+            $m.foreach { kv => first = writeSep(out, first); writeObjectField(out, kv._1); ..$writeKV }
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
@@ -449,7 +339,7 @@ object Codec {
         q"""import com.jsoniter.CodegenAccess._
             import com.jsoniter.JsonIterator
             import com.jsoniter.output.JsonStream
-            new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe](classOf[$tpe]) {
+            new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
               ..$reqFields
               override def decode(in: JsonIterator): AnyRef =
                 nextToken(in) match {
