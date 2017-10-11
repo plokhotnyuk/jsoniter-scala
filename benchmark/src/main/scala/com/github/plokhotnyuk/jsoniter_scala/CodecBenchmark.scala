@@ -31,8 +31,8 @@ class CodecBenchmark {
   val iterablesCodec: Codec[Iterables] = materialize[Iterables]
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
   val mapsCodec: Codec[Maps] = materialize[Maps]
-  // FIXME: Cannot find play.api.libs.json.Format for immutable maps
-  //val mapsFormat: OFormat[Maps] = Json.format[Maps]
+  import CustomPlayJsonFormats._
+  val mapsFormat: OFormat[Maps] = Json.format[Maps]
   val mutableMapsCodec: Codec[MutableMaps] = materialize[MutableMaps]
   // FIXME: Cannot find play.api.libs.json.Format for mutable maps
   //val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
@@ -97,11 +97,8 @@ class CodecBenchmark {
   @Benchmark
   def readMapsJsoniter(): Maps = mapsCodec.read(mapsJson)
 
-  // FIXME: Cannot find play.api.libs.json.Format for immutable maps
-/*
   @Benchmark
   def readMapsPlay(): Maps = Json.parse(mapsJson).as[Maps](mapsFormat)
-*/
 
   @Benchmark
   def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJson)
@@ -175,11 +172,8 @@ class CodecBenchmark {
   @Benchmark
   def writeMapsJsoniter(): Array[Byte] = mapsCodec.write(mapsObj)
 
-  // FIXME: Cannot find play.api.libs.json.Format for immutable maps
-/*
   @Benchmark
   def writeMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mapsObj)(mapsFormat))
-*/
 
   @Benchmark
   def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
