@@ -7,18 +7,16 @@ import scala.collection.immutable.HashMap
 
 object CustomPlayJsonFormats {
   implicit val oFormat1: OFormat[HashMap[String, Double]] = OFormat(
-    Reads(js => JsSuccess[HashMap[String, Double]](js.as[Map[String, Double]].map(identity)(breakOut))),
-    OWrites[HashMap[String, Double]](m => Json.toJsObject(m.toMap)))
+    Reads[HashMap[String, Double]](js => JsSuccess(js.as[Map[String, Double]].map(identity)(breakOut))),
+    OWrites[HashMap[String, Double]](m => Json.toJsObject[Map[String, Double]](m)))
 
-  implicit val oFormat2: OFormat[Map[Long, Double]] = OFormat(
-    Reads(js => JsSuccess(js.as[Map[String, Double]].map { case (k, v) => (java.lang.Long.parseLong(k), v) })),
-    OWrites[Map[Long, Double]](m => Json.toJsObject(m.map { case (k, v) => (k.toString, v) })))
-
-  implicit val oFormat3: OFormat[HashMap[Long, Double]] = OFormat(
-    Reads(js => JsSuccess[HashMap[Long, Double]](js.as[Map[Long, Double]].map(identity)(breakOut))),
-    OWrites[HashMap[Long, Double]](m => Json.toJsObject(m.map { case (k, v) => (k.toString, v) })))
-
-  implicit val oFormat4: OFormat[Map[Int, HashMap[Long, Double]]] = OFormat(
-    Reads(js => JsSuccess(js.as[Map[String, HashMap[Long, Double]]].map { case (k, v) => (java.lang.Integer.parseInt(k), v) })),
-    OWrites[Map[Int, HashMap[Long, Double]]](m => Json.toJsObject(m.map { case (k, v) => (k.toString, v.toMap) })))
+  implicit val oFormat2: OFormat[Map[Int, HashMap[Long, Double]]] = OFormat(
+    Reads[Map[Int, HashMap[Long, Double]]](js => JsSuccess(js.as[Map[String, Map[String, Double]]].map { kv =>
+      (java.lang.Integer.parseInt(kv._1), kv._2.map { kv1 =>
+        (java.lang.Long.parseLong(kv1._1), kv1._2)
+      }(breakOut): HashMap[Long, Double])
+    }(breakOut))),
+    OWrites[Map[Int, HashMap[Long, Double]]](m => Json.toJsObject[Map[String, Map[String, Double]]](m.map { kv =>
+      (kv._1.toString, kv._2.map(kv1 => (kv1._1.toString, kv1._2)))
+    })))
 }
