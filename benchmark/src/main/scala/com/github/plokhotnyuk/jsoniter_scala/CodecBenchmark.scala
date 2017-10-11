@@ -34,8 +34,7 @@ class CodecBenchmark {
   import CustomPlayJsonFormats._
   val mapsFormat: OFormat[Maps] = Json.format[Maps]
   val mutableMapsCodec: Codec[MutableMaps] = materialize[MutableMaps]
-  // FIXME: Cannot find play.api.libs.json.Format for mutable maps
-  //val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
+  val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
   val intAndLongMapsCodec: Codec[IntAndLongMaps] = materialize[IntAndLongMaps]
   // FIXME: Cannot find play.api.libs.json.Format for int & long maps
   //val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
@@ -106,11 +105,8 @@ class CodecBenchmark {
   @Benchmark
   def readMutableMapsJsoniter(): MutableMaps = mutableMapsCodec.read(mutableMapsJson)
 
-  // FIXME: Cannot find play.api.libs.json.Format for mutable maps
-/*
   @Benchmark
   def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJson).as[MutableMaps](mutableMapsFormat)
-*/
 
   //FIXME: Jackson-module-scala doesn`t support parsing of int & long maps
 /*
@@ -181,11 +177,8 @@ class CodecBenchmark {
   @Benchmark
   def writeMutableMapsJsoniter(): Array[Byte] = mutableMapsCodec.write(mutableMapsObj)
 
-  // FIXME: Cannot find play.api.libs.json.Format for mutable maps
-/*
   @Benchmark
   def writeMutableMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableMapsObj)(mutableMapsFormat))
-*/
 
   @Benchmark
   def writeIntAndLongMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intAndLongMapsObj)
