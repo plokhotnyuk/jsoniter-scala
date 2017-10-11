@@ -21,8 +21,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       //FIXME: Jackson-module-scala parse keys as String
       // benchmark.readMapsJackson() shouldBe benchmark.mapsObj
       benchmark.readMapsJsoniter() shouldBe benchmark.mapsObj
-      // FIXME: Cannot find play.api.libs.json.Format for immutable maps
-      //benchmark.readMapsPlay() shouldBe benchmark.mapsObj
+      benchmark.readMapsPlay() shouldBe benchmark.mapsObj
       //FIXME: Jackson-module-scala parse keys as String
       //benchmark.readMutableMapsJackson() shouldBe benchmark.mutableMapsObj
       benchmark.readMutableMapsJsoniter() shouldBe benchmark.mutableMapsObj
@@ -48,8 +47,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeIterablesPlay()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeMapsJackson()) shouldBe toString(benchmark.mapsJson)
       toString(benchmark.writeMapsJsoniter()) shouldBe toString(benchmark.mapsJson)
-      // FIXME: Cannot find play.api.libs.json.Format for immutable maps
-      //toString(benchmark.writeMapsPlay()) shouldBe toString(benchmark.mapsJson)
+      toString(benchmark.writeMapsPlay()) shouldBe toString(benchmark.mapsJson)
       toString(benchmark.writeMutableMapsJackson()) shouldBe toString(benchmark.mutableMapsJson)
       toString(benchmark.writeMutableMapsJsoniter()) shouldBe toString(benchmark.mutableMapsJson)
       // FIXME: Cannot find play.api.libs.json.Format for mutable maps
