@@ -25,8 +25,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       //FIXME: Jackson-module-scala parse keys as String
       //benchmark.readMutableMapsJackson() shouldBe benchmark.mutableMapsObj
       benchmark.readMutableMapsJsoniter() shouldBe benchmark.mutableMapsObj
-      // FIXME: Cannot find play.api.libs.json.Format for mutable maps
-      //benchmark.readMutableMapsPlay() shouldBe benchmark.mutableMapsObj
+      benchmark.readMutableMapsPlay() shouldBe benchmark.mutableMapsObj
       //FIXME: Jackson-module-scala doesn`t support parsing of int & long maps
       //benchmark.readIntAndLongMapsJackson() shouldBe benchmark.intAndLongMapsObj
       benchmark.readIntAndLongMapsJsoniter() shouldBe benchmark.intAndLongMapsObj
@@ -50,8 +49,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeMapsPlay()) shouldBe toString(benchmark.mapsJson)
       toString(benchmark.writeMutableMapsJackson()) shouldBe toString(benchmark.mutableMapsJson)
       toString(benchmark.writeMutableMapsJsoniter()) shouldBe toString(benchmark.mutableMapsJson)
-      // FIXME: Cannot find play.api.libs.json.Format for mutable maps
-      //toString(benchmark.writeMutableMapsPlay()) shouldBe toString(benchmark.mutableMapsJson)
+      toString(benchmark.writeMutableMapsPlay()) shouldBe toString(benchmark.mutableMapsJson)
       toString(benchmark.writeIntAndLongMapsJackson()) shouldBe toString(benchmark.intAndLongMapsJson)
       toString(benchmark.writeIntAndLongMapsJsoniter()) shouldBe toString(benchmark.intAndLongMapsJson)
       // FIXME: Cannot find play.api.libs.json.Format for int & long maps
