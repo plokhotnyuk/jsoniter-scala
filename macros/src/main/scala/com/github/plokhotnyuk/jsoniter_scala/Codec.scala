@@ -335,6 +335,9 @@ object Codec {
           case None => writeField
         }
       }
+      val writeFieldsBlock =
+        if (writeFields.isEmpty) EmptyTree
+        else q"val x = obj.asInstanceOf[$tpe]; var first = true; ..$writeFields"
       val tree =
         q"""import com.jsoniter.CodegenAccess._
             import com.jsoniter.CodecBase
@@ -362,13 +365,13 @@ object Codec {
                   case _ =>
                     decodeError(in, "expect { or n")
                 }
-              override def encode(obj: AnyRef, out: JsonStream): Unit = {
-                out.writeObjectStart()
-                val x = obj.asInstanceOf[$tpe]
-                var first = true
-                ..$writeFields
-                out.writeObjectEnd()
-              }
+              override def encode(obj: AnyRef, out: JsonStream): Unit =
+                if (obj eq null) out.writeNull()
+                else {
+                  out.writeObjectStart()
+                  ..$writeFieldsBlock
+                  out.writeObjectEnd()
+                }
               ..${decoders.map { case (_, d) => d._2 }}
               ..${encoders.map { case (_, e) => e._2 }}
             }"""

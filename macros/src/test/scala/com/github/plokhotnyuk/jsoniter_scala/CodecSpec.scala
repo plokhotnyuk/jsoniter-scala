@@ -125,6 +125,9 @@ class CodecSpec extends WordSpec with Matchers {
     "don't deserialize unknown fields" in {
       verifyDeser(materialize[Unknown], Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes)
     }
+    "serialize and deserialize null" in {
+      verifyDeser(materialize[Unknown], null, """null""".getBytes)
+    }
     "throw exception in case of missing required fields detected during deserialization" in {
       assert(intercept[Exception] {
         val obj = Required(
