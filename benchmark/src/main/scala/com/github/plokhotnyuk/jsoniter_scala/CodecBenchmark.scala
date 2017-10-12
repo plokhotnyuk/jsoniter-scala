@@ -36,8 +36,7 @@ class CodecBenchmark {
   val mutableMapsCodec: Codec[MutableMaps] = materialize[MutableMaps]
   val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
   val intAndLongMapsCodec: Codec[IntAndLongMaps] = materialize[IntAndLongMaps]
-  // FIXME: Cannot find play.api.libs.json.Format for int & long maps
-  //val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
+  val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
   val primitivesCodec: Codec[Primitives] = materialize[Primitives]
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
@@ -117,11 +116,8 @@ class CodecBenchmark {
   @Benchmark
   def readIntAndLongMapsJsoniter(): IntAndLongMaps = intAndLongMapsCodec.read(intAndLongMapsJson)
 
-  // FIXME: Cannot find play.api.libs.json.Format for int & long maps
-/*
   @Benchmark
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
-*/
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -186,11 +182,8 @@ class CodecBenchmark {
   @Benchmark
   def writeIntAndLongMapsJsoniter(): Array[Byte] = intAndLongMapsCodec.write(intAndLongMapsObj)
 
-  // FIXME: Cannot find play.api.libs.json.Format for int & long maps
-/*
   @Benchmark
   def writeIntAndLongMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(intAndLongMapsObj)(intAndLongMapsFormat))
-*/
 
   @Benchmark
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
