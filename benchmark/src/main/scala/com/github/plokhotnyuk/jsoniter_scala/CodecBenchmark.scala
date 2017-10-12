@@ -2,10 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.util.concurrent.TimeUnit
 
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
+import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import org.openjdk.jmh.annotations._
 
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap, Map}
@@ -23,6 +25,12 @@ class CodecBenchmark {
 
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
+    registerModule(new SimpleModule()
+      .addSerializer(classOf[Char], new CharToIntSerializer)
+      .addSerializer(classOf[BitSet], new BitSetSerializer)
+      .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
+      .addDeserializer(classOf[BitSet], new BitSetDeserializer)
+      .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
   val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
@@ -65,11 +73,8 @@ class CodecBenchmark {
   @Benchmark
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
 
-  //FIXME: Jackson-module-scala doesn`t support parsing of bitsets
-/*
   @Benchmark
   def readBitSetsJackson(): BitSets = jacksonMapper.readValue[BitSets](bitSetsJson)
-*/
 
   @Benchmark
   def readBitSetsJsoniter(): BitSets = bitSetsCodec.read(bitSetsJson)

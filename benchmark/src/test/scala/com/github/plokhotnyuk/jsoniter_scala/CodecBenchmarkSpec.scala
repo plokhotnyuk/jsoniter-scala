@@ -10,8 +10,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readAnyRefsJackson() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsJsoniter() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsPlay() shouldBe benchmark.anyRefsObj
-      //FIXME: Jackson-module-scala doesn`t support parsing of bitsets
-      //benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
+      benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsJsoniter() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsPlay() shouldBe benchmark.bitSetsObj
       benchmark.readIterablesJackson() shouldBe benchmark.iterablesObj
@@ -52,8 +51,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeIntAndLongMapsJackson()) shouldBe toString(benchmark.intAndLongMapsJson)
       toString(benchmark.writeIntAndLongMapsJsoniter()) shouldBe toString(benchmark.intAndLongMapsJson)
       toString(benchmark.writeIntAndLongMapsPlay()) shouldBe toString(benchmark.intAndLongMapsJson)
-      //FIXME jackson also should serialize char as int
-      //toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
+      toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesPlay()) shouldBe toString(benchmark.primitivesJson)
     }
