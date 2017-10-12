@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
 import org.openjdk.jmh.annotations._
 
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap, Map}
@@ -21,7 +22,6 @@ import play.api.libs.json.{Json, _}
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class CodecBenchmark {
-  import CustomPlayJsonFormats._
 
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
