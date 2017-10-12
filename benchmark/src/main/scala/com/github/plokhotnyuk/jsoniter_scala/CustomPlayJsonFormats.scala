@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 
 import scala.collection.breakOut
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap}
@@ -57,4 +58,21 @@ object CustomPlayJsonFormats {
 
   implicit val reads8: Reads[mutable.BitSet] =
     Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*)))
+
+  val charAsIntFormat: Format[Char] = Format(
+    Reads[Char](js => JsSuccess(js.as[Int].toChar)),
+    Writes[Char](c => JsNumber(c.toInt))
+  )
+
+  implicit val primitivesFormats: OFormat[Primitives] = (
+    (__ \ "b").format[Byte] and
+      (__ \ "s").format[Short] and
+      (__ \ "i").format[Int] and
+      (__ \ "l").format[Long] and
+      (__ \ "bl").format[Boolean] and
+      (__ \ "ch").format[Char](charAsIntFormat) and
+      (__ \ "dbl").format[Double] and
+      (__ \ "f").format[Float]
+    )(Primitives.apply, unlift(Primitives.unapply)
+  )
 }
