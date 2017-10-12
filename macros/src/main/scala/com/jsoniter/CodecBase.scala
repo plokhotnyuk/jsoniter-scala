@@ -203,9 +203,10 @@ object CodecBase {
         i += 1
         b match {
           case 'b' => mix(hash, '\b')
-          case 't' => mix(hash, '\t')
-          case 'n' => mix(hash, '\n')
           case 'f' => mix(hash, '\f')
+          case 'n' => mix(hash, '\n')
+          case 'r' => mix(hash, '\r')
+          case 't' => mix(hash, '\t')
           case '"' => mix(hash, '"')
           case '/' => mix(hash, '/')
           case '\\' => mix(hash, '\\')

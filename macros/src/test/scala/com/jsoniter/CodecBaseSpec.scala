@@ -7,8 +7,8 @@ class CodecBaseSpec extends WordSpec with Matchers {
     "compute the same hash value for encoded & non-encoded field names" in {
       hashCode("""Hello""") shouldBe hashCode("Hello")
       hashCode("""Hello""") shouldBe hashCode("\\u0048\\u0065\\u006C\\u006c\\u006f")
-      hashCode("""\b\t\n\f\/""") shouldBe hashCode("\b\t\n\f/")
-      hashCode("""\b\t\n\f\/Aиბ""") shouldBe hashCode("\\u0008\\u0009\\u000a\\u000C\\u002F\\u0041\\u0438\\u10d1")
+      hashCode("""\b\f\n\r\t\/\\""") shouldBe hashCode("\b\f\n\r\t/\\\\")
+      hashCode("""\b\f\n\r\t\/Aиბ""") shouldBe hashCode("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1")
       hashCode("𝄞") shouldBe hashCode("\\ud834\\udd1e")
     }
     "throw parsing exception in case of invalid escape character sequence" in {
