@@ -13,8 +13,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       //FIXME: Jackson-module-scala doesn`t support parsing of bitsets
       //benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsJsoniter() shouldBe benchmark.bitSetsObj
-      // FIXME: Cannot find play.api.libs.json.Format for bitsets
-      //benchmark.readBitSetsPlay() shouldBe benchmark.bitSetsObj
+      benchmark.readBitSetsPlay() shouldBe benchmark.bitSetsObj
       benchmark.readIterablesJackson() shouldBe benchmark.iterablesObj
       benchmark.readIterablesJsoniter() shouldBe benchmark.iterablesObj
       benchmark.readIterablesPlay() shouldBe benchmark.iterablesObj
@@ -40,6 +39,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeAnyRefsPlay()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeBitSetsJackson()) shouldBe toString(benchmark.bitSetsJson)
       toString(benchmark.writeBitSetsJsoniter()) shouldBe toString(benchmark.bitSetsJson)
+      toString(benchmark.writeBitSetsPlay()) shouldBe toString(benchmark.bitSetsJson)
       toString(benchmark.writeIterablesJackson()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeIterablesJsoniter()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeIterablesPlay()) shouldBe toString(benchmark.iterablesJson)
