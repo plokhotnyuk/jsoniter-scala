@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 import play.api.libs.json._
 
 import scala.collection.breakOut
-import scala.collection.immutable.{HashMap, IntMap, LongMap}
+import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap}
 import scala.collection.mutable
 
 object CustomPlayJsonFormats {
@@ -51,4 +51,10 @@ object CustomPlayJsonFormats {
     OWrites[mutable.LongMap[LongMap[Double]]](m => Json.toJsObject[Map[String, Map[String, Double]]](m.map { kv =>
       (kv._1.toString, kv._2.map(kv1 => (kv1._1.toString, kv1._2))(breakOut): Map[String, Double])
     }(breakOut): Map[String, Map[String, Double]])))
+
+  implicit val reads7: Reads[BitSet] =
+    Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*)))
+
+  implicit val reads8: Reads[mutable.BitSet] =
+    Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*)))
 }

@@ -19,6 +19,8 @@ import play.api.libs.json.{Json, _}
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class CodecBenchmark {
+  import CustomPlayJsonFormats._
+
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -26,12 +28,10 @@ class CodecBenchmark {
   val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
   val bitSetsCodec: Codec[BitSets] = materialize[BitSets]
-  // FIXME: Cannot find play.api.libs.json.Format for bitsets
-  //val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
+  val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
   val iterablesCodec: Codec[Iterables] = materialize[Iterables]
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
   val mapsCodec: Codec[Maps] = materialize[Maps]
-  import CustomPlayJsonFormats._
   val mapsFormat: OFormat[Maps] = Json.format[Maps]
   val mutableMapsCodec: Codec[MutableMaps] = materialize[MutableMaps]
   val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
@@ -74,11 +74,8 @@ class CodecBenchmark {
   @Benchmark
   def readBitSetsJsoniter(): BitSets = bitSetsCodec.read(bitSetsJson)
 
-// FIXME: Cannot find play.api.libs.json.Format for bitsets
-/*
   @Benchmark
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
-*/
 
   @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
@@ -143,11 +140,8 @@ class CodecBenchmark {
   @Benchmark
   def writeBitSetsJsoniter(): Array[Byte] = bitSetsCodec.write(bitSetsObj)
 
-  // FIXME: Cannot find play.api.libs.json.Format for bitsets
-/*
   @Benchmark
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
-*/
 
   @Benchmark
   def writeIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(iterablesObj)

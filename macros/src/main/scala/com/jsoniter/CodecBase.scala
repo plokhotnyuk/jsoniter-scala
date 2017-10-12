@@ -228,8 +228,8 @@ object CodecBase {
                 IterImplString.translateHex(buf(i + 5))).toChar
               i += 6
               if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
-              val uc = Character.toCodePoint(c1, c2)
-              mix(mix(mix(mix(hash, 0xF0 | (uc >> 18)), 0x80 | ((uc >> 12) & 0x3F)), 0x80 | ((uc >> 6) & 0x3F)), 0x80 | (uc & 0x3F))
+              val c = Character.toCodePoint(c1, c2)
+              mix(mix(mix(mix(hash, 0xF0 | (c >> 18)), 0x80 | ((c >> 12) & 0x3F)), 0x80 | ((c >> 6) & 0x3F)), 0x80 | (c & 0x3F))
             } else readObjectFieldAsHashError(in, "invalid escape sequence")
           case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
         }
@@ -242,10 +242,10 @@ object CodecBase {
     case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid escape sequence")
   }
 
-  private def mix(h: Long, b: Int): Long = { // use 64-bit hash to minimize collisions in field name switch
-    val h1 = h ^ (b & 0xFF)
+  private def mix(hash: Long, byte: Int): Long = { // use 64-bit hash to minimize collisions in field name switch
+    val h1 = hash ^ (byte & 0xFF)
     val h2 = h1 * 1609587929392839161L
-    h2 ^ h2 >>> 47
+    h2 ^ (h2 >>> 47)
   }
 
   private def readObjectFieldAsHashError(in: JsonIterator, msg: String): Nothing =

@@ -110,8 +110,8 @@ class CodecSpec extends WordSpec with Matchers {
       verifyDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes("UTF-8"))
       withConfig(_.escapeUnicode(true)) {
-        verifySer(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ/\t"),
-          "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes("UTF-8"))
+        verifySer(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
+          "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes("UTF-8"))
       }
     }
     "serialize and deserialize with keys overridden by annotation" in {
