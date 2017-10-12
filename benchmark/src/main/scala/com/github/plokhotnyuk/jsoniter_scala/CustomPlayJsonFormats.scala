@@ -3,11 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 import play.api.libs.json._
 
 import scala.collection.breakOut
-<<<<<<< HEAD
-import scala.collection.immutable.HashMap
-=======
 import scala.collection.immutable.{HashMap, IntMap, LongMap}
->>>>>>> upstream/master
 import scala.collection.mutable
 
 object CustomPlayJsonFormats {
