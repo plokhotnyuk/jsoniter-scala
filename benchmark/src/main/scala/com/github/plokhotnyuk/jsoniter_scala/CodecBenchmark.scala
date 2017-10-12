@@ -38,14 +38,13 @@ class CodecBenchmark {
   val intAndLongMapsCodec: Codec[IntAndLongMaps] = materialize[IntAndLongMaps]
   val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
   val primitivesCodec: Codec[Primitives] = materialize[Primitives]
-  val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val bitSetsJson: Array[Byte] = """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes
   val iterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
   val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
   val mutableMapsJson: Array[Byte] = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
-  val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"dbl":1.1,"f":2.5}""".getBytes
+  val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":120,"dbl":1.1,"f":2.5}""".getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
   val iterablesObj: Iterables = Iterables(List("1", "2", "3"), Set(4, 5, 6), List(Set(1, 2), Set()))
@@ -54,7 +53,7 @@ class CodecBenchmark {
     mutable.Map(1 -> mutable.OpenHashMap(3L -> 3.3), 2 -> mutable.OpenHashMap.empty[Long, Double]))
   val intAndLongMapsObj: IntAndLongMaps = IntAndLongMaps(IntMap(1 -> 1.1, 2 -> 2.2),
     mutable.LongMap(1L -> LongMap(3L -> 3.3), 2L -> LongMap.empty[Double]))
-  val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, 1.1, 2.5f)
+  val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
@@ -123,7 +122,7 @@ class CodecBenchmark {
   def readPrimitivesJsoniter(): Primitives = primitivesCodec.read(primitivesJson)
 
   @Benchmark
-  def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
+  def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormats)
 
   @Benchmark
   def writeAnyRefsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(anyRefsObj)
@@ -186,7 +185,7 @@ class CodecBenchmark {
   def writePrimitivesJsoniter(): Array[Byte] = primitivesCodec.write(primitivesObj)
 
   @Benchmark
-  def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
+  def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormats))
 }
 
 case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
@@ -201,4 +200,4 @@ case class MutableMaps(m: mutable.HashMap[String, Double], mm: mutable.Map[Int, 
 
 case class IntAndLongMaps(m: IntMap[Double], mm: mutable.LongMap[LongMap[Double]])
 
-case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, dbl: Double, f: Float)
+case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
