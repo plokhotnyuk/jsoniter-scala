@@ -17,6 +17,24 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+/* FIXME parsing of Int.MinValue fails with "decode: missing required field(s)"
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, -2147483648, 4L, bl = true, 'V', 1.1, 2.2f),
+        """{"b":1,"s":2,"i":-2147483648,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+*/
+/* FIXME parsing of too big values for primitive types should throw exception
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+        """{"b":1000,"s":100000,"i":3000000000,"l":9223372036854775808,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+*/
+/* FIXME parsing of invalid Boolean value fails with "decode: missing required field(s)"
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+        """{"b":1,"s":2,"i":3,"l":4,"bl":truee,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+        """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+*/
     }
     "serialize and deserialize boxed primitives" in {
       verifySerDeser(materialize[BoxedPrimitives],
@@ -27,9 +45,17 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[StandardTypes],
         StandardTypes("VVV", BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
         """{"s":"VVV","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
+/* FIXME should throw exception that illegal UTF-8 character detected in string value instead of parsing with placeholder
+      val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
+      buf(6) = 0xF0.toByte
+      verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+*/
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
+/* FIXME fails with "java.util.NoSuchElementException: key not found: -1", consider wrapping to parse exception with better message
+      verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":-1}""".getBytes)
+*/
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],
