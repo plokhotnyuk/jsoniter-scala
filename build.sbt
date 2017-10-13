@@ -2,10 +2,10 @@ import sbt.Keys.scalacOptions
 
 lazy val `jsoniter-scala` = project.in(file("."))
   .settings(
-    crossScalaVersions := Seq("2.12.3", "2.11.11"),
     inThisBuild(Seq(
       organization := "com.github.plokhotnyuk.jsoniter-scala",
       scalaVersion := "2.12.3",
+      crossScalaVersions := Seq("2.12.3", "2.11.11"),
       startYear := Some(2017),
       organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
       homepage := Some(url("http://github.com/plokhotnyuk/jsoniter-scala")),
