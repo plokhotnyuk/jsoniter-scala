@@ -79,14 +79,14 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize immutable iterables" in {
       verifySerDeser(materialize[ImmutableIterables],
-        ImmutableIterables(List(ListSet("1", "2", "3")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
+        ImmutableIterables(List(ListSet("1")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
           IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(10L, 11L)),
-        """{"l":[["1","2","3"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[10,11]}""".getBytes)
+        """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[10,11]}""".getBytes)
     }
     "serialize and deserialize mutable maps" in {
       verifySerDeser(materialize[MutableMaps],
         MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
-          mutable.Map(1.1f -> mutable.SortedMap(BigInt(2) -> "2")),
+          mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> "2")),
           mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
         """{"hm":{"true":{"1.1":1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
     }
@@ -254,7 +254,7 @@ case class ImmutableIterables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
                               is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]], v: Vector[Long])
 
 case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
-                       m: mutable.Map[Float, mutable.SortedMap[BigInt, String]],
+                       m: mutable.Map[Float, mutable.WeakHashMap[BigInt, String]],
                        ohm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
 
 case class ImmutableMaps(m: Map[Int, Double], hm: HashMap[String, ListMap[Int, BigInt]],
