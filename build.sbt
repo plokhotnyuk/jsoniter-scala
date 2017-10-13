@@ -12,14 +12,14 @@ lazy val `jsoniter-scala` = project.in(file("."))
       licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
       resolvers += Resolver.mavenLocal,
       scalacOptions ++= Seq(
+        "-deprecation",
         "-encoding", "UTF-8",
         "-feature",
         "-unchecked",
-        "-deprecation",
-        "-Xlint",
         "-Yno-adapted-args",
         "-Ywarn-dead-code",
         "-Xfuture",
+        "-Xlint",
         "-Xmacro-settings:print-codecs"
       )
     ))
