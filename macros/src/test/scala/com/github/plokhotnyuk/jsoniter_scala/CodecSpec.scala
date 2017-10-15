@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
-import com.jsoniter.spi.{Config, JsoniterSpi}
+import com.jsoniter.spi.{Config, JsonException, JsoniterSpi}
 import Codec._
 import org.scalatest.{Matchers, WordSpec}
 
@@ -17,15 +17,32 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      assertThrows[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1000,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      }
+      assertThrows[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1,"s":200000,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      }
+      assertThrows[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1,"s":2,"i":3000000000,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      }
 /* FIXME parsing of Int.MinValue fails with "decode: missing required field(s)"
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, -2147483648, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":-2147483648,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
 */
-/* FIXME parsing of too big values for primitive types should throw exception
-      verifyDeser(materialize[Primitives],
-        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-        """{"b":1000,"s":100000,"i":3000000000,"l":9223372036854775808,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+/* FIXME parsing of too big values for long types should throw exception
+      assertThrows[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1,"s":2,"i":3,"l":40000000000000000000,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      }
 */
 /* FIXME parsing of invalid Boolean value fails with "decode: missing required field(s)"
       verifyDeser(materialize[Primitives],
@@ -35,6 +52,20 @@ class CodecSpec extends WordSpec with Matchers {
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
 */
+      assertThrows[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":1000000,"dbl":1.1,"f":2.2}""".getBytes)
+      }
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.PositiveInfinity, Float.PositiveInfinity),
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e1000,"f":2.2e2000}""".getBytes)
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.NegativeInfinity, Float.NegativeInfinity),
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":-1.1e1000,"f":-2.2e2000}""".getBytes)
+      verifyDeser(materialize[Primitives],
+        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 0.0, 0.0f),
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
     }
     "serialize and deserialize boxed primitives" in {
       verifySerDeser(materialize[BoxedPrimitives],

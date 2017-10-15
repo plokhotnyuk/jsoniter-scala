@@ -62,11 +62,11 @@ object Codec {
         if (tpe =:= definitions.BooleanTpe) {
           q"readObjectFieldAsBoolean(in)"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"readObjectFieldAsInt(in).toByte"
+          q"toByte(in, readObjectFieldAsInt(in))"
         } else if (tpe =:= definitions.CharTpe) {
-          q"readObjectFieldAsInt(in).toChar"
+          q"toChar(in, readObjectFieldAsInt(in))"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"readObjectFieldAsInt(in).toShort"
+          q"toShort(in, readObjectFieldAsInt(in))"
         } else if (tpe =:= definitions.IntTpe) {
           q"readObjectFieldAsInt(in)"
         } else if (tpe =:= definitions.LongTpe) {
@@ -150,11 +150,11 @@ object Codec {
         if (tpe =:= definitions.BooleanTpe) {
           q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"in.readInt().toByte"
+          q"toByte(in, in.readInt())"
         } else if (tpe =:= definitions.CharTpe) {
-          q"in.readInt().toChar"
+          q"toChar(in, in.readInt())"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"in.readInt().toShort"
+          q"toShort(in, in.readInt())"
         } else if (tpe =:= definitions.IntTpe) {
           q"in.readInt()"
         } else if (tpe.widen =:= definitions.LongTpe) {

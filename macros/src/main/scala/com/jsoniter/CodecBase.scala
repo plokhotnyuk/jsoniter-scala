@@ -173,6 +173,21 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
     writeParenthesesWithColon(out)
   }
 
+  protected def toByte(in: JsonIterator, n: Int): Byte = {
+    if (n > Byte.MaxValue || n < Byte.MinValue) decodeError(in, s"byte overflow: $n")
+    else n.toByte
+  }
+
+  protected def toChar(in: JsonIterator, n: Int): Char = {
+    if (n > Char.MaxValue || n < Char.MinValue) decodeError(in, s"char overflow: $n")
+    else n.toChar
+  }
+
+  protected def toShort(in: JsonIterator, n: Int): Byte = {
+    if (n > Short.MaxValue || n < Short.MinValue) decodeError(in, s"short overflow: $n")
+    else n.toByte
+  }
+
   private def readParentheses(in: JsonIterator): Unit =
     if (IterImpl.readByte(in) != '"') decodeError(in, "expect \"")
 
