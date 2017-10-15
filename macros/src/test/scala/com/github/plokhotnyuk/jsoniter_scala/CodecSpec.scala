@@ -68,20 +68,23 @@ class CodecSpec extends WordSpec with Matchers {
         """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
     }
     "serialize and deserialize mutable iterables" in {
-      verifySerDeser(materialize[MutableIterables],
-        MutableIterables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
+      verifySerDeser(materialize[MutableTraversables],
+        MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
           mutable.ArrayBuffer(mutable.Set(BigInt(4)), mutable.Set.empty[BigInt]),
           mutable.ArraySeq(mutable.LinkedHashSet(5, 6), mutable.LinkedHashSet.empty[Int]),
           mutable.Buffer(mutable.HashSet(7.7, 8.8)),
           mutable.ListBuffer(mutable.TreeSet(9L, 10L)),
-          mutable.IndexedSeq(mutable.ArrayStack(11.11f, 12.12f))),
-        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]]}""".getBytes)
+          mutable.IndexedSeq(mutable.ArrayStack(11.11f, 12.12f)),
+          mutable.UnrolledBuffer(mutable.Traversable(13.toShort, 14.toShort)),
+          mutable.LinearSeq(15.toByte, 16.toByte),
+          mutable.ResizableArray(mutable.Seq(17.17, 18.18))),
+        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]],"ls":[15,16],"ra":[[17.17,18.18]]}""".getBytes)
     }
     "serialize and deserialize immutable iterables" in {
-      verifySerDeser(materialize[ImmutableIterables],
-        ImmutableIterables(List(ListSet("1")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
-          IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(10L, 11L)),
-        """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[10,11]}""".getBytes)
+      verifySerDeser(materialize[ImmutableTraversables],
+        ImmutableTraversables(List(ListSet("1")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
+          IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Traversable(10L, 11L))),
+        """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[[10,11]]}""".getBytes)
     }
     "serialize and deserialize mutable maps" in {
       verifySerDeser(materialize[MutableMaps],
@@ -155,7 +158,7 @@ class CodecSpec extends WordSpec with Matchers {
         """{"str":"VVV","nv":{}}""".getBytes)
     }
     "don't serialize fields empty collections" in {
-      verifySer(materialize[EmptyIterables], EmptyIterables(List(), Set(), List()), """{}""".getBytes)
+      verifySer(materialize[EmptyTraversables], EmptyTraversables(List(), Set(), List()), """{}""".getBytes)
     }
     "don't deserialize unknown fields" in {
       verifyDeser(materialize[Unknown], Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes)
@@ -243,15 +246,19 @@ case class ValueClassTypes(uid: UserId, oid: OrderId)
 
 case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]])
 
-case class MutableIterables(ml: mutable.MutableList[mutable.SortedSet[String]],
-                            ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
-                            as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
-                            b: mutable.Buffer[mutable.HashSet[Double]],
-                            lb: mutable.ListBuffer[mutable.TreeSet[Long]],
-                            is: mutable.IndexedSeq[mutable.ArrayStack[Float]])
+case class MutableTraversables(ml: mutable.MutableList[mutable.SortedSet[String]],
+                               ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
+                               as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
+                               b: mutable.Buffer[mutable.HashSet[Double]],
+                               lb: mutable.ListBuffer[mutable.TreeSet[Long]],
+                               is: mutable.IndexedSeq[mutable.ArrayStack[Float]],
+                               ub: mutable.UnrolledBuffer[mutable.Traversable[Short]],
+                               ls: mutable.LinearSeq[Byte],
+                               ra: mutable.ResizableArray[mutable.Seq[Double]])
 
-case class ImmutableIterables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
-                              is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]], v: Vector[Long])
+case class ImmutableTraversables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
+                                 is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]],
+                                 v: Vector[Traversable[Long]])
 
 case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
                        m: mutable.Map[Float, mutable.WeakHashMap[BigInt, String]],
@@ -280,7 +287,7 @@ case class Transient(required: String, @transient transient: String = "default")
 
 case class NullOrNoneValues(str: String, bi: BigInt, bd: BigDecimal, nv: NullOrNoneValues, opt: Option[String])
 
-case class EmptyIterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
+case class EmptyTraversables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 
 case class Unknown()
 

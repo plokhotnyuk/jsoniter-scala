@@ -31,7 +31,7 @@ object Codec {
 
       def isValueClass(tpe: Type): Boolean = tpe <:< typeOf[AnyVal] && tpe.typeSymbol.asClass.isDerivedValueClass
 
-      def isContainer(tpe: Type): Boolean = tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Iterable[_]]
+      def isContainer(tpe: Type): Boolean = tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]]
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
@@ -200,7 +200,7 @@ object Codec {
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe) {
           val comp = companion(tpe)
           genReadArray(q"$comp.empty", q"val buf = $comp.newBuilder", q"buf += in.readInt()")
-        } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(tpe) {
+        } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadArray(q"$comp.empty[$tpe1]", q"val buf = $comp.newBuilder[$tpe1]",
@@ -241,7 +241,7 @@ object Codec {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg2(tpe)))
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(tpe, m) {
           genWriteArray(q"x", q"out.writeVal(x)")
-        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(tpe, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe)))
         } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           q"out.writeRaw($m.toString)"
