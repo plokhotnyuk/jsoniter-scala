@@ -52,7 +52,7 @@ object Codec {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) {
           q"${companion(tpe)}.empty"
-        } else if (tpe <:< typeOf[Iterable[_]]) {
+        } else if (tpe <:< typeOf[Traversable[_]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
         } else {
           q"null"
@@ -260,7 +260,7 @@ object Codec {
           q"if (($m ne null) && $m.isDefined) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
-        } else if (tpe <:< typeOf[Iterable[_]]) {
+        } else if (tpe <:< typeOf[Traversable[_]]) {
           q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else {
           q"if ($m ne null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
