@@ -205,18 +205,14 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
+  // TODO add more tests for byte array & InputStream input
   def readObjectFieldAsHash(in: JsonIterator): Long = try {
-    if (IterImpl.readByte(in) != '"' && IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
-    val limit = in.tail
-    val buf = in.buf
-    var i = in.head
+    if (IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
     var hash: Long = -8796714831421723037L
     var b = 0
-    while (i < limit && { b = buf(i); i += 1; b != '"' }) hash = {
+    while ({ b = IterImpl.readByte(in); b != '"' }) hash = {
       if (b == '\\') {
-        b = buf(i)
-        i += 1
-        b match {
+        IterImpl.readByte(in) match {
           case 'b' => mix(hash, '\b')
           case 'f' => mix(hash, '\f')
           case 'n' => mix(hash, '\n')
@@ -226,22 +222,20 @@ object CodecBase {
           case '/' => mix(hash, '/')
           case '\\' => mix(hash, '\\')
           case 'u' =>
-            val c1 = ((IterImplString.translateHex(buf(i)) << 12) +
-              (IterImplString.translateHex(buf(i + 1)) << 8) +
-              (IterImplString.translateHex(buf(i + 2)) << 4) +
-              IterImplString.translateHex(buf(i +3))).toChar
-            i += 4
+            val c1 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
+              (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
+              (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
+              IterImplString.translateHex(IterImpl.readByte(in))).toChar
             if (c1 < 128) mix(hash, c1)
             else if (c1  < 2048) mix(mix(hash, 0xC0 | (c1 >> 6)), 0x80 | (c1 & 0x3F))
             else if (!Character.isHighSurrogate(c1)) {
               if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
               mix(mix(mix(hash, 0xE0 | (c1 >> 12)), 0x80 | ((c1 >> 6) & 0x3F)), 0x80 | (c1 & 0x3F))
-            } else if (buf(i) == '\\' && buf(i + 1) == 'u') {
-              val c2 = ((IterImplString.translateHex(buf(i + 2)) << 12) +
-                (IterImplString.translateHex(buf(i + 3)) << 8) +
-                (IterImplString.translateHex(buf(i + 4)) << 4) +
-                IterImplString.translateHex(buf(i + 5))).toChar
-              i += 6
+            } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
+              val c2 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
+                (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
+                (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
+                IterImplString.translateHex(IterImpl.readByte(in))).toChar
               if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
               val c = Character.toCodePoint(c1, c2)
               mix(mix(mix(mix(hash, 0xF0 | (c >> 18)), 0x80 | ((c >> 12) & 0x3F)), 0x80 | ((c >> 6) & 0x3F)), 0x80 | (c & 0x3F))
@@ -250,8 +244,7 @@ object CodecBase {
         }
       } else mix(hash, b)
     }
-    in.head = i
-    if (IterImpl.readByte(in) != ':' && IterImpl.nextToken(in) != ':') readObjectFieldAsHashError(in, "expect :")
+    if (IterImpl.nextToken(in) != ':') readObjectFieldAsHashError(in, "expect :")
     hash
   } catch {
     case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid escape sequence")

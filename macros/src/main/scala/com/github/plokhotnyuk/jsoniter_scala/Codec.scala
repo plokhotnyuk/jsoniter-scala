@@ -211,9 +211,12 @@ object Codec {
           q"BigInt(in.readBigInteger())"
         } else if (tpe =:= typeOf[BigDecimal]) {
           q"BigDecimal(in.readBigDecimal())"
-        } else if (tpe <:< typeOf[Enumeration#Value]) {
+        } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"$enumSymbol.apply(in.readInt())"
+          q"""val v = in.readInt()
+              try $enumSymbol.apply(v) catch {
+                case _: java.util.NoSuchElementException => decodeError(in, "Invalid enum value: " + v)
+              }"""
         } else {
           q"in.read(classOf[$tpe])"
         }

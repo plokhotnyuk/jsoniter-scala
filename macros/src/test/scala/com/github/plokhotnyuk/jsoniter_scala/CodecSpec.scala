@@ -84,9 +84,9 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
-/* FIXME fails with "java.util.NoSuchElementException: key not found: -1", consider wrapping to parse exception with better message
-      verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":-1}""".getBytes)
-*/
+      assertThrows[JsonException] {
+        verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":-1}""".getBytes)
+      }
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],
