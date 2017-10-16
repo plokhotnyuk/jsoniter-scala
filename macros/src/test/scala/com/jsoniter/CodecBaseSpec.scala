@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class CodecBaseSpec extends WordSpec with Matchers {
   "CodecBase.readObjectFieldAsHash" should {
-    "compute the same hash value for encoded & non-encoded field names" in {
+    "compute the same hash value for escaped & non-escaped field names" in {
       hashCode("""Hello""") shouldBe hashCode("Hello")
       hashCode("""Hello""") shouldBe hashCode("\\u0048\\u0065\\u006C\\u006c\\u006f")
       hashCode("""\b\f\n\r\t\/\\""") shouldBe hashCode("\b\f\n\r\t/\\\\")
