@@ -274,9 +274,8 @@ object CodecBase {
   }
 
   private def mix(hash: Long, ch: Char): Long = { // use 64-bit hash to minimize collisions in field name switch
-    val h1 = hash ^ ch
-    val h2 = h1 * 1609587929392839161L
-    h2 ^ (h2 >>> 47)
+    val h = (hash ^ ch) * 1609587929392839161L
+    h ^ (h >>> 47)
   }
 
   private def isMalformed2(b1: Byte, b2: Byte) = (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
