@@ -205,55 +205,98 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  // TODO add more tests for byte array & InputStream input
+  private val hexDigits = "0123456789ABCDEF".toCharArray
+
   def readObjectFieldAsHash(in: JsonIterator): Long = try {
     if (IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
     var hash: Long = -8796714831421723037L
-    var b = 0
-    while ({ b = IterImpl.readByte(in); b != '"' }) hash = {
-      if (b == '\\') {
-        IterImpl.readByte(in) match {
-          case 'b' => mix(hash, '\b')
-          case 'f' => mix(hash, '\f')
-          case 'n' => mix(hash, '\n')
-          case 'r' => mix(hash, '\r')
-          case 't' => mix(hash, '\t')
-          case '"' => mix(hash, '"')
-          case '/' => mix(hash, '/')
-          case '\\' => mix(hash, '\\')
-          case 'u' =>
-            val c1 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
-              (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
-              (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
-              IterImplString.translateHex(IterImpl.readByte(in))).toChar
-            if (c1 < 128) mix(hash, c1)
-            else if (c1  < 2048) mix(mix(hash, 0xC0 | (c1 >> 6)), 0x80 | (c1 & 0x3F))
-            else if (!Character.isHighSurrogate(c1)) {
-              if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
-              mix(mix(mix(hash, 0xE0 | (c1 >> 12)), 0x80 | ((c1 >> 6) & 0x3F)), 0x80 | (c1 & 0x3F))
-            } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
-              val c2 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
+    var b1: Byte = 0
+    while ({ b1 = IterImpl.readByte(in); b1 != '"' }) hash = {
+      if (b1 >= 0) {
+        // 1 byte, 7 bits: 0xxxxxxx
+        if (b1 != '\\') mix(hash, b1.toChar)
+        else {
+          IterImpl.readByte(in) match {
+            case 'b' => mix(hash, '\b')
+            case 'f' => mix(hash, '\f')
+            case 'n' => mix(hash, '\n')
+            case 'r' => mix(hash, '\r')
+            case 't' => mix(hash, '\t')
+            case '"' => mix(hash, '"')
+            case '/' => mix(hash, '/')
+            case '\\' => mix(hash, '\\')
+            case 'u' =>
+              val c1 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
                 (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
                 (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
                 IterImplString.translateHex(IterImpl.readByte(in))).toChar
-              if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
-              val c = Character.toCodePoint(c1, c2)
-              mix(mix(mix(mix(hash, 0xF0 | (c >> 18)), 0x80 | ((c >> 12) & 0x3F)), 0x80 | ((c >> 6) & 0x3F)), 0x80 | (c & 0x3F))
-            } else readObjectFieldAsHashError(in, "invalid escape sequence")
-          case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
+              if (c1  < 2048) mix(hash, c1)
+              else if (!Character.isHighSurrogate(c1)) {
+                if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
+                mix(hash, c1)
+              } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
+                val c2 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
+                  (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
+                  (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
+                  IterImplString.translateHex(IterImpl.readByte(in))).toChar
+                if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
+                mix(mix(hash, c1), c2)
+              } else readObjectFieldAsHashError(in, "invalid escape sequence")
+            case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
+          }
         }
-      } else mix(hash, b)
+      } else if ((b1 >> 5) == -2) {
+        // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        val b2 = IterImpl.readByte(in)
+        if (isMalformed2(b1, b2)) malformedBytes(in, b1, b2)
+        mix(hash, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
+      } else if ((b1 >> 4) == -2) {
+        // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        val b2 = IterImpl.readByte(in)
+        val b3 = IterImpl.readByte(in)
+        val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(in, b1, b2, b3)
+        mix(hash, c)
+      } else if ((b1 >> 3) == -2) {
+        // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        val b2 = IterImpl.readByte(in)
+        val b3 = IterImpl.readByte(in)
+        val b4 = IterImpl.readByte(in)
+        val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(in, b1, b2, b3, b4)
+        mix(mix(hash, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
+      } else malformedBytes(in, b1)
     }
     if (IterImpl.nextToken(in) != ':') readObjectFieldAsHashError(in, "expect :")
     hash
   } catch {
-    case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid escape sequence")
+    case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid byte or escape sequence")
   }
 
-  private def mix(hash: Long, byte: Int): Long = { // use 64-bit hash to minimize collisions in field name switch
-    val h1 = hash ^ (byte & 0xFF)
+  private def mix(hash: Long, ch: Char): Long = { // use 64-bit hash to minimize collisions in field name switch
+    val h1 = hash ^ (ch & 0xFFFF)
     val h2 = h1 * 1609587929392839161L
     h2 ^ (h2 >>> 47)
+  }
+
+  private def isMalformed2(b1: Byte, b2: Byte) = (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
+
+  private def isMalformed3(b1: Byte, b2: Byte, b3: Byte) =
+    (b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80
+
+  private def isMalformed4(b2: Byte, b3: Byte, b4: Byte) =
+    (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80
+
+  private def malformedBytes(in: JsonIterator, bytes: Byte*): Nothing = {
+    val sb = new StringBuilder("malformed byte(s): ")
+    var first = true
+    bytes.foreach { b =>
+      (if (first) {
+        first = false
+        sb.append("0x")
+      } else sb.append(", 0x")).append(hexDigits((b & 0xFF) >> 4)).append(hexDigits(b & 0xF))
+    }
+    readObjectFieldAsHashError(in, sb.toString)
   }
 
   private def readObjectFieldAsHashError(in: JsonIterator, msg: String): Nothing =

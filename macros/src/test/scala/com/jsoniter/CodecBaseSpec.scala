@@ -17,16 +17,32 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](hashCode("\\u000")).getMessage.contains("34 is not valid hex digit"))
       assert(intercept[Exception](hashCode("\\u00")).getMessage.contains("34 is not valid hex digit"))
       assert(intercept[Exception](hashCode("\\u0")).getMessage.contains("34 is not valid hex digit"))
-      assert(intercept[Exception](hashCode("\\")).getMessage.contains("invalid escape sequence"))
+      assert(intercept[Exception](hashCode("\\")).getMessage.contains("invalid byte or escape sequence"))
       assert(intercept[Exception](hashCode("\\udd1e")).getMessage.contains("expect high surrogate character"))
       assert(intercept[Exception](hashCode("\\ud834\\")).getMessage.contains("invalid escape sequence"))
       assert(intercept[Exception](hashCode("\\ud834\\x")).getMessage.contains("invalid escape sequence"))
       assert(intercept[Exception](hashCode("\\ud834\\ud834")).getMessage.contains("expect low surrogate character"))
     }
+    "throw parsing exception in case of invalid byte sequence" in {
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte))).getMessage.contains("invalid byte or escape sequence"))
+      assert(intercept[Exception](hashCode(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 0x80"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xC0, 0x80"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0x08"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xC8.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0xFF"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xE0, 0x80, 0x80"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xE0, 0xFF, 0x80"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xE8, 0x88, 0x08"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x80, 0x80, 0x80"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x04, 0x9E"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0xFF"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0xFF, 0x9E"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
+    }
   }
 
-  def hashCode(s: String): Long = {
-    val buf = s""""$s":""".getBytes("UTF-8")
-    CodecBase.readObjectFieldAsHash(JsonIterator.parse(buf))
-  }
+  def hashCode(s: String): Long = hashCode(s.getBytes("UTF-8"))
+
+  def hashCode(buf: Array[Byte]): Long =
+    CodecBase.readObjectFieldAsHash(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte))
 }
