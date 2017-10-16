@@ -274,7 +274,7 @@ object CodecBase {
   }
 
   private def mix(hash: Long, ch: Char): Long = { // use 64-bit hash to minimize collisions in field name switch
-    val h1 = hash ^ (ch & 0xFFFF)
+    val h1 = hash ^ ch
     val h2 = h1 * 1609587929392839161L
     h2 ^ (h2 >>> 47)
   }
