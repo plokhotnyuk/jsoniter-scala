@@ -42,6 +42,19 @@ class CodecBaseSpec extends WordSpec with Matchers {
     }
   }
   "CodecBase.readString" should {
+    "parse null value" in {
+      CodecBase.readString(JsonIterator.parse("null".getBytes)) shouldBe null
+    }
+    "parse long string" in {
+      val text =
+        """
+          |JavaScript Object Notation (JSON) is a lightweight, text-based,
+          |language-independent data interchange format.  It was derived from
+          |the ECMAScript Programming Language Standard.  JSON defines a small
+          |set of formatting rules for the portable representation of structured
+          |data.""".stripMargin
+      readString(text) shouldBe text
+    }
     "get the same string value for escaped & non-escaped field names" in {
       readString("""Hello""") shouldBe readString("Hello")
       readString("""Hello""") shouldBe readString("\\u0048\\u0065\\u006C\\u006c\\u006f")
