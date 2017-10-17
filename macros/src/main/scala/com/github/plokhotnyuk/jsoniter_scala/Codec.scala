@@ -215,7 +215,7 @@ object Codec {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"""val v = in.readInt()
               try $enumSymbol.apply(v) catch {
-                case _: java.util.NoSuchElementException => decodeError(in, "Invalid enum value: " + v)
+                case _: java.util.NoSuchElementException => decodeError(in, "invalid enum value: " + v)
               }"""
         } else {
           q"in.read(classOf[$tpe])"

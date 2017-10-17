@@ -180,17 +180,17 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
   }
 
   protected def toByte(in: JsonIterator, n: Int): Byte = {
-    if (n > Byte.MaxValue || n < Byte.MinValue) decodeError(in, s"byte overflow: $n")
+    if (n > Byte.MaxValue || n < Byte.MinValue) decodeError(in, "value is too large for byte")
     else n.toByte
   }
 
   protected def toChar(in: JsonIterator, n: Int): Char = {
-    if (n > Char.MaxValue || n < Char.MinValue) decodeError(in, s"char overflow: $n")
+    if (n > Char.MaxValue || n < Char.MinValue) decodeError(in, "value is too large for char")
     else n.toChar
   }
 
   protected def toShort(in: JsonIterator, n: Int): Byte = {
-    if (n > Short.MaxValue || n < Short.MinValue) decodeError(in, s"short overflow: $n")
+    if (n > Short.MaxValue || n < Short.MinValue) decodeError(in, "value is too large for short")
     else n.toByte
   }
 

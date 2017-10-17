@@ -17,21 +17,21 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      assertThrows[JsonException] {
+      assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1000,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }
-      assertThrows[JsonException] {
+      }.getMessage.contains("value is too large for byte"))
+      assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":200000,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }
-      assertThrows[JsonException] {
+      }.getMessage.contains("value is too large for short"))
+      assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3000000000,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }
+      }.getMessage.contains("value is too large for int"))
 /* FIXME parsing of Int.MinValue fails with "decode: missing required field(s)"
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, -2147483648, 4L, bl = true, 'V', 1.1, 2.2f),
@@ -52,11 +52,11 @@ class CodecSpec extends WordSpec with Matchers {
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
 */
-      assertThrows[JsonException] {
+      assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":1000000,"dbl":1.1,"f":2.2}""".getBytes)
-      }
+      }.getMessage.contains("value is too large for char"))
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.PositiveInfinity, Float.PositiveInfinity),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e1000,"f":2.2e2000}""".getBytes)
@@ -76,17 +76,38 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[StandardTypes],
         StandardTypes("VVV", BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
         """{"s":"VVV","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
-/* FIXME should throw exception that illegal UTF-8 character detected in string value instead of parsing with placeholder
-      val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
-      buf(6) = 0xF0.toByte
-      verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
-*/
+    }
+    "don't deserialize invalid UTF-8 encoded strings" in {
+      assert(intercept[JsonException] {
+        val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
+        buf(6) = 0xF0.toByte
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+      }.getMessage.contains("malformed byte(s): 0xF0"))
+    }
+    "don't deserialize invalid UTF-8 encoded field names" in {
+      assert(intercept[JsonException] {
+        val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
+        buf(2) = 0xF0.toByte
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+      }.getMessage.contains("malformed byte(s): 0xF0"))
+    }
+    "don't deserialize invalid JSON escaped strings" in {
+      assert(intercept[JsonException] {
+        val buf = "{\"s\":\"\\udd1e\",\"bi\":1,\"bd\":1.1}".getBytes
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+      }.getMessage.contains("expect high surrogate character"))
+    }
+    "don't deserialize invalid JSON escaped field names" in {
+      assert(intercept[JsonException] {
+        val buf = "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}".getBytes
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+      }.getMessage.contains("expect high surrogate character"))
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
-      assertThrows[JsonException] {
+      assert(intercept[JsonException] {
         verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":-1}""".getBytes)
-      }
+      }.getMessage.contains("invalid enum value: -1"))
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],
