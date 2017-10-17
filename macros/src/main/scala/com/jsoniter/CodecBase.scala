@@ -214,30 +214,7 @@ object CodecBase {
       if (b1 >= 0) {
         // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') mix(hash, b1.toChar)
-        else {
-          IterImpl.readByte(in) match {
-            case 'b' => mix(hash, '\b')
-            case 'f' => mix(hash, '\f')
-            case 'n' => mix(hash, '\n')
-            case 'r' => mix(hash, '\r')
-            case 't' => mix(hash, '\t')
-            case '"' => mix(hash, '"')
-            case '/' => mix(hash, '/')
-            case '\\' => mix(hash, '\\')
-            case 'u' =>
-              val c1 = readHexDigitPresentedChar(in)
-              if (c1 < 2048) mix(hash, c1)
-              else if (!Character.isHighSurrogate(c1)) {
-                if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
-                mix(hash, c1)
-              } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
-                val c2 = readHexDigitPresentedChar(in)
-                if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
-                mix(mix(hash, c1), c2)
-              } else readObjectFieldAsHashError(in, "invalid escape sequence")
-            case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
-          }
-        }
+        else parseAndHashEscapeSequence(in, hash)
       } else if ((b1 >> 5) == -2) {
         // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         val b2 = IterImpl.readByte(in)
@@ -265,6 +242,30 @@ object CodecBase {
   } catch {
     case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid byte or escape sequence")
   }
+
+  private def parseAndHashEscapeSequence(in: JsonIterator, hash: Long) =
+    IterImpl.readByte(in) match {
+      case 'b' => mix(hash, '\b')
+      case 'f' => mix(hash, '\f')
+      case 'n' => mix(hash, '\n')
+      case 'r' => mix(hash, '\r')
+      case 't' => mix(hash, '\t')
+      case '"' => mix(hash, '"')
+      case '/' => mix(hash, '/')
+      case '\\' => mix(hash, '\\')
+      case 'u' =>
+        val c1 = readHexDigitPresentedChar(in)
+        if (c1 < 2048) mix(hash, c1)
+        else if (!Character.isHighSurrogate(c1)) {
+          if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
+          mix(hash, c1)
+        } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
+          val c2 = readHexDigitPresentedChar(in)
+          if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
+          mix(mix(hash, c1), c2)
+        } else readObjectFieldAsHashError(in, "invalid escape sequence")
+      case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
+    }
 
   private def readHexDigitPresentedChar(in: JsonIterator): Char =
     ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
