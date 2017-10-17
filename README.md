@@ -22,7 +22,7 @@ to get maximum performance of JSON parsing & serialization.
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Need to materialize for all case classes used in nested structures
 - Key names can be overridden by field annotation
-- TODO: implicitly resolvable encoder(s)/decoder(s) for fields and their type parameter(s)
+- TODO: implicitly resolvable encoders/decoders for field types
 - TODO: efficient specialized immutable list & set for primitive types
 - TODO: fix problems with parsing of minimal ints & longs, and numbers with leading zeros, see details here: https://github.com/json-iterator/java/pull/116/files 
 
