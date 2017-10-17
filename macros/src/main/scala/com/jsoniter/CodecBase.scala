@@ -205,8 +205,6 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  private val hexDigits = "0123456789ABCDEF".toCharArray
-
   def readObjectFieldAsHash(in: JsonIterator): Long = try {
     if (IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
     var hash: Long = -8796714831421723037L
@@ -293,10 +291,15 @@ object CodecBase {
       (if (first) {
         first = false
         sb.append("0x")
-      } else sb.append(", 0x")).append(hexDigits((b & 0xFF) >> 4)).append(hexDigits(b & 0xF))
+      } else sb.append(", 0x")).append(hexDigits(b >>> 4)).append(hexDigits(b))
     }
     readObjectFieldAsHashError(in, sb.toString)
   }
+
+  private def hexDigits(n: Int): Char = {
+    val nibble = n & 15
+    nibble + 48 + (((9 - nibble) >> 31) & 7)
+  }.toChar
 
   private def readObjectFieldAsHashError(in: JsonIterator, msg: String): Nothing =
     throw in.reportError("readObjectFieldAsHash", msg)
