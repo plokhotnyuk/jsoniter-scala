@@ -291,12 +291,12 @@ object CodecBase {
       (if (first) {
         first = false
         sb.append("0x")
-      } else sb.append(", 0x")).append(hexDigits(b >>> 4)).append(hexDigits(b))
+      } else sb.append(", 0x")).append(hexDigit(b >>> 4)).append(hexDigit(b))
     }
     readObjectFieldAsHashError(in, sb.toString)
   }
 
-  private def hexDigits(n: Int): Char = {
+  private def hexDigit(n: Int): Char = {
     val nibble = n & 15
     nibble + 48 + (((9 - nibble) >> 31) & 7)
   }.toChar
