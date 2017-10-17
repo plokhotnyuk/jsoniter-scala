@@ -12,8 +12,8 @@ to get maximum performance of JSON parsing & serialization.
 - JSON parsing from `Array[Byte]` or `java.io.InputStream` using `com.jsoniter.JsonIterator`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
 - Support of UTF-8 encoding 
-- Parsing of encoded JSON field names, keys & values 
-- Configurable serialization of encoded JSON field names, keys & values to support other ASCII based encodings
+- Parsing of strings with escaped characters for JSON field names, keys & values 
+- Configurable serialization of strings with escaped UTF-8 characters to support other ASCII based encodings
 - Configurable indenting of output
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option` & Scala collections as class fields are supported
