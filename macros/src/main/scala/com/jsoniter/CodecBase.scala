@@ -71,7 +71,7 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
     decodeError(in, sb.toString())
   }
 
-  protected def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
+  protected def decodeError(in: JsonIterator, msg: String): Nothing = CodecBase.decodeError(in, msg)
 
   protected def readObjectFieldAsString(in: JsonIterator): String = {
     val x = CodecBase.readString(in)
@@ -214,7 +214,7 @@ object CodecBase {
   def readString(in: JsonIterator): String = try {
     val b = IterImpl.nextToken(in)
     if (b != '"') {
-      if (b != 'n') readStringError(in, "expect string or null, but " + b.toChar)
+      if (b != 'n') decodeError(in, "expect string or null, but " + b.toChar)
       else {
         IterImpl.skipFixedBytes(in, 3)
         null
@@ -252,7 +252,7 @@ object CodecBase {
       new String(in.reusableChars, 0, pos)
     }
   } catch {
-    case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid byte or escape sequence")
+    case _: ArrayIndexOutOfBoundsException => decodeError(in, "invalid byte or escape sequence")
   }
 
   private def parseEscapeSequence(in: JsonIterator, pos: Int): Int =
@@ -269,14 +269,14 @@ object CodecBase {
         val c1 = readHexDigitPresentedChar(in)
         if (c1 < 2048) putCharAt(in, pos, c1)
         else if (!Character.isHighSurrogate(c1)) {
-          if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
+          if (Character.isLowSurrogate(c1)) decodeError(in, "expect high surrogate character")
           putCharAt(in, pos, c1)
         } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
           val c2 = readHexDigitPresentedChar(in)
-          if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
+          if (!Character.isLowSurrogate(c2)) decodeError(in, "expect low surrogate character")
           putCharAt(in, putCharAt(in, pos, c1), c2)
-        } else readObjectFieldAsHashError(in, "invalid escape sequence")
-      case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
+        } else decodeError(in, "invalid escape sequence")
+      case _ => decodeError(in, "invalid escape sequence")
     }
 
   private def putCharAt(in: JsonIterator, pos: Int, ch: Char): Int = {
@@ -293,7 +293,7 @@ object CodecBase {
 
   // use 64-bit hash to minimize collisions in field name switch
   def readObjectFieldAsHash(in: JsonIterator): Long = try {
-    if (IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
+    if (IterImpl.nextToken(in) != '"') decodeError(in, "expect \"")
     var hash: Long = -8796714831421723037L
     var b1: Byte = 0
     while ({ b1 = IterImpl.readByte(in); b1 != '"' }) hash = {
@@ -323,10 +323,10 @@ object CodecBase {
         mix(mix(hash, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
       } else malformedBytes(in, b1)
     }
-    if (IterImpl.nextToken(in) != ':') readObjectFieldAsHashError(in, "expect :")
+    if (IterImpl.nextToken(in) != ':') decodeError(in, "expect :")
     hash
   } catch {
-    case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid byte or escape sequence")
+    case _: ArrayIndexOutOfBoundsException => decodeError(in, "invalid byte or escape sequence")
   }
 
   private def parseAndHashEscapeSequence(in: JsonIterator, hash: Long) =
@@ -343,14 +343,14 @@ object CodecBase {
         val c1 = readHexDigitPresentedChar(in)
         if (c1 < 2048) mix(hash, c1)
         else if (!Character.isHighSurrogate(c1)) {
-          if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
+          if (Character.isLowSurrogate(c1)) decodeError(in, "expect high surrogate character")
           mix(hash, c1)
         } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
           val c2 = readHexDigitPresentedChar(in)
-          if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
+          if (!Character.isLowSurrogate(c2)) decodeError(in, "expect low surrogate character")
           mix(mix(hash, c1), c2)
-        } else readObjectFieldAsHashError(in, "invalid escape sequence")
-      case _ => readObjectFieldAsHashError(in, "invalid escape sequence")
+        } else decodeError(in, "invalid escape sequence")
+      case _ => decodeError(in, "invalid escape sequence")
     }
 
   private def readHexDigitPresentedChar(in: JsonIterator): Char =
@@ -378,7 +378,7 @@ object CodecBase {
         sb.append("0x")
       } else sb.append(", 0x")).append(toHexDigit(b >>> 4)).append(toHexDigit(b))
     }
-    readObjectFieldAsHashError(in, sb.toString)
+    decodeError(in, sb.toString)
   }
 
   private def toHexDigit(n: Int): Char = {
@@ -386,9 +386,5 @@ object CodecBase {
     nibble + 48 + (((9 - nibble) >> 31) & 7)
   }.toChar
 
-  private def readStringError(in: JsonIterator, msg: String): Nothing =
-    throw in.reportError("readString", msg)
-
-  private def readObjectFieldAsHashError(in: JsonIterator, msg: String): Nothing =
-    throw in.reportError("readObjectFieldAsHash", msg)
+  private def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
 }
