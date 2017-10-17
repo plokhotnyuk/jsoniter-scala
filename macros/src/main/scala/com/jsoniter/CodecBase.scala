@@ -205,6 +205,7 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
+  // use 64-bit hash to minimize collisions in field name switch
   def readObjectFieldAsHash(in: JsonIterator): Long = try {
     if (IterImpl.nextToken(in) != '"') readObjectFieldAsHashError(in, "expect \"")
     var hash: Long = -8796714831421723037L
@@ -224,19 +225,13 @@ object CodecBase {
             case '/' => mix(hash, '/')
             case '\\' => mix(hash, '\\')
             case 'u' =>
-              val c1 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
-                (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
-                (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
-                IterImplString.translateHex(IterImpl.readByte(in))).toChar
-              if (c1  < 2048) mix(hash, c1)
+              val c1 = readHexDigitPresentedChar(in)
+              if (c1 < 2048) mix(hash, c1)
               else if (!Character.isHighSurrogate(c1)) {
                 if (Character.isLowSurrogate(c1)) readObjectFieldAsHashError(in, "expect high surrogate character")
                 mix(hash, c1)
               } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
-                val c2 = ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
-                  (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
-                  (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
-                  IterImplString.translateHex(IterImpl.readByte(in))).toChar
+                val c2 = readHexDigitPresentedChar(in)
                 if (!Character.isLowSurrogate(c2)) readObjectFieldAsHashError(in, "expect low surrogate character")
                 mix(mix(hash, c1), c2)
               } else readObjectFieldAsHashError(in, "invalid escape sequence")
@@ -271,10 +266,13 @@ object CodecBase {
     case _: ArrayIndexOutOfBoundsException => readObjectFieldAsHashError(in, "invalid byte or escape sequence")
   }
 
-  private def mix(hash: Long, ch: Char): Long = { // use 64-bit hash to minimize collisions in field name switch
-    val h = (hash ^ ch) * 1609587929392839161L
-    h ^ (h >>> 47)
-  }
+  private def readHexDigitPresentedChar(in: JsonIterator): Char =
+    ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
+      (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
+      (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
+      IterImplString.translateHex(IterImpl.readByte(in))).toChar
+
+  private def mix(hash: Long, ch: Char): Long =  (hash ^ (hash >>> 47)) * 1609587929392839161L ^ ch
 
   private def isMalformed2(b1: Byte, b2: Byte) = (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
 
@@ -291,12 +289,12 @@ object CodecBase {
       (if (first) {
         first = false
         sb.append("0x")
-      } else sb.append(", 0x")).append(hexDigit(b >>> 4)).append(hexDigit(b))
+      } else sb.append(", 0x")).append(toHexDigit(b >>> 4)).append(toHexDigit(b))
     }
     readObjectFieldAsHashError(in, sb.toString)
   }
 
-  private def hexDigit(n: Int): Char = {
+  private def toHexDigit(n: Int): Char = {
     val nibble = n & 15
     nibble + 48 + (((9 - nibble) >> 31) & 7)
   }.toChar
