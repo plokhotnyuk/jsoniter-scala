@@ -80,7 +80,7 @@ object Codec {
         } else if (tpe <:< typeOf[Option[_]]) {
           q"Option(${genReadKey(typeArg1(tpe))})"
         } else if (tpe =:= typeOf[String]) {
-          q"readObjectFieldAsString(in)"
+          q"this.readObjectFieldAsString(in)"
         } else if (tpe =:= typeOf[BigInt]) {
           q"readObjectFieldAsBigInt(in)"
         } else if (tpe =:= typeOf[BigDecimal]) {
@@ -89,7 +89,7 @@ object Codec {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"$enumSymbol.apply(readObjectFieldAsInt(in))"
         } else {
-          q"new $tpe(readObjectFieldAsString(in))"
+          q"new $tpe(this.readObjectFieldAsString(in))"
         }
 
       def genReadArray(empty: Tree, newBuilder: Tree, readVal: Tree, result: Tree = q"buf.result()"): Tree =
@@ -206,7 +206,7 @@ object Codec {
           genReadArray(q"$comp.empty[$tpe1]", q"val buf = $comp.newBuilder[$tpe1]",
             q"buf += ${genReadField(tpe1)}")
         } else if (tpe =:= typeOf[String]) {
-          q"in.readString()"
+          q"CodecBase.readString(in)"
         } else if (tpe =:= typeOf[BigInt]) {
           q"BigInt(in.readBigInteger())"
         } else if (tpe =:= typeOf[BigDecimal]) {
