@@ -44,6 +44,9 @@ class CodecBaseSpec extends WordSpec with Matchers {
   "CodecBase.readString" should {
     "parse null value" in {
       CodecBase.readString(JsonIterator.parse("null".getBytes)) shouldBe null
+      assert(intercept[Exception] {
+        CodecBase.readString(JsonIterator.parse("true".getBytes))
+      }.getMessage.contains("expect string or null"))
     }
     "parse long string" in {
       val text =
@@ -54,6 +57,17 @@ class CodecBaseSpec extends WordSpec with Matchers {
           |set of formatting rules for the portable representation of structured
           |data.""".stripMargin
       readString(text) shouldBe text
+    }
+    "throw parsing exception for boolean values & numbers" in {
+      assert(intercept[Exception] {
+        CodecBase.readString(JsonIterator.parse("true".getBytes))
+      }.getMessage.contains("expect string or null"))
+      assert(intercept[Exception] {
+        CodecBase.readString(JsonIterator.parse("false".getBytes))
+      }.getMessage.contains("expect string or null"))
+      assert(intercept[Exception] {
+        CodecBase.readString(JsonIterator.parse("12345".getBytes))
+      }.getMessage.contains("expect string or null"))
     }
     "get the same string value for escaped & non-escaped field names" in {
       readString("""Hello""") shouldBe readString("Hello")
