@@ -24,6 +24,7 @@ to get maximum performance of JSON parsing & serialization.
 - Key names can be overridden by field annotation
 - TODO: implicitly resolvable encoder(s)/decoder(s) for fields and their type parameter(s)
 - TODO: efficient specialized immutable list & set for primitive types
+- TODO: fix problems with parsing of minimal ints & longs, and numbers with leading zeros, see details here: https://github.com/json-iterator/java/pull/116/files 
 
 ## How to use
 
