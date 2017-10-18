@@ -18,7 +18,16 @@ import play.api.libs.json.{Json, _}
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5)
-@Fork(1)
+@Fork(value = 1, jvmArgs = Array(
+  "-server",
+  "-Xms1g",
+  "-Xmx1g",
+  "-XX:NewSize=512m",
+  "-XX:MaxNewSize=512m",
+  "-XX:InitialCodeCacheSize=256m",
+  "-XX:ReservedCodeCacheSize=256m",
+  "-XX:-UseBiasedLocking",
+  "-XX:+AlwaysPreTouch"))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class CodecBenchmark {
