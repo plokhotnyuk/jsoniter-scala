@@ -201,8 +201,7 @@ object Codec {
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadArray(q"$comp.empty[$tpe1]", q"val buf = $comp.newBuilder[$tpe1]",
-            q"buf += ${genReadField(tpe1)}")
+          genReadArray(q"$comp.empty[$tpe1]", q"val buf = $comp.newBuilder[$tpe1]", q"buf += ${genReadField(tpe1)}")
         } else if (tpe =:= typeOf[String]) {
           q"CodecBase.readString(in)"
         } else if (tpe =:= typeOf[BigInt]) withDecoderFor(tpe) {
@@ -213,9 +212,15 @@ object Codec {
               if (x ne null) BigDecimal(x) else null"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"""val v = in.readInt()
-              try $enumSymbol.apply(v) catch {
-                case _: java.util.NoSuchElementException => decodeError(in, "invalid enum value: " + v)
+          q"""nextToken(in) match {
+                case 'n' =>
+                  CodecBase.parseNull(in, null)
+                case _ =>
+                  unreadByte(in)
+                  val v = in.readInt()
+                  try $enumSymbol.apply(v) catch {
+                    case _: java.util.NoSuchElementException => decodeError(in, "invalid enum value: " + v)
+                  }
               }"""
         } else {
           q"in.read(classOf[$tpe])"
@@ -247,18 +252,16 @@ object Codec {
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(tpe, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe)))
         } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
-          q"out.writeRaw($m.toString)"
+          q"if ($m ne null) out.writeRaw($m.toString) else out.writeNull()"
         } else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"out.writeVal($m.id)"
+          q"if ($m ne null) out.writeVal($m.id) else out.writeNull()"
         } else {
-          q"out.writeVal($m)"
+          q"if ($m ne null) out.writeVal($m) else out.writeNull()"
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
         if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
-        } else if (tpe <:< definitions.AnyValTpe) {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
         } else if (tpe <:< typeOf[Option[_]]) {
           q"if (($m ne null) && $m.isDefined) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
@@ -266,7 +269,7 @@ object Codec {
         } else if (tpe <:< typeOf[Traversable[_]]) {
           q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else {
-          q"if ($m ne null) { first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)} }"
+          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
         }
 
       val tpe = weakTypeOf[A]

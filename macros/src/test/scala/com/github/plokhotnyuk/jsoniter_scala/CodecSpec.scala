@@ -256,10 +256,10 @@ class CodecSpec extends WordSpec with Matchers {
     "don't serialize and deserialize transient and non constructor defined fields" in {
       verifySerDeser(materialize[Transient], Transient("VVV"), """{"required":"VVV"}""".getBytes)
     }
-    "don't serialize fields null or none values" in {
-      verifySer(materialize[NullOrNoneValues],
-        NullOrNoneValues("VVV", null, null, NullOrNoneValues(null, null, null, null, None), None),
-        """{"str":"VVV","nv":{}}""".getBytes)
+    "don't serialize fields with none values" in {
+      verifySer(materialize[NullAndNoneValues],
+        NullAndNoneValues("VVV", null, null, null, NullAndNoneValues(null, null, null, null, null, None), None),
+        """{"str":"VVV","bi":null,"bd":null,"lt":null,"nv":{"str":null,"bi":null,"bd":null,"lt":null,"nv":null}}""".getBytes)
     }
     "don't serialize fields empty collections" in {
       verifySer(materialize[EmptyTraversables], EmptyTraversables(List(), Set(), List()), """{}""".getBytes)
@@ -407,7 +407,8 @@ case class Transient(required: String, @transient transient: String = "default")
   val ignored: String = required + "_" + transient
 }
 
-case class NullOrNoneValues(str: String, bi: BigInt, bd: BigDecimal, nv: NullOrNoneValues, opt: Option[String])
+case class NullAndNoneValues(str: String, bi: BigInt, bd: BigDecimal, lt: LocationType.LocationType,
+                             nv: NullAndNoneValues, opt: Option[String])
 
 case class EmptyTraversables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 
