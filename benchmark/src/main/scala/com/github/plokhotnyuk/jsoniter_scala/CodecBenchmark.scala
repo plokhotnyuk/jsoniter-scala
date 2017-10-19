@@ -31,7 +31,6 @@ import play.api.libs.json.{Json, _}
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class CodecBenchmark {
-
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     registerModule(new SimpleModule()
