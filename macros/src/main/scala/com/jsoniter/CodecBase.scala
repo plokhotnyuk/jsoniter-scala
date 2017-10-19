@@ -172,7 +172,7 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
   }
 
   protected def writeObjectField(out: JsonStream, x: BigInt): Unit =
-    if (x != null) {
+    if (x ne null) {
       writeParentheses(out)
       out.writeRaw(x.toString)
       writeParenthesesWithColon(out)

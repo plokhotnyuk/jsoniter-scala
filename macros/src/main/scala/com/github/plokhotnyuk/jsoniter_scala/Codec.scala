@@ -369,12 +369,11 @@ object Codec {
                     decodeError(in, "expect { or n")
                 }
               override def encode(obj: AnyRef, out: JsonStream): Unit =
-                if (obj eq null) out.writeNull()
-                else {
+                if (obj ne null) {
                   out.writeObjectStart()
                   ..$writeFieldsBlock
                   out.writeObjectEnd()
-                }
+                } else out.writeNull()
               ..${decoders.map { case (_, d) => d._2 }}
               ..${encoders.map { case (_, e) => e._2 }}
             }"""
