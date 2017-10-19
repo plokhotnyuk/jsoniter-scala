@@ -17,6 +17,8 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+    }
+    "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
@@ -57,12 +59,16 @@ class CodecSpec extends WordSpec with Matchers {
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":1000000,"dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for char"))
+    }
+    "deserialize too big numbers as infinity for floating point types" in {
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.PositiveInfinity, Float.PositiveInfinity),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e1000,"f":2.2e2000}""".getBytes)
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.NegativeInfinity, Float.NegativeInfinity),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":-1.1e1000,"f":-2.2e2000}""".getBytes)
+    }
+    "deserialize too small numbers as zero for floating point types" in {
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 0.0, 0.0f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
@@ -76,6 +82,30 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[StandardTypes],
         StandardTypes("VVV", BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
         """{"s":"VVV","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
+    }
+    "don't deserialize unexpected or invalid values" in {
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes],
+          StandardTypes(null, 1, 2),
+          """{"s":n,"bi":1,"bd":2}""".getBytes)
+      }.getMessage.contains("unexpected value"))
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes],
+          StandardTypes(null, 1, 2),
+          """{"s":nu,"bi":1,"bd":2}""".getBytes)
+      }.getMessage.contains("unexpected value"))
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes],
+          StandardTypes(null, 1, 2),
+          """{"s":nul,"bi":1,"bd":2}""".getBytes)
+      }.getMessage.contains("unexpected value"))
+/* FIXME consider using FSM based parser to avoid such kind of failures
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes],
+          StandardTypes(null, 1, 2),
+          """{"s":nulll,"bi":1,"bd":2}""".getBytes)
+      }.getMessage.contains("unexpected value"))
+*/
     }
     "don't deserialize invalid UTF-8 encoded strings" in {
       assert(intercept[JsonException] {
@@ -239,6 +269,11 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize null" in {
       verifyDeser(materialize[Unknown], null, """null""".getBytes)
+    }
+    "deserialize null values for required fields with standard types" in {
+      verifyDeser(materialize[StandardTypes],
+        StandardTypes(null, null, null),
+        """{"s":null,"bi":null,"bd":null}""".getBytes)
     }
     "throw exception in case of missing required fields detected during deserialization" in {
       assert(intercept[Exception] {

@@ -220,11 +220,13 @@ object CodecBase {
   def readString(in: JsonIterator): String =
     IterImpl.nextToken(in) match {
       case '"' => parseString(in)
-      case 'n' =>
-        IterImpl.skipFixedBytes(in, 3)
-        null
+      case 'n' => parseNull(in, null)
       case _ => decodeError(in, "expect string or null")
     }
+
+  def parseNull[A](in: JsonIterator, x: A): A =
+    if (IterImpl.readByte(in) != 'u' || IterImpl.readByte(in) != 'l' ||  IterImpl.readByte(in) != 'l') decodeError(in, "unexpected value")
+    else x
 
   private def parseString(in: JsonIterator): String = try {
     var pos: Int = 0

@@ -105,8 +105,7 @@ object Codec {
                   ..$result
                 }
               case 'n' =>
-                skipFixedBytes(in, 3)
-                ..$empty
+                CodecBase.parseNull(in, $empty)
               case _ =>
                 decodeError(in, "expect [ or n")
             }"""
@@ -124,8 +123,7 @@ object Codec {
                   ..$result
                 }
               case 'n' =>
-                skipFixedBytes(in, 3)
-                ..$empty
+                CodecBase.parseNull(in, $empty)
               case _ =>
                 decodeError(in, "expect { or n")
             }"""
@@ -207,10 +205,12 @@ object Codec {
             q"buf += ${genReadField(tpe1)}")
         } else if (tpe =:= typeOf[String]) {
           q"CodecBase.readString(in)"
-        } else if (tpe =:= typeOf[BigInt]) {
-          q"BigInt(in.readBigInteger())"
-        } else if (tpe =:= typeOf[BigDecimal]) {
-          q"BigDecimal(in.readBigDecimal())"
+        } else if (tpe =:= typeOf[BigInt]) withDecoderFor(tpe) {
+          q"""val x = in.readBigInteger()
+              if (x ne null) BigInt(x) else null"""
+        } else if (tpe =:= typeOf[BigDecimal]) withDecoderFor(tpe) {
+          q"""val x = in.readBigDecimal()
+              if (x ne null) BigDecimal(x) else null"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"""val v = in.readInt()
@@ -363,8 +363,7 @@ object Codec {
                     }
                     ..$checkReqVarsAndConstruct
                   case 'n' =>
-                    skipFixedBytes(in, 3)
-                    null
+                    CodecBase.parseNull(in, null)
                   case _ =>
                     decodeError(in, "expect { or n")
                 }
