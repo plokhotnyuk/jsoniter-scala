@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 
 import com.jsoniter.spi.{Config, JsonException, JsoniterSpi}
 import Codec._
@@ -150,6 +150,28 @@ class CodecSpec extends WordSpec with Matchers {
         ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap(2 -> 2), "3" -> ListMap(3 -> 3)),
           SortedMap(4L -> TreeMap(4.4 -> 4.4f), 5L -> TreeMap.empty[Double, Float])),
         """{"m":{"1":1.1},"hm":{"2":{"2":2},"3":{"3":3}},"sm":{"4":{"4.4":4.4},"5":{}}}""".getBytes)
+    }
+    "don't serialize null keys for maps" in {
+      assert(intercept[IOException] {
+        verifySer(materialize[MutableMaps],
+          MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(null.asInstanceOf[BigDecimal] -> 1)),
+            mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> "2")),
+            mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
+          """{"hm":{"true":{null:1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
+      }.getMessage.contains("key cannot be null"))
+      assert(intercept[IOException] {
+        verifySer(materialize[MutableMaps],
+          MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
+            mutable.Map(1.1f -> mutable.WeakHashMap(null.asInstanceOf[BigInt] -> "2")),
+            mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
+          """{"hm":{"true":{"1.1":1}},"m":{"1.1":{null:"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
+      }.getMessage.contains("key cannot be null"))
+      assert(intercept[IOException] {
+        verifySerDeser(materialize[ImmutableMaps],
+          ImmutableMaps(Map(1 -> 1.1), HashMap(null.asInstanceOf[String] -> ListMap(2 -> 2), "3" -> ListMap(3 -> 3)),
+            SortedMap(4L -> TreeMap(4.4 -> 4.4f), 5L -> TreeMap.empty[Double, Float])),
+          """{"m":{"1":1.1},"hm":{null:{"2":2},"3":{"3":3}},"sm":{"4":{"4.4":4.4},"5":{}}}""".getBytes)
+      }.getMessage.contains("key cannot be null"))
     }
     "serialize and deserialize mutable long maps" in {
       verifySerDeser(materialize[MutableLongMaps],

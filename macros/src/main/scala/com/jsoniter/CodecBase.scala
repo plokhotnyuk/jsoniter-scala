@@ -1,6 +1,6 @@
 package com.jsoniter
 
-import java.io.{InputStream, OutputStream}
+import java.io.{IOException, InputStream, OutputStream}
 
 import com.jsoniter.output.{JsonStream, JsonStreamPool}
 import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
@@ -73,8 +73,11 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 
   protected def decodeError(in: JsonIterator, msg: String): Nothing = CodecBase.decodeError(in, msg)
 
+  protected def encodeError(msg: String): Nothing = CodecBase.encodeError(msg)
+
   protected def readObjectFieldAsString(in: JsonIterator): String = {
-    val x = CodecBase.readString(in)
+    readParentheses(in)
+    val x = CodecBase.parseString(in)
     if (IterImpl.nextToken(in) != ':') decodeError(in, "expect :")
     x
   }
@@ -135,7 +138,8 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
   }
 
   protected def writeObjectField(out: JsonStream, x: String): Unit =
-    out.writeObjectField(x)
+    if (x ne null) out.writeObjectField(x)
+    else encodeError("key cannot be null")
 
   protected def writeObjectField(out: JsonStream, x: Boolean): Unit = {
     writeParentheses(out)
@@ -167,17 +171,19 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
     writeParenthesesWithColon(out)
   }
 
-  protected def writeObjectField(out: JsonStream, x: BigInt): Unit = {
-    writeParentheses(out)
-    out.writeRaw(x.toString)
-    writeParenthesesWithColon(out)
-  }
+  protected def writeObjectField(out: JsonStream, x: BigInt): Unit =
+    if (x != null) {
+      writeParentheses(out)
+      out.writeRaw(x.toString)
+      writeParenthesesWithColon(out)
+    } else encodeError("key cannot be null")
 
-  protected def writeObjectField(out: JsonStream, x: BigDecimal): Unit = {
-    writeParentheses(out)
-    out.writeRaw(x.toString)
-    writeParenthesesWithColon(out)
-  }
+  protected def writeObjectField(out: JsonStream, x: BigDecimal): Unit =
+    if (x ne null) {
+      writeParentheses(out)
+      out.writeRaw(x.toString)
+      writeParenthesesWithColon(out)
+    } else encodeError("key cannot be null")
 
   protected def toByte(in: JsonIterator, n: Int): Byte = {
     if (n > Byte.MaxValue || n < Byte.MinValue) decodeError(in, "value is too large for byte")
@@ -211,46 +217,49 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  def readString(in: JsonIterator): String = try {
-    val b = IterImpl.nextToken(in)
-    if (b != '"') {
-      if (b != 'n') decodeError(in, "expect string or null, but " + b.toChar)
-      else {
+  def readString(in: JsonIterator): String =
+    IterImpl.nextToken(in) match {
+      case '"' => parseString(in)
+      case 'n' =>
         IterImpl.skipFixedBytes(in, 3)
         null
-      }
-    } else {
-      var pos: Int = 0
-      var b1: Byte = 0
-      while ({ b1 = IterImpl.readByte(in); b1 != '"' }) pos = {
-        if (b1 >= 0) {
-          // 1 byte, 7 bits: 0xxxxxxx
-          if (b1 != '\\') putCharAt(in, pos, b1.toChar)
-          else parseEscapeSequence(in, pos)
-        } else if ((b1 >> 5) == -2) {
-          // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-          val b2 = IterImpl.readByte(in)
-          if (isMalformed2(b1, b2)) malformedBytes(in, b1, b2)
-          putCharAt(in, pos, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
-        } else if ((b1 >> 4) == -2) {
-          // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-          val b2 = IterImpl.readByte(in)
-          val b3 = IterImpl.readByte(in)
-          val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(in, b1, b2, b3)
-          putCharAt(in, pos, c)
-        } else if ((b1 >> 3) == -2) {
-          // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-          val b2 = IterImpl.readByte(in)
-          val b3 = IterImpl.readByte(in)
-          val b4 = IterImpl.readByte(in)
-          val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(in, b1, b2, b3, b4)
-          putCharAt(in, putCharAt(in, pos, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
-        } else malformedBytes(in, b1)
-      }
-      new String(in.reusableChars, 0, pos)
+      case _ => decodeError(in, "expect string or null")
     }
+
+  private def parseString(in: JsonIterator): String = try {
+    var pos: Int = 0
+    var b1: Byte = 0
+    while ({
+      b1 = IterImpl.readByte(in)
+      b1 != '"'
+    }) pos = {
+      if (b1 >= 0) {
+        // 1 byte, 7 bits: 0xxxxxxx
+        if (b1 != '\\') putCharAt(in, pos, b1.toChar)
+        else parseEscapeSequence(in, pos)
+      } else if ((b1 >> 5) == -2) {
+        // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        val b2 = IterImpl.readByte(in)
+        if (isMalformed2(b1, b2)) malformedBytes(in, b1, b2)
+        putCharAt(in, pos, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
+      } else if ((b1 >> 4) == -2) {
+        // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        val b2 = IterImpl.readByte(in)
+        val b3 = IterImpl.readByte(in)
+        val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(in, b1, b2, b3)
+        putCharAt(in, pos, c)
+      } else if ((b1 >> 3) == -2) {
+        // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        val b2 = IterImpl.readByte(in)
+        val b3 = IterImpl.readByte(in)
+        val b4 = IterImpl.readByte(in)
+        val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(in, b1, b2, b3, b4)
+        putCharAt(in, putCharAt(in, pos, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
+      } else malformedBytes(in, b1)
+    }
+    new String(in.reusableChars, 0, pos)
   } catch {
     case _: ArrayIndexOutOfBoundsException => decodeError(in, "invalid byte or escape sequence")
   }
@@ -387,4 +396,6 @@ object CodecBase {
   }.toChar
 
   private def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
+
+  private def encodeError(msg: String): Nothing = throw new IOException("encode: " + msg)
 }
