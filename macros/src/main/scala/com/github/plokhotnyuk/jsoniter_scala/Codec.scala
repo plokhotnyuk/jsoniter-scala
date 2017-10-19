@@ -353,7 +353,7 @@ object Codec {
                   case '{' =>
                     ..$reqVars
                     ..$readVars
-                    if (nextToken(in).!=('}')) {
+                    if (nextToken(in) != '}') {
                       unreadByte(in)
                       do {
                         CodecBase.readObjectFieldAsHash(in) match {

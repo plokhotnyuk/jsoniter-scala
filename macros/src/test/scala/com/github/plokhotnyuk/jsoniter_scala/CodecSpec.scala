@@ -149,7 +149,7 @@ class CodecSpec extends WordSpec with Matchers {
         Options(Option("VVV"), Option(BigInt(4)), Option(Set())),
         """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
     }
-    "serialize and deserialize mutable iterables" in {
+    "serialize and deserialize mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
         MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
           mutable.ArrayBuffer(mutable.Set(BigInt(4)), mutable.Set.empty[BigInt]),
@@ -162,7 +162,7 @@ class CodecSpec extends WordSpec with Matchers {
           mutable.ResizableArray(mutable.Seq(17.17, 18.18))),
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]],"ls":[15,16],"ra":[[17.17,18.18]]}""".getBytes)
     }
-    "serialize and deserialize immutable iterables" in {
+    "serialize and deserialize immutable traversables" in {
       verifySerDeser(materialize[ImmutableTraversables],
         ImmutableTraversables(List(ListSet("1")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
           IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Traversable(10L, 11L))),
@@ -270,10 +270,23 @@ class CodecSpec extends WordSpec with Matchers {
     "serialize and deserialize null" in {
       verifyDeser(materialize[Unknown], null, """null""".getBytes)
     }
-    "deserialize null values for required fields with standard types" in {
+    "deserialize null values for standard types" in {
       verifyDeser(materialize[StandardTypes],
         StandardTypes(null, null, null),
         """{"s":null,"bi":null,"bd":null}""".getBytes)
+    }
+    "deserialize null values for standard types (but empty values for container types) of traversable values" in {
+      verifyDeser(materialize[ImmutableTraversables],
+        ImmutableTraversables(List(ListSet(null)), Queue(Set(BigInt(4), null, BigInt(6))),
+          IndexedSeq(), Stream(TreeSet()), Vector(Traversable())),
+        """{"l":[[null]],"q":[[4,null,6]],"is":null,"s":[null],"v":[null]}""".getBytes)
+    }
+    "deserialize null values for standard types (but empty values for container types) of map values" in {
+      verifyDeser(materialize[MutableMaps],
+        MutableMaps(mutable.HashMap(),
+          mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> null.asInstanceOf[String])),
+          mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(), 2.2 -> mutable.LinkedHashMap())),
+        """{"hm":null,"m":{"1.1":{"2":null}},"ohm":{"1.1":null,"2.2":null}}""".getBytes)
     }
     "throw exception in case of missing required fields detected during deserialization" in {
       assert(intercept[Exception] {

@@ -302,7 +302,7 @@ object CodecBase {
     pos + 1
   }
 
-  // use 64-bit hash to minimize collisions in field name switch
+  // using 64-bit hash greatly reducing collisions in field name switch
   def readObjectFieldAsHash(in: JsonIterator): Long = try {
     if (IterImpl.nextToken(in) != '"') decodeError(in, "expect \"")
     var hash: Long = -8796714831421723037L
@@ -370,7 +370,8 @@ object CodecBase {
       (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
       IterImplString.translateHex(IterImpl.readByte(in))).toChar
 
-  private def mix(hash: Long, ch: Char): Long =  (hash ^ (hash >>> 47)) * 1609587929392839161L ^ ch
+  // mixing highest 17 bits to lowest reduces probability of zeroing and loosing part of hash from preceding chars
+  private def mix(hash: Long, ch: Char): Long = (hash ^ (hash >>> 47)) * 1609587929392839161L ^ ch
 
   private def isMalformed2(b1: Byte, b2: Byte) = (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
 
@@ -394,7 +395,7 @@ object CodecBase {
 
   private def toHexDigit(n: Int): Char = {
     val nibble = n & 15
-    nibble + 48 + (((9 - nibble) >> 31) & 7)
+    nibble + 48 + (((9 - nibble) >> 31) & 7) // branchless conversion of nibble to hex digit
   }.toChar
 
   private def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
