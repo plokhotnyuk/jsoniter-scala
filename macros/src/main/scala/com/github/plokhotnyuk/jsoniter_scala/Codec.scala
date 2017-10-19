@@ -239,9 +239,7 @@ object Codec {
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
-        if (tpe <:< definitions.AnyValTpe) {
-          q"out.writeVal($m)"
-        } else if (tpe <:< typeOf[Option[_]]) {
+        if (tpe <:< typeOf[Option[_]]) {
           genWriteVal(q"$m.get", typeArg1(tpe))
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) withEncoderFor(tpe, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe)))
@@ -251,23 +249,19 @@ object Codec {
           genWriteArray(q"x", q"out.writeVal(x)")
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(tpe, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe)))
-        } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
-          q"if ($m ne null) out.writeRaw($m.toString) else out.writeNull()"
-        } else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"if ($m ne null) out.writeVal($m.id) else out.writeNull()"
+        } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) withEncoderFor(tpe, m) {
+          q"if (x ne null) out.writeRaw(x.toString) else out.writeNull()"
+        } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
+          q"if (x ne null) out.writeVal(x.id) else out.writeNull()"
         } else {
-          q"if ($m ne null) out.writeVal($m) else out.writeNull()"
+          q"out.writeVal($m)"
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
         if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
-        } else if (tpe <:< typeOf[Option[_]]) {
-          q"if (($m ne null) && $m.isDefined) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
-        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
-          q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
-        } else if (tpe <:< typeOf[Traversable[_]]) {
-          q"if (($m ne null) && $m.nonEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
+        } else if (tpe <:< typeOf[Option[_]] || tpe <:< typeOf[scala.collection.Map[_, _]] || tpe <:< typeOf[Traversable[_]]) {
+          q"if (($m ne null) && !$m.isEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else {
           q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
         }
