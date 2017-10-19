@@ -18,7 +18,7 @@ to get maximum performance of JSON parsing & serialization.
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option` & Scala collections as class fields are supported
 - Fields with default values that defined in constrictor are optional, other fields are required (no special annotation required)
-- Fields with null values, default values, empty options & empty collections are not serialized to provide sparse output 
+- Fields with default values, empty options & empty collections are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Need to materialize for all case classes used in nested structures
 - Key names can be overridden by field annotation
