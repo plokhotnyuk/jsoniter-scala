@@ -22,6 +22,7 @@ to get maximum performance of JSON parsing & serialization.
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Need to materialize for all case classes used in nested structures
 - Key names can be overridden by field annotation
+- TODO: generate encoders/decoders recursively from top-level type
 - TODO: support on top-level for collections & values to avoid wrapping to redundant case classes
 - TODO: implicitly resolvable encoders/decoders for field types
 - TODO: efficient specialized immutable list & set for primitive types
@@ -89,7 +90,7 @@ sbt -no-colors clean 'benchmark/jmh:run -prof gc .*CodecBenchmark.*' >results.tx
 
 Currently [./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) contains results for the following environment:
 
-Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_112-b15 64-bit
+Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_152-b16 64-bit
 
 
 ## Acknowledges
