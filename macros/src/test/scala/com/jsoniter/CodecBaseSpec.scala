@@ -44,9 +44,9 @@ class CodecBaseSpec extends WordSpec with Matchers {
   "CodecBase.readString" should {
     "parse null value" in {
       CodecBase.readString(JsonIterator.parse("null".getBytes)) shouldBe null
-      assert(intercept[Exception] {
-        CodecBase.readString(JsonIterator.parse("true".getBytes))
-      }.getMessage.contains("expect string or null"))
+    }
+    "return supplied default value instead of null value" in {
+      CodecBase.readString(JsonIterator.parse("null".getBytes), "VVV") shouldBe "VVV"
     }
     "parse long string" in {
       val text =

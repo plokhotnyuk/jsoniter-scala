@@ -307,7 +307,10 @@ object CodecBase {
     if (IterImpl.nextToken(in) != '"') decodeError(in, "expect \"")
     var hash: Long = -8796714831421723037L
     var b1: Byte = 0
-    while ({ b1 = IterImpl.readByte(in); b1 != '"' }) hash = {
+    while ({
+      b1 = IterImpl.readByte(in)
+      b1 != '"'
+    }) hash = {
       if (b1 >= 0) {
         // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') mix(hash, b1.toChar)
