@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -10,10 +11,14 @@ import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
 import org.openjdk.jmh.annotations._
+import io.circe._
+import io.circe.generic.auto._
+import io.circe.parser._
+import io.circe.syntax._
+import play.api.libs.json.{Json, _}
 
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap, Map}
 import scala.collection.mutable
-import play.api.libs.json.{Json, _}
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
@@ -73,6 +78,10 @@ class CodecBenchmark {
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
 
   @Benchmark
+  def readAnyRefsCirce(): AnyRefs =
+    decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+
+  @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
 
   @Benchmark
@@ -80,6 +89,12 @@ class CodecBenchmark {
 
   @Benchmark
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
+
+/* FIXME: Circe doesn`t support parsing of bitsets
+  @Benchmark
+  def readBitSetsCirce(): BitSets =
+    decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+*/
 
   @Benchmark
   def readBitSetsJackson(): BitSets = jacksonMapper.readValue[BitSets](bitSetsJson)
@@ -91,6 +106,10 @@ class CodecBenchmark {
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
 
   @Benchmark
+  def readIterablesCirce(): Iterables =
+    decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+
+  @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
 
   @Benchmark
@@ -98,6 +117,10 @@ class CodecBenchmark {
 
   @Benchmark
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
+
+  @Benchmark
+  def readMapsCirce(): Maps =
+    decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
 
   @Benchmark
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
@@ -108,6 +131,12 @@ class CodecBenchmark {
   @Benchmark
   def readMapsPlay(): Maps = Json.parse(mapsJson).as[Maps](mapsFormat)
 
+/* FIXME: Circe doesn`t support parsing of mutable maps
+  @Benchmark
+  def readMutableMapsCirce(): MutableMaps =
+    decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+*/
+
   @Benchmark
   def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJson)
 
@@ -117,8 +146,13 @@ class CodecBenchmark {
   @Benchmark
   def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJson).as[MutableMaps](mutableMapsFormat)
 
-  //FIXME: Jackson-module-scala doesn`t support parsing of int & long maps
-/*
+/* FIXME: Circe doesn`t support parsing of int & long maps
+  @Benchmark
+  def readIntAndLongMapsCirce(): IntAndLongMaps =
+    decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+*/
+
+/* FIXME: Jackson-module-scala doesn`t support parsing of int & long maps
   @Benchmark
   def readIntAndLongMapsJackson(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](intAndLongMapsJson)
 */
@@ -130,6 +164,10 @@ class CodecBenchmark {
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
+  def readPrimitivesCirce(): Primitives =
+    decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+
+  @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
 
   @Benchmark
@@ -139,6 +177,9 @@ class CodecBenchmark {
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
 
   @Benchmark
+  def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+  @Benchmark
   def writeAnyRefsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(anyRefsObj)
 
   @Benchmark
@@ -146,6 +187,11 @@ class CodecBenchmark {
 
   @Benchmark
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
+
+/* FIXME: Circe doesn`t support writing of bitsets
+  @Benchmark
+  def writeBitSetsCirce(): Array[Byte] = bitSetsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+*/
 
   @Benchmark
   def writeBitSetsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(bitSetsObj)
@@ -157,6 +203,9 @@ class CodecBenchmark {
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
 
   @Benchmark
+  def writeIterablesCirce(): Array[Byte] = iterablesObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+  @Benchmark
   def writeIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(iterablesObj)
 
   @Benchmark
@@ -164,6 +213,9 @@ class CodecBenchmark {
 
   @Benchmark
   def writeIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(iterablesObj)(iterablesFormat))
+
+  @Benchmark
+  def writeMapsCirce(): Array[Byte] = mapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
   @Benchmark
   def writeMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mapsObj)
@@ -175,6 +227,9 @@ class CodecBenchmark {
   def writeMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mapsObj)(mapsFormat))
 
   @Benchmark
+  def writeMutableMapsCirce(): Array[Byte] = mutableMapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+  @Benchmark
   def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
 
   @Benchmark
@@ -182,6 +237,11 @@ class CodecBenchmark {
 
   @Benchmark
   def writeMutableMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableMapsObj)(mutableMapsFormat))
+
+/* FIXME: Circe doesn`t support writing of int & long maps
+  @Benchmark
+  def writeIntAndLongMapsCirce(): Array[Byte] = intAndLongMapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+*/
 
   @Benchmark
   def writeIntAndLongMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intAndLongMapsObj)
@@ -191,6 +251,9 @@ class CodecBenchmark {
 
   @Benchmark
   def writeIntAndLongMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(intAndLongMapsObj)(intAndLongMapsFormat))
+
+  @Benchmark
+  def writePrimitivesCirce(): Array[Byte] = primitivesObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
   @Benchmark
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
