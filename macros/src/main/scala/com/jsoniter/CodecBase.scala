@@ -217,16 +217,16 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  def readString(in: JsonIterator): String =
+  def readString(in: JsonIterator, default: String = null): String =
     IterImpl.nextToken(in) match {
       case '"' => parseString(in)
-      case 'n' => parseNull(in, null)
+      case 'n' => parseNull(in, default)
       case _ => decodeError(in, "expect string or null")
     }
 
-  def parseNull[A](in: JsonIterator, x: A): A =
+  def parseNull[A](in: JsonIterator, default: A): A =
     if (IterImpl.readByte(in) != 'u' || IterImpl.readByte(in) != 'l' ||  IterImpl.readByte(in) != 'l') decodeError(in, "unexpected value")
-    else x
+    else default
 
   private def parseString(in: JsonIterator): String = try {
     var pos: Int = 0

@@ -183,9 +183,11 @@ class CodecBenchmark {
   @Benchmark
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
+/* FIXME: Circe parses chars from strings
   @Benchmark
   def readPrimitivesCirce(): Primitives =
     decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+*/
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)

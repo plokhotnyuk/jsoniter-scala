@@ -155,8 +155,8 @@ class CodecSpec extends WordSpec with Matchers {
       val obj = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
       verifySer(arrayCodec, obj, json)
       val parsedObj = arrayCodec.read(json)
-      parsedObj.aa.toSeq.map(_.toSeq) shouldBe obj.aa.toSeq.map(_.toSeq)
-      parsedObj.a.toSeq shouldBe obj.a.toSeq
+      parsedObj.aa.deep shouldBe obj.aa.deep
+      parsedObj.a.deep shouldBe obj.a.deep
     }
     "serialize and deserialize mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
@@ -260,7 +260,15 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[KeyOverridden], KeyOverridden("VVV"), """{"new_key":"VVV"}""".getBytes)
     }
     "deserialize but don't serialize default values that defined for fields" in {
-      verifySerDeser(materialize[Defaults], Defaults(), """{}""".getBytes)
+      val defaultsCodec = materialize[Defaults]
+      val obj = Defaults()
+      val json = """{}""".getBytes
+      verifySer(defaultsCodec, obj, json)
+      val parsedObj = defaultsCodec.read(json)
+      parsedObj.s shouldBe obj.s
+      parsedObj.i shouldBe obj.i
+      parsedObj.bi shouldBe obj.bi
+      parsedObj.a.deep shouldBe obj.a.deep
     }
     "don't serialize and deserialize transient and non constructor defined fields" in {
       verifySerDeser(materialize[Transient], Transient("VVV"), """{"required":"VVV"}""".getBytes)
@@ -412,7 +420,8 @@ case class Indented(f1: String, f2: List[String])
 
 case class UTF8KeysAndValues(გასაღები: String)
 
-case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = BigInt(-1))
+case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = BigInt(-1), l: List[Int] = List(0),
+                    a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
 
 case class Transient(required: String, @transient transient: String = "default") {
   val ignored: String = required + "_" + transient

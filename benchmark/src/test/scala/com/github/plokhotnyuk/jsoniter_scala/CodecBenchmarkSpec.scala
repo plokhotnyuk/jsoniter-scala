@@ -93,7 +93,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
   private def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
 
   private def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
-    parsedObj.aa.toSeq.map(_.toSeq) shouldBe obj.aa.toSeq.map(_.toSeq)
-    parsedObj.a.toSeq shouldBe obj.a.toSeq
+    parsedObj.aa.deep shouldBe obj.aa.deep
+    parsedObj.a.deep shouldBe obj.a.deep
   }
 }
