@@ -13,6 +13,11 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readAnyRefsJackson() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsJsoniter() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsPlay() shouldBe benchmark.anyRefsObj
+      assertArrays(benchmark.readArraysCirce(), benchmark.arraysObj)
+      assertArrays(benchmark.readArraysJackson(), benchmark.arraysObj)
+      assertArrays(benchmark.readArraysJsoniter(), benchmark.arraysObj)
+      // FIXME: Add Play JSON format for arrays
+      //assertArrays(benchmark.readArraysPlay(), benchmark.arraysObj)
       //FIXME: Circe doesn't support parsing of bitsets
       // benchmark.readBitSetsCirce() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
@@ -50,6 +55,11 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeAnyRefsJackson()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeAnyRefsJsoniter()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeAnyRefsPlay()) shouldBe toString(benchmark.anyRefsJson)
+      toString(benchmark.writeArraysCirce()) shouldBe toString(benchmark.arraysJson)
+      toString(benchmark.writeArraysJackson()) shouldBe toString(benchmark.arraysJson)
+      toString(benchmark.writeArraysJsoniter()) shouldBe toString(benchmark.arraysJson)
+      // FIXME: Add Play JSON format for arrays
+      //toString(benchmark.writeArraysPlay()) shouldBe toString(benchmark.arraysJson)
       //FIXME: Circe doesn't support writing of bitsets
       // toString(benchmark.writeBitSetsCirce()) shouldBe toString(benchmark.bitSetsJson)
       toString(benchmark.writeBitSetsJackson()) shouldBe toString(benchmark.bitSetsJson)
@@ -80,5 +90,10 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
     }
   }
 
-  def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
+  private def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
+
+  private def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
+    parsedObj.aa.toSeq.map(_.toSeq) shouldBe obj.aa.toSeq.map(_.toSeq)
+    parsedObj.a.toSeq shouldBe obj.a.toSeq
+  }
 }

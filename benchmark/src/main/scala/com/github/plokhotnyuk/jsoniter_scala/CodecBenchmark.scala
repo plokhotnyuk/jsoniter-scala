@@ -48,6 +48,9 @@ class CodecBenchmark {
   }
   val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
+  val arraysCodec: Codec[Arrays] = materialize[Arrays]
+  // FIXME Add Play JSON format for arrays
+  //val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
   val bitSetsCodec: Codec[BitSets] = materialize[BitSets]
   val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
   val iterablesCodec: Codec[Iterables] = materialize[Iterables]
@@ -61,6 +64,7 @@ class CodecBenchmark {
   val primitivesCodec: Codec[Primitives] = materialize[Primitives]
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
+  val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
   val bitSetsJson: Array[Byte] = """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes
   val iterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
   val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
@@ -68,6 +72,7 @@ class CodecBenchmark {
   val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":120,"dbl":1.1,"f":2.5}""".getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
+  val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
   val iterablesObj: Iterables = Iterables(List("1", "2", "3"), Set(4, 5, 6), List(Set(1, 2), Set()))
   val mapsObj: Maps = Maps(HashMap("1" -> 1.1, "2" -> 2.2), Map(1 -> HashMap(3L -> 3.3), 2 -> HashMap.empty[Long, Double]))
@@ -89,6 +94,21 @@ class CodecBenchmark {
 
   @Benchmark
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
+
+  @Benchmark
+  def readArraysCirce(): Arrays =
+    decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+
+  @Benchmark
+  def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
+
+  @Benchmark
+  def readArraysJsoniter(): Arrays = arraysCodec.read(arraysJson)
+
+/* FIXME Add Play JSON format for arrays
+  @Benchmark
+  def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
+*/
 
 /* FIXME: Circe doesn`t support parsing of bitsets
   @Benchmark
@@ -188,6 +208,20 @@ class CodecBenchmark {
   @Benchmark
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
 
+  @Benchmark
+  def writeArraysCirce(): Array[Byte] = arraysObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+  @Benchmark
+  def writeArraysJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(arraysObj)
+
+  @Benchmark
+  def writeArraysJsoniter(): Array[Byte] = arraysCodec.write(arraysObj)
+
+/* FIXME: Add Play JSON format for arrays
+  @Benchmark
+  def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj)(arraysFormat))
+*/
+
 /* FIXME: Circe doesn`t support writing of bitsets
   @Benchmark
   def writeBitSetsCirce(): Array[Byte] = bitSetsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -266,6 +300,8 @@ class CodecBenchmark {
 }
 
 case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
+
+case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
 case class Iterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 

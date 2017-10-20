@@ -54,6 +54,8 @@ object Codec {
           q"${companion(tpe)}.empty"
         } else if (tpe <:< typeOf[Traversable[_]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
+        } else if (tpe <:< typeOf[Array[_]]) {
+          q"new Array[${typeArg1(tpe)}](0)"
         } else {
           q"null"
         }
@@ -202,6 +204,10 @@ object Codec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadArray(q"$comp.empty[$tpe1]", q"val buf = $comp.newBuilder[$tpe1]", q"buf += ${genReadField(tpe1)}")
+        } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(tpe) {
+          val tpe1 = typeArg1(tpe)
+          genReadArray(q"new Array[$tpe1](0)", q"val buf = collection.mutable.ArrayBuilder.make[$tpe1]",
+            q"buf += ${genReadField(tpe1)}")
         } else if (tpe =:= typeOf[String]) {
           q"CodecBase.readString(in)"
         } else if (tpe =:= typeOf[BigInt]) withDecoderFor(tpe) {
@@ -249,6 +255,17 @@ object Codec {
           genWriteArray(q"x", q"out.writeVal(x)")
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(tpe, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe)))
+        } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(tpe, m) {
+          q"""out.writeArrayStart()
+              val l = x.length
+              var i = 0
+              var first = true
+              while (i < l) {
+                first = writeSep(out, first)
+                ..${genWriteVal(q"x(i)", typeArg1(tpe))}
+                i += 1
+              }
+              out.writeArrayEnd()"""
         } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeRaw(x.toString) else out.writeNull()"
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {

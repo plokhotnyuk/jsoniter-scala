@@ -149,6 +149,15 @@ class CodecSpec extends WordSpec with Matchers {
         Options(Option("VVV"), Option(BigInt(4)), Option(Set())),
         """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
     }
+    "serialize and deserialize arrays" in {
+      val arrayCodec = materialize[Arrays]
+      val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
+      val obj = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
+      verifySer(arrayCodec, obj, json)
+      val parsedObj = arrayCodec.read(json)
+      parsedObj.aa.toSeq.map(_.toSeq) shouldBe obj.aa.toSeq.map(_.toSeq)
+      parsedObj.a.toSeq shouldBe obj.a.toSeq
+    }
     "serialize and deserialize mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
         MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
@@ -367,6 +376,8 @@ case class Enums(lt: LocationType.LocationType)
 case class ValueClassTypes(uid: UserId, oid: OrderId)
 
 case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]])
+
+case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
 case class MutableTraversables(ml: mutable.MutableList[mutable.SortedSet[String]],
                                ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
