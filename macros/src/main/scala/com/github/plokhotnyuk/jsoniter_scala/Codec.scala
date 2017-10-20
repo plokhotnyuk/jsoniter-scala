@@ -79,8 +79,6 @@ object Codec {
           q"readObjectFieldAsFloat(in)"
         } else if (isValueClass(tpe)) {
           q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
-        } else if (tpe <:< typeOf[Option[_]]) {
-          q"Option(${genReadKey(typeArg1(tpe))})"
         } else if (tpe =:= typeOf[String]) {
           q"this.readObjectFieldAsString(in)"
         } else if (tpe =:= typeOf[BigInt]) {
@@ -91,7 +89,7 @@ object Codec {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"$enumSymbol.apply(readObjectFieldAsInt(in))"
         } else {
-          q"new $tpe(this.readObjectFieldAsString(in))"
+          c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
         }
 
       def genReadArray(empty: Tree, newBuilder: Tree, readVal: Tree, result: Tree = q"buf.result()"): Tree =

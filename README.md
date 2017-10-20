@@ -17,6 +17,7 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable indenting of output
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option`, Scala collections & arrays as class fields are supported
+- Types that supported as map keys: primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for them  
 - Fields with default values that defined in constrictor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
@@ -24,7 +25,7 @@ to get maximum performance of JSON parsing & serialization.
 - Key names can be overridden by field annotation
 - TODO: generate encoders/decoders recursively from top-level type
 - TODO: support on top-level for values, collections & arrays to avoid wrapping to redundant case classes
-- TODO: implicitly resolvable encoders/decoders for field types
+- TODO: implicitly resolvable encoders/decoders for field types and map keys
 - TODO: efficient specialized immutable list & set for primitive types
 - TODO: fix problems with parsing of minimal ints & longs, and numbers with leading zeros, see details here: https://github.com/json-iterator/java/pull/116/files 
 
