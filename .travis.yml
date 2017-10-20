@@ -10,11 +10,6 @@ scala:
 
 jdk: oraclejdk8
 
-addons:
-  apt:
-    packages:
-      - oracle-java9-installer
-
 script:
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
   - sbt -no-colors ++$TRAVIS_SCALA_VERSION 'benchmark/jmh:run -prof gc .*CodecBenchmark.*'
