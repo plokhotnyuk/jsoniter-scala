@@ -8,7 +8,14 @@ scala:
   - 2.11.11
   - 2.12.4
 
-jdk: oraclejdk8
+jdk:
+  - oraclejdk8
+  - oraclejdk9
+
+addons:
+  apt:
+    packages:
+      - oracle-java9-installer
 
 script:
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
