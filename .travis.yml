@@ -1,6 +1,6 @@
-sudo: required
-dist: precise
-group: edge
+sudo: false
+
+dist: trusty
 
 language: scala
 
@@ -8,9 +8,7 @@ scala:
   - 2.11.11
   - 2.12.4
 
-jdk:
-  - oraclejdk8
-  - oraclejdk9
+jdk: oraclejdk8
 
 addons:
   apt:
