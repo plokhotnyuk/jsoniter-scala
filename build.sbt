@@ -28,7 +28,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
 lazy val macros = project
   .settings(
     libraryDependencies ++= Seq(
-      "com.jsoniter" % "jsoniter" % "0.9.16",
+      "com.jsoniter" % "jsoniter" % "0.9.17",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.javassist" % "javassist" % "3.21.0-GA" % Optional,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test

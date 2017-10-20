@@ -27,7 +27,6 @@ to get maximum performance of JSON parsing & serialization.
 - TODO: support on top-level for values, collections & arrays to avoid wrapping to redundant case classes
 - TODO: implicitly resolvable encoders/decoders for field types and map keys
 - TODO: efficient specialized immutable list & set for primitive types
-- TODO: fix problems with parsing of minimal ints & longs, and numbers with leading zeros, see details here: https://github.com/json-iterator/java/pull/116/files 
 
 ## How to use
 

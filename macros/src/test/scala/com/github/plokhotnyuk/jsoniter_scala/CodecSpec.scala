@@ -17,6 +17,16 @@ class CodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      verifyDeser(materialize[Primitives],
+        Primitives(-128.toByte, -32768.toShort, -2147483648, -9223372036854775808L, bl = true, 'V', -1.1, -2.2f),
+        """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":86,"dbl":-1.1,"f":-2.2}""".getBytes)
+    }
+    "don't deserialize numbers with leading zeroes" in {
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":01000,"s":02,"i":03,"l":04,"bl":true,"ch":086,"dbl":01.1,"f":02.2}""".getBytes)
+      }.getMessage.contains("leading zero is invalid"))
     }
     "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {
@@ -34,17 +44,12 @@ class CodecSpec extends WordSpec with Matchers {
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3000000000,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for int"))
-/* FIXME parsing of Int.MinValue fails with "decode: missing required field(s)"
-      verifyDeser(materialize[Primitives],
-        Primitives(1.toByte, 2.toShort, -2147483648, 4L, bl = true, 'V', 1.1, 2.2f),
-        """{"b":1,"s":2,"i":-2147483648,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-*/
 /* FIXME parsing of too big values for long types should throw exception
-      assertThrows[JsonException] {
+      assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":40000000000000000000,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }
+      }.getMessage.contains("value is too large for int"))
 */
 /* FIXME parsing of invalid Boolean value fails with "decode: missing required field(s)"
       verifyDeser(materialize[Primitives],

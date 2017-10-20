@@ -195,9 +195,9 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
     else n.toChar
   }
 
-  protected def toShort(in: JsonIterator, n: Int): Byte = {
+  protected def toShort(in: JsonIterator, n: Int): Short = {
     if (n > Short.MaxValue || n < Short.MinValue) decodeError(in, "value is too large for short")
-    else n.toByte
+    else n.toShort
   }
 
   private def readParentheses(in: JsonIterator): Unit =
