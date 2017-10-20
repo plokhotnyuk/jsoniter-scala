@@ -1,6 +1,6 @@
-# by default Travis uses JDK 8u31, which is much too old for Scala 2.12 (versions before 8u102 have issues - https://issues.scala-lang.org/browse/SI-9828)
-dist: trusty
-sudo: false
+sudo: required
+dist: precise
+group: edge
 
 language: scala
 
