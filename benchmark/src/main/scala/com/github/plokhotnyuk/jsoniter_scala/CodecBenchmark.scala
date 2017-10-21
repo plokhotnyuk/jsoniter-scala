@@ -63,6 +63,8 @@ class CodecBenchmark {
   val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
   val primitivesCodec: Codec[Primitives] = materialize[Primitives]
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
+  val extractFieldsCodec: Codec[ExtractFields] = materialize[ExtractFields]
+  val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
   val bitSetsJson: Array[Byte] = """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes
@@ -71,6 +73,8 @@ class CodecBenchmark {
   val mutableMapsJson: Array[Byte] = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":120,"dbl":1.1,"f":2.5}""".getBytes
+  val extractFieldsJson: Array[Byte] =
+    """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}""".getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
@@ -81,6 +85,7 @@ class CodecBenchmark {
   val intAndLongMapsObj: IntAndLongMaps = IntAndLongMaps(IntMap(1 -> 1.1, 2 -> 2.2),
     mutable.LongMap(1L -> LongMap(3L -> 3.3), 2L -> LongMap.empty[Double]))
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
+  val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
 
   @Benchmark
   def readAnyRefsCirce(): AnyRefs =
@@ -197,6 +202,19 @@ class CodecBenchmark {
 
   @Benchmark
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
+
+  @Benchmark
+  def readExtractFieldsCirce(): ExtractFields =
+    decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+
+  @Benchmark
+  def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
+
+  @Benchmark
+  def readExtractFieldsJsoniter(): ExtractFields = extractFieldsCodec.read(extractFieldsJson)
+
+  @Benchmark
+  def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
 
   @Benchmark
   def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -316,3 +334,5 @@ case class MutableMaps(m: mutable.HashMap[String, Double], mm: mutable.Map[Int, 
 case class IntAndLongMaps(m: IntMap[Double], mm: mutable.LongMap[LongMap[Double]])
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
+
+case class ExtractFields(s: String, l: Long)

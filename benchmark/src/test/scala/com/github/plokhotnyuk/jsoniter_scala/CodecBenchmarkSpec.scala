@@ -49,6 +49,10 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readPrimitivesJackson() shouldBe benchmark.primitivesObj
       benchmark.readPrimitivesJsoniter() shouldBe benchmark.primitivesObj
       benchmark.readPrimitivesPlay() shouldBe benchmark.primitivesObj
+      benchmark.readExtractFieldsCirce() shouldBe benchmark.extractFieldsObj
+      benchmark.readExtractFieldsJackson() shouldBe benchmark.extractFieldsObj
+      benchmark.readExtractFieldsJsoniter() shouldBe benchmark.extractFieldsObj
+      benchmark.readExtractFieldsPlay() shouldBe benchmark.extractFieldsObj
     }
     "serialize properly" in {
       toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJson)
