@@ -63,7 +63,7 @@ object CustomPlayJsonFormats {
     Writes[Char](c => JsNumber(c.toInt)))
 
   implicit val format10: Format[Arrays] = Format(
-    Reads[Arrays]{js => JsSuccess(Arrays(js.\("aa").as[Array[Array[Int]]], js.\("a").as[Array[Int]].map(BigInt(_))))},
-    Writes[Arrays](js => Json.obj("aa" -> js.aa, "a" -> js.a.map(_.toInt)))
+    Reads[Arrays]{js => JsSuccess(Arrays(js.\("aa").as[Array[Array[Int]]], js.\("a").as[Array[JsNumber]].map(_.value.toBigInt())))},
+    Writes[Arrays](js => Json.obj("aa" -> js.aa, "a" -> js.a.map(v => BigDecimal(v.toString()))))
   )
 }
