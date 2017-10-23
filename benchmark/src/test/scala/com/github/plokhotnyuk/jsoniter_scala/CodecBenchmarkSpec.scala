@@ -16,8 +16,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       assertArrays(benchmark.readArraysCirce(), benchmark.arraysObj)
       assertArrays(benchmark.readArraysJackson(), benchmark.arraysObj)
       assertArrays(benchmark.readArraysJsoniter(), benchmark.arraysObj)
-      // FIXME: Add Play JSON format for arrays
-      //assertArrays(benchmark.readArraysPlay(), benchmark.arraysObj)
+      assertArrays(benchmark.readArraysPlay(), benchmark.arraysObj)
       //FIXME: Circe doesn't support parsing of bitsets
       // benchmark.readBitSetsCirce() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
@@ -62,8 +61,7 @@ class CodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeArraysCirce()) shouldBe toString(benchmark.arraysJson)
       toString(benchmark.writeArraysJackson()) shouldBe toString(benchmark.arraysJson)
       toString(benchmark.writeArraysJsoniter()) shouldBe toString(benchmark.arraysJson)
-      // FIXME: Add Play JSON format for arrays
-      //toString(benchmark.writeArraysPlay()) shouldBe toString(benchmark.arraysJson)
+      toString(benchmark.writeArraysPlay()) shouldBe toString(benchmark.arraysJson)
       //FIXME: Circe doesn't support writing of bitsets
       // toString(benchmark.writeBitSetsCirce()) shouldBe toString(benchmark.bitSetsJson)
       toString(benchmark.writeBitSetsJackson()) shouldBe toString(benchmark.bitSetsJson)
