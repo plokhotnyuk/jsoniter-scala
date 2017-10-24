@@ -13,10 +13,10 @@ class CodecBaseSpec extends WordSpec with Matchers {
     }
     "throw parsing exception in case of invalid escape character sequence" in {
       assert(intercept[Exception](hashCode("\\x0008")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](hashCode("\\u000Z")).getMessage.contains("90 is not valid hex digit"))
-      assert(intercept[Exception](hashCode("\\u000")).getMessage.contains("34 is not valid hex digit"))
-      assert(intercept[Exception](hashCode("\\u00")).getMessage.contains("34 is not valid hex digit"))
-      assert(intercept[Exception](hashCode("\\u0")).getMessage.contains("34 is not valid hex digit"))
+      assert(intercept[Exception](hashCode("\\u000Z")).getMessage.contains("expect hex digit character"))
+      assert(intercept[Exception](hashCode("\\u000")).getMessage.contains("expect hex digit character"))
+      assert(intercept[Exception](hashCode("\\u00")).getMessage.contains("expect hex digit character"))
+      assert(intercept[Exception](hashCode("\\u0")).getMessage.contains("expect hex digit character"))
       assert(intercept[Exception](hashCode("\\")).getMessage.contains("invalid byte or escape sequence"))
       assert(intercept[Exception](hashCode("\\udd1e")).getMessage.contains("expect high surrogate character"))
       assert(intercept[Exception](hashCode("\\ud834")).getMessage.contains("invalid escape sequence"))
@@ -78,10 +78,10 @@ class CodecBaseSpec extends WordSpec with Matchers {
     }
     "throw parsing exception in case of invalid escape character sequence" in {
       assert(intercept[Exception](readString("\\x0008")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](readString("\\u000Z")).getMessage.contains("90 is not valid hex digit"))
-      assert(intercept[Exception](readString("\\u000")).getMessage.contains("34 is not valid hex digit"))
-      assert(intercept[Exception](readString("\\u00")).getMessage.contains("34 is not valid hex digit"))
-      assert(intercept[Exception](readString("\\u0")).getMessage.contains("34 is not valid hex digit"))
+      assert(intercept[Exception](readString("\\u000Z")).getMessage.contains("expect hex digit character"))
+      assert(intercept[Exception](readString("\\u000")).getMessage.contains("expect hex digit character"))
+      assert(intercept[Exception](readString("\\u00")).getMessage.contains("expect hex digit character"))
+      assert(intercept[Exception](readString("\\u0")).getMessage.contains("expect hex digit character"))
       assert(intercept[Exception](readString("\\")).getMessage.contains("invalid byte or escape sequence"))
       assert(intercept[Exception](readString("\\udd1e")).getMessage.contains("expect high surrogate character"))
       assert(intercept[Exception](readString("\\ud834")).getMessage.contains("invalid escape sequence"))

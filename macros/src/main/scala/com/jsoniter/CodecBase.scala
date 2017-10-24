@@ -368,10 +368,10 @@ object CodecBase {
     }
 
   private def readHexDigitPresentedChar(in: JsonIterator): Char =
-    ((IterImplString.translateHex(IterImpl.readByte(in)) << 12) +
-      (IterImplString.translateHex(IterImpl.readByte(in)) << 8) +
-      (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
-      IterImplString.translateHex(IterImpl.readByte(in))).toChar
+    ((fromHexDigit(in, IterImpl.readByte(in)) << 12) +
+      (fromHexDigit(in, IterImpl.readByte(in)) << 8) +
+      (fromHexDigit(in, IterImpl.readByte(in)) << 4) +
+      fromHexDigit(in, IterImpl.readByte(in))).toChar
 
   private def mix(hash: Long, ch: Char): Long = {
     val h = (hash ^ ch) * 1609587929392839161L
@@ -398,9 +398,18 @@ object CodecBase {
     decodeError(in, sb.toString)
   }
 
+  private def fromHexDigit(in: JsonIterator, b: Byte): Int = {
+    if (b >= '0' & b <= '9') b - 48
+    else {
+      val b1 = b & -33
+      if (b1 >= 'A' & b1 <= 'F') b1 - 55
+      else decodeError(in, "expect hex digit character")
+    }
+  }
+
   private def toHexDigit(n: Int): Char = {
-    val nibble = n & 15
-    nibble + 48 + (((9 - nibble) >> 31) & 7) // branchless conversion of nibble to hex digit
+    val n1 = n & 15
+    n1 + (if (n1 > 9) 55 else 48)
   }.toChar
 
   private def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
