@@ -373,8 +373,10 @@ object CodecBase {
       (IterImplString.translateHex(IterImpl.readByte(in)) << 4) +
       IterImplString.translateHex(IterImpl.readByte(in))).toChar
 
-  // mixing highest 17 bits to lowest reduces probability of zeroing and loosing part of hash from preceding chars
-  private def mix(hash: Long, ch: Char): Long = (hash ^ (hash >>> 47)) * 1609587929392839161L ^ ch
+  private def mix(hash: Long, ch: Char): Long = {
+    val h = (hash ^ ch) * 1609587929392839161L
+    h ^ (h >>> 47) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
+  }
 
   private def isMalformed2(b1: Byte, b2: Byte) = (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
 
