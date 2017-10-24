@@ -110,10 +110,8 @@ class CodecBenchmark {
   @Benchmark
   def readArraysJsoniter(): Arrays = arraysCodec.read(arraysJson)
 
-/* FIXME Add Play JSON format for arrays
   @Benchmark
-  def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
-*/
+  def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays]
 
 /* FIXME: Circe doesn`t support parsing of bitsets
   @Benchmark
@@ -237,10 +235,8 @@ class CodecBenchmark {
   @Benchmark
   def writeArraysJsoniter(): Array[Byte] = arraysCodec.write(arraysObj)
 
-/* FIXME: Add Play JSON format for arrays
   @Benchmark
-  def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj)(arraysFormat))
-*/
+  def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj))
 
 /* FIXME: Circe doesn`t support writing of bitsets
   @Benchmark
