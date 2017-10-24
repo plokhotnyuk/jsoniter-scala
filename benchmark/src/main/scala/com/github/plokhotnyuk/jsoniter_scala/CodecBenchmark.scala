@@ -49,8 +49,7 @@ class CodecBenchmark {
   val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
   val arraysCodec: Codec[Arrays] = materialize[Arrays]
-  // FIXME Add Play JSON format for arrays
-  //val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
+  val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
   val bitSetsCodec: Codec[BitSets] = materialize[BitSets]
   val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
   val iterablesCodec: Codec[Iterables] = materialize[Iterables]
@@ -111,7 +110,7 @@ class CodecBenchmark {
   def readArraysJsoniter(): Arrays = arraysCodec.read(arraysJson)
 
   @Benchmark
-  def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays]
+  def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
 
 /* FIXME: Circe doesn`t support parsing of bitsets
   @Benchmark
@@ -236,7 +235,7 @@ class CodecBenchmark {
   def writeArraysJsoniter(): Array[Byte] = arraysCodec.write(arraysObj)
 
   @Benchmark
-  def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj))
+  def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj)(arraysFormat))
 
 /* FIXME: Circe doesn`t support writing of bitsets
   @Benchmark
