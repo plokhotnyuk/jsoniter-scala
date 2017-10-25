@@ -1,5 +1,7 @@
 package com.jsoniter
 
+import java.nio.charset.StandardCharsets
+
 import org.scalatest.{Matchers, WordSpec}
 
 class CodecBaseSpec extends WordSpec with Matchers {
@@ -17,7 +19,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](hashCode("\\u000")).getMessage.contains("expect hex digit character"))
       assert(intercept[Exception](hashCode("\\u00")).getMessage.contains("expect hex digit character"))
       assert(intercept[Exception](hashCode("\\u0")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](hashCode("\\")).getMessage.contains("invalid byte or escape sequence"))
+      assert(intercept[Exception](hashCode("\\")).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](hashCode("\\udd1e")).getMessage.contains("expect high surrogate character"))
       assert(intercept[Exception](hashCode("\\ud834")).getMessage.contains("invalid escape sequence"))
       assert(intercept[Exception](hashCode("\\ud834\\")).getMessage.contains("invalid escape sequence"))
@@ -25,7 +27,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](hashCode("\\ud834\\ud834")).getMessage.contains("expect low surrogate character"))
     }
     "throw parsing exception in case of invalid byte sequence" in {
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte))).getMessage.contains("invalid byte or escape sequence"))
+      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte))).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](hashCode(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 0x80"))
       assert(intercept[Exception](hashCode(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xC0, 0x80"))
       assert(intercept[Exception](hashCode(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0x08"))
@@ -82,7 +84,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](readString("\\u000")).getMessage.contains("expect hex digit character"))
       assert(intercept[Exception](readString("\\u00")).getMessage.contains("expect hex digit character"))
       assert(intercept[Exception](readString("\\u0")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](readString("\\")).getMessage.contains("invalid byte or escape sequence"))
+      assert(intercept[Exception](readString("\\")).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readString("\\udd1e")).getMessage.contains("expect high surrogate character"))
       assert(intercept[Exception](readString("\\ud834")).getMessage.contains("invalid escape sequence"))
       assert(intercept[Exception](readString("\\ud834\\")).getMessage.contains("invalid escape sequence"))
@@ -90,7 +92,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](readString("\\ud834\\ud834")).getMessage.contains("expect low surrogate character"))
     }
     "throw parsing exception in case of invalid byte sequence" in {
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte))).getMessage.contains("invalid byte or escape sequence"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte))).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readString(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 0x80"))
       assert(intercept[Exception](readString(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xC0, 0x80"))
       assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0x08"))
@@ -105,15 +107,73 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
     }
+    "CodecBase.readInt" should {
+      "parse valid int values" in {
+        readInt("0") shouldBe 0
+        readInt("-0") shouldBe -0
+        readInt("123456789") shouldBe 123456789
+        readInt("-123456789") shouldBe -123456789
+        readInt("2147483647") shouldBe 2147483647
+        readInt("-2147483648") shouldBe -2147483648
+      }
+      "throw parsing exception on int overflow" in {
+        assert(intercept[Exception](readInt("2147483648")).getMessage.contains("value is too large for int"))
+        assert(intercept[Exception](readInt("-2147483649")).getMessage.contains("value is too large for int"))
+        assert(intercept[Exception](readInt("12345678901")).getMessage.contains("value is too large for int"))
+        assert(intercept[Exception](readInt("-12345678901")).getMessage.contains("value is too large for int"))
+        assert(intercept[Exception](readInt("12345678901234567890")).getMessage.contains("value is too large for int"))
+        assert(intercept[Exception](readInt("-12345678901234567890")).getMessage.contains("value is too large for int"))
+      }
+      "throw parsing exception on leading zero" in {
+        assert(intercept[Exception](readInt("00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readInt("-00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readInt("0123456789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readInt("-0123456789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readInt("02147483647")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("leading zero is invalid"))
+      }
+    }
+    "CodecBase.readLong" should {
+      "parse valid long values" in {
+        readLong("0") shouldBe 0L
+        readLong("-0") shouldBe -0L
+        readLong("1234567890123456789") shouldBe 1234567890123456789L
+        readLong("-1234567890123456789") shouldBe -1234567890123456789L
+        readLong("9223372036854775807") shouldBe 9223372036854775807L
+        readLong("-9223372036854775808") shouldBe -9223372036854775808L
+      }
+      "throw parsing exception on long overflow" in {
+        assert(intercept[Exception](readLong("9223372036854775808")).getMessage.contains("value is too large for long"))
+        assert(intercept[Exception](readLong("-9223372036854775809")).getMessage.contains("value is too large for long"))
+        assert(intercept[Exception](readLong("12345678901234567890")).getMessage.contains("value is too large for long"))
+        assert(intercept[Exception](readLong("-12345678901234567890")).getMessage.contains("value is too large for long"))
+        assert(intercept[Exception](readLong("123456789012345678901234567890")).getMessage.contains("value is too large for long"))
+        assert(intercept[Exception](readLong("-123456789012345678901234567890")).getMessage.contains("value is too large for long"))
+      }
+      "throw parsing exception on leading zero" in {
+        assert(intercept[Exception](readLong("00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readLong("-00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readLong("01234567890123456789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readLong("-01234567890123456789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readLong("09223372036854775807")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("leading zero is invalid"))
+      }
+    }
   }
 
-  def hashCode(s: String): Long = hashCode(s.getBytes("UTF-8"))
+  def hashCode(s: String): Long = hashCode(s.getBytes(StandardCharsets.UTF_8))
 
-  def hashCode(buf: Array[Byte]): Long =
-    CodecBase.readObjectFieldAsHash(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte))
+  def hashCode(buf: Array[Byte]): Long = CodecBase.readObjectFieldAsHash(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte))
 
-  def readString(s: String): String = readString(s.getBytes("UTF-8"))
+  def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
 
-  def readString(buf: Array[Byte]): String =
-    CodecBase.readString(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte))
+  def readString(buf: Array[Byte]): String = CodecBase.readString(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte))
+
+  def readInt(s: String): Int = readInt(s.getBytes(StandardCharsets.UTF_8))
+
+  def readInt(buf: Array[Byte]): Int = CodecBase.readInt(JsonIterator.parse(buf))
+
+  def readLong(s: String): Long = readLong(s.getBytes(StandardCharsets.UTF_8))
+
+  def readLong(buf: Array[Byte]): Long = CodecBase.readLong(JsonIterator.parse(buf))
 }

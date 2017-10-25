@@ -105,7 +105,7 @@ object Codec {
                   ..$result
                 }
               case 'n' =>
-                CodecBase.parseNull(in, default)
+                parseNull(in, default)
               case _ =>
                 decodeError(in, "expect [ or n")
             }"""
@@ -123,7 +123,7 @@ object Codec {
                   ..$result
                 }
               case 'n' =>
-                CodecBase.parseNull(in, default)
+                parseNull(in, default)
               case _ =>
                 decodeError(in, "expect { or n")
             }"""
@@ -148,15 +148,15 @@ object Codec {
         if (tpe =:= definitions.BooleanTpe) {
           q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"toByte(in, in.readInt())"
+          q"toByte(in, readInt(in))"
         } else if (tpe =:= definitions.CharTpe) {
-          q"toChar(in, in.readInt())"
+          q"toChar(in, readInt(in))"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"toShort(in, in.readInt())"
+          q"toShort(in, readInt(in))"
         } else if (tpe =:= definitions.IntTpe) {
-          q"in.readInt()"
+          q"readInt(in)"
         } else if (tpe.widen =:= definitions.LongTpe) {
-          q"in.readLong()"
+          q"readLong(in)"
         } else if (tpe =:= definitions.DoubleTpe) {
           q"in.readDouble()"
         } else if (tpe =:= definitions.FloatTpe) {
@@ -196,10 +196,10 @@ object Codec {
             q"buf = buf.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
+          genReadArray(q"val buf = $comp.empty", q"buf.add(readInt(in))", q"buf")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.newBuilder", q"buf += in.readInt()")
+          genReadArray(q"val buf = $comp.newBuilder", q"buf += readInt(in)")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
@@ -209,7 +209,7 @@ object Codec {
           genReadArray(q"val buf = collection.mutable.ArrayBuilder.make[$tpe1]",
             q"buf += ${genReadField(tpe1, defaultValue(tpe1))}")
         } else if (tpe =:= typeOf[String]) {
-          q"CodecBase.readString(in, $default)"
+          q"readString(in, $default)"
         } else if (tpe =:= typeOf[BigInt]) withDecoderFor(tpe, default) {
           q"""val x = in.readBigInteger()
               if (x ne null) BigInt(x) else default"""
@@ -220,10 +220,10 @@ object Codec {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"""nextToken(in) match {
                 case 'n' =>
-                  CodecBase.parseNull(in, default)
+                  parseNull(in, default)
                 case _ =>
                   unreadByte(in)
-                  val v = in.readInt()
+                  val v = readInt(in)
                   try $enumSymbol.apply(v) catch {
                     case _: java.util.NoSuchElementException => decodeError(in, "invalid enum value: " + v)
                   }
@@ -361,8 +361,7 @@ object Codec {
         if (writeFields.isEmpty) EmptyTree
         else q"val x = obj.asInstanceOf[$tpe]; var first = true; ..$writeFields"
       val tree =
-        q"""import com.jsoniter.CodegenAccess._
-            import com.jsoniter.CodecBase
+        q"""import com.jsoniter.CodecBase._
             import com.jsoniter.JsonIterator
             import com.jsoniter.output.JsonStream
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
@@ -375,14 +374,14 @@ object Codec {
                     if (nextToken(in) != '}') {
                       unreadByte(in)
                       do {
-                        CodecBase.readObjectFieldAsHash(in) match {
+                        readObjectFieldAsHash(in) match {
                           case ..$readFields
                         }
                       } while (nextToken(in) == ',')
                     }
                     ..$checkReqVarsAndConstruct
                   case 'n' =>
-                    CodecBase.parseNull(in, null)
+                    parseNull(in, null)
                   case _ =>
                     decodeError(in, "expect { or n")
                 }

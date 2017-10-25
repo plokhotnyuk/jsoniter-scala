@@ -6,6 +6,8 @@ import com.jsoniter.output.{JsonStream, JsonStreamPool}
 import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
 import com.jsoniter.spi.JsoniterSpi._
 
+import scala.annotation.tailrec
+
 abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decoder {
   private val cls = m.runtimeClass.asInstanceOf[Class[A]]
 
@@ -77,8 +79,8 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 
   protected def readObjectFieldAsString(in: JsonIterator): String = {
     readParentheses(in)
-    val x = CodecBase.parseString(in)
-    if (IterImpl.nextToken(in) != ':') decodeError(in, "expect :")
+    val x = CodecBase.parseString(in, 0)
+    if (CodecBase.nextToken(in) != ':') decodeError(in, "expect :")
     x
   }
 
@@ -91,14 +93,14 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 
   protected def readObjectFieldAsInt(in: JsonIterator): Int = {
     readParentheses(in)
-    val x = in.readInt()
+    val x = CodecBase.readInt(in)
     readParenthesesWithColon(in)
     x
   }
 
   protected def readObjectFieldAsLong(in: JsonIterator): Long = {
     readParentheses(in)
-    val x = in.readLong()
+    val x = CodecBase.readLong(in)
     readParenthesesWithColon(in)
     x
   }
@@ -201,11 +203,11 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
   }
 
   private def readParentheses(in: JsonIterator): Unit =
-    if (IterImpl.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodecBase.readByte(in) != '"') decodeError(in, "expect \"")
 
   private def readParenthesesWithColon(in: JsonIterator): Unit = {
-    if (IterImpl.readByte(in) != '"') decodeError(in, "expect \"")
-    if (IterImpl.nextToken(in) != ':') decodeError(in, "expect :")
+    if (CodecBase.readByte(in) != '"') decodeError(in, "expect \"")
+    if (CodecBase.nextToken(in) != ':') decodeError(in, "expect :")
   }
 
   private def writeParentheses(out: JsonStream): Unit = out.write('"')
@@ -217,57 +219,133 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 }
 
 object CodecBase {
-  def readString(in: JsonIterator, default: String = null): String =
-    IterImpl.nextToken(in) match {
-      case '"' => parseString(in)
+  final def readInt(in: JsonIterator): Int = {
+    var b = readByte(in)
+    val negative = b == '-'
+    if (negative) b = readByte(in)
+    if (b >= '0' & b <= '9') {
+      var v = '0' - b
+      var i = 0
+      do {
+        i = in.head
+        while (i < in.tail && {
+          b = in.buf(i)
+          b >= '0' & b <= '9'
+        }) i = {
+          if (v == 0) decodeError(in, "leading zero is invalid")
+          if (v < -214748364) decodeError(in, "value is too large for int")
+          v = (v << 3) + (v << 1) + '0' - b
+          if (v >= 0) decodeError(in,  "value is too large for int")
+          i + 1
+        }
+      } while (loadMore(in, i))
+      if (negative) v
+      else if (v == Int.MinValue) decodeError(in, "value is too large for int")
+      else -v
+    } else {
+      unreadByte(in)
+      decodeError(in, "illegal number")
+    }
+  }
+
+  final def readLong(in: JsonIterator): Long = {
+    var b = readByte(in)
+    val negative = b == '-'
+    if (negative) b = readByte(in)
+    if (b >= '0' & b <= '9') {
+      var v: Long = '0' - b
+      var i = 0
+      do {
+        i = in.head
+        while (i < in.tail && {
+          b = in.buf(i)
+          b >= '0' & b <= '9'
+        }) i = {
+          if (v == 0) decodeError(in, "leading zero is invalid")
+          if (v < -922337203685477580L) decodeError(in, "value is too large for long")
+          v = (v << 3) + (v << 1) + '0' - b
+          if (v >= 0) decodeError(in,  "value is too large for long")
+          i + 1
+        }
+      } while (loadMore(in, i))
+      if (negative) v
+      else if (v == Long.MinValue) decodeError(in, "value is too large for long")
+      else -v
+    } else {
+      unreadByte(in)
+      decodeError(in, "illegal number")
+    }
+  }
+
+  final def readString(in: JsonIterator, default: String = null): String =
+    nextToken(in) match {
+      case '"' => parseString(in, 0)
       case 'n' => parseNull(in, default)
       case _ => decodeError(in, "expect string or null")
     }
 
-  def parseNull[A](in: JsonIterator, default: A): A =
-    if (IterImpl.readByte(in) != 'u' || IterImpl.readByte(in) != 'l' ||  IterImpl.readByte(in) != 'l') decodeError(in, "unexpected value")
+  final def parseNull[A](in: JsonIterator, default: A): A =
+    if (readByte(in) != 'u' || readByte(in) != 'l' ||  readByte(in) != 'l') decodeError(in, "unexpected value")
     else default
 
-  private def parseString(in: JsonIterator): String = try {
-    var pos: Int = 0
+  @tailrec
+  private def parseString(in: JsonIterator, pos: Int): String = {
+    var j = pos
+    var i = in.head
+    while (i < in.tail) j = {
+      val b = in.buf(i)
+      i += 1
+      if (b == '"') {
+        in.head = i
+        return new String(in.reusableChars, 0, j)
+      } else if ((b ^ '\\') < 1) {
+        in.head = i - 1
+        return slowParseString(in, j)
+      }
+      putCharAt(in, j, b.toChar)
+    }
+    if (loadMore(in, i)) parseString(in, j)
+    else decodeError(in, "unexpected end of input")
+  }
+
+  private def slowParseString(in: JsonIterator, pos: Int): String = {
+    var j: Int = pos
     var b1: Byte = 0
     while ({
-      b1 = IterImpl.readByte(in)
+      b1 = readByte(in)
       b1 != '"'
-    }) pos = {
+    }) j = {
       if (b1 >= 0) {
         // 1 byte, 7 bits: 0xxxxxxx
-        if (b1 != '\\') putCharAt(in, pos, b1.toChar)
-        else parseEscapeSequence(in, pos)
+        if (b1 != '\\') putCharAt(in, j, b1.toChar)
+        else parseEscapeSequence(in, j)
       } else if ((b1 >> 5) == -2) {
         // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        val b2 = IterImpl.readByte(in)
+        val b2 = readByte(in)
         if (isMalformed2(b1, b2)) malformedBytes(in, b1, b2)
-        putCharAt(in, pos, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
+        putCharAt(in, j, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
       } else if ((b1 >> 4) == -2) {
         // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        val b2 = IterImpl.readByte(in)
-        val b3 = IterImpl.readByte(in)
+        val b2 = readByte(in)
+        val b3 = readByte(in)
         val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
         if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(in, b1, b2, b3)
-        putCharAt(in, pos, c)
+        putCharAt(in, j, c)
       } else if ((b1 >> 3) == -2) {
         // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        val b2 = IterImpl.readByte(in)
-        val b3 = IterImpl.readByte(in)
-        val b4 = IterImpl.readByte(in)
+        val b2 = readByte(in)
+        val b3 = readByte(in)
+        val b4 = readByte(in)
         val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
         if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(in, b1, b2, b3, b4)
-        putCharAt(in, putCharAt(in, pos, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
+        putCharAt(in, putCharAt(in, j, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
       } else malformedBytes(in, b1)
     }
-    new String(in.reusableChars, 0, pos)
-  } catch {
-    case _: ArrayIndexOutOfBoundsException => decodeError(in, "invalid byte or escape sequence")
+    new String(in.reusableChars, 0, j)
   }
 
   private def parseEscapeSequence(in: JsonIterator, pos: Int): Int =
-    IterImpl.readByte(in) match {
+    readByte(in) match {
       case 'b' => putCharAt(in, pos, '\b')
       case 'f' => putCharAt(in, pos, '\f')
       case 'n' => putCharAt(in, pos, '\n')
@@ -282,7 +360,7 @@ object CodecBase {
         else if (!Character.isHighSurrogate(c1)) {
           if (Character.isLowSurrogate(c1)) decodeError(in, "expect high surrogate character")
           putCharAt(in, pos, c1)
-        } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
+        } else if (readByte(in) == '\\' && readByte(in) == 'u') {
           val c2 = readHexDigitPresentedChar(in)
           if (!Character.isLowSurrogate(c2)) decodeError(in, "expect low surrogate character")
           putCharAt(in, putCharAt(in, pos, c1), c2)
@@ -303,48 +381,71 @@ object CodecBase {
   }
 
   // using 64-bit hash greatly reducing collisions in field name switch
-  def readObjectFieldAsHash(in: JsonIterator): Long = try {
-    if (IterImpl.nextToken(in) != '"') decodeError(in, "expect \"")
-    var hash: Long = -8796714831421723037L
+  final def readObjectFieldAsHash(in: JsonIterator): Long = {
+    if (nextToken(in) != '"') decodeError(in, "expect \"")
+    val h = parseObjectFieldAsHash(in, -8796714831421723037L)
+    if (nextToken(in) != ':') decodeError(in, "expect :")
+    h
+  }
+
+  @tailrec
+  private def parseObjectFieldAsHash(in: JsonIterator, hash: Long): Long = {
+    var h = hash
+    var i = in.head
+    while (i < in.tail) h = {
+      val b = in.buf(i)
+      i += 1
+      if (b == '"') {
+        in.head = i
+        return h
+      } else if ((b ^ '\\') < 1) {
+        in.head = i - 1
+        return slowParseObjectFieldAsHash(in, h)
+      }
+      mix(h, b.toChar)
+    }
+    if (loadMore(in, i)) parseObjectFieldAsHash(in, h)
+    else decodeError(in, "unexpected end of input")
+  }
+
+  private def slowParseObjectFieldAsHash(in: JsonIterator, hash: Long): Long = {
+    var h = hash
     var b1: Byte = 0
     while ({
-      b1 = IterImpl.readByte(in)
+      b1 = readByte(in)
       b1 != '"'
-    }) hash = {
+    }) h = {
       if (b1 >= 0) {
         // 1 byte, 7 bits: 0xxxxxxx
-        if (b1 != '\\') mix(hash, b1.toChar)
-        else parseAndHashEscapeSequence(in, hash)
+        if (b1 != '\\') mix(h, b1.toChar)
+        else parseAndHashEscapeSequence(in, h)
       } else if ((b1 >> 5) == -2) {
         // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        val b2 = IterImpl.readByte(in)
+        val b2 = readByte(in)
         if (isMalformed2(b1, b2)) malformedBytes(in, b1, b2)
-        mix(hash, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
+        mix(h, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
       } else if ((b1 >> 4) == -2) {
         // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        val b2 = IterImpl.readByte(in)
-        val b3 = IterImpl.readByte(in)
+        val b2 = readByte(in)
+        val b3 = readByte(in)
         val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
         if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(in, b1, b2, b3)
-        mix(hash, c)
+        mix(h, c)
       } else if ((b1 >> 3) == -2) {
         // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        val b2 = IterImpl.readByte(in)
-        val b3 = IterImpl.readByte(in)
-        val b4 = IterImpl.readByte(in)
+        val b2 = readByte(in)
+        val b3 = readByte(in)
+        val b4 = readByte(in)
         val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
         if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(in, b1, b2, b3, b4)
-        mix(mix(hash, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
+        mix(mix(h, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
       } else malformedBytes(in, b1)
     }
-    if (IterImpl.nextToken(in) != ':') decodeError(in, "expect :")
-    hash
-  } catch {
-    case _: ArrayIndexOutOfBoundsException => decodeError(in, "invalid byte or escape sequence")
+    h
   }
 
   private def parseAndHashEscapeSequence(in: JsonIterator, hash: Long) =
-    IterImpl.readByte(in) match {
+    readByte(in) match {
       case 'b' => mix(hash, '\b')
       case 'f' => mix(hash, '\f')
       case 'n' => mix(hash, '\n')
@@ -359,7 +460,7 @@ object CodecBase {
         else if (!Character.isHighSurrogate(c1)) {
           if (Character.isLowSurrogate(c1)) decodeError(in, "expect high surrogate character")
           mix(hash, c1)
-        } else if (IterImpl.readByte(in) == '\\' && IterImpl.readByte(in) == 'u') {
+        } else if (readByte(in) == '\\' && readByte(in) == 'u') {
           val c2 = readHexDigitPresentedChar(in)
           if (!Character.isLowSurrogate(c2)) decodeError(in, "expect low surrogate character")
           mix(mix(hash, c1), c2)
@@ -368,10 +469,10 @@ object CodecBase {
     }
 
   private def readHexDigitPresentedChar(in: JsonIterator): Char =
-    ((fromHexDigit(in, IterImpl.readByte(in)) << 12) +
-      (fromHexDigit(in, IterImpl.readByte(in)) << 8) +
-      (fromHexDigit(in, IterImpl.readByte(in)) << 4) +
-      fromHexDigit(in, IterImpl.readByte(in))).toChar
+    ((fromHexDigit(in, readByte(in)) << 12) +
+      (fromHexDigit(in, readByte(in)) << 8) +
+      (fromHexDigit(in, readByte(in)) << 4) +
+      fromHexDigit(in, readByte(in))).toChar
 
   private def mix(hash: Long, ch: Char): Long = {
     val h = (hash ^ ch) * 1609587929392839161L
@@ -411,6 +512,55 @@ object CodecBase {
     val n1 = n & 15
     n1 + (if (n1 > 9) 55 else 48)
   }.toChar
+
+  @tailrec
+  final def nextToken(in: JsonIterator): Byte = {
+    var i = in.head
+    while (i < in.tail) {
+      in.buf(i) match {
+        case ' ' => // continue
+        case '\n' => // continue
+        case '\t' => // continue
+        case '\r' => // continue
+        case b =>
+          in.head = i + 1
+          return b
+      }
+      i += 1
+    }
+    if (loadMore(in, i)) nextToken(in)
+    else decodeError(in, "unexpected end of input")
+  }
+
+  final def readByte(in: JsonIterator): Byte = {
+    var i = in.head
+    if (i == in.tail) {
+      if (loadMore(in, i)) i = 0
+      else decodeError(in, "unexpected end of input")
+    }
+    in.head = i + 1
+    in.buf(i)
+  }
+
+  final def unreadByte(in: JsonIterator): Unit = in.head -= 1
+
+  private def loadMore(in: JsonIterator, i: Int): Boolean =
+    if (in.in == null) {
+      in.head = i
+      false
+    } else realLoadMore(in, i)
+
+  private def realLoadMore(in: JsonIterator, i: Int): Boolean = {
+    val n = in.in.read(in.buf)
+    if (n > 0) {
+      in.head = 0
+      in.tail = n
+      true
+    } else if (n == -1) {
+      in.head = i
+      false
+    } else decodeError(in, "invalid parser state")
+  }
 
   private def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
 
