@@ -11,12 +11,12 @@ object JsonStreamUtil {
     }
 
     override def get(): JsonStream = {
-      val stream = super.get()
+      var stream = super.get()
       if (stream.buf.length > 32768) {
-        val newStream = initialValue()
-        set(newStream)
-        newStream
-      } else stream
+        stream = initialValue()
+        set(stream)
+      }
+      stream
     }
   }
 

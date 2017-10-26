@@ -11,12 +11,12 @@ object JsonIteratorUtil {
     }
 
     override def get(): JsonIterator = {
-      val it = super.get()
+      var it = super.get()
       if (it.buf.length + it.reusableChars.length > 32768) {
-        val newIt = initialValue()
-        set(newIt)
-        newIt
-      } else it
+        it = initialValue()
+        set(it)
+      }
+      it
     }
   }
 }

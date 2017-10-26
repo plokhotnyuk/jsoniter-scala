@@ -218,7 +218,7 @@ object CodecBase {
         }) i = {
           if (v == 0) decodeError(in, "leading zero is invalid")
           if (v < -214748364) decodeError(in, "value is too large for int")
-          v = (v << 3) + (v << 1) + '0' - b
+          v = v * 10 + '0' - b
           if (v >= 0) decodeError(in,  "value is too large for int")
           i + 1
         }
@@ -247,7 +247,7 @@ object CodecBase {
         }) i = {
           if (v == 0) decodeError(in, "leading zero is invalid")
           if (v < -922337203685477580L) decodeError(in, "value is too large for long")
-          v = (v << 3) + (v << 1) + '0' - b
+          v = v * 10 + '0' - b
           if (v >= 0) decodeError(in,  "value is too large for long")
           i + 1
         }

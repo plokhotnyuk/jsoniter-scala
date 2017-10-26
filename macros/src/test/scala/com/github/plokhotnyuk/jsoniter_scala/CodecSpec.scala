@@ -116,9 +116,10 @@ class CodecSpec extends WordSpec with Matchers {
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
     }
     "serialize and deserialize standard types" in {
+      val longStr = new String(Array.fill(100000)(' '))
       verifySerDeser(materialize[StandardTypes],
-        StandardTypes("VVV", BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
-        """{"s":"VVV","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
+        StandardTypes(longStr, BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
+        s"""{"s":"$longStr","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
     }
     "don't deserialize unexpected or invalid values" in {
       assert(intercept[JsonException] {
@@ -183,7 +184,7 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize options" in {
       verifySerDeser(materialize[Options],
-        Options(Option("VVV"), Option[BigInt](4), Option(Set())),
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set())),
         """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
     }
     "serialize and deserialize arrays" in {
@@ -469,7 +470,7 @@ case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, l: List[Int]
                     a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
 
 case class Transient(required: String, @transient transient: String = "default") {
-  val ignored: String = required + "_" + transient
+  val ignored: String = s"$required-$transient"
 }
 
 case class NullAndNoneValues(str: String, bi: BigInt, bd: BigDecimal, lt: LocationType.LocationType,
