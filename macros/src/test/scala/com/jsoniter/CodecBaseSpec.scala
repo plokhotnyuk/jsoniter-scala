@@ -116,6 +116,11 @@ class CodecBaseSpec extends WordSpec with Matchers {
         readInt("2147483647") shouldBe 2147483647
         readInt("-2147483648") shouldBe -2147483648
       }
+      "throw parsing exception on invalid or empty input" in {
+        assert(intercept[Exception](readInt("")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readInt("-")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readInt("x")).getMessage.contains("illegal number"))
+      }
       "throw parsing exception on int overflow" in {
         assert(intercept[Exception](readInt("2147483648")).getMessage.contains("value is too large for int"))
         assert(intercept[Exception](readInt("-2147483649")).getMessage.contains("value is too large for int"))
@@ -141,6 +146,11 @@ class CodecBaseSpec extends WordSpec with Matchers {
         readLong("-1234567890123456789") shouldBe -1234567890123456789L
         readLong("9223372036854775807") shouldBe 9223372036854775807L
         readLong("-9223372036854775808") shouldBe -9223372036854775808L
+      }
+      "throw parsing exception on invalid or empty input" in {
+        assert(intercept[Exception](readLong("")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readLong("-")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readLong("x")).getMessage.contains("illegal number"))
       }
       "throw parsing exception on long overflow" in {
         assert(intercept[Exception](readLong("9223372036854775808")).getMessage.contains("value is too large for long"))
