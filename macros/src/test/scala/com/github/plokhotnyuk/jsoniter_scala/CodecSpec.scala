@@ -148,26 +148,26 @@ class CodecSpec extends WordSpec with Matchers {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(6) = 0xF0.toByte
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("malformed byte(s): 0xF0"))
     }
     "don't deserialize invalid UTF-8 encoded field names" in {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(2) = 0xF0.toByte
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("malformed byte(s): 0xF0"))
     }
     "don't deserialize invalid JSON escaped strings" in {
       assert(intercept[JsonException] {
         val buf = "{\"s\":\"\\udd1e\",\"bi\":1,\"bd\":1.1}".getBytes
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("expect high surrogate character"))
     }
     "don't deserialize invalid JSON escaped field names" in {
       assert(intercept[JsonException] {
         val buf = "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}".getBytes
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", BigInt("1"), BigDecimal("1.1")), buf)
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("expect high surrogate character"))
     }
     "serialize and deserialize enumerations" in {
@@ -183,13 +183,13 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize options" in {
       verifySerDeser(materialize[Options],
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set())),
+        Options(Option("VVV"), Option[BigInt](4), Option(Set())),
         """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
     }
     "serialize and deserialize arrays" in {
       val arrayCodec = materialize[Arrays]
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
-      val obj = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
+      val obj = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
       verifySer(arrayCodec, obj, json)
       val parsedObj = arrayCodec.read(json)
       parsedObj.aa.deep shouldBe obj.aa.deep
@@ -198,7 +198,7 @@ class CodecSpec extends WordSpec with Matchers {
     "serialize and deserialize mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
         MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
-          mutable.ArrayBuffer(mutable.Set(BigInt(4)), mutable.Set.empty[BigInt]),
+          mutable.ArrayBuffer(mutable.Set[BigInt](4), mutable.Set.empty[BigInt]),
           mutable.ArraySeq(mutable.LinkedHashSet(5, 6), mutable.LinkedHashSet.empty[Int]),
           mutable.Buffer(mutable.HashSet(7.7, 8.8)),
           mutable.ListBuffer(mutable.TreeSet(9L, 10L)),
@@ -210,7 +210,7 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize immutable traversables" in {
       verifySerDeser(materialize[ImmutableTraversables],
-        ImmutableTraversables(List(ListSet("1")), Queue(Set(BigInt(4), BigInt(5), BigInt(6))),
+        ImmutableTraversables(List(ListSet("1")), Queue(Set[BigInt](4, 5, 6)),
           IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Traversable(10L, 11L))),
         """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[[10,11]]}""".getBytes)
     }
@@ -331,7 +331,7 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "deserialize null values for standard types (but empty values for container types) of traversable values" in {
       verifyDeser(materialize[ImmutableTraversables],
-        ImmutableTraversables(List(ListSet(null)), Queue(Set(BigInt(4), null, BigInt(6))),
+        ImmutableTraversables(List(ListSet(null)), Queue(Set[BigInt](4, null, 6)),
           IndexedSeq(), Stream(TreeSet()), Vector(Traversable())),
         """{"l":[[null]],"q":[[4,null,6]],"is":null,"s":[null],"v":[null]}""".getBytes)
     }
@@ -465,7 +465,7 @@ case class Indented(f1: String, f2: List[String])
 
 case class UTF8KeysAndValues(გასაღები: String)
 
-case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = BigInt(-1), l: List[Int] = List(0),
+case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, l: List[Int] = List(0),
                     a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
 
 case class Transient(required: String, @transient transient: String = "default") {
