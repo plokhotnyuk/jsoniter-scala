@@ -60,6 +60,14 @@ class CodecBaseSpec extends WordSpec with Matchers {
           |data.""".stripMargin
       readString(text) shouldBe text
     }
+    "throw parsing exception for empty input and invalid or broken string" in {
+      assert(intercept[Exception](CodecBase.readString(JsonIterator.parse("".getBytes))).getMessage
+        .contains("unexpected end of input"))
+      assert(intercept[Exception](CodecBase.readString(JsonIterator.parse("\"".getBytes))).getMessage
+        .contains("unexpected end of input"))
+      assert(intercept[Exception](CodecBase.readString(JsonIterator.parse("\"\\".getBytes))).getMessage
+        .contains("unexpected end of input"))
+    }
     "throw parsing exception for boolean values & numbers" in {
       assert(intercept[Exception] {
         CodecBase.readString(JsonIterator.parse("true".getBytes))
