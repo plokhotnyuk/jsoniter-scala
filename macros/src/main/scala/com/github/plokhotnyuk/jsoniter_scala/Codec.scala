@@ -158,9 +158,9 @@ object Codec {
         } else if (tpe.widen =:= definitions.LongTpe) {
           q"readLong(in)"
         } else if (tpe =:= definitions.DoubleTpe) {
-          q"in.readDouble()"
+          q"readDouble(in)"
         } else if (tpe =:= definitions.FloatTpe) {
-          q"in.readFloat()"
+          q"readFloat(in)"
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadField(tpe1, defaultValue(tpe1))})"
@@ -210,12 +210,10 @@ object Codec {
             q"buf += ${genReadField(tpe1, defaultValue(tpe1))}")
         } else if (tpe =:= typeOf[String]) {
           q"readString(in, $default)"
-        } else if (tpe =:= typeOf[BigInt]) withDecoderFor(tpe, default) {
-          q"""val x = in.readBigInteger()
-              if (x ne null) BigInt(x) else default"""
-        } else if (tpe =:= typeOf[BigDecimal]) withDecoderFor(tpe, default) {
-          q"""val x = in.readBigDecimal()
-              if (x ne null) BigDecimal(x) else default"""
+        } else if (tpe =:= typeOf[BigInt]) {
+          q"readBigInt(in, $default)"
+        } else if (tpe =:= typeOf[BigDecimal]) {
+          q"readBigDecimal(in, $default)"
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"""nextToken(in) match {

@@ -177,6 +177,166 @@ class CodecBaseSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("leading zero is invalid"))
       }
     }
+    "CodecBase.readFloat" should {
+      "parse valid float values" in {
+        readFloat("0") shouldBe 0.0f
+        readFloat("0e0") shouldBe 0.0f
+        readFloat("0.0") shouldBe 0.0f
+        readFloat("-0.0") shouldBe -0.0f
+        readFloat("12345.6789") shouldBe 12345.6789f
+        readFloat("-12345.6789") shouldBe -12345.6789f
+        readFloat("12345.6789e10") shouldBe 1.23456788e14f
+        readFloat("-12345.6789E-10") shouldBe -1.2345679e-6f
+      }
+      "parse infinity on float overflow" in {
+        readFloat("12345e6789") shouldBe Float.PositiveInfinity
+        readFloat("-12345e6789") shouldBe Float.NegativeInfinity
+      }
+      "parse zero on float underflow" in {
+        readFloat("12345e-6789") shouldBe 0.0f
+        readFloat("-12345e-6789") shouldBe -0.0f
+      }
+      "throw parsing exception on invalid or empty input" in {
+        assert(intercept[Exception](readFloat("")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readFloat("-")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readFloat("x")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("0.E")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("0.+")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("0.-")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("NaN")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("Inf")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("Infinity")).getMessage.contains("illegal number"))
+      }
+      "throw parsing exception on leading zero" in {
+        assert(intercept[Exception](readFloat("00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readFloat("-00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readFloat("012345.6789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("leading zero is invalid"))
+      }
+    }
+    "CodecBase.readDouble" should {
+      "parse valid double values" in {
+        readDouble("0") shouldBe 0.0
+        readDouble("0e0") shouldBe 0.0
+        readDouble("0.0") shouldBe 0.0
+        readDouble("-0.0") shouldBe -0.0
+        readDouble("123456789.12345678") shouldBe 1.2345678912345678e8
+        readDouble("-123456789.12345678") shouldBe -1.2345678912345678e8
+        readDouble("123456789.123456789e10") shouldBe 1.23456789123456794e18
+        readDouble("-123456789.123456789E-10") shouldBe -0.012345678912345679
+      }
+      "parse infinity on double overflow" in {
+        readDouble("12345e6789") shouldBe Double.PositiveInfinity
+        readDouble("-12345e6789") shouldBe Double.NegativeInfinity
+      }
+      "parse zero on double underflow" in {
+        readDouble("12345e-6789") shouldBe 0.0
+        readDouble("-12345e-6789") shouldBe -0.0
+      }
+      "throw parsing exception on invalid or empty input" in {
+        assert(intercept[Exception](readDouble("")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readDouble("-")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readDouble("x")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("0.E")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("0.-")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("0.+")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("NaN")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("Inf")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("Infinity")).getMessage.contains("illegal number"))
+      }
+      "throw parsing exception on leading zero" in {
+        assert(intercept[Exception](readDouble("00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readDouble("-00")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readDouble("012345.6789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("leading zero is invalid"))
+      }
+    }
+    "CodecBase.readBigInt" should {
+      "parse null value" in {
+        readBigInt("null", null) shouldBe null
+      }
+      "return supplied default value instead of null value" in {
+        readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
+      }
+      "parse valid double values" in {
+        readBigInt("0", null) shouldBe BigInt("0")
+        readBigInt("0e0", null) shouldBe BigInt("0")
+        readBigInt("0.0", null) shouldBe BigInt("0")
+        readBigInt("-0.0", null) shouldBe BigInt("0")
+        readBigInt("12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
+        readBigInt("-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
+        readBigInt("1234567890123456789.0123456789e10", null) shouldBe BigInt("12345678901234567890123456789")
+        readBigInt("-1234567890123456789.0123456789E-10", null) shouldBe BigInt("-123456789")
+      }
+      "parse big numbers without overflow" in {
+        readBigInt("12345e6789", null) shouldBe BigInt("12345" + new String(Array.fill(6789)('0')))
+        readBigInt("-12345e6789", null) shouldBe BigInt("-12345" + new String(Array.fill(6789)('0')))
+      }
+      "parse zero on underflow" in {
+        readBigInt("12345e-6789", null) shouldBe BigInt("0")
+        readBigInt("-12345e-6789", null) shouldBe BigInt("0")
+      }
+      "throw parsing exception on invalid or empty input" in {
+        assert(intercept[Exception](readBigInt("", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigInt("x", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("0.E", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("0.-", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("0.+", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("NaN", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("Inf", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("Infinity", null)).getMessage.contains("illegal number"))
+      }
+      "throw parsing exception on leading zero" in {
+        assert(intercept[Exception](readBigInt("00", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigInt("-00", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigInt("012345.6789", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("leading zero is invalid"))
+      }
+    }
+    "CodecBase.readBigDecimal" should {
+      "parse null value" in {
+        readBigDecimal("null", null) shouldBe null
+      }
+      "return supplied default value instead of null value" in {
+        readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
+      }
+      "parse valid double values" in {
+        readBigDecimal("0", null) shouldBe BigDecimal("0")
+        readBigDecimal("0e0", null) shouldBe BigDecimal("0")
+        readBigDecimal("0.0", null) shouldBe BigDecimal("0")
+        readBigDecimal("-0.0", null) shouldBe BigDecimal("0")
+        readBigDecimal("1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+        readBigDecimal("-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
+        readBigDecimal("1234567890123456789.0123456789e10", null) shouldBe BigDecimal("12345678901234567890123456789")
+        readBigDecimal("-1234567890123456789.0123456789E-10", null) shouldBe BigDecimal("-123456789.01234567890123456789")
+      }
+      "parse big numbers without overflow" in {
+        readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
+        readBigDecimal("-12345e6789", null) shouldBe BigDecimal("-12345e6789")
+      }
+      "parse small numbers without underflow" in {
+        readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
+        readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
+      }
+      "throw parsing exception on invalid or empty input" in {
+        assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigDecimal("x", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("0.E", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("0.-", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("0.+", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("NaN", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("Inf", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("Infinity", null)).getMessage.contains("illegal number"))
+      }
+      "throw parsing exception on leading zero" in {
+        assert(intercept[Exception](readBigDecimal("00", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigDecimal("-00", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigDecimal("012345.6789", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("leading zero is invalid"))
+      }
+    }
   }
 
   def hashCode(s: String): Long = hashCode(s.getBytes(StandardCharsets.UTF_8))
@@ -194,4 +354,20 @@ class CodecBaseSpec extends WordSpec with Matchers {
   def readLong(s: String): Long = readLong(s.getBytes(StandardCharsets.UTF_8))
 
   def readLong(buf: Array[Byte]): Long = CodecBase.readLong(JsonIterator.parse(buf))
+
+  def readFloat(s: String): Float = readFloat(s.getBytes(StandardCharsets.UTF_8))
+
+  def readFloat(buf: Array[Byte]): Float = CodecBase.readFloat(JsonIterator.parse(buf))
+
+  def readDouble(s: String): Double = readDouble(s.getBytes(StandardCharsets.UTF_8))
+
+  def readDouble(buf: Array[Byte]): Double = CodecBase.readDouble(JsonIterator.parse(buf))
+
+  def readBigInt(s: String, default: BigInt): BigInt = readBigInt(s.getBytes(StandardCharsets.UTF_8), default)
+
+  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = CodecBase.readBigInt(JsonIterator.parse(buf), default)
+
+  def readBigDecimal(s: String, default: BigDecimal): BigDecimal = readBigDecimal(s.getBytes(StandardCharsets.UTF_8), default)
+
+  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = CodecBase.readBigDecimal(JsonIterator.parse(buf), default)
 }

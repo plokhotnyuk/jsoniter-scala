@@ -91,28 +91,40 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 
   protected def readObjectFieldAsFloat(in: JsonIterator): Float = {
     readParentheses(in)
-    val x = in.readFloat()
+    val len = CodecBase.parseNumber(in, isToken = false)
+    val x = try java.lang.Float.parseFloat(new String(in.reusableChars, 0, len)) catch {
+      case _: NumberFormatException => decodeError(in, "illegal number")
+    }
     readParenthesesWithColon(in)
     x
   }
 
   protected def readObjectFieldAsDouble(in: JsonIterator): Double = {
     readParentheses(in)
-    val x = in.readDouble()
+    val len = CodecBase.parseNumber(in, isToken = false)
+    val x = try java.lang.Double.parseDouble(new String(in.reusableChars, 0, len)) catch {
+      case _: NumberFormatException => decodeError(in, "illegal number")
+    }
     readParenthesesWithColon(in)
     x
   }
 
   protected def readObjectFieldAsBigInt(in: JsonIterator): BigInt = {
     readParentheses(in)
-    val x = in.readBigInteger()
+    val len = CodecBase.parseNumber(in, isToken = false)
+    val x = try new BigInt(new java.math.BigDecimal(in.reusableChars, 0, len).toBigInteger) catch {
+      case _: NumberFormatException => decodeError(in, "illegal number")
+    }
     readParenthesesWithColon(in)
     x
   }
 
   protected def readObjectFieldAsBigDecimal(in: JsonIterator): BigDecimal = {
     readParentheses(in)
-    val x = in.readBigDecimal()
+    val len = CodecBase.parseNumber(in, isToken = false)
+    val x = try new BigDecimal(new java.math.BigDecimal(in.reusableChars, 0, len)) catch {
+      case _: NumberFormatException => decodeError(in, "illegal number")
+    }
     readParenthesesWithColon(in)
     x
   }
@@ -255,6 +267,78 @@ object CodecBase {
       if (negative) v
       else if (v == Long.MinValue) decodeError(in, "value is too large for long")
       else -v
+    } else {
+      unreadByte(in)
+      decodeError(in, "illegal number")
+    }
+  }
+
+  final def readDouble(in: JsonIterator): Double = {
+    val len = parseNumber(in, isToken = true)
+    try java.lang.Double.parseDouble(new String(in.reusableChars, 0, len)) catch {
+      case _: NumberFormatException => decodeError(in, "illegal number")
+    }
+  }
+
+  final def readFloat(in: JsonIterator): Float = {
+    val len = parseNumber(in, isToken = true)
+    try java.lang.Float.parseFloat(new String(in.reusableChars, 0, len)) catch {
+      case _: NumberFormatException => decodeError(in, "illegal number")
+    }
+  }
+
+  final def readBigInt(in: JsonIterator, default: BigInt): BigInt =
+    nextToken(in) match {
+      case 'n' => parseNull(in, default)
+      case _ =>
+        unreadByte(in)
+        val len = parseNumber(in, isToken = false)
+        try new BigInt(new java.math.BigDecimal(in.reusableChars, 0, len).toBigInteger) catch {
+          case _: NumberFormatException => decodeError(in, "illegal number")
+        }
+    }
+
+  final def readBigDecimal(in: JsonIterator, default: BigDecimal): BigDecimal =
+    nextToken(in) match {
+      case 'n' => parseNull(in, default)
+      case _ =>
+        unreadByte(in)
+        val len = parseNumber(in, isToken = false)
+        try new BigDecimal(new java.math.BigDecimal(in.reusableChars, 0, len)) catch {
+          case _: NumberFormatException => decodeError(in, "illegal number")
+        }
+    }
+
+  private def parseNumber(in: JsonIterator, isToken: Boolean): Int = {
+    var j = 0
+    var b = if (isToken) nextToken(in) else readByte(in)
+    if (b == '-') {
+      j = putCharAt(in, j, b.toChar)
+      b = readByte(in)
+    }
+    if (b >= '0' & b <= '9') {
+      j = putCharAt(in, j, b.toChar)
+      var lz = b == '0'
+      var i = 0
+      do {
+        i = in.head
+        while (i < in.tail) i = {
+          b = in.buf(i)
+          if (b >= '0' & b <= '9') {
+            if (lz) decodeError(in, "leading zero is invalid")
+            j = putCharAt(in, j, b.toChar)
+            i + 1
+          } else if (b == '.' || b == 'e' || b == 'E' || b == '-' || b == '+') {
+            lz = false
+            j = putCharAt(in, j, b.toChar)
+            i + 1
+          } else {
+            in.head = i
+            return j
+          }
+        }
+      } while (loadMore(in, i))
+      j
     } else {
       unreadByte(in)
       decodeError(in, "illegal number")
