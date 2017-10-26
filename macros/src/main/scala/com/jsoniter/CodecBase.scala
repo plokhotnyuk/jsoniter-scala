@@ -2,7 +2,7 @@ package com.jsoniter
 
 import java.io.{IOException, InputStream, OutputStream}
 
-import com.jsoniter.output.{JsonStream, JsonStreamPool}
+import com.jsoniter.output.{JsonStream, JsonStreamUtil}
 import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
 import com.jsoniter.spi.JsoniterSpi._
 
@@ -15,49 +15,33 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
   addNewEncoder(getCurrentConfig.getEncoderCacheKey(cls), this)
   addNewDecoder(getCurrentConfig.getDecoderCacheKey(cls), this)
 
-  def read(in: InputStream, bufSize: Int = 512): A = {
-    val it = JsonIteratorPool.borrowJsonIterator()
-    try {
-      JsonIterator.enableStreamingSupport()
-      it.in = in
-      if (it.buf.length != bufSize) it.buf = new Array[Byte](bufSize)
-      it.head = 0
-      it.tail = 0
-      decode(it).asInstanceOf[A]
-    } finally JsonIteratorPool.returnJsonIterator(it)
+  final def read(in: InputStream): A = {
+    val it = JsonIteratorUtil.pool.get
+    JsonIterator.enableStreamingSupport()
+    it.in = in
+    it.head = 0
+    it.tail = 0
+    decode(it).asInstanceOf[A]
   }
 
-  def read(buf: Array[Byte]): A = {
-    val it = JsonIteratorPool.borrowJsonIterator()
-    try {
-      it.reset(buf)
-      decode(it).asInstanceOf[A]
-    } finally JsonIteratorPool.returnJsonIterator(it)
+  final def read(buf: Array[Byte]): A = {
+    val it = JsonIteratorUtil.pool.get
+    it.reset(buf)
+    decode(it).asInstanceOf[A]
   }
 
-  def write(obj: A, out: OutputStream): Unit = {
-    val stream = JsonStreamPool.borrowJsonStream()
-    try {
-      stream.reset(out)
-      if (obj == null) stream.writeNull()
-      else encode(obj, stream)
-    } finally {
-      stream.close()
-      JsonStreamPool.returnJsonStream(stream)
-    }
+  final def write(obj: A, out: OutputStream): Unit = {
+    val stream = JsonStreamUtil.pool.get
+    stream.reset(out)
+    try encode(obj, stream)
+    finally stream.flush()
   }
 
-  def write(obj: A): Array[Byte] = {
-    val out = JsonStreamPool.borrowJsonStream
-    try {
-      out.reset(null)
-      if (obj == null) out.writeNull()
-      else encode(obj, out)
-      val buf = out.buffer()
-      val array = new Array[Byte](buf.len)
-      System.arraycopy(buf.data, 0, array, 0, buf.len)
-      array
-    } finally JsonStreamPool.returnJsonStream(out)
+  final def write(obj: A): Array[Byte] = {
+    val stream = JsonStreamUtil.pool.get
+    stream.reset(null)
+    encode(obj, stream)
+    JsonStreamUtil.getBytes(stream)
   }
 
   protected def reqFieldError(in: JsonIterator, reqFields: Array[String], reqs: Long*): Nothing = {

@@ -2,8 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 
-import com.jsoniter.spi.{Config, JsonException, JsoniterSpi}
+import com.jsoniter.spi.{Config, JsonException}
 import Codec._
+import com.jsoniter.JsonIteratorUtil
+import com.jsoniter.output.JsonStreamUtil
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.immutable._
@@ -389,9 +391,17 @@ class CodecSpec extends WordSpec with Matchers {
   }
 
   def withConfig(configBuilder: Config.Builder => Config.Builder)(f: => Unit): Unit = {
-    val currentConfig = JsoniterSpi.getCurrentConfig
-    JsoniterSpi.setCurrentConfig(configBuilder(new Config.Builder).build)
-    try f finally JsoniterSpi.setCurrentConfig(currentConfig)
+    val in = JsonIteratorUtil.pool.get
+    val out = JsonStreamUtil.pool.get
+    val inConfig = in.configCache
+    val outConfig = out.configCache
+    val config = configBuilder(new Config.Builder).build
+    in.configCache = config
+    out.configCache = config
+    try f finally {
+      in.configCache = inConfig
+      out.configCache = outConfig
+    }
   }
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
