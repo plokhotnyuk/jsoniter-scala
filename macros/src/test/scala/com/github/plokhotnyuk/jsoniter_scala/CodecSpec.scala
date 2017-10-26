@@ -171,6 +171,17 @@ class CodecSpec extends WordSpec with Matchers {
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("expect high surrogate character"))
     }
+    "don't deserialize in case of missing tokens" in {
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """"s":"VVV","bi":1,"bd":1.1}""".getBytes)
+      }.getMessage.contains("expect { or n"))
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s""VVV","bi":1,"bd":1.1}""".getBytes)
+      }.getMessage.contains("expect :"))
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s":"VVV""bi":1"bd":1.1}""".getBytes)
+      }.getMessage.contains("""missing required field(s) "bi", "bd""""))
+    }
     "serialize and deserialize enumerations" in {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
       assert(intercept[JsonException] {
