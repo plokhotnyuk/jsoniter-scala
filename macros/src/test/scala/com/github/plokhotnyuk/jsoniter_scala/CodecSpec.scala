@@ -282,6 +282,10 @@ class CodecSpec extends WordSpec with Matchers {
             |}""".stripMargin.getBytes)
       }
     }
+    "deserialize JSON with tabs & line returns" in {
+      verifyDeser(materialize[Indented], Indented("VVV", List("X", "Y", "Z")),
+        "{\r\t\"f1\":\"VVV\",\r\t\"f2\":[\r\t\t\"X\",\r\t\t\"Y\",\r\t\t\"Z\"\r\t]\r}".getBytes)
+    }
     "serialize and deserialize UTF-8 keys and values without hex encoding" in {
       verifySerDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ"),
         """{"გასაღები":"ვვვ"}""".getBytes("UTF-8"))
