@@ -58,8 +58,11 @@ That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_sc
 Now you can use it:
 
 ```scala
-userCodec.read("""{"name":"John"}""".getBytes("UTF-8"))
-userCodec.write(User(name = "John"))
+import com.jsontiter.JsonIteratorUtil._
+import com.jsontiter.output.JsonStreamUtil._
+
+read(userCodec, """{"name":"John"}""".getBytes("UTF-8"))
+write(userCodec, User(name = "John"))
 ```
 
 To see generated code add the following line to your sbt build file

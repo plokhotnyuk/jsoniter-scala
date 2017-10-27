@@ -10,6 +10,8 @@ import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
+import com.jsoniter.JsonIteratorUtil
+import com.jsoniter.output.JsonStreamUtil
 import org.openjdk.jmh.annotations._
 import io.circe._
 import io.circe.generic.auto._
@@ -94,7 +96,7 @@ class CodecBenchmark {
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
 
   @Benchmark
-  def readAnyRefsJsoniter(): AnyRefs = anyRefsCodec.read(anyRefsJson)
+  def readAnyRefsJsoniter(): AnyRefs = JsonIteratorUtil.read(anyRefsCodec, anyRefsJson)
 
   @Benchmark
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
@@ -107,7 +109,7 @@ class CodecBenchmark {
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
 
   @Benchmark
-  def readArraysJsoniter(): Arrays = arraysCodec.read(arraysJson)
+  def readArraysJsoniter(): Arrays = JsonIteratorUtil.read(arraysCodec, arraysJson)
 
   @Benchmark
   def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
@@ -122,7 +124,7 @@ class CodecBenchmark {
   def readBitSetsJackson(): BitSets = jacksonMapper.readValue[BitSets](bitSetsJson)
 
   @Benchmark
-  def readBitSetsJsoniter(): BitSets = bitSetsCodec.read(bitSetsJson)
+  def readBitSetsJsoniter(): BitSets = JsonIteratorUtil.read(bitSetsCodec, bitSetsJson)
 
   @Benchmark
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
@@ -135,7 +137,7 @@ class CodecBenchmark {
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
 
   @Benchmark
-  def readIterablesJsoniter(): Iterables = iterablesCodec.read(iterablesJson)
+  def readIterablesJsoniter(): Iterables = JsonIteratorUtil.read(iterablesCodec, iterablesJson)
 
   @Benchmark
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
@@ -148,7 +150,7 @@ class CodecBenchmark {
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
 
   @Benchmark
-  def readMapsJsoniter(): Maps = mapsCodec.read(mapsJson)
+  def readMapsJsoniter(): Maps = JsonIteratorUtil.read(mapsCodec, mapsJson)
 
   @Benchmark
   def readMapsPlay(): Maps = Json.parse(mapsJson).as[Maps](mapsFormat)
@@ -163,7 +165,7 @@ class CodecBenchmark {
   def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJson)
 
   @Benchmark
-  def readMutableMapsJsoniter(): MutableMaps = mutableMapsCodec.read(mutableMapsJson)
+  def readMutableMapsJsoniter(): MutableMaps = JsonIteratorUtil.read(mutableMapsCodec, mutableMapsJson)
 
   @Benchmark
   def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJson).as[MutableMaps](mutableMapsFormat)
@@ -180,7 +182,7 @@ class CodecBenchmark {
 */
 
   @Benchmark
-  def readIntAndLongMapsJsoniter(): IntAndLongMaps = intAndLongMapsCodec.read(intAndLongMapsJson)
+  def readIntAndLongMapsJsoniter(): IntAndLongMaps = JsonIteratorUtil.read(intAndLongMapsCodec, intAndLongMapsJson)
 
   @Benchmark
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
@@ -195,7 +197,7 @@ class CodecBenchmark {
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
 
   @Benchmark
-  def readPrimitivesJsoniter(): Primitives = primitivesCodec.read(primitivesJson)
+  def readPrimitivesJsoniter(): Primitives = JsonIteratorUtil.read(primitivesCodec, primitivesJson)
 
   @Benchmark
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
@@ -208,7 +210,7 @@ class CodecBenchmark {
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
 
   @Benchmark
-  def readExtractFieldsJsoniter(): ExtractFields = extractFieldsCodec.read(extractFieldsJson)
+  def readExtractFieldsJsoniter(): ExtractFields = JsonIteratorUtil.read(extractFieldsCodec, extractFieldsJson)
 
   @Benchmark
   def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
@@ -220,7 +222,7 @@ class CodecBenchmark {
   def writeAnyRefsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(anyRefsObj)
 
   @Benchmark
-  def writeAnyRefsJsoniter(): Array[Byte] = anyRefsCodec.write(anyRefsObj)
+  def writeAnyRefsJsoniter(): Array[Byte] = JsonStreamUtil.write(anyRefsCodec, anyRefsObj)
 
   @Benchmark
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
@@ -232,7 +234,7 @@ class CodecBenchmark {
   def writeArraysJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(arraysObj)
 
   @Benchmark
-  def writeArraysJsoniter(): Array[Byte] = arraysCodec.write(arraysObj)
+  def writeArraysJsoniter(): Array[Byte] = JsonStreamUtil.write(arraysCodec, arraysObj)
 
   @Benchmark
   def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj)(arraysFormat))
@@ -246,7 +248,7 @@ class CodecBenchmark {
   def writeBitSetsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(bitSetsObj)
 
   @Benchmark
-  def writeBitSetsJsoniter(): Array[Byte] = bitSetsCodec.write(bitSetsObj)
+  def writeBitSetsJsoniter(): Array[Byte] = JsonStreamUtil.write(bitSetsCodec, bitSetsObj)
 
   @Benchmark
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
@@ -258,7 +260,7 @@ class CodecBenchmark {
   def writeIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(iterablesObj)
 
   @Benchmark
-  def writeIterablesJsoniter(): Array[Byte] = iterablesCodec.write(iterablesObj)
+  def writeIterablesJsoniter(): Array[Byte] = JsonStreamUtil.write(iterablesCodec, iterablesObj)
 
   @Benchmark
   def writeIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(iterablesObj)(iterablesFormat))
@@ -270,7 +272,7 @@ class CodecBenchmark {
   def writeMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mapsObj)
 
   @Benchmark
-  def writeMapsJsoniter(): Array[Byte] = mapsCodec.write(mapsObj)
+  def writeMapsJsoniter(): Array[Byte] = JsonStreamUtil.write(mapsCodec, mapsObj)
 
   @Benchmark
   def writeMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mapsObj)(mapsFormat))
@@ -282,7 +284,7 @@ class CodecBenchmark {
   def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
 
   @Benchmark
-  def writeMutableMapsJsoniter(): Array[Byte] = mutableMapsCodec.write(mutableMapsObj)
+  def writeMutableMapsJsoniter(): Array[Byte] = JsonStreamUtil.write(mutableMapsCodec, mutableMapsObj)
 
   @Benchmark
   def writeMutableMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableMapsObj)(mutableMapsFormat))
@@ -296,7 +298,7 @@ class CodecBenchmark {
   def writeIntAndLongMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intAndLongMapsObj)
 
   @Benchmark
-  def writeIntAndLongMapsJsoniter(): Array[Byte] = intAndLongMapsCodec.write(intAndLongMapsObj)
+  def writeIntAndLongMapsJsoniter(): Array[Byte] = JsonStreamUtil.write(intAndLongMapsCodec, intAndLongMapsObj)
 
   @Benchmark
   def writeIntAndLongMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(intAndLongMapsObj)(intAndLongMapsFormat))
@@ -308,7 +310,7 @@ class CodecBenchmark {
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
 
   @Benchmark
-  def writePrimitivesJsoniter(): Array[Byte] = primitivesCodec.write(primitivesObj)
+  def writePrimitivesJsoniter(): Array[Byte] = JsonStreamUtil.write(primitivesCodec, primitivesObj)
 
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))

@@ -1,6 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import com.jsoniter.{CodecBase, JsonIterator}
+import com.jsoniter.{JsonIterator, JsonIteratorUtil}
+import com.jsoniter.output.JsonStream
+import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
+import com.jsoniter.spi.JsoniterSpi.{addNewDecoder, addNewEncoder, getCurrentConfig}
 
 import scala.annotation.meta.field
 import scala.collection.breakOut
@@ -12,7 +15,21 @@ import scala.reflect.macros.blackbox
 @field
 class key(key: String) extends scala.annotation.StaticAnnotation
 
-abstract class Codec[A](implicit m: Manifest[A]) extends CodecBase[A]
+abstract class Codec[A](implicit m: Manifest[A]) extends Encoder with Decoder {
+  private val cls = m.runtimeClass.asInstanceOf[Class[A]]
+
+  JsoniterSpi.setDefaultConfig((new Config.Builder).escapeUnicode(false).build)
+  addNewEncoder(getCurrentConfig.getEncoderCacheKey(cls), this)
+  addNewDecoder(getCurrentConfig.getDecoderCacheKey(cls), this)
+
+  def read(in: JsonIterator): A
+
+  def write(obj: A, out: JsonStream): Unit
+
+  override def decode(in: JsonIterator): AnyRef = read(in).asInstanceOf[AnyRef]
+
+  override def encode(obj: AnyRef, out: JsonStream): Unit = write(obj.asInstanceOf[A], out)
+}
 
 object Codec {
   def materialize[A]: Codec[A] = macro Impl.materialize[A]
@@ -64,11 +81,11 @@ object Codec {
         if (tpe =:= definitions.BooleanTpe) {
           q"readObjectFieldAsBoolean(in)"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"toByte(in, readObjectFieldAsInt(in))"
+          q"readObjectFieldAsByte(in)"
         } else if (tpe =:= definitions.CharTpe) {
-          q"toChar(in, readObjectFieldAsInt(in))"
+          q"readObjectFieldAsChar(in)"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"toShort(in, readObjectFieldAsInt(in))"
+          q"readObjectFieldAsShort(in)"
         } else if (tpe =:= definitions.IntTpe) {
           q"readObjectFieldAsInt(in)"
         } else if (tpe =:= definitions.LongTpe) {
@@ -80,7 +97,7 @@ object Codec {
         } else if (isValueClass(tpe)) {
           q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
         } else if (tpe =:= typeOf[String]) {
-          q"this.readObjectFieldAsString(in)"
+          q"readObjectFieldAsString(in)"
         } else if (tpe =:= typeOf[BigInt]) {
           q"readObjectFieldAsBigInt(in)"
         } else if (tpe =:= typeOf[BigDecimal]) {
@@ -148,11 +165,11 @@ object Codec {
         if (tpe =:= definitions.BooleanTpe) {
           q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"toByte(in, readInt(in))"
+          q"readByte(in)"
         } else if (tpe =:= definitions.CharTpe) {
-          q"toChar(in, readInt(in))"
+          q"readChar(in)"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"toShort(in, readInt(in))"
+          q"readShort(in)"
         } else if (tpe =:= definitions.IntTpe) {
           q"readInt(in)"
         } else if (tpe.widen =:= definitions.LongTpe) {
@@ -298,7 +315,7 @@ object Codec {
         }).getOrElse(m.name.toString)
 
       def hashCode(m: MethodSymbol): Long =
-        CodecBase.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
+        JsonIteratorUtil.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
       val comp = tpe.typeSymbol.companion
@@ -359,12 +376,13 @@ object Codec {
         if (writeFields.isEmpty) EmptyTree
         else q"val x = obj.asInstanceOf[$tpe]; var first = true; ..$writeFields"
       val tree =
-        q"""import com.jsoniter.CodecBase._
-            import com.jsoniter.JsonIterator
+        q"""import com.jsoniter.JsonIterator
+            import com.jsoniter.JsonIteratorUtil._
             import com.jsoniter.output.JsonStream
+            import com.jsoniter.output.JsonStreamUtil._
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
               ..$reqFields
-              override def decode(in: JsonIterator): AnyRef =
+              override def read(in: JsonIterator): $tpe =
                 nextToken(in) match {
                   case '{' =>
                     ..$reqVars
@@ -383,7 +401,7 @@ object Codec {
                   case _ =>
                     decodeError(in, "expect { or n")
                 }
-              override def encode(obj: AnyRef, out: JsonStream): Unit =
+              override def write(obj: $tpe, out: JsonStream): Unit =
                 if (obj ne null) {
                   out.writeObjectStart()
                   ..$writeFieldsBlock

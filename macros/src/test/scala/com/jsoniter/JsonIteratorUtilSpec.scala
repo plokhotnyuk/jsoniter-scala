@@ -2,10 +2,11 @@ package com.jsoniter
 
 import java.nio.charset.StandardCharsets
 
+import com.jsoniter.JsonIteratorUtil.readObjectFieldAsHash
 import org.scalatest.{Matchers, WordSpec}
 
-class CodecBaseSpec extends WordSpec with Matchers {
-  "CodecBase.readObjectFieldAsHash" should {
+class JsonIteratorUtilSpec extends WordSpec with Matchers {
+  "JsonIteratorUtil.readObjectFieldAsHash" should {
     "compute the same hash value for escaped & non-escaped field names" in {
       hashCode("""Hello""") shouldBe hashCode("Hello")
       hashCode("""Hello""") shouldBe hashCode("\\u0048\\u0065\\u006C\\u006c\\u006f")
@@ -43,12 +44,12 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
     }
   }
-  "CodecBase.readString" should {
+  "JsonIteratorUtil.readString" should {
     "parse null value" in {
-      CodecBase.readString(JsonIterator.parse("null".getBytes)) shouldBe null
+      JsonIteratorUtil.readString(JsonIterator.parse("null".getBytes)) shouldBe null
     }
     "return supplied default value instead of null value" in {
-      CodecBase.readString(JsonIterator.parse("null".getBytes), "VVV") shouldBe "VVV"
+      JsonIteratorUtil.readString(JsonIterator.parse("null".getBytes), "VVV") shouldBe "VVV"
     }
     "parse long string" in {
       val text =
@@ -61,22 +62,22 @@ class CodecBaseSpec extends WordSpec with Matchers {
       readString(text) shouldBe text
     }
     "throw parsing exception for empty input and invalid or broken string" in {
-      assert(intercept[Exception](CodecBase.readString(JsonIterator.parse("".getBytes))).getMessage
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("".getBytes))).getMessage
         .contains("unexpected end of input"))
-      assert(intercept[Exception](CodecBase.readString(JsonIterator.parse("\"".getBytes))).getMessage
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"".getBytes))).getMessage
         .contains("unexpected end of input"))
-      assert(intercept[Exception](CodecBase.readString(JsonIterator.parse("\"\\".getBytes))).getMessage
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"\\".getBytes))).getMessage
         .contains("unexpected end of input"))
     }
     "throw parsing exception for boolean values & numbers" in {
       assert(intercept[Exception] {
-        CodecBase.readString(JsonIterator.parse("true".getBytes))
+        JsonIteratorUtil.readString(JsonIterator.parse("true".getBytes))
       }.getMessage.contains("expect string or null"))
       assert(intercept[Exception] {
-        CodecBase.readString(JsonIterator.parse("false".getBytes))
+        JsonIteratorUtil.readString(JsonIterator.parse("false".getBytes))
       }.getMessage.contains("expect string or null"))
       assert(intercept[Exception] {
-        CodecBase.readString(JsonIterator.parse("12345".getBytes))
+        JsonIteratorUtil.readString(JsonIterator.parse("12345".getBytes))
       }.getMessage.contains("expect string or null"))
     }
     "get the same string value for escaped & non-escaped field names" in {
@@ -115,7 +116,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
     }
-    "CodecBase.readInt" should {
+    "JsonIteratorUtil.readInt" should {
       "parse valid int values" in {
         readInt("0") shouldBe 0
         readInt("-0") shouldBe -0
@@ -146,7 +147,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("leading zero is invalid"))
       }
     }
-    "CodecBase.readLong" should {
+    "JsonIteratorUtil.readLong" should {
       "parse valid long values" in {
         readLong("0") shouldBe 0L
         readLong("-0") shouldBe -0L
@@ -177,7 +178,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("leading zero is invalid"))
       }
     }
-    "CodecBase.readFloat" should {
+    "JsonIteratorUtil.readFloat" should {
       "parse valid float values" in {
         readFloat("0") shouldBe 0.0f
         readFloat("0e0") shouldBe 0.0f
@@ -214,7 +215,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("leading zero is invalid"))
       }
     }
-    "CodecBase.readDouble" should {
+    "JsonIteratorUtil.readDouble" should {
       "parse valid double values" in {
         readDouble("0") shouldBe 0.0
         readDouble("0e0") shouldBe 0.0
@@ -251,7 +252,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("leading zero is invalid"))
       }
     }
-    "CodecBase.readBigInt" should {
+    "JsonIteratorUtil.readBigInt" should {
       "parse null value" in {
         readBigInt("null", null) shouldBe null
       }
@@ -294,7 +295,7 @@ class CodecBaseSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("leading zero is invalid"))
       }
     }
-    "CodecBase.readBigDecimal" should {
+    "JsonIteratorUtil.readBigDecimal" should {
       "parse null value" in {
         readBigDecimal("null", null) shouldBe null
       }
@@ -341,33 +342,33 @@ class CodecBaseSpec extends WordSpec with Matchers {
 
   def hashCode(s: String): Long = hashCode(s.getBytes(StandardCharsets.UTF_8))
 
-  def hashCode(buf: Array[Byte]): Long = CodecBase.readObjectFieldAsHash(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte))
+  def hashCode(buf: Array[Byte]): Long = readObjectFieldAsHash(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte))
 
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
 
-  def readString(buf: Array[Byte]): String = CodecBase.readString(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte))
+  def readString(buf: Array[Byte]): String = JsonIteratorUtil.readString(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte))
 
   def readInt(s: String): Int = readInt(s.getBytes(StandardCharsets.UTF_8))
 
-  def readInt(buf: Array[Byte]): Int = CodecBase.readInt(JsonIterator.parse(buf))
+  def readInt(buf: Array[Byte]): Int = JsonIteratorUtil.readInt(JsonIterator.parse(buf))
 
   def readLong(s: String): Long = readLong(s.getBytes(StandardCharsets.UTF_8))
 
-  def readLong(buf: Array[Byte]): Long = CodecBase.readLong(JsonIterator.parse(buf))
+  def readLong(buf: Array[Byte]): Long = JsonIteratorUtil.readLong(JsonIterator.parse(buf))
 
   def readFloat(s: String): Float = readFloat(s.getBytes(StandardCharsets.UTF_8))
 
-  def readFloat(buf: Array[Byte]): Float = CodecBase.readFloat(JsonIterator.parse(buf))
+  def readFloat(buf: Array[Byte]): Float = JsonIteratorUtil.readFloat(JsonIterator.parse(buf))
 
   def readDouble(s: String): Double = readDouble(s.getBytes(StandardCharsets.UTF_8))
 
-  def readDouble(buf: Array[Byte]): Double = CodecBase.readDouble(JsonIterator.parse(buf))
+  def readDouble(buf: Array[Byte]): Double = JsonIteratorUtil.readDouble(JsonIterator.parse(buf))
 
   def readBigInt(s: String, default: BigInt): BigInt = readBigInt(s.getBytes(StandardCharsets.UTF_8), default)
 
-  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = CodecBase.readBigInt(JsonIterator.parse(buf), default)
+  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = JsonIteratorUtil.readBigInt(JsonIterator.parse(buf), default)
 
   def readBigDecimal(s: String, default: BigDecimal): BigDecimal = readBigDecimal(s.getBytes(StandardCharsets.UTF_8), default)
 
-  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = CodecBase.readBigDecimal(JsonIterator.parse(buf), default)
+  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = JsonIteratorUtil.readBigDecimal(JsonIterator.parse(buf), default)
 }

@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 
-import com.jsoniter.spi.{Config, JsonException}
+import com.jsoniter.spi.{Config, JsonException, JsoniterSpi}
 import Codec._
 import com.jsoniter.JsonIteratorUtil
 import com.jsoniter.output.JsonStreamUtil
@@ -203,7 +203,7 @@ class CodecSpec extends WordSpec with Matchers {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
       val obj = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
       verifySer(arrayCodec, obj, json)
-      val parsedObj = arrayCodec.read(json)
+      val parsedObj = JsonIteratorUtil.read(arrayCodec, json)
       parsedObj.aa.deep shouldBe obj.aa.deep
       parsedObj.a.deep shouldBe obj.a.deep
     }
@@ -281,21 +281,21 @@ class CodecSpec extends WordSpec with Matchers {
         """{"camelCase":"VVV","snake_case":"XXX"}""".getBytes)
     }
     "serialize and deserialize indented JSON" in {
-      withConfig(_.indentionStep(2)) {
-        verifySerDeser(materialize[Indented], Indented("VVV", List("X", "Y", "Z")),
-          """{
-            |  "f1": "VVV",
-            |  "f2": [
-            |    "X",
-            |    "Y",
-            |    "Z"
-            |  ]
-            |}""".stripMargin.getBytes)
-      }
+      verifySerDeser(materialize[Indented], Indented("VVV", 1.1, List(1, 2, 3)),
+        """{
+          |  "s": "VVV",
+          |  "bd": 1.1,
+          |  "l": [
+          |    1,
+          |    2,
+          |    3
+          |  ]
+          |}""".stripMargin.getBytes,
+        (new Config.Builder).indentionStep(2).build)
     }
     "deserialize JSON with tabs & line returns" in {
-      verifyDeser(materialize[Indented], Indented("VVV", List("X", "Y", "Z")),
-        "{\r\t\"f1\":\"VVV\",\r\t\"f2\":[\r\t\t\"X\",\r\t\t\"Y\",\r\t\t\"Z\"\r\t]\r}".getBytes)
+      verifyDeser(materialize[Indented], Indented("VVV", 1.1, List(1, 2, 3)),
+        "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t]\r}".getBytes)
     }
     "serialize and deserialize UTF-8 keys and values without hex encoding" in {
       verifySerDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ"),
@@ -304,10 +304,9 @@ class CodecSpec extends WordSpec with Matchers {
     "serialize and deserialize UTF-8 keys and values with hex encoding" in {
       verifyDeser(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes("UTF-8"))
-      withConfig(_.escapeUnicode(true)) {
-        verifySer(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
-          "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes("UTF-8"))
-      }
+      verifySer(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
+        "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes("UTF-8"),
+        (new Config.Builder).escapeUnicode(true).build)
     }
     "serialize and deserialize with keys overridden by annotation" in {
       verifySerDeser(materialize[KeyOverridden], KeyOverridden("VVV"), """{"new_key":"VVV"}""".getBytes)
@@ -317,7 +316,7 @@ class CodecSpec extends WordSpec with Matchers {
       val obj = Defaults()
       val json = """{}""".getBytes
       verifySer(defaultsCodec, obj, json)
-      val parsedObj = defaultsCodec.read(json)
+      val parsedObj = JsonIteratorUtil.read(defaultsCodec, json)
       parsedObj.s shouldBe obj.s
       parsedObj.i shouldBe obj.i
       parsedObj.bi shouldBe obj.bi
@@ -388,36 +387,22 @@ class CodecSpec extends WordSpec with Matchers {
     }
   }
 
-  def verifySerDeser[A](codec: Codec[A], obj: A, json: Array[Byte]): Unit = {
-    verifySer(codec, obj, json)
-    verifyDeser(codec, obj, json)
+  def verifySerDeser[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
+    verifySer(codec, obj, json, cfg)
+    verifyDeser(codec, obj, json, cfg)
   }
 
-  def verifySer[A](codec: Codec[A], obj: A, json: Array[Byte]): Unit = {
+  def verifySer[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
     val baos = new ByteArrayOutputStream
-    codec.write(obj, baos)
+    JsonStreamUtil.write(codec, obj, baos, cfg)
     toString(baos.toByteArray) shouldBe toString(json)
-    toString(codec.write(obj)) shouldBe toString(json)
+    toString(JsonStreamUtil.write(codec, obj, cfg)) shouldBe toString(json)
   }
 
-  def verifyDeser[A](codec: Codec[A], obj: A, json: Array[Byte]): Unit = {
+  def verifyDeser[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
     //FIXME: Failing when launched by 'sbt test'
-    //codec.read(new ByteArrayInputStream(json)) shouldBe obj
-    codec.read(json) shouldBe obj
-  }
-
-  def withConfig(configBuilder: Config.Builder => Config.Builder)(f: => Unit): Unit = {
-    val in = JsonIteratorUtil.pool.get
-    val out = JsonStreamUtil.pool.get
-    val inConfig = in.configCache
-    val outConfig = out.configCache
-    val config = configBuilder(new Config.Builder).build
-    in.configCache = config
-    out.configCache = config
-    try f finally {
-      in.configCache = inConfig
-      out.configCache = outConfig
-    }
+    //JsonIteratorUtil.read(codec, new ByteArrayInputStream(json), cfg) shouldBe obj
+    JsonIteratorUtil.read(codec, json, cfg) shouldBe obj
   }
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
@@ -477,7 +462,7 @@ case class BitSets(bs: BitSet, mbs: mutable.BitSet)
 
 case class CamelAndSnakeCase(camelCase: String, snake_case: String)
 
-case class Indented(f1: String, f2: List[String])
+case class Indented(s: String, bd: BigDecimal, l: List[Int])
 
 case class UTF8KeysAndValues(გასაღები: String)
 
