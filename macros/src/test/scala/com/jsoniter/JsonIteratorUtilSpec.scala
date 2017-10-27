@@ -198,8 +198,8 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readFloat("-12345e-6789") shouldBe -0.0f
       }
       "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readFloat("")).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readFloat("-")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readFloat("")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("-")).getMessage.contains("illegal number"))
         assert(intercept[Exception](readFloat("x")).getMessage.contains("illegal number"))
         assert(intercept[Exception](readFloat("0.E")).getMessage.contains("illegal number"))
         assert(intercept[Exception](readFloat("0.+")).getMessage.contains("illegal number"))
@@ -235,8 +235,8 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readDouble("-12345e-6789") shouldBe -0.0
       }
       "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readDouble("")).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readDouble("-")).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readDouble("")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("-")).getMessage.contains("illegal number"))
         assert(intercept[Exception](readDouble("x")).getMessage.contains("illegal number"))
         assert(intercept[Exception](readDouble("0.E")).getMessage.contains("illegal number"))
         assert(intercept[Exception](readDouble("0.-")).getMessage.contains("illegal number"))
@@ -279,7 +279,7 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readBigInt("", null)).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigInt("x", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigInt("0.E", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigInt("0.-", null)).getMessage.contains("illegal number"))
@@ -322,7 +322,7 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigDecimal("x", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigDecimal("0.E", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigDecimal("0.-", null)).getMessage.contains("illegal number"))

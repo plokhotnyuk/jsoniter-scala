@@ -235,9 +235,9 @@ class CodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize immutable maps" in {
       verifySerDeser(materialize[ImmutableMaps],
-        ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap(2 -> 2), "3" -> ListMap(3 -> 3)),
-          SortedMap(4L -> TreeMap(4.4 -> 4.4f), 5L -> TreeMap.empty[Double, Float])),
-        """{"m":{"1":1.1},"hm":{"2":{"2":2},"3":{"3":3}},"sm":{"4":{"4.4":4.4},"5":{}}}""".getBytes)
+        ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap(2.toChar -> 2), "3" -> ListMap(3.toChar -> 3)),
+          SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
+        """{"m":{"1":1.1},"hm":{"2":{"2":2},"3":{"3":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
     }
     "don't serialize null keys for maps" in {
       assert(intercept[IOException] {
@@ -256,9 +256,9 @@ class CodecSpec extends WordSpec with Matchers {
       }.getMessage.contains("key cannot be null"))
       assert(intercept[IOException] {
         verifySerDeser(materialize[ImmutableMaps],
-          ImmutableMaps(Map(1 -> 1.1), HashMap(null.asInstanceOf[String] -> ListMap(2 -> 2), "3" -> ListMap(3 -> 3)),
-            SortedMap(4L -> TreeMap(4.4 -> 4.4f), 5L -> TreeMap.empty[Double, Float])),
-          """{"m":{"1":1.1},"hm":{null:{"2":2},"3":{"3":3}},"sm":{"4":{"4.4":4.4},"5":{}}}""".getBytes)
+          ImmutableMaps(Map(1 -> 1.1), HashMap(null.asInstanceOf[String] -> ListMap(2.toChar -> 2), "3" -> ListMap(3.toChar -> 3)),
+            SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
+          """{"m":{"1":1.1},"hm":{null:{"2":2},"3":{"3":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
       }.getMessage.contains("key cannot be null"))
     }
     "serialize and deserialize mutable long maps" in {
@@ -451,8 +451,8 @@ case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal
                        m: mutable.Map[Float, mutable.WeakHashMap[BigInt, String]],
                        ohm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
 
-case class ImmutableMaps(m: Map[Int, Double], hm: HashMap[String, ListMap[Int, BigInt]],
-                         sm: SortedMap[Long, TreeMap[Double, Float]])
+case class ImmutableMaps(m: Map[Int, Double], hm: HashMap[String, ListMap[Char, BigInt]],
+                         sm: SortedMap[Long, TreeMap[Byte, Float]])
 
 case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])
 
