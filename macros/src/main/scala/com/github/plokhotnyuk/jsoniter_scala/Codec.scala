@@ -314,7 +314,7 @@ object Codec {
           key
         }).getOrElse(m.name.toString)
 
-      def hashCode(m: MethodSymbol): Long =
+      def hashCode(m: MethodSymbol): Int =
         JsonIteratorUtil.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
@@ -380,6 +380,7 @@ object Codec {
             import com.jsoniter.JsonIteratorUtil._
             import com.jsoniter.output.JsonStream
             import com.jsoniter.output.JsonStreamUtil._
+            import scala.annotation.switch
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
               ..$reqFields
               override def read(in: JsonIterator): $tpe =
@@ -390,7 +391,7 @@ object Codec {
                     if (nextToken(in) != '}') {
                       unreadByte(in)
                       do {
-                        readObjectFieldAsHash(in) match {
+                        (readObjectFieldAsHash(in): @switch) match {
                           case ..$readFields
                         }
                       } while (nextToken(in) == ',')

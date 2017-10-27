@@ -5,7 +5,7 @@ import java.io.InputStream
 import com.github.plokhotnyuk.jsoniter_scala.Codec
 import com.jsoniter.spi.{Config, JsoniterSpi}
 
-import scala.annotation.tailrec
+import scala.annotation.{switch, tailrec}
 
 object JsonIteratorUtil {
   private val pool: ThreadLocal[JsonIterator] = new ThreadLocal[JsonIterator] {
@@ -218,10 +218,9 @@ object JsonIteratorUtil {
     if (nextByte(in) != 'u' || nextByte(in) != 'l' ||  nextByte(in) != 'l') decodeError(in, "unexpected value")
     else default
 
-  // using 64-bit hash greatly reducing collisions in field name switch
-  final def readObjectFieldAsHash(in: JsonIterator): Long = {
+  final def readObjectFieldAsHash(in: JsonIterator): Int = {
     if (nextToken(in) != '"') decodeError(in, "expect \"")
-    val h = parseObjectFieldAsHash(in, -8796714831421723037L)
+    val h = parseObjectFieldAsHash(in, 777767777)
     if (nextToken(in) != ':') decodeError(in, "expect :")
     h
   }
@@ -230,7 +229,7 @@ object JsonIteratorUtil {
   final def nextToken(in: JsonIterator): Byte = {
     var i = in.head
     while (i < in.tail) {
-      in.buf(i) match {
+      (in.buf(i): @switch) match {
         case ' ' => // continue
         case '\n' => // continue
         case '\t' => // continue
@@ -339,7 +338,7 @@ object JsonIteratorUtil {
       i = in.head
       while (i < in.tail) {
         val ch = in.buf(i).toChar
-        state match {
+        (state: @switch) match {
           case 0 => // start
             if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
               if (!isToken) numberError(in)
@@ -502,7 +501,7 @@ object JsonIteratorUtil {
       var isZeroFirst = false
       while (i < in.tail) {
         val ch = in.buf(i).toChar
-        state match {
+        (state: @switch) match {
           case 0 => // start
             if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
               if (!isToken) numberError(in)
@@ -668,7 +667,7 @@ object JsonIteratorUtil {
   }
 
   private def parseEscapeSequence(in: JsonIterator, pos: Int): Int =
-    nextByte(in) match {
+    (nextByte(in): @switch) match {
       case 'b' => putCharAt(in, pos, '\b')
       case 'f' => putCharAt(in, pos, '\f')
       case 'n' => putCharAt(in, pos, '\n')
@@ -704,7 +703,7 @@ object JsonIteratorUtil {
   }
 
   @tailrec
-  private def parseObjectFieldAsHash(in: JsonIterator, hash: Long): Long = {
+  private def parseObjectFieldAsHash(in: JsonIterator, hash: Int): Int = {
     var h = hash
     var i = in.head
     while (i < in.tail) h = {
@@ -723,7 +722,7 @@ object JsonIteratorUtil {
     else decodeError(in, "unexpected end of input")
   }
 
-  private def slowParseObjectFieldAsHash(in: JsonIterator, hash: Long): Long = {
+  private def slowParseObjectFieldAsHash(in: JsonIterator, hash: Int): Int = {
     var h = hash
     var b1: Byte = 0
     while ({
@@ -759,8 +758,8 @@ object JsonIteratorUtil {
     h
   }
 
-  private def parseAndHashEscapeSequence(in: JsonIterator, hash: Long) =
-    nextByte(in) match {
+  private def parseAndHashEscapeSequence(in: JsonIterator, hash: Int): Int =
+    (nextByte(in): @switch) match {
       case 'b' => mix(hash, '\b')
       case 'f' => mix(hash, '\f')
       case 'n' => mix(hash, '\n')
@@ -789,17 +788,18 @@ object JsonIteratorUtil {
       (fromHexDigit(in, nextByte(in)) << 4) +
       fromHexDigit(in, nextByte(in))).toChar
 
-  private def mix(hash: Long, ch: Char): Long = {
-    val h = (hash ^ ch) * 1609587929392839161L
-    h ^ (h >>> 47) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
+  private def mix(hash: Int, ch: Char): Int = {
+    val h = (hash ^ ch) * 1500450271
+    h ^ (h >>> 11) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
   }
 
-  private def isMalformed2(b1: Byte, b2: Byte) = (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
+  private def isMalformed2(b1: Byte, b2: Byte): Boolean =
+    (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
 
-  private def isMalformed3(b1: Byte, b2: Byte, b3: Byte) =
+  private def isMalformed3(b1: Byte, b2: Byte, b3: Byte): Boolean =
     (b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80
 
-  private def isMalformed4(b2: Byte, b3: Byte, b4: Byte) =
+  private def isMalformed4(b2: Byte, b3: Byte, b4: Byte): Boolean =
     (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80
 
   private def malformedBytes(in: JsonIterator, bytes: Byte*): Nothing = {
