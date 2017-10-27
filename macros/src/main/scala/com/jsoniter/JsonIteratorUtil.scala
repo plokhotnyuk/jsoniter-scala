@@ -66,12 +66,12 @@ object JsonIteratorUtil {
     }
   }
 
-  final def reqFieldError(in: JsonIterator, reqFields: Array[String], reqs: Long*): Nothing = {
+  final def reqFieldError(in: JsonIterator, reqFields: Array[String], reqs: Int*): Nothing = {
     val sb = new StringBuilder(64)
     val l = reqFields.length
     var i = 0
     while (i < l) {
-      if ((reqs(i >> 6) & (1L << i)) != 0) {
+      if ((reqs(i >> 5) & (1 << i)) != 0) {
         sb.append(if (sb.isEmpty) "missing required field(s) " else ", ").append('"').append(reqFields(i)).append('"')
       }
       i += 1

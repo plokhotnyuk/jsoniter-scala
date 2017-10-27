@@ -333,15 +333,15 @@ object Codec {
         case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
       }
       val reqVarNum = required.size
-      val lastReqVarIndex = reqVarNum >> 6
-      val lastReqVarBits = (1L << reqVarNum) - 1
+      val lastReqVarIndex = reqVarNum >> 5
+      val lastReqVarBits = (1 << reqVarNum) - 1
       val reqVarNames = (0 to lastReqVarIndex).map(i => TermName(s"req$i"))
       val bitmasks: Map[String, Tree] = required.zipWithIndex.map {
-        case (r, i) => (r, q"${reqVarNames(i >> 6)} &= ${~(1L << i)}")
+        case (r, i) => (r, q"${reqVarNames(i >> 5)} &= ${~(1 << i)}")
       }(breakOut)
       val reqVars =
         if (lastReqVarBits == 0) Nil
-        else reqVarNames.dropRight(1).map(n => q"var $n: Long = -1") :+ q"var ${reqVarNames.last}: Long = $lastReqVarBits"
+        else reqVarNames.dropRight(1).map(n => q"var $n = -1") :+ q"var ${reqVarNames.last} = $lastReqVarBits"
       val reqFields =
         if (lastReqVarBits == 0) EmptyTree
         else q"private val reqFields: Array[String] = Array(..$required)"
