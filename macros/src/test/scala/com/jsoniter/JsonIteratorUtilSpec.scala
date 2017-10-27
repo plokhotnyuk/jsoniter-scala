@@ -192,10 +192,14 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       "parse infinity on float overflow" in {
         readFloat("12345e6789") shouldBe Float.PositiveInfinity
         readFloat("-12345e6789") shouldBe Float.NegativeInfinity
+        readFloat("12345678901234567890e12345678901234567890") shouldBe Float.PositiveInfinity
+        readFloat("-12345678901234567890e12345678901234567890") shouldBe Float.NegativeInfinity
       }
       "parse zero on float underflow" in {
         readFloat("12345e-6789") shouldBe 0.0f
         readFloat("-12345e-6789") shouldBe -0.0f
+        readFloat("12345678901234567890e-12345678901234567890") shouldBe 0.0f
+        readFloat("-12345678901234567890e-12345678901234567890") shouldBe -0.0f
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readFloat("")).getMessage.contains("illegal number"))
@@ -229,10 +233,14 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       "parse infinity on double overflow" in {
         readDouble("12345e6789") shouldBe Double.PositiveInfinity
         readDouble("-12345e6789") shouldBe Double.NegativeInfinity
+        readDouble("12345678901234567890e12345678901234567890") shouldBe Double.PositiveInfinity
+        readDouble("-12345678901234567890e12345678901234567890") shouldBe Double.NegativeInfinity
       }
       "parse zero on double underflow" in {
         readDouble("12345e-6789") shouldBe 0.0
         readDouble("-12345e-6789") shouldBe -0.0
+        readDouble("12345678901234567890e-12345678901234567890") shouldBe 0.0
+        readDouble("-1234567890123456789e-12345678901234567890") shouldBe -0.0
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readDouble("")).getMessage.contains("illegal number"))
@@ -277,6 +285,12 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readBigInt("12345e-6789", null) shouldBe BigInt("0")
         readBigInt("-12345e-6789", null) shouldBe BigInt("0")
       }
+      "throw number format exception for too big exponents" in {
+        intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890", null))
+        intercept[NumberFormatException](readBigInt("-12345678901234567890e12345678901234567890", null))
+        intercept[NumberFormatException](readBigInt("12345678901234567890e-12345678901234567890", null))
+        intercept[NumberFormatException](readBigInt("-12345678901234567890e-12345678901234567890", null))
+      }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readBigInt("", null)).getMessage.contains("unexpected end of input"))
         assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
@@ -319,6 +333,12 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       "parse small numbers without underflow" in {
         readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
         readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
+      }
+      "throw number format exception for too big exponents" in {
+        intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890", null))
+        intercept[NumberFormatException](readBigDecimal("-12345678901234567890e12345678901234567890", null))
+        intercept[NumberFormatException](readBigDecimal("12345678901234567890e-12345678901234567890", null))
+        intercept[NumberFormatException](readBigDecimal("-12345678901234567890e-12345678901234567890", null))
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("unexpected end of input"))

@@ -25,6 +25,11 @@ object JsonIteratorUtil {
     }
   }
 
+  // all the positive powers of 10 that can be represented exactly in double/float
+  private val pow10: Array[Double] =
+    Array(1, 1e+01, 1e+02, 1e+03, 1e+04, 1e+05, 1e+06, 1e+07, 1e+08, 1e+09, 1e+10,
+      1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21)
+
   final def read[A](codec: Codec[A], in: InputStream): A = {
     val it = pool.get
     it.reset(in)
@@ -134,32 +139,28 @@ object JsonIteratorUtil {
 
   final def readObjectFieldAsFloat(in: JsonIterator): Float = {
     readParentheses(in)
-    val len = parseNumber(in, isToken = false)
-    val x = java.lang.Float.parseFloat(new String(in.reusableChars, 0, len))
+    val x = parseDouble(in, isToken = false).toFloat
     readParenthesesWithColon(in)
     x
   }
 
   final def readObjectFieldAsDouble(in: JsonIterator): Double = {
     readParentheses(in)
-    val len = parseNumber(in, isToken = false)
-    val x = java.lang.Double.parseDouble(new String(in.reusableChars, 0, len))
+    val x = parseDouble(in, isToken = false)
     readParenthesesWithColon(in)
     x
   }
 
   final def readObjectFieldAsBigInt(in: JsonIterator): BigInt = {
     readParentheses(in)
-    val len = parseNumber(in, isToken = false)
-    val x = new BigInt(new java.math.BigDecimal(in.reusableChars, 0, len).toBigInteger)
+    val x = new BigInt(parseBigDecimal(in, isToken = false).toBigInteger)
     readParenthesesWithColon(in)
     x
   }
 
   final def readObjectFieldAsBigDecimal(in: JsonIterator): BigDecimal = {
     readParentheses(in)
-    val len = parseNumber(in, isToken = false)
-    val x = new BigDecimal(new java.math.BigDecimal(in.reusableChars, 0, len))
+    val x = new BigDecimal(parseBigDecimal(in, isToken = false))
     readParenthesesWithColon(in)
     x
   }
@@ -186,23 +187,16 @@ object JsonIteratorUtil {
 
   final def readLong(in: JsonIterator): Long =  parseLong(in, isToken = true)
 
-  final def readDouble(in: JsonIterator): Double = {
-    val len = parseNumber(in, isToken = true)
-    java.lang.Double.parseDouble(new String(in.reusableChars, 0, len))
-  }
+  final def readDouble(in: JsonIterator): Double = parseDouble(in, isToken = true)
 
-  final def readFloat(in: JsonIterator): Float = {
-    val len = parseNumber(in, isToken = true)
-    java.lang.Float.parseFloat(new String(in.reusableChars, 0, len))
-  }
+  final def readFloat(in: JsonIterator): Float = parseDouble(in, isToken = true).toFloat
 
   final def readBigInt(in: JsonIterator, default: BigInt): BigInt =
     nextToken(in) match {
       case 'n' => parseNull(in, default)
       case _ =>
         unreadByte(in)
-        val len = parseNumber(in, isToken = false)
-        new BigInt(new java.math.BigDecimal(in.reusableChars, 0, len).toBigInteger)
+        new BigInt(parseBigDecimal(in, isToken = false).toBigInteger)
     }
 
   final def readBigDecimal(in: JsonIterator, default: BigDecimal): BigDecimal =
@@ -210,8 +204,7 @@ object JsonIteratorUtil {
       case 'n' => parseNull(in, default)
       case _ =>
         unreadByte(in)
-        val len = parseNumber(in, isToken = false)
-        new BigDecimal(new java.math.BigDecimal(in.reusableChars, 0, len))
+        new BigDecimal(parseBigDecimal(in, isToken = false))
     }
 
   final def readString(in: JsonIterator, default: String = null): String =
@@ -289,7 +282,7 @@ object JsonIteratorUtil {
         }) i = {
           if (v == 0) decodeError(in, "leading zero is invalid")
           if (v < -214748364) decodeError(in, "value is too large for int")
-          v = v * 10 + '0' - b
+          v = v * 10 + ('0' - b)
           if (v >= 0) decodeError(in,  "value is too large for int")
           i + 1
         }
@@ -318,7 +311,7 @@ object JsonIteratorUtil {
         }) i = {
           if (v == 0) decodeError(in, "leading zero is invalid")
           if (v < -922337203685477580L) decodeError(in, "value is too large for long")
-          v = v * 10 + '0' - b
+          v = v * 10 + ('0' - b)
           if (v >= 0) decodeError(in,  "value is too large for long")
           i + 1
         }
@@ -332,13 +325,18 @@ object JsonIteratorUtil {
     }
   }
 
-  private def parseNumber(in: JsonIterator, isToken: Boolean): Int = {
+  private def parseDouble(in: JsonIterator, isToken: Boolean): Double = {
+    var isNeg = false
+    var posMan = 0L
+    var manExp = 0
+    var isExpNeg = false
+    var posExp = 0
     var j = 0
     var i = 0
     var state = 0
     do {
+      var isZeroFirst = false
       i = in.head
-      var isZeroFirstDigit = false
       while (i < in.tail) {
         val ch = in.buf(i).toChar
         state match {
@@ -348,7 +346,170 @@ object JsonIteratorUtil {
               state = 1
             } else if (ch >= '0' && ch <= '9') {
               j = putCharAt(in, j, ch)
-              isZeroFirstDigit = ch == '0'
+              posMan = ch - '0'
+              isZeroFirst = posMan == 0
+              state = 3
+            } else if (ch == '-') {
+              j = putCharAt(in, j, ch)
+              isNeg = true
+              state = 2
+            } else numberError(in)
+          case 1 => // whitespaces
+            if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+              state = 1
+            } else if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              posMan = ch - '0'
+              isZeroFirst = posMan == 0
+              state = 3
+            } else if (ch == '-') {
+              j = putCharAt(in, j, ch)
+              isNeg = true
+              state = 2
+            } else numberError(in)
+          case 2 => // signum
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              posMan = ch - '0'
+              isZeroFirst = posMan == 0
+              state = 3
+            } else numberError(in)
+          case 3 => // first int digit
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              posMan = posMan * 10 + (ch - '0')
+              if (isZeroFirst) decodeError(in, "leading zero is invalid")
+              state = 4
+            } else if (ch == '.') {
+              j = putCharAt(in, j, ch)
+              state = 5
+            } else if (ch == 'e' || ch == 'E') {
+              j = putCharAt(in, j, ch)
+              state = 7
+            } else {
+              in.head = i
+              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
+            }
+          case 4 => // int digit
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              if (posMan < 922337203685477580L) posMan = posMan * 10 + (ch - '0')
+              else manExp += 1
+              state = 4
+            } else if (ch == '.') {
+              j = putCharAt(in, j, ch)
+              state = 5
+            } else if (ch == 'e' || ch == 'E') {
+              j = putCharAt(in, j, ch)
+              state = 7
+            } else {
+              in.head = i
+              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
+            }
+          case 5 => // dot
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              if (posMan < 922337203685477580L) {
+                posMan = posMan * 10 + (ch - '0')
+                manExp -= 1
+              }
+              state = 6
+            } else numberError(in)
+          case 6 => // frac digit
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              if (posMan < 922337203685477580L) {
+                posMan = posMan * 10 + (ch - '0')
+                manExp -= 1
+              }
+              state = 6
+            } else if (ch == 'e' || ch == 'E') {
+              j = putCharAt(in, j, ch)
+              state = 7
+            } else {
+              in.head = i
+              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
+            }
+          case 7 => // e
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              posExp = ch - '0'
+              state = 9
+            } else if (ch == '-' || ch == '+') {
+              j = putCharAt(in, j, ch)
+              isExpNeg = ch == '-'
+              state = 8
+            } else numberError(in)
+          case 8 => // exp. sign
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              posExp = ch - '0'
+              state = 9
+            } else numberError(in)
+          case 9 => // exp. digit
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              posExp = posExp * 10 + (ch - '0')
+              if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 214748364) state = 10
+              else state = 9
+            } else {
+              in.head = i
+              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
+            }
+          case 10 => // exp. digit overflow
+            if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              state = 10
+            } else {
+              in.head = i
+              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
+            }
+        }
+        i += 1
+      }
+    } while (loadMore(in, i))
+    if (state == 3 || state == 4 || state == 6 || state == 9) toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
+    else if (state == 10) toExpOverflowDouble(isNeg, manExp, isExpNeg, posExp)
+    else numberError(in)
+  }
+
+  private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int,
+                       in: JsonIterator, j: Int): Double = {
+    val exp = toExp(manExp, isExpNeg, posExp)
+    val man = if (isNeg) -posMan else posMan
+    val maxExp = pow10.length
+    if (exp < -maxExp || exp > maxExp) java.lang.Double.parseDouble(new String(in.reusableChars, 0, j))
+    else if (exp == 0) man
+    else if (exp > 0) man * pow10(exp)
+    else man / pow10(-exp)
+  }
+
+  private def toExpOverflowDouble(isNeg: Boolean, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
+    if (toExp(manExp, isExpNeg, posExp) > 0) {
+      if (isNeg) Double.NegativeInfinity else Double.PositiveInfinity
+    } else {
+      if (isNeg) -0.0 else 0.0
+    }
+
+  private def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
+
+  private def parseBigDecimal(in: JsonIterator, isToken: Boolean): java.math.BigDecimal = {
+    var j = 0
+    var i = 0
+    var state = 0
+    do {
+      i = in.head
+      var isZeroFirst = false
+      while (i < in.tail) {
+        val ch = in.buf(i).toChar
+        state match {
+          case 0 => // start
+            if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+              if (!isToken) numberError(in)
+              state = 1
+            } else if (ch >= '0' && ch <= '9') {
+              j = putCharAt(in, j, ch)
+              isZeroFirst = ch == '0'
               state = 3
             } else if (ch == '-') {
               j = putCharAt(in, j, ch)
@@ -359,7 +520,7 @@ object JsonIteratorUtil {
               state = 1
             } else if (ch >= '0' && ch <= '9') {
               j = putCharAt(in, j, ch)
-              isZeroFirstDigit = ch == '0'
+              isZeroFirst = ch == '0'
               state = 3
             } else if (ch == '-') {
               j = putCharAt(in, j, ch)
@@ -368,12 +529,12 @@ object JsonIteratorUtil {
           case 2 => // signum
             if (ch >= '0' && ch <= '9') {
               j = putCharAt(in, j, ch)
-              isZeroFirstDigit = ch == '0'
+              isZeroFirst = ch == '0'
               state = 3
             } else numberError(in)
           case 3 => // first int digit
             if (ch >= '0' && ch <= '9') {
-              if (isZeroFirstDigit) decodeError(in, "leading zero is invalid")
+              if (isZeroFirst) decodeError(in, "leading zero is invalid")
               j = putCharAt(in, j, ch)
               state = 4
             } else if (ch == '.') {
@@ -384,7 +545,7 @@ object JsonIteratorUtil {
               state = 7
             } else {
               in.head = i
-              return j
+              return toBigDecimal(in, j)
             }
           case 4 => // int digit
             if (ch >= '0' && ch <= '9') {
@@ -398,7 +559,7 @@ object JsonIteratorUtil {
               state = 7
             } else {
               in.head = i
-              return j
+              return toBigDecimal(in, j)
             }
           case 5 => // dot
             if (ch >= '0' && ch <= '9') {
@@ -414,7 +575,7 @@ object JsonIteratorUtil {
               state = 7
             } else {
               in.head = i
-              return j
+              return toBigDecimal(in, j)
             }
           case 7 => // e
             if (ch >= '0' && ch <= '9') {
@@ -435,15 +596,18 @@ object JsonIteratorUtil {
               state = 9
             } else {
               in.head = i
-              return j
+              return toBigDecimal(in, j)
             }
         }
         i += 1
       }
     } while (loadMore(in, i))
-    if (state == 3 || state == 4 || state == 6 || state == 9) j
+    if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(in, j)
     else numberError(in)
   }
+
+  private def toBigDecimal(in: JsonIterator, len: Int): java.math.BigDecimal =
+    new java.math.BigDecimal(in.reusableChars, 0, len)
 
   private def numberError(in: JsonIterator): Nothing = decodeError(in, "illegal number")
 
