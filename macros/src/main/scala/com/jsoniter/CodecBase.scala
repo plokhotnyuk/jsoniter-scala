@@ -26,8 +26,10 @@ abstract class CodecBase[A](implicit m: Manifest[A]) extends Encoder with Decode
 
   final def read(buf: Array[Byte]): A = {
     val it = JsonIteratorUtil.pool.get
+    val currBuf = it.buf
     it.reset(buf)
-    decode(it).asInstanceOf[A]
+    try decode(it).asInstanceOf[A]
+    finally it.buf = currBuf
   }
 
   final def write(obj: A, out: OutputStream): Unit = {
