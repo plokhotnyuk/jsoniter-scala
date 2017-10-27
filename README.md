@@ -23,6 +23,8 @@ to get maximum performance of JSON parsing & serialization.
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Need to materialize for all case classes used in nested structures
 - Key names can be overridden by field annotation
+- Field names are matched by hash and can have collisions with other keys on the same JSON object value
+- TODO: efficient and no-allocation exact matching of field names after table switch by hash
 - TODO: generate encoders/decoders recursively from top-level type
 - TODO: support on top-level for values, collections & arrays to avoid wrapping to redundant case classes
 - TODO: implicitly resolvable encoders/decoders for field types and map keys
