@@ -119,14 +119,18 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
     "JsonIteratorUtil.readInt" should {
       "parse valid int values" in {
         readInt("0") shouldBe 0
-        readInt("0$") shouldBe 0
         readInt("-0") shouldBe -0
         readInt("123456789") shouldBe 123456789
         readInt("-123456789") shouldBe -123456789
-        readInt(" \n\t\r123456789") shouldBe 123456789
-        readInt(" \n\t\r-123456789") shouldBe -123456789
         readInt("2147483647") shouldBe 2147483647
         readInt("-2147483648") shouldBe -2147483648
+      }
+      "parse valid int values with skiping JSON space characters" in {
+        readInt(" \n\t\r123456789") shouldBe 123456789
+        readInt(" \n\t\r-123456789") shouldBe -123456789
+      }
+      "parse valid int values and stops on not numeric chars" in {
+        readInt("0$") shouldBe 0
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readInt("")).getMessage.contains("unexpected end of input"))
@@ -153,14 +157,18 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
     "JsonIteratorUtil.readLong" should {
       "parse valid long values" in {
         readLong("0") shouldBe 0L
-        readLong("0$") shouldBe 0L
         readLong("-0") shouldBe -0L
         readLong("1234567890123456789") shouldBe 1234567890123456789L
         readLong("-1234567890123456789") shouldBe -1234567890123456789L
-        readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
-        readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
         readLong("9223372036854775807") shouldBe 9223372036854775807L
         readLong("-9223372036854775808") shouldBe -9223372036854775808L
+      }
+      "parse valid long values with skiping JSON space characters" in {
+        readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
+        readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
+      }
+      "parse valid long values and stops on not numeric chars" in {
+        readLong("0$") shouldBe 0L
       }
       "throw parsing exception on invalid or empty input" in {
         assert(intercept[Exception](readLong("")).getMessage.contains("unexpected end of input"))
@@ -192,8 +200,6 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readFloat("-0.0") shouldBe -0.0f
         readFloat("12345.6789") shouldBe 12345.6789f
         readFloat("-12345.6789") shouldBe -12345.6789f
-        readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
-        readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
         readFloat("12345.6789e10") shouldBe 1.23456788e14f
         readFloat("12345.6789e+10") shouldBe 1.23456788e14f
         readFloat("-12345.6789E-10") shouldBe -1.2345679e-6f
@@ -209,6 +215,10 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readFloat("-12345e-6789") shouldBe -0.0f
         readFloat("12345678901234567890e-12345678901234567890") shouldBe 0.0f
         readFloat("-12345678901234567890e-12345678901234567890") shouldBe -0.0f
+      }
+      "parse valid float values with skiping JSON space characters" in {
+        readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
+        readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
       }
       "parse valid float values and stops on not numeric chars" in {
         readFloat("0$") shouldBe 0.0f
@@ -247,8 +257,6 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readDouble("-0.0") shouldBe -0.0
         readDouble("123456789.12345678") shouldBe 1.2345678912345678e8
         readDouble("-123456789.12345678") shouldBe -1.2345678912345678e8
-        readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
-        readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
         readDouble("123456789.123456789e10") shouldBe 1.23456789123456794e18
         readDouble("123456789.123456789e+10") shouldBe 1.23456789123456794e18
         readDouble("-123456789.123456789E-10") shouldBe -0.012345678912345679
@@ -264,6 +272,10 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readDouble("-12345e-6789") shouldBe -0.0
         readDouble("12345678901234567890e-12345678901234567890") shouldBe 0.0
         readDouble("-1234567890123456789e-12345678901234567890") shouldBe -0.0
+      }
+      "parse valid double values with skiping JSON space characters" in {
+        readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
+        readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
       }
       "parse valid double values and stops on not numeric chars" in {
         readDouble("0$") shouldBe 0.0
@@ -308,13 +320,11 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readBigInt("-0.0", null) shouldBe BigInt("0")
         readBigInt("12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
         readBigInt("-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
-        readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
-        readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
         readBigInt("1234567890123456789.0123456789e10", null) shouldBe BigInt("12345678901234567890123456789")
         readBigInt("1234567890123456789.0123456789e+10", null) shouldBe BigInt("12345678901234567890123456789")
         readBigInt("-1234567890123456789.0123456789E-10", null) shouldBe BigInt("-123456789")
       }
-      "parse big numbers without overflow" in {
+      "parse big number values without overflow" in {
         readBigInt("12345e6789", null) shouldBe BigInt("12345" + new String(Array.fill(6789)('0')))
         readBigInt("-12345e6789", null) shouldBe BigInt("-12345" + new String(Array.fill(6789)('0')))
       }
@@ -322,7 +332,11 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readBigInt("12345e-6789", null) shouldBe BigInt("0")
         readBigInt("-12345e-6789", null) shouldBe BigInt("0")
       }
-      "parse valid numbers values and stops on not numeric chars" in {
+      "parse valid number values with skiping JSON space characters" in {
+        readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
+        readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
+      }
+      "parse valid number values and stops on not numeric chars" in {
         readBigInt("0$", null) shouldBe BigInt("0")
         readBigInt("12345678901234567890123456789$", null) shouldBe BigInt("12345678901234567890123456789")
         readBigInt("1234567890123456789.0123456789e10$", null) shouldBe BigInt("12345678901234567890123456789")
@@ -371,21 +385,23 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         readBigDecimal("-0.0", null) shouldBe BigDecimal("0")
         readBigDecimal("1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
         readBigDecimal("-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
-        readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-        readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
         readBigDecimal("1234567890123456789.0123456789e10", null) shouldBe BigDecimal("12345678901234567890123456789")
         readBigDecimal("1234567890123456789.0123456789e+10", null) shouldBe BigDecimal("12345678901234567890123456789")
         readBigDecimal("-1234567890123456789.0123456789E-10", null) shouldBe BigDecimal("-123456789.01234567890123456789")
       }
-      "parse big numbers without overflow" in {
+      "parse big number values without overflow" in {
         readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
         readBigDecimal("-12345e6789", null) shouldBe BigDecimal("-12345e6789")
       }
-      "parse small numbers without underflow" in {
+      "parse small number values without underflow" in {
         readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
         readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
       }
-      "parse valid numbers values and stops on not numeric chars" in {
+      "parse valid number values with skiping JSON space characters" in {
+        readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+        readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
+      }
+      "parse valid number values and stops on not numeric chars" in {
         readBigDecimal("0$", null) shouldBe BigDecimal("0")
         readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
         readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
