@@ -471,8 +471,7 @@ object JsonIteratorUtil {
             if (ch >= '0' && ch <= '9') {
               j = putCharAt(in, j, ch)
               posExp = posExp * 10 + (ch - '0')
-              if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 214748364) state = 10
-              else state = 9
+              state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 214748364) 10 else 9
             } else {
               in.head = i
               return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, in, j)
@@ -626,17 +625,14 @@ object JsonIteratorUtil {
               return toBigDecimal(in, j)
             }
           case 10 => // n'u'll
-            if (ch == 'u') {
-              state = 11
-            } else numberError(in)
+            if (ch == 'u') state = 11
+            else numberError(in)
           case 11 => // nu'l'l
-            if (ch == 'l') {
-              state = 12
-            } else numberError(in)
+            if (ch == 'l') state = 12
+            else numberError(in)
           case 12 => // nul'l'
-            if (ch == 'l') {
-              state = 13
-            } else numberError(in)
+            if (ch == 'l') state = 13
+            else numberError(in)
           case 13 => // null
             in.head = i
             return null
