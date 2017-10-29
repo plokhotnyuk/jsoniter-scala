@@ -81,7 +81,7 @@ object JsonIteratorUtil {
 
   final def readObjectFieldAsString(in: JsonIterator): String = {
     readParentheses(in)
-    val x = parseString(in, 0)
+    val x = reusableCharsToString(in, parseString(in, 0))
     if (nextToken(in) != ':') decodeError(in, "expect :")
     x
   }
@@ -209,7 +209,7 @@ object JsonIteratorUtil {
 
   final def readString(in: JsonIterator, default: String = null): String =
     nextToken(in) match {
-      case '"' => parseString(in, 0)
+      case '"' => reusableCharsToString(in, parseString(in, 0))
       case 'n' => parseNull(in, default)
       case _ => decodeError(in, "expect string or null")
     }
@@ -218,11 +218,11 @@ object JsonIteratorUtil {
     if (nextByte(in) != 'u' || nextByte(in) != 'l' ||  nextByte(in) != 'l') decodeError(in, "unexpected value")
     else default
 
-  final def readObjectFieldAsHash(in: JsonIterator): Int = {
+  final def readObjectFieldAsReusableChars(in: JsonIterator): Int = {
     if (nextToken(in) != '"') decodeError(in, "expect \"")
-    val h = parseObjectFieldAsHash(in, 777767777)
+    val x = parseString(in, 0)
     if (nextToken(in) != ':') decodeError(in, "expect :")
-    h
+    x
   }
 
   @tailrec
@@ -244,17 +244,43 @@ object JsonIteratorUtil {
     else decodeError(in, "unexpected end of input")
   }
 
+  final def reusableCharsToHashCode(in: JsonIterator, len: Int): Int = toHashCode(in.reusableChars, len)
+
+  final def toHashCode(cs: Array[Char], len: Int): Int = {
+    var i = 0
+    var h = 777767777
+    while (i < len) {
+      h = (h ^ cs(i)) * 1500450271
+      h ^= (h >>> 11) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
+      i += 1
+    }
+    h
+  }
+
+  final def isReusableCharsEqualsTo(in: JsonIterator, len: Int, cs2: Array[Char]): Boolean =
+    if (len != cs2.length) false
+    else {
+      val cs1 = in.reusableChars
+      var i = 0
+      while (i < len) {
+        if (cs1(i) != cs2(i)) return false
+        i += 1
+      }
+      true
+    }
+
   final def unreadByte(in: JsonIterator): Unit = in.head -= 1
 
   final def decodeError(in: JsonIterator, msg: String): Nothing = throw in.reportError("decode", msg)
 
+  private def reusableCharsToString(in: JsonIterator, len: Int): String = new String(in.reusableChars, 0, len)
+
   private def readParentheses(in: JsonIterator): Unit =
     if (nextByte(in) != '"') decodeError(in, "expect \"")
 
-  private def readParenthesesWithColon(in: JsonIterator): Unit = {
+  private def readParenthesesWithColon(in: JsonIterator): Unit =
     if (nextByte(in) != '"') decodeError(in, "expect \"")
-    if (nextToken(in) != ':') decodeError(in, "expect :")
-  }
+    else if (nextToken(in) != ':') decodeError(in, "expect :")
 
   private def nextByte(in: JsonIterator): Byte = {
     var i = in.head
@@ -474,13 +500,15 @@ object JsonIteratorUtil {
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int,
                        in: JsonIterator, j: Int): Double = {
-    val exp = toExp(manExp, isExpNeg, posExp)
     val man = if (isNeg) -posMan else posMan
-    val maxExp = pow10.length
-    if (exp < -maxExp || exp > maxExp) java.lang.Double.parseDouble(new String(in.reusableChars, 0, j))
-    else if (exp == 0) man
-    else if (exp > 0) man * pow10(exp)
-    else man / pow10(-exp)
+    val exp = toExp(manExp, isExpNeg, posExp)
+    if (exp == 0) man
+    else {
+      val maxExp = pow10.length
+      if (exp >= -maxExp && exp < 0) man / pow10(-exp)
+      else if (exp > 0 && exp <= maxExp) man * pow10(exp)
+      else java.lang.Double.parseDouble(reusableCharsToString(in, j))
+    }
   }
 
   private def toExpOverflowDouble(isNeg: Boolean, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
@@ -611,7 +639,7 @@ object JsonIteratorUtil {
   private def numberError(in: JsonIterator): Nothing = decodeError(in, "illegal number")
 
   @tailrec
-  private def parseString(in: JsonIterator, pos: Int): String = {
+  private def parseString(in: JsonIterator, pos: Int): Int = {
     var j = pos
     var i = in.head
     while (i < in.tail) j = {
@@ -619,7 +647,7 @@ object JsonIteratorUtil {
       i += 1
       if (b == '"') {
         in.head = i
-        return new String(in.reusableChars, 0, j)
+        return j
       } else if ((b ^ '\\') < 1) {
         in.head = i - 1
         return slowParseString(in, j)
@@ -630,7 +658,7 @@ object JsonIteratorUtil {
     else decodeError(in, "unexpected end of input")
   }
 
-  private def slowParseString(in: JsonIterator, pos: Int): String = {
+  private def slowParseString(in: JsonIterator, pos: Int): Int = {
     var j: Int = pos
     var b1: Byte = 0
     while ({
@@ -663,7 +691,7 @@ object JsonIteratorUtil {
         putCharAt(in, putCharAt(in, j, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
       } else malformedBytes(in, b1)
     }
-    new String(in.reusableChars, 0, j)
+    j
   }
 
   private def parseEscapeSequence(in: JsonIterator, pos: Int): Int =
@@ -702,96 +730,11 @@ object JsonIteratorUtil {
     pos + 1
   }
 
-  @tailrec
-  private def parseObjectFieldAsHash(in: JsonIterator, hash: Int): Int = {
-    var h = hash
-    var i = in.head
-    while (i < in.tail) h = {
-      val b = in.buf(i)
-      i += 1
-      if (b == '"') {
-        in.head = i
-        return h
-      } else if ((b ^ '\\') < 1) {
-        in.head = i - 1
-        return slowParseObjectFieldAsHash(in, h)
-      }
-      mix(h, b.toChar)
-    }
-    if (loadMore(in, i)) parseObjectFieldAsHash(in, h)
-    else decodeError(in, "unexpected end of input")
-  }
-
-  private def slowParseObjectFieldAsHash(in: JsonIterator, hash: Int): Int = {
-    var h = hash
-    var b1: Byte = 0
-    while ({
-      b1 = nextByte(in)
-      b1 != '"'
-    }) h = {
-      if (b1 >= 0) {
-        // 1 byte, 7 bits: 0xxxxxxx
-        if (b1 != '\\') mix(h, b1.toChar)
-        else parseAndHashEscapeSequence(in, h)
-      } else if ((b1 >> 5) == -2) {
-        // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        val b2 = nextByte(in)
-        if (isMalformed2(b1, b2)) malformedBytes(in, b1, b2)
-        mix(h, ((b1 << 6) ^ (b2 ^ 0xF80)).toChar) //((0xC0.toByte << 6) ^ 0x80.toByte)
-      } else if ((b1 >> 4) == -2) {
-        // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        val b2 = nextByte(in)
-        val b3 = nextByte(in)
-        val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(in, b1, b2, b3)
-        mix(h, c)
-      } else if ((b1 >> 3) == -2) {
-        // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        val b2 = nextByte(in)
-        val b3 = nextByte(in)
-        val b4 = nextByte(in)
-        val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(in, b1, b2, b3, b4)
-        mix(mix(h, Character.highSurrogate(uc)), Character.lowSurrogate(uc))
-      } else malformedBytes(in, b1)
-    }
-    h
-  }
-
-  private def parseAndHashEscapeSequence(in: JsonIterator, hash: Int): Int =
-    (nextByte(in): @switch) match {
-      case 'b' => mix(hash, '\b')
-      case 'f' => mix(hash, '\f')
-      case 'n' => mix(hash, '\n')
-      case 'r' => mix(hash, '\r')
-      case 't' => mix(hash, '\t')
-      case '"' => mix(hash, '"')
-      case '/' => mix(hash, '/')
-      case '\\' => mix(hash, '\\')
-      case 'u' =>
-        val c1 = readHexDigitPresentedChar(in)
-        if (c1 < 2048) mix(hash, c1)
-        else if (!Character.isHighSurrogate(c1)) {
-          if (Character.isLowSurrogate(c1)) decodeError(in, "expect high surrogate character")
-          mix(hash, c1)
-        } else if (nextByte(in) == '\\' && nextByte(in) == 'u') {
-          val c2 = readHexDigitPresentedChar(in)
-          if (!Character.isLowSurrogate(c2)) decodeError(in, "expect low surrogate character")
-          mix(mix(hash, c1), c2)
-        } else decodeError(in, "invalid escape sequence")
-      case _ => decodeError(in, "invalid escape sequence")
-    }
-
   private def readHexDigitPresentedChar(in: JsonIterator): Char =
     ((fromHexDigit(in, nextByte(in)) << 12) +
       (fromHexDigit(in, nextByte(in)) << 8) +
       (fromHexDigit(in, nextByte(in)) << 4) +
       fromHexDigit(in, nextByte(in))).toChar
-
-  private def mix(hash: Int, ch: Char): Int = {
-    val h = (hash ^ ch) * 1500450271
-    h ^ (h >>> 11) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
-  }
 
   private def isMalformed2(b1: Byte, b2: Byte): Boolean =
     (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80

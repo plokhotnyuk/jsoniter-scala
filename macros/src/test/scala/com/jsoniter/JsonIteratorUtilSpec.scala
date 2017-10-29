@@ -2,48 +2,9 @@ package com.jsoniter
 
 import java.nio.charset.StandardCharsets
 
-import com.jsoniter.JsonIteratorUtil.readObjectFieldAsHash
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonIteratorUtilSpec extends WordSpec with Matchers {
-  "JsonIteratorUtil.readObjectFieldAsHash" should {
-    "compute the same hash value for escaped & non-escaped field names" in {
-      hashCode("""Hello""") shouldBe hashCode("Hello")
-      hashCode("""Hello""") shouldBe hashCode("\\u0048\\u0065\\u006C\\u006c\\u006f")
-      hashCode("""\b\f\n\r\t\/\\""") shouldBe hashCode("\b\f\n\r\t/\\\\")
-      hashCode("""\b\f\n\r\t\/Aиბ""") shouldBe hashCode("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1")
-      hashCode("𝄞") shouldBe hashCode("\\ud834\\udd1e")
-    }
-    "throw parsing exception in case of invalid escape character sequence" in {
-      assert(intercept[Exception](hashCode("\\x0008")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](hashCode("\\u000Z")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](hashCode("\\u000")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](hashCode("\\u00")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](hashCode("\\u0")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](hashCode("\\")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](hashCode("\\udd1e")).getMessage.contains("expect high surrogate character"))
-      assert(intercept[Exception](hashCode("\\ud834")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](hashCode("\\ud834\\")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](hashCode("\\ud834\\x")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](hashCode("\\ud834\\ud834")).getMessage.contains("expect low surrogate character"))
-    }
-    "throw parsing exception in case of invalid byte sequence" in {
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte))).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](hashCode(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 0x80"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xC0, 0x80"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0x08"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xC8.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0xFF"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xE0, 0x80, 0x80"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xE0, 0xFF, 0x80"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xE8, 0x88, 0x08"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x80, 0x80, 0x80"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x04, 0x9E"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0xFF"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0xFF, 0x9E"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
-      assert(intercept[Exception](hashCode(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
-    }
-  }
   "JsonIteratorUtil.readString" should {
     "parse null value" in {
       JsonIteratorUtil.readString(JsonIterator.parse("null".getBytes)) shouldBe null
@@ -437,10 +398,6 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
     }
   }
-
-  def hashCode(s: String): Long = hashCode(s.getBytes(StandardCharsets.UTF_8))
-
-  def hashCode(buf: Array[Byte]): Long = readObjectFieldAsHash(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte))
 
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
 

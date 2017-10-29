@@ -314,8 +314,10 @@ object Codec {
           key
         }).getOrElse(m.name.toString)
 
-      def hashCode(m: MethodSymbol): Int =
-        JsonIteratorUtil.readObjectFieldAsHash(JsonIterator.parse(s""""${keyName(m)}":""".getBytes("UTF-8")))
+      def hashCode(m: MethodSymbol): Int = {
+        val cs = keyName(m).toCharArray
+        JsonIteratorUtil.toHashCode(cs, cs.length)
+      }
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
       val comp = tpe.typeSymbol.companion
@@ -329,7 +331,7 @@ object Codec {
       val defaults: Map[String, Tree] = params.zipWithIndex.collect {
         case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
       }(breakOut)
-      val required = params.collect {
+      val required = params.collect { // FIXME should report overridden by annotation keys instead of param names
         case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
       }
       val reqVarNum = required.size
@@ -356,11 +358,16 @@ object Codec {
       val readVars = members.map { m =>
         q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, defaultValue(methodType(m)))}"
       }
-      val readFields = members.map { m =>
+      val fields =
+        if (members.isEmpty) EmptyTree
+        else q"private val fields: Array[Array[Char]] = Array(..${members.map(m => q"${keyName(m)}.toCharArray")})"
+      val readFields = members.zipWithIndex.map { case (m, i) =>
         val varName = TermName(s"_${m.name}")
         cq"""${hashCode(m)} =>
-            ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
-            $varName = ${genReadField(methodType(m), q"$varName")}"""
+            if (isReusableCharsEqualsTo(in, l, fields($i))) {
+              ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
+              $varName = ${genReadField(methodType(m), q"$varName")}
+            } else in.skip()"""
       } :+ cq"_ => in.skip()"
       val writeFields = members.map { m =>
         val tpe = methodType(m)
@@ -382,6 +389,7 @@ object Codec {
             import com.jsoniter.output.JsonStreamUtil._
             import scala.annotation.switch
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
+              ..$fields
               ..$reqFields
               override def read(in: JsonIterator): $tpe =
                 nextToken(in) match {
@@ -391,7 +399,8 @@ object Codec {
                     if (nextToken(in) != '}') {
                       unreadByte(in)
                       do {
-                        (readObjectFieldAsHash(in): @switch) match {
+                        val l = readObjectFieldAsReusableChars(in)
+                        (reusableCharsToHashCode(in, l): @switch) match {
                           case ..$readFields
                         }
                       } while (nextToken(in) == ',')
