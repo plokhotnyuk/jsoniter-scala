@@ -185,27 +185,23 @@ object JsonIteratorUtil {
 
   final def readInt(in: JsonIterator): Int = parseInt(in, isToken = true)
 
-  final def readLong(in: JsonIterator): Long =  parseLong(in, isToken = true)
+  final def readLong(in: JsonIterator): Long = parseLong(in, isToken = true)
 
   final def readDouble(in: JsonIterator): Double = parseDouble(in, isToken = true)
 
   final def readFloat(in: JsonIterator): Float = parseDouble(in, isToken = true).toFloat
 
-  final def readBigInt(in: JsonIterator, default: BigInt): BigInt =
-    nextToken(in) match {
-      case 'n' => parseNull(in, default)
-      case _ =>
-        unreadByte(in)
-        new BigInt(parseBigDecimal(in, isToken = false).toBigInteger)
-    }
+  final def readBigInt(in: JsonIterator, default: BigInt): BigInt = {
+    val x = parseBigDecimal(in, isToken = true)
+    if (x ne null) new BigInt(x.toBigInteger)
+    else default
+  }
 
-  final def readBigDecimal(in: JsonIterator, default: BigDecimal): BigDecimal =
-    nextToken(in) match {
-      case 'n' => parseNull(in, default)
-      case _ =>
-        unreadByte(in)
-        new BigDecimal(parseBigDecimal(in, isToken = false))
-    }
+  final def readBigDecimal(in: JsonIterator, default: BigDecimal): BigDecimal = {
+    val x = parseBigDecimal(in, isToken = true)
+    if (x ne null) new BigDecimal(x)
+    else default
+  }
 
   final def readString(in: JsonIterator, default: String = null): String =
     nextToken(in) match {
@@ -541,6 +537,8 @@ object JsonIteratorUtil {
             } else if (ch == '-') {
               j = putCharAt(in, j, ch)
               state = 2
+            } else if (ch == 'n' && isToken) {
+              state = 10
             } else numberError(in)
           case 1 => // whitespaces
             if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
@@ -552,6 +550,8 @@ object JsonIteratorUtil {
             } else if (ch == '-') {
               j = putCharAt(in, j, ch)
               state = 2
+            } else if (ch == 'n' && isToken) {
+              state = 10
             } else numberError(in)
           case 2 => // signum
             if (ch >= '0' && ch <= '9') {
@@ -625,11 +625,27 @@ object JsonIteratorUtil {
               in.head = i
               return toBigDecimal(in, j)
             }
+          case 10 => // n'u'll
+            if (ch == 'u') {
+              state = 11
+            } else numberError(in)
+          case 11 => // nu'l'l
+            if (ch == 'l') {
+              state = 12
+            } else numberError(in)
+          case 12 => // nul'l'
+            if (ch == 'l') {
+              state = 13
+            } else numberError(in)
+          case 13 => // null
+            in.head = i
+            return null
         }
         i += 1
       }
     } while (loadMore(in, i))
     if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(in, j)
+    else if (state == 13) null
     else numberError(in)
   }
 

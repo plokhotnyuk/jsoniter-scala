@@ -183,6 +183,7 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
       "parse valid float values and stops on not numeric chars" in {
         readFloat("0$") shouldBe 0.0f
+        readFloat("12345$") shouldBe 12345f
         readFloat("12345.6789$") shouldBe 12345.6789f
         readFloat("12345.6789e10$") shouldBe 1.23456788e14f
         readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
@@ -240,6 +241,7 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
       "parse valid double values and stops on not numeric chars" in {
         readDouble("0$") shouldBe 0.0
+        readDouble("123456789$") shouldBe 123456789.0
         readDouble("123456789.12345678$") shouldBe 1.2345678912345678e8
         readDouble("123456789.123456789e10$") shouldBe 1.23456789123456794e18
         readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
@@ -299,7 +301,8 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
       "parse valid number values and stops on not numeric chars" in {
         readBigInt("0$", null) shouldBe BigInt("0")
-        readBigInt("12345678901234567890123456789$", null) shouldBe BigInt("12345678901234567890123456789")
+        readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
+        readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
         readBigInt("1234567890123456789.0123456789e10$", null) shouldBe BigInt("12345678901234567890123456789")
       }
       "throw number format exception for too big exponents" in {
@@ -310,8 +313,8 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890$", null))
       }
       "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readBigInt("", null)).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readBigInt(" ", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigInt("", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt(" ", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigInt("$", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigInt(" $", null)).getMessage.contains("illegal number"))
@@ -364,6 +367,7 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       }
       "parse valid number values and stops on not numeric chars" in {
         readBigDecimal("0$", null) shouldBe BigDecimal("0")
+        readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
         readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
         readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
       }
@@ -375,8 +379,8 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890$", null))
       }
       "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readBigDecimal(" ", null)).getMessage.contains("unexpected end of input"))
+        assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal(" ", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigDecimal("$", null)).getMessage.contains("illegal number"))
         assert(intercept[Exception](readBigDecimal(" $", null)).getMessage.contains("illegal number"))
