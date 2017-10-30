@@ -10,7 +10,6 @@ import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
-import com.jsoniter.JsonIteratorUtil
 import com.jsoniter.output.JsonStreamUtil
 import org.openjdk.jmh.annotations._
 import io.circe._
@@ -96,7 +95,7 @@ class CodecBenchmark {
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
 
   @Benchmark
-  def readAnyRefsJsoniter(): AnyRefs = JsonIteratorUtil.read(anyRefsCodec, anyRefsJson)
+  def readAnyRefsJsoniter(): AnyRefs = JsonReader.read(anyRefsCodec, anyRefsJson)
 
   @Benchmark
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
@@ -109,7 +108,7 @@ class CodecBenchmark {
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
 
   @Benchmark
-  def readArraysJsoniter(): Arrays = JsonIteratorUtil.read(arraysCodec, arraysJson)
+  def readArraysJsoniter(): Arrays = JsonReader.read(arraysCodec, arraysJson)
 
   @Benchmark
   def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
@@ -124,7 +123,7 @@ class CodecBenchmark {
   def readBitSetsJackson(): BitSets = jacksonMapper.readValue[BitSets](bitSetsJson)
 
   @Benchmark
-  def readBitSetsJsoniter(): BitSets = JsonIteratorUtil.read(bitSetsCodec, bitSetsJson)
+  def readBitSetsJsoniter(): BitSets = JsonReader.read(bitSetsCodec, bitSetsJson)
 
   @Benchmark
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
@@ -137,7 +136,7 @@ class CodecBenchmark {
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
 
   @Benchmark
-  def readIterablesJsoniter(): Iterables = JsonIteratorUtil.read(iterablesCodec, iterablesJson)
+  def readIterablesJsoniter(): Iterables = JsonReader.read(iterablesCodec, iterablesJson)
 
   @Benchmark
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
@@ -150,7 +149,7 @@ class CodecBenchmark {
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
 
   @Benchmark
-  def readMapsJsoniter(): Maps = JsonIteratorUtil.read(mapsCodec, mapsJson)
+  def readMapsJsoniter(): Maps = JsonReader.read(mapsCodec, mapsJson)
 
   @Benchmark
   def readMapsPlay(): Maps = Json.parse(mapsJson).as[Maps](mapsFormat)
@@ -165,7 +164,7 @@ class CodecBenchmark {
   def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJson)
 
   @Benchmark
-  def readMutableMapsJsoniter(): MutableMaps = JsonIteratorUtil.read(mutableMapsCodec, mutableMapsJson)
+  def readMutableMapsJsoniter(): MutableMaps = JsonReader.read(mutableMapsCodec, mutableMapsJson)
 
   @Benchmark
   def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJson).as[MutableMaps](mutableMapsFormat)
@@ -182,7 +181,7 @@ class CodecBenchmark {
 */
 
   @Benchmark
-  def readIntAndLongMapsJsoniter(): IntAndLongMaps = JsonIteratorUtil.read(intAndLongMapsCodec, intAndLongMapsJson)
+  def readIntAndLongMapsJsoniter(): IntAndLongMaps = JsonReader.read(intAndLongMapsCodec, intAndLongMapsJson)
 
   @Benchmark
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
@@ -197,7 +196,7 @@ class CodecBenchmark {
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
 
   @Benchmark
-  def readPrimitivesJsoniter(): Primitives = JsonIteratorUtil.read(primitivesCodec, primitivesJson)
+  def readPrimitivesJsoniter(): Primitives = JsonReader.read(primitivesCodec, primitivesJson)
 
   @Benchmark
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
@@ -210,7 +209,7 @@ class CodecBenchmark {
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
 
   @Benchmark
-  def readExtractFieldsJsoniter(): ExtractFields = JsonIteratorUtil.read(extractFieldsCodec, extractFieldsJson)
+  def readExtractFieldsJsoniter(): ExtractFields = JsonReader.read(extractFieldsCodec, extractFieldsJson)
 
   @Benchmark
   def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)

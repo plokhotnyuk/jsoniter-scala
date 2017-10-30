@@ -1,11 +1,12 @@
-package com.jsoniter
+package com.github.plokhotnyuk.jsoniter_scala
 
+import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.{Matchers, WordSpec}
 
-class JsonIteratorUtilSpec extends WordSpec with Matchers {
-  "JsonIteratorUtil.skip" should {
+class JsonReaderSpec extends WordSpec with Matchers {
+  "JsonReader.skip" should {
     "skip string values" in {
       skip("\"\"")
       skip("\" \"")
@@ -66,26 +67,26 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
           |}""".stripMargin)
     }
   }
-  "JsonIteratorUtil.readBoolean" should {
+  "JsonReader.readBoolean" should {
     "parse valid true and false values" in {
-      JsonIteratorUtil.readBoolean(JsonIterator.parse("true".getBytes)) shouldBe true
-      JsonIteratorUtil.readBoolean(JsonIterator.parse("false".getBytes)) shouldBe false
+      parse("true".getBytes).readBoolean() shouldBe true
+      parse("false".getBytes).readBoolean() shouldBe false
     }
     "throw parsing exception for empty input and invalid or broken value" in {
-      assert(intercept[Exception](JsonIteratorUtil.readBoolean(JsonIterator.parse("".getBytes)))
+      assert(intercept[Exception](parse("".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](JsonIteratorUtil.readBoolean(JsonIterator.parse("tru".getBytes)))
+      assert(intercept[Exception](parse("tru".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](JsonIteratorUtil.readBoolean(JsonIterator.parse("fals".getBytes)))
+      assert(intercept[Exception](parse("tru".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input"))
     }
   }
-  "JsonIteratorUtil.readString" should {
+  "JsonReader.readString" should {
     "parse null value" in {
-      JsonIteratorUtil.readString(JsonIterator.parse("null".getBytes)) shouldBe null
+      parse("null".getBytes).readString() shouldBe null
     }
     "return supplied default value instead of null value" in {
-      JsonIteratorUtil.readString(JsonIterator.parse("null".getBytes), "VVV") shouldBe "VVV"
+      parse("null".getBytes).readString("VVV") shouldBe "VVV"
     }
     "parse long string" in {
       val text =
@@ -98,19 +99,19 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       readString(text) shouldBe text
     }
     "throw parsing exception for empty input and invalid or broken string" in {
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("".getBytes)))
+      assert(intercept[Exception](parse("".getBytes).readString())
         .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"".getBytes)))
+      assert(intercept[Exception](parse("\"".getBytes).readString())
         .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"\\".getBytes)))
+      assert(intercept[Exception](parse("\"\\".getBytes).readString())
         .getMessage.contains("unexpected end of input"))
     }
     "throw parsing exception for boolean values & numbers" in {
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("true".getBytes)))
+      assert(intercept[Exception](parse("true".getBytes).readString())
         .getMessage.contains("expect string or null"))
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("false".getBytes)))
+      assert(intercept[Exception](parse("false".getBytes).readString())
         .getMessage.contains("expect string or null"))
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("12345".getBytes)))
+      assert(intercept[Exception](parse("12345".getBytes).readString())
         .getMessage.contains("expect string or null"))
     }
     "get the same string value for escaped & non-escaped field names" in {
@@ -149,7 +150,7 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
     }
-    "JsonIteratorUtil.readInt" should {
+    "JsonReader.readInt" should {
       "parse valid int values" in {
         readInt("0") shouldBe 0
         readInt("-0") shouldBe -0
@@ -179,15 +180,15 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readInt("-12345678901234567890")).getMessage.contains("value is too large for int"))
       }
       "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readInt("00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readInt("-00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readInt("0123456789")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readInt("-0123456789")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readInt("02147483647")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readInt("00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readInt("-00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readInt("0123456789")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readInt("-0123456789")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readInt("02147483647")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("illegal number"))
       }
     }
-    "JsonIteratorUtil.readLong" should {
+    "JsonReader.readLong" should {
       "parse valid long values" in {
         readLong("0") shouldBe 0L
         readLong("-0") shouldBe -0L
@@ -217,15 +218,15 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readLong("-123456789012345678901234567890")).getMessage.contains("value is too large for long"))
       }
       "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readLong("00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readLong("-00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readLong("01234567890123456789")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readLong("-01234567890123456789")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readLong("09223372036854775807")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readLong("00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readLong("-00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readLong("01234567890123456789")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readLong("-01234567890123456789")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readLong("09223372036854775807")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("illegal number"))
       }
     }
-    "JsonIteratorUtil.readFloat" should {
+    "JsonReader.readFloat" should {
       "parse valid float values" in {
         readFloat("0") shouldBe 0.0f
         readFloat("0e0") shouldBe 0.0f
@@ -277,13 +278,13 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readFloat("Infinity")).getMessage.contains("illegal number"))
       }
       "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readFloat("00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readFloat("-00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readFloat("012345.6789")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readFloat("00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("-00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("012345.6789")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("illegal number"))
       }
     }
-    "JsonIteratorUtil.readDouble" should {
+    "JsonReader.readDouble" should {
       "parse valid double values" in {
         readDouble("0") shouldBe 0.0
         readDouble("0e0") shouldBe 0.0
@@ -335,13 +336,13 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readDouble("Infinity")).getMessage.contains("illegal number"))
       }
       "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readDouble("00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readDouble("-00")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readDouble("012345.6789")).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readDouble("00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("-00")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("012345.6789")).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("illegal number"))
       }
     }
-    "JsonIteratorUtil.readBigInt" should {
+    "JsonReader.readBigInt" should {
       "parse null value" in {
         readBigInt("null", null) shouldBe null
       }
@@ -401,13 +402,13 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readBigInt("Infinity", null)).getMessage.contains("illegal number"))
       }
       "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readBigInt("00", null)).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readBigInt("-00", null)).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readBigInt("012345.6789", null)).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigInt("00", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("-00", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("012345.6789", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("illegal number"))
       }
     }
-    "JsonIteratorUtil.readBigDecimal" should {
+    "JsonReader.readBigDecimal" should {
       "parse null value" in {
         readBigDecimal("null", null) shouldBe null
       }
@@ -467,46 +468,44 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readBigDecimal("Infinity", null)).getMessage.contains("illegal number"))
       }
       "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readBigDecimal("00", null)).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readBigDecimal("-00", null)).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readBigDecimal("012345.6789", null)).getMessage.contains("leading zero is invalid"))
-        assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("leading zero is invalid"))
+        assert(intercept[Exception](readBigDecimal("00", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("-00", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("012345.6789", null)).getMessage.contains("illegal number"))
+        assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("illegal number"))
       }
     }
   }
 
-  def skip(s: String): Unit = {
-    val in = JsonIterator.parse(s.getBytes)
-    val expected = in.tail
-    JsonIteratorUtil.skip(in)
-    assert(in.head == expected)
-  }
+  def parse(buf: Array[Byte]): JsonReader =
+    new JsonReader(new Array[Byte](2), 0, 0, new Array[Char](2), new ByteArrayInputStream(buf))
+
+  def skip(s: String): Unit = parse(s.getBytes).skip()
 
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
 
-  def readString(buf: Array[Byte]): String = JsonIteratorUtil.readString(JsonIterator.parse('"'.toByte +: buf :+ '"'.toByte))
+  def readString(buf: Array[Byte]): String = parse('"'.toByte +: buf :+ '"'.toByte).readString()
 
   def readInt(s: String): Int = readInt(s.getBytes(StandardCharsets.UTF_8))
 
-  def readInt(buf: Array[Byte]): Int = JsonIteratorUtil.readInt(JsonIterator.parse(buf))
+  def readInt(buf: Array[Byte]): Int = parse(buf).readInt()
 
   def readLong(s: String): Long = readLong(s.getBytes(StandardCharsets.UTF_8))
 
-  def readLong(buf: Array[Byte]): Long = JsonIteratorUtil.readLong(JsonIterator.parse(buf))
+  def readLong(buf: Array[Byte]): Long = parse(buf).readLong()
 
   def readFloat(s: String): Float = readFloat(s.getBytes(StandardCharsets.UTF_8))
 
-  def readFloat(buf: Array[Byte]): Float = JsonIteratorUtil.readFloat(JsonIterator.parse(buf))
+  def readFloat(buf: Array[Byte]): Float = parse(buf).readFloat()
 
   def readDouble(s: String): Double = readDouble(s.getBytes(StandardCharsets.UTF_8))
 
-  def readDouble(buf: Array[Byte]): Double = JsonIteratorUtil.readDouble(JsonIterator.parse(buf))
+  def readDouble(buf: Array[Byte]): Double = parse(buf).readDouble()
 
   def readBigInt(s: String, default: BigInt): BigInt = readBigInt(s.getBytes(StandardCharsets.UTF_8), default)
 
-  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = JsonIteratorUtil.readBigInt(JsonIterator.parse(buf), default)
+  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = parse(buf).readBigInt(default)
 
   def readBigDecimal(s: String, default: BigDecimal): BigDecimal = readBigDecimal(s.getBytes(StandardCharsets.UTF_8), default)
 
-  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = JsonIteratorUtil.readBigDecimal(JsonIterator.parse(buf), default)
+  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = parse(buf).readBigDecimal(default)
 }

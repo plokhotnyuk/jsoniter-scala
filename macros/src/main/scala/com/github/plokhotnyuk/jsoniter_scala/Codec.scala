@@ -1,9 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import com.jsoniter.{JsonIterator, JsonIteratorUtil}
 import com.jsoniter.output.JsonStream
-import com.jsoniter.spi.{Config, Decoder, Encoder, JsoniterSpi}
-import com.jsoniter.spi.JsoniterSpi.{addNewDecoder, addNewEncoder, getCurrentConfig}
+import com.jsoniter.spi.{Config, Encoder, JsoniterSpi}
+import com.jsoniter.spi.JsoniterSpi.{addNewEncoder, getCurrentConfig}
 
 import scala.annotation.meta.field
 import scala.collection.breakOut
@@ -15,18 +14,15 @@ import scala.reflect.macros.blackbox
 @field
 class key(key: String) extends scala.annotation.StaticAnnotation
 
-abstract class Codec[A](implicit m: Manifest[A]) extends Encoder with Decoder {
+abstract class Codec[A](implicit m: Manifest[A]) extends Encoder {
   private val cls = m.runtimeClass.asInstanceOf[Class[A]]
 
   JsoniterSpi.setDefaultConfig((new Config.Builder).escapeUnicode(false).build)
   addNewEncoder(getCurrentConfig.getEncoderCacheKey(cls), this)
-  addNewDecoder(getCurrentConfig.getDecoderCacheKey(cls), this)
 
-  def read(in: JsonIterator): A
+  def read(in: JsonReader): A
 
   def write(obj: A, out: JsonStream): Unit
-
-  override def decode(in: JsonIterator): AnyRef = read(in).asInstanceOf[AnyRef]
 
   override def encode(obj: AnyRef, out: JsonStream): Unit = write(obj.asInstanceOf[A], out)
 }
@@ -79,70 +75,70 @@ object Codec {
 
       def genReadKey(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe) {
-          q"readObjectFieldAsBoolean(in)"
+          q"in.readObjectFieldAsBoolean()"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"readObjectFieldAsByte(in)"
+          q"in.readObjectFieldAsByte()"
         } else if (tpe =:= definitions.CharTpe) {
-          q"readObjectFieldAsChar(in)"
+          q"in.readObjectFieldAsChar()"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"readObjectFieldAsShort(in)"
+          q"in.readObjectFieldAsShort()"
         } else if (tpe =:= definitions.IntTpe) {
-          q"readObjectFieldAsInt(in)"
+          q"in.readObjectFieldAsInt()"
         } else if (tpe =:= definitions.LongTpe) {
-          q"readObjectFieldAsLong(in)"
+          q"in.readObjectFieldAsLong()"
         } else if (tpe =:= definitions.DoubleTpe) {
-          q"readObjectFieldAsDouble(in)"
+          q"in.readObjectFieldAsDouble()"
         } else if (tpe =:= definitions.FloatTpe) {
-          q"readObjectFieldAsFloat(in)"
+          q"in.readObjectFieldAsFloat()"
         } else if (isValueClass(tpe)) {
           q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
         } else if (tpe =:= typeOf[String]) {
-          q"readObjectFieldAsString(in)"
+          q"in.readObjectFieldAsString()"
         } else if (tpe =:= typeOf[BigInt]) {
-          q"readObjectFieldAsBigInt(in)"
+          q"in.readObjectFieldAsBigInt()"
         } else if (tpe =:= typeOf[BigDecimal]) {
-          q"readObjectFieldAsBigDecimal(in)"
+          q"in.readObjectFieldAsBigDecimal()"
         } else if (tpe <:< typeOf[Enumeration#Value]) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"$enumSymbol.apply(readObjectFieldAsInt(in))"
+          q"$enumSymbol.apply(in.readObjectFieldAsInt())"
         } else {
           c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
         }
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"buf.result()"): Tree =
-        q"""nextToken(in) match {
+        q"""in.nextToken() match {
               case '[' =>
-                if (nextToken(in) == ']') default
+                if (in.nextToken() == ']') default
                 else {
-                  unreadByte(in)
+                  in.unreadByte()
                   ..$newBuilder
                   do {
                     ..$readVal
-                  } while (nextToken(in) == ',')
+                  } while (in.nextToken() == ',')
                   ..$result
                 }
               case 'n' =>
-                parseNull(in, default)
+                in.parseNull(default)
               case _ =>
-                decodeError(in, "expect [ or n")
+                in.decodeError("expect [ or n")
             }"""
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"buf"): Tree =
-        q"""nextToken(in) match {
+        q"""in.nextToken() match {
               case '{' =>
-                if (nextToken(in) == '}') default
+                if (in.nextToken() == '}') default
                 else {
-                  unreadByte(in)
+                  in.unreadByte()
                   ..$newBuilder
                   do {
                     ..$readKV
-                  } while (nextToken(in) == ',')
+                  } while (in.nextToken() == ',')
                   ..$result
                 }
               case 'n' =>
-                parseNull(in, default)
+                in.parseNull(default)
               case _ =>
-                decodeError(in, "expect { or n")
+                in.decodeError("expect { or n")
             }"""
 
       val decoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
@@ -151,7 +147,7 @@ object Codec {
         q"""${decoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"d${decoders.size}")
-          (name, q"private def $name(in: JsonIterator, default: $tpe): $tpe = $impl")})._1}(in, $arg)"""
+          (name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")})._1}(in, $arg)"""
 
       val encoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
 
@@ -163,21 +159,21 @@ object Codec {
 
       def genReadField(tpe: Type, default: Tree): Tree =
         if (tpe =:= definitions.BooleanTpe) {
-          q"readBoolean(in)"
+          q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe) {
-          q"readByte(in)"
+          q"in.readByte()"
         } else if (tpe =:= definitions.CharTpe) {
-          q"readChar(in)"
+          q"in.readChar()"
         } else if (tpe =:= definitions.ShortTpe) {
-          q"readShort(in)"
+          q"in.readShort()"
         } else if (tpe =:= definitions.IntTpe) {
-          q"readInt(in)"
+          q"in.readInt()"
         } else if (tpe.widen =:= definitions.LongTpe) {
-          q"readLong(in)"
+          q"in.readLong()"
         } else if (tpe =:= definitions.DoubleTpe) {
-          q"readDouble(in)"
+          q"in.readDouble()"
         } else if (tpe =:= definitions.FloatTpe) {
-          q"readFloat(in)"
+          q"in.readFloat()"
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadField(tpe1, defaultValue(tpe1))})"
@@ -188,17 +184,17 @@ object Codec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var buf = $comp.empty[$tpe1]",
-            q"buf = buf.updated(readObjectFieldAsInt(in), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"buf = buf.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"val buf = $comp.empty[$tpe1]",
-            q"buf.update(readObjectFieldAsLong(in), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"buf.update(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var buf = $comp.empty[$tpe1]",
-            q"buf = buf.updated(readObjectFieldAsLong(in), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"buf = buf.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
@@ -213,10 +209,10 @@ object Codec {
             q"buf = buf.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.empty", q"buf.add(readInt(in))", q"buf")
+          genReadArray(q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.newBuilder", q"buf += readInt(in)")
+          genReadArray(q"val buf = $comp.newBuilder", q"buf += in.readInt()")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
@@ -226,25 +222,25 @@ object Codec {
           genReadArray(q"val buf = collection.mutable.ArrayBuilder.make[$tpe1]",
             q"buf += ${genReadField(tpe1, defaultValue(tpe1))}")
         } else if (tpe =:= typeOf[String]) {
-          q"readString(in, $default)"
+          q"in.readString($default)"
         } else if (tpe =:= typeOf[BigInt]) {
-          q"readBigInt(in, $default)"
+          q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
-          q"readBigDecimal(in, $default)"
+          q"in.readBigDecimal($default)"
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"""nextToken(in) match {
+          q"""in.nextToken() match {
                 case 'n' =>
-                  parseNull(in, default)
+                  in.parseNull(default)
                 case _ =>
-                  unreadByte(in)
-                  val v = readInt(in)
+                  in.unreadByte()
+                  val v = in.readInt()
                   try $enumSymbol.apply(v) catch {
-                    case _: java.util.NoSuchElementException => decodeError(in, "invalid enum value: " + v)
+                    case _: java.util.NoSuchElementException => in.decodeError("invalid enum value: " + v)
                   }
               }"""
         } else withDecoderFor(tpe, default) {
-          q"""val x = in.read(classOf[$tpe])
+          q"""val x = read(in)
               if (x ne null) x else default"""
         }
 
@@ -316,7 +312,7 @@ object Codec {
 
       def hashCode(m: MethodSymbol): Int = {
         val cs = keyName(m).toCharArray
-        JsonIteratorUtil.toHashCode(cs, cs.length)
+        JsonReader.toHashCode(cs, cs.length)
       }
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
@@ -354,7 +350,7 @@ object Codec {
       val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
       val checkReqVarsAndConstruct =
         if (lastReqVarBits == 0) construct
-        else q"if ($checkReqVars) $construct else reqFieldError(in, reqFields, ..$reqVarNames)"
+        else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
       val readVars = members.map { m =>
         q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, defaultValue(methodType(m)))}"
       }
@@ -364,11 +360,11 @@ object Codec {
       val readFields = members.zipWithIndex.map { case (m, i) =>
         val varName = TermName(s"_${m.name}")
         cq"""${hashCode(m)} =>
-            if (isReusableCharsEqualsTo(in, l, fields($i))) {
+            if (in.isReusableCharsEqualsTo(l, fields($i))) {
               ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
               $varName = ${genReadField(methodType(m), q"$varName")}
-            } else skip(in)"""
-      } :+ cq"_ => skip(in)"
+            } else in.skip()"""
+      } :+ cq"_ => in.skip()"
       val writeFields = members.map { m =>
         val tpe = methodType(m)
         val writeField = genWriteField(q"x.$m", tpe, keyName(m))
@@ -383,33 +379,32 @@ object Codec {
         if (writeFields.isEmpty) EmptyTree
         else q"val x = obj.asInstanceOf[$tpe]; var first = true; ..$writeFields"
       val tree =
-        q"""import com.jsoniter.JsonIterator
-            import com.jsoniter.JsonIteratorUtil._
+        q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
             import com.jsoniter.output.JsonStream
             import com.jsoniter.output.JsonStreamUtil._
             import scala.annotation.switch
             new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
               ..$fields
               ..$reqFields
-              override def read(in: JsonIterator): $tpe =
-                nextToken(in) match {
+              override def read(in: JsonReader): $tpe =
+                in.nextToken() match {
                   case '{' =>
                     ..$reqVars
                     ..$readVars
-                    if (nextToken(in) != '}') {
-                      unreadByte(in)
+                    if (in.nextToken() != '}') {
+                      in.unreadByte()
                       do {
-                        val l = readObjectFieldAsReusableChars(in)
-                        (reusableCharsToHashCode(in, l): @switch) match {
+                        val l = in.readObjectFieldAsReusableChars()
+                        (in.reusableCharsToHashCode(l): @switch) match {
                           case ..$readFields
                         }
-                      } while (nextToken(in) == ',')
+                      } while (in.nextToken() == ',')
                     }
                     ..$checkReqVarsAndConstruct
                   case 'n' =>
-                    parseNull(in, null)
+                    in.parseNull(null)
                   case _ =>
-                    decodeError(in, "expect { or n")
+                    in.decodeError("expect { or n")
                 }
               override def write(obj: $tpe, out: JsonStream): Unit =
                 if (obj ne null) {

@@ -2,9 +2,8 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 
+import com.github.plokhotnyuk.jsoniter_scala.Codec._
 import com.jsoniter.spi.{Config, JsonException, JsoniterSpi}
-import Codec._
-import com.jsoniter.JsonIteratorUtil
 import com.jsoniter.output.JsonStreamUtil
 import org.scalatest.{Matchers, WordSpec}
 
@@ -28,37 +27,37 @@ class CodecSpec extends WordSpec with Matchers {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":01,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":02,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":03,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":04,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":086,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":01.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":02.2}""".getBytes)
-      }.getMessage.contains("leading zero is invalid"))
+      }.getMessage.contains("illegal number"))
     }
     "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {
@@ -85,7 +84,12 @@ class CodecSpec extends WordSpec with Matchers {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("invalid boolean value"))
+      }.getMessage.contains("illegal boolean"))
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1,"s":2,"i":3,"l":4,"bl":fals,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      }.getMessage.contains("illegal boolean"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
@@ -105,11 +109,13 @@ class CodecSpec extends WordSpec with Matchers {
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 0.0, 0.0f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
     }
+/* FIXME: Restore support of boxed primitives
     "serialize and deserialize boxed primitives" in {
       verifySerDeser(materialize[BoxedPrimitives],
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
     }
+*/
     "serialize and deserialize standard types" in {
       val longStr = new String(Array.fill(100000)(' '))
       verifySerDeser(materialize[StandardTypes],
@@ -191,7 +197,7 @@ class CodecSpec extends WordSpec with Matchers {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
       val obj = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
       verifySer(arrayCodec, obj, json)
-      val parsedObj = JsonIteratorUtil.read(arrayCodec, json)
+      val parsedObj = JsonReader.read(arrayCodec, json)
       parsedObj.aa.deep shouldBe obj.aa.deep
       parsedObj.a.deep shouldBe obj.a.deep
     }
@@ -304,7 +310,7 @@ class CodecSpec extends WordSpec with Matchers {
       val obj = Defaults()
       val json = """{}""".getBytes
       verifySer(defaultsCodec, obj, json)
-      val parsedObj = JsonIteratorUtil.read(defaultsCodec, json)
+      val parsedObj = JsonReader.read(defaultsCodec, json)
       parsedObj.s shouldBe obj.s
       parsedObj.i shouldBe obj.i
       parsedObj.bi shouldBe obj.bi
@@ -371,13 +377,13 @@ class CodecSpec extends WordSpec with Matchers {
             |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,
             |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
             |}""".stripMargin.getBytes)
-      }.getMessage.contains("""decode: missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99""""))
+      }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99""""))
     }
   }
 
   def verifySerDeser[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
     verifySer(codec, obj, json, cfg)
-    verifyDeser(codec, obj, json, cfg)
+    verifyDeser(codec, obj, json)
   }
 
   def verifySer[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
@@ -387,10 +393,9 @@ class CodecSpec extends WordSpec with Matchers {
     toString(JsonStreamUtil.write(codec, obj, cfg)) shouldBe toString(json)
   }
 
-  def verifyDeser[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
-    //FIXME: Failing when launched by 'sbt test'
-    //JsonIteratorUtil.read(codec, new ByteArrayInputStream(json), cfg) shouldBe obj
-    JsonIteratorUtil.read(codec, json, cfg) shouldBe obj
+  def verifyDeser[A](codec: Codec[A], obj: A, json: Array[Byte]): Unit = {
+    JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe obj
+    JsonReader.read(codec, json) shouldBe obj
   }
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
@@ -402,8 +407,10 @@ case class OrderId(value: Int) extends AnyVal
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
+/* FIXME: restore support of boxed promitives
 case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.Integer, l: java.lang.Long,
                            bl: java.lang.Boolean, ch: java.lang.Character, dbl: java.lang.Double, f: java.lang.Float)
+*/
 
 case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
 
