@@ -5,6 +5,81 @@ import java.nio.charset.StandardCharsets
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonIteratorUtilSpec extends WordSpec with Matchers {
+  "JsonIteratorUtil.skip" should {
+    "skip string values" in {
+      skip("\"\"")
+      skip("\" \"")
+      skip(" \n\t\r\" \"")
+      skip("\"[\"")
+      skip("\"{\"")
+      skip("\"0\"")
+      skip("\"9\"")
+      skip("\"-\"")
+    }
+    "skip string values with escaped characters" in {
+      skip(""""\\"""")
+      skip(""""\\\"\\"""")
+    }
+    "skip number values" in {
+      skip("0")
+      skip("0.1")
+      skip("-0.1")
+      skip(" \n\t\r0.1")
+      skip("123456789.0E+10")
+    }
+    "skip boolean values" in {
+      skip("true")
+      skip("false")
+    }
+    "skip null values" in {
+      skip("null")
+    }
+    "skip object values" in {
+      skip("{}")
+      skip("{{{{{}}}}{{{}}}}")
+    }
+    "skip array values" in {
+      skip("[]")
+      skip("[[[[[]]]][[[]]]]")
+    }
+    "skip mixed values" in {
+      skip(
+        """
+          |{
+          |  "x": {
+          |    "xx": [
+          |      -1.0,
+          |      1,
+          |      4.0E20
+          |    ],
+          |    "yy": {
+          |      "xxx": true,
+          |      "yyy": false,
+          |      "zzz": null
+          |    }
+          |  },
+          |  "y": [
+          |    [1, 2, 3],
+          |    [4, 5, 6],
+          |    [7, 8, 9]
+          |  ]
+          |}""".stripMargin)
+    }
+  }
+  "JsonIteratorUtil.readBoolean" should {
+    "parse valid true and false values" in {
+      JsonIteratorUtil.readBoolean(JsonIterator.parse("true".getBytes)) shouldBe true
+      JsonIteratorUtil.readBoolean(JsonIterator.parse("false".getBytes)) shouldBe false
+    }
+    "throw parsing exception for empty input and invalid or broken value" in {
+      assert(intercept[Exception](JsonIteratorUtil.readBoolean(JsonIterator.parse("".getBytes)))
+        .getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](JsonIteratorUtil.readBoolean(JsonIterator.parse("tru".getBytes)))
+        .getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](JsonIteratorUtil.readBoolean(JsonIterator.parse("fals".getBytes)))
+        .getMessage.contains("unexpected end of input"))
+    }
+  }
   "JsonIteratorUtil.readString" should {
     "parse null value" in {
       JsonIteratorUtil.readString(JsonIterator.parse("null".getBytes)) shouldBe null
@@ -23,23 +98,20 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
       readString(text) shouldBe text
     }
     "throw parsing exception for empty input and invalid or broken string" in {
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("".getBytes))).getMessage
-        .contains("unexpected end of input"))
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"".getBytes))).getMessage
-        .contains("unexpected end of input"))
-      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"\\".getBytes))).getMessage
-        .contains("unexpected end of input"))
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("".getBytes)))
+        .getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"".getBytes)))
+        .getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("\"\\".getBytes)))
+        .getMessage.contains("unexpected end of input"))
     }
     "throw parsing exception for boolean values & numbers" in {
-      assert(intercept[Exception] {
-        JsonIteratorUtil.readString(JsonIterator.parse("true".getBytes))
-      }.getMessage.contains("expect string or null"))
-      assert(intercept[Exception] {
-        JsonIteratorUtil.readString(JsonIterator.parse("false".getBytes))
-      }.getMessage.contains("expect string or null"))
-      assert(intercept[Exception] {
-        JsonIteratorUtil.readString(JsonIterator.parse("12345".getBytes))
-      }.getMessage.contains("expect string or null"))
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("true".getBytes)))
+        .getMessage.contains("expect string or null"))
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("false".getBytes)))
+        .getMessage.contains("expect string or null"))
+      assert(intercept[Exception](JsonIteratorUtil.readString(JsonIterator.parse("12345".getBytes)))
+        .getMessage.contains("expect string or null"))
     }
     "get the same string value for escaped & non-escaped field names" in {
       readString("""Hello""") shouldBe readString("Hello")
@@ -401,6 +473,13 @@ class JsonIteratorUtilSpec extends WordSpec with Matchers {
         assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("leading zero is invalid"))
       }
     }
+  }
+
+  def skip(s: String): Unit = {
+    val in = JsonIterator.parse(s.getBytes)
+    val expected = in.tail
+    JsonIteratorUtil.skip(in)
+    assert(in.head == expected)
   }
 
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))

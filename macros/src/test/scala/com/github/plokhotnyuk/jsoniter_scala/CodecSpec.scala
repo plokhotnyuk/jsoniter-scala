@@ -49,7 +49,6 @@ class CodecSpec extends WordSpec with Matchers {
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":086,"dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("leading zero is invalid"))
-/* FIXME missing detection of leading zero for double & float
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
@@ -60,7 +59,6 @@ class CodecSpec extends WordSpec with Matchers {
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":02.2}""".getBytes)
       }.getMessage.contains("leading zero is invalid"))
-*/
     }
     "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {
@@ -83,14 +81,11 @@ class CodecSpec extends WordSpec with Matchers {
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
           """{"b":1,"s":2,"i":3,"l":40000000000000000000,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for long"))
-/* FIXME parsing of invalid Boolean value fails with "decode: missing required field(s)"
-      verifyDeser(materialize[Primitives],
-        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":truee,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-      verifyDeser(materialize[Primitives],
-        Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
-*/
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+      }.getMessage.contains("invalid boolean value"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
@@ -137,13 +132,6 @@ class CodecSpec extends WordSpec with Matchers {
           StandardTypes(null, 1, 2),
           """{"s":nul,"bi":1,"bd":2}""".getBytes)
       }.getMessage.contains("unexpected value"))
-/* FIXME consider using FSM based parser to avoid such kind of failures
-      assert(intercept[JsonException] {
-        verifyDeser(materialize[StandardTypes],
-          StandardTypes(null, 1, 2),
-          """{"s":nulll,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("unexpected value"))
-*/
     }
     "don't deserialize invalid UTF-8 encoded strings" in {
       assert(intercept[JsonException] {

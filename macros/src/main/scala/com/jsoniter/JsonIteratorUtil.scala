@@ -88,7 +88,7 @@ object JsonIteratorUtil {
 
   final def readObjectFieldAsBoolean(in: JsonIterator): Boolean = {
     readParentheses(in)
-    val x = in.readBoolean()
+    val x = parseBoolean(in, isToken = false)
     readParenthesesWithColon(in)
     x
   }
@@ -203,12 +203,25 @@ object JsonIteratorUtil {
     else default
   }
 
-  final def readString(in: JsonIterator, default: String = null): String =
-    nextToken(in) match {
-      case '"' => reusableCharsToString(in, parseString(in, 0))
-      case 'n' => parseNull(in, default)
-      case _ => decodeError(in, "expect string or null")
-    }
+  final def readString(in: JsonIterator, default: String = null): String = {
+    val b = nextToken(in)
+    if (b == '"') reusableCharsToString(in, parseString(in, 0))
+    else if (b == 'n') parseNull(in, default)
+    else decodeError(in, "expect string or null")
+  }
+
+  final def readBoolean(in: JsonIterator): Boolean = parseBoolean(in, isToken = true)
+
+  private def parseBoolean(in: JsonIterator, isToken: Boolean): Boolean = {
+    val b = if (isToken) nextToken(in) else nextByte(in)
+    if (b == 't') {
+      if (nextByte(in) == 'r' && nextByte(in) == 'u' && nextByte(in) == 'e') true
+      else decodeError(in, "invalid boolean value")
+    } else if (b == 'f') {
+      if (nextByte(in) == 'a' && nextByte(in) == 'l' && nextByte(in) == 's' && nextByte(in) == 'e') false
+      else decodeError(in, "invalid boolean value")
+    } else decodeError(in, "expect true or false")
+  }
 
   final def parseNull[A](in: JsonIterator, default: A): A =
     if (nextByte(in) != 'u' || nextByte(in) != 'l' ||  nextByte(in) != 'l') decodeError(in, "unexpected value")
@@ -225,16 +238,12 @@ object JsonIteratorUtil {
   final def nextToken(in: JsonIterator): Byte = {
     var i = in.head
     while (i < in.tail) {
-      (in.buf(i): @switch) match {
-        case ' ' => // continue
-        case '\n' => // continue
-        case '\t' => // continue
-        case '\r' => // continue
-        case b =>
-          in.head = i + 1
-          return b
-      }
+      val b = in.buf(i)
       i += 1
+      if (b != ' ' && b != '\n' && b != '\t' && b != '\r') {
+        in.head = i
+        return b
+      }
     }
     if (loadMore(in, i)) nextToken(in)
     else decodeError(in, "unexpected end of input")
@@ -264,6 +273,17 @@ object JsonIteratorUtil {
       }
       true
     }
+
+  final def skip(in: JsonIterator): Unit = {
+    val b = nextToken(in)
+    if (b == '"') skipString(in)
+    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(in)
+    else if (b == 't' || b == 'n') skipFixedBytes(in, 3)
+    else if (b == 'f') skipFixedBytes(in, 4)
+    else if (b == '{') skipObject(in)
+    else if (b == '[') skipArray(in)
+    else decodeError(in, "expect JSON value")
+  }
 
   final def unreadByte(in: JsonIterator): Unit = in.head -= 1
 
@@ -782,6 +802,131 @@ object JsonIteratorUtil {
     val n1 = n & 15
     n1 + (if (n1 > 9) 55 else 48)
   }.toChar
+
+  private def findStringEnd(in: JsonIterator): Int = {
+    var escaped = false
+    var i = in.head
+    while (i < in.tail) {
+      val b = in.buf(i)
+      if (b == '"') {
+        if (escaped) {
+          var j = i - 1
+          var oddBackslash = false
+          do {
+            if (j < in.head || in.buf(j) != '\\') { // even number of backslashes
+              return i + 1
+            }
+            j -= 1
+            if (j < in.head || in.buf(j) != '\\') { // odd number of backslashes
+              oddBackslash = true
+            }
+            j -= 1
+          } while (!oddBackslash)
+        } else return i + 1
+      } else if (b == '\\') escaped = true
+      i += 1
+    }
+    -1
+  }
+
+  private def skipString(in: JsonIterator): Unit = {
+    while (true) {
+      val end = findStringEnd(in)
+      if (end == -1) {
+        var j = in.tail - 1
+        var escaped = true
+        var continue = true
+        while (continue) { // walk backward until head
+          if (j < in.head || in.buf(j) != '\\') { // even number of backslashes
+            escaped = false
+            continue = false
+          } else {
+            j -= 1
+            if (j < in.head || in.buf(j) != '\\') { // odd number of backslashes
+              continue = false
+            } else j -= 1
+          }
+        }
+        if (!loadMore(in, j)) decodeError(in, "invalid string")
+        if (escaped) in.head = 1 // skip the first char as last char is \
+      } else {
+        in.head = end
+        return
+      }
+    }
+  }
+
+  private def skipNumber(in: JsonIterator): Unit = {
+    var i = 0
+    do {
+      i = in.head
+      while (i < in.tail) {
+        val b = in.buf(i)
+        if (b == ' ' || b == '\n' || b == '\t' || b == '\r' || b == ',' ||  b == '}' ||  b == ']') {
+          in.head = i
+          return
+        }
+        i += 1
+      }
+    } while (loadMore(in, i))
+  }
+
+  private def skipArray(in: JsonIterator): Unit = {
+    var level = 1
+    var i = 0
+    do {
+      i = in.head
+      while (i < in.tail) {
+        val b = in.buf(i)
+        i += 1
+        if (b == '"') {
+          in.head = i
+          skipString(in)
+          i = in.head
+        } else if (b == '[') level += 1
+        else if (b == ']') {
+          level -= 1
+          if (level == 0) {
+            in.head = i
+            return
+          }
+        }
+      }
+    } while (loadMore(in, i))
+  }
+
+  private def skipObject(in: JsonIterator): Unit = {
+    var level = 1
+    var i = 0
+    do {
+      i = in.head
+      while (i < in.tail) {
+        val b = in.buf(i)
+        i += 1
+        if (b == '"') {
+          in.head = i
+          skipString(in)
+          i = in.head
+        } else if (b == '{') level += 1
+        else if (b == '}') {
+          level -= 1
+          if (level == 0) {
+            in.head = i
+            return
+          }
+        }
+      }
+    } while (loadMore(in, i))
+  }
+
+  @tailrec
+  private def skipFixedBytes(in: JsonIterator, n: Int): Unit = {
+    val i = in.head + n
+    val lim = in.tail
+    if (i <= lim) in.head = i
+    else if (loadMore(in, lim)) skipFixedBytes(in, i - lim)
+    else decodeError(in, "unexpected end of input")
+  }
 
   private def loadMore(in: JsonIterator, i: Int): Boolean =
     if (in.in == null) {

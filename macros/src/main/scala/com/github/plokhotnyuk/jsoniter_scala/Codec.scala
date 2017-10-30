@@ -163,7 +163,7 @@ object Codec {
 
       def genReadField(tpe: Type, default: Tree): Tree =
         if (tpe =:= definitions.BooleanTpe) {
-          q"in.readBoolean()"
+          q"readBoolean(in)"
         } else if (tpe =:= definitions.ByteTpe) {
           q"readByte(in)"
         } else if (tpe =:= definitions.CharTpe) {
@@ -367,8 +367,8 @@ object Codec {
             if (isReusableCharsEqualsTo(in, l, fields($i))) {
               ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
               $varName = ${genReadField(methodType(m), q"$varName")}
-            } else in.skip()"""
-      } :+ cq"_ => in.skip()"
+            } else skip(in)"""
+      } :+ cq"_ => skip(in)"
       val writeFields = members.map { m =>
         val tpe = methodType(m)
         val writeField = genWriteField(q"x.$m", tpe, keyName(m))
