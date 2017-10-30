@@ -765,57 +765,21 @@ final class JsonReader private[jsoniter_scala](
     n1 + (if (n1 > 9) 55 else 48)
   }.toChar
 
-  private def findStringEnd(): Int = {
-    var escaped = false
-    var i = head
-    while (i < tail) {
-      val b = buf(i)
-      if (b == '"') {
-        if (escaped) {
-          var j = i - 1
-          var oddBackslash = false
-          do {
-            if (j < head || buf(j) != '\\') { // even number of backslashes
-              return i + 1
-            }
-            j -= 1
-            if (j < head || buf(j) != '\\') { // odd number of backslashes
-              oddBackslash = true
-            }
-            j -= 1
-          } while (!oddBackslash)
-        } else return i + 1
-      } else if (b == '\\') escaped = true
-      i += 1
-    }
-    -1
-  }
-
   private def skipString(): Unit = {
-    while (true) {
-      val end = findStringEnd()
-      if (end == -1) {
-        var j = tail - 1
-        var escaped = true
-        var continue = true
-        while (continue) { // walk backward until head
-          if (j < head || buf(j) != '\\') { // even number of backslashes
-            escaped = false
-            continue = false
-          } else {
-            j -= 1
-            if (j < head || buf(j) != '\\') { // odd number of backslashes
-              continue = false
-            } else j -= 1
-          }
-        }
-        if (!loadMore(j)) decodeError("invalid string")
-        if (escaped) head = 1 // skip the first char as last char is \
-      } else {
-        head = end
-        return
+    var evenBackSlashes = true
+    var i = 0
+    do {
+      i = head
+      while (i < tail) {
+        val b = buf(i)
+        i += 1
+        if (b == '"' && evenBackSlashes) {
+          head = i
+          return
+        } else if (b == '\\') evenBackSlashes = !evenBackSlashes
+        else evenBackSlashes = true
       }
-    }
+    } while (loadMore(i))
   }
 
   private def skipNumber(): Unit = {
@@ -824,11 +788,11 @@ final class JsonReader private[jsoniter_scala](
       i = head
       while (i < tail) {
         val b = buf(i)
-        if (b == ' ' || b == '\n' || b == '\t' || b == '\r' || b == ',' ||  b == '}' ||  b == ']') {
+        if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' ||  b == 'E') i += 1
+        else {
           head = i
           return
         }
-        i += 1
       }
     } while (loadMore(i))
   }
