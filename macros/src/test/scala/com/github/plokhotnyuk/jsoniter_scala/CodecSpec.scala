@@ -109,13 +109,11 @@ class CodecSpec extends WordSpec with Matchers {
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 0.0, 0.0f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
     }
-/* FIXME: Restore support of boxed primitives
     "serialize and deserialize boxed primitives" in {
       verifySerDeser(materialize[BoxedPrimitives],
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
     }
-*/
     "serialize and deserialize standard types" in {
       val longStr = new String(Array.fill(100000)(' '))
       verifySerDeser(materialize[StandardTypes],
@@ -407,10 +405,8 @@ case class OrderId(value: Int) extends AnyVal
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
-/* FIXME: restore support of boxed promitives
 case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.Integer, l: java.lang.Long,
                            bl: java.lang.Boolean, ch: java.lang.Character, dbl: java.lang.Double, f: java.lang.Float)
-*/
 
 case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
 

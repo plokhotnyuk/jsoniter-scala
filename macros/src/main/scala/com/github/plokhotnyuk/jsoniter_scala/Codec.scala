@@ -49,12 +49,22 @@ object Codec {
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
       def defaultValue(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe) {
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           q"false"
-        } else if (tpe =:= definitions.ByteTpe || tpe =:= definitions.CharTpe || tpe =:= definitions.ShortTpe ||
-          tpe =:= definitions.IntTpe || tpe =:= definitions.LongTpe || tpe =:= definitions.DoubleTpe ||
-          tpe =:= definitions.FloatTpe) {
+        } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
+          q"0.toByte"
+        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) {
+          q"0.toChar"
+        } else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
+          q"0.toShort"
+        } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
           q"0"
+        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
+          q"0L"
+        } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
+          q"0f"
+        } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
+          q"0.0"
         } else if (isValueClass(tpe)) {
           q"null.asInstanceOf[$tpe]"
         } else if (tpe <:< typeOf[Option[_]]) {
@@ -74,22 +84,22 @@ object Codec {
         }
 
       def genReadKey(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe) {
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           q"in.readObjectFieldAsBoolean()"
-        } else if (tpe =:= definitions.ByteTpe) {
+        } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
           q"in.readObjectFieldAsByte()"
-        } else if (tpe =:= definitions.CharTpe) {
+        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) {
           q"in.readObjectFieldAsChar()"
-        } else if (tpe =:= definitions.ShortTpe) {
+        } else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
           q"in.readObjectFieldAsShort()"
-        } else if (tpe =:= definitions.IntTpe) {
+        } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
           q"in.readObjectFieldAsInt()"
-        } else if (tpe =:= definitions.LongTpe) {
+        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
           q"in.readObjectFieldAsLong()"
-        } else if (tpe =:= definitions.DoubleTpe) {
-          q"in.readObjectFieldAsDouble()"
-        } else if (tpe =:= definitions.FloatTpe) {
+        } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
           q"in.readObjectFieldAsFloat()"
+        } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
+          q"in.readObjectFieldAsDouble()"
         } else if (isValueClass(tpe)) {
           q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
         } else if (tpe =:= typeOf[String]) {
@@ -158,22 +168,22 @@ object Codec {
           (name, q"private def $name(out: JsonStream, x: $tpe): Unit = $impl")})._1}(out, $arg)"""
 
       def genReadField(tpe: Type, default: Tree): Tree =
-        if (tpe =:= definitions.BooleanTpe) {
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           q"in.readBoolean()"
-        } else if (tpe =:= definitions.ByteTpe) {
+        } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
           q"in.readByte()"
-        } else if (tpe =:= definitions.CharTpe) {
+        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) {
           q"in.readChar()"
-        } else if (tpe =:= definitions.ShortTpe) {
+        } else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
           q"in.readShort()"
-        } else if (tpe =:= definitions.IntTpe) {
+        } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
           q"in.readInt()"
-        } else if (tpe.widen =:= definitions.LongTpe) {
+        } else if (tpe.widen =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
           q"in.readLong()"
-        } else if (tpe =:= definitions.DoubleTpe) {
-          q"in.readDouble()"
-        } else if (tpe =:= definitions.FloatTpe) {
+        } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
           q"in.readFloat()"
+        } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
+          q"in.readDouble()"
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadField(tpe1, defaultValue(tpe1))})"
