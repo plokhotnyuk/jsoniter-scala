@@ -174,6 +174,12 @@ class CodecSpec extends WordSpec with Matchers {
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s":"VVV""bi":1"bd":1.1}""".getBytes)
       }.getMessage.contains("""missing required field(s) "bi", "bd""""))
     }
+    "serialize and deserialize outer types using implicit vals or objects of inner types" in {
+      implicit val standardTypesCodec: Codec[StandardTypes] = materialize[StandardTypes]
+      verifySerDeser(materialize[OuterTypes],
+        OuterTypes("X", StandardTypes("VVV", 2, 3.3)),
+        """{"s":"X","st":{"s":"VVV","bi":2,"bd":3.3}}""".getBytes)
+    }
     "serialize and deserialize enumerations" in {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
       assert(intercept[JsonException] {
@@ -409,6 +415,8 @@ case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.I
                            bl: java.lang.Boolean, ch: java.lang.Character, dbl: java.lang.Double, f: java.lang.Float)
 
 case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
+
+case class OuterTypes(s: String, st: StandardTypes)
 
 object LocationType extends Enumeration {
   type LocationType = Value

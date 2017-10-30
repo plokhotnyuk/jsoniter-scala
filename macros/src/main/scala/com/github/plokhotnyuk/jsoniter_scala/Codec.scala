@@ -167,6 +167,12 @@ object Codec {
           val name = TermName(s"e${encoders.size}")
           (name, q"private def $name(out: JsonStream, x: $tpe): Unit = $impl")})._1}(out, $arg)"""
 
+      def findImplicitCodec(tpe: Type): Option[Tree] = {
+        val codecTpe = c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe]", mode = c.TYPEmode).tpe
+        val implCodec = c.inferImplicitValue(codecTpe)
+        if (implCodec != EmptyTree) Some(implCodec) else None
+      }
+
       def genReadField(tpe: Type, default: Tree): Tree =
         if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           q"in.readBoolean()"
@@ -178,7 +184,7 @@ object Codec {
           q"in.readShort()"
         } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
           q"in.readInt()"
-        } else if (tpe.widen =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
+        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
           q"in.readLong()"
         } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
           q"in.readFloat()"
@@ -250,7 +256,7 @@ object Codec {
                   }
               }"""
         } else withDecoderFor(tpe, default) {
-          q"""val x = read(in)
+          q"""val x = ${findImplicitCodec(tpe).getOrElse(q"this")}.read(in)
               if (x ne null) x else default"""
         }
 
@@ -267,7 +273,16 @@ object Codec {
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
-        if (tpe <:< typeOf[Option[_]]) {
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
+          tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
+          tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
+          tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
+          tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer] ||
+          tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long] ||
+          tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
+          tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
+          q"out.writeVal($m)"
+        } else if (tpe <:< typeOf[Option[_]]) {
           genWriteVal(q"$m.get", typeArg1(tpe))
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) withEncoderFor(tpe, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe)))
@@ -288,12 +303,14 @@ object Codec {
                 i += 1
               }
               out.writeArrayEnd()"""
+        } else if (tpe =:= typeOf[String]) {
+          q"out.writeVal($m)"
         } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeRaw(x.toString) else out.writeNull()"
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.id) else out.writeNull()"
         } else {
-          q"out.writeVal($m)"
+          q"${findImplicitCodec(tpe).getOrElse(q"this")}.write($m, out)"
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
