@@ -713,16 +713,17 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private def putCharAt(pos: Int, ch: Char): Int = {
-    val buf = reusableChars
-    if (buf.length > pos) buf(pos) = ch
-    else {
-      val newBuf: Array[Char] = new Array[Char](buf.length << 1)
-      System.arraycopy(buf, 0, newBuf, 0, buf.length)
-      reusableChars = newBuf
-      newBuf(pos) = ch
-    }
+    ensureSizeOfReusableChars(pos)
+    reusableChars(pos) = ch
     pos + 1
   }
+
+  private def ensureSizeOfReusableChars(pos: Int): Unit =
+    if (pos >= reusableChars.length) {
+      val cs = new Array[Char](pos << 1)
+      System.arraycopy(reusableChars, 0, cs, 0, reusableChars.length)
+      reusableChars = cs
+    }
 
   private def readHexDigitPresentedChar(): Char =
     ((fromHexDigit(nextByte()) << 12) +
