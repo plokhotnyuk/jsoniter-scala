@@ -14,6 +14,8 @@ final class JsonReader private[jsoniter_scala](
     private var tail: Int,
     private var reusableChars: Array[Char],
     private var in: InputStream) {
+  require(buf.length > 0 && reusableChars.length > 0)
+
   def reset(in: InputStream): Unit = {
     this.in = in
     head = 0
@@ -134,19 +136,19 @@ final class JsonReader private[jsoniter_scala](
   def readByte(): Byte = {
     val x = parseInt(isToken = true)
     if (x > Byte.MaxValue || x < Byte.MinValue) decodeError("value is too large for byte")
-    else x.toByte
+    x.toByte
   }
 
   def readChar(): Char = {
     val x = parseInt(isToken = true)
     if (x > Char.MaxValue || x < Char.MinValue) decodeError("value is too large for char")
-    else x.toChar
+    x.toChar
   }
 
   def readShort(): Short = {
     val x = parseInt(isToken = true)
     if (x > Short.MaxValue || x < Short.MinValue) decodeError("value is too large for short")
-    else x.toShort
+    x.toShort
   }
 
   def readInt(): Int = parseInt(isToken = true)
@@ -159,14 +161,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readBigInt(default: BigInt): BigInt = {
     val x = parseBigDecimal(isToken = true)
-    if (x ne null) new BigInt(x.toBigInteger)
-    else default
+    if (x eq null) default
+    else new BigInt(x.toBigInteger)
   }
 
   def readBigDecimal(default: BigDecimal): BigDecimal = {
     val x = parseBigDecimal(isToken = true)
-    if (x ne null) new BigDecimal(x)
-    else default
+    if (x eq null) default
+    else new BigDecimal(x)
   }
 
   def readString(default: String = null): String = {
@@ -179,8 +181,8 @@ final class JsonReader private[jsoniter_scala](
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
   def parseNull[A](default: A): A =
-    if (nextByte() != 'u' || nextByte() != 'l' ||  nextByte() != 'l') decodeError("unexpected value")
-    else default
+    if (nextByte() == 'u' && nextByte() == 'l' && nextByte() == 'l') default
+    else decodeError("unexpected value")
 
   def readObjectFieldAsReusableChars(): Int = {
     if (nextToken() != '"') decodeError("expect \"")
@@ -206,13 +208,12 @@ final class JsonReader private[jsoniter_scala](
 
   def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
 
-  def isReusableCharsEqualsTo(len: Int, cs2: Array[Char]): Boolean =
-    if (len != cs2.length) false
+  def isReusableCharsEqualsTo(len: Int, cs: Array[Char]): Boolean =
+    if (len != cs.length) false
     else {
-      val cs1 = reusableChars
       var i = 0
       while (i < len) {
-        if (cs1(i) != cs2(i)) return false
+        if (reusableChars(i) != cs(i)) return false
         i += 1
       }
       true
@@ -222,7 +223,7 @@ final class JsonReader private[jsoniter_scala](
     val b = nextToken()
     if (b == '"') skipString()
     else if ((b >= '0' && b <= '9') || b == '-') skipNumber()
-    else if (b == 't' || b == 'n') skipFixedBytes(3)
+    else if (b == 'n' || b == 't') skipFixedBytes(3)
     else if (b == 'f') skipFixedBytes(4)
     else if (b == '{') skipObject()
     else if (b == '[') skipArray()
@@ -267,7 +268,7 @@ final class JsonReader private[jsoniter_scala](
     } else if (b == 'f') {
       if (nextByte() == 'a' && nextByte() == 'l' && nextByte() == 's' && nextByte() == 'e') false
       else decodeError("illegal boolean")
-    } else decodeError("expect true or false")
+    } else decodeError("illegal boolean")
   }
 
   private def parseInt(isToken: Boolean): Int = {
@@ -849,14 +850,14 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private def skipFixedBytes(n: Int): Unit = {
     val i = head + n
-    val lim = tail
-    if (i <= lim) head = i
-    else if (loadMore(lim)) skipFixedBytes(i - lim)
+    val diff = i - tail
+    if (diff <= 0) head = i
+    else if (loadMore(tail)) skipFixedBytes(diff)
     else decodeError("unexpected end of input")
   }
 
   private def loadMore(i: Int): Boolean =
-    if (in == null) {
+    if (in eq null) {
       head = i
       false
     } else realLoadMore(i)
@@ -867,10 +868,10 @@ final class JsonReader private[jsoniter_scala](
       head = 0
       tail = n
       true
-    } else if (n == -1) {
+    } else {
       head = i
       false
-    } else decodeError("invalid parser state")
+    }
   }
 }
 
