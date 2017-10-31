@@ -89,7 +89,7 @@ sbt clean +coverage +test +coverageReport
 Run benchmarks
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*CodecBenchmark.*' >results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecBenchmark.*' >results.txt
 ```
 
 Current results for the following environment:
