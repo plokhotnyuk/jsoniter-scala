@@ -16,8 +16,8 @@ final class JsonReader private[jsoniter_scala](
     private var tail: Int,
     private var reusableChars: Array[Char],
     private var in: InputStream) {
-  require(buf != null && buf.length > 0, "buf should be non empty")
-  require(reusableChars != null && reusableChars.length > 0, "reusableChars should be non empty")
+  require((buf ne null) && buf.length > 0, "buf should be non empty")
+  require((reusableChars ne null) && reusableChars.length > 0, "reusableChars should be non empty")
 
   def reset(in: InputStream): Unit = {
     this.in = in
