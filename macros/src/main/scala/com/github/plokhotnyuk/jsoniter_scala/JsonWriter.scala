@@ -4,6 +4,8 @@ import java.io.{IOException, OutputStream}
 
 import com.github.plokhotnyuk.jsoniter_scala.JsonWriter._
 
+import scala.annotation.switch
+
 case class WriterConfig(
   indentionStep: Int = 0,
   escapeUnicode: Boolean = false)
@@ -79,18 +81,18 @@ final class JsonWriter private[jsoniter_scala](
       writeParenthesesWithColon()
     } else encodeError("key cannot be null")
 
-  def writeObjectField(field: String): Unit =
-    if (field ne null) {
-      writeString(field)
+  def writeObjectField(x: String): Unit =
+    if (x ne null) {
+      writeString(x)
       if (indention > 0) write(':'.toByte, ' '.toByte)
       else write(':')
     } else encodeError("key cannot be null")
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
-  def writeVal(v: BigDecimal): Unit = if (v eq null) writeNull() else writeAsciiString(v.toString())
+  def writeVal(v: BigDecimal): Unit = if (v eq null) writeNull() else writeAsciiString(v.toString)
 
-  def writeVal(v: BigInt): Unit = if (v eq null) writeNull() else writeAsciiString(v.toString())
+  def writeVal(v: BigInt): Unit = if (v eq null) writeNull() else writeAsciiString(v.toString)
 
   def writeVal(v: String): Unit = if (v eq null) writeNull() else writeString(v)
 
@@ -114,11 +116,6 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeNull(): Unit = write('n'.toByte, 'u'.toByte, 'l'.toByte, 'l'.toByte)
 
-  def writeArrayStart(): Unit = {
-    indention += config.indentionStep
-    write('[')
-  }
-
   def writeMore(): Unit = {
     write(',')
     writeIndention()
@@ -137,6 +134,11 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
+  def writeArrayStart(): Unit = {
+    indention += config.indentionStep
+    write('[')
+  }
+
   def writeArrayEnd(): Unit = {
     val indentionStep = config.indentionStep
     writeIndention(indentionStep)
@@ -145,8 +147,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeObjectStart(): Unit = {
-    val indentionStep = config.indentionStep
-    indention += indentionStep
+    indention += config.indentionStep
     write('{')
   }
 
@@ -318,7 +319,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeAsciiChar(ch: Int): Unit =
-    ch match {
+    (ch: @switch) match {
       case '"' => write('\\'.toByte, '"'.toByte)
       case '\\' => write('\\'.toByte, '\\'.toByte)
       case '\b' => write('\\'.toByte, 'b'.toByte)
@@ -569,7 +570,7 @@ final class JsonWriter private[jsoniter_scala](
   private def ensure(minimal: Int): Unit = {
     val available = buf.length - count
     if (available < minimal) {
-      if (count > 1024) flushBuffer()
+      if (count > 8192) flushBuffer()
       growAtLeast(minimal)
     }
   }
@@ -588,12 +589,9 @@ object JsonWriter {
       new JsonWriter(new Array[Byte](8192), 0, 0, null, WriterConfig())
 
     override def get(): JsonWriter = {
-      var stream = super.get()
-      if (stream.buf.length > 32768) {
-        stream = initialValue()
-        set(stream)
-      }
-      stream
+      val writer = super.get()
+      if (writer.buf.length > 32768) writer.buf = new Array[Byte](8192)
+      writer
     }
   }
   private val digits = new Array[Int](1000)
