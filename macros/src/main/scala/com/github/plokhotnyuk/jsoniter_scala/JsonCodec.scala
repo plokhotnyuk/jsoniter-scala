@@ -1,9 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import com.jsoniter.output.JsonStream
-import com.jsoniter.spi.{Config, Encoder, JsoniterSpi}
-import com.jsoniter.spi.JsoniterSpi.{addNewEncoder, getCurrentConfig}
-
 import scala.annotation.meta.field
 import scala.collection.breakOut
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
@@ -14,24 +10,17 @@ import scala.reflect.macros.blackbox
 @field
 class key(key: String) extends scala.annotation.StaticAnnotation
 
-abstract class Codec[A](implicit m: Manifest[A]) extends Encoder {
-  private val cls = m.runtimeClass.asInstanceOf[Class[A]]
-
-  JsoniterSpi.setDefaultConfig((new Config.Builder).escapeUnicode(false).build)
-  addNewEncoder(getCurrentConfig.getEncoderCacheKey(cls), this)
-
+abstract class JsonCodec[A] {
   def read(in: JsonReader): A
 
-  def write(obj: A, out: JsonStream): Unit
-
-  override def encode(obj: AnyRef, out: JsonStream): Unit = write(obj.asInstanceOf[A], out)
+  def write(obj: A, out: JsonWriter): Unit
 }
 
-object Codec {
-  def materialize[A]: Codec[A] = macro Impl.materialize[A]
+object JsonCodec {
+  def materialize[A]: JsonCodec[A] = macro Impl.materialize[A]
 
   private object Impl {
-    def materialize[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[Codec[A]] = {
+    def materialize[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonCodec[A]] = {
       import c.universe._
 
       def methodType(m: MethodSymbol): Type = m.returnType.dealias
@@ -116,7 +105,7 @@ object Codec {
         }
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"buf.result()"): Tree =
-        q"""in.nextToken() match {
+        q"""(in.nextToken(): @switch) match {
               case '[' =>
                 if (in.nextToken() == ']') default
                 else {
@@ -134,7 +123,7 @@ object Codec {
             }"""
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"buf"): Tree =
-        q"""in.nextToken() match {
+        q"""(in.nextToken(): @switch) match {
               case '{' =>
                 if (in.nextToken() == '}') default
                 else {
@@ -165,10 +154,10 @@ object Codec {
         q"""${encoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"e${encoders.size}")
-          (name, q"private def $name(out: JsonStream, x: $tpe): Unit = $impl")})._1}(out, $arg)"""
+          (name, q"private def $name(out: JsonWriter, x: $tpe): Unit = $impl")})._1}(out, $arg)"""
 
       def findImplicitCodec(tpe: Type): Option[Tree] = {
-        val codecTpe = c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe]", mode = c.TYPEmode).tpe
+        val codecTpe = c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe]", mode = c.TYPEmode).tpe
         val implCodec = c.inferImplicitValue(codecTpe)
         if (implCodec != EmptyTree) Some(implCodec) else None
       }
@@ -245,15 +234,13 @@ object Codec {
           q"in.readBigDecimal($default)"
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"""in.nextToken() match {
-                case 'n' =>
-                  in.parseNull(default)
-                case _ =>
-                  in.unreadByte()
-                  val v = in.readInt()
-                  try $enumSymbol.apply(v) catch {
-                    case _: java.util.NoSuchElementException => in.decodeError("invalid enum value: " + v)
-                  }
+          q"""if (in.nextToken() == 'n') in.parseNull(default)
+              else {
+                in.unreadByte()
+                val v = in.readInt()
+                try $enumSymbol.apply(v) catch {
+                  case _: java.util.NoSuchElementException => in.decodeError("invalid enum value: " + v)
+                }
               }"""
         } else withDecoderFor(tpe, default) {
           q"""val x = ${findImplicitCodec(tpe).getOrElse(q"this")}.read(in)
@@ -263,13 +250,13 @@ object Codec {
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
             var first = true
-            $m.foreach { x => first = writeSep(out, first); ..$writeVal }
+            $m.foreach { x => first = out.writeSep(first); ..$writeVal }
             out.writeArrayEnd()"""
 
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
             var first = true
-            $m.foreach { kv => first = writeSep(out, first); writeObjectField(out, kv._1); ..$writeKV }
+            $m.foreach { kv => first = out.writeSep(first); out.writeObjectField(kv._1); ..$writeKV }
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
@@ -298,15 +285,13 @@ object Codec {
               var i = 0
               var first = true
               while (i < l) {
-                first = writeSep(out, first)
+                first = out.writeSep(first)
                 ..${genWriteVal(q"x(i)", typeArg1(tpe))}
                 i += 1
               }
               out.writeArrayEnd()"""
-        } else if (tpe =:= typeOf[String]) {
+        } else if (tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           q"out.writeVal($m)"
-        } else if (tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) withEncoderFor(tpe, m) {
-          q"if (x ne null) out.writeRaw(x.toString) else out.writeNull()"
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.id) else out.writeNull()"
         } else {
@@ -317,9 +302,9 @@ object Codec {
         if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
         } else if (tpe <:< typeOf[Option[_]] || tpe <:< typeOf[scala.collection.Map[_, _]] || tpe <:< typeOf[Traversable[_]]) {
-          q"if (($m ne null) && !$m.isEmpty) { first = writeSep(out, first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
+          q"if (($m ne null) && !$m.isEmpty) { first = out.writeSep(first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
         } else {
-          q"first = writeSep(out, first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
+          q"first = out.writeSep(first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
         }
 
       val tpe = weakTypeOf[A]
@@ -407,14 +392,13 @@ object Codec {
         else q"val x = obj.asInstanceOf[$tpe]; var first = true; ..$writeFields"
       val tree =
         q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
-            import com.jsoniter.output.JsonStream
-            import com.jsoniter.output.JsonStreamUtil._
+            import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
             import scala.annotation.switch
-            new com.github.plokhotnyuk.jsoniter_scala.Codec[$tpe] {
+            new com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe] {
               ..$fields
               ..$reqFields
               override def read(in: JsonReader): $tpe =
-                in.nextToken() match {
+                (in.nextToken(): @switch) match {
                   case '{' =>
                     ..$reqVars
                     ..$readVars
@@ -433,7 +417,7 @@ object Codec {
                   case _ =>
                     in.decodeError("expect { or n")
                 }
-              override def write(obj: $tpe, out: JsonStream): Unit =
+              override def write(obj: $tpe, out: JsonWriter): Unit =
                 if (obj ne null) {
                   out.writeObjectStart()
                   ..$writeFieldsBlock
@@ -442,8 +426,8 @@ object Codec {
               ..${decoders.map { case (_, d) => d._2 }}
               ..${encoders.map { case (_, e) => e._2 }}
             }"""
-      if (c.settings.contains("print-codecs")) c.info(c.enclosingPosition, s"Generated codec for type '$tpe':\n${showCode(tree)}", force = true)
-      c.Expr[Codec[A]](tree)
+      if (c.settings.contains("print-codecs")) c.info(c.enclosingPosition, s"Generated JSON codec for type '$tpe':\n${showCode(tree)}", force = true)
+      c.Expr[JsonCodec[A]](tree)
     }
   }
 }

@@ -4,17 +4,18 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
-import com.jsoniter.spi.JsonException
 
 import scala.annotation.{switch, tailrec}
 
+//noinspection EmptyCheck
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte],
     private var head: Int,
     private var tail: Int,
     private var reusableChars: Array[Char],
     private var in: InputStream) {
-  require(buf.length > 0 && reusableChars.length > 0)
+  require(buf != null && buf.length > 0, "buf should be non empty")
+  require(reusableChars != null && reusableChars.length > 0, "reusableChars should be non empty")
 
   def reset(in: InputStream): Unit = {
     this.in = in
@@ -30,9 +31,6 @@ final class JsonReader private[jsoniter_scala](
     tail = buf.length
     currBuf
   }
-
-  def cleanUp(): Unit = // reduce char buffer size to avoid wasting the heap
-    if (reusableChars.length > 32768) reusableChars = new Array[Char](1024)
 
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val sb = new StringBuilder(64)
@@ -881,28 +879,26 @@ object JsonReader {
       new JsonReader(new Array[Byte](8192), 0, 0, new Array[Char](1024), null)
 
     override def get(): JsonReader = {
-      val it = super.get()
-      it.cleanUp()
-      it
+      val reader = super.get()
+      if (reader.reusableChars.length > 32768) reader.reusableChars = new Array[Char](1024)
+      reader
     }
   }
-
-  // all the positive powers of 10 that can be represented exactly in double/float
-  private val pow10: Array[Double] =
+  private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double/float
     Array(1, 1e+01, 1e+02, 1e+03, 1e+04, 1e+05, 1e+06, 1e+07, 1e+08, 1e+09, 1e+10,
       1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21)
 
-  def read[A](codec: Codec[A], in: InputStream): A = {
-    val it = pool.get
-    it.reset(in)
-    codec.read(it)
+  final def read[A](codec: JsonCodec[A], in: InputStream): A = {
+    val reader = pool.get
+    reader.reset(in)
+    codec.read(reader)
   }
 
-  def read[A](codec: Codec[A], buf: Array[Byte]): A = {
-    val it = pool.get
-    val currBuf = it.reset(buf)
-    try codec.read(it)
-    finally it.buf = currBuf
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = {
+    val reader = pool.get
+    val currBuf = reader.reset(buf)
+    try codec.read(reader)
+    finally reader.buf = currBuf
   }
 
   def toHashCode(cs: Array[Char], len: Int): Int = {
@@ -910,7 +906,7 @@ object JsonReader {
     var h = 777767777
     while (i < len) {
       h = (h ^ cs(i)) * 1500450271
-      h ^= (h >>> 11) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
+      h ^= (h >>> 21) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
       i += 1
     }
     h

@@ -2,9 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 
-import com.github.plokhotnyuk.jsoniter_scala.Codec._
-import com.jsoniter.spi.{Config, JsonException, JsoniterSpi}
-import com.jsoniter.output.JsonStreamUtil
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodec._
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.immutable._
@@ -12,8 +10,8 @@ import scala.collection.mutable
 
 case class KeyOverridden(@key("new_key") oldKey: String) //FIXME: fail tests when move to end of source file
 
-class CodecSpec extends WordSpec with Matchers {
-  "Codec" should {
+class JsonCodecSpec extends WordSpec with Matchers {
+  "JsonCodec" should {
     "serialize and deserialize primitives" in {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
@@ -175,7 +173,7 @@ class CodecSpec extends WordSpec with Matchers {
       }.getMessage.contains("""missing required field(s) "bi", "bd""""))
     }
     "serialize and deserialize outer types using implicit vals or objects of inner types" in {
-      implicit val standardTypesCodec: Codec[StandardTypes] = materialize[StandardTypes]
+      implicit val standardTypesCodec: JsonCodec[StandardTypes] = materialize[StandardTypes]
       verifySerDeser(materialize[OuterTypes],
         OuterTypes("X", StandardTypes("VVV", 2, 3.3)),
         """{"s":"X","st":{"s":"VVV","bi":2,"bd":3.3}}""".getBytes)
@@ -289,7 +287,7 @@ class CodecSpec extends WordSpec with Matchers {
           |    3
           |  ]
           |}""".stripMargin.getBytes,
-        (new Config.Builder).indentionStep(2).build)
+        WriterConfig(indentionStep = 2))
     }
     "deserialize JSON with tabs & line returns" in {
       verifyDeser(materialize[Indented], Indented("VVV", 1.1, List(1, 2, 3)),
@@ -304,7 +302,7 @@ class CodecSpec extends WordSpec with Matchers {
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes("UTF-8"))
       verifySer(materialize[UTF8KeysAndValues], UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes("UTF-8"),
-        (new Config.Builder).escapeUnicode(true).build)
+        WriterConfig(escapeUnicode = true))
     }
     "serialize and deserialize with keys overridden by annotation" in {
       verifySerDeser(materialize[KeyOverridden], KeyOverridden("VVV"), """{"new_key":"VVV"}""".getBytes)
@@ -385,19 +383,19 @@ class CodecSpec extends WordSpec with Matchers {
     }
   }
 
-  def verifySerDeser[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
+  def verifySerDeser[A](codec: JsonCodec[A], obj: A, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)
   }
 
-  def verifySer[A](codec: Codec[A], obj: A, json: Array[Byte], cfg: Config = JsoniterSpi.getDefaultConfig): Unit = {
+  def verifySer[A](codec: JsonCodec[A], obj: A, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     val baos = new ByteArrayOutputStream
-    JsonStreamUtil.write(codec, obj, baos, cfg)
+    JsonWriter.write(codec, obj, baos, cfg)
     toString(baos.toByteArray) shouldBe toString(json)
-    toString(JsonStreamUtil.write(codec, obj, cfg)) shouldBe toString(json)
+    toString(JsonWriter.write(codec, obj, cfg)) shouldBe toString(json)
   }
 
-  def verifyDeser[A](codec: Codec[A], obj: A, json: Array[Byte]): Unit = {
+  def verifyDeser[A](codec: JsonCodec[A], obj: A, json: Array[Byte]): Unit = {
     JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe obj
     JsonReader.read(codec, json) shouldBe obj
   }

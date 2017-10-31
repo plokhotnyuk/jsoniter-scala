@@ -17,7 +17,7 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable indenting of output
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option`, Scala collections & arrays as class fields are supported
-- Types that supported as map keys: primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for them  
+- Types that supported as map keys: primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for them  
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
@@ -47,11 +47,13 @@ libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.
 Generate some serializers for your case classes
     
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.Codec
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodec._
 
-case class User(name: String)
+case class Device(id: Int, model: String)
+implicit val deviceCodec = materialize[Device]
 
-val userCodec = Codec.materialize[User]
+case class User(name: String, devices: Seq[Device])
+val userCodec = materialize[User]
 ```
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.Codec` which implements both
@@ -61,10 +63,10 @@ Now you can use it:
 
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
-import com.jsontiter.output.JsonStreamUtil._
+import com.github.plokhotnyuk.jsoniter_scala.JsonWriter._
 
-read(userCodec, """{"name":"John"}""".getBytes("UTF-8"))
-write(userCodec, User(name = "John"))
+read(userCodec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
+write(userCodec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
 To see generated code add the following line to your sbt build file

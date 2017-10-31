@@ -7,10 +7,9 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.github.plokhotnyuk.jsoniter_scala.Codec.materialize
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodec.materialize
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
-import com.jsoniter.output.JsonStreamUtil
 import org.openjdk.jmh.annotations._
 import io.circe._
 import io.circe.generic.auto._
@@ -47,23 +46,23 @@ class CodecBenchmark {
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
-  val anyRefsCodec: Codec[AnyRefs] = materialize[AnyRefs]
+  val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
-  val arraysCodec: Codec[Arrays] = materialize[Arrays]
+  val arraysCodec: JsonCodec[Arrays] = materialize[Arrays]
   val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
-  val bitSetsCodec: Codec[BitSets] = materialize[BitSets]
+  val bitSetsCodec: JsonCodec[BitSets] = materialize[BitSets]
   val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
-  val iterablesCodec: Codec[Iterables] = materialize[Iterables]
+  val iterablesCodec: JsonCodec[Iterables] = materialize[Iterables]
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
-  val mapsCodec: Codec[Maps] = materialize[Maps]
+  val mapsCodec: JsonCodec[Maps] = materialize[Maps]
   val mapsFormat: OFormat[Maps] = Json.format[Maps]
-  val mutableMapsCodec: Codec[MutableMaps] = materialize[MutableMaps]
+  val mutableMapsCodec: JsonCodec[MutableMaps] = materialize[MutableMaps]
   val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
-  val intAndLongMapsCodec: Codec[IntAndLongMaps] = materialize[IntAndLongMaps]
+  val intAndLongMapsCodec: JsonCodec[IntAndLongMaps] = materialize[IntAndLongMaps]
   val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
-  val primitivesCodec: Codec[Primitives] = materialize[Primitives]
+  val primitivesCodec: JsonCodec[Primitives] = materialize[Primitives]
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
-  val extractFieldsCodec: Codec[ExtractFields] = materialize[ExtractFields]
+  val extractFieldsCodec: JsonCodec[ExtractFields] = materialize[ExtractFields]
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -221,7 +220,7 @@ class CodecBenchmark {
   def writeAnyRefsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(anyRefsObj)
 
   @Benchmark
-  def writeAnyRefsJsoniter(): Array[Byte] = JsonStreamUtil.write(anyRefsCodec, anyRefsObj)
+  def writeAnyRefsJsoniter(): Array[Byte] = JsonWriter.write(anyRefsCodec, anyRefsObj)
 
   @Benchmark
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
@@ -233,7 +232,7 @@ class CodecBenchmark {
   def writeArraysJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(arraysObj)
 
   @Benchmark
-  def writeArraysJsoniter(): Array[Byte] = JsonStreamUtil.write(arraysCodec, arraysObj)
+  def writeArraysJsoniter(): Array[Byte] = JsonWriter.write(arraysCodec, arraysObj)
 
   @Benchmark
   def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj)(arraysFormat))
@@ -247,7 +246,7 @@ class CodecBenchmark {
   def writeBitSetsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(bitSetsObj)
 
   @Benchmark
-  def writeBitSetsJsoniter(): Array[Byte] = JsonStreamUtil.write(bitSetsCodec, bitSetsObj)
+  def writeBitSetsJsoniter(): Array[Byte] = JsonWriter.write(bitSetsCodec, bitSetsObj)
 
   @Benchmark
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
@@ -259,7 +258,7 @@ class CodecBenchmark {
   def writeIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(iterablesObj)
 
   @Benchmark
-  def writeIterablesJsoniter(): Array[Byte] = JsonStreamUtil.write(iterablesCodec, iterablesObj)
+  def writeIterablesJsoniter(): Array[Byte] = JsonWriter.write(iterablesCodec, iterablesObj)
 
   @Benchmark
   def writeIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(iterablesObj)(iterablesFormat))
@@ -271,7 +270,7 @@ class CodecBenchmark {
   def writeMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mapsObj)
 
   @Benchmark
-  def writeMapsJsoniter(): Array[Byte] = JsonStreamUtil.write(mapsCodec, mapsObj)
+  def writeMapsJsoniter(): Array[Byte] = JsonWriter.write(mapsCodec, mapsObj)
 
   @Benchmark
   def writeMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mapsObj)(mapsFormat))
@@ -283,7 +282,7 @@ class CodecBenchmark {
   def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
 
   @Benchmark
-  def writeMutableMapsJsoniter(): Array[Byte] = JsonStreamUtil.write(mutableMapsCodec, mutableMapsObj)
+  def writeMutableMapsJsoniter(): Array[Byte] = JsonWriter.write(mutableMapsCodec, mutableMapsObj)
 
   @Benchmark
   def writeMutableMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableMapsObj)(mutableMapsFormat))
@@ -297,7 +296,7 @@ class CodecBenchmark {
   def writeIntAndLongMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intAndLongMapsObj)
 
   @Benchmark
-  def writeIntAndLongMapsJsoniter(): Array[Byte] = JsonStreamUtil.write(intAndLongMapsCodec, intAndLongMapsObj)
+  def writeIntAndLongMapsJsoniter(): Array[Byte] = JsonWriter.write(intAndLongMapsCodec, intAndLongMapsObj)
 
   @Benchmark
   def writeIntAndLongMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(intAndLongMapsObj)(intAndLongMapsFormat))
@@ -309,7 +308,7 @@ class CodecBenchmark {
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
 
   @Benchmark
-  def writePrimitivesJsoniter(): Array[Byte] = JsonStreamUtil.write(primitivesCodec, primitivesObj)
+  def writePrimitivesJsoniter(): Array[Byte] = JsonWriter.write(primitivesCodec, primitivesObj)
 
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
