@@ -7,6 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
 
 import scala.annotation.{switch, tailrec}
 
+class JsonException(message: String) extends RuntimeException(message)
+
 //noinspection EmptyCheck
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte],

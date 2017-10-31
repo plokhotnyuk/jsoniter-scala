@@ -2,18 +2,15 @@
 
 [![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala) [![license](http://img.shields.io/:license-Apache%202-green.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-Scala macros that generates `com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces in compile time,
-based on compile time reflection.
-
-Main goal is to provide a static code generation for Scala case classes, standard types and collections
+Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
 ## Features and limitations
-- JSON parsing from `Array[Byte]` or `java.io.InputStream` using `com.jsoniter.JsonIterator`
-- JSON serialization to `Array[Byte]` or `java.io.OutputStream` using `com.jsoniter.JsonStream`
-- Support of UTF-8 encoding 
+- JSON parsing from `Array[Byte]` or `java.io.InputStream`
+- JSON serialization to `Array[Byte]` or `java.io.OutputStream`
+- Support of UTF-8 encoding
 - Parsing of strings with escaped characters for JSON field names, keys & values 
-- Configurable serialization of strings with escaped UTF-8 characters to support other ASCII based encodings
+- Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Enums, `BigInt`, `BigDecimal`, `Option`, Scala collections & arrays as class fields are supported
