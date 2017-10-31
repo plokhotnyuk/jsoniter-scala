@@ -208,12 +208,12 @@ final class JsonReader private[jsoniter_scala](
 
   def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
 
-  def isReusableCharsEqualsTo(len: Int, cs: Array[Char]): Boolean =
-    if (len != cs.length) false
+  def isReusableCharsEqualsTo(len: Int, s: String): Boolean =
+    if (len != s.length) false
     else {
       var i = 0
       while (i < len) {
-        if (reusableChars(i) != cs(i)) return false
+        if (reusableChars(i) != s.charAt(i)) return false
         i += 1
       }
       true

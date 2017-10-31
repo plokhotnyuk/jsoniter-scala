@@ -366,13 +366,10 @@ object JsonCodec {
       val readVars = members.map { m =>
         q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, defaultValue(methodType(m)))}"
       }
-      val fields =
-        if (members.isEmpty) EmptyTree
-        else q"private val fields: Array[Array[Char]] = Array(..${members.map(m => q"${keyName(m)}.toCharArray")})"
-      val readFields = members.zipWithIndex.map { case (m, i) =>
+      val readFields = members.map { m =>
         val varName = TermName(s"_${m.name}")
         cq"""${hashCode(m)} =>
-            if (in.isReusableCharsEqualsTo(l, fields($i))) {
+            if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
               ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
               $varName = ${genReadField(methodType(m), q"$varName")}
             } else in.skip()"""
@@ -395,7 +392,6 @@ object JsonCodec {
             import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
             import scala.annotation.switch
             new com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe] {
-              ..$fields
               ..$reqFields
               override def read(in: JsonReader): $tpe =
                 (in.nextToken(): @switch) match {
