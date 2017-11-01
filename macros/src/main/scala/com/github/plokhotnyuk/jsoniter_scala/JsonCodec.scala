@@ -249,14 +249,14 @@ object JsonCodec {
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
-            var comma = false
-            $m.foreach { x => comma = out.writeComma(comma); ..$writeVal }
+            var c = false
+            $m.foreach { x => c = out.writeComma(c); ..$writeVal }
             out.writeArrayEnd()"""
 
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
-            var comma = false
-            $m.foreach { kv => comma = out.writeObjectField(comma, kv._1); ..$writeKV }
+            var c = false
+            $m.foreach { kv => c = out.writeObjectField(c, kv._1); ..$writeKV }
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
@@ -283,9 +283,9 @@ object JsonCodec {
           q"""out.writeArrayStart()
               val l = x.length
               var i = 0
-              var comma = false
+              var c = false
               while (i < l) {
-                comma = out.writeComma(comma)
+                c = out.writeComma(c)
                 ..${genWriteVal(q"x(i)", typeArg1(tpe))}
                 i += 1
               }
@@ -302,9 +302,9 @@ object JsonCodec {
         if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
         } else if (tpe <:< typeOf[Option[_]] || tpe <:< typeOf[scala.collection.Map[_, _]] || tpe <:< typeOf[Traversable[_]]) {
-          q"if (($m ne null) && !$m.isEmpty) { comma = out.writeObjectField(comma, $name); ${genWriteVal(m, tpe)} }"
+          q"if (($m ne null) && !$m.isEmpty) { c = out.writeObjectField(c, $name); ${genWriteVal(m, tpe)} }"
         } else {
-          q"comma = out.writeObjectField(comma, $name); ..${genWriteVal(m, tpe)}"
+          q"c = out.writeObjectField(c, $name); ..${genWriteVal(m, tpe)}"
         }
 
       val tpe = weakTypeOf[A]
@@ -386,7 +386,7 @@ object JsonCodec {
       }
       val writeFieldsBlock =
         if (writeFields.isEmpty) EmptyTree
-        else q"val x = obj.asInstanceOf[$tpe]; var comma = false; ..$writeFields"
+        else q"val x = obj.asInstanceOf[$tpe]; var c = false; ..$writeFields"
       val tree =
         q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
             import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
