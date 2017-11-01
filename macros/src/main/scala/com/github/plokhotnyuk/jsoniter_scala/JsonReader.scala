@@ -763,8 +763,8 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def toHexDigit(n: Int): Char = {
-    val n1 = n & 15
-    n1 + (if (n1 > 9) 55 else 48)
+    val nibble = n & 15
+    (((9 - nibble) >> 31) & 7) + nibble + 48 // branchless conversion of nibble to hex digit
   }.toChar
 
   private def skipString(): Unit = {

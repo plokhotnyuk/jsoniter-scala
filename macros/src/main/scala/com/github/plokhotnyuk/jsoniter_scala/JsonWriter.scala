@@ -305,11 +305,17 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def toHexDigit(n: Int): Byte = {
-    val n1 = n & 15
-    n1 + (if (n1 > 9) 87 else 48)
+    val nibble = n & 15
+    (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
   }.toByte
 
-  private def illegalSurrogateError(ch: Int): Nothing = encodeError("illegal surrogate: \\u" + Integer.toHexString(ch))
+  private def illegalSurrogateError(ch: Int): Nothing = encodeError {
+    new StringBuilder(32).append("illegal surrogate: \\u")
+      .append(toHexDigit(ch >>> 12).toChar)
+      .append(toHexDigit(ch >>> 8).toChar)
+      .append(toHexDigit(ch >>> 4).toChar)
+      .append(toHexDigit(ch).toChar).toString()
+  }
 
   private def writeCommaWithParentheses(comma: Boolean): Unit = {
     if (comma) write(',')
