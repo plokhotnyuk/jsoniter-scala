@@ -15,7 +15,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
     "write null value" in {
       serialized(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
     }
-    "write long string" in {
+    "write ascii chars" in {
       val text = new String(Array.fill[Char]('a')(10000))
       serialized(_.writeVal(text)) shouldBe '"' + text + '"'
     }
@@ -23,13 +23,11 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal("\b\f\n\r\t\\")) shouldBe """"\b\f\n\r\t\\""""
     }
     "write strings with unicode chars" in {
-      serialized(_.writeVal("иბ")) shouldBe "\"иბ\""
-// FIXME serialization of surrogate pairs
-//      serialized(_.writeVal("𝄞")) shouldBe "\ud834\udd1e"
+      serialized(_.writeVal("иბ𝄞")) shouldBe "\"иბ\ud834\udd1e\""
     }
     "write strings with escaped unicode chars" in {
-      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\b\f\n\r\t/Aиბ")) shouldBe "\"\\b\\f\\n\\r\\t/A\\u0438\\u10d1\""
-      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("𝄞")) shouldBe "\"\\ud834\\udd1e\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u0001\b\f\n\r\t/Aиბ𝄞")) shouldBe
+        "\"\\u0001\\b\\f\\n\\r\\t/A\\u0438\\u10d1\\ud834\\udd1e\""
     }
     "throw i/o exception in case of invalid character surrogate pair" in {
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
@@ -126,7 +124,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
 
   def serialized(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val out = new ByteArrayOutputStream(1024)
-    val writer = new JsonWriter(new Array[Byte](33), 0, 0, out, cfg)
+    val writer = new JsonWriter(new Array[Byte](2), 0, 0, out, cfg)
     try f(writer)
     finally writer.close()
     out.toString("UTF-8")

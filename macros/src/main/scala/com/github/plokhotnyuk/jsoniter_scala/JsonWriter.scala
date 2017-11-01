@@ -16,7 +16,7 @@ final class JsonWriter private[jsoniter_scala](
     private var indention: Int,
     private var out: OutputStream,
     private var config: WriterConfig) {
-  require((buf ne null) && buf.length > 32, "buf size should be greater than 32")
+  require((buf ne null) && buf.length > 0, "buf size should be non empty")
 
   def reset(out: OutputStream): Unit = {
     this.out = out
@@ -25,10 +25,9 @@ final class JsonWriter private[jsoniter_scala](
 
   def close(): Unit =
     if (out ne null) {
-      if (count > 0) flushBuffer()
+      flushBuffer()
       out.close()
-      out = null
-      count = 0
+      out = null // help GC
     }
 
   def writeSep(first: Boolean): Boolean = {
@@ -83,7 +82,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeObjectField(x: String): Unit =
     if (x ne null) {
-      writeString(x)
+      writeString(x, 0, x.length)
       if (indention > 0) write(':'.toByte, ' '.toByte)
       else write(':')
     } else encodeError("key cannot be null")
@@ -94,7 +93,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: BigInt): Unit = if (x eq null) writeNull() else writeAsciiString(x.toString)
 
-  def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
+  def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x, 0, x.length)
 
   def writeVal(x: Boolean): Unit =
     if (x) write('t'.toByte, 'r'.toByte, 'u'.toByte, 'e'.toByte)
@@ -180,145 +179,128 @@ final class JsonWriter private[jsoniter_scala](
     count += 5
   }
 
-  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): Unit = {
-    ensure(6)
-    buf(count) = b1
-    buf(count + 1) = b2
-    buf(count + 2) = b3
-    buf(count + 3) = b4
-    buf(count + 4) = b5
-    buf(count + 5) = b6
-    count += 6
-  }
-
   private def writeAsciiString(s: String): Unit = {
-    var remaining = s.length
-    if (out == null) {
-      ensure(remaining)
-      s.getBytes(0, remaining, buf, count)
-      count += remaining
-    } else {
-      var i = 0
-      var continue = true
-      while (continue) {
-        val available = buf.length - count
-        if (available < remaining) {
-          remaining -= available
-          val j = i + available
-          s.getBytes(i, j, buf, count)
-          count = buf.length
-          flushBuffer()
-          i = j
-        } else {
-          val j = i + remaining
-          s.getBytes(i, j, buf, count)
-          count += remaining
-          continue = false
-        }
-      }
-    }
+    val len = s.length
+    ensure(len)
+    s.getBytes(0, len, buf, count)
+    count += len
   }
 
-  private def writeString(s: String): Unit = {
-    var i = 0
-    val len = s.length
-    var toWriteLen = len
-    val bufLengthMinusTwo = buf.length - 2 // make room for the quotes
-    if (count + toWriteLen > bufLengthMinusTwo) toWriteLen = bufLengthMinusTwo - count
-    if (toWriteLen < 0) {
-      ensure(32)
-      if (count + toWriteLen > bufLengthMinusTwo) toWriteLen = bufLengthMinusTwo - count
-    }
+  private def writeString(s: String, from: Int, to: Int): Unit = {
+    ensure((to - from) + 2) // 1 byte per char (suppose that they are ASCII only) + make room for the quotes
     var pos = count
+    var i = from
     buf(pos) = '"'
     pos += 1
-    try { // write string, the fast path, without utf8 and escape support
-      var continue = true
-      while (continue && i < toWriteLen) {
-        val c = s.charAt(i)
-        i += 1
-        if (c > 31 && c < 126 && c != '"' && c != '\\') {
-          buf(pos) = c.toByte
-          pos += 1
-        } else {
-          continue = false
-          i -= 1
-        }
-      }
-    } catch {
-      case e: ArrayIndexOutOfBoundsException => // FIXME: not sure that it is efficient in deep calls
-    }
-    if (i == len) {
-      buf(pos) = '"'
-      count = pos + 1
-    } else {
-      count = pos
-      writeStringSlowPath(s, i, len) // for the remaining parts, we process them char by char
-      write('"')
-    }
-  }
-
-  private def writeStringSlowPath(s: String, start: Int, len: Int): Unit =
-    if (config.escapeUnicode) {
-      var i = start
-      while (i < len) {
-        val c: Int = s.charAt(i)
-        i += 1
-        if (c > 125) writeAsSlashU(c)
-        else writeAsciiChar(c)
-      }
-    } else writeStringSlowPathWithoutEscapeUnicode(s, start, len)
-
-  private def writeStringSlowPathWithoutEscapeUnicode(s: String, start: Int, len: Int): Unit = {
-    var i = start
-    var surrogate = 0
-    var continue = true
-    while (continue && i < len) {
-      var ch: Int = s.charAt(i)
+    var ch: Char = 0 // the fast path without utf8 and escape support
+    while (i < to && {
+      ch = s.charAt(i)
+      ch > 31 && ch < 128 && ch != '"' && ch != '\\'
+    }) pos += {
       i += 1
-      if (ch > 125) {
-        if (ch < 0x800) { // 2-byte
-          write((0xc0 | (ch >> 6)).toByte, (0x80 | (ch & 0x3f)).toByte)
-        } else if (ch < 0xD800 || ch > 0xDFFF) {
-          write((0xe0 | (ch >> 12)).toByte, (0x80 | ((ch >> 6) & 0x3f)).toByte, (0x80 | (ch & 0x3f)).toByte)
-        } else {
-          if (ch > 0xDBFF) encodeError("illegal surrogate: " + ch)
-          surrogate = ch
-          if (i > len) {
-            continue = false
-            i -= 1
-          } else {
-            val firstPart = surrogate
-            surrogate = 0
-            if (ch < 0xDC00 || ch > 0xDFFF) encodeError("illegal surrogate pair: \\u" + Integer.toHexString(firstPart) + " \\u" + Integer.toHexString(ch))
-            ch = 0x10000 + ((firstPart - 0xD800) << 10) + (ch - 0xDC00)
-            if (ch > 0x10FFFF) encodeError("illegal surrogate")
-            write((0xf0 | (ch >> 18)).toByte, (0x80 | ((ch >> 12) & 0x3f)).toByte, (0x80 | ((ch >> 6) & 0x3f)).toByte, (0x80 | (ch & 0x3f)).toByte)
-          }
-        }
-      } else writeAsciiChar(ch)
+      buf(pos) = ch.toByte
+      1
     }
+    if (i < to) { // for the remaining parts we process with utf-8 encoding and escape unicode support
+      count = pos
+      writeStringSlowPath(s, i, to)
+      pos = count
+    }
+    buf(pos) = '"'
+    count = pos + 1
   }
 
-  private def writeAsciiChar(ch: Int): Unit =
-    (ch: @switch) match {
-      case '"' => write('\\'.toByte, '"'.toByte)
-      case '\\' => write('\\'.toByte, '\\'.toByte)
-      case '\b' => write('\\'.toByte, 'b'.toByte)
-      case '\f' => write('\\'.toByte, 'f'.toByte)
-      case '\n' => write('\\'.toByte, 'n'.toByte)
-      case '\r' => write('\\'.toByte, 'r'.toByte)
-      case '\t' => write('\\'.toByte, 't'.toByte)
-      case _ => if (ch < 32) writeAsSlashU(ch) else write(ch.toByte)
+  private def writeStringSlowPath(s: String, from: Int, to: Int): Unit = {
+    val escapeUnicode = config.escapeUnicode
+    ensure((to - from) * (if (escapeUnicode) 6 else 3) + 1) // max 6/3 bytes per char + the closing quotes
+    var pos = count
+    var i = from
+    while (i < to) pos += {
+      val c1 = s.charAt(i)
+      i += 1
+      if (c1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
+        (c1: @switch) match {
+          case '"' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = '"'.toByte
+            2
+          case '\\' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = '\\'.toByte
+            2
+          case '\b' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'b'.toByte
+            2
+          case '\f' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'f'.toByte
+            2
+          case '\n' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'n'.toByte
+            2
+          case '\r' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'r'.toByte
+            2
+          case '\t' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 't'.toByte
+            2
+          case _ =>
+            if (escapeUnicode && c1 < 32) {
+              buf(pos) = '\\'.toByte
+              buf(pos + 1) = 'u'.toByte
+              buf(pos + 2) = toHexDigit(c1 >>> 12)
+              buf(pos + 3) = toHexDigit(c1 >>> 8)
+              buf(pos + 4) = toHexDigit(c1 >>> 4)
+              buf(pos + 5) = toHexDigit(c1)
+              6
+            } else {
+              buf(pos) = c1.toByte
+              1
+            }
+        }
+      } else if (escapeUnicode) { // FIXME: add surrogate pair checking for escaped unicodes
+        buf(pos) = '\\'.toByte
+        buf(pos + 1) = 'u'.toByte
+        buf(pos + 2) = toHexDigit(c1 >>> 12)
+        buf(pos + 3) = toHexDigit(c1 >>> 8)
+        buf(pos + 4) = toHexDigit(c1 >>> 4)
+        buf(pos + 5) = toHexDigit(c1)
+        6
+      } else if (c1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        buf(pos) = (0xC0 | (c1 >> 6)).toByte
+        buf(pos + 1) = (0x80 | (c1 & 0x3F)).toByte
+        2
+      } else if (!Character.isHighSurrogate(c1)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        if (Character.isLowSurrogate(c1)) illegalSurrogateError(c1)
+        buf(pos) = (0xE0 | (c1 >> 12)).toByte
+        buf(pos + 1) = (0x80 | ((c1 >> 6) & 0x3F)).toByte
+        buf(pos + 2) = (0x80 | (c1 & 0x3F)).toByte
+        3
+      } else if (i < to) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        val c2 = s.charAt(i)
+        i += 1
+        if (!Character.isLowSurrogate(c2)) illegalSurrogateError(c2)
+        val uc = Character.toCodePoint(c1, c2)
+        buf(pos) = (0xF0 | (uc >> 18)).toByte
+        buf(pos + 1) = (0x80 | ((uc >> 12) & 0x3F)).toByte
+        buf(pos + 2) = (0x80 | ((uc >> 6) & 0x3F)).toByte
+        buf(pos + 3) = (0x80 | (uc & 0x3F)).toByte
+        4
+      } else illegalSurrogateError(c1)
     }
-
-  private def writeAsSlashU(ch: Int): Unit =
-    write('\\'.toByte, 'u'.toByte, toHexDigit(ch >>> 12), toHexDigit(ch >>> 8), toHexDigit(ch >>> 4), toHexDigit(ch))
+    count = pos
+  }
 
   private def toHexDigit(n: Int): Byte = {
     val n1 = n & 15
     n1 + (if (n1 > 9) 87 else 48)
   }.toByte
+
+  private def illegalSurrogateError(ch: Int): Nothing = encodeError("illegal surrogate: \\u" + Integer.toHexString(ch))
 
   private def writeParentheses(): Unit = write('"')
 
@@ -327,7 +309,7 @@ final class JsonWriter private[jsoniter_scala](
     else write('"'.toByte, ':'.toByte)
 
   private def writeInt(x: Int): Unit = {
-    ensure(12)
+    ensure(11) // minIntBytes.length
     var value = x
     var pos = count
     count =
@@ -369,7 +351,7 @@ final class JsonWriter private[jsoniter_scala](
 
   // TODO: consider more cache-aware algorithm from RapidJSON, see https://github.com/miloyip/itoa-benchmark/blob/master/src/branchlut.cpp
   private def writeLong(x: Long): Unit = {
-    ensure(22)
+    ensure(20) // minLongBytes.length
     var value = x
     var pos = count
     count =
@@ -492,18 +474,15 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private def ensure(minimal: Int): Unit = {
-    val available = buf.length - count
-    if (available < minimal) {
-      if (count > 8192) flushBuffer()
-      growAtLeast(minimal)
+    val totalRequired = minimal + count
+    if (buf.length < totalRequired) {
+      flushBuffer()
+      if (buf.length < totalRequired) {
+        val newBuf = new Array[Byte](Math.max(buf.length << 1, totalRequired))
+        System.arraycopy(buf, 0, newBuf, 0, buf.length)
+        buf = newBuf
+      }
     }
-  }
-
-  private def growAtLeast(minimal: Int): Unit = {
-    val len = buf.length
-    val newBuf = new Array[Byte](len + Math.max(len, minimal))
-    System.arraycopy(buf, 0, newBuf, 0, len)
-    buf = newBuf
   }
 }
 
