@@ -59,8 +59,8 @@ object CustomPlayJsonFormats {
     Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*)))
 
   implicit val format9: Format[Char] = Format(
-    Reads[Char](js => JsSuccess(js.as[Int].toChar)),
-    Writes[Char](c => JsNumber(c.toInt)))
+    Reads[Char](js => JsSuccess(js.as[String].charAt(0))),
+    Writes[Char](c => JsString(c.toString)))
 
   implicit val format10: Format[Array[BigInt]] = Format(
     Reads[Array[BigInt]]{js => JsSuccess(js.as[Array[JsNumber]].map(_.value.toBigInt()))},

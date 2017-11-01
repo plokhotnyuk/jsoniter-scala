@@ -43,8 +43,7 @@ class JsonCodecBenchmarkSpec extends WordSpec with Matchers {
       //benchmark.readIntAndLongMapsJackson() shouldBe benchmark.intAndLongMapsObj
       benchmark.readIntAndLongMapsJsoniter() shouldBe benchmark.intAndLongMapsObj
       benchmark.readIntAndLongMapsPlay() shouldBe benchmark.intAndLongMapsObj
-      //FIXME: Circe parses chars from strings
-      //benchmark.readPrimitivesCirce() shouldBe benchmark.primitivesObj
+      benchmark.readPrimitivesCirce() shouldBe benchmark.primitivesObj
       benchmark.readPrimitivesJackson() shouldBe benchmark.primitivesObj
       benchmark.readPrimitivesJsoniter() shouldBe benchmark.primitivesObj
       benchmark.readPrimitivesPlay() shouldBe benchmark.primitivesObj
@@ -84,8 +83,7 @@ class JsonCodecBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeIntAndLongMapsJackson()) shouldBe toString(benchmark.intAndLongMapsJson)
       toString(benchmark.writeIntAndLongMapsJsoniter()) shouldBe toString(benchmark.intAndLongMapsJson)
       toString(benchmark.writeIntAndLongMapsPlay()) shouldBe toString(benchmark.intAndLongMapsJson)
-      //FIXME: Circe writes chars as strings
-      // toString(benchmark.writePrimitivesCirce()) shouldBe toString(benchmark.primitivesJson)
+      toString(benchmark.writePrimitivesCirce()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesPlay()) shouldBe toString(benchmark.primitivesJson)

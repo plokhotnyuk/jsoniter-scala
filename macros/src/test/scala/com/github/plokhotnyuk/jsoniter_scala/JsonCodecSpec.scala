@@ -15,102 +15,102 @@ class JsonCodecSpec extends WordSpec with Matchers {
     "serialize and deserialize primitives" in {
       verifySerDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       verifyDeser(materialize[Primitives],
         Primitives(-128.toByte, -32768.toShort, -2147483648, -9223372036854775808L, bl = true, 'V', -1.1, -2.2f),
-        """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":86,"dbl":-1.1,"f":-2.2}""".getBytes)
+        """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":"V","dbl":-1.1,"f":-2.2}""".getBytes)
     }
     "don't deserialize numbers with leading zeroes" in {
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":01,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":01,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":02,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":02,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":03,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":03,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":04,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3,"l":04,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":086,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":01.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":01.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":01.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal number"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":02.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"𝄞","dbl":1.1,"f":02.2}""".getBytes)
+      }.getMessage.contains("illegal value for char"))
     }
     "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1000,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1000,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for byte"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":200000,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":200000,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for short"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3000000000,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3000000000,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for int"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":40000000000000000000,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3,"l":40000000000000000000,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("value is too large for long"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal boolean"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":4,"bl":fals,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+          """{"b":1,"s":2,"i":3,"l":4,"bl":fals,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
       }.getMessage.contains("illegal boolean"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
           Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":1000000,"dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("value is too large for char"))
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"1000000","dbl":1.1,"f":2.2}""".getBytes)
+      }.getMessage.contains("illegal value for char"))
     }
     "deserialize too big numbers as infinity for floating point types" in {
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.PositiveInfinity, Float.PositiveInfinity),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e1000,"f":2.2e2000}""".getBytes)
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1e1000,"f":2.2e2000}""".getBytes)
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', Double.NegativeInfinity, Float.NegativeInfinity),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":-1.1e1000,"f":-2.2e2000}""".getBytes)
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":-1.1e1000,"f":-2.2e2000}""".getBytes)
     }
     "deserialize too small numbers as zero for floating point types" in {
       verifyDeser(materialize[Primitives],
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 0.0, 0.0f),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
     }
     "serialize and deserialize boxed primitives" in {
       verifySerDeser(materialize[BoxedPrimitives],
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
-        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":86,"dbl":1.1,"f":2.2}""".getBytes)
+        """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
     }
     "serialize and deserialize standard types" in {
       val longStr = new String(Array.fill(100000)(' '))
@@ -179,10 +179,10 @@ class JsonCodecSpec extends WordSpec with Matchers {
         """{"s":"X","st":{"s":"VVV","bi":2,"bd":3.3}}""".getBytes)
     }
     "serialize and deserialize enumerations" in {
-      verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
+      verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
       assert(intercept[JsonException] {
-        verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":-1}""".getBytes)
-      }.getMessage.contains("invalid enum value: -1"))
+        verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
+      }.getMessage.contains("invalid enum value"))
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],
@@ -231,9 +231,9 @@ class JsonCodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize immutable maps" in {
       verifySerDeser(materialize[ImmutableMaps],
-        ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap(2.toChar -> 2), "3" -> ListMap(3.toChar -> 3)),
+        ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap('V' -> 2), "3" -> ListMap('X' -> 3)),
           SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
-        """{"m":{"1":1.1},"hm":{"2":{"2":2},"3":{"3":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
+        """{"m":{"1":1.1},"hm":{"2":{"V":2},"3":{"X":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
     }
     "don't serialize null keys for maps" in {
       assert(intercept[IOException] {

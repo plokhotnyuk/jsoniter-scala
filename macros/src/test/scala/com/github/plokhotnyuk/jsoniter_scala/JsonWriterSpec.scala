@@ -36,91 +36,123 @@ class JsonWriterSpec extends WordSpec with Matchers {
       assert(intercept[Exception](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
     }
-    "JsonWriter.writeVal for int" should {
-      "write int values" in {
-        serialized(_.writeVal(0)) shouldBe "0"
-        serialized(_.writeVal(-0)) shouldBe "0"
-        serialized(_.writeVal(123)) shouldBe "123"
-        serialized(_.writeVal(-123)) shouldBe "-123"
-        serialized(_.writeVal(123456)) shouldBe "123456"
-        serialized(_.writeVal(-123456)) shouldBe "-123456"
-        serialized(_.writeVal(123456789)) shouldBe "123456789"
-        serialized(_.writeVal(-123456789)) shouldBe "-123456789"
-        serialized(_.writeVal(2147483647)) shouldBe "2147483647"
-        serialized(_.writeVal(-2147483648)) shouldBe "-2147483648"
-      }
+  }
+  "JsonWriter.writeVal for char" should {
+    "write ascii chars" in {
+      serialized(_.writeVal('a')) shouldBe "\"a\""
     }
-    "JsonWriter.writeVal long" should {
-      "write long values" in {
-        serialized(_.writeVal(0L)) shouldBe "0"
-        serialized(_.writeVal(-0L)) shouldBe "0"
-        serialized(_.writeVal(123L)) shouldBe "123"
-        serialized(_.writeVal(-123L)) shouldBe "-123"
-        serialized(_.writeVal(123456L)) shouldBe "123456"
-        serialized(_.writeVal(-123456L)) shouldBe "-123456"
-        serialized(_.writeVal(123456789L)) shouldBe "123456789"
-        serialized(_.writeVal(-123456789L)) shouldBe "-123456789"
-        serialized(_.writeVal(123456789012L)) shouldBe "123456789012"
-        serialized(_.writeVal(-123456789012L)) shouldBe "-123456789012"
-        serialized(_.writeVal(123456789012345L)) shouldBe "123456789012345"
-        serialized(_.writeVal(-123456789012345L)) shouldBe "-123456789012345"
-        serialized(_.writeVal(123456789012345678L)) shouldBe "123456789012345678"
-        serialized(_.writeVal(-123456789012345678L)) shouldBe "-123456789012345678"
-        serialized(_.writeVal(9223372036854775807L)) shouldBe "9223372036854775807"
-        serialized(_.writeVal(-9223372036854775808L)) shouldBe "-9223372036854775808"
-      }
+    "write escaped whitespace chars" in {
+      serialized(_.writeVal('\b')) shouldBe """"\b""""
+      serialized(_.writeVal('\f')) shouldBe """"\f""""
+      serialized(_.writeVal('\n')) shouldBe """"\n""""
+      serialized(_.writeVal('\r')) shouldBe """"\r""""
+      serialized(_.writeVal('\t')) shouldBe """"\t""""
+      serialized(_.writeVal('\\')) shouldBe """"\\""""
+      serialized(_.writeVal('\"')) shouldBe """"\"""""
     }
-    "JsonWriter.writeVal for float" should {
-      "write float values" in {
-        serialized(_.writeVal(0.0f)) shouldBe "0.0"
-        serialized(_.writeVal(-0.0f)) shouldBe "-0.0"
-        serialized(_.writeVal(12345.678f)) shouldBe "12345.678"
-        serialized(_.writeVal(-12345.678f)) shouldBe "-12345.678"
-        serialized(_.writeVal(1.23456788e14f)) shouldBe "1.23456788E14"
-        serialized(_.writeVal(-1.2345679e-6f)) shouldBe "-1.2345679E-6"
-      }
-      "throw i/o exception on invalid JSON numbers" in {
-        assert(intercept[Exception](serialized(_.writeVal(0.0f/0.0f))).getMessage.contains("illegal number"))
-        assert(intercept[Exception](serialized(_.writeVal(1.0f/0.0f))).getMessage.contains("illegal number"))
-        assert(intercept[Exception](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
-      }
+    "write strings with unicode chars" in {
+      serialized(_.writeVal('и')) shouldBe "\"и\""
+      serialized(_.writeVal('ბ')) shouldBe "\"ბ\""
     }
-    "JsonWriter.writeVal for double" should {
-      "write double values" in {
-        serialized(_.writeVal(0.0)) shouldBe "0.0"
-        serialized(_.writeVal(-0.0)) shouldBe "-0.0"
-        serialized(_.writeVal(123456789.12345678)) shouldBe "1.2345678912345678E8"
-        serialized(_.writeVal(-123456789.12345678)) shouldBe "-1.2345678912345678E8"
-        serialized(_.writeVal(123456789.123456e10)) shouldBe "1.23456789123456E18"
-        serialized(_.writeVal(-123456789.123456e-10)) shouldBe "-0.0123456789123456"
-      }
-      "throw i/o exception on invalid JSON numbers" in {
-        assert(intercept[Exception](serialized(_.writeVal(0.0/0.0))).getMessage.contains("illegal number"))
-        assert(intercept[Exception](serialized(_.writeVal(1.0/0.0))).getMessage.contains("illegal number"))
-        assert(intercept[Exception](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))
-      }
+    "write strings with escaped unicode chars" in {
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u0001')) shouldBe "\"\\u0001\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\b')) shouldBe "\"\\b\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\f')) shouldBe "\"\\f\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\n')) shouldBe "\"\\n\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\r')) shouldBe "\"\\r\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\t')) shouldBe "\"\\t\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('и')) shouldBe "\"\\u0438\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('ბ')) shouldBe "\"\\u10d1\""
     }
-    "JsonWriter.writeVal for BigInt" should {
-      "write null value" in {
-        serialized(_.writeVal(null.asInstanceOf[BigInt])) shouldBe "null"
-      }
-      "write number values" in {
-        serialized(_.writeVal(BigInt("0"))) shouldBe "0"
-        serialized(_.writeVal(BigInt("-0"))) shouldBe "0"
-        serialized(_.writeVal(BigInt("12345678901234567890123456789"))) shouldBe "12345678901234567890123456789"
-        serialized(_.writeVal(BigInt("-12345678901234567890123456789"))) shouldBe "-12345678901234567890123456789"
-      }
+    "throw i/o exception in case of surrogate pair character" in {
+      assert(intercept[Exception](serialized(_.writeVal('\udd1e'))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(_.writeVal('\ud834'))).getMessage.contains("illegal surrogate"))
     }
-    "JsonWriter.writeVal for BigDecimal" should {
-      "write null value" in {
-        serialized(_.writeVal(null.asInstanceOf[BigDecimal])) shouldBe "null"
-      }
-      "write number values" in {
-        serialized(_.writeVal(BigDecimal("0"))) shouldBe "0"
-        serialized(_.writeVal(BigDecimal("-0"))) shouldBe "0"
-        serialized(_.writeVal(BigDecimal("1234567890123456789.0123456789"))) shouldBe "1234567890123456789.0123456789"
-        serialized(_.writeVal(BigDecimal("-1234567890123456789.0123456789"))) shouldBe "-1234567890123456789.0123456789"
-      }
+  }
+  "JsonWriter.writeVal for int" should {
+    "write int values" in {
+      serialized(_.writeVal(0)) shouldBe "0"
+      serialized(_.writeVal(-0)) shouldBe "0"
+      serialized(_.writeVal(123)) shouldBe "123"
+      serialized(_.writeVal(-123)) shouldBe "-123"
+      serialized(_.writeVal(123456)) shouldBe "123456"
+      serialized(_.writeVal(-123456)) shouldBe "-123456"
+      serialized(_.writeVal(123456789)) shouldBe "123456789"
+      serialized(_.writeVal(-123456789)) shouldBe "-123456789"
+      serialized(_.writeVal(2147483647)) shouldBe "2147483647"
+      serialized(_.writeVal(-2147483648)) shouldBe "-2147483648"
+    }
+  }
+  "JsonWriter.writeVal long" should {
+    "write long values" in {
+      serialized(_.writeVal(0L)) shouldBe "0"
+      serialized(_.writeVal(-0L)) shouldBe "0"
+      serialized(_.writeVal(123L)) shouldBe "123"
+      serialized(_.writeVal(-123L)) shouldBe "-123"
+      serialized(_.writeVal(123456L)) shouldBe "123456"
+      serialized(_.writeVal(-123456L)) shouldBe "-123456"
+      serialized(_.writeVal(123456789L)) shouldBe "123456789"
+      serialized(_.writeVal(-123456789L)) shouldBe "-123456789"
+      serialized(_.writeVal(123456789012L)) shouldBe "123456789012"
+      serialized(_.writeVal(-123456789012L)) shouldBe "-123456789012"
+      serialized(_.writeVal(123456789012345L)) shouldBe "123456789012345"
+      serialized(_.writeVal(-123456789012345L)) shouldBe "-123456789012345"
+      serialized(_.writeVal(123456789012345678L)) shouldBe "123456789012345678"
+      serialized(_.writeVal(-123456789012345678L)) shouldBe "-123456789012345678"
+      serialized(_.writeVal(9223372036854775807L)) shouldBe "9223372036854775807"
+      serialized(_.writeVal(-9223372036854775808L)) shouldBe "-9223372036854775808"
+    }
+  }
+  "JsonWriter.writeVal for float" should {
+    "write float values" in {
+      serialized(_.writeVal(0.0f)) shouldBe "0.0"
+      serialized(_.writeVal(-0.0f)) shouldBe "-0.0"
+      serialized(_.writeVal(12345.678f)) shouldBe "12345.678"
+      serialized(_.writeVal(-12345.678f)) shouldBe "-12345.678"
+      serialized(_.writeVal(1.23456788e14f)) shouldBe "1.23456788E14"
+      serialized(_.writeVal(-1.2345679e-6f)) shouldBe "-1.2345679E-6"
+    }
+    "throw i/o exception on invalid JSON numbers" in {
+      assert(intercept[Exception](serialized(_.writeVal(0.0f/0.0f))).getMessage.contains("illegal number"))
+      assert(intercept[Exception](serialized(_.writeVal(1.0f/0.0f))).getMessage.contains("illegal number"))
+      assert(intercept[Exception](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonWriter.writeVal for double" should {
+    "write double values" in {
+      serialized(_.writeVal(0.0)) shouldBe "0.0"
+      serialized(_.writeVal(-0.0)) shouldBe "-0.0"
+      serialized(_.writeVal(123456789.12345678)) shouldBe "1.2345678912345678E8"
+      serialized(_.writeVal(-123456789.12345678)) shouldBe "-1.2345678912345678E8"
+      serialized(_.writeVal(123456789.123456e10)) shouldBe "1.23456789123456E18"
+      serialized(_.writeVal(-123456789.123456e-10)) shouldBe "-0.0123456789123456"
+    }
+    "throw i/o exception on invalid JSON numbers" in {
+      assert(intercept[Exception](serialized(_.writeVal(0.0/0.0))).getMessage.contains("illegal number"))
+      assert(intercept[Exception](serialized(_.writeVal(1.0/0.0))).getMessage.contains("illegal number"))
+      assert(intercept[Exception](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonWriter.writeVal for BigInt" should {
+    "write null value" in {
+      serialized(_.writeVal(null.asInstanceOf[BigInt])) shouldBe "null"
+    }
+    "write number values" in {
+      serialized(_.writeVal(BigInt("0"))) shouldBe "0"
+      serialized(_.writeVal(BigInt("-0"))) shouldBe "0"
+      serialized(_.writeVal(BigInt("12345678901234567890123456789"))) shouldBe "12345678901234567890123456789"
+      serialized(_.writeVal(BigInt("-12345678901234567890123456789"))) shouldBe "-12345678901234567890123456789"
+    }
+  }
+  "JsonWriter.writeVal for BigDecimal" should {
+    "write null value" in {
+      serialized(_.writeVal(null.asInstanceOf[BigDecimal])) shouldBe "null"
+    }
+    "write number values" in {
+      serialized(_.writeVal(BigDecimal("0"))) shouldBe "0"
+      serialized(_.writeVal(BigDecimal("-0"))) shouldBe "0"
+      serialized(_.writeVal(BigDecimal("1234567890123456789.0123456789"))) shouldBe "1234567890123456789.0123456789"
+      serialized(_.writeVal(BigDecimal("-1234567890123456789.0123456789"))) shouldBe "-1234567890123456789.0123456789"
     }
   }
 

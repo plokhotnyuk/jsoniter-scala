@@ -10,11 +10,6 @@ import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object CustomJacksonSerDesers {
-  class CharToIntSerializer extends JsonSerializer[Char] {
-    override def serialize(value: Char, gen: JsonGenerator, serializers: SerializerProvider): Unit =
-      gen.writeNumber(value.toInt)
-  }
-
   class BitSetDeserializer extends StdDeserializer[BitSet](classOf[BitSet]) {
     override def deserialize(p: JsonParser, ctxt: DeserializationContext): BitSet =
       if (p.getCurrentToken != START_ARRAY) throw new JsonParseException(p, "'[' or 'null' expected")

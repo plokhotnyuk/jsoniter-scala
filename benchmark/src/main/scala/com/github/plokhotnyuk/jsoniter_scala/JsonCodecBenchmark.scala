@@ -39,7 +39,6 @@ class JsonCodecBenchmark {
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     registerModule(new SimpleModule()
-      .addSerializer(classOf[Char], new CharToIntSerializer)
       .addSerializer(classOf[BitSet], new BitSetSerializer)
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
       .addDeserializer(classOf[BitSet], new BitSetDeserializer)
@@ -71,7 +70,7 @@ class JsonCodecBenchmark {
   val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
   val mutableMapsJson: Array[Byte] = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
-  val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":120,"dbl":1.1,"f":2.5}""".getBytes
+  val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}""".getBytes
   val extractFieldsJson: Array[Byte] =
     """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}""".getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
@@ -185,11 +184,9 @@ class JsonCodecBenchmark {
   @Benchmark
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
-/* FIXME: Circe parses chars from strings
   @Benchmark
   def readPrimitivesCirce(): Primitives =
     decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
-*/
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)

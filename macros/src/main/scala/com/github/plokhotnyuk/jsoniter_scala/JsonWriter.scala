@@ -45,6 +45,28 @@ final class JsonWriter private[jsoniter_scala](
     true
   }
 
+  def writeObjectField(comma: Boolean, x: Byte): Boolean = {
+    writeCommaWithParentheses(comma)
+    writeInt(x)
+    writeParenthesesWithColon()
+    true
+  }
+
+  def writeObjectField(comma: Boolean, x: Char): Boolean = {
+    writeComma(comma)
+    writeChar(x)
+    if (indention > 0) write(':'.toByte, ' '.toByte)
+    else write(':')
+    true
+  }
+
+  def writeObjectField(comma: Boolean, x: Short): Boolean = {
+    writeCommaWithParentheses(comma)
+    writeInt(x)
+    writeParenthesesWithColon()
+    true
+  }
+
   def writeObjectField(comma: Boolean, x: Int): Boolean = {
     writeCommaWithParentheses(comma)
     writeInt(x)
@@ -114,7 +136,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Short): Unit = writeInt(x.toInt)
 
-  def writeVal(x: Char): Unit = writeInt(x.toInt)
+  def writeVal(x: Char): Unit = writeChar(x)
 
   def writeVal(x: Int): Unit = writeInt(x)
 
@@ -306,6 +328,79 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos + 3) = (0x80 | (uc & 0x3F)).toByte
         4
       } else illegalSurrogateError(c1)
+    }
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeChar(ch: Char): Unit = count = {
+    var pos = ensure(8) // 6 bytes per char for encoded unicode + make room for the quotes
+    val buf = this.buf
+    buf(pos) = '"'
+    pos += 1
+    pos += {
+      if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
+        (ch: @switch) match {
+          case '"' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = '"'.toByte
+            2
+          case '\\' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = '\\'.toByte
+            2
+          case '\b' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'b'.toByte
+            2
+          case '\f' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'f'.toByte
+            2
+          case '\n' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'n'.toByte
+            2
+          case '\r' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 'r'.toByte
+            2
+          case '\t' =>
+            buf(pos) = '\\'.toByte
+            buf(pos + 1) = 't'.toByte
+            2
+          case _ =>
+            if (config.escapeUnicode && ch < 32) {
+              buf(pos) = '\\'.toByte
+              buf(pos + 1) = 'u'.toByte
+              buf(pos + 2) = toHexDigit(ch >>> 12)
+              buf(pos + 3) = toHexDigit(ch >>> 8)
+              buf(pos + 4) = toHexDigit(ch >>> 4)
+              buf(pos + 5) = toHexDigit(ch)
+              6
+            } else {
+              buf(pos) = ch.toByte
+              1
+            }
+        }
+      } else if (config.escapeUnicode) { // FIXME: add surrogate pair checking for escaped unicodes
+        buf(pos) = '\\'.toByte
+        buf(pos + 1) = 'u'.toByte
+        buf(pos + 2) = toHexDigit(ch >>> 12)
+        buf(pos + 3) = toHexDigit(ch >>> 8)
+        buf(pos + 4) = toHexDigit(ch >>> 4)
+        buf(pos + 5) = toHexDigit(ch)
+        6
+      } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        buf(pos) = (0xC0 | (ch >> 6)).toByte
+        buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
+        2
+      } else if (!Character.isSurrogate(ch)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        buf(pos) = (0xE0 | (ch >> 12)).toByte
+        buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
+        buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte
+        3
+      } else illegalSurrogateError(ch)
     }
     buf(pos) = '"'
     pos + 1

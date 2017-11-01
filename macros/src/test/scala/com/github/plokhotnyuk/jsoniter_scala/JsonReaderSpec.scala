@@ -150,329 +150,329 @@ class JsonReaderSpec extends WordSpec with Matchers {
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
     }
-    "JsonReader.readInt" should {
-      "parse valid int values" in {
-        readInt("0") shouldBe 0
-        readInt("-0") shouldBe -0
-        readInt("123456789") shouldBe 123456789
-        readInt("-123456789") shouldBe -123456789
-        readInt("2147483647") shouldBe 2147483647
-        readInt("-2147483648") shouldBe -2147483648
-      }
-      "parse valid int values with skiping JSON space characters" in {
-        readInt(" \n\t\r123456789") shouldBe 123456789
-        readInt(" \n\t\r-123456789") shouldBe -123456789
-      }
-      "parse valid int values and stops on not numeric chars" in {
-        readInt("0$") shouldBe 0
-      }
-      "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readInt("")).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readInt("-")).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readInt("x")).getMessage.contains("illegal number"))
-      }
-      "throw parsing exception on int overflow" in {
-        assert(intercept[Exception](readInt("2147483648")).getMessage.contains("value is too large for int"))
-        assert(intercept[Exception](readInt("-2147483649")).getMessage.contains("value is too large for int"))
-        assert(intercept[Exception](readInt("12345678901")).getMessage.contains("value is too large for int"))
-        assert(intercept[Exception](readInt("-12345678901")).getMessage.contains("value is too large for int"))
-        assert(intercept[Exception](readInt("12345678901234567890")).getMessage.contains("value is too large for int"))
-        assert(intercept[Exception](readInt("-12345678901234567890")).getMessage.contains("value is too large for int"))
-      }
-      "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readInt("00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readInt("-00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readInt("0123456789")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readInt("-0123456789")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readInt("02147483647")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("illegal number"))
-      }
+  }
+  "JsonReader.readInt" should {
+    "parse valid int values" in {
+      readInt("0") shouldBe 0
+      readInt("-0") shouldBe -0
+      readInt("123456789") shouldBe 123456789
+      readInt("-123456789") shouldBe -123456789
+      readInt("2147483647") shouldBe 2147483647
+      readInt("-2147483648") shouldBe -2147483648
     }
-    "JsonReader.readLong" should {
-      "parse valid long values" in {
-        readLong("0") shouldBe 0L
-        readLong("-0") shouldBe -0L
-        readLong("1234567890123456789") shouldBe 1234567890123456789L
-        readLong("-1234567890123456789") shouldBe -1234567890123456789L
-        readLong("9223372036854775807") shouldBe 9223372036854775807L
-        readLong("-9223372036854775808") shouldBe -9223372036854775808L
-      }
-      "parse valid long values with skiping JSON space characters" in {
-        readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
-        readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
-      }
-      "parse valid long values and stops on not numeric chars" in {
-        readLong("0$") shouldBe 0L
-      }
-      "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readLong("")).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readLong("-")).getMessage.contains("unexpected end of input"))
-        assert(intercept[Exception](readLong("x")).getMessage.contains("illegal number"))
-      }
-      "throw parsing exception on long overflow" in {
-        assert(intercept[Exception](readLong("9223372036854775808")).getMessage.contains("value is too large for long"))
-        assert(intercept[Exception](readLong("-9223372036854775809")).getMessage.contains("value is too large for long"))
-        assert(intercept[Exception](readLong("12345678901234567890")).getMessage.contains("value is too large for long"))
-        assert(intercept[Exception](readLong("-12345678901234567890")).getMessage.contains("value is too large for long"))
-        assert(intercept[Exception](readLong("123456789012345678901234567890")).getMessage.contains("value is too large for long"))
-        assert(intercept[Exception](readLong("-123456789012345678901234567890")).getMessage.contains("value is too large for long"))
-      }
-      "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readLong("00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readLong("-00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readLong("01234567890123456789")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readLong("-01234567890123456789")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readLong("09223372036854775807")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("illegal number"))
-      }
+    "parse valid int values with skiping JSON space characters" in {
+      readInt(" \n\t\r123456789") shouldBe 123456789
+      readInt(" \n\t\r-123456789") shouldBe -123456789
     }
-    "JsonReader.readFloat" should {
-      "parse valid float values" in {
-        readFloat("0") shouldBe 0.0f
-        readFloat("0e0") shouldBe 0.0f
-        readFloat("0.0") shouldBe 0.0f
-        readFloat("-0.0") shouldBe -0.0f
-        readFloat("12345.6789") shouldBe 12345.6789f
-        readFloat("-12345.6789") shouldBe -12345.6789f
-        readFloat("12345.6789e10") shouldBe 1.23456788e14f
-        readFloat("12345.6789e+10") shouldBe 1.23456788e14f
-        readFloat("-12345.6789E-10") shouldBe -1.2345679e-6f
-      }
-      "parse infinity on float overflow" in {
-        readFloat("12345e6789") shouldBe Float.PositiveInfinity
-        readFloat("-12345e6789") shouldBe Float.NegativeInfinity
-        readFloat("12345678901234567890e12345678901234567890") shouldBe Float.PositiveInfinity
-        readFloat("-12345678901234567890e12345678901234567890") shouldBe Float.NegativeInfinity
-      }
-      "parse zero on float underflow" in {
-        readFloat("12345e-6789") shouldBe 0.0f
-        readFloat("-12345e-6789") shouldBe -0.0f
-        readFloat("12345678901234567890e-12345678901234567890") shouldBe 0.0f
-        readFloat("-12345678901234567890e-12345678901234567890") shouldBe -0.0f
-      }
-      "parse valid float values with skiping JSON space characters" in {
-        readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
-        readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
-      }
-      "parse valid float values and stops on not numeric chars" in {
-        readFloat("0$") shouldBe 0.0f
-        readFloat("12345$") shouldBe 12345f
-        readFloat("12345.6789$") shouldBe 12345.6789f
-        readFloat("12345.6789e10$") shouldBe 1.23456788e14f
-        readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
-      }
-      "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readFloat("")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat(" ")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("-")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat(" $")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("-$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("0e$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("0e-$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("0.E")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("0.+")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("0.-")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("NaN")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("Inf")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("Infinity")).getMessage.contains("illegal number"))
-      }
-      "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readFloat("00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("-00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("012345.6789")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("illegal number"))
-      }
+    "parse valid int values and stops on not numeric chars" in {
+      readInt("0$") shouldBe 0
     }
-    "JsonReader.readDouble" should {
-      "parse valid double values" in {
-        readDouble("0") shouldBe 0.0
-        readDouble("0e0") shouldBe 0.0
-        readDouble("0.0") shouldBe 0.0
-        readDouble("-0.0") shouldBe -0.0
-        readDouble("123456789.12345678") shouldBe 1.2345678912345678e8
-        readDouble("-123456789.12345678") shouldBe -1.2345678912345678e8
-        readDouble("123456789.123456789e10") shouldBe 1.23456789123456794e18
-        readDouble("123456789.123456789e+10") shouldBe 1.23456789123456794e18
-        readDouble("-123456789.123456789E-10") shouldBe -0.012345678912345679
-      }
-      "parse infinity on double overflow" in {
-        readDouble("12345e6789") shouldBe Double.PositiveInfinity
-        readDouble("-12345e6789") shouldBe Double.NegativeInfinity
-        readDouble("12345678901234567890e12345678901234567890") shouldBe Double.PositiveInfinity
-        readDouble("-12345678901234567890e12345678901234567890") shouldBe Double.NegativeInfinity
-      }
-      "parse zero on double underflow" in {
-        readDouble("12345e-6789") shouldBe 0.0
-        readDouble("-12345e-6789") shouldBe -0.0
-        readDouble("12345678901234567890e-12345678901234567890") shouldBe 0.0
-        readDouble("-1234567890123456789e-12345678901234567890") shouldBe -0.0
-      }
-      "parse valid double values with skiping JSON space characters" in {
-        readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
-        readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
-      }
-      "parse valid double values and stops on not numeric chars" in {
-        readDouble("0$") shouldBe 0.0
-        readDouble("123456789$") shouldBe 123456789.0
-        readDouble("123456789.12345678$") shouldBe 1.2345678912345678e8
-        readDouble("123456789.123456789e10$") shouldBe 1.23456789123456794e18
-        readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
-      }
-      "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readDouble("")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble(" ")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("-")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble(" $")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("-$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("0e$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("0e-$")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("0.E")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("0.-")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("0.+")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("NaN")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("Inf")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("Infinity")).getMessage.contains("illegal number"))
-      }
-      "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readDouble("00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("-00")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("012345.6789")).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("illegal number"))
-      }
+    "throw parsing exception on invalid or empty input" in {
+      assert(intercept[Exception](readInt("")).getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](readInt("-")).getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](readInt("x")).getMessage.contains("illegal number"))
     }
-    "JsonReader.readBigInt" should {
-      "parse null value" in {
-        readBigInt("null", null) shouldBe null
-      }
-      "return supplied default value instead of null value" in {
-        readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
-      }
-      "parse valid number values" in {
-        readBigInt("0", null) shouldBe BigInt("0")
-        readBigInt("0e0", null) shouldBe BigInt("0")
-        readBigInt("0.0", null) shouldBe BigInt("0")
-        readBigInt("-0.0", null) shouldBe BigInt("0")
-        readBigInt("12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
-        readBigInt("-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
-        readBigInt("1234567890123456789.0123456789e10", null) shouldBe BigInt("12345678901234567890123456789")
-        readBigInt("1234567890123456789.0123456789e+10", null) shouldBe BigInt("12345678901234567890123456789")
-        readBigInt("-1234567890123456789.0123456789E-10", null) shouldBe BigInt("-123456789")
-      }
-      "parse big number values without overflow" in {
-        readBigInt("12345e6789", null) shouldBe BigInt("12345" + new String(Array.fill(6789)('0')))
-        readBigInt("-12345e6789", null) shouldBe BigInt("-12345" + new String(Array.fill(6789)('0')))
-      }
-      "parse zero on underflow" in {
-        readBigInt("12345e-6789", null) shouldBe BigInt("0")
-        readBigInt("-12345e-6789", null) shouldBe BigInt("0")
-      }
-      "parse valid number values with skiping JSON space characters" in {
-        readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
-        readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
-      }
-      "parse valid number values and stops on not numeric chars" in {
-        readBigInt("0$", null) shouldBe BigInt("0")
-        readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
-        readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
-        readBigInt("1234567890123456789.0123456789e10$", null) shouldBe BigInt("12345678901234567890123456789")
-      }
-      "throw number format exception for too big exponents" in {
-        intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890", null))
-        intercept[NumberFormatException](readBigInt("-12345678901234567890e12345678901234567890", null))
-        intercept[NumberFormatException](readBigInt("12345678901234567890e-12345678901234567890", null))
-        intercept[NumberFormatException](readBigInt("-12345678901234567890e-12345678901234567890", null))
-        intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890$", null))
-      }
-      "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readBigInt("", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt(" ", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt(" $", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("-$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("0e$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("0e-$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("0.E", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("0.-", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("0.+", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("NaN", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("Inf", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("Infinity", null)).getMessage.contains("illegal number"))
-      }
-      "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readBigInt("00", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("-00", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("012345.6789", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("illegal number"))
-      }
+    "throw parsing exception on int overflow" in {
+      assert(intercept[Exception](readInt("2147483648")).getMessage.contains("value is too large for int"))
+      assert(intercept[Exception](readInt("-2147483649")).getMessage.contains("value is too large for int"))
+      assert(intercept[Exception](readInt("12345678901")).getMessage.contains("value is too large for int"))
+      assert(intercept[Exception](readInt("-12345678901")).getMessage.contains("value is too large for int"))
+      assert(intercept[Exception](readInt("12345678901234567890")).getMessage.contains("value is too large for int"))
+      assert(intercept[Exception](readInt("-12345678901234567890")).getMessage.contains("value is too large for int"))
     }
-    "JsonReader.readBigDecimal" should {
-      "parse null value" in {
-        readBigDecimal("null", null) shouldBe null
-      }
-      "return supplied default value instead of null value" in {
-        readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
-      }
-      "parse valid number values" in {
-        readBigDecimal("0", null) shouldBe BigDecimal("0")
-        readBigDecimal("0e0", null) shouldBe BigDecimal("0")
-        readBigDecimal("0.0", null) shouldBe BigDecimal("0")
-        readBigDecimal("-0.0", null) shouldBe BigDecimal("0")
-        readBigDecimal("1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-        readBigDecimal("-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
-        readBigDecimal("1234567890123456789.0123456789e10", null) shouldBe BigDecimal("12345678901234567890123456789")
-        readBigDecimal("1234567890123456789.0123456789e+10", null) shouldBe BigDecimal("12345678901234567890123456789")
-        readBigDecimal("-1234567890123456789.0123456789E-10", null) shouldBe BigDecimal("-123456789.01234567890123456789")
-      }
-      "parse big number values without overflow" in {
-        readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
-        readBigDecimal("-12345e6789", null) shouldBe BigDecimal("-12345e6789")
-      }
-      "parse small number values without underflow" in {
-        readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
-        readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
-      }
-      "parse valid number values with skiping JSON space characters" in {
-        readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-        readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
-      }
-      "parse valid number values and stops on not numeric chars" in {
-        readBigDecimal("0$", null) shouldBe BigDecimal("0")
-        readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
-        readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-        readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
-      }
-      "throw number format exception for too big exponents" in {
-        intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890", null))
-        intercept[NumberFormatException](readBigDecimal("-12345678901234567890e12345678901234567890", null))
-        intercept[NumberFormatException](readBigDecimal("12345678901234567890e-12345678901234567890", null))
-        intercept[NumberFormatException](readBigDecimal("-12345678901234567890e-12345678901234567890", null))
-        intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890$", null))
-      }
-      "throw parsing exception on invalid or empty input" in {
-        assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal(" ", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal(" $", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("-$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("0e$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("0e-$", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("0.E", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("0.-", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("0.+", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("NaN", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("Inf", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("Infinity", null)).getMessage.contains("illegal number"))
-      }
-      "throw parsing exception on leading zero" in {
-        assert(intercept[Exception](readBigDecimal("00", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("-00", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("012345.6789", null)).getMessage.contains("illegal number"))
-        assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("illegal number"))
-      }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[Exception](readInt("00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readInt("-00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readInt("0123456789")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readInt("-0123456789")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readInt("02147483647")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonReader.readLong" should {
+    "parse valid long values" in {
+      readLong("0") shouldBe 0L
+      readLong("-0") shouldBe -0L
+      readLong("1234567890123456789") shouldBe 1234567890123456789L
+      readLong("-1234567890123456789") shouldBe -1234567890123456789L
+      readLong("9223372036854775807") shouldBe 9223372036854775807L
+      readLong("-9223372036854775808") shouldBe -9223372036854775808L
+    }
+    "parse valid long values with skiping JSON space characters" in {
+      readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
+      readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
+    }
+    "parse valid long values and stops on not numeric chars" in {
+      readLong("0$") shouldBe 0L
+    }
+    "throw parsing exception on invalid or empty input" in {
+      assert(intercept[Exception](readLong("")).getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](readLong("-")).getMessage.contains("unexpected end of input"))
+      assert(intercept[Exception](readLong("x")).getMessage.contains("illegal number"))
+    }
+    "throw parsing exception on long overflow" in {
+      assert(intercept[Exception](readLong("9223372036854775808")).getMessage.contains("value is too large for long"))
+      assert(intercept[Exception](readLong("-9223372036854775809")).getMessage.contains("value is too large for long"))
+      assert(intercept[Exception](readLong("12345678901234567890")).getMessage.contains("value is too large for long"))
+      assert(intercept[Exception](readLong("-12345678901234567890")).getMessage.contains("value is too large for long"))
+      assert(intercept[Exception](readLong("123456789012345678901234567890")).getMessage.contains("value is too large for long"))
+      assert(intercept[Exception](readLong("-123456789012345678901234567890")).getMessage.contains("value is too large for long"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[Exception](readLong("00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readLong("-00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readLong("01234567890123456789")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readLong("-01234567890123456789")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readLong("09223372036854775807")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonReader.readFloat" should {
+    "parse valid float values" in {
+      readFloat("0") shouldBe 0.0f
+      readFloat("0e0") shouldBe 0.0f
+      readFloat("0.0") shouldBe 0.0f
+      readFloat("-0.0") shouldBe -0.0f
+      readFloat("12345.6789") shouldBe 12345.6789f
+      readFloat("-12345.6789") shouldBe -12345.6789f
+      readFloat("12345.6789e10") shouldBe 1.23456788e14f
+      readFloat("12345.6789e+10") shouldBe 1.23456788e14f
+      readFloat("-12345.6789E-10") shouldBe -1.2345679e-6f
+    }
+    "parse infinity on float overflow" in {
+      readFloat("12345e6789") shouldBe Float.PositiveInfinity
+      readFloat("-12345e6789") shouldBe Float.NegativeInfinity
+      readFloat("12345678901234567890e12345678901234567890") shouldBe Float.PositiveInfinity
+      readFloat("-12345678901234567890e12345678901234567890") shouldBe Float.NegativeInfinity
+    }
+    "parse zero on float underflow" in {
+      readFloat("12345e-6789") shouldBe 0.0f
+      readFloat("-12345e-6789") shouldBe -0.0f
+      readFloat("12345678901234567890e-12345678901234567890") shouldBe 0.0f
+      readFloat("-12345678901234567890e-12345678901234567890") shouldBe -0.0f
+    }
+    "parse valid float values with skiping JSON space characters" in {
+      readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
+      readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
+    }
+    "parse valid float values and stops on not numeric chars" in {
+      readFloat("0$") shouldBe 0.0f
+      readFloat("12345$") shouldBe 12345f
+      readFloat("12345.6789$") shouldBe 12345.6789f
+      readFloat("12345.6789e10$") shouldBe 1.23456788e14f
+      readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
+    }
+    "throw parsing exception on invalid or empty input" in {
+      assert(intercept[Exception](readFloat("")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat(" ")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("-")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat(" $")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("-$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("0e$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("0e-$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("0.E")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("0.+")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("0.-")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("NaN")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("Inf")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("Infinity")).getMessage.contains("illegal number"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[Exception](readFloat("00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("-00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("012345.6789")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonReader.readDouble" should {
+    "parse valid double values" in {
+      readDouble("0") shouldBe 0.0
+      readDouble("0e0") shouldBe 0.0
+      readDouble("0.0") shouldBe 0.0
+      readDouble("-0.0") shouldBe -0.0
+      readDouble("123456789.12345678") shouldBe 1.2345678912345678e8
+      readDouble("-123456789.12345678") shouldBe -1.2345678912345678e8
+      readDouble("123456789.123456789e10") shouldBe 1.23456789123456794e18
+      readDouble("123456789.123456789e+10") shouldBe 1.23456789123456794e18
+      readDouble("-123456789.123456789E-10") shouldBe -0.012345678912345679
+    }
+    "parse infinity on double overflow" in {
+      readDouble("12345e6789") shouldBe Double.PositiveInfinity
+      readDouble("-12345e6789") shouldBe Double.NegativeInfinity
+      readDouble("12345678901234567890e12345678901234567890") shouldBe Double.PositiveInfinity
+      readDouble("-12345678901234567890e12345678901234567890") shouldBe Double.NegativeInfinity
+    }
+    "parse zero on double underflow" in {
+      readDouble("12345e-6789") shouldBe 0.0
+      readDouble("-12345e-6789") shouldBe -0.0
+      readDouble("12345678901234567890e-12345678901234567890") shouldBe 0.0
+      readDouble("-1234567890123456789e-12345678901234567890") shouldBe -0.0
+    }
+    "parse valid double values with skiping JSON space characters" in {
+      readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
+      readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
+    }
+    "parse valid double values and stops on not numeric chars" in {
+      readDouble("0$") shouldBe 0.0
+      readDouble("123456789$") shouldBe 123456789.0
+      readDouble("123456789.12345678$") shouldBe 1.2345678912345678e8
+      readDouble("123456789.123456789e10$") shouldBe 1.23456789123456794e18
+      readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
+    }
+    "throw parsing exception on invalid or empty input" in {
+      assert(intercept[Exception](readDouble("")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble(" ")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("-")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble(" $")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("-$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("0e$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("0e-$")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("0.E")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("0.-")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("0.+")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("NaN")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("Inf")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("Infinity")).getMessage.contains("illegal number"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[Exception](readDouble("00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("-00")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("012345.6789")).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonReader.readBigInt" should {
+    "parse null value" in {
+      readBigInt("null", null) shouldBe null
+    }
+    "return supplied default value instead of null value" in {
+      readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
+    }
+    "parse valid number values" in {
+      readBigInt("0", null) shouldBe BigInt("0")
+      readBigInt("0e0", null) shouldBe BigInt("0")
+      readBigInt("0.0", null) shouldBe BigInt("0")
+      readBigInt("-0.0", null) shouldBe BigInt("0")
+      readBigInt("12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
+      readBigInt("-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
+      readBigInt("1234567890123456789.0123456789e10", null) shouldBe BigInt("12345678901234567890123456789")
+      readBigInt("1234567890123456789.0123456789e+10", null) shouldBe BigInt("12345678901234567890123456789")
+      readBigInt("-1234567890123456789.0123456789E-10", null) shouldBe BigInt("-123456789")
+    }
+    "parse big number values without overflow" in {
+      readBigInt("12345e6789", null) shouldBe BigInt("12345" + new String(Array.fill(6789)('0')))
+      readBigInt("-12345e6789", null) shouldBe BigInt("-12345" + new String(Array.fill(6789)('0')))
+    }
+    "parse zero on underflow" in {
+      readBigInt("12345e-6789", null) shouldBe BigInt("0")
+      readBigInt("-12345e-6789", null) shouldBe BigInt("0")
+    }
+    "parse valid number values with skiping JSON space characters" in {
+      readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
+      readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
+    }
+    "parse valid number values and stops on not numeric chars" in {
+      readBigInt("0$", null) shouldBe BigInt("0")
+      readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
+      readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
+      readBigInt("1234567890123456789.0123456789e10$", null) shouldBe BigInt("12345678901234567890123456789")
+    }
+    "throw number format exception for too big exponents" in {
+      intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890", null))
+      intercept[NumberFormatException](readBigInt("-12345678901234567890e12345678901234567890", null))
+      intercept[NumberFormatException](readBigInt("12345678901234567890e-12345678901234567890", null))
+      intercept[NumberFormatException](readBigInt("-12345678901234567890e-12345678901234567890", null))
+      intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890$", null))
+    }
+    "throw parsing exception on invalid or empty input" in {
+      assert(intercept[Exception](readBigInt("", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt(" ", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt(" $", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("-$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("0e$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("0e-$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("0.E", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("0.-", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("0.+", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("NaN", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("Inf", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("Infinity", null)).getMessage.contains("illegal number"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[Exception](readBigInt("00", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("-00", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("012345.6789", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("illegal number"))
+    }
+  }
+  "JsonReader.readBigDecimal" should {
+    "parse null value" in {
+      readBigDecimal("null", null) shouldBe null
+    }
+    "return supplied default value instead of null value" in {
+      readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
+    }
+    "parse valid number values" in {
+      readBigDecimal("0", null) shouldBe BigDecimal("0")
+      readBigDecimal("0e0", null) shouldBe BigDecimal("0")
+      readBigDecimal("0.0", null) shouldBe BigDecimal("0")
+      readBigDecimal("-0.0", null) shouldBe BigDecimal("0")
+      readBigDecimal("1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal("-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
+      readBigDecimal("1234567890123456789.0123456789e10", null) shouldBe BigDecimal("12345678901234567890123456789")
+      readBigDecimal("1234567890123456789.0123456789e+10", null) shouldBe BigDecimal("12345678901234567890123456789")
+      readBigDecimal("-1234567890123456789.0123456789E-10", null) shouldBe BigDecimal("-123456789.01234567890123456789")
+    }
+    "parse big number values without overflow" in {
+      readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
+      readBigDecimal("-12345e6789", null) shouldBe BigDecimal("-12345e6789")
+    }
+    "parse small number values without underflow" in {
+      readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
+      readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
+    }
+    "parse valid number values with skiping JSON space characters" in {
+      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
+    }
+    "parse valid number values and stops on not numeric chars" in {
+      readBigDecimal("0$", null) shouldBe BigDecimal("0")
+      readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
+      readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
+    }
+    "throw number format exception for too big exponents" in {
+      intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890", null))
+      intercept[NumberFormatException](readBigDecimal("-12345678901234567890e12345678901234567890", null))
+      intercept[NumberFormatException](readBigDecimal("12345678901234567890e-12345678901234567890", null))
+      intercept[NumberFormatException](readBigDecimal("-12345678901234567890e-12345678901234567890", null))
+      intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890$", null))
+    }
+    "throw parsing exception on invalid or empty input" in {
+      assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal(" ", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal(" $", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("-$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("0e$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("0e-$", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("0.E", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("0.-", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("0.+", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("NaN", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("Inf", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("Infinity", null)).getMessage.contains("illegal number"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[Exception](readBigDecimal("00", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("-00", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("012345.6789", null)).getMessage.contains("illegal number"))
+      assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("illegal number"))
     }
   }
 

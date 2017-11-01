@@ -73,11 +73,12 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsChar(): Char = {
     readParentheses()
-    val x = parseInt(isToken = false)
-    if (x > Char.MaxValue || x < Char.MinValue) decodeError("value is too large for char")
+    val len = parseString(0)
+    val x = reusableChars(0)
+    if (len != 1) decodeError("illegal value for char")
     else {
-      readParenthesesWithColon()
-      x.toChar
+      if (nextToken() != ':') decodeError("expect :")
+      x
     }
   }
 
@@ -140,9 +141,11 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def readChar(): Char = {
-    val x = parseInt(isToken = true)
-    if (x > Char.MaxValue || x < Char.MinValue) decodeError("value is too large for char")
-    x.toChar
+    readParentheses()
+    val len = parseString(0)
+    val x = reusableChars(0)
+    if (len != 1) decodeError("illegal value for char")
+    x
   }
 
   def readShort(): Short = {

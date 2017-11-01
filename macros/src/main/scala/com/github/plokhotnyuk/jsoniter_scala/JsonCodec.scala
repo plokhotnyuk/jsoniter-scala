@@ -99,7 +99,7 @@ object JsonCodec {
           q"in.readObjectFieldAsBigDecimal()"
         } else if (tpe <:< typeOf[Enumeration#Value]) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"$enumSymbol.apply(in.readObjectFieldAsInt())"
+          q"$enumSymbol.withName(in.readObjectFieldAsString())"
         } else {
           c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
         }
@@ -237,8 +237,8 @@ object JsonCodec {
           q"""if (in.nextToken() == 'n') in.parseNull(default)
               else {
                 in.unreadByte()
-                val v = in.readInt()
-                try $enumSymbol.apply(v) catch {
+                val v = in.readString()
+                try $enumSymbol.withName(v) catch {
                   case _: java.util.NoSuchElementException => in.decodeError("invalid enum value: " + v)
                 }
               }"""
@@ -293,7 +293,7 @@ object JsonCodec {
         } else if (tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           q"out.writeVal($m)"
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
-          q"if (x ne null) out.writeVal(x.id) else out.writeNull()"
+          q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else {
           q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)"
         }
