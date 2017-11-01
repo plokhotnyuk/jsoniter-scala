@@ -30,61 +30,70 @@ final class JsonWriter private[jsoniter_scala](
       out = null // help GC
     }
 
-  def writeSep(first: Boolean): Boolean = {
-    if (!first) write(',')
+  def writeComma(comma: Boolean): Boolean = {
+    if (comma) write(',')
     writeIndention()
-    false
+    true
   }
 
-  def writeObjectField(x: Boolean): Unit = {
-    writeParentheses()
+  def writeObjectField(comma: Boolean, x: Boolean): Boolean = {
+    writeCommaWithParentheses(comma)
     writeVal(x)
     writeParenthesesWithColon()
+    true
   }
 
-  def writeObjectField(x: Int): Unit = {
-    writeParentheses()
+  def writeObjectField(comma: Boolean, x: Int): Boolean = {
+    writeCommaWithParentheses(comma)
     writeInt(x)
     writeParenthesesWithColon()
+    true
   }
 
-  def writeObjectField(x: Long): Unit = {
-    writeParentheses()
+  def writeObjectField(comma: Boolean, x: Long): Boolean = {
+    writeCommaWithParentheses(comma)
     writeLong(x)
     writeParenthesesWithColon()
+    true
   }
 
-  def writeObjectField(x: Float): Unit = {
-    writeParentheses()
+  def writeObjectField(comma: Boolean, x: Float): Boolean = {
+    writeCommaWithParentheses(comma)
     writeFloat(x)
     writeParenthesesWithColon()
+    true
   }
 
-  def writeObjectField(x: Double): Unit = {
-    writeParentheses()
+  def writeObjectField(comma: Boolean, x: Double): Boolean = {
+    writeCommaWithParentheses(comma)
     writeDouble(x)
     writeParenthesesWithColon()
+    true
   }
 
-  def writeObjectField(x: BigInt): Unit =
+  def writeObjectField(comma: Boolean, x: BigInt): Boolean =
     if (x ne null) {
-      writeParentheses()
+      writeCommaWithParentheses(comma)
       writeAsciiString(x.toString)
       writeParenthesesWithColon()
+      true
     } else encodeError("key cannot be null")
 
-  def writeObjectField(x: BigDecimal): Unit =
+  def writeObjectField(comma: Boolean, x: BigDecimal): Boolean =
     if (x ne null) {
-      writeParentheses()
+      writeCommaWithParentheses(comma)
       writeAsciiString(x.toString)
       writeParenthesesWithColon()
+      true
     } else encodeError("key cannot be null")
 
-  def writeObjectField(x: String): Unit =
+  def writeObjectField(comma: Boolean, x: String): Boolean =
     if (x ne null) {
+      writeComma(comma)
       writeString(x, 0, x.length)
       if (indention > 0) write(':'.toByte, ' '.toByte)
       else write(':')
+      true
     } else encodeError("key cannot be null")
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
@@ -302,7 +311,11 @@ final class JsonWriter private[jsoniter_scala](
 
   private def illegalSurrogateError(ch: Int): Nothing = encodeError("illegal surrogate: \\u" + Integer.toHexString(ch))
 
-  private def writeParentheses(): Unit = write('"')
+  private def writeCommaWithParentheses(comma: Boolean): Unit = {
+    if (comma) write(',')
+    writeIndention()
+    write('"')
+  }
 
   private def writeParenthesesWithColon(): Unit =
     if (config.indentionStep > 0) write('"'.toByte, ':'.toByte, ' '.toByte)

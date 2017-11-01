@@ -249,14 +249,14 @@ object JsonCodec {
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
-            var first = true
-            $m.foreach { x => first = out.writeSep(first); ..$writeVal }
+            var comma = false
+            $m.foreach { x => comma = out.writeComma(comma); ..$writeVal }
             out.writeArrayEnd()"""
 
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
-            var first = true
-            $m.foreach { kv => first = out.writeSep(first); out.writeObjectField(kv._1); ..$writeKV }
+            var comma = false
+            $m.foreach { kv => comma = out.writeObjectField(comma, kv._1); ..$writeKV }
             out.writeObjectEnd()"""
 
       def genWriteVal(m: Tree, tpe: Type): Tree =
@@ -283,9 +283,9 @@ object JsonCodec {
           q"""out.writeArrayStart()
               val l = x.length
               var i = 0
-              var first = true
+              var comma = false
               while (i < l) {
-                first = out.writeSep(first)
+                comma = out.writeComma(comma)
                 ..${genWriteVal(q"x(i)", typeArg1(tpe))}
                 i += 1
               }
@@ -302,9 +302,9 @@ object JsonCodec {
         if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
         } else if (tpe <:< typeOf[Option[_]] || tpe <:< typeOf[scala.collection.Map[_, _]] || tpe <:< typeOf[Traversable[_]]) {
-          q"if (($m ne null) && !$m.isEmpty) { first = out.writeSep(first); out.writeObjectField($name); ${genWriteVal(m, tpe)} }"
+          q"if (($m ne null) && !$m.isEmpty) { comma = out.writeObjectField(comma, $name); ${genWriteVal(m, tpe)} }"
         } else {
-          q"first = out.writeSep(first); out.writeObjectField($name); ..${genWriteVal(m, tpe)}"
+          q"comma = out.writeObjectField(comma, $name); ..${genWriteVal(m, tpe)}"
         }
 
       val tpe = weakTypeOf[A]
@@ -386,7 +386,7 @@ object JsonCodec {
       }
       val writeFieldsBlock =
         if (writeFields.isEmpty) EmptyTree
-        else q"val x = obj.asInstanceOf[$tpe]; var first = true; ..$writeFields"
+        else q"val x = obj.asInstanceOf[$tpe]; var comma = false; ..$writeFields"
       val tree =
         q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
             import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
