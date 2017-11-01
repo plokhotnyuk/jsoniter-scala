@@ -73,7 +73,7 @@ scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
 For more features & examples, please, check out
-[CodecSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/CodecSpec.scala)
+[JsonCodecSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/JsonCodecSpec.scala)
 
 
 ## How to develop

@@ -5,13 +5,13 @@ import java.io.ByteArrayOutputStream
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers {
-  "JsonWriter.writeBoolean" should {
+  "JsonWriter.writeVal for boolean" should {
     "write valid true and false values" in {
       serialized(_.writeVal(true)) shouldBe "true"
       serialized(_.writeVal(false)) shouldBe "false"
     }
   }
-  "JsonWriter.writeString" should {
+  "JsonWriter.writeVal for string" should {
     "write null value" in {
       serialized(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
     }
@@ -29,13 +29,12 @@ class JsonWriterSpec extends WordSpec with Matchers {
     }
     "write strings with escaped unicode chars" in {
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\b\f\n\r\t/Aиბ")) shouldBe "\"\\b\\f\\n\\r\\t/A\\u0438\\u10d1\""
-// FIXME serialization of surrogate pairs
-//      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("𝄞")) shouldBe "\"\\ud834\\udd1e\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("𝄞")) shouldBe "\"\\ud834\\udd1e\""
     }
     "throw i/o exception in case of invalid character surrogate pair" in {
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
     }
-    "JsonWriter.writeInt" should {
+    "JsonWriter.writeVal for int" should {
       "write int values" in {
         serialized(_.writeVal(0)) shouldBe "0"
         serialized(_.writeVal(-0)) shouldBe "0"
@@ -49,7 +48,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
         serialized(_.writeVal(-2147483648)) shouldBe "-2147483648"
       }
     }
-    "JsonWriter.writeLong" should {
+    "JsonWriter.writeVal long" should {
       "write long values" in {
         serialized(_.writeVal(0L)) shouldBe "0"
         serialized(_.writeVal(-0L)) shouldBe "0"
@@ -69,7 +68,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
         serialized(_.writeVal(-9223372036854775808L)) shouldBe "-9223372036854775808"
       }
     }
-    "JsonWriter.writeFloat" should {
+    "JsonWriter.writeVal for float" should {
       "write float values" in {
         serialized(_.writeVal(0.0f)) shouldBe "0.0"
         serialized(_.writeVal(-0.0f)) shouldBe "-0.0"
@@ -84,7 +83,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
         assert(intercept[Exception](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
       }
     }
-    "JsonWriter.writeDouble" should {
+    "JsonWriter.writeVal for double" should {
       "write double values" in {
         serialized(_.writeVal(0.0)) shouldBe "0.0"
         serialized(_.writeVal(-0.0)) shouldBe "-0.0"
@@ -99,7 +98,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
         assert(intercept[Exception](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))
       }
     }
-    "JsonWriter.writeBigInt" should {
+    "JsonWriter.writeVal for BigInt" should {
       "write null value" in {
         serialized(_.writeVal(null.asInstanceOf[BigInt])) shouldBe "null"
       }
@@ -110,7 +109,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
         serialized(_.writeVal(BigInt("-12345678901234567890123456789"))) shouldBe "-12345678901234567890123456789"
       }
     }
-    "JsonWriter.readBigDecimal" should {
+    "JsonWriter.writeVal for BigDecimal" should {
       "write null value" in {
         serialized(_.writeVal(null.asInstanceOf[BigDecimal])) shouldBe "null"
       }
