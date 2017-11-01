@@ -4,6 +4,7 @@ import java.io.{IOException, OutputStream}
 
 import com.github.plokhotnyuk.jsoniter_scala.JsonWriter._
 
+import scala.collection.breakOut
 import scala.annotation.switch
 
 case class WriterConfig(
@@ -446,23 +447,23 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeFirstBuf(buf: Array[Byte], v: Int, p: Int): Int = {
     var pos = p
-    val start = v >> 24
+    val start = v >> 12
     if (start == 0) {
-      buf(pos) = (v >> 16).toByte
-      buf(pos + 1) = (v >> 8).toByte
+      buf(pos) = ((v >> 8) & 15 | '0').toByte
+      buf(pos + 1) = ((v >> 4) & 15 | '0').toByte
       pos += 2
     } else if (start == 1) {
-      buf(pos) = (v >> 8).toByte
+      buf(pos) = ((v >> 4) & 15 | '0').toByte
       pos += 1
     }
-    buf(pos) = v.toByte
+    buf(pos) = (v & 15 | '0').toByte
     pos + 1
   }
 
   private def writeBuf(buf: Array[Byte], v: Int, pos: Int): Unit = {
-    buf(pos) = (v >> 16).toByte
-    buf(pos + 1) = (v >> 8).toByte
-    buf(pos + 2) = v.toByte
+    buf(pos) = ((v >> 8) & 15 | '0').toByte
+    buf(pos + 1) = ((v >> 4) & 15 | '0').toByte
+    buf(pos + 2) = (v & 15 | '0').toByte
   }
 
   private def writeFloat(x: Float): Unit =
@@ -517,20 +518,13 @@ object JsonWriter {
       writer
     }
   }
-  private val digits = new Array[Int](1000)
-  private val minIntBytes = "-2147483648".getBytes
-  private val minLongBytes = "-9223372036854775808".getBytes
-
-  {
-    var i = 0
-    while (i < 1000) {
-      digits(i) =
-        (if (i < 10) 2 << 24
-        else if (i < 100) 1 << 24
-        else 0) + (((i / 100) + '0') << 16) + ((((i / 10) % 10) + '0') << 8) + i % 10 + '0'
-      i += 1
-    }
-  }
+  private val digits: Array[Short] = (0 to 999).map { i =>
+    ((if (i < 10) 2 << 12
+    else if (i < 100) 1 << 12
+    else 0) + ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort
+  }(breakOut)
+  private val minIntBytes: Array[Byte] = "-2147483648".getBytes
+  private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
   final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit = {
     val writer = pool.get
