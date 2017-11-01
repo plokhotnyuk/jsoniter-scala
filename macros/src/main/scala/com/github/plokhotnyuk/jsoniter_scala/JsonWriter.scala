@@ -34,7 +34,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeComma(comma: Boolean): Boolean = {
     if (comma) write(',')
-    writeIndention()
+    writeIndention(0)
     true
   }
 
@@ -321,7 +321,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeCommaWithParentheses(comma: Boolean): Unit = {
     if (comma) write(',')
-    writeIndention()
+    writeIndention(0)
     write('"')
   }
 
@@ -475,18 +475,22 @@ final class JsonWriter private[jsoniter_scala](
     if (java.lang.Double.isFinite(x)) writeAsciiString(java.lang.Double.toString(x))
     else encodeError("illegal number: " + x)
 
-  private def writeIndention(delta: Int = 0): Unit =
-    if (indention != 0) {
-      write('\n')
-      val toWrite = indention - delta
-      ensure(toWrite)
-      var i = 0
-      while (i < toWrite && count < buf.length) {
-        buf(count) = ' '
-        count += 1
-        i += 1
-      }
+  @inline
+  private def writeIndention(delta: Int): Unit = if (indention != 0) writeLineFeedAndSpaces(delta)
+
+  private def writeLineFeedAndSpaces(delta: Int): Unit = {
+    val toWrite = indention - delta
+    ensure(toWrite + 1)
+    var pos = count
+    buf(pos) = '\n'.toByte
+    pos += 1
+    val to = pos + toWrite
+    while (pos < to) {
+      buf(pos) = ' '.toByte
+      pos += 1
     }
+    count = pos
+  }
 
   private def flushBuffer(): Unit =
     if (out ne null) {
