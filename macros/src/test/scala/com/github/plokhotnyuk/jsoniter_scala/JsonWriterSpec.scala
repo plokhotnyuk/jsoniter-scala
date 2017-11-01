@@ -20,7 +20,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal(text)) shouldBe '"' + text + '"'
     }
     "write strings with escaped whitespace chars" in {
-      serialized(_.writeVal("\b\f\n\r\t\\")) shouldBe """"\b\f\n\r\t\\""""
+      serialized(_.writeVal("\b\f\n\r\t\\\"")) shouldBe """"\b\f\n\r\t\\\"""""
     }
     "write strings with unicode chars" in {
       serialized(_.writeVal("иბ𝄞")) shouldBe "\"иბ\ud834\udd1e\""
@@ -30,6 +30,10 @@ class JsonWriterSpec extends WordSpec with Matchers {
         "\"\\u0001\\b\\f\\n\\r\\t/A\\u0438\\u10d1\\ud834\\udd1e\""
     }
     "throw i/o exception in case of invalid character surrogate pair" in {
+      assert(intercept[Exception](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(_.writeVal("\ud834"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
     }
     "JsonWriter.writeVal for int" should {

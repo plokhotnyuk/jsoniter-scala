@@ -486,15 +486,15 @@ final class JsonWriter private[jsoniter_scala](
       count = 0
     }
 
-  private def ensure(minimal: Int): Unit = {
-    val totalRequired = minimal + count
-    if (buf.length < totalRequired) {
-      flushBuffer()
-      if (buf.length < totalRequired) {
-        val newBuf = new Array[Byte](Math.max(buf.length << 1, totalRequired))
-        System.arraycopy(buf, 0, newBuf, 0, buf.length)
-        buf = newBuf
-      }
+  @inline
+  private def ensure(minimal: Int): Unit = if (buf.length < count + minimal) growBuffer(minimal)
+
+  private def growBuffer(minimal: Int): Unit = {
+    flushBuffer()
+    if (buf.length < count + minimal) {
+      val newBuf = new Array[Byte](Math.max(buf.length << 1, count + minimal))
+      System.arraycopy(buf, 0, newBuf, 0, buf.length)
+      buf = newBuf
     }
   }
 }
