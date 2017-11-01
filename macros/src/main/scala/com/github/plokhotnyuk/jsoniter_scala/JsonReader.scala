@@ -893,13 +893,13 @@ object JsonReader {
   final def read[A](codec: JsonCodec[A], in: InputStream): A = {
     val reader = pool.get
     reader.reset(in)
-    codec.read(reader)
+    codec.decode(reader)
   }
 
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = {
     val reader = pool.get
     val currBuf = reader.reset(buf)
-    try codec.read(reader)
+    try codec.decode(reader)
     finally reader.buf = currBuf
   }
 

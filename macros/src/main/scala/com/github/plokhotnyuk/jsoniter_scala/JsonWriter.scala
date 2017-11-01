@@ -329,141 +329,114 @@ final class JsonWriter private[jsoniter_scala](
     if (config.indentionStep > 0) write('"'.toByte, ':'.toByte, ' '.toByte)
     else write('"'.toByte, ':'.toByte)
 
-  private def writeInt(x: Int): Unit = {
+  private def writeInt(x: Int): Unit = count ={
     ensure(11) // minIntBytes.length
-    var value = x
     var pos = count
-    count =
-      if (value == Integer.MIN_VALUE) {
-        System.arraycopy(minIntBytes, 0, buf, pos, minIntBytes.length)
-        pos + minIntBytes.length
-      } else {
-        if (value < 0) {
-          value = -value
+    if (x == Integer.MIN_VALUE) {
+      System.arraycopy(minIntBytes, 0, buf, pos, minIntBytes.length)
+      pos + minIntBytes.length
+    } else {
+      val q0 =
+        if (x >= 0) x
+        else {
           buf(pos) = '-'
           pos += 1
+          -x
         }
-        val q1 = value / 1000
-        if (q1 == 0) writeFirstBuf(buf, digits(value), pos)
+      val q1 = q0 / 1000
+      if (q1 == 0) writeFirstRem(q0, pos)
+      else {
+        val r1 = q0 - q1 * 1000
+        val q2 = q1 / 1000
+        if (q2 == 0) writeRem(r1, writeFirstRem(q1, pos))
         else {
-          val r1 = value - q1 * 1000
-          val q2 = q1 / 1000
-          if (q2 == 0) {
-            pos = writeFirstBuf(buf, digits(q1), pos)
-            writeBuf(buf, digits(r1), pos)
-            pos + 3
-          } else {
-            val r2 = q1 - q2 * 1000
-            val q3 = q2 / 1000
-            if (q3 == 0) pos = writeFirstBuf(buf, digits(q2), pos)
+          val r2 = q1 - q2 * 1000
+          val q3 = q2 / 1000
+          writeRem(r1, writeRem(r2, {
+            if (q3 == 0) writeFirstRem(q2, pos)
             else {
               val r3 = q2 - q3 * 1000
               buf(pos) = (q3 + '0').toByte
-              writeBuf(buf, digits(r3), pos + 1)
-              pos += 4
+              writeRem(r3, pos + 1)
             }
-            writeBuf(buf, digits(r2), pos)
-            writeBuf(buf, digits(r1), pos + 3)
-            pos + 6
-          }
+          }))
         }
       }
+    }
   }
 
   // TODO: consider more cache-aware algorithm from RapidJSON, see https://github.com/miloyip/itoa-benchmark/blob/master/src/branchlut.cpp
-  private def writeLong(x: Long): Unit = {
+  private def writeLong(x: Long): Unit = count = {
     ensure(20) // minLongBytes.length
-    var value = x
     var pos = count
-    count =
-      if (value == java.lang.Long.MIN_VALUE) {
-        System.arraycopy(minLongBytes, 0, buf, pos, minLongBytes.length)
-        pos + minLongBytes.length
-      } else {
-        if (value < 0) {
-          value = -value
+    if (x == java.lang.Long.MIN_VALUE) {
+      System.arraycopy(minLongBytes, 0, buf, pos, minLongBytes.length)
+      pos + minLongBytes.length
+    } else {
+      val q0 =
+        if (x >= 0) x
+        else {
           buf(pos) = '-'
           pos += 1
+          -x
         }
-        val q1 = value / 1000
-        if (q1 == 0) writeFirstBuf(buf, digits(value.toInt), pos)
+      val q1 = q0 / 1000
+      if (q1 == 0) writeFirstRem(q0.toInt, pos)
+      else {
+        val r1 = (q0 - q1 * 1000).toInt
+        val q2 = q1 / 1000
+        if (q2 == 0) writeRem(r1, writeFirstRem(q1.toInt, pos))
         else {
-          val r1 = (value - q1 * 1000).toInt
-          val q2 = q1 / 1000
-          if (q2 == 0) {
-            pos = writeFirstBuf(buf, digits(q1.toInt), pos)
-            writeBuf(buf, digits(r1), pos)
-            pos + 3
-          } else {
-            val r2 = (q1 - q2 * 1000).toInt
-            val q3 = q2 / 1000
-            if (q3 == 0) {
-              pos = writeFirstBuf(buf, digits(q2.toInt), pos)
-              writeBuf(buf, digits(r2), pos)
-              writeBuf(buf, digits(r1), pos + 3)
-              pos + 6
-            } else {
-              val r3 = (q2 - q3 * 1000).toInt
-              val q4 = (q3 / 1000).toInt
-              if (q4 == 0) {
-                pos = writeFirstBuf(buf, digits(q3.toInt), pos)
-                writeBuf(buf, digits(r3), pos)
-                writeBuf(buf, digits(r2), pos + 3)
-                writeBuf(buf, digits(r1), pos + 6)
-                pos + 9
-              } else {
-                val r4 = (q3 - q4 * 1000).toInt
-                val q5 = q4 / 1000
-                if (q5 == 0) {
-                  pos = writeFirstBuf(buf, digits(q4), pos)
-                  writeBuf(buf, digits(r4), pos)
-                  writeBuf(buf, digits(r3), pos + 3)
-                  writeBuf(buf, digits(r2), pos + 6)
-                  writeBuf(buf, digits(r1), pos + 9)
-                  pos + 12
-                } else {
-                  val r5 = q4 - q5 * 1000
-                  val q6 = q5 / 1000
-                  if (q6 == 0) pos = writeFirstBuf(buf, digits(q5), pos)
+          val r2 = (q1 - q2 * 1000).toInt
+          val q3 = q2 / 1000
+          if (q3 == 0) writeRem(r1, writeRem(r2, writeFirstRem(q2.toInt, pos)))
+          else {
+            val r3 = (q2 - q3 * 1000).toInt
+            val q4 = (q3 / 1000).toInt
+            if (q4 == 0) writeRem(r1, writeRem(r2, writeRem(r3, writeFirstRem(q3.toInt, pos))))
+            else {
+              val r4 = (q3 - q4 * 1000).toInt
+              val q5 = q4 / 1000
+              if (q5 == 0) writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeFirstRem(q4, pos)))))
+              else {
+                val r5 = q4 - q5 * 1000
+                val q6 = q5 / 1000
+                writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeRem(r5, {
+                  if (q6 == 0) writeFirstRem(q5, pos)
                   else {
                     val r6 = q5 - q6 * 1000
                     buf(pos) = (q6 + '0').toByte
-                    writeBuf(buf, digits(r6), pos + 1)
-                    pos += 4
+                    writeRem(r6, pos + 1)
                   }
-                  writeBuf(buf, digits(r5), pos)
-                  writeBuf(buf, digits(r4), pos + 3)
-                  writeBuf(buf, digits(r3), pos + 6)
-                  writeBuf(buf, digits(r2), pos + 9)
-                  writeBuf(buf, digits(r1), pos + 12)
-                  pos + 15
-                }
+                })))))
               }
             }
           }
         }
       }
-  }
-
-  private def writeFirstBuf(buf: Array[Byte], v: Int, p: Int): Int = {
-    var pos = p
-    val start = v >> 12
-    if (start == 0) {
-      buf(pos) = ((v >> 8) & 15 | '0').toByte
-      buf(pos + 1) = ((v >> 4) & 15 | '0').toByte
-      pos += 2
-    } else if (start == 1) {
-      buf(pos) = ((v >> 4) & 15 | '0').toByte
-      pos += 1
     }
-    buf(pos) = (v & 15 | '0').toByte
-    pos + 1
   }
 
-  private def writeBuf(buf: Array[Byte], v: Int, pos: Int): Unit = {
-    buf(pos) = ((v >> 8) & 15 | '0').toByte
-    buf(pos + 1) = ((v >> 4) & 15 | '0').toByte
-    buf(pos + 2) = (v & 15 | '0').toByte
+  private def writeFirstRem(r: Int, pos: Int): Int = {
+    val d = digits(r)
+    val off = d >> 12
+    if (off == 3) {
+      buf(pos) = ((d >> 8) & 15 | '0').toByte
+      buf(pos + 1) = ((d >> 4) & 15 | '0').toByte
+      buf(pos + 2) = (d & 15 | '0').toByte
+    } else if (off == 2) {
+      buf(pos) = ((d >> 4) & 15 | '0').toByte
+      buf(pos + 1) = (d & 15 | '0').toByte
+    } else buf(pos) = (d & 15 | '0').toByte
+    pos + off
+  }
+
+  private def writeRem(r: Int, pos: Int): Int = {
+    val d = digits(r)
+    buf(pos) = ((d >> 8) & 15 | '0').toByte
+    buf(pos + 1) = ((d >> 4) & 15 | '0').toByte
+    buf(pos + 2) = (d & 15 | '0').toByte
+    pos + 3
   }
 
   private def writeFloat(x: Float): Unit =
@@ -523,9 +496,8 @@ object JsonWriter {
     }
   }
   private val digits: Array[Short] = (0 to 999).map { i =>
-    ((if (i < 10) 2 << 12
-    else if (i < 100) 1 << 12
-    else 0) + ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort
+    (((if (i < 10) 1 else if (i < 100) 2 else 3) << 12) +
+      ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort
   }(breakOut)
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
@@ -533,14 +505,14 @@ object JsonWriter {
   final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit = {
     val writer = pool.get
     writer.reset(out)
-    try codec.write(obj, writer)
+    try codec.encode(obj, writer)
     finally writer.close()
   }
 
   final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] = {
     val writer = pool.get
     writer.reset(null)
-    codec.write(obj, writer)
+    codec.encode(obj, writer)
     val arr = new Array[Byte](writer.count)
     System.arraycopy(writer.buf, 0, arr, 0, arr.length)
     arr
@@ -551,7 +523,7 @@ object JsonWriter {
     val currCfg = writer.config
     writer.reset(out)
     writer.config = cfg
-    try codec.write(obj, writer)
+    try codec.encode(obj, writer)
     finally {
       writer.config = currCfg
       writer.close()
@@ -563,7 +535,7 @@ object JsonWriter {
     val currCfg = writer.config
     writer.reset(null)
     writer.config = cfg
-    try codec.write(obj, writer)
+    try codec.encode(obj, writer)
     finally writer.config = currCfg
     val arr = new Array[Byte](writer.count)
     System.arraycopy(writer.buf, 0, arr, 0, arr.length)

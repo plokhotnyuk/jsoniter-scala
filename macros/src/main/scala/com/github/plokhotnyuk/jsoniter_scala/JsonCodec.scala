@@ -11,9 +11,9 @@ import scala.reflect.macros.blackbox
 class key(key: String) extends scala.annotation.StaticAnnotation
 
 abstract class JsonCodec[A] {
-  def read(in: JsonReader): A
+  def decode(in: JsonReader): A
 
-  def write(obj: A, out: JsonWriter): Unit
+  def encode(obj: A, out: JsonWriter): Unit
 }
 
 object JsonCodec {
@@ -243,7 +243,7 @@ object JsonCodec {
                 }
               }"""
         } else withDecoderFor(tpe, default) {
-          q"""val x = ${findImplicitCodec(tpe).getOrElse(q"this")}.read(in)
+          q"""val x = ${findImplicitCodec(tpe).getOrElse(q"this")}.decode(in)
               if (x ne null) x else default"""
         }
 
@@ -295,7 +295,7 @@ object JsonCodec {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.id) else out.writeNull()"
         } else {
-          q"${findImplicitCodec(tpe).getOrElse(q"this")}.write($m, out)"
+          q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)"
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
@@ -393,7 +393,7 @@ object JsonCodec {
             import scala.annotation.switch
             new com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe] {
               ..$reqFields
-              override def read(in: JsonReader): $tpe =
+              override def decode(in: JsonReader): $tpe =
                 (in.nextToken(): @switch) match {
                   case '{' =>
                     ..$reqVars
@@ -413,7 +413,7 @@ object JsonCodec {
                   case _ =>
                     in.decodeError("expect { or n")
                 }
-              override def write(obj: $tpe, out: JsonWriter): Unit =
+              override def encode(obj: $tpe, out: JsonWriter): Unit =
                 if (obj ne null) {
                   out.writeObjectStart()
                   ..$writeFieldsBlock
