@@ -57,13 +57,13 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeObjectField(x: Float): Unit = {
     writeParentheses()
-    writeAsciiString(java.lang.Float.toString(x))
+    writeFloat(x)
     writeParenthesesWithColon()
   }
 
   def writeObjectField(x: Double): Unit = {
     writeParentheses()
-    writeAsciiString(java.lang.Double.toString(x))
+    writeDouble(x)
     writeParenthesesWithColon()
   }
 
@@ -110,25 +110,11 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Long): Unit = writeLong(x)
 
-  def writeVal(x: Float): Unit = writeAsciiString(java.lang.Float.toString(x))
+  def writeVal(x: Float): Unit = writeFloat(x)
 
-  // TODO: use more efficient algorithm from RapidJSON, see https://github.com/miloyip/dtoa-benchmark
-  def writeVal(x: Double): Unit = writeAsciiString(java.lang.Double.toString(x))
+  def writeVal(x: Double): Unit = writeDouble(x)
 
   def writeNull(): Unit = write('n'.toByte, 'u'.toByte, 'l'.toByte, 'l'.toByte)
-
-  private def writeIndention(delta: Int = 0): Unit =
-    if (indention != 0) {
-      write('\n')
-      val toWrite = indention - delta
-      ensure(toWrite)
-      var i = 0
-      while (i < toWrite && count < buf.length) {
-        buf(count) = ' '
-        count += 1
-        i += 1
-      }
-    }
 
   def writeArrayStart(): Unit = {
     indention += config.indentionStep
@@ -296,7 +282,7 @@ final class JsonWriter private[jsoniter_scala](
         } else if (ch < 0xD800 || ch > 0xDFFF) {
           write((0xe0 | (ch >> 12)).toByte, (0x80 | ((ch >> 6) & 0x3f)).toByte, (0x80 | (ch & 0x3f)).toByte)
         } else {
-          if (ch > 0xDBFF) encodeError("illegalSurrogate")
+          if (ch > 0xDBFF) encodeError("illegal surrogate: " + ch)
           surrogate = ch
           if (i > len) {
             continue = false
@@ -304,9 +290,9 @@ final class JsonWriter private[jsoniter_scala](
           } else {
             val firstPart = surrogate
             surrogate = 0
-            if (ch < 0xDC00 || ch > 0xDFFF) encodeError("Broken surrogate pair: first char 0x" + Integer.toHexString(firstPart) + ", second 0x" + Integer.toHexString(ch) + "; illegal combination")
+            if (ch < 0xDC00 || ch > 0xDFFF) encodeError("illegal surrogate pair: \\u" + Integer.toHexString(firstPart) + " \\u" + Integer.toHexString(ch))
             ch = 0x10000 + ((firstPart - 0xD800) << 10) + (ch - 0xDC00)
-            if (ch > 0x10FFFF) encodeError("illegalSurrogate")
+            if (ch > 0x10FFFF) encodeError("illegal surrogate")
             write((0xf0 | (ch >> 18)).toByte, (0x80 | ((ch >> 12) & 0x3f)).toByte, (0x80 | ((ch >> 6) & 0x3f)).toByte, (0x80 | (ch & 0x3f)).toByte)
           }
         }
@@ -476,6 +462,28 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = (v >> 8).toByte
     buf(pos + 2) = v.toByte
   }
+
+  private def writeFloat(x: Float): Unit =
+    if (java.lang.Float.isFinite(x)) writeAsciiString(java.lang.Float.toString(x))
+    else encodeError("illegal number: " + x)
+
+  // TODO: use more efficient algorithm from RapidJSON, see https://github.com/miloyip/dtoa-benchmark
+  private def writeDouble(x: Double): Unit =
+    if (java.lang.Double.isFinite(x)) writeAsciiString(java.lang.Double.toString(x))
+    else encodeError("illegal number: " + x)
+
+  private def writeIndention(delta: Int = 0): Unit =
+    if (indention != 0) {
+      write('\n')
+      val toWrite = indention - delta
+      ensure(toWrite)
+      var i = 0
+      while (i < toWrite && count < buf.length) {
+        buf(count) = ' '
+        count += 1
+        i += 1
+      }
+    }
 
   private def flushBuffer(): Unit =
     if (out ne null) {
