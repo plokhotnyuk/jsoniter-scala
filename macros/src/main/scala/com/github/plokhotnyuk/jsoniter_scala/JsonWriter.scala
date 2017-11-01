@@ -252,7 +252,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensure((to - from) * (if (escapeUnicode) 6 else 3) + 1) // max 6/3 bytes per char + the closing quotes
     val buf = this.buf
     var i = from
-    while (i < to) pos += {
+    while (i < to) pos = {
       val c1 = s.charAt(i)
       i += 1
       if (c1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
@@ -260,63 +260,58 @@ final class JsonWriter private[jsoniter_scala](
           case '"' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = '"'.toByte
-            2
+            pos + 2
           case '\\' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = '\\'.toByte
-            2
+            pos + 2
           case '\b' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'b'.toByte
-            2
+            pos + 2
           case '\f' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'f'.toByte
-            2
+            pos + 2
           case '\n' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'n'.toByte
-            2
+            pos + 2
           case '\r' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'r'.toByte
-            2
+            pos + 2
           case '\t' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 't'.toByte
-            2
+            pos + 2
           case _ =>
-            if (escapeUnicode && c1 < 32) {
-              buf(pos) = '\\'.toByte
-              buf(pos + 1) = 'u'.toByte
-              buf(pos + 2) = toHexDigit(c1 >>> 12)
-              buf(pos + 3) = toHexDigit(c1 >>> 8)
-              buf(pos + 4) = toHexDigit(c1 >>> 4)
-              buf(pos + 5) = toHexDigit(c1)
-              6
-            } else {
+            if (escapeUnicode && c1 < 32) writeEscapedUnicode(buf, c1, pos)
+            else {
               buf(pos) = c1.toByte
-              1
+              pos + 1
             }
         }
       } else if (escapeUnicode) { // FIXME: add surrogate pair checking for escaped unicodes
-        buf(pos) = '\\'.toByte
-        buf(pos + 1) = 'u'.toByte
-        buf(pos + 2) = toHexDigit(c1 >>> 12)
-        buf(pos + 3) = toHexDigit(c1 >>> 8)
-        buf(pos + 4) = toHexDigit(c1 >>> 4)
-        buf(pos + 5) = toHexDigit(c1)
-        6
+        if (c1 < 2048 || !Character.isHighSurrogate(c1)) {
+          if (Character.isLowSurrogate(c1)) illegalSurrogateError(c1)
+          writeEscapedUnicode(buf, c1, pos)
+        } else if (i < to) {
+          val c2 = s.charAt(i)
+          i += 1
+          if (!Character.isLowSurrogate(c2)) illegalSurrogateError(c2)
+          writeEscapedUnicode(buf, c2, writeEscapedUnicode(buf, c1, pos))
+        } else illegalSurrogateError(c1)
       } else if (c1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (c1 >> 6)).toByte
         buf(pos + 1) = (0x80 | (c1 & 0x3F)).toByte
-        2
+        pos + 2
       } else if (!Character.isHighSurrogate(c1)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         if (Character.isLowSurrogate(c1)) illegalSurrogateError(c1)
         buf(pos) = (0xE0 | (c1 >> 12)).toByte
         buf(pos + 1) = (0x80 | ((c1 >> 6) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | (c1 & 0x3F)).toByte
-        3
+        pos + 3
       } else if (i < to) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         val c2 = s.charAt(i)
         i += 1
@@ -326,7 +321,7 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos + 1) = (0x80 | ((uc >> 12) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | ((uc >> 6) & 0x3F)).toByte
         buf(pos + 3) = (0x80 | (uc & 0x3F)).toByte
-        4
+        pos + 4
       } else illegalSurrogateError(c1)
     }
     buf(pos) = '"'
@@ -338,72 +333,70 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos += 1
-    pos += {
+    pos = {
       if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
         (ch: @switch) match {
           case '"' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = '"'.toByte
-            2
+            pos + 2
           case '\\' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = '\\'.toByte
-            2
+            pos + 2
           case '\b' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'b'.toByte
-            2
+            pos + 2
           case '\f' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'f'.toByte
-            2
+            pos + 2
           case '\n' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'n'.toByte
-            2
+            pos + 2
           case '\r' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 'r'.toByte
-            2
+            pos + 2
           case '\t' =>
             buf(pos) = '\\'.toByte
             buf(pos + 1) = 't'.toByte
-            2
+            pos + 2
           case _ =>
-            if (config.escapeUnicode && ch < 32) {
-              buf(pos) = '\\'.toByte
-              buf(pos + 1) = 'u'.toByte
-              buf(pos + 2) = toHexDigit(ch >>> 12)
-              buf(pos + 3) = toHexDigit(ch >>> 8)
-              buf(pos + 4) = toHexDigit(ch >>> 4)
-              buf(pos + 5) = toHexDigit(ch)
-              6
-            } else {
+            if (config.escapeUnicode && ch < 32) writeEscapedUnicode(buf, ch, pos)
+            else {
               buf(pos) = ch.toByte
-              1
+              pos + 1
             }
         }
-      } else if (config.escapeUnicode) { // FIXME: add surrogate pair checking for escaped unicodes
-        buf(pos) = '\\'.toByte
-        buf(pos + 1) = 'u'.toByte
-        buf(pos + 2) = toHexDigit(ch >>> 12)
-        buf(pos + 3) = toHexDigit(ch >>> 8)
-        buf(pos + 4) = toHexDigit(ch >>> 4)
-        buf(pos + 5) = toHexDigit(ch)
-        6
+      } else if (config.escapeUnicode) {
+        if (Character.isSurrogate(ch)) illegalSurrogateError(ch)
+        writeEscapedUnicode(buf, ch, pos)
       } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
-        2
+        pos + 2
       } else if (!Character.isSurrogate(ch)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         buf(pos) = (0xE0 | (ch >> 12)).toByte
         buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte
-        3
+        pos + 3
       } else illegalSurrogateError(ch)
     }
     buf(pos) = '"'
     pos + 1
+  }
+
+  private def writeEscapedUnicode(buf: Array[Byte], ch: Int, pos: Int): Int = {
+    buf(pos) = '\\'.toByte
+    buf(pos + 1) = 'u'.toByte
+    buf(pos + 2) = toHexDigit(ch >>> 12)
+    buf(pos + 3) = toHexDigit(ch >>> 8)
+    buf(pos + 4) = toHexDigit(ch >>> 4)
+    buf(pos + 5) = toHexDigit(ch)
+    pos + 6
   }
 
   private def toHexDigit(n: Int): Byte = {

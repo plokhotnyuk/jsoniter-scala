@@ -35,6 +35,11 @@ class JsonWriterSpec extends WordSpec with Matchers {
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
     }
   }
   "JsonWriter.writeVal for char" should {
@@ -67,6 +72,8 @@ class JsonWriterSpec extends WordSpec with Matchers {
     "throw i/o exception in case of surrogate pair character" in {
       assert(intercept[Exception](serialized(_.writeVal('\udd1e'))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal('\ud834'))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\udd1e'))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\ud834'))).getMessage.contains("illegal surrogate"))
     }
   }
   "JsonWriter.writeVal for int" should {
