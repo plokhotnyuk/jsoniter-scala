@@ -10,6 +10,7 @@ case class WriterConfig(
   indentionStep: Int = 0,
   escapeUnicode: Boolean = false)
 
+//noinspection EmptyCheck
 final class JsonWriter private[jsoniter_scala](
     private var buf: Array[Byte],
     private var count: Int,

@@ -479,7 +479,11 @@ class JsonReaderSpec extends WordSpec with Matchers {
   def parse(buf: Array[Byte]): JsonReader =
     new JsonReader(new Array[Byte](2), 0, 0, new Array[Char](2), new ByteArrayInputStream(buf))
 
-  def skip(s: String): Unit = parse(s.getBytes).skip()
+  def skip(s: String): Unit = {
+    val reader = parse((s + ",").getBytes)
+    reader.skip()
+    reader.nextToken() shouldBe ','
+  }
 
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
 
