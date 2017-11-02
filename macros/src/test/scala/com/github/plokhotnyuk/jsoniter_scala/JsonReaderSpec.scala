@@ -43,12 +43,12 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "skip object values" in {
       skip("{}")
-      skip(" \n\t\r{{{{{}}}}{{{}}}}")
+      skip(" \n\t\r{{{{{}}}}")
       skip("{\"{\"}")
     }
     "skip array values" in {
       skip("[]")
-      skip(" \n\t\r[[[[[]]]][[[]]]]")
+      skip(" \n\t\r[[[[[]]]]")
       skip("[\"[\"]")
     }
     "skip mixed values" in {
@@ -74,7 +74,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
           |  ]
           |}""".stripMargin)
     }
-    "throw parsing exception when skipping not from value staring" in {
+    "throw parsing exception when skipping not from start of JSON value" in {
       assert(intercept[Exception](skip("]")).getMessage.contains("expected JSON value"))
       assert(intercept[Exception](skip("}")).getMessage.contains("expected JSON value"))
       assert(intercept[Exception](skip(",")).getMessage.contains("expected JSON value"))
@@ -496,7 +496,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
   def skip(s: String): Unit = {
     val reader = parse((s + ",").getBytes)
     reader.skip()
-    reader.nextToken() shouldBe ','
+    reader.nextToken().toChar shouldBe ','
   }
 
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
