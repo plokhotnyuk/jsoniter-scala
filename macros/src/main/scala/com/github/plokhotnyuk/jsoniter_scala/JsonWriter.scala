@@ -512,11 +512,11 @@ final class JsonWriter private[jsoniter_scala](
 object JsonWriter {
   private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter =
-      new JsonWriter(new Array[Byte](8192), 0, 0, null, WriterConfig())
+      new JsonWriter(new Array[Byte](4096), 0, 0, null, WriterConfig())
 
     override def get(): JsonWriter = {
       val writer = super.get()
-      if (writer.buf.length > 32768) writer.buf = new Array[Byte](8192)
+      if (writer.buf.length > 16384) writer.buf = new Array[Byte](16384)
       writer
     }
   }
