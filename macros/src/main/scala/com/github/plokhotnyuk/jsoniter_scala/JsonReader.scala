@@ -497,8 +497,7 @@ final class JsonReader(
     else numberError()
   }
 
-  private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int,
-                       j: Int): Double = {
+  private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double = {
     val man = if (isNeg) -posMan else posMan
     val exp = toExp(manExp, isExpNeg, posExp)
     if (exp == 0) man
@@ -506,7 +505,7 @@ final class JsonReader(
       val maxExp = pow10.length
       if (exp >= -maxExp && exp < 0) man / pow10(-exp)
       else if (exp > 0 && exp <= maxExp) man * pow10(exp)
-      else java.lang.Double.parseDouble(reusableCharsToString(j))
+      else java.lang.Double.parseDouble(reusableCharsToString(i))
     }
   }
 
