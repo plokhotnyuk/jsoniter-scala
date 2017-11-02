@@ -258,10 +258,10 @@ final class JsonWriter(
         if (Character.isLowSurrogate(ch1)) illegalSurrogateError(ch1)
         write((0xE0 | (ch1 >> 12)).toByte, (0x80 | ((ch1 >> 6) & 0x3F)).toByte, (0x80 | (ch1 & 0x3F)).toByte, pos)
       } else if (i < to) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        val c2 = s.charAt(i)
+        val ch2 = s.charAt(i)
         i += 1
-        if (!Character.isLowSurrogate(c2)) illegalSurrogateError(c2)
-        val cp = Character.toCodePoint(ch1, c2)
+        if (!Character.isLowSurrogate(ch2)) illegalSurrogateError(ch2)
+        val cp = Character.toCodePoint(ch1, ch2)
         write((0xF0 | (cp >> 18)).toByte, (0x80 | ((cp >> 12) & 0x3F)).toByte, (0x80 | ((cp >> 6) & 0x3F)).toByte, (0x80 | (cp & 0x3F)).toByte, pos)
       } else illegalSurrogateError(ch1)
     }
