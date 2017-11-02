@@ -13,11 +13,11 @@ case class WriterConfig(
 
 //noinspection EmptyCheck
 final class JsonWriter(
-    private var buf: Array[Byte],
-    private var count: Int,
-    private var indention: Int,
-    private var out: OutputStream,
-    private var config: WriterConfig) {
+    private var buf: Array[Byte] = new Array[Byte](4096),
+    private var count: Int = 0,
+    private var indention: Int = 0,
+    private var out: OutputStream = null,
+    private var config: WriterConfig = WriterConfig()) {
   require((buf ne null) && buf.length > 0, "buf should be non empty")
   require(0 <= count && count <= buf.length, "count should be positive and not greater than buf size")
   require(indention >= 0, "indention should be positive")
@@ -508,8 +508,7 @@ final class JsonWriter(
 
 object JsonWriter {
   private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
-    override def initialValue(): JsonWriter =
-      new JsonWriter(new Array[Byte](4096), 0, 0, null, WriterConfig())
+    override def initialValue(): JsonWriter = new JsonWriter()
 
     override def get(): JsonWriter = {
       val writer = super.get()

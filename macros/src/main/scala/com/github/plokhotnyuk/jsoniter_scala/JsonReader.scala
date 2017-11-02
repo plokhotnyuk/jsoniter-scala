@@ -11,11 +11,11 @@ class JsonException(message: String) extends RuntimeException(message)
 
 //noinspection EmptyCheck
 final class JsonReader(
-    private var buf: Array[Byte],
-    private var head: Int,
-    private var tail: Int,
-    private var reusableChars: Array[Char],
-    private var in: InputStream) {
+    private var buf: Array[Byte] = new Array[Byte](4096),
+    private var head: Int = 0,
+    private var tail: Int = 0,
+    private var reusableChars: Array[Char] = new Array[Char](4096),
+    private var in: InputStream = null) {
   require((buf ne null) && buf.length > 0, "buf should be non empty")
   require(0 <= tail && tail <= buf.length, "tail should be positive and not greater than buf size")
   require(0 <= head && head <= tail, "head should be positive and not greater than tail")
@@ -906,8 +906,7 @@ final class JsonReader(
 
 object JsonReader {
   private val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
-    override def initialValue(): JsonReader =
-      new JsonReader(new Array[Byte](4096), 0, 0, new Array[Char](4096), null)
+    override def initialValue(): JsonReader = new JsonReader()
 
     override def get(): JsonReader = {
       val reader = super.get()
