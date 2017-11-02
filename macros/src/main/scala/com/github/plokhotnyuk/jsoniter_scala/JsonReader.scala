@@ -222,15 +222,25 @@ final class JsonReader private[jsoniter_scala](
       true
     }
 
-  def skip(): Unit = {
-    val b = nextToken()
-    if (b == '"') skipString()
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber()
-    else if (b == 'n' || b == 't') skipFixedBytes(3)
-    else if (b == 'f') skipFixedBytes(4)
-    else if (b == '{') skipObject()
-    else if (b == '[') skipArray()
-    else decodeError("expected JSON value")
+  def skip(): Unit = (nextToken(): @switch) match {
+    case '"' => skipString()
+    case '0' => skipNumber()
+    case '1' => skipNumber()
+    case '2' => skipNumber()
+    case '3' => skipNumber()
+    case '4' => skipNumber()
+    case '5' => skipNumber()
+    case '6' => skipNumber()
+    case '7' => skipNumber()
+    case '8' => skipNumber()
+    case '9' => skipNumber()
+    case '-' => skipNumber()
+    case 'n' => skipFixedBytes(3)
+    case 't' => skipFixedBytes(3)
+    case 'f' => skipFixedBytes(4)
+    case '{' => skipObject()
+    case '[' => skipArray()
+    case _ => decodeError("expected JSON value")
   }
 
   def unreadByte(): Unit = head -= 1
@@ -443,7 +453,7 @@ final class JsonReader private[jsoniter_scala](
               head = pos
               return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
             }
-          case 7 => // e
+          case 7 => // e char
             if (ch >= '0' && ch <= '9') {
               i = putCharAt(ch, i)
               posExp = ch - '0'
@@ -595,7 +605,7 @@ final class JsonReader private[jsoniter_scala](
               head = pos
               return toBigDecimal(i)
             }
-          case 7 => // e
+          case 7 => // e char
             if (ch >= '0' && ch <= '9') {
               i = putCharAt(ch, i)
               state = 9
@@ -669,7 +679,7 @@ final class JsonReader private[jsoniter_scala](
       b1 = nextByte()
       b1 != '"'
     }) i = {
-      ensureSizeOfReusableChars(i + 1)
+      ensureSizeOfReusableChars(i + 1) // +1 for surrogate pair case
       if (b1 >= 0) {
         // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') putCharAt(b1.toChar, i)
@@ -678,12 +688,12 @@ final class JsonReader private[jsoniter_scala](
         // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         val b2 = nextByte()
         if (isMalformed2(b1, b2)) malformedBytes(b1, b2)
-        putCharAt(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, i) //((0xC0.toByte << 6) ^ 0x80.toByte)
+        putCharAt(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, i) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
       } else if ((b1 >> 4) == -2) {
         // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         val b2 = nextByte()
         val b3 = nextByte()
-        val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar //((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
         if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(b1, b2, b3)
         putCharAt(c, i)
       } else if ((b1 >> 3) == -2) {
@@ -691,37 +701,35 @@ final class JsonReader private[jsoniter_scala](
         val b2 = nextByte()
         val b3 = nextByte()
         val b4 = nextByte()
-        val uc = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) //((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(uc)) malformedBytes(b1, b2, b3, b4)
-        putCharAt(Character.lowSurrogate(uc), putCharAt(Character.highSurrogate(uc), i))
+        val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4)
+        putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i))
       } else malformedBytes(b1)
     }
     i
   }
 
-  private def readEscapeSequence(i: Int): Int = {
-    (nextByte(): @switch) match {
-      case 'b' => putCharAt('\b', i)
-      case 'f' => putCharAt('\f', i)
-      case 'n' => putCharAt('\n', i)
-      case 'r' => putCharAt('\r', i)
-      case 't' => putCharAt('\t', i)
-      case '"' => putCharAt('"', i)
-      case '/' => putCharAt('/', i)
-      case '\\' => putCharAt('\\', i)
-      case 'u' =>
-        val c1 = readEscapedUnicode()
-        if (c1 < 2048) putCharAt(c1, i)
-        else if (!Character.isHighSurrogate(c1)) {
-          if (Character.isLowSurrogate(c1)) decodeError("expected high surrogate character")
-          putCharAt(c1, i)
-        } else if (nextByte() == '\\' && nextByte() == 'u') {
-          val c2 = readEscapedUnicode()
-          if (!Character.isLowSurrogate(c2)) decodeError("expected low surrogate character")
-          putCharAt(c2, putCharAt(c1, i))
-        } else decodeError("illegal escape sequence")
-      case _ => decodeError("illegal escape sequence")
-    }
+  private def readEscapeSequence(i: Int): Int = (nextByte(): @switch) match {
+    case 'b' => putCharAt('\b', i)
+    case 'f' => putCharAt('\f', i)
+    case 'n' => putCharAt('\n', i)
+    case 'r' => putCharAt('\r', i)
+    case 't' => putCharAt('\t', i)
+    case '"' => putCharAt('"', i)
+    case '/' => putCharAt('/', i)
+    case '\\' => putCharAt('\\', i)
+    case 'u' =>
+      val ch1 = readEscapedUnicode()
+      if (ch1 < 2048) putCharAt(ch1, i)
+      else if (!Character.isHighSurrogate(ch1)) {
+        if (Character.isLowSurrogate(ch1)) decodeError("expected high surrogate character")
+        putCharAt(ch1, i)
+      } else if (nextByte() == '\\' && nextByte() == 'u') {
+        val ch2 = readEscapedUnicode()
+        if (!Character.isLowSurrogate(ch2)) decodeError("expected low surrogate character")
+        putCharAt(ch2, putCharAt(ch1, i))
+      } else decodeError("illegal escape sequence")
+    case _ => decodeError("illegal escape sequence")
   }
 
   private def readEscapedUnicode(): Char =
@@ -749,12 +757,13 @@ final class JsonReader private[jsoniter_scala](
 
   private def malformedBytes(bytes: Byte*): Nothing = {
     val sb = new StringBuilder("malformed byte(s): ")
-    var first = true
+    var comma = false
     bytes.foreach { b =>
-      (if (first) {
-        first = false
+      (if (comma) sb.append(", 0x")
+      else {
+        comma = true
         sb.append("0x")
-      } else sb.append(", 0x")).append(toHexDigit(b >>> 4)).append(toHexDigit(b))
+      }).append(toHexDigit(b >>> 4)).append(toHexDigit(b))
     }
     decodeError(sb.toString)
   }

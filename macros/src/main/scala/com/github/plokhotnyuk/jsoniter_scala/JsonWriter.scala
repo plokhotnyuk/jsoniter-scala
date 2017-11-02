@@ -224,10 +224,10 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensure((to - from) * (if (escapeUnicode) 6 else 3) + 1) // max 6/3 bytes per char + the closing quotes
     var i = from
     while (i < to) pos = {
-      val c1 = s.charAt(i)
+      val ch1 = s.charAt(i)
       i += 1
-      if (c1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        (c1: @switch) match {
+      if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
+        (ch1: @switch) match {
           case '"' => write('\\', '"', pos)
           case '\\' => write('\\', '\\', pos)
           case '\b' => write('\\', 'b', pos)
@@ -236,31 +236,31 @@ final class JsonWriter private[jsoniter_scala](
           case '\r' => write('\\', 'r', pos)
           case '\t' => write('\\', 't', pos)
           case _ =>
-            if (escapeUnicode && c1 < 32) writeEscapedUnicode(c1, pos)
-            else write(c1.toByte, pos)
+            if (escapeUnicode && ch1 < 32) writeEscapedUnicode(ch1, pos)
+            else write(ch1.toByte, pos)
         }
       } else if (escapeUnicode) { // FIXME: add surrogate pair checking for escaped unicodes
-        if (c1 < 2048 || !Character.isHighSurrogate(c1)) {
-          if (Character.isLowSurrogate(c1)) illegalSurrogateError(c1)
-          writeEscapedUnicode(c1, pos)
+        if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
+          if (Character.isLowSurrogate(ch1)) illegalSurrogateError(ch1)
+          writeEscapedUnicode(ch1, pos)
         } else if (i < to) {
-          val c2 = s.charAt(i)
+          val ch2 = s.charAt(i)
           i += 1
-          if (!Character.isLowSurrogate(c2)) illegalSurrogateError(c2)
-          writeEscapedUnicode(c2, writeEscapedUnicode(c1, pos))
-        } else illegalSurrogateError(c1)
-      } else if (c1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        write((0xC0 | (c1 >> 6)).toByte, (0x80 | (c1 & 0x3F)).toByte, pos)
-      } else if (!Character.isHighSurrogate(c1)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        if (Character.isLowSurrogate(c1)) illegalSurrogateError(c1)
-        write((0xE0 | (c1 >> 12)).toByte, (0x80 | ((c1 >> 6) & 0x3F)).toByte, (0x80 | (c1 & 0x3F)).toByte, pos)
+          if (!Character.isLowSurrogate(ch2)) illegalSurrogateError(ch2)
+          writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos))
+        } else illegalSurrogateError(ch1)
+      } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        write((0xC0 | (ch1 >> 6)).toByte, (0x80 | (ch1 & 0x3F)).toByte, pos)
+      } else if (!Character.isHighSurrogate(ch1)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        if (Character.isLowSurrogate(ch1)) illegalSurrogateError(ch1)
+        write((0xE0 | (ch1 >> 12)).toByte, (0x80 | ((ch1 >> 6) & 0x3F)).toByte, (0x80 | (ch1 & 0x3F)).toByte, pos)
       } else if (i < to) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         val c2 = s.charAt(i)
         i += 1
         if (!Character.isLowSurrogate(c2)) illegalSurrogateError(c2)
-        val uc = Character.toCodePoint(c1, c2)
-        write((0xF0 | (uc >> 18)).toByte, (0x80 | ((uc >> 12) & 0x3F)).toByte, (0x80 | ((uc >> 6) & 0x3F)).toByte, (0x80 | (uc & 0x3F)).toByte, pos)
-      } else illegalSurrogateError(c1)
+        val cp = Character.toCodePoint(ch1, c2)
+        write((0xF0 | (cp >> 18)).toByte, (0x80 | ((cp >> 12) & 0x3F)).toByte, (0x80 | ((cp >> 6) & 0x3F)).toByte, (0x80 | (cp & 0x3F)).toByte, pos)
+      } else illegalSurrogateError(ch1)
     }
     write('"', pos)
   }
