@@ -43,12 +43,12 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "skip object values" in {
       skip("{}")
-      skip(" \n\t\r{{{{{}}}}")
+      skip(" \n\t\r{{{{{}}}}{{{}}}}")
       skip("{\"{\"}")
     }
     "skip array values" in {
       skip("[]")
-      skip(" \n\t\r[[[[[]]]]")
+      skip(" \n\t\r[[[[[]]]][[[]]]]")
       skip("[\"[\"]")
     }
     "skip mixed values" in {
