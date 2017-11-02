@@ -339,7 +339,7 @@ object JsonCodec {
       val defaults: Map[String, Tree] = params.zipWithIndex.collect {
         case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
       }(breakOut)
-      val required = params.collect { // FIXME should report overridden by annotation keys instead of param names
+      val required = params.collect { // FIXME: should report overridden by annotation keys instead of param names
         case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
       }
       val reqVarNum = required.size

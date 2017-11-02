@@ -8,7 +8,7 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.collection.immutable._
 import scala.collection.mutable
 
-case class KeyOverridden(@key("new_key") oldKey: String) //FIXME: fail tests when move to end of source file
+case class KeyOverridden(@key("new_key") oldKey: String) //FIXME: classes with field annotation should be defined in source file before materialize call
 
 class JsonCodecSpec extends WordSpec with Matchers {
   "JsonCodec" should {

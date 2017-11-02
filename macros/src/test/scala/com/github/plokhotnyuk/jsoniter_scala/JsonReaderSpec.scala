@@ -23,25 +23,33 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "skip number values" in {
       skip("0")
-      skip("0.1")
-      skip("-0.1")
-      skip(" \n\t\r0.1")
-      skip("123456789.0E+10")
+      skip("1.1")
+      skip("-2.1")
+      skip(" 3.1")
+      skip("\n4.1")
+      skip("\t5.1")
+      skip("\r6.1")
+      skip("7.1e+123456789")
+      skip("-8.1E-123456789")
+      skip("987654321.0E+10")
     }
     "skip boolean values" in {
       skip("true")
-      skip("false")
+      skip(" \n\t\rfalse")
     }
     "skip null values" in {
       skip("null")
+      skip(" \n\t\rnull")
     }
     "skip object values" in {
       skip("{}")
-      skip("{{{{{}}}}{{{}}}}")
+      skip(" \n\t\r{{{{{}}}}{{{}}}}")
+      skip("{\"{\"}")
     }
     "skip array values" in {
       skip("[]")
-      skip("[[[[[]]]][[[]]]]")
+      skip(" \n\t\r[[[[[]]]][[[]]]]")
+      skip("[\"[\"]")
     }
     "skip mixed values" in {
       skip(
@@ -65,6 +73,12 @@ class JsonReaderSpec extends WordSpec with Matchers {
           |    [7, 8, 9]
           |  ]
           |}""".stripMargin)
+    }
+    "throw parsing exception when skipping not from value staring" in {
+      assert(intercept[Exception](skip("]")).getMessage.contains("expected JSON value"))
+      assert(intercept[Exception](skip("}")).getMessage.contains("expected JSON value"))
+      assert(intercept[Exception](skip(",")).getMessage.contains("expected JSON value"))
+      assert(intercept[Exception](skip(":")).getMessage.contains("expected JSON value"))
     }
   }
   "JsonReader.readBoolean" should {
