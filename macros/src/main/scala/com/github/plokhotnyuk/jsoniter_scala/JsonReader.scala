@@ -257,7 +257,7 @@ final class JsonReader(
     var peekSize = head - peekStart
     if (head > tail) peekSize = tail - peekStart
     val peek = new String(buf, peekStart, peekSize, UTF_8)
-    throw new JsonException(msg + ", head: " + head + ", peek: " + peek + ", buf: " + new String(buf, UTF_8))
+    throw new JsonException(msg + ", head: " + head + ", peek: " + peek + ", buf: " + new String(buf, UTF_8)) // TODO: print hex dump of buf instead
   }
 
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
@@ -308,7 +308,7 @@ final class JsonReader(
           if (v == 0) decodeError("illegal number")
           if (v < -214748364) decodeError("value is too large for int")
           v = v * 10 + ('0' - b)
-          if (v >= 0) decodeError( "value is too large for int")
+          if (v >= 0) decodeError("value is too large for int")
           pos + 1
         }
       } while (loadMore(pos))
@@ -337,7 +337,7 @@ final class JsonReader(
           if (v == 0) decodeError("illegal number")
           if (v < -922337203685477580L) decodeError("value is too large for long")
           v = v * 10 + ('0' - b)
-          if (v >= 0) decodeError( "value is too large for long")
+          if (v >= 0) decodeError("value is too large for long")
           pos + 1
         }
       } while (loadMore(pos))
@@ -817,7 +817,7 @@ final class JsonReader(
       pos = head
       while (pos < tail) {
         val b = buf(pos)
-        if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' ||  b == 'E') pos += 1
+        if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' || b == 'E') pos += 1
         else {
           head = pos
           return

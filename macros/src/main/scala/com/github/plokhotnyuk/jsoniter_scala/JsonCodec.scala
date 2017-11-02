@@ -1,9 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import scala.annotation.meta.field
-import scala.collection.breakOut
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
-import scala.collection.mutable
+import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -142,19 +141,25 @@ object JsonCodec {
 
       val decoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
 
-      def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree =
-        q"""${decoders.getOrElseUpdate(tpe, {
+      def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
+        val decodeMethodName = decoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"d${decoders.size}")
-          (name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")})._1}(in, $arg)"""
+          (name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")
+        })._1
+        q"$decodeMethodName(in, $arg)"
+      }
 
       val encoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
 
-      def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree =
-        q"""${encoders.getOrElseUpdate(tpe, {
+      def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
+        val encodeMethodName = encoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"e${encoders.size}")
-          (name, q"private def $name(out: JsonWriter, x: $tpe): Unit = $impl")})._1}(out, $arg)"""
+          (name, q"private def $name(out: JsonWriter, x: $tpe): Unit = $impl")
+        })._1
+        q"$encodeMethodName(out, $arg)"
+      }
 
       def findImplicitCodec(tpe: Type): Option[Tree] = {
         val codecTpe = c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe]", mode = c.TYPEmode).tpe

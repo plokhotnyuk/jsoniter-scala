@@ -4,8 +4,8 @@ import java.io.{IOException, OutputStream}
 
 import com.github.plokhotnyuk.jsoniter_scala.JsonWriter._
 
-import scala.collection.breakOut
 import scala.annotation.switch
+import scala.collection.breakOut
 
 case class WriterConfig(
   indentionStep: Int = 0,
@@ -265,7 +265,7 @@ final class JsonWriter(
       } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         write((0xC0 | (ch >> 6)).toByte, (0x80 | (ch & 0x3F)).toByte, pos)
       } else if (!Character.isSurrogate(ch)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        write((0xE0 | (ch >> 12)).toByte,  (0x80 | ((ch >> 6) & 0x3F)).toByte, (0x80 | (ch & 0x3F)).toByte, pos)
+        write((0xE0 | (ch >> 12)).toByte, (0x80 | ((ch >> 6) & 0x3F)).toByte, (0x80 | (ch & 0x3F)).toByte, pos)
       } else illegalSurrogateError()
     }
     buf(pos) = '"'

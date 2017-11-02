@@ -422,6 +422,7 @@ object LocationType extends Enumeration {
   val IP: LocationType = Value(2)
   val UserProvided: LocationType = Value(3)
 }
+
 case class Enums(lt: LocationType.LocationType)
 
 case class ValueClassTypes(uid: UserId, oid: OrderId)
