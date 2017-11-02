@@ -332,12 +332,10 @@ final class JsonWriter private[jsoniter_scala](
     if (config.indentionStep > 0) ensureAndWrite(':'.toByte, ' '.toByte)
     else ensureAndWrite(':'.toByte)
 
-  private def writeInt(x: Int): Unit = count ={
+  private def writeInt(x: Int): Unit = count = {
     var pos = ensure(11) // minIntBytes.length
-    if (x == Integer.MIN_VALUE) {
-      System.arraycopy(minIntBytes, 0, buf, pos, minIntBytes.length)
-      pos + minIntBytes.length
-    } else {
+    if (x == Integer.MIN_VALUE) writeBytes(minIntBytes, pos)
+    else {
       val q0 =
         if (x >= 0) x
         else {
@@ -368,10 +366,8 @@ final class JsonWriter private[jsoniter_scala](
   // TODO: consider more cache-aware algorithm from RapidJSON, see https://github.com/miloyip/itoa-benchmark/blob/master/src/branchlut.cpp
   private def writeLong(x: Long): Unit = count = {
     var pos = ensure(20) // minLongBytes.length
-    if (x == java.lang.Long.MIN_VALUE) {
-      System.arraycopy(minLongBytes, 0, buf, pos, minLongBytes.length)
-      pos + minLongBytes.length
-    } else {
+    if (x == java.lang.Long.MIN_VALUE) writeBytes(minLongBytes, pos)
+    else {
       val q0 =
         if (x >= 0) x
         else {
@@ -412,6 +408,11 @@ final class JsonWriter private[jsoniter_scala](
         }
       }
     }
+  }
+
+  private def writeBytes(bs: Array[Byte], pos: Int): Int = {
+    System.arraycopy(bs, 0, buf, pos, bs.length)
+    pos + bs.length
   }
 
   private def writeFirstRem(r: Int, pos: Int) = {
