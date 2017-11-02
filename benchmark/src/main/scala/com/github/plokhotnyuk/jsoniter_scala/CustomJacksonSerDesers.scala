@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonToken._
 import com.fasterxml.jackson.core.{JsonGenerator, JsonParseException, JsonParser}
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.databind.{DeserializationContext, JsonSerializer, SerializerProvider}
+import com.fasterxml.jackson.databind.{DeserializationContext, SerializerProvider}
 
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
