@@ -28,8 +28,7 @@ final class JsonWriter private[jsoniter_scala](
   def close(): Unit =
     if (out ne null) {
       flushBuffer()
-      out.close()
-      out = null // help GC
+      out = null // do not close output stream, just help GC instead
     }
 
   def writeComma(comma: Boolean): Boolean = {
