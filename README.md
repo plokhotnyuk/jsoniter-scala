@@ -13,8 +13,8 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
 - Case classes should be defined as a top-level class or directly inside of another class or object
-- Enums, `BigInt`, `BigDecimal`, `Option`, Scala collections & arrays as class fields are supported
-- Types that supported as map keys: primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for them  
+- Primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, arrays and value classes for all them or case classes themself are supported as case class fields 
+- Types that supported as map keys are all which can be represented by single value, basically it is all above excluding case classes, arrays & collections  
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
