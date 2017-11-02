@@ -378,8 +378,8 @@ object JsonCodec {
         val tpe = methodType(m)
         val writeField = genWriteField(q"x.$m", tpe, keyName(m))
         defaults.get(m.name.toString) match {
-          case Some(d) => // FIXME: more efficient equals for array required
-            if (tpe <:< typeOf[Array[_]]) q"if (x.$m.deep != $d.deep) $writeField"
+          case Some(d) =>
+            if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"
             else q"if (x.$m != $d) $writeField"
           case None => writeField
         }
