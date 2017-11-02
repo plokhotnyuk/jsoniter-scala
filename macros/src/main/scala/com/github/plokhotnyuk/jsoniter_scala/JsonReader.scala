@@ -655,7 +655,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private def parseString(from: Int): Int = {
     var i = from
-    var pos = ensureSizeOfReusableChars(i)
+    var pos = ensureSizeOfReusableChars(from)
     while (pos < tail) i = {
       val b = buf(pos)
       pos += 1
@@ -679,7 +679,7 @@ final class JsonReader private[jsoniter_scala](
       b1 = nextByte()
       b1 != '"'
     }) i = {
-      ensureSizeOfReusableChars(i + 1) // +1 for surrogate pair case
+      ensureSizeOfReusableChars(i + 2) // +2 for surrogate pair case
       if (b1 >= 0) {
         // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') putCharAt(b1.toChar, i)
