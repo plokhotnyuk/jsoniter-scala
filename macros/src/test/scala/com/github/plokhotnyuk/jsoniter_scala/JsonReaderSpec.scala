@@ -6,6 +6,27 @@ import java.nio.charset.StandardCharsets
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers {
+  "JsonReader.this" should {
+    "create an properly defined instances only" in {
+      new JsonReader(new Array[Byte](2), 0, 2, new Array[Char](2), null)
+      assert(intercept[Exception](new JsonReader(new Array[Byte](0), 0, 2, new Array[Char](2), null))
+        .getMessage.contains("buf should be non empty"))
+      assert(intercept[Exception](new JsonReader(null, 0, 2, new Array[Char](2), null))
+        .getMessage.contains("buf should be non empty"))
+      assert(intercept[Exception](new JsonReader(new Array[Byte](2), -1, 2, new Array[Char](2), null))
+        .getMessage.contains("head should be positive and not greater than tail"))
+      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 3, 2, new Array[Char](2), null))
+        .getMessage.contains("head should be positive and not greater than tail"))
+      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, -1, new Array[Char](2), null))
+        .getMessage.contains("tail should be positive and not greater than buf size"))
+      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, 3, new Array[Char](2), null))
+        .getMessage.contains("tail should be positive and not greater than buf size"))
+      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, 2, new Array[Char](0), null))
+        .getMessage.contains("reusableChars should be non empty"))
+      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, 2, null, null))
+        .getMessage.contains("reusableChars should be non empty"))
+    }
+  }
   "JsonReader.skip" should {
     "skip string values" in {
       skip("\"\"")

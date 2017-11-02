@@ -5,6 +5,23 @@ import java.io.ByteArrayOutputStream
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers {
+  "JsonWriter.this" should {
+    "create an properly defined instances only" in {
+      new JsonWriter(new Array[Byte](2), 0, 0, null, WriterConfig())
+      assert(intercept[Exception](new JsonWriter(new Array[Byte](0), 0, 0, null, WriterConfig()))
+        .getMessage.contains("buf should be non empty"))
+      assert(intercept[Exception](new JsonWriter(null, 0, 0, null, WriterConfig()))
+        .getMessage.contains("buf should be non empty"))
+      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), -1, 0, null, WriterConfig()))
+        .getMessage.contains("count should be positive and not greater than buf size"))
+      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), 3, 0, null, WriterConfig()))
+        .getMessage.contains("count should be positive and not greater than buf size"))
+      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), 0, -1, null, WriterConfig()))
+        .getMessage.contains("indention should be positive"))
+      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), 0, 0, null, null))
+        .getMessage.contains("config should not be null"))
+    }
+  }
   "JsonWriter.writeVal for boolean" should {
     "write valid true and false values" in {
       serialized(_.writeVal(true)) shouldBe "true"

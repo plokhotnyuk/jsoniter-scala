@@ -10,13 +10,15 @@ import scala.annotation.{switch, tailrec}
 class JsonException(message: String) extends RuntimeException(message)
 
 //noinspection EmptyCheck
-final class JsonReader private[jsoniter_scala](
+final class JsonReader(
     private var buf: Array[Byte],
     private var head: Int,
     private var tail: Int,
     private var reusableChars: Array[Char],
     private var in: InputStream) {
   require((buf ne null) && buf.length > 0, "buf should be non empty")
+  require(0 <= tail && tail <= buf.length, "tail should be positive and not greater than buf size")
+  require(0 <= head && head <= tail, "head should be positive and not greater than tail")
   require((reusableChars ne null) && reusableChars.length > 0, "reusableChars should be non empty")
 
   def reset(in: InputStream): Unit = {

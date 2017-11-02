@@ -12,13 +12,16 @@ case class WriterConfig(
   escapeUnicode: Boolean = false)
 
 //noinspection EmptyCheck
-final class JsonWriter private[jsoniter_scala](
+final class JsonWriter(
     private var buf: Array[Byte],
     private var count: Int,
     private var indention: Int,
     private var out: OutputStream,
     private var config: WriterConfig) {
-  require((buf ne null) && buf.length > 0, "buf size should be non empty")
+  require((buf ne null) && buf.length > 0, "buf should be non empty")
+  require(0 <= count && count <= buf.length, "count should be positive and not greater than buf size")
+  require(indention >= 0, "indention should be positive")
+  require(config ne null, "config should not be null")
 
   def reset(out: OutputStream): Unit = {
     this.out = out
