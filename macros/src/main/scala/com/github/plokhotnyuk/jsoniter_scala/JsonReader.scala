@@ -694,9 +694,9 @@ final class JsonReader(
         // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         val b2 = nextByte()
         val b3 = nextByte()
-        val c = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(c)) malformedBytes(b1, b2, b3)
-        putCharAt(c, i)
+        val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3)
+        putCharAt(ch, i)
       } else if ((b1 >> 3) == -2) {
         // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         val b2 = nextByte()
