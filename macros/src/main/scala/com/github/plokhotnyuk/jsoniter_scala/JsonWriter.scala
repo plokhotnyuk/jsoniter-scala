@@ -223,47 +223,34 @@ final class JsonWriter(
   }
 
   private def writeStringSlowPath(s: String, from: Int, to: Int): Int = {
-    val escapeUnicode = config.escapeUnicode
-    var pos = ensure((to - from) * (if (escapeUnicode) 6 else 3) + 1) // max 6/3 bytes per char + the closing quotes
+    var pos = ensure((to - from) * (if (config.escapeUnicode) 6 else 3) + 1) // max 6 or 3 bytes per char + the closing quotes
     var i = from
     while (i < to) pos = {
       val ch1 = s.charAt(i)
       i += 1
-      if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        (ch1: @switch) match {
-          case '"' => write('\\', '"', pos)
-          case '\\' => write('\\', '\\', pos)
-          case '\b' => write('\\', 'b', pos)
-          case '\f' => write('\\', 'f', pos)
-          case '\n' => write('\\', 'n', pos)
-          case '\r' => write('\\', 'r', pos)
-          case '\t' => write('\\', 't', pos)
-          case _ =>
-            if (escapeUnicode && ch1 < 32) writeEscapedUnicode(ch1, pos)
-            else write(ch1.toByte, pos)
-        }
-      } else if (escapeUnicode) { // FIXME: add surrogate pair checking for escaped unicodes
+      if (ch1 < 128) writeAscii(ch1, pos) // 1 byte, 7 bits: 0xxxxxxx
+      else if (config.escapeUnicode) {
         if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
-          if (Character.isLowSurrogate(ch1)) illegalSurrogateError(ch1)
+          if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
           writeEscapedUnicode(ch1, pos)
         } else if (i < to) {
           val ch2 = s.charAt(i)
           i += 1
-          if (!Character.isLowSurrogate(ch2)) illegalSurrogateError(ch2)
+          if (!Character.isLowSurrogate(ch2)) illegalSurrogateError()
           writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos))
-        } else illegalSurrogateError(ch1)
+        } else illegalSurrogateError()
       } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         write((0xC0 | (ch1 >> 6)).toByte, (0x80 | (ch1 & 0x3F)).toByte, pos)
       } else if (!Character.isHighSurrogate(ch1)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        if (Character.isLowSurrogate(ch1)) illegalSurrogateError(ch1)
+        if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
         write((0xE0 | (ch1 >> 12)).toByte, (0x80 | ((ch1 >> 6) & 0x3F)).toByte, (0x80 | (ch1 & 0x3F)).toByte, pos)
       } else if (i < to) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         val ch2 = s.charAt(i)
         i += 1
-        if (!Character.isLowSurrogate(ch2)) illegalSurrogateError(ch2)
+        if (!Character.isLowSurrogate(ch2)) illegalSurrogateError()
         val cp = Character.toCodePoint(ch1, ch2)
         write((0xF0 | (cp >> 18)).toByte, (0x80 | ((cp >> 12) & 0x3F)).toByte, (0x80 | ((cp >> 6) & 0x3F)).toByte, (0x80 | (cp & 0x3F)).toByte, pos)
-      } else illegalSurrogateError(ch1)
+      } else illegalSurrogateError()
     }
     write('"', pos)
   }
@@ -271,33 +258,32 @@ final class JsonWriter(
   private def writeChar(ch: Char): Unit = count = {
     var pos = write('"', ensure(8)) // 6 bytes per char for encoded unicode + make room for the quotes
     pos = {
-      if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        (ch: @switch) match {
-          case '"' => write('\\', '"', pos)
-          case '\\' => write('\\', '\\', pos)
-          case '\b' => write('\\', 'b', pos)
-          case '\f' => write('\\', 'f', pos)
-          case '\n' => write('\\', 'n', pos)
-          case '\r' => write('\\', 'r', pos)
-          case '\t' => write('\\', 't', pos)
-          case _ =>
-            if (config.escapeUnicode && ch < 32) writeEscapedUnicode(ch, pos)
-            else write(ch.toByte, pos)
-        }
-      } else if (config.escapeUnicode) {
-        if (Character.isSurrogate(ch)) illegalSurrogateError(ch)
+      if (ch < 128) writeAscii(ch, pos) // 1 byte, 7 bits: 0xxxxxxx
+      else if (config.escapeUnicode) {
+        if (Character.isSurrogate(ch)) illegalSurrogateError()
         writeEscapedUnicode(ch, pos)
       } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         write((0xC0 | (ch >> 6)).toByte, (0x80 | (ch & 0x3F)).toByte, pos)
       } else if (!Character.isSurrogate(ch)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         write((0xE0 | (ch >> 12)).toByte,  (0x80 | ((ch >> 6) & 0x3F)).toByte, (0x80 | (ch & 0x3F)).toByte, pos)
-      } else illegalSurrogateError(ch)
+      } else illegalSurrogateError()
     }
     buf(pos) = '"'
     pos + 1
   }
 
-  private def writeEscapedUnicode(ch: Int, pos: Int) = {
+  private def writeAscii(ch: Char, pos: Int) = (ch: @switch) match {
+    case '"' => write('\\', '"', pos)
+    case '\\' => write('\\', '\\', pos)
+    case '\b' => write('\\', 'b', pos)
+    case '\f' => write('\\', 'f', pos)
+    case '\n' => write('\\', 'n', pos)
+    case '\r' => write('\\', 'r', pos)
+    case '\t' => write('\\', 't', pos)
+    case _ => if (config.escapeUnicode && ch < 32) writeEscapedUnicode(ch, pos) else write(ch.toByte, pos)
+  }
+
+  private def writeEscapedUnicode(ch: Char, pos: Int) = {
     buf(pos) = '\\'.toByte
     buf(pos + 1) = 'u'.toByte
     buf(pos + 2) = toHexDigit(ch >>> 12)
@@ -312,7 +298,7 @@ final class JsonWriter(
     (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
   }.toByte
 
-  private def illegalSurrogateError(ch: Int): Nothing = encodeError("illegal char sequence of surrogate pair")
+  private def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
   private def writeCommaWithParentheses(comma: Boolean): Unit = {
     if (comma) ensureAndWrite(',')
@@ -485,8 +471,8 @@ final class JsonWriter(
   }
 
   @inline
-  private def ensure(minimal: Int): Int = {
-    if (buf.length < count + minimal) growBuffer(minimal)
+  private def ensure(required: Int): Int = {
+    if (buf.length < count + required) growBuffer(required)
     count
   }
 
@@ -496,10 +482,10 @@ final class JsonWriter(
       count = 0
     }
 
-  private def growBuffer(minimal: Int): Unit = {
+  private def growBuffer(required: Int): Unit = {
     flushBuffer()
-    if (buf.length < count + minimal) {
-      val newBuf = new Array[Byte](Math.max(buf.length << 1, count + minimal))
+    if (buf.length < count + required) {
+      val newBuf = new Array[Byte](Math.max(buf.length << 1, count + required))
       System.arraycopy(buf, 0, newBuf, 0, buf.length)
       buf = newBuf
     }
@@ -517,8 +503,8 @@ object JsonWriter {
     }
   }
   private val digits: Array[Short] = (0 to 999).map { i =>
-    (((if (i < 10) 2 else if (i < 100) 1 else 0) << 12) +
-      ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort
+    (((if (i < 10) 2 else if (i < 100) 1 else 0) << 12) + // this nibble encodes number of leading zeroes
+      ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort // decimal digit per nibble
   }(breakOut)
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
