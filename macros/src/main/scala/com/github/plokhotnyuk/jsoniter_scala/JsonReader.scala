@@ -252,12 +252,9 @@ final class JsonReader(
   def objectStartError(): Nothing = decodeError("expected `{` or `null`")
 
   def decodeError(msg: String): Nothing = {
-    var peekStart = head - 10
-    if (peekStart < 0) peekStart = 0
-    var peekSize = head - peekStart
-    if (head > tail) peekSize = tail - peekStart
-    val peek = new String(buf, peekStart, peekSize, UTF_8)
-    throw new JsonException(msg + ", head: " + head + ", peek: " + peek + ", buf: " + new String(buf, UTF_8)) // TODO: print hex dump of buf instead
+    val peekFrom = Math.max(head - 16, 0)
+    throw new JsonException(msg + ", head: " + head + ", peek: " + new String(buf, peekFrom, head - peekFrom, UTF_8) +
+      ", buf: " + new String(buf, UTF_8)) // TODO: print hex dump of buf instead
   }
 
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
