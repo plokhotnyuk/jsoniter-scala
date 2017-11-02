@@ -123,17 +123,17 @@ class JsonCodecSpec extends WordSpec with Matchers {
         verifyDeser(materialize[StandardTypes],
           StandardTypes(null, 1, 2),
           """{"s":n,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("expected JSON value or `null`"))
+      }.getMessage.contains("expected value or `null`"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes],
           StandardTypes(null, 1, 2),
           """{"s":nu,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("expected JSON value or `null`"))
+      }.getMessage.contains("expected value or `null`"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes],
           StandardTypes(null, 1, 2),
           """{"s":nul,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("expected JSON value or `null`"))
+      }.getMessage.contains("expected value or `null`"))
     }
     "don't deserialize illegal UTF-8 encoded strings" in {
       assert(intercept[JsonException] {

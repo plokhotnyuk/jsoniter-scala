@@ -96,10 +96,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
           |}""".stripMargin)
     }
     "throw parsing exception when skipping not from start of JSON value" in {
-      assert(intercept[Exception](skip("]")).getMessage.contains("expected JSON value"))
-      assert(intercept[Exception](skip("}")).getMessage.contains("expected JSON value"))
-      assert(intercept[Exception](skip(",")).getMessage.contains("expected JSON value"))
-      assert(intercept[Exception](skip(":")).getMessage.contains("expected JSON value"))
+      assert(intercept[Exception](skip("]")).getMessage.contains("expected value"))
+      assert(intercept[Exception](skip("}")).getMessage.contains("expected value"))
+      assert(intercept[Exception](skip(",")).getMessage.contains("expected value"))
+      assert(intercept[Exception](skip(":")).getMessage.contains("expected value"))
     }
   }
   "JsonReader.readBoolean" should {

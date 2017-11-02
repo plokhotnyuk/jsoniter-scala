@@ -187,7 +187,7 @@ final class JsonReader(
 
   def parseNull[A](default: A): A =
     if (nextByte() == 'u' && nextByte() == 'l' && nextByte() == 'l') default
-    else decodeError("expected JSON value or `null`")
+    else decodeError("expected value or `null`")
 
   def readObjectFieldAsReusableChars(): Int = {
     if (nextToken() != '"') decodeError("expected `\"`")
@@ -242,7 +242,7 @@ final class JsonReader(
     case 'f' => skipFixedBytes(4)
     case '{' => skipObject()
     case '[' => skipArray()
-    case _ => decodeError("expected JSON value")
+    case _ => decodeError("expected value")
   }
 
   def unreadByte(): Unit = head -= 1
@@ -254,13 +254,12 @@ final class JsonReader(
   def decodeError(msg: String): Nothing = {
     val peekFrom = Math.max(head - 16, 0)
     throw new JsonException(msg + ", head: " + head + ", peek: " + new String(buf, peekFrom, head - peekFrom, UTF_8) +
-      ", buf: " + new String(buf, UTF_8)) // TODO: print hex dump of buf instead
+      ", buf: " + new String(buf, UTF_8)) // TODO: consider printing of hex dump of buf instead
   }
 
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
 
-  private def readParentheses(): Unit =
-    if (nextByte() != '"') decodeError("expected `\"`")
+  private def readParentheses(): Unit = if (nextByte() != '"') decodeError("expected `\"`")
 
   private def readParenthesesWithColon(): Unit =
     if (nextByte() != '"') decodeError("expected `\"`")
@@ -282,13 +281,16 @@ final class JsonReader(
     val b = if (isToken) nextToken() else nextByte()
     if (b == 't') {
       if (nextByte() == 'r' && nextByte() == 'u' && nextByte() == 'e') true
-      else decodeError("illegal boolean")
+      else booleanError()
     } else if (b == 'f') {
       if (nextByte() == 'a' && nextByte() == 'l' && nextByte() == 's' && nextByte() == 'e') false
-      else decodeError("illegal boolean")
-    } else decodeError("illegal boolean")
+      else booleanError()
+    } else booleanError()
   }
 
+  private def booleanError(): Nothing = decodeError("illegal boolean")
+
+  // TODO: consider fast path with unrolled loop for small numbers
   private def parseInt(isToken: Boolean): Int = {
     var b = if (isToken) nextToken() else nextByte()
     val negative = b == '-'
@@ -302,15 +304,15 @@ final class JsonReader(
           b = buf(pos)
           b >= '0' && b <= '9'
         }) pos = {
-          if (v == 0) decodeError("illegal number")
-          if (v < -214748364) decodeError("value is too large for int")
+          if (v == 0) numberError()
+          if (v < -214748364) intOverflowError()
           v = v * 10 + ('0' - b)
-          if (v >= 0) decodeError("value is too large for int")
+          if (v >= 0) intOverflowError()
           pos + 1
         }
       } while (loadMore(pos))
       if (negative) v
-      else if (v == Int.MinValue) decodeError("value is too large for int")
+      else if (v == Int.MinValue) intOverflowError()
       else -v
     } else {
       unreadByte()
@@ -318,6 +320,9 @@ final class JsonReader(
     }
   }
 
+  private def intOverflowError(): Nothing = decodeError("value is too large for int")
+
+  // TODO: consider fast path with unrolled loop for small numbers
   private def parseLong(isToken: Boolean): Long = {
     var b = if (isToken) nextToken() else nextByte()
     val negative = b == '-'
@@ -331,15 +336,15 @@ final class JsonReader(
           b = buf(pos)
           b >= '0' && b <= '9'
         }) pos = {
-          if (v == 0) decodeError("illegal number")
-          if (v < -922337203685477580L) decodeError("value is too large for long")
+          if (v == 0) numberError()
+          if (v < -922337203685477580L) longOverflowError()
           v = v * 10 + ('0' - b)
-          if (v >= 0) decodeError("value is too large for long")
+          if (v >= 0) longOverflowError()
           pos + 1
         }
       } while (loadMore(pos))
       if (negative) v
-      else if (v == Long.MinValue) decodeError("value is too large for long")
+      else if (v == Long.MinValue) longOverflowError()
       else -v
     } else {
       unreadByte()
@@ -347,6 +352,9 @@ final class JsonReader(
     }
   }
 
+  private def longOverflowError(): Nothing = decodeError("value is too large for long")
+
+  // TODO: consider fast path with unrolled loop for small numbers
   private def parseDouble(isToken: Boolean): Double = {
     var posMan = 0L
     var manExp = 0
@@ -515,6 +523,7 @@ final class JsonReader(
 
   private def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
 
+  // TODO: consider fast path with unrolled loop for small numbers
   private def parseBigDecimal(isToken: Boolean): java.math.BigDecimal = {
     var isZeroFirst = false
     var i = 0
@@ -678,24 +687,20 @@ final class JsonReader(
       b1 != '"'
     }) i = {
       ensureSizeOfReusableChars(i + 2) // +2 for surrogate pair case
-      if (b1 >= 0) {
-        // 1 byte, 7 bits: 0xxxxxxx
+      if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') putCharAt(b1.toChar, i)
         else readEscapeSequence(i)
-      } else if ((b1 >> 5) == -2) {
-        // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+      } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         val b2 = nextByte()
         if (isMalformed2(b1, b2)) malformedBytes(b1, b2)
         putCharAt(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, i) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
-      } else if ((b1 >> 4) == -2) {
-        // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+      } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         val b2 = nextByte()
         val b3 = nextByte()
         val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
         if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3)
         putCharAt(ch, i)
-      } else if ((b1 >> 3) == -2) {
-        // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         val b2 = nextByte()
         val b3 = nextByte()
         val b4 = nextByte()
@@ -835,14 +840,13 @@ final class JsonReader(
           head = pos
           skipString()
           pos = head
-        } else if (b == '[') level += 1
-        else if (b == ']') {
+        } else if (b == ']') {
           level -= 1
           if (level == 0) {
             head = pos
             return
           }
-        }
+        } else if (b == '[') level += 1
       }
     } while (loadMore(pos))
   }
@@ -859,14 +863,13 @@ final class JsonReader(
           head = pos
           skipString()
           pos = head
-        } else if (b == '{') level += 1
-        else if (b == '}') {
+        } else if (b == '}') {
           level -= 1
           if (level == 0) {
             head = pos
             return
           }
-        }
+        } else if (b == '{') level += 1
       }
     } while (loadMore(pos))
   }
