@@ -309,13 +309,7 @@ final class JsonWriter private[jsoniter_scala](
     (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
   }.toByte
 
-  private def illegalSurrogateError(ch: Int): Nothing = encodeError {
-    new StringBuilder(32).append("illegal surrogate: \\u")
-      .append(toHexDigit(ch >>> 12).toChar)
-      .append(toHexDigit(ch >>> 8).toChar)
-      .append(toHexDigit(ch >>> 4).toChar)
-      .append(toHexDigit(ch).toChar).toString()
-  }
+  private def illegalSurrogateError(ch: Int): Nothing = encodeError("illegal char sequence of surrogate pair")
 
   private def writeCommaWithParentheses(comma: Boolean): Unit = {
     if (comma) ensureAndWrite(',')

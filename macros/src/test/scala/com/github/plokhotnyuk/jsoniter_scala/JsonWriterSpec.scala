@@ -30,16 +30,16 @@ class JsonWriterSpec extends WordSpec with Matchers {
         "\"\\u0001\\b\\f\\n\\r\\t/A\\u0438\\u10d1\\ud834\\udd1e\""
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
-      assert(intercept[Exception](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(_.writeVal("\ud834"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(_.writeVal("\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
     }
   }
   "JsonWriter.writeVal for char" should {
@@ -70,10 +70,10 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('ბ')) shouldBe "\"\\u10d1\""
     }
     "throw i/o exception in case of surrogate pair character" in {
-      assert(intercept[Exception](serialized(_.writeVal('\udd1e'))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(_.writeVal('\ud834'))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\udd1e'))).getMessage.contains("illegal surrogate"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\ud834'))).getMessage.contains("illegal surrogate"))
+      assert(intercept[Exception](serialized(_.writeVal('\udd1e'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(_.writeVal('\ud834'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\udd1e'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\ud834'))).getMessage.contains("illegal char sequence of surrogate pair"))
     }
   }
   "JsonWriter.writeVal for int" should {
