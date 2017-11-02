@@ -119,7 +119,7 @@ object JsonCodec {
               case 'n' =>
                 in.parseNull(default)
               case _ =>
-                in.decodeError("expect [ or n")
+                in.arrayStartError()
             }"""
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"buf"): Tree =
@@ -137,7 +137,7 @@ object JsonCodec {
               case 'n' =>
                 in.parseNull(default)
               case _ =>
-                in.decodeError("expect { or n")
+                in.objectStartError()
             }"""
 
       val decoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
@@ -239,7 +239,7 @@ object JsonCodec {
                 in.unreadByte()
                 val v = in.readString()
                 try $enumSymbol.withName(v) catch {
-                  case _: java.util.NoSuchElementException => in.decodeError("invalid enum value: " + v)
+                  case _: java.util.NoSuchElementException => in.decodeError("illegal enum value: " + v)
                 }
               }"""
         } else withDecoderFor(tpe, default) {
@@ -411,7 +411,7 @@ object JsonCodec {
                   case 'n' =>
                     in.parseNull(null)
                   case _ =>
-                    in.decodeError("expect { or n")
+                    in.objectStartError()
                 }
               override def encode(obj: $tpe, out: JsonWriter): Unit =
                 if (obj ne null) {

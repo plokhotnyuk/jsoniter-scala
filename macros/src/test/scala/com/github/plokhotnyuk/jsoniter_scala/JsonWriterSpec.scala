@@ -29,7 +29,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u0001\b\f\n\r\t/Aиბ𝄞")) shouldBe
         "\"\\u0001\\b\\f\\n\\r\\t/A\\u0438\\u10d1\\ud834\\udd1e\""
     }
-    "throw i/o exception in case of invalid character surrogate pair" in {
+    "throw i/o exception in case of illegal character surrogate pair" in {
       assert(intercept[Exception](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal("\ud834"))).getMessage.contains("illegal surrogate"))
       assert(intercept[Exception](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal surrogate"))
@@ -119,7 +119,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal(1.23456788e14f)) shouldBe "1.23456788E14"
       serialized(_.writeVal(-1.2345679e-6f)) shouldBe "-1.2345679E-6"
     }
-    "throw i/o exception on invalid JSON numbers" in {
+    "throw i/o exception on illegal JSON numbers" in {
       assert(intercept[Exception](serialized(_.writeVal(0.0f/0.0f))).getMessage.contains("illegal number"))
       assert(intercept[Exception](serialized(_.writeVal(1.0f/0.0f))).getMessage.contains("illegal number"))
       assert(intercept[Exception](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
@@ -134,7 +134,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal(123456789.123456e10)) shouldBe "1.23456789123456E18"
       serialized(_.writeVal(-123456789.123456e-10)) shouldBe "-0.0123456789123456"
     }
-    "throw i/o exception on invalid JSON numbers" in {
+    "throw i/o exception on illegal JSON numbers" in {
       assert(intercept[Exception](serialized(_.writeVal(0.0/0.0))).getMessage.contains("illegal number"))
       assert(intercept[Exception](serialized(_.writeVal(1.0/0.0))).getMessage.contains("illegal number"))
       assert(intercept[Exception](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))

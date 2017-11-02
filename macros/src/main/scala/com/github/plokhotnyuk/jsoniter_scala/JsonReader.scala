@@ -178,17 +178,17 @@ final class JsonReader private[jsoniter_scala](
     val b = nextToken()
     if (b == '"') reusableCharsToString(parseString(0))
     else if (b == 'n') parseNull(default)
-    else decodeError("expect string or null")
+    else decodeError("expected string value or `null`")
   }
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
   def parseNull[A](default: A): A =
     if (nextByte() == 'u' && nextByte() == 'l' && nextByte() == 'l') default
-    else decodeError("unexpected value")
+    else decodeError("expected JSON value or `null`")
 
   def readObjectFieldAsReusableChars(): Int = {
-    if (nextToken() != '"') decodeError("expect \"")
+    if (nextToken() != '"') decodeError("expected `\"`")
     val x = parseString(0)
     readColon()
     x
@@ -230,10 +230,14 @@ final class JsonReader private[jsoniter_scala](
     else if (b == 'f') skipFixedBytes(4)
     else if (b == '{') skipObject()
     else if (b == '[') skipArray()
-    else decodeError("expect JSON value")
+    else decodeError("expected JSON value")
   }
 
   def unreadByte(): Unit = head -= 1
+
+  def arrayStartError(): Nothing = decodeError("expected `[` or `null`")
+
+  def objectStartError(): Nothing = decodeError("expected `{` or `null`")
 
   def decodeError(msg: String): Nothing = {
     var peekStart = head - 10
@@ -247,13 +251,13 @@ final class JsonReader private[jsoniter_scala](
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
 
   private def readParentheses(): Unit =
-    if (nextByte() != '"') decodeError("expect \"")
+    if (nextByte() != '"') decodeError("expected `\"`")
 
   private def readParenthesesWithColon(): Unit =
-    if (nextByte() != '"') decodeError("expect \"")
+    if (nextByte() != '"') decodeError("expected `\"`")
     else readColon()
 
-  private def readColon(): Unit = if (nextToken() != ':') decodeError("expect :")
+  private def readColon(): Unit = if (nextToken() != ':') decodeError("expected `:`")
 
   private def nextByte(): Byte = {
     var pos = head
@@ -706,25 +710,33 @@ final class JsonReader private[jsoniter_scala](
       case '/' => putCharAt('/', i)
       case '\\' => putCharAt('\\', i)
       case 'u' =>
-        val c1 = readHexDigitPresentedChar()
+        val c1 = readEscapedUnicode()
         if (c1 < 2048) putCharAt(c1, i)
         else if (!Character.isHighSurrogate(c1)) {
-          if (Character.isLowSurrogate(c1)) decodeError("expect high surrogate character")
+          if (Character.isLowSurrogate(c1)) decodeError("expected high surrogate character")
           putCharAt(c1, i)
         } else if (nextByte() == '\\' && nextByte() == 'u') {
-          val c2 = readHexDigitPresentedChar()
-          if (!Character.isLowSurrogate(c2)) decodeError("expect low surrogate character")
+          val c2 = readEscapedUnicode()
+          if (!Character.isLowSurrogate(c2)) decodeError("expected low surrogate character")
           putCharAt(c2, putCharAt(c1, i))
-        } else decodeError("invalid escape sequence")
-      case _ => decodeError("invalid escape sequence")
+        } else decodeError("illegal escape sequence")
+      case _ => decodeError("illegal escape sequence")
     }
   }
 
-  private def readHexDigitPresentedChar(): Char =
+  private def readEscapedUnicode(): Char =
     ((fromHexDigit(nextByte()) << 12) +
       (fromHexDigit(nextByte()) << 8) +
       (fromHexDigit(nextByte()) << 4) +
       fromHexDigit(nextByte())).toChar
+
+  private def fromHexDigit(b: Byte): Int =
+    if (b >= '0' && b <= '9') b - 48
+    else {
+      val b1 = b & -33
+      if (b1 >= 'A' && b1 <= 'F') b1 - 55
+      else decodeError("expected hex digit")
+    }
 
   private def isMalformed2(b1: Byte, b2: Byte): Boolean =
     (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
@@ -745,15 +757,6 @@ final class JsonReader private[jsoniter_scala](
       } else sb.append(", 0x")).append(toHexDigit(b >>> 4)).append(toHexDigit(b))
     }
     decodeError(sb.toString)
-  }
-
-  private def fromHexDigit(b: Byte): Int = {
-    if (b >= '0' && b <= '9') b - 48
-    else {
-      val b1 = b & -33
-      if (b1 >= 'A' && b1 <= 'F') b1 - 55
-      else decodeError("expect hex digit character")
-    }
   }
 
   private def toHexDigit(n: Int): Char = {

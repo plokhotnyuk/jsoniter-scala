@@ -118,56 +118,56 @@ class JsonCodecSpec extends WordSpec with Matchers {
         StandardTypes(longStr, BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
         s"""{"s":"$longStr","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
     }
-    "don't deserialize unexpected or invalid values" in {
+    "don't deserialize unexpected or illegal values" in {
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes],
           StandardTypes(null, 1, 2),
           """{"s":n,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("unexpected value"))
+      }.getMessage.contains("expected JSON value or `null`"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes],
           StandardTypes(null, 1, 2),
           """{"s":nu,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("unexpected value"))
+      }.getMessage.contains("expected JSON value or `null`"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes],
           StandardTypes(null, 1, 2),
           """{"s":nul,"bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("unexpected value"))
+      }.getMessage.contains("expected JSON value or `null`"))
     }
-    "don't deserialize invalid UTF-8 encoded strings" in {
+    "don't deserialize illegal UTF-8 encoded strings" in {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(6) = 0xF0.toByte
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("malformed byte(s): 0xF0"))
     }
-    "don't deserialize invalid UTF-8 encoded field names" in {
+    "don't deserialize illegal UTF-8 encoded field names" in {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(2) = 0xF0.toByte
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("malformed byte(s): 0xF0"))
     }
-    "don't deserialize invalid JSON escaped strings" in {
+    "don't deserialize illegal JSON escaped strings" in {
       assert(intercept[JsonException] {
         val buf = "{\"s\":\"\\udd1e\",\"bi\":1,\"bd\":1.1}".getBytes
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
-      }.getMessage.contains("expect high surrogate character"))
+      }.getMessage.contains("expected high surrogate character"))
     }
-    "don't deserialize invalid JSON escaped field names" in {
+    "don't deserialize illegal JSON escaped field names" in {
       assert(intercept[JsonException] {
         val buf = "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}".getBytes
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
-      }.getMessage.contains("expect high surrogate character"))
+      }.getMessage.contains("expected high surrogate character"))
     }
     "don't deserialize in case of missing tokens" in {
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """"s":"VVV","bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expect { or n"))
+      }.getMessage.contains("expected `{` or `null`"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s""VVV","bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expect :"))
+      }.getMessage.contains("expected `:`"))
       assert(intercept[JsonException] {
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s":"VVV""bi":1"bd":1.1}""".getBytes)
       }.getMessage.contains("""missing required field(s) "bi", "bd""""))
@@ -182,7 +182,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
       assert(intercept[JsonException] {
         verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
-      }.getMessage.contains("invalid enum value"))
+      }.getMessage.contains("illegal enum value"))
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],

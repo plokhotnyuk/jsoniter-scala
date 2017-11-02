@@ -72,7 +72,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
       parse("true".getBytes).readBoolean() shouldBe true
       parse("false".getBytes).readBoolean() shouldBe false
     }
-    "throw parsing exception for empty input and invalid or broken value" in {
+    "throw parsing exception for empty input and illegal or broken value" in {
       assert(intercept[Exception](parse("".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](parse("tru".getBytes).readBoolean())
@@ -98,7 +98,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
           |data.""".stripMargin
       readString(text) shouldBe text
     }
-    "throw parsing exception for empty input and invalid or broken string" in {
+    "throw parsing exception for empty input and illegal or broken string" in {
       assert(intercept[Exception](parse("".getBytes).readString())
         .getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](parse("\"".getBytes).readString())
@@ -108,11 +108,11 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception for boolean values & numbers" in {
       assert(intercept[Exception](parse("true".getBytes).readString())
-        .getMessage.contains("expect string or null"))
+        .getMessage.contains("expected string value or `null`"))
       assert(intercept[Exception](parse("false".getBytes).readString())
-        .getMessage.contains("expect string or null"))
+        .getMessage.contains("expected string value or `null`"))
       assert(intercept[Exception](parse("12345".getBytes).readString())
-        .getMessage.contains("expect string or null"))
+        .getMessage.contains("expected string value or `null`"))
     }
     "get the same string value for escaped & non-escaped field names" in {
       readString("""Hello""") shouldBe readString("Hello")
@@ -121,20 +121,20 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readString("""\b\f\n\r\t\/Aиბ""") shouldBe readString("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1")
       readString("𝄞") shouldBe readString("\\ud834\\udd1e")
     }
-    "throw parsing exception in case of invalid escape character sequence" in {
-      assert(intercept[Exception](readString("\\x0008")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](readString("\\u000Z")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](readString("\\u000")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](readString("\\u00")).getMessage.contains("expect hex digit character"))
-      assert(intercept[Exception](readString("\\u0")).getMessage.contains("expect hex digit character"))
+    "throw parsing exception in case of illegal escape sequence" in {
+      assert(intercept[Exception](readString("\\x0008")).getMessage.contains("illegal escape sequence"))
+      assert(intercept[Exception](readString("\\u000Z")).getMessage.contains("expected hex digit"))
+      assert(intercept[Exception](readString("\\u000")).getMessage.contains("expected hex digit"))
+      assert(intercept[Exception](readString("\\u00")).getMessage.contains("expected hex digit"))
+      assert(intercept[Exception](readString("\\u0")).getMessage.contains("expected hex digit"))
       assert(intercept[Exception](readString("\\")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readString("\\udd1e")).getMessage.contains("expect high surrogate character"))
-      assert(intercept[Exception](readString("\\ud834")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](readString("\\ud834\\")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](readString("\\ud834\\x")).getMessage.contains("invalid escape sequence"))
-      assert(intercept[Exception](readString("\\ud834\\ud834")).getMessage.contains("expect low surrogate character"))
+      assert(intercept[Exception](readString("\\udd1e")).getMessage.contains("expected high surrogate character"))
+      assert(intercept[Exception](readString("\\ud834")).getMessage.contains("illegal escape sequence"))
+      assert(intercept[Exception](readString("\\ud834\\")).getMessage.contains("illegal escape sequence"))
+      assert(intercept[Exception](readString("\\ud834\\x")).getMessage.contains("illegal escape sequence"))
+      assert(intercept[Exception](readString("\\ud834\\ud834")).getMessage.contains("expected low surrogate character"))
     }
-    "throw parsing exception in case of invalid byte sequence" in {
+    "throw parsing exception in case of illegal byte sequence" in {
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte))).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readString(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 0x80"))
       assert(intercept[Exception](readString(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xC0, 0x80"))
@@ -167,7 +167,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
     "parse valid int values and stops on not numeric chars" in {
       readInt("0$") shouldBe 0
     }
-    "throw parsing exception on invalid or empty input" in {
+    "throw parsing exception on illegal or empty input" in {
       assert(intercept[Exception](readInt("")).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readInt("-")).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readInt("x")).getMessage.contains("illegal number"))
@@ -205,7 +205,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
     "parse valid long values and stops on not numeric chars" in {
       readLong("0$") shouldBe 0L
     }
-    "throw parsing exception on invalid or empty input" in {
+    "throw parsing exception on illegal or empty input" in {
       assert(intercept[Exception](readLong("")).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readLong("-")).getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](readLong("x")).getMessage.contains("illegal number"))
@@ -262,7 +262,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readFloat("12345.6789e10$") shouldBe 1.23456788e14f
       readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
     }
-    "throw parsing exception on invalid or empty input" in {
+    "throw parsing exception on illegal or empty input" in {
       assert(intercept[Exception](readFloat("")).getMessage.contains("illegal number"))
       assert(intercept[Exception](readFloat(" ")).getMessage.contains("illegal number"))
       assert(intercept[Exception](readFloat("-")).getMessage.contains("illegal number"))
@@ -320,7 +320,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readDouble("123456789.123456789e10$") shouldBe 1.23456789123456794e18
       readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
     }
-    "throw parsing exception on invalid or empty input" in {
+    "throw parsing exception on illegal or empty input" in {
       assert(intercept[Exception](readDouble("")).getMessage.contains("illegal number"))
       assert(intercept[Exception](readDouble(" ")).getMessage.contains("illegal number"))
       assert(intercept[Exception](readDouble("-")).getMessage.contains("illegal number"))
@@ -386,7 +386,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
       intercept[NumberFormatException](readBigInt("-12345678901234567890e-12345678901234567890", null))
       intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890$", null))
     }
-    "throw parsing exception on invalid or empty input" in {
+    "throw parsing exception on illegal or empty input" in {
       assert(intercept[Exception](readBigInt("", null)).getMessage.contains("illegal number"))
       assert(intercept[Exception](readBigInt(" ", null)).getMessage.contains("illegal number"))
       assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
@@ -452,7 +452,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
       intercept[NumberFormatException](readBigDecimal("-12345678901234567890e-12345678901234567890", null))
       intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890$", null))
     }
-    "throw parsing exception on invalid or empty input" in {
+    "throw parsing exception on illegal or empty input" in {
       assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("illegal number"))
       assert(intercept[Exception](readBigDecimal(" ", null)).getMessage.contains("illegal number"))
       assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("illegal number"))
