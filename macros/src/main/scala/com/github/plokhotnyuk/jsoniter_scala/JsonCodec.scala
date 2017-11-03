@@ -239,15 +239,13 @@ object JsonCodec {
           q"in.readBigDecimal($default)"
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
           val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"""if (in.nextToken() == 'n') in.parseNull(default)
-              else {
-                in.unreadByte()
-                val v = in.readString()
+          q"""val v = in.readString()
+              if (v ne null) {
                 try $enumSymbol.withName(v) catch {
                   case _: java.util.NoSuchElementException => in.decodeError("illegal enum value: " + v)
                 }
-              }"""
-        } else withDecoderFor(tpe, default) {
+              } else default"""
+        } else withDecoderFor(tpe, default) { // FIXME: use check matching with case class `tpe` before using `this`
           q"""val x = ${findImplicitCodec(tpe).getOrElse(q"this")}.decode(in)
               if (x ne null) x else default"""
         }
