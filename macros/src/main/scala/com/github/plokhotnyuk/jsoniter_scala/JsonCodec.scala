@@ -103,7 +103,7 @@ object JsonCodec {
           c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
         }
 
-      def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"buf.result()"): Tree =
+      def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x.result()"): Tree =
         q"""(in.nextToken(): @switch) match {
               case '[' =>
                 if (in.nextToken() == ']') default
@@ -121,7 +121,7 @@ object JsonCodec {
                 in.arrayStartError()
             }"""
 
-      def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"buf"): Tree =
+      def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
         q"""(in.nextToken(): @switch) match {
               case '{' =>
                 if (in.nextToken() == '}') default
@@ -193,44 +193,44 @@ object JsonCodec {
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadMap(q"var buf = $comp.empty[$tpe1]",
-            q"buf = buf.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})")
+          genReadMap(q"var x = $comp.empty[$tpe1]",
+            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadMap(q"val buf = $comp.empty[$tpe1]",
-            q"buf.update(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
+          genReadMap(q"val x = $comp.empty[$tpe1]",
+            q"x.update(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadMap(q"var buf = $comp.empty[$tpe1]",
-            q"buf = buf.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
+          genReadMap(q"var x = $comp.empty[$tpe1]",
+            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
-          genReadMap(q"val buf = $comp.empty[$tpe1, $tpe2]",
-            q"buf.update(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
+          genReadMap(q"val x = $comp.empty[$tpe1, $tpe2]",
+            q"x.update(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
-          genReadMap(q"var buf = $comp.empty[$tpe1, $tpe2]",
-            q"buf = buf.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
+          genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
+            q"x = x.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.empty", q"buf.add(in.readInt())", q"buf")
+          genReadArray(q"val x = $comp.empty", q"x.add(in.readInt())", q"x")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.newBuilder", q"buf += in.readInt()")
+          genReadArray(q"val x = $comp.newBuilder", q"x += in.readInt()")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadArray(q"val buf = $comp.newBuilder[$tpe1]", q"buf += ${genReadField(tpe1, defaultValue(tpe1))}")
+          genReadArray(q"val x = $comp.newBuilder[$tpe1]", q"x += ${genReadField(tpe1, defaultValue(tpe1))}")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val buf = collection.mutable.ArrayBuilder.make[$tpe1]",
-            q"buf += ${genReadField(tpe1, defaultValue(tpe1))}")
+          genReadArray(q"val x = collection.mutable.ArrayBuilder.make[$tpe1]",
+            q"x += ${genReadField(tpe1, defaultValue(tpe1))}")
         } else if (tpe =:= typeOf[String]) {
           q"in.readString($default)"
         } else if (tpe =:= typeOf[BigInt]) {
