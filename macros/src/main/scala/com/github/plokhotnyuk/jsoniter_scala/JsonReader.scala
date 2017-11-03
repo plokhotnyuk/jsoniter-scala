@@ -234,7 +234,7 @@ final class JsonReader private[jsoniter_scala](
   def decodeError(msg: String): Nothing = {
     val from = Math.max((head - 32) & -16, 0)
     val to = Math.min((head + 48) & -16, buf.length)
-    val sb = new StringBuilder(2048).append(msg).append(", offset: ")
+    val sb = new StringBuilder(1024).append(msg).append(", offset: ")
     val offset = if (in eq null) 0 else totalRead - tail
     appendHex(offset + head - 1, sb) // TODO: consider supporting offset values beyond 2Gb
     sb.append(", buf:")
@@ -864,17 +864,15 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def appendHexDump(buf: Array[Byte], from: Int, to: Int, offset: Int, sb: StringBuilder): Unit = {
-    val hexCodes = new StringBuilder(64)
-    val chars = new StringBuilder(32)
+    val hexCodes = new StringBuilder(48)
+    val chars = new StringBuilder(16)
     val alignedAbsFrom = (from + offset) & -16
     val alignedAbsTo = (to + offset + 15) & -16
     val len = alignedAbsTo - alignedAbsFrom
     val bufOffset = alignedAbsFrom - offset
-    sb.append(
-      """
-        |           +-------------------------------------------------+
-        |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
-        |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    sb.append("\n           +-------------------------------------------------+")
+    sb.append("\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |")
+    sb.append("\n+----------+-------------------------------------------------+------------------+")
     var i = 0
     while (i < len) {
       val pos = bufOffset + i
