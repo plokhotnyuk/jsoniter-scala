@@ -236,7 +236,7 @@ final class JsonReader private[jsoniter_scala](
     val to = Math.min((head + 48) & -16, buf.length)
     val sb = new StringBuilder(2048).append(msg).append(", offset: ")
     val offset = if (in eq null) 0 else totalRead - tail
-    appendHexInt(offset + head - 1, sb) // TODO: consider supporting offset values beyond 2Gb
+    appendHex(offset + head - 1, sb) // TODO: consider supporting offset values beyond 2Gb
     sb.append(", buf:")
     appendHexDump(buf, from, to, offset, sb)
     throw new JsonException(sb.toString)
@@ -747,7 +747,7 @@ final class JsonReader private[jsoniter_scala](
     val sb = new StringBuilder("malformed byte(s): ")
     var comma = false
     bytes.foreach { b =>
-      appendHexByte(b, if (comma) sb.append(", ") else {
+      appendHex(b, if (comma) sb.append(", ") else {
         comma = true
         sb
       })
@@ -888,6 +888,7 @@ final class JsonReader private[jsoniter_scala](
     val alignedAbsFrom = (from + offset) & -16
     val alignedAbsTo = (to + offset + 15) & -16
     val len = alignedAbsTo - alignedAbsFrom
+    val bufOffset = alignedAbsFrom - offset
     sb.append(
       """
         |           +-------------------------------------------------+
@@ -895,10 +896,10 @@ final class JsonReader private[jsoniter_scala](
         |+----------+-------------------------------------------------+------------------+""".stripMargin)
     var i = 0
     while (i < len) {
-      val pos = alignedAbsFrom - offset + i
+      val pos = bufOffset + i
       if (pos >= from && pos < to) {
         val b = buf(pos)
-        appendHexByte(b, hexCodes)
+        appendHex(b, hexCodes)
         hexCodes.append(' ')
         chars.append(if (b < 32 || b > 126) '.' else b.toChar)
       } else {
@@ -907,7 +908,7 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((i & 15) == 15) {
         sb.append("\n| ")
-        appendHexInt(alignedAbsFrom + i - 15, sb)
+        appendHex(alignedAbsFrom + i - 15, sb)
         sb.append(" | ").append(hexCodes).append("| ").append(chars).append(" |")
         hexCodes.setLength(0)
         chars.setLength(0)
@@ -917,13 +918,13 @@ final class JsonReader private[jsoniter_scala](
     sb.append("\n+----------+-------------------------------------------------+------------------+")
   }
 
-  private def appendHexInt(d: Int, sb: StringBuilder): Unit =
+  private def appendHex(d: Int, sb: StringBuilder): Unit =
     sb.append(toHexDigit(d >>> 28)).append(toHexDigit(d >>> 24))
       .append(toHexDigit(d >>> 20)).append(toHexDigit(d >>> 16))
       .append(toHexDigit(d >>> 12)).append(toHexDigit(d >>> 8))
       .append(toHexDigit(d >>> 4)).append(toHexDigit(d))
 
-  private def appendHexByte(b: Int, sb: StringBuilder): Unit =
+  private def appendHex(b: Byte, sb: StringBuilder): Unit =
     sb.append(toHexDigit(b >>> 4)).append(toHexDigit(b))
 
   private def toHexDigit(n: Int): Char = {
