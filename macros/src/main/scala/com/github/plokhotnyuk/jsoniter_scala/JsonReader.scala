@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.InputStream
-import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
 
@@ -15,7 +14,8 @@ final class JsonReader private[jsoniter_scala](
     private var head: Int = 0,
     private var tail: Int = 0,
     private var reusableChars: Array[Char] = new Array[Char](4096),
-    private var in: InputStream = null) {
+    private var in: InputStream = null,
+    private var totalRead: Int = 0) {
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val sb = new StringBuilder(64)
     val len = reqFields.length
@@ -232,9 +232,14 @@ final class JsonReader private[jsoniter_scala](
   def objectStartError(): Nothing = decodeError("expected `{` or `null`")
 
   def decodeError(msg: String): Nothing = {
-    val peekFrom = Math.max(head - 16, 0)
-    throw new JsonException(msg + ", head: " + head + ", peek: " + new String(buf, peekFrom, head - peekFrom, UTF_8) +
-      ", buf: " + new String(buf, UTF_8)) // TODO: consider printing of hex dump of buf instead
+    val from = Math.max((head - 32) & -16, 0)
+    val to = Math.min((head + 48) & -16, buf.length)
+    val sb = new StringBuilder(2048).append(msg).append(", offset: ")
+    val offset = if (in eq null) 0 else totalRead - tail
+    appendHexInt(offset + head - 1, sb) // TODO: consider supporting offset values beyond 2Gb
+    sb.append(", buf:")
+    appendHexDump(buf, from, to, offset, sb)
+    throw new JsonException(sb.toString)
   }
 
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
@@ -742,19 +747,13 @@ final class JsonReader private[jsoniter_scala](
     val sb = new StringBuilder("malformed byte(s): ")
     var comma = false
     bytes.foreach { b =>
-      (if (comma) sb.append(", 0x")
-      else {
+      appendHexByte(b, if (comma) sb.append(", ") else {
         comma = true
-        sb.append("0x")
-      }).append(toHexDigit(b >>> 4)).append(toHexDigit(b))
+        sb
+      })
     }
     decodeError(sb.toString)
   }
-
-  private def toHexDigit(n: Int): Char = {
-    val nibble = n & 15
-    (((9 - nibble) >> 31) & 7) + nibble + 48 // branchless conversion of nibble to hex digit
-  }.toChar
 
   @inline
   private def putCharAt(ch: Char, i: Int) = {
@@ -875,12 +874,62 @@ final class JsonReader private[jsoniter_scala](
     if (n > 0) {
       head = 0
       tail = n
+      totalRead += n
       true
     } else {
       head = pos
       false
     }
   }
+
+  private def appendHexDump(buf: Array[Byte], from: Int, to: Int, offset: Int, sb: StringBuilder): Unit = {
+    val hexCodes = new StringBuilder(64)
+    val chars = new StringBuilder(32)
+    val alignedAbsFrom = (from + offset) & -16
+    val alignedAbsTo = (to + offset + 15) & -16
+    val len = alignedAbsTo - alignedAbsFrom
+    sb.append(
+      """
+        |           +-------------------------------------------------+
+        |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+        |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    var i = 0
+    while (i < len) {
+      val pos = alignedAbsFrom - offset + i
+      if (pos >= from && pos < to) {
+        val b = buf(pos)
+        appendHexByte(b, hexCodes)
+        hexCodes.append(' ')
+        chars.append(if (b < 32 || b > 126) '.' else b.toChar)
+      } else {
+        hexCodes.append("   ")
+        chars.append(' ')
+      }
+      if ((i & 15) == 15) {
+        sb.append("\n| ")
+        appendHexInt(alignedAbsFrom + i - 15, sb)
+        sb.append(" | ").append(hexCodes).append("| ").append(chars).append(" |")
+        hexCodes.setLength(0)
+        chars.setLength(0)
+      }
+      i += 1
+    }
+    sb.append("\n+----------+-------------------------------------------------+------------------+")
+  }
+
+  private def appendHexInt(d: Int, sb: StringBuilder): Unit =
+    sb.append(toHexDigit(d >>> 28)).append(toHexDigit(d >>> 24))
+      .append(toHexDigit(d >>> 20)).append(toHexDigit(d >>> 16))
+      .append(toHexDigit(d >>> 12)).append(toHexDigit(d >>> 8))
+      .append(toHexDigit(d >>> 4)).append(toHexDigit(d))
+
+  private def appendHexByte(b: Int, sb: StringBuilder): Unit =
+    sb.append(toHexDigit(b >>> 4)).append(toHexDigit(b))
+
+  private def toHexDigit(n: Int): Char = {
+    val nibble = n & 15
+    (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
+  }.toChar
 }
 
 object JsonReader {
@@ -904,6 +953,7 @@ object JsonReader {
     reader.in = in
     reader.head = 0
     reader.tail = 0
+    reader.totalRead = 0
     codec.decode(reader)
   }
 
@@ -922,6 +972,7 @@ object JsonReader {
     reader.buf = buf
     reader.head = from
     reader.tail = to
+    reader.totalRead = 0
     try codec.decode(reader)
     finally reader.buf = currBuf
   }

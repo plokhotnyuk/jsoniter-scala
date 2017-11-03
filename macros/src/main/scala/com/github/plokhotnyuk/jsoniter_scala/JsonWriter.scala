@@ -271,7 +271,7 @@ final class JsonWriter private[jsoniter_scala](
     case '\n' => write('\\', 'n', pos)
     case '\r' => write('\\', 'r', pos)
     case '\t' => write('\\', 't', pos)
-    case _ => if (config.escapeUnicode && ch < 32) writeEscapedUnicode(ch, pos) else write(ch.toByte, pos)
+    case _ => if (config.escapeUnicode && (ch < 32 || ch > 126)) writeEscapedUnicode(ch, pos) else write(ch.toByte, pos)
   }
 
   private def writeEscapedUnicode(ch: Char, pos: Int) = {

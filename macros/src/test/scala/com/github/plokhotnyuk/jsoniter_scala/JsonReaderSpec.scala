@@ -65,14 +65,15 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "skip number values" in {
       skip("0")
+      skip("-0.0")
       skip("1.1")
-      skip("-2.1")
+      skip("2.1")
       skip(" 3.1")
       skip("\n4.1")
       skip("\t5.1")
       skip("\r6.1")
       skip("7.1e+123456789")
-      skip("-8.1E-123456789")
+      skip("8.1E-123456789")
       skip("987654321.0E+10")
     }
     "skip boolean values" in {
@@ -133,7 +134,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
         .getMessage.contains("unexpected end of input"))
       assert(intercept[Exception](parse("tru".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](parse("tru".getBytes).readBoolean())
+      assert(intercept[Exception](parse("fal".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input"))
     }
   }
@@ -192,19 +193,19 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception in case of illegal byte sequence" in {
       assert(intercept[Exception](readString(Array[Byte](0xF0.toByte))).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readString(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 0x80"))
-      assert(intercept[Exception](readString(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xC0, 0x80"))
-      assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0x08"))
-      assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): 0xC8, 0xFF"))
-      assert(intercept[Exception](readString(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xE0, 0x80, 0x80"))
-      assert(intercept[Exception](readString(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xE0, 0xFF, 0x80"))
-      assert(intercept[Exception](readString(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): 0xE8, 0x88, 0x08"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x80, 0x80, 0x80"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x04, 0x9E"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0xFF"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0xFF, 0x9E"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0xFF, 0x84, 0x9E"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): 0xF0, 0x9D, 0x84, 0x0E"))
+      assert(intercept[Exception](readString(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 80"))
+      assert(intercept[Exception](readString(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): c0, 80"))
+      assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): c8, 08"))
+      assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): c8, ff"))
+      assert(intercept[Exception](readString(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): e0, 80, 80"))
+      assert(intercept[Exception](readString(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): e0, ff, 80"))
+      assert(intercept[Exception](readString(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): e8, 88, 08"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): f0, 80, 80, 80"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): f0, 9d, 04, 9e"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): f0, 9d, 84, ff"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): f0, 9d, ff, 9e"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): f0, ff, 84, 9e"))
+      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): f0, 9d, 84, 0e"))
     }
   }
   "JsonReader.readInt" should {

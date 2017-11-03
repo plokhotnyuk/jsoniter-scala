@@ -20,6 +20,23 @@ class JsonCodecSpec extends WordSpec with Matchers {
         Primitives(-128.toByte, -32768.toShort, -2147483648, -9223372036854775808L, bl = true, 'V', -1.1, -2.2f),
         """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":"V","dbl":-1.1,"f":-2.2}""".getBytes)
     }
+    "don't deserialize and throw exception with hex dump in case of illegal input" in {
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[Primitives],
+          Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
+          """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":"V","dbl":-123456789.0,'f':-12345.0}""".getBytes)
+      }.getMessage.contains(
+        """expected `"`, offset: 00000064, buf:
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000040 | 6c 22 3a 74 72 75 65 2c 22 63 68 22 3a 22 56 22 | l":true,"ch":"V" |
+          || 00000050 | 2c 22 64 62 6c 22 3a 2d 31 32 33 34 35 36 37 38 | ,"dbl":-12345678 |
+          || 00000060 | 39 2e 30 2c 27 66 27 3a 2d 31 32 33 34 35 2e 30 | 9.0,'f':-12345.0 |
+          || 00000070 | 7d 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | }............... |
+          || 00000080 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 | ................ |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin))
+    }
     "don't deserialize numbers with leading zeroes" in {
       assert(intercept[JsonException] {
         verifyDeser(materialize[Primitives],
@@ -140,14 +157,14 @@ class JsonCodecSpec extends WordSpec with Matchers {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(6) = 0xF0.toByte
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
-      }.getMessage.contains("malformed byte(s): 0xF0"))
+      }.getMessage.contains("malformed byte(s): f0"))
     }
     "don't deserialize illegal UTF-8 encoded field names" in {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(2) = 0xF0.toByte
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
-      }.getMessage.contains("malformed byte(s): 0xF0"))
+      }.getMessage.contains("malformed byte(s): f0"))
     }
     "don't deserialize illegal JSON escaped strings" in {
       assert(intercept[JsonException] {
@@ -354,7 +371,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
         """{"hm":null,"m":{"1.1":{"2":null}},"ohm":{"1.1":null,"2.2":null}}""".getBytes)
     }
     "throw exception in case of missing required fields detected during deserialization" in {
-      assert(intercept[Exception] {
+      assert(intercept[JsonException] {
         val obj = Required(
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
           10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
