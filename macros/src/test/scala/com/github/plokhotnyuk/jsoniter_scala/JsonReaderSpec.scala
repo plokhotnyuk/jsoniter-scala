@@ -1,30 +1,51 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers {
-  "JsonReader.this" should {
-    "create an properly defined instances only" in {
-      new JsonReader(new Array[Byte](2), 0, 2, new Array[Char](2), null)
-      assert(intercept[Exception](new JsonReader(new Array[Byte](0), 0, 2, new Array[Char](2), null))
+  case class Device(id: Int, model: String)
+  implicit val deviceCodec = JsonCodec.materialize[Device]
+
+  case class User(name: String, devices: Seq[Device])
+  val userCodec = JsonCodec.materialize[User]
+
+  val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
+  val json = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes("UTF-8")
+  val httpMessage = """HTTP/1.0 200 OK
+                      |Content-Type: application/json
+                      |Content-Length: 55
+                      |
+                      |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes("UTF-8")
+  "JsonReader.read" should {
+    "parse json from the provided input stream" in {
+      JsonReader.read(userCodec, new ByteArrayInputStream(json)) shouldBe user
+    }
+    "parse json from the byte array" in {
+      JsonReader.read(userCodec, json) shouldBe user
+    }
+    "parse json from the byte array within specified positions" in {
+      JsonReader.read(userCodec, httpMessage, 66, httpMessage.length) shouldBe user
+    }
+    "throw json exception in case of the provided params are invalid" in {
+      assert(intercept[JsonException](JsonReader.read(null, json))
+        .getMessage.contains("codec should be not null"))
+      assert(intercept[JsonException](JsonReader.read(null, new ByteArrayInputStream(json)))
+        .getMessage.contains("codec should be not null"))
+      assert(intercept[JsonException](JsonReader.read(null, httpMessage, 66, httpMessage.length))
+        .getMessage.contains("codec should be not null"))
+      assert(intercept[JsonException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]]))
         .getMessage.contains("buf should be non empty"))
-      assert(intercept[Exception](new JsonReader(null, 0, 2, new Array[Char](2), null))
+      assert(intercept[JsonException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]], 0, 50))
         .getMessage.contains("buf should be non empty"))
-      assert(intercept[Exception](new JsonReader(new Array[Byte](2), -1, 2, new Array[Char](2), null))
-        .getMessage.contains("head should be positive and not greater than tail"))
-      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 3, 2, new Array[Char](2), null))
-        .getMessage.contains("head should be positive and not greater than tail"))
-      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, -1, new Array[Char](2), null))
-        .getMessage.contains("tail should be positive and not greater than buf size"))
-      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, 3, new Array[Char](2), null))
-        .getMessage.contains("tail should be positive and not greater than buf size"))
-      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, 2, new Array[Char](0), null))
-        .getMessage.contains("reusableChars should be non empty"))
-      assert(intercept[Exception](new JsonReader(new Array[Byte](2), 0, 2, null, null))
-        .getMessage.contains("reusableChars should be non empty"))
+      assert(intercept[JsonException](JsonReader.read(userCodec, httpMessage, 50, 200))
+        .getMessage.contains("to should be positive and not greater than buf length"))
+      assert(intercept[JsonException](JsonReader.read(userCodec, httpMessage, 50, 10))
+        .getMessage.contains("from should be positive and not greater than to"))
+      assert(intercept[JsonException](JsonReader.read(userCodec, null.asInstanceOf[InputStream]))
+        .getMessage.contains("in should be not null"))
     }
   }
   "JsonReader.skip" should {

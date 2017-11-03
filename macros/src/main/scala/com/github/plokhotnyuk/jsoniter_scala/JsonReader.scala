@@ -10,32 +10,12 @@ import scala.annotation.{switch, tailrec}
 class JsonException(message: String) extends RuntimeException(message)
 
 //noinspection EmptyCheck
-final class JsonReader(
+final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
     private var head: Int = 0,
     private var tail: Int = 0,
     private var reusableChars: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null) {
-  require((buf ne null) && buf.length > 0, "buf should be non empty")
-  require(0 <= tail && tail <= buf.length, "tail should be positive and not greater than buf size")
-  require(0 <= head && head <= tail, "head should be positive and not greater than tail")
-  require((reusableChars ne null) && reusableChars.length > 0, "reusableChars should be non empty")
-
-  def reset(in: InputStream): Unit = {
-    this.in = in
-    head = 0
-    tail = 0
-  }
-
-  def reset(buf: Array[Byte]): Array[Byte] = {
-    val currBuf = this.buf
-    this.buf = buf
-    this.in = null
-    head = 0
-    tail = buf.length
-    currBuf
-  }
-
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val sb = new StringBuilder(64)
     val len = reqFields.length
@@ -918,14 +898,30 @@ object JsonReader {
       1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21)
 
   final def read[A](codec: JsonCodec[A], in: InputStream): A = {
+    if (codec eq null) throw new JsonException("codec should be not null")
+    if (in eq null) throw new JsonException("in should be not null")
     val reader = pool.get
-    reader.reset(in)
+    reader.in = in
+    reader.head = 0
+    reader.tail = 0
     codec.decode(reader)
   }
 
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = {
+    if (buf eq null) throw new JsonException("buf should be non empty")
+    read(codec, buf, 0, buf.length)
+  }
+
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int): A = {
+    if (codec eq null) throw new JsonException("codec should be not null")
+    if ((buf eq null) || buf.length == 0) throw new JsonException("buf should be non empty")
+    if (to < 0 || to > buf.length) throw new JsonException("to should be positive and not greater than buf length")
+    if (from < 0 || from > to) throw new JsonException("from should be positive and not greater than to")
     val reader = pool.get
-    val currBuf = reader.reset(buf)
+    val currBuf = reader.buf
+    reader.buf = buf
+    reader.head = from
+    reader.tail = to
     try codec.decode(reader)
     finally reader.buf = currBuf
   }

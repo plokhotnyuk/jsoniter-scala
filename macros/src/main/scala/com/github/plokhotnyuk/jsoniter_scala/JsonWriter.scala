@@ -12,22 +12,13 @@ case class WriterConfig(
   escapeUnicode: Boolean = false)
 
 //noinspection EmptyCheck
-final class JsonWriter(
+final class JsonWriter private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
     private var count: Int = 0,
     private var indention: Int = 0,
     private var out: OutputStream = null,
+    private var isBufGrowingAllowed: Boolean = true,
     private var config: WriterConfig = WriterConfig()) {
-  require((buf ne null) && buf.length > 0, "buf should be non empty")
-  require(0 <= count && count <= buf.length, "count should be positive and not greater than buf size")
-  require(indention >= 0, "indention should be positive")
-  require(config ne null, "config should not be null")
-
-  def reset(out: OutputStream): Unit = {
-    this.out = out
-    count = 0
-  }
-
   def close(): Unit =
     if (out ne null) {
       flushBuffer()
@@ -485,9 +476,11 @@ final class JsonWriter(
   private def growBuffer(required: Int): Unit = {
     flushBuffer()
     if (buf.length < count + required) {
-      val newBuf = new Array[Byte](Math.max(buf.length << 1, count + required))
-      System.arraycopy(buf, 0, newBuf, 0, buf.length)
-      buf = newBuf
+      if (isBufGrowingAllowed) {
+        val newBuf = new Array[Byte](Math.max(buf.length << 1, count + required))
+        System.arraycopy(buf, 0, newBuf, 0, buf.length)
+        buf = newBuf
+      } else throw new IOException("buf is overflown")
     }
   }
 }
@@ -509,43 +502,64 @@ object JsonWriter {
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
-  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit = {
-    val writer = pool.get
-    writer.reset(out)
-    try codec.encode(obj, writer)
-    finally writer.close()
-  }
+  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit =
+    write(codec, obj, out, null)
 
-  final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] = {
+  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream, config: WriterConfig): Unit = {
+    if (codec eq null) throw new IOException("codec should be not null")
+    if (out eq null) throw new IOException("out should be not null")
     val writer = pool.get
-    writer.reset(null)
-    codec.encode(obj, writer)
-    val arr = new Array[Byte](writer.count)
-    System.arraycopy(writer.buf, 0, arr, 0, arr.length)
-    arr
-  }
-
-  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream, cfg: WriterConfig): Unit = {
-    val writer = pool.get
-    val currCfg = writer.config
-    writer.reset(out)
-    writer.config = cfg
+    val currConfig = writer.config
+    if (config ne null) writer.config = config
+    writer.out = out
+    writer.count = 0
+    writer.indention = 0
     try codec.encode(obj, writer)
     finally {
-      writer.config = currCfg
+      writer.config = currConfig
       writer.close()
     }
   }
 
-  final def write[A](codec: JsonCodec[A], obj: A, cfg: WriterConfig): Array[Byte] = {
+  final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] =
+    write(codec, obj, null.asInstanceOf[WriterConfig])
+
+  final def write[A](codec: JsonCodec[A], obj: A, config: WriterConfig): Array[Byte] = {
+    if (codec eq null) throw new IOException("codec should be not null")
     val writer = pool.get
-    val currCfg = writer.config
-    writer.reset(null)
-    writer.config = cfg
+    val currConfig = writer.config
+    if (config ne null) writer.config = config
+    writer.count = 0
+    writer.indention = 0
     try codec.encode(obj, writer)
-    finally writer.config = currCfg
+    finally writer.config = currConfig
     val arr = new Array[Byte](writer.count)
     System.arraycopy(writer.buf, 0, arr, 0, arr.length)
     arr
+  }
+
+  final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int): Int =
+    write(codec, obj, buf, from, null)
+
+  final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+    if (codec eq null) throw new IOException("codec should be not null")
+    if ((buf eq null) || buf.length == 0) throw new IOException("buf should be non empty")
+    if (from < 0 || from > buf.length) throw new IOException("from should be positive and not greater than buf length")
+    val writer = pool.get
+    val currConfig = writer.config
+    val currBuf = writer.buf
+    if (config ne null) writer.config = config
+    writer.buf = buf
+    writer.count = from
+    writer.indention = 0
+    writer.isBufGrowingAllowed = false
+    try {
+      codec.encode(obj, writer)
+      writer.count
+    } finally {
+      writer.config = currConfig
+      writer.buf = currBuf
+      writer.isBufGrowingAllowed = true
+    }
   }
 }

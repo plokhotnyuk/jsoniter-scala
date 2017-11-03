@@ -41,29 +41,28 @@ Add the library to your dependencies list
 libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.1-SNAPSHOT"
 ```
 
-Generate some serializers for your case classes
+Generate codecs for your case classes
     
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodec._
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodec
 
 case class Device(id: Int, model: String)
-implicit val deviceCodec = materialize[Device]
+implicit val deviceCodec = JsonCodec.materialize[Device]
 
 case class User(name: String, devices: Seq[Device])
-val userCodec = materialize[User]
+val userCodec = JsonCodec.materialize[User]
 ```
 
-That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.Codec` which implements both
-`com.jsoniter.spi.Decoder` and `com.jsoniter.spi.Encoder` interfaces for your `User`.
+That's it! You have generated couple instances of `com.github.plokhotnyuk.jsoniter_scala.Codec`.
 
-Now you can use it:
+Now you can use them:
 
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
-import com.github.plokhotnyuk.jsoniter_scala.JsonWriter._
+import com.github.plokhotnyuk.jsoniter_scala.JsonReader
+import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
 
-read(userCodec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
-write(userCodec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+val user = JsonReader.read(userCodec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
+val jsonBytes = JsonWriter.write(userCodec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
 To see generated code add the following line to your sbt build file

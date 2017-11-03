@@ -1,25 +1,66 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers {
-  "JsonWriter.this" should {
-    "create an properly defined instances only" in {
-      new JsonWriter(new Array[Byte](2), 0, 0, null, WriterConfig())
-      assert(intercept[Exception](new JsonWriter(new Array[Byte](0), 0, 0, null, WriterConfig()))
+  case class Device(id: Int, model: String)
+  implicit val deviceCodec = JsonCodec.materialize[Device]
+
+  case class User(name: String, devices: Seq[Device])
+  val userCodec = JsonCodec.materialize[User]
+
+  val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
+  val json = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}"""
+  val prettyJson = """{
+                     |  "name": "John",
+                     |  "devices": [
+                     |    {
+                     |      "id": 2,
+                     |      "model": "iPhone X"
+                     |    }
+                     |  ]
+                     |}""".stripMargin
+  val buf = new Array[Byte](100)
+  "JsonWriter.write" should {
+    "serialize an object to the provided output stream" in {
+      val out1 = new ByteArrayOutputStream()
+      JsonWriter.write(userCodec, user, out1)
+      out1.toString("UTF-8") shouldBe json
+      val out2 = new ByteArrayOutputStream()
+      JsonWriter.write(userCodec, user, out2, WriterConfig(indentionStep = 2))
+      out2.toString("UTF-8") shouldBe prettyJson
+    }
+    "serialize an object to a new instance of byte array" in {
+      new String(JsonWriter.write(userCodec, user), "UTF-8") shouldBe json
+      new String(JsonWriter.write(userCodec, user, WriterConfig(indentionStep = 2)), "UTF-8") shouldBe prettyJson
+    }
+    "serialize an object to the provided byte array from specified position" in {
+      val from1 = 10
+      val to1 = JsonWriter.write(userCodec, user, buf, from1)
+      new String(buf, from1, to1 - from1, "UTF-8") shouldBe json
+      val from2 = 0
+      val to2 = JsonWriter.write(userCodec, user, buf, from2, WriterConfig(indentionStep = 2))
+      new String(buf, from2, to2 - from2, "UTF-8") shouldBe prettyJson
+    }
+    "throw i/o exception in case of the provided byte array is overflown during serialization" in {
+      assert(intercept[IOException](JsonWriter.write(userCodec, user, buf, 50))
+        .getMessage.contains("buf is overflown"))
+    }
+    "throw i/o exception in case of the provided params are invalid" in {
+      assert(intercept[IOException](JsonWriter.write(null, user))
+        .getMessage.contains("codec should be not null"))
+      assert(intercept[IOException](JsonWriter.write(null, user, new ByteArrayOutputStream()))
+        .getMessage.contains("codec should be not null"))
+      assert(intercept[IOException](JsonWriter.write(null, user, buf, 0))
+        .getMessage.contains("codec should be not null"))
+      assert(intercept[IOException](JsonWriter.write(userCodec, user, null.asInstanceOf[OutputStream]))
+        .getMessage.contains("out should be not null"))
+      assert(intercept[IOException](JsonWriter.write(userCodec, user, null, 50))
         .getMessage.contains("buf should be non empty"))
-      assert(intercept[Exception](new JsonWriter(null, 0, 0, null, WriterConfig()))
-        .getMessage.contains("buf should be non empty"))
-      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), -1, 0, null, WriterConfig()))
-        .getMessage.contains("count should be positive and not greater than buf size"))
-      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), 3, 0, null, WriterConfig()))
-        .getMessage.contains("count should be positive and not greater than buf size"))
-      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), 0, -1, null, WriterConfig()))
-        .getMessage.contains("indention should be positive"))
-      assert(intercept[Exception](new JsonWriter(new Array[Byte](2), 0, 0, null, null))
-        .getMessage.contains("config should not be null"))
+      assert(intercept[IOException](JsonWriter.write(userCodec, user, new Array[Byte](10), 50))
+        .getMessage.contains("from should be positive and not greater than buf length"))
     }
   }
   "JsonWriter.writeVal for boolean" should {
@@ -47,16 +88,16 @@ class JsonWriterSpec extends WordSpec with Matchers {
         "\"\\u0001\\b\\f\\n\\r\\t/A\\u0438\\u10d1\\ud834\\udd1e\""
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
-      assert(intercept[Exception](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(_.writeVal("\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal("\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\ud834"))).getMessage.contains("illegal char sequence of surrogate pair"))
     }
   }
   "JsonWriter.writeVal for char" should {
@@ -87,10 +128,10 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('ბ')) shouldBe "\"\\u10d1\""
     }
     "throw i/o exception in case of surrogate pair character" in {
-      assert(intercept[Exception](serialized(_.writeVal('\udd1e'))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(_.writeVal('\ud834'))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\udd1e'))).getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[Exception](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\ud834'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal('\udd1e'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(_.writeVal('\ud834'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\udd1e'))).getMessage.contains("illegal char sequence of surrogate pair"))
+      assert(intercept[IOException](serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\ud834'))).getMessage.contains("illegal char sequence of surrogate pair"))
     }
   }
   "JsonWriter.writeVal for int" should {
@@ -137,9 +178,9 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal(-1.2345679e-6f)) shouldBe "-1.2345679E-6"
     }
     "throw i/o exception on illegal JSON numbers" in {
-      assert(intercept[Exception](serialized(_.writeVal(0.0f/0.0f))).getMessage.contains("illegal number"))
-      assert(intercept[Exception](serialized(_.writeVal(1.0f/0.0f))).getMessage.contains("illegal number"))
-      assert(intercept[Exception](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(0.0f/0.0f))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(1.0f/0.0f))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
     }
   }
   "JsonWriter.writeVal for double" should {
@@ -152,9 +193,9 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal(-123456789.123456e-10)) shouldBe "-0.0123456789123456"
     }
     "throw i/o exception on illegal JSON numbers" in {
-      assert(intercept[Exception](serialized(_.writeVal(0.0/0.0))).getMessage.contains("illegal number"))
-      assert(intercept[Exception](serialized(_.writeVal(1.0/0.0))).getMessage.contains("illegal number"))
-      assert(intercept[Exception](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(0.0/0.0))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(1.0/0.0))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))
     }
   }
   "JsonWriter.writeVal for BigInt" should {
@@ -184,7 +225,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
 
   def serialized(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val out = new ByteArrayOutputStream(1024)
-    val writer = new JsonWriter(new Array[Byte](1), 0, 0, out, cfg)
+    val writer = new JsonWriter(new Array[Byte](1), 0, 0, out, true, cfg)
     try f(writer)
     finally writer.close()
     out.toString("UTF-8")
