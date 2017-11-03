@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-class key(key: String) extends scala.annotation.StaticAnnotation
+class key(key: String) extends scala.annotation.StaticAnnotation // FIXME: use more suitable name for this annotation
 
 abstract class JsonCodec[A] {
   def decode(in: JsonReader): A
@@ -194,7 +194,7 @@ object JsonCodec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})") // FIXME: use builder instead
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
@@ -204,7 +204,7 @@ object JsonCodec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})") // FIXME: use builder instead
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
@@ -216,7 +216,7 @@ object JsonCodec {
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
-            q"x = x.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
+            q"x = x.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})") // FIXME: use builder instead
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
           genReadArray(q"val x = $comp.empty", q"x.add(in.readInt())", q"x")
@@ -294,9 +294,8 @@ object JsonCodec {
           q"""out.writeArrayStart()
               val l = x.length
               var i = 0
-              var c = false
               while (i < l) {
-                c = out.writeComma(c)
+                out.writeComma(i != 0)
                 ..${genWriteVal(q"x(i)", typeArg1(tpe))}
                 i += 1
               }
@@ -306,13 +305,13 @@ object JsonCodec {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else {
-          q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)"
+          q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)" // FIXME: add checking of tpe for `this` and add branch with compilation error
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
         if (isValueClass(tpe)) {
           genWriteField(q"$m.value", valueClassValueType(tpe), name)
-        } else if (tpe <:< typeOf[Option[_]] || tpe <:< typeOf[scala.collection.Map[_, _]] || tpe <:< typeOf[Traversable[_]]) {
+        } else if (isContainer(tpe)) {
           q"""if (($m ne null) && !$m.isEmpty) {
                 c = out.writeObjectField(c, $name)
                 ${genWriteVal(m, tpe)}
@@ -329,10 +328,10 @@ object JsonCodec {
       }(breakOut)
 
       def nonTransient(m: MethodSymbol): Boolean =
-        !annotations.get(m).exists(_.exists(_.tree.tpe <:< c.weakTypeOf[transient]))
+        !annotations.get(m).exists(_.exists(_.tree.tpe <:< c.weakTypeOf[transient])) // FIXME: consider use own annotation instead 'scala.transient'
 
       def keyName(m: MethodSymbol): String =
-        annotations.get(m).flatMap(_.collectFirst { case a if a.tree.tpe <:< c.weakTypeOf[key] =>
+        annotations.get(m).flatMap(_.collectFirst { case a if a.tree.tpe <:< c.weakTypeOf[key] => // FIXME: report warning in case of duplicated annotation found
           val Literal(Constant(key: String)) = a.tree.children.tail.head
           key
         }).getOrElse(m.name.toString)
@@ -402,11 +401,10 @@ object JsonCodec {
       val writeFieldsBlock =
         if (writeFields.isEmpty) EmptyTree
         else {
-          q"""val x = obj.asInstanceOf[$tpe]
-              var c = false
+          q"""var c = false
               ..$writeFields"""
         }
-      val tree =
+      val codecForCaseClass =
         q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
             import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
             import scala.annotation.switch
@@ -432,8 +430,8 @@ object JsonCodec {
                   case _ =>
                     in.objectStartError()
                 }
-              override def encode(obj: $tpe, out: JsonWriter): Unit =
-                if (obj ne null) {
+              override def encode(x: $tpe, out: JsonWriter): Unit =
+                if (x != null) {
                   out.writeObjectStart()
                   ..$writeFieldsBlock
                   out.writeObjectEnd()
@@ -441,8 +439,8 @@ object JsonCodec {
               ..${decoders.map { case (_, d) => d._2 }}
               ..${encoders.map { case (_, e) => e._2 }}
             }"""
-      if (c.settings.contains("print-codecs")) c.info(c.enclosingPosition, s"Generated JSON codec for type '$tpe':\n${showCode(tree)}", force = true)
-      c.Expr[JsonCodec[A]](tree)
+      if (c.settings.contains("print-codecs")) c.info(c.enclosingPosition, s"Generated JSON codec for type '$tpe':\n${showCode(codecForCaseClass)}", force = true)
+      c.Expr[JsonCodec[A]](codecForCaseClass)
     }
   }
 }
