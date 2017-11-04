@@ -8,7 +8,6 @@ import scala.annotation.{switch, tailrec}
 
 class JsonException(message: String) extends RuntimeException(message)
 
-//noinspection EmptyCheck
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
     private var head: Int = 0,
