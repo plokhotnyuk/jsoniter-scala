@@ -471,11 +471,10 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[jsoniter_scala] def flushBuffer(): Unit =
-    if (out ne null) {
-      out.write(buf, 0, count)
-      count = 0
-    }
+  private[jsoniter_scala] def flushBuffer(): Unit = if (out ne null) {
+    out.write(buf, 0, count)
+    count = 0
+  }
 }
 
 object JsonWriter {

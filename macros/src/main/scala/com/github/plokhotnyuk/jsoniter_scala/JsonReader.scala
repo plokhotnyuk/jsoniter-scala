@@ -175,35 +175,32 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  def nextToken(): Byte = nextToken(head)
+
   @tailrec
-  def nextToken(): Byte = {
-    var pos = head
-    while (pos < tail) {
+  private def nextToken(pos: Int): Byte =
+    if (pos < tail) {
       val b = buf(pos)
-      pos += 1
       if (b != ' ' && b != '\n' && b != '\t' && b != '\r') {
-        head = pos
-        return b
-      }
-    }
-    if (loadMore(pos)) nextToken()
+        head = pos + 1
+        b
+      } else nextToken(pos + 1)
+    } else if (loadMore(pos)) nextToken(head)
     else decodeError("unexpected end of input")
-  }
 
   def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
 
   def isReusableCharsEqualsTo(len: Int, s: String): Boolean =
     if (len != s.length) false
-    else {
-      var i = 0
-      while (i < len) {
-        if (reusableChars(i) != s.charAt(i)) return false
-        i += 1
-      }
-      true
-    }
+    else isReusableCharsEqualsTo(len, s, 0)
 
-  def skip(): Unit = (nextToken(): @switch) match {
+  @tailrec
+  private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
+    if (i == len) true
+    else if (reusableChars(i) != s.charAt(i)) false
+    else isReusableCharsEqualsTo(len, s, i + 1)
+
+  def skip(): Unit = head = (nextToken(): @switch) match {
     case '"' => skipString()
     case '0' => skipNumber()
     case '1' => skipNumber()
@@ -216,9 +213,9 @@ final class JsonReader private[jsoniter_scala](
     case '8' => skipNumber()
     case '9' => skipNumber()
     case '-' => skipNumber()
-    case 'n' => skipFixedBytes(3) // TODO: consider replace skipping of bytes by parsing of 'null'
-    case 't' => skipFixedBytes(3) // TODO: consider skipping of bytes by parsing of 'true'
-    case 'f' => skipFixedBytes(4) // TODO: consider skipping of bytes by parsing of 'false'
+    case 'n' => skipFixedBytes(3)
+    case 't' => skipFixedBytes(3)
+    case 'f' => skipFixedBytes(4)
     case '{' => skipNested('{', '}')
     case '[' => skipNested('[', ']')
     case _ => decodeError("expected value")
@@ -774,67 +771,44 @@ final class JsonReader private[jsoniter_scala](
     reusableChars = cs
   }
 
-  private def skipString(): Unit = {
-    var evenBackSlashes = true
-    var pos = 0
-    do {
-      pos = head
-      while (pos < tail) {
-        val b = buf(pos)
-        pos += 1
-        if (b == '"' && evenBackSlashes) {
-          head = pos
-          return
-        } else if (b == '\\') evenBackSlashes = !evenBackSlashes
-        else evenBackSlashes = true
-      }
-    } while (loadMore(pos))
-  }
-
-  private def skipNumber(): Unit = {
-    var pos = 0
-    do {
-      pos = head
-      while (pos < tail) {
-        val b = buf(pos)
-        if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' || b == 'E') pos += 1
-        else {
-          head = pos
-          return
-        }
-      }
-    } while (loadMore(pos))
-  }
-
-  private def skipNested(opening: Byte, closing: Byte): Unit = {
-    var level = 1
-    var pos = 0
-    do {
-      pos = head
-      while (pos < tail) {
-        val b = buf(pos)
-        pos += 1
-        if (b == '"') {
-          head = pos
-          skipString()
-          pos = head
-        } else if (b == closing) {
-          level -= 1
-          if (level == 0) {
-            head = pos
-            return
-          }
-        } else if (b == opening) level += 1
-      }
-    } while (loadMore(pos))
-  }
+  @tailrec
+  private def skipString(evenBackSlashes: Boolean = true, pos: Int = head): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"' && evenBackSlashes) pos + 1
+      else if (b == '\\') skipString(!evenBackSlashes, pos + 1)
+      else skipString(evenBackSlashes = true, pos + 1)
+    } else if (loadMore(pos)) skipString(evenBackSlashes, head)
+    else pos
 
   @tailrec
-  private def skipFixedBytes(n: Int): Unit = {
-    val pos = head + n
-    val diff = pos - tail
-    if (diff <= 0) head = pos
-    else if (loadMore(tail)) skipFixedBytes(diff)
+  private def skipNumber(pos: Int = head): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' || b == 'E') skipNumber(pos + 1)
+      else pos
+    } else if (loadMore(pos)) skipNumber(head)
+    else pos
+
+  @tailrec
+  private def skipNested(opening: Byte, closing: Byte, level: Int = 0, pos: Int = head): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipNested(opening, closing, level, skipString(evenBackSlashes = true, pos + 1))
+      else if (b == closing) {
+        if (level == 0) pos + 1
+        else skipNested(opening, closing, level - 1, pos + 1)
+      } else if (b == opening) skipNested(opening, closing, level + 1, pos + 1)
+      else skipNested(opening, closing, level, pos + 1)
+    } else if (loadMore(pos)) skipNested(opening, closing, level, head)
+    else pos
+
+  @tailrec
+  private def skipFixedBytes(n: Int, pos: Int = head): Int = {
+    val newPos = pos + n
+    val diff = newPos - tail
+    if (diff <= 0) newPos
+    else if (loadMore(tail)) skipFixedBytes(diff, head)
     else decodeError("unexpected end of input")
   }
 
@@ -898,8 +872,7 @@ final class JsonReader private[jsoniter_scala](
       .append(toHexDigit(d >>> 12)).append(toHexDigit(d >>> 8))
       .append(toHexDigit(d >>> 4)).append(toHexDigit(d))
 
-  private def appendHex(b: Byte, sb: StringBuilder): Unit =
-    sb.append(toHexDigit(b >>> 4)).append(toHexDigit(b))
+  private def appendHex(b: Byte, sb: StringBuilder): Unit = sb.append(toHexDigit(b >>> 4)).append(toHexDigit(b))
 
   private def toHexDigit(n: Int): Char = {
     val nibble = n & 15
