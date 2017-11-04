@@ -217,11 +217,11 @@ final class JsonReader private[jsoniter_scala](
     case '8' => skipNumber()
     case '9' => skipNumber()
     case '-' => skipNumber()
-    case 'n' => skipFixedBytes(3) // FIXME: replace skipping of bytes by parsing of 'null'
-    case 't' => skipFixedBytes(3) // FIXME: replace skipping of bytes by parsing of 'true'
-    case 'f' => skipFixedBytes(4) // FIXME: replace skipping of bytes by parsing of 'false'
-    case '{' => skipObject()
-    case '[' => skipArray()
+    case 'n' => skipFixedBytes(3) // TODO: consider replace skipping of bytes by parsing of 'null'
+    case 't' => skipFixedBytes(3) // TODO: consider skipping of bytes by parsing of 'true'
+    case 'f' => skipFixedBytes(4) // TODO: consider skipping of bytes by parsing of 'false'
+    case '{' => skipNested('{', '}')
+    case '[' => skipNested('[', ']')
     case _ => decodeError("expected value")
   }
 
@@ -806,10 +806,6 @@ final class JsonReader private[jsoniter_scala](
       }
     } while (loadMore(pos))
   }
-
-  private def skipArray(): Unit = skipNested('[', ']')
-
-  private def skipObject(): Unit = skipNested('{', '}')
 
   private def skipNested(opening: Byte, closing: Byte): Unit = {
     var level = 1
