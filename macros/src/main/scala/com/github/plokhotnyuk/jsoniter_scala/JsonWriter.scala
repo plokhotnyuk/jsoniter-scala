@@ -18,12 +18,6 @@ final class JsonWriter private[jsoniter_scala](
     private var out: OutputStream = null,
     private var isBufGrowingAllowed: Boolean = true,
     private var config: WriterConfig = WriterConfig()) {
-  def flushBuffer(): Unit =
-    if (out ne null) {
-      out.write(buf, 0, count)
-      count = 0
-    }
-
   def writeComma(comma: Boolean): Boolean = {
     if (comma) ensureAndWrite(',')
     writeIndention(0)
@@ -476,6 +470,12 @@ final class JsonWriter private[jsoniter_scala](
       } else throw new IOException("buf is overflown")
     }
   }
+
+  private[jsoniter_scala] def flushBuffer(): Unit =
+    if (out ne null) {
+      out.write(buf, 0, count)
+      count = 0
+    }
 }
 
 object JsonWriter {
