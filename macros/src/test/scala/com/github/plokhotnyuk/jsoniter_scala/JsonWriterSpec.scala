@@ -227,7 +227,7 @@ class JsonWriterSpec extends WordSpec with Matchers {
     val out = new ByteArrayOutputStream(1024)
     val writer = new JsonWriter(new Array[Byte](1), 0, 0, out, true, cfg)
     try f(writer)
-    finally writer.close()
+    finally writer.flushBuffer()
     out.toString("UTF-8")
   }
 }

@@ -18,10 +18,10 @@ final class JsonWriter private[jsoniter_scala](
     private var out: OutputStream = null,
     private var isBufGrowingAllowed: Boolean = true,
     private var config: WriterConfig = WriterConfig()) {
-  def close(): Unit =
+  def flushBuffer(): Unit =
     if (out ne null) {
-      flushBuffer()
-      out = null // do not close output stream, just help GC instead
+      out.write(buf, 0, count)
+      count = 0
     }
 
   def writeComma(comma: Boolean): Boolean = {
@@ -466,12 +466,6 @@ final class JsonWriter private[jsoniter_scala](
     count
   }
 
-  private def flushBuffer(): Unit =
-    if (out ne null) {
-      out.write(buf, 0, count)
-      count = 0
-    }
-
   private def growBuffer(required: Int): Unit = {
     flushBuffer()
     if (buf.length < count + required) {
@@ -516,7 +510,8 @@ object JsonWriter {
     try codec.encode(obj, writer)
     finally {
       writer.config = currConfig
-      writer.close()
+      writer.flushBuffer()
+      writer.out = null // do not close output stream, just help GC instead
     }
   }
 
