@@ -19,7 +19,7 @@ final class JsonWriter private[jsoniter_scala](
     private var isBufGrowingAllowed: Boolean = true,
     private var config: WriterConfig = WriterConfig()) {
   def writeComma(comma: Boolean): Boolean = {
-    if (comma) ensureAndWrite(',')
+    if (comma) ensureCapacityAndWrite(',')
     writeIndention(0)
     true
   }
@@ -113,8 +113,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x, 0, x.length)
 
   def writeVal(x: Boolean): Unit =
-    if (x) ensureAndWrite('t'.toByte, 'r'.toByte, 'u'.toByte, 'e'.toByte)
-    else ensureAndWrite('f'.toByte, 'a'.toByte, 'l'.toByte, 's'.toByte, 'e'.toByte)
+    if (x) ensureCapacityAndWrite('t'.toByte, 'r'.toByte, 'u'.toByte, 'e'.toByte)
+    else ensureCapacityAndWrite('f'.toByte, 'a'.toByte, 'l'.toByte, 's'.toByte, 'e'.toByte)
 
   def writeVal(x: Byte): Unit = writeInt(x.toInt)
 
@@ -130,66 +130,66 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Double): Unit = writeDouble(x)
 
-  def writeNull(): Unit = ensureAndWrite('n'.toByte, 'u'.toByte, 'l'.toByte, 'l'.toByte)
+  def writeNull(): Unit = ensureCapacityAndWrite('n'.toByte, 'u'.toByte, 'l'.toByte, 'l'.toByte)
 
   def writeArrayStart(): Unit = {
     indention += config.indentionStep
-    ensureAndWrite('[')
+    ensureCapacityAndWrite('[')
   }
 
   def writeArrayEnd(): Unit = {
     val indentionStep = config.indentionStep
     writeIndention(indentionStep)
     indention -= indentionStep
-    ensureAndWrite(']')
+    ensureCapacityAndWrite(']')
   }
 
   def writeObjectStart(): Unit = {
     indention += config.indentionStep
-    ensureAndWrite('{')
+    ensureCapacityAndWrite('{')
   }
 
   def writeObjectEnd(): Unit = {
     val indentionStep = config.indentionStep
     writeIndention(indentionStep)
     indention -= indentionStep
-    ensureAndWrite('}')
+    ensureCapacityAndWrite('}')
   }
 
-  private def ensureAndWrite(b: Byte): Unit = {
-    val pos = ensure(1)
+  private def ensureCapacityAndWrite(b: Byte): Unit = {
+    val pos = ensureBufferCapacity(1)
     count = write(b, pos)
   }
 
-  private def ensureAndWrite(b1: Byte, b2: Byte): Unit = {
-    val pos = ensure(2)
+  private def ensureCapacityAndWrite(b1: Byte, b2: Byte): Unit = {
+    val pos = ensureBufferCapacity(2)
     count = write(b1, b2, pos)
   }
 
-  private def ensureAndWrite(b1: Byte, b2: Byte, b3: Byte): Unit = {
-    val pos = ensure(3)
+  private def ensureCapacityAndWrite(b1: Byte, b2: Byte, b3: Byte): Unit = {
+    val pos = ensureBufferCapacity(3)
     count = write(b1, b2, b3, pos)
   }
 
-  private def ensureAndWrite(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = {
-    val pos = ensure(4)
+  private def ensureCapacityAndWrite(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = {
+    val pos = ensureBufferCapacity(4)
     count = write(b1, b2, b3, b4, pos)
   }
 
-  private def ensureAndWrite(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = {
-    val pos = ensure(5)
+  private def ensureCapacityAndWrite(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = {
+    val pos = ensureBufferCapacity(5)
     count = write(b1, b2, b3, b4, b5, pos)
   }
 
   private def writeAsciiString(s: String): Unit = count = {
     val len = s.length
-    val pos = ensure(len)
+    val pos = ensureBufferCapacity(len)
     s.getBytes(0, len, buf, pos)
     pos + len
   }
 
   private def writeString(s: String, from: Int, to: Int): Unit = count = {
-    var pos = write('"', ensure((to - from) + 2)) // 1 byte per char (suppose that they are ASCII only) + make room for the quotes
+    var pos = write('"', ensureBufferCapacity((to - from) + 2)) // 1 byte per char (suppose that they are ASCII only) + make room for the quotes
     var i = from
     var ch: Char = 0 // the fast path without utf8 and escape support
     while (i < to && {
@@ -207,7 +207,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeStringSlowPath(s: String, from: Int, to: Int): Int = {
-    var pos = ensure((to - from) * (if (config.escapeUnicode) 6 else 3) + 1) // max 6 or 3 bytes per char + the closing quotes
+    var pos = ensureBufferCapacity((to - from) * (if (config.escapeUnicode) 6 else 3) + 1) // max 6 or 3 bytes per char + the closing quotes
     var i = from
     while (i < to) pos = {
       val ch1 = s.charAt(i)
@@ -240,7 +240,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeChar(ch: Char): Unit = count = {
-    var pos = write('"', ensure(8)) // 6 bytes per char for encoded unicode + make room for the quotes
+    var pos = write('"', ensureBufferCapacity((if (config.escapeUnicode) 6 else 3) + 2)) // 6 or 3 bytes per char for encoded unicode + make room for the quotes
     pos = {
       if (ch < 128) writeAscii(ch, pos) // 1 byte, 7 bits: 0xxxxxxx
       else if (config.escapeUnicode) {
@@ -285,21 +285,21 @@ final class JsonWriter private[jsoniter_scala](
   private def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
   private def writeCommaWithParentheses(comma: Boolean): Unit = {
-    if (comma) ensureAndWrite(',')
+    if (comma) ensureCapacityAndWrite(',')
     writeIndention(0)
-    ensureAndWrite('"')
+    ensureCapacityAndWrite('"')
   }
 
   private def writeParenthesesWithColon(): Unit =
-    if (config.indentionStep > 0) ensureAndWrite('"'.toByte, ':'.toByte, ' '.toByte)
-    else ensureAndWrite('"'.toByte, ':'.toByte)
+    if (config.indentionStep > 0) ensureCapacityAndWrite('"'.toByte, ':'.toByte, ' '.toByte)
+    else ensureCapacityAndWrite('"'.toByte, ':'.toByte)
 
   private def writeColon(): Unit =
-    if (config.indentionStep > 0) ensureAndWrite(':'.toByte, ' '.toByte)
-    else ensureAndWrite(':'.toByte)
+    if (config.indentionStep > 0) ensureCapacityAndWrite(':'.toByte, ' '.toByte)
+    else ensureCapacityAndWrite(':'.toByte)
 
   private def writeInt(x: Int): Unit = count = {
-    var pos = ensure(11) // minIntBytes.length
+    var pos = ensureBufferCapacity(11) // minIntBytes.length
     if (x == Integer.MIN_VALUE) writeBytes(minIntBytes, pos)
     else {
       val q0 =
@@ -331,7 +331,7 @@ final class JsonWriter private[jsoniter_scala](
 
   // TODO: consider more cache-aware algorithm from RapidJSON, see https://github.com/miloyip/itoa-benchmark/blob/master/src/branchlut.cpp
   private def writeLong(x: Long): Unit = count = {
-    var pos = ensure(20) // minLongBytes.length
+    var pos = ensureBufferCapacity(20) // minLongBytes.length
     if (x == java.lang.Long.MIN_VALUE) writeBytes(minLongBytes, pos)
     else {
       val q0 =
@@ -408,7 +408,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeNewLineAndSpaces(delta: Int): Unit = count = {
     val toWrite = indention - delta
-    var pos = write('\n', ensure(toWrite + 1))
+    var pos = write('\n', ensureBufferCapacity(toWrite + 1))
     val to = pos + toWrite
     while (pos < to) pos = write(' ', pos)
     pos
@@ -455,7 +455,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private def ensure(required: Int): Int = {
+  private def ensureBufferCapacity(required: Int): Int = {
     if (buf.length < count + required) growBuffer(required)
     count
   }
