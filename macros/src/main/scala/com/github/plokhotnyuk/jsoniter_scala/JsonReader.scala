@@ -660,14 +660,12 @@ final class JsonReader private[jsoniter_scala](
     } else if (loadMore(pos)) parseString(i, ensureReusableCharsCapacity(i))
     else decodeError("unexpected end of input")
 
-  private def slowParseString(from: Int): Int = {
-    var i = from
-    var b1: Byte = 0
-    while ({
-      b1 = nextByte()
-      b1 != '"'
-    }) i = {
-      ensureReusableCharsCapacity(i + 2) // +2 for surrogate pair case
+  @tailrec
+  private def slowParseString(i: Int): Int = {
+    val b1 = nextByte()
+    if (b1 == '"') i
+    else slowParseString({
+      ensureReusableCharsCapacity(i + 2) // +2 extra for surrogate pair case
       if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') putCharAt(b1.toChar, i)
         else readEscapeSequence(i)
@@ -689,8 +687,7 @@ final class JsonReader private[jsoniter_scala](
         if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4)
         putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i))
       } else malformedBytes(b1)
-    }
-    i
+    })
   }
 
   private def readEscapeSequence(i: Int): Int = (nextByte(): @switch) match {
