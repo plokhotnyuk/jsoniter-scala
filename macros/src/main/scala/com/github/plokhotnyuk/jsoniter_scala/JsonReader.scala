@@ -809,7 +809,7 @@ final class JsonReader private[jsoniter_scala](
     val diff = newPos - tail
     if (diff <= 0) newPos
     else if (loadMore(tail)) skipFixedBytes(diff, head)
-    else decodeError("unexpected end of input", pos)
+    else tail
   }
 
   @inline

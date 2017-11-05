@@ -60,6 +60,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
       skip("\"9\"")
       skip("\"-\"")
     }
+    "throw parsing exception when skipping string that is not closed by parentheses" in {
+      assert(intercept[JsonException](skip("\"")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonException](skip("\"abc")).getMessage.contains("unexpected end of input, offset: 0x00000005"))
+    }
     "skip string values with escaped characters" in {
       skip(""""\\"""")
       skip(""""\\\"\\"""")
@@ -81,6 +85,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
       skip("true")
       skip(" \n\t\rfalse")
     }
+    "throw parsing exception when skipping truncated boolean value" in {
+      assert(intercept[JsonException](skip("t")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonException](skip("f")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
+    }
     "skip null values" in {
       skip("null")
       skip(" \n\t\rnull")
@@ -90,10 +98,16 @@ class JsonReaderSpec extends WordSpec with Matchers {
       skip(" \n\t\r{{{{{}}}}{{{}}}}")
       skip("{\"{\"}")
     }
+    "throw parsing exception when skipping not closed object" in {
+      assert(intercept[JsonException](skip("{{}")).getMessage.contains("unexpected end of input, offset: 0x00000004"))
+    }
     "skip array values" in {
       skip("[]")
       skip(" \n\t\r[[[[[]]]][[[]]]]")
       skip("[\"[\"]")
+    }
+    "throw parsing exception when skipping not closed array" in {
+      assert(intercept[JsonException](skip("[[]")).getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip mixed values" in {
       skip(
