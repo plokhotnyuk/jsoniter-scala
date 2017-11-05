@@ -115,20 +115,21 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  // TODO: use more efficient unrolled loop
   def readByte(): Byte = {
     val x = parseInt(isToken = true)
     if (x > Byte.MaxValue || x < Byte.MinValue) decodeError("value is too large for byte")
     x.toByte
   }
 
+  // TODO: use more efficient unrolled loop
   def readChar(): Char = {
     readParentheses()
-    val len = parseString()
-    val x = reusableChars(0)
-    if (len != 1) decodeError("illegal value for char")
-    x
+    if (parseString() != 1) decodeError("illegal value for char")
+    reusableChars(0)
   }
 
+  // TODO: unrolled loop
   def readShort(): Short = {
     val x = parseInt(isToken = true)
     if (x > Short.MaxValue || x < Short.MinValue) decodeError("value is too large for short")
