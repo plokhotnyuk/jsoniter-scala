@@ -225,7 +225,11 @@ final class JsonReader private[jsoniter_scala](
 
   def arrayStartError(): Nothing = decodeError("expected `[` or `null`")
 
+  def arrayEndError(): Nothing = decodeError("expected `]` or `,`")
+
   def objectStartError(): Nothing = decodeError("expected `{` or `null`")
+
+  def objectEndError(): Nothing = decodeError("expected `}` or `,`")
 
   def decodeError(msg: String): Nothing = {
     val from = Math.max((head - 32) & -16, 0)

@@ -178,16 +178,30 @@ class JsonCodecSpec extends WordSpec with Matchers {
         verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), buf)
       }.getMessage.contains("expected high surrogate character"))
     }
-    "don't deserialize in case of missing tokens" in {
+    "don't deserialize JSON object to case class due missing or illegal tokens" in {
+      val codec = materialize[StandardTypes]
+      val obj = StandardTypes("VVV", 1, 1.1)
       assert(intercept[JsonException] {
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """"s":"VVV","bi":1,"bd":1.1}""".getBytes)
+        verifyDeser(codec, obj, """"s":"VVV","bi":1,"bd":1.1}""".getBytes)
       }.getMessage.contains("expected `{` or `null`"))
       assert(intercept[JsonException] {
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s""VVV","bi":1,"bd":1.1}""".getBytes)
+        verifyDeser(codec, obj, """{"s""VVV","bi":1,"bd":1.1}""".getBytes)
       }.getMessage.contains("expected `:`"))
       assert(intercept[JsonException] {
-        verifyDeser(materialize[StandardTypes], StandardTypes("VVV", 1, 1.1), """{"s":"VVV""bi":1"bd":1.1}""".getBytes)
-      }.getMessage.contains("""missing required field(s) "bi", "bd""""))
+        verifyDeser(codec, obj, """{"s":"VVV""bi":1"bd":1.1}""".getBytes)
+      }.getMessage.contains("expected `}` or `,`"))
+      assert(intercept[JsonException] {
+        verifyDeser(codec, obj, """["s":"VVV","bi":1,"bd":2}""".getBytes)
+      }.getMessage.contains("expected `{` or `null`"))
+      assert(intercept[JsonException] {
+        verifyDeser(codec, obj, """{,"s":"VVV","bi":1,"bd":2}""".getBytes)
+      }.getMessage.contains("expected `\"`"))
+      assert(intercept[JsonException] {
+        verifyDeser(codec, obj, """{"s":"VVV","bi":1,"bd":2]""".getBytes)
+      }.getMessage.contains("expected `}` or `,`"))
+      assert(intercept[JsonException] {
+        verifyDeser(codec, obj, """{"s":"VVV","bi":1,"bd":2,}""".getBytes)
+      }.getMessage.contains("expected `\"`"))
     }
     "serialize and deserialize outer types using implicit vals or objects of inner types" in {
       implicit val standardTypesCodec: JsonCodec[StandardTypes] = materialize[StandardTypes]
@@ -220,6 +234,22 @@ class JsonCodecSpec extends WordSpec with Matchers {
       parsedObj.aa.deep shouldBe obj.aa.deep
       parsedObj.a.deep shouldBe obj.a.deep
     }
+    "don't deserialize JSON array that is not properly started/closed or with leading/trailing comma" in {
+      val arrayCodec = materialize[Arrays]
+      val obj = Arrays(Array(Array(1, 2, 3)), Array.empty)
+      assert(intercept[JsonException] {
+        verifyDeser(arrayCodec, obj, """{"aa":[{1,2,3]],"a":[]}""".getBytes)
+      }.getMessage.contains("expected `[` or `null`"))
+      assert(intercept[JsonException] {
+        verifyDeser(arrayCodec, obj, """{"aa":[[,1,2,3]],"a":[]}""".getBytes)
+      }.getMessage.contains("illegal number"))
+      assert(intercept[JsonException] {
+        verifyDeser(arrayCodec, obj, """{"aa":[[1,2,3}],"a":[]}""".getBytes)
+      }.getMessage.contains("expected `]` or `,`"))
+      assert(intercept[JsonException] {
+        verifyDeser(arrayCodec, obj, """{"aa":[[1,2,3,]],"a":[]}""".getBytes)
+      }.getMessage.contains("illegal number"))
+    }
     "serialize and deserialize mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
         MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
@@ -251,6 +281,22 @@ class JsonCodecSpec extends WordSpec with Matchers {
         ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap('V' -> 2), "3" -> ListMap('X' -> 3)),
           SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
         """{"m":{"1":1.1},"hm":{"2":{"V":2},"3":{"X":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
+    }
+    "don't deserialize JSON object that is not properly started/closed or with leading/trailing comma" in {
+      val mapCodec = materialize[ImmutableMaps]
+      val obj = ImmutableMaps(Map(1 -> 1.1), HashMap.empty, SortedMap.empty)
+      assert(intercept[JsonException] {
+        verifyDeser(mapCodec, obj, """{"m":["1":1.1},"hm":{},"sm":{}}""".getBytes)
+      }.getMessage.contains("expected `{` or `null`"))
+      assert(intercept[JsonException] {
+        verifyDeser(mapCodec, obj, """{"m":{,"1":1.1},"hm":{},"sm":{}}""".getBytes)
+      }.getMessage.contains("expected `\"`"))
+      assert(intercept[JsonException] {
+        verifyDeser(mapCodec, obj, """{"m":{"1":1.1],"hm":{},"sm":{}""".getBytes)
+      }.getMessage.contains("expected `}` or `,`"))
+      assert(intercept[JsonException] {
+        verifyDeser(mapCodec, obj, """{"m":{"1":1.1,},"hm":{},"sm":{}""".getBytes)
+      }.getMessage.contains("expected `\"`"))
     }
     "don't serialize null keys for maps" in {
       assert(intercept[IOException] {

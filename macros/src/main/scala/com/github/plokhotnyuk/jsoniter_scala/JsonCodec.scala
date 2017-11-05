@@ -113,7 +113,10 @@ object JsonCodec {
                   do {
                     ..$readVal
                   } while (in.nextToken() == ',')
-                  ..$result
+                  in.unreadByte()
+                  if (in.nextToken() == ']') {
+                    ..$result
+                  } else in.arrayEndError()
                 }
               case 'n' =>
                 in.parseNull(default)
@@ -131,7 +134,10 @@ object JsonCodec {
                   do {
                     ..$readKV
                   } while (in.nextToken() == ',')
-                  ..$result
+                  in.unreadByte()
+                  if (in.nextToken() == '}') {
+                    ..$result
+                  } else in.objectEndError()
                 }
               case 'n' =>
                 in.parseNull(default)
@@ -419,6 +425,8 @@ object JsonCodec {
                           case ..$readFields
                         }
                       } while (in.nextToken() == ',')
+                      in.unreadByte()
+                      if (in.nextToken() != '}') in.objectEndError()
                     }
                     ..$checkReqVarsAndConstruct
                   case 'n' =>
