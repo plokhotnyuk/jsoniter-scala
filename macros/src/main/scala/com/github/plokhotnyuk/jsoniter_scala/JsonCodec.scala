@@ -248,10 +248,10 @@ object JsonCodec {
           q"""val v = in.readString()
               if (v ne null) {
                 try $enumSymbol.withName(v) catch {
-                  case _: java.util.NoSuchElementException => in.decodeError("illegal enum value: " + v)
+                  case _: java.util.NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
                 }
               } else default"""
-        } else { // FIXME: use check matching with case class `tpe` before using `this`
+        } else { // FIXME: use check matching with case class 'tpe' before using 'this'
           q"${findImplicitCodec(tpe).getOrElse(q"this")}.decode(in, $default)"
         }
 
@@ -307,7 +307,7 @@ object JsonCodec {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else {
-          q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)" // FIXME: add checking of tpe for `this` and add branch with compilation error
+          q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)" // FIXME: add checking of tpe for 'this' and add branch with compilation error
         }
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =

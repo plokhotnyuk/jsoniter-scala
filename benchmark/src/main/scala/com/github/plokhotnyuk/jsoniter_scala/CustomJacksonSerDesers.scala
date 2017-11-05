@@ -12,7 +12,7 @@ import scala.collection.mutable
 object CustomJacksonSerDesers {
   class BitSetDeserializer extends StdDeserializer[BitSet](classOf[BitSet]) {
     override def deserialize(p: JsonParser, ctxt: DeserializationContext): BitSet =
-      if (p.getCurrentToken != START_ARRAY) throw new JsonParseException(p, "expected '[' or 'null'")
+      if (p.getCurrentToken != START_ARRAY) throw new JsonParseException(p, "expected '[' or null")
       else if (p.nextToken() == END_ARRAY) getNullValue(ctxt)
       else {
         val s = BitSet.newBuilder
@@ -37,7 +37,7 @@ object CustomJacksonSerDesers {
 
   class MutableBitSetDeserializer extends StdDeserializer[mutable.BitSet](classOf[mutable.BitSet]) {
     override def deserialize(p: JsonParser, ctxt: DeserializationContext): mutable.BitSet =
-      if (p.getCurrentToken != START_ARRAY) throw new JsonParseException(p, "expected '[' or 'null'")
+      if (p.getCurrentToken != START_ARRAY) throw new JsonParseException(p, "expected '[' or null")
       else {
         val s = getNullValue(ctxt)
         while (p.nextToken() != END_ARRAY) {

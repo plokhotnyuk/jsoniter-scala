@@ -39,7 +39,7 @@ class JsonCodecBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readMutableMapsPlay() shouldBe benchmark.mutableMapsObj
       //FIXME: Circe doesn't support parsing of int & long maps
       // benchmark.readIntAndLongMapsCirce() shouldBe benchmark.intAndLongMapsObj
-      //FIXME: Jackson-module-scala doesn`t support parsing of int & long maps
+      //FIXME: Jackson-module-scala doesn't support parsing of int & long maps
       //benchmark.readIntAndLongMapsJackson() shouldBe benchmark.intAndLongMapsObj
       benchmark.readIntAndLongMapsJsoniter() shouldBe benchmark.intAndLongMapsObj
       benchmark.readIntAndLongMapsPlay() shouldBe benchmark.intAndLongMapsObj

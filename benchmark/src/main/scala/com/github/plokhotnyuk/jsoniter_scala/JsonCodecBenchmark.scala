@@ -111,7 +111,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
 
-/* FIXME: Circe doesn`t support parsing of bitsets
+/* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
   def readBitSetsCirce(): BitSets =
     decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
@@ -152,7 +152,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def readMapsPlay(): Maps = Json.parse(mapsJson).as[Maps](mapsFormat)
 
-/* FIXME: Circe doesn`t support parsing of mutable maps
+/* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
   def readMutableMapsCirce(): MutableMaps =
     decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
@@ -167,13 +167,13 @@ class JsonCodecBenchmark {
   @Benchmark
   def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJson).as[MutableMaps](mutableMapsFormat)
 
-/* FIXME: Circe doesn`t support parsing of int & long maps
+/* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
   def readIntAndLongMapsCirce(): IntAndLongMaps =
     decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
 */
 
-/* FIXME: Jackson-module-scala doesn`t support parsing of int & long maps
+/* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
   @Benchmark
   def readIntAndLongMapsJackson(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](intAndLongMapsJson)
 */
@@ -234,7 +234,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def writeArraysPlay(): Array[Byte] = Json.toBytes(Json.toJson(arraysObj)(arraysFormat))
 
-/* FIXME: Circe doesn`t support writing of bitsets
+/* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
   def writeBitSetsCirce(): Array[Byte] = bitSetsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 */
@@ -284,7 +284,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def writeMutableMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableMapsObj)(mutableMapsFormat))
 
-/* FIXME: Circe doesn`t support writing of int & long maps
+/* FIXME: Circe doesn't support writing of int & long maps
   @Benchmark
   def writeIntAndLongMapsCirce(): Array[Byte] = intAndLongMapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 */

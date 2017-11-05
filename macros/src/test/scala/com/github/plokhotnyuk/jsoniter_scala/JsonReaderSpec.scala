@@ -119,10 +119,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
           |}""".stripMargin)
     }
     "throw parsing exception when skipping not from start of JSON value" in {
-      assert(intercept[Exception](skip("]")).getMessage.contains("expected value"))
-      assert(intercept[Exception](skip("}")).getMessage.contains("expected value"))
-      assert(intercept[Exception](skip(",")).getMessage.contains("expected value"))
-      assert(intercept[Exception](skip(":")).getMessage.contains("expected value"))
+      assert(intercept[JsonException](skip("]")).getMessage.contains("expected value, offset: 0x00000000"))
+      assert(intercept[JsonException](skip("}")).getMessage.contains("expected value, offset: 0x00000000"))
+      assert(intercept[JsonException](skip(",")).getMessage.contains("expected value, offset: 0x00000000"))
+      assert(intercept[JsonException](skip(":")).getMessage.contains("expected value, offset: 0x00000000"))
     }
   }
   "JsonReader.readBoolean" should {
@@ -131,12 +131,12 @@ class JsonReaderSpec extends WordSpec with Matchers {
       parse("false".getBytes).readBoolean() shouldBe false
     }
     "throw parsing exception for empty input and illegal or broken value" in {
-      assert(intercept[Exception](parse("".getBytes).readBoolean())
-        .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](parse("tru".getBytes).readBoolean())
-        .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](parse("fal".getBytes).readBoolean())
-        .getMessage.contains("unexpected end of input"))
+      assert(intercept[JsonException](parse("".getBytes).readBoolean())
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonException](parse("tru".getBytes).readBoolean())
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonException](parse("fals".getBytes).readBoolean())
+        .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
   }
   "JsonReader.readString" should {
@@ -157,56 +157,82 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readString(text) shouldBe text
     }
     "throw parsing exception for empty input and illegal or broken string" in {
-      assert(intercept[Exception](parse("".getBytes).readString())
-        .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](parse("\"".getBytes).readString())
-        .getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](parse("\"\\".getBytes).readString())
-        .getMessage.contains("unexpected end of input"))
+      assert(intercept[JsonException](parse("".getBytes).readString())
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonException](parse("\"".getBytes).readString())
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonException](parse("\"\\".getBytes).readString())
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "throw parsing exception for boolean values & numbers" in {
-      assert(intercept[Exception](parse("true".getBytes).readString())
-        .getMessage.contains("expected string value or `null`"))
-      assert(intercept[Exception](parse("false".getBytes).readString())
-        .getMessage.contains("expected string value or `null`"))
-      assert(intercept[Exception](parse("12345".getBytes).readString())
-        .getMessage.contains("expected string value or `null`"))
+      assert(intercept[JsonException](parse("true".getBytes).readString())
+        .getMessage.contains("expected string value or null, offset: 0x00000000"))
+      assert(intercept[JsonException](parse("false".getBytes).readString())
+        .getMessage.contains("expected string value or null, offset: 0x00000000"))
+      assert(intercept[JsonException](parse("12345".getBytes).readString())
+        .getMessage.contains("expected string value or null, offset: 0x00000000"))
     }
     "get the same string value for escaped & non-escaped field names" in {
       readString("""Hello""") shouldBe readString("Hello")
       readString("""Hello""") shouldBe readString("\\u0048\\u0065\\u006C\\u006c\\u006f")
       readString("""\b\f\n\r\t\/\\""") shouldBe readString("\b\f\n\r\t/\\\\")
-      readString("""\b\f\n\r\t\/Aиბ""") shouldBe readString("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1")
+      readString("""\b\f\n\r\t\/Aиბ""") shouldBe
+        readString("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1")
       readString("𝄞") shouldBe readString("\\ud834\\udd1e")
     }
     "throw parsing exception in case of illegal escape sequence" in {
-      assert(intercept[Exception](readString("\\x0008")).getMessage.contains("illegal escape sequence"))
-      assert(intercept[Exception](readString("\\u000Z")).getMessage.contains("expected hex digit"))
-      assert(intercept[Exception](readString("\\u000")).getMessage.contains("expected hex digit"))
-      assert(intercept[Exception](readString("\\u00")).getMessage.contains("expected hex digit"))
-      assert(intercept[Exception](readString("\\u0")).getMessage.contains("expected hex digit"))
-      assert(intercept[Exception](readString("\\")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readString("\\udd1e")).getMessage.contains("expected high surrogate character"))
-      assert(intercept[Exception](readString("\\ud834")).getMessage.contains("illegal escape sequence"))
-      assert(intercept[Exception](readString("\\ud834\\")).getMessage.contains("illegal escape sequence"))
-      assert(intercept[Exception](readString("\\ud834\\x")).getMessage.contains("illegal escape sequence"))
-      assert(intercept[Exception](readString("\\ud834\\ud834")).getMessage.contains("expected low surrogate character"))
+      assert(intercept[JsonException](readString("\\x0008"))
+        .getMessage.contains("illegal escape sequence, offset: 0x00000002"))
+      assert(intercept[JsonException](readString("\\u000Z"))
+        .getMessage.contains("expected hex digit, offset: 0x00000006"))
+      assert(intercept[JsonException](readString("\\u000"))
+        .getMessage.contains("expected hex digit, offset: 0x00000006"))
+      assert(intercept[JsonException](readString("\\u00"))
+        .getMessage.contains("expected hex digit, offset: 0x00000005"))
+      assert(intercept[JsonException](readString("\\u0"))
+        .getMessage.contains("expected hex digit, offset: 0x00000004"))
+      assert(intercept[JsonException](readString("\\"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonException](readString("\\udd1e"))
+        .getMessage.contains("expected high surrogate character, offset: 0x00000006"))
+      assert(intercept[JsonException](readString("\\ud834"))
+        .getMessage.contains("illegal escape sequence, offset: 0x00000007"))
+      assert(intercept[JsonException](readString("\\ud834\\"))
+        .getMessage.contains("illegal escape sequence, offset: 0x00000008"))
+      assert(intercept[JsonException](readString("\\ud834\\x"))
+        .getMessage.contains("illegal escape sequence, offset: 0x00000008"))
+      assert(intercept[JsonException](readString("\\ud834\\ud834"))
+        .getMessage.contains("expected low surrogate character, offset: 0x0000000c"))
     }
     "throw parsing exception in case of illegal byte sequence" in {
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte))).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readString(Array[Byte](0x80.toByte))).getMessage.contains("malformed byte(s): 80"))
-      assert(intercept[Exception](readString(Array[Byte](0xC0.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): c0, 80"))
-      assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): c8, 08"))
-      assert(intercept[Exception](readString(Array[Byte](0xC8.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): c8, ff"))
-      assert(intercept[Exception](readString(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): e0, 80, 80"))
-      assert(intercept[Exception](readString(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): e0, ff, 80"))
-      assert(intercept[Exception](readString(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte))).getMessage.contains("malformed byte(s): e8, 88, 08"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte))).getMessage.contains("malformed byte(s): f0, 80, 80, 80"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): f0, 9d, 04, 9e"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte))).getMessage.contains("malformed byte(s): f0, 9d, 84, ff"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): f0, 9d, ff, 9e"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte))).getMessage.contains("malformed byte(s): f0, ff, 84, 9e"))
-      assert(intercept[Exception](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte))).getMessage.contains("malformed byte(s): f0, 9d, 84, 0e"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte)))
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonException](readString(Array[Byte](0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0x80, offset: 0x00000001"))
+      assert(intercept[JsonException](readString(Array[Byte](0xC0.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xc0, 0x80, offset: 0x00000002"))
+      assert(intercept[JsonException](readString(Array[Byte](0xC8.toByte, 0x08.toByte)))
+        .getMessage.contains("malformed byte(s): 0xc8, 0x08, offset: 0x00000002"))
+      assert(intercept[JsonException](readString(Array[Byte](0xC8.toByte, 0xFF.toByte)))
+        .getMessage.contains("malformed byte(s): 0xc8, 0xff, offset: 0x00000002"))
+      assert(intercept[JsonException](readString(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xe0, 0x80, 0x80, offset: 0x00000003"))
+      assert(intercept[JsonException](readString(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xe0, 0xff, 0x80, offset: 0x00000003"))
+      assert(intercept[JsonException](readString(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte)))
+        .getMessage.contains("malformed byte(s): 0xe8, 0x88, 0x08, offset: 0x00000003"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, 0x80, 0x80, 0x80, offset: 0x00000004"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, 0x9d, 0x04, 0x9e, offset: 0x00000004"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, 0x9d, 0x84, 0xff, offset: 0x00000004"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, 0x9d, 0xff, 0x9e, offset: 0x00000004"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, 0xff, 0x84, 0x9e, offset: 0x00000004"))
+      assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, 0x9d, 0x84, 0x0e, offset: 0x00000004"))
     }
   }
   "JsonReader.readInt" should {
@@ -226,25 +252,37 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readInt("0$") shouldBe 0
     }
     "throw parsing exception on illegal or empty input" in {
-      assert(intercept[Exception](readInt("")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readInt("-")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readInt("x")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readInt("")).getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonException](readInt("-")).getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonException](readInt("x")).getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on int overflow" in {
-      assert(intercept[Exception](readInt("2147483648")).getMessage.contains("value is too large for int"))
-      assert(intercept[Exception](readInt("-2147483649")).getMessage.contains("value is too large for int"))
-      assert(intercept[Exception](readInt("12345678901")).getMessage.contains("value is too large for int"))
-      assert(intercept[Exception](readInt("-12345678901")).getMessage.contains("value is too large for int"))
-      assert(intercept[Exception](readInt("12345678901234567890")).getMessage.contains("value is too large for int"))
-      assert(intercept[Exception](readInt("-12345678901234567890")).getMessage.contains("value is too large for int"))
+      assert(intercept[JsonException](readInt("2147483648"))
+        .getMessage.contains("value is too large for int, offset: 0x00000009"))
+      assert(intercept[JsonException](readInt("-2147483649"))
+        .getMessage.contains("value is too large for int, offset: 0x0000000a"))
+      assert(intercept[JsonException](readInt("12345678901"))
+        .getMessage.contains("value is too large for int, offset: 0x0000000a"))
+      assert(intercept[JsonException](readInt("-12345678901"))
+        .getMessage.contains("value is too large for int, offset: 0x0000000b"))
+      assert(intercept[JsonException](readInt("12345678901234567890"))
+        .getMessage.contains("value is too large for int, offset: 0x0000000a"))
+      assert(intercept[JsonException](readInt("-12345678901234567890"))
+        .getMessage.contains("value is too large for int, offset: 0x0000000b"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[Exception](readInt("00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readInt("-00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readInt("0123456789")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readInt("-0123456789")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readInt("02147483647")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readInt("-02147483648")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readInt("00"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readInt("-00"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readInt("0123456789"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readInt("-0123456789"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readInt("02147483647"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readInt("-02147483648"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
     }
   }
   "JsonReader.readLong" should {
@@ -264,25 +302,37 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readLong("0$") shouldBe 0L
     }
     "throw parsing exception on illegal or empty input" in {
-      assert(intercept[Exception](readLong("")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readLong("-")).getMessage.contains("unexpected end of input"))
-      assert(intercept[Exception](readLong("x")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readLong("")).getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonException](readLong("-")).getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonException](readLong("x")).getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on long overflow" in {
-      assert(intercept[Exception](readLong("9223372036854775808")).getMessage.contains("value is too large for long"))
-      assert(intercept[Exception](readLong("-9223372036854775809")).getMessage.contains("value is too large for long"))
-      assert(intercept[Exception](readLong("12345678901234567890")).getMessage.contains("value is too large for long"))
-      assert(intercept[Exception](readLong("-12345678901234567890")).getMessage.contains("value is too large for long"))
-      assert(intercept[Exception](readLong("123456789012345678901234567890")).getMessage.contains("value is too large for long"))
-      assert(intercept[Exception](readLong("-123456789012345678901234567890")).getMessage.contains("value is too large for long"))
+      assert(intercept[JsonException](readLong("9223372036854775808"))
+        .getMessage.contains("value is too large for long, offset: 0x00000012"))
+      assert(intercept[JsonException](readLong("-9223372036854775809"))
+        .getMessage.contains("value is too large for long, offset: 0x00000013"))
+      assert(intercept[JsonException](readLong("12345678901234567890"))
+        .getMessage.contains("value is too large for long, offset: 0x00000013"))
+      assert(intercept[JsonException](readLong("-12345678901234567890"))
+        .getMessage.contains("value is too large for long, offset: 0x00000014"))
+      assert(intercept[JsonException](readLong("123456789012345678901234567890"))
+        .getMessage.contains("value is too large for long, offset: 0x00000013"))
+      assert(intercept[JsonException](readLong("-123456789012345678901234567890"))
+        .getMessage.contains("value is too large for long, offset: 0x00000014"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[Exception](readLong("00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readLong("-00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readLong("01234567890123456789")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readLong("-01234567890123456789")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readLong("09223372036854775807")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readLong("-09223372036854775808")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readLong("00"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readLong("-00"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readLong("01234567890123456789"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readLong("-01234567890123456789"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readLong("09223372036854775807"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readLong("-09223372036854775808"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
     }
   }
   "JsonReader.readFloat" should {
@@ -321,26 +371,30 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
     }
     "throw parsing exception on illegal or empty input" in {
-      assert(intercept[Exception](readFloat("")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat(" ")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("-")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat(" $")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("-$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("0e$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("0e-$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("0.E")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("0.+")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("0.-")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("NaN")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("Inf")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("Infinity")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readFloat("")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readFloat(" ")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readFloat("-")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readFloat("$")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readFloat(" $")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readFloat("-$")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readFloat("0e$")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readFloat("0e-$")).getMessage.contains("illegal number, offset: 0x00000003"))
+      assert(intercept[JsonException](readFloat("0.E")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readFloat("0.+")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readFloat("0.-")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readFloat("NaN")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readFloat("Inf")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readFloat("Infinity")).getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[Exception](readFloat("00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("-00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("012345.6789")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readFloat("-012345.6789")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readFloat("00"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readFloat("-00"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readFloat("012345.6789"))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readFloat("-012345.6789"))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
     }
   }
   "JsonReader.readDouble" should {
@@ -379,26 +433,26 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
     }
     "throw parsing exception on illegal or empty input" in {
-      assert(intercept[Exception](readDouble("")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble(" ")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("-")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble(" $")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("-$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("0e$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("0e-$")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("0.E")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("0.-")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("0.+")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("NaN")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("Inf")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("Infinity")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readDouble("")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readDouble(" ")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readDouble("-")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readDouble("$")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readDouble(" $")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readDouble("-$")).getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readDouble("0e$")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readDouble("0e-$")).getMessage.contains("illegal number, offset: 0x00000003"))
+      assert(intercept[JsonException](readDouble("0.E")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readDouble("0.-")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readDouble("0.+")).getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readDouble("NaN")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readDouble("Inf")).getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readDouble("Infinity")).getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[Exception](readDouble("00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("-00")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("012345.6789")).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readDouble("-012345.6789")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readDouble("00")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readDouble("-00")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readDouble("012345.6789")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readDouble("-012345.6789")).getMessage.contains("illegal number"))
     }
   }
   "JsonReader.readBigInt" should {
@@ -445,26 +499,44 @@ class JsonReaderSpec extends WordSpec with Matchers {
       intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890$", null))
     }
     "throw parsing exception on illegal or empty input" in {
-      assert(intercept[Exception](readBigInt("", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt(" ", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("-", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt(" $", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("-$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("0e$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("0e-$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("0.E", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("0.-", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("0.+", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("NaN", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("Inf", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("Infinity", null)).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readBigInt("", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigInt(" ", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigInt("-", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigInt("$", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigInt(" $", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigInt("-$", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigInt("0e$", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigInt("0e-$", null))
+        .getMessage.contains("illegal number, offset: 0x00000003"))
+      assert(intercept[JsonException](readBigInt("0.E", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigInt("0.-", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigInt("0.+", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigInt("NaN", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigInt("Inf", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigInt("Infinity", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[Exception](readBigInt("00", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("-00", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("012345.6789", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigInt("-012345.6789", null)).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readBigInt("00", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigInt("-00", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigInt("012345.6789", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigInt("-012345.6789", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
     }
   }
   "JsonReader.readBigDecimal" should {
@@ -494,8 +566,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
     }
     "parse valid number values with skiping JSON space characters" in {
-      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
+      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe
+        BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe
+        BigDecimal("-1234567890123456789.0123456789")
     }
     "parse valid number values and stops on not numeric chars" in {
       readBigDecimal("0$", null) shouldBe BigDecimal("0")
@@ -511,26 +585,60 @@ class JsonReaderSpec extends WordSpec with Matchers {
       intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890$", null))
     }
     "throw parsing exception on illegal or empty input" in {
-      assert(intercept[Exception](readBigDecimal("", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal(" ", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("-", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal(" $", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("-$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("0e$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("0e-$", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("0.E", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("0.-", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("0.+", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("NaN", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("Inf", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("Infinity", null)).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readBigDecimal("", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigDecimal(" ", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigDecimal("-", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigDecimal("$", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigDecimal(" $", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigDecimal("-$", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigDecimal("0e$", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigDecimal("0e-$", null))
+        .getMessage.contains("illegal number, offset: 0x00000003"))
+      assert(intercept[JsonException](readBigDecimal("0.E", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigDecimal("0.-", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigDecimal("0.+", null))
+        .getMessage.contains("illegal number, offset: 0x00000002"))
+      assert(intercept[JsonException](readBigDecimal("NaN", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigDecimal("Inf", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigDecimal("Infinity", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[Exception](readBigDecimal("00", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("-00", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("012345.6789", null)).getMessage.contains("illegal number"))
-      assert(intercept[Exception](readBigDecimal("-012345.6789", null)).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readBigDecimal("00", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigDecimal("-00", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+      assert(intercept[JsonException](readBigDecimal("012345.6789", null))
+        .getMessage.contains("illegal number, offset: 0x00000000"))
+      assert(intercept[JsonException](readBigDecimal("-012345.6789", null))
+        .getMessage.contains("illegal number, offset: 0x00000001"))
+    }
+  }
+  "JsonReader.appendHexDump" should {
+    "print specified part of byte buffer aligned to 16 byte offset" in {
+      val sb = new StringBuilder
+      JsonReader.appendHexDump(json, 10, 50, 0, sb)
+      sb.toString shouldBe
+        """
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 |                               6f 68 6e 22 2c 22 |           ohn"," |
+          || 00000010 | 64 65 76 69 63 65 73 22 3a 5b 7b 22 69 64 22 3a | devices":[{"id": |
+          || 00000020 | 32 2c 22 6d 6f 64 65 6c 22 3a 22 69 50 68 6f 6e | 2,"model":"iPhon |
+          || 00000030 | 65 20                                           | e                |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin
     }
   }
 
@@ -567,7 +675,8 @@ class JsonReaderSpec extends WordSpec with Matchers {
 
   def readBigInt(buf: Array[Byte], default: BigInt): BigInt = parse(buf).readBigInt(default)
 
-  def readBigDecimal(s: String, default: BigDecimal): BigDecimal = readBigDecimal(s.getBytes(StandardCharsets.UTF_8), default)
+  def readBigDecimal(s: String, default: BigDecimal): BigDecimal =
+    readBigDecimal(s.getBytes(StandardCharsets.UTF_8), default)
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = parse(buf).readBigDecimal(default)
 }

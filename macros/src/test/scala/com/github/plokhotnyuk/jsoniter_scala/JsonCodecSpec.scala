@@ -132,7 +132,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,'bl':true,"ch":"V","dbl":-123456789.0,"f":-12345.0}""".getBytes)
       }.getMessage.contains(
-        """expected `"`, offset: 0000003e, buf:
+        """expected '"', offset: 0x0000003e, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
           |+----------+-------------------------------------------------+------------------+
@@ -147,61 +147,61 @@ class JsonCodecSpec extends WordSpec with Matchers {
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":01,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x00000005"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":02,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x0000000b"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":03,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x00000011"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":04,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x00000017"))
+      assert(intercept[JsonException] {
+        verifyDeser(codecOfPrimitives, primitives,
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"𝄞","dbl":1.1,"f":2.2}""".getBytes)
+      }.getMessage.contains("illegal value for char, offset: 0x0000002d"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":01.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x00000032"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
-          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":01.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number"))
-      assert(intercept[JsonException] {
-        verifyDeser(codecOfPrimitives, primitives,
-          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"𝄞","dbl":1.1,"f":02.2}""".getBytes)
-      }.getMessage.contains("illegal value for char"))
+          """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":02.2}""".getBytes)
+      }.getMessage.contains("illegal number, offset: 0x0000003a"))
     }
     "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1000,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("value is too large for byte"))
+      }.getMessage.contains("value is too large for byte, offset: 0x00000008"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":200000,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("value is too large for short"))
+      }.getMessage.contains("value is too large for short, offset: 0x00000010"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3000000000,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("value is too large for int"))
+      }.getMessage.contains("value is too large for int, offset: 0x0000001a"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":40000000000000000000,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("value is too large for long"))
+      }.getMessage.contains("value is too large for long, offset: 0x0000002a"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":tru,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal boolean"))
+      }.getMessage.contains("illegal boolean, offset: 0x00000021"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":fals,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal boolean"))
+      }.getMessage.contains("illegal boolean, offset: 0x00000022"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"1000000","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal value for char"))
+      }.getMessage.contains("illegal value for char, offset: 0x00000030"))
     }
     "deserialize too big numbers as infinity for floating point types" in {
       verifyDeser(codecOfPrimitives,
@@ -230,60 +230,60 @@ class JsonCodecSpec extends WordSpec with Matchers {
     "don't deserialize unexpected or illegal values" in {
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes.copy(s = null), """{"s":n,"bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected value or `null`"))
+      }.getMessage.contains("expected value or null, offset: 0x00000006"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes.copy(s = null), """{"s":nu,"bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected value or `null`"))
+      }.getMessage.contains("expected value or null, offset: 0x00000007"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes.copy(s = null), """{"s":nul,"bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected value or `null`"))
+      }.getMessage.contains("expected value or null, offset: 0x00000008"))
     }
     "don't deserialize illegal UTF-8 encoded strings" in {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(6) = 0xF0.toByte
         verifyDeser(codecOfStandardTypes, standardTypes, buf)
-      }.getMessage.contains("malformed byte(s): f0"))
+      }.getMessage.contains("malformed byte(s): 0xf0, 0x56, 0x56, 0x22, offset: 0x00000009"))
     }
     "don't deserialize illegal UTF-8 encoded field names" in {
       assert(intercept[JsonException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
         buf(2) = 0xF0.toByte
         verifyDeser(codecOfStandardTypes, standardTypes, buf)
-      }.getMessage.contains("malformed byte(s): f0"))
+      }.getMessage.contains("malformed byte(s): 0xf0, 0x22, 0x3a, 0x22, offset: 0x00000005"))
     }
     "don't deserialize illegal JSON escaped strings" in {
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, "{\"s\":\"\\udd1e\",\"bi\":1,\"bd\":1.1}".getBytes)
-      }.getMessage.contains("expected high surrogate character"))
+      }.getMessage.contains("expected high surrogate character, offset: 0x0000000b"))
     }
     "don't deserialize illegal JSON escaped field names" in {
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}".getBytes)
-      }.getMessage.contains("expected high surrogate character"))
+      }.getMessage.contains("expected high surrogate character, offset: 0x00000007"))
     }
     "don't deserialize JSON object to case class due missing or illegal tokens" in {
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """"s":"VVV","bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected `{` or `null`"))
+      }.getMessage.contains("expected '{' or null, offset: 0x00000000"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s""VVV","bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected `:`"))
+      }.getMessage.contains("expected ':', offset: 0x00000004"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV""bi":1"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected `}` or `,`"))
+      }.getMessage.contains("expected '}' or ',', offset: 0x0000000a"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """["s":"VVV","bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("expected `{` or `null`"))
+      }.getMessage.contains("expected '{' or null, offset: 0x00000000"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{,"s":"VVV","bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("expected `\"`"))
+      }.getMessage.contains("expected '\"', offset: 0x00000001"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2]""".getBytes)
-      }.getMessage.contains("expected `}` or `,`"))
+      }.getMessage.contains("expected '}' or ',', offset: 0x00000018"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""".getBytes)
-      }.getMessage.contains("expected `\"`"))
+      }.getMessage.contains("expected '\"', offset: 0x00000019"))
     }
     "serialize and deserialize outer types using implicit vals or objects of inner types" in {
       implicit val codecOfNestedType: JsonCodec[StandardTypes] = codecOfStandardTypes
@@ -294,7 +294,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
       assert(intercept[JsonException] {
         verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
-      }.getMessage.contains("illegal enum value"))
+      }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],
@@ -316,16 +316,16 @@ class JsonCodecSpec extends WordSpec with Matchers {
     "don't deserialize JSON array that is not properly started/closed or with leading/trailing comma" in {
       assert(intercept[JsonException] {
         verifyDeser(codecOfArrays, arrays, """{"aa":[{1,2,3]],"a":[]}""".getBytes)
-      }.getMessage.contains("expected `[` or `null`"))
+      }.getMessage.contains("expected '[' or null, offset: 0x00000007"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfArrays, arrays, """{"aa":[[,1,2,3]],"a":[]}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x00000008"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3}],"a":[]}""".getBytes)
-      }.getMessage.contains("expected `]` or `,`"))
+      }.getMessage.contains("expected ']' or ',', offset: 0x0000000d"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3,]],"a":[]}""".getBytes)
-      }.getMessage.contains("illegal number"))
+      }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
     "serialize and deserialize mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
@@ -363,16 +363,16 @@ class JsonCodecSpec extends WordSpec with Matchers {
       val immutableMaps = ImmutableMaps(Map(1 -> 1.1), HashMap.empty, SortedMap.empty)
       assert(intercept[JsonException] {
         verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":["1":1.1},"hm":{},"sm":{}}""".getBytes)
-      }.getMessage.contains("expected `{` or `null`"))
+      }.getMessage.contains("expected '{' or null, offset: 0x00000005"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{,"1":1.1},"hm":{},"sm":{}}""".getBytes)
-      }.getMessage.contains("expected `\"`"))
+      }.getMessage.contains("expected '\"', offset: 0x00000006"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1],"hm":{},"sm":{}""".getBytes)
-      }.getMessage.contains("expected `}` or `,`"))
+      }.getMessage.contains("expected '}' or ',', offset: 0x0000000d"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1,},"hm":{},"sm":{}""".getBytes)
-      }.getMessage.contains("expected `\"`"))
+      }.getMessage.contains("expected '\"', offset: 0x0000000e"))
     }
     "don't serialize null keys for maps" in {
       assert(intercept[IOException] {
@@ -515,7 +515,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
             |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,
             |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
             |}""".stripMargin.getBytes)
-      }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99""""))
+      }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99", offset: 0x0000032c"""))
     }
   }
 
