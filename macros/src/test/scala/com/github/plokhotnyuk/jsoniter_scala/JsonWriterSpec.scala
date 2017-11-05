@@ -84,8 +84,11 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal("иბ𝄞")) shouldBe "\"иბ\ud834\udd1e\""
     }
     "write strings with escaped unicode chars" in {
-      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u0001\b\f\n\r\t/Aиბ𝄞")) shouldBe
-        "\"\\u0001\\b\\f\\n\\r\\t/A\\u0438\\u10d1\\ud834\\udd1e\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u0000")) shouldBe "\"\\u0000\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u001f")) shouldBe "\"\\u001f\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u007F")) shouldBe "\"\\u007f\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\b\f\n\r\t")) shouldBe "\"\\b\\f\\n\\r\\t\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal("/Aиბ𝄞")) shouldBe "\"/A\\u0438\\u10d1\\ud834\\udd1e\""
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
       assert(intercept[IOException](serialized(_.writeVal("\udd1e"))).getMessage.contains("illegal char sequence of surrogate pair"))
@@ -118,7 +121,9 @@ class JsonWriterSpec extends WordSpec with Matchers {
       serialized(_.writeVal('ბ')) shouldBe "\"ბ\""
     }
     "write strings with escaped unicode chars" in {
-      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u0001')) shouldBe "\"\\u0001\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u0000')) shouldBe "\"\\u0000\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u001f')) shouldBe "\"\\u001f\""
+      serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u007F')) shouldBe "\"\\u007f\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\b')) shouldBe "\"\\b\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\f')) shouldBe "\"\\f\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\n')) shouldBe "\"\\n\""

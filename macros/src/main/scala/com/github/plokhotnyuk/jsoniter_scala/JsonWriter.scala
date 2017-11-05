@@ -194,7 +194,7 @@ final class JsonWriter private[jsoniter_scala](
     var ch: Char = 0 // the fast path without utf8 and escape support
     while (i < to && {
       ch = s.charAt(i)
-      ch > 31 && ch < 128 && ch != '"' && ch != '\\'
+      ch > 31 && ch < 127 && ch != '"' && ch != '\\'
     }) pos = {
       i += 1
       write(ch.toByte, pos)
@@ -264,7 +264,7 @@ final class JsonWriter private[jsoniter_scala](
     case '\n' => write('\\', 'n', pos)
     case '\r' => write('\\', 'r', pos)
     case '\t' => write('\\', 't', pos)
-    case _ => if (config.escapeUnicode && (ch < 32 || ch > 126)) writeEscapedUnicode(ch, pos) else write(ch.toByte, pos)
+    case _ => if (config.escapeUnicode && (ch <= 31 || ch >= 127)) writeEscapedUnicode(ch, pos) else write(ch.toByte, pos)
   }
 
   private def writeEscapedUnicode(ch: Char, pos: Int) = {
