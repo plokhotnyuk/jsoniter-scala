@@ -10,7 +10,6 @@ lazy val `jsoniter-scala` = project.in(file("."))
       organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
       homepage := Some(url("http://github.com/plokhotnyuk/jsoniter-scala")),
       licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-      resolvers += Resolver.mavenLocal,
       scalacOptions ++= Seq(
         "-deprecation",
         "-encoding", "UTF-8",

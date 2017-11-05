@@ -174,7 +174,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
       assert(intercept[JsonException](parse("".getBytes).readString())
         .getMessage.contains("unexpected end of input, offset: 0x00000000"))
       assert(intercept[JsonException](parse("\"".getBytes).readString())
-        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
       assert(intercept[JsonException](parse("\"\\".getBytes).readString())
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
@@ -202,25 +202,25 @@ class JsonReaderSpec extends WordSpec with Matchers {
       assert(intercept[JsonException](readString("\\u000"))
         .getMessage.contains("expected hex digit, offset: 0x00000006"))
       assert(intercept[JsonException](readString("\\u00"))
-        .getMessage.contains("expected hex digit, offset: 0x00000005"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000006"))
       assert(intercept[JsonException](readString("\\u0"))
-        .getMessage.contains("expected hex digit, offset: 0x00000004"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000005"))
       assert(intercept[JsonException](readString("\\"))
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
       assert(intercept[JsonException](readString("\\udd1e"))
         .getMessage.contains("expected high surrogate character, offset: 0x00000006"))
       assert(intercept[JsonException](readString("\\ud834"))
-        .getMessage.contains("illegal escape sequence, offset: 0x00000007"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000008"))
       assert(intercept[JsonException](readString("\\ud834\\"))
-        .getMessage.contains("illegal escape sequence, offset: 0x00000008"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000009"))
       assert(intercept[JsonException](readString("\\ud834\\x"))
-        .getMessage.contains("illegal escape sequence, offset: 0x00000008"))
+        .getMessage.contains("unexpected end of input, offset: 0x0000000a"))
       assert(intercept[JsonException](readString("\\ud834\\ud834"))
         .getMessage.contains("expected low surrogate character, offset: 0x0000000c"))
     }
     "throw parsing exception in case of illegal byte sequence" in {
       assert(intercept[JsonException](readString(Array[Byte](0xF0.toByte)))
-        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+        .getMessage.contains("malformed byte(s): 0xf0, offset: 0x00000001"))
       assert(intercept[JsonException](readString(Array[Byte](0x80.toByte)))
         .getMessage.contains("malformed byte(s): 0x80, offset: 0x00000001"))
       assert(intercept[JsonException](readString(Array[Byte](0xC0.toByte, 0x80.toByte)))
@@ -657,7 +657,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
   }
 
   def parse(buf: Array[Byte]): JsonReader =
-    new JsonReader(new Array[Byte](1), 0, 0, new Array[Char](1), new ByteArrayInputStream(buf))
+    new JsonReader(new Array[Byte](12), 0, 0, new Array[Char](1), new ByteArrayInputStream(buf))
 
   def skip(s: String): Unit = {
     val reader = parse((s + ",").getBytes)

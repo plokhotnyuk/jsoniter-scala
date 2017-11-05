@@ -186,8 +186,7 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 1
         b
       } else nextToken(pos + 1)
-    } else if (loadMore(pos)) nextToken(head)
-    else decodeError("unexpected end of input", pos)
+    } else nextToken(loadMoreOrError(pos))
 
   def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
 
@@ -257,10 +256,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def nextByte(): Byte = {
     var pos = head
-    if (pos == tail) {
-      if (loadMore(pos)) pos = 0
-      else decodeError("unexpected end of input", pos)
-    }
+    if (pos == tail) pos = loadMoreOrError(pos)
     head = pos + 1
     buf(pos)
   }
@@ -285,20 +281,21 @@ final class JsonReader private[jsoniter_scala](
     if (negative) b = nextByte()
     if (b >= '0' && b <= '9') {
       var v = '0' - b
-      var pos = 0
-      do {
-        pos = head
-        while (pos < tail && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) pos = {
-          if (v == 0) numberError(pos - 1)
-          if (v < -214748364) intOverflowError(pos)
-          v = v * 10 + ('0' - b)
-          if (v >= 0) intOverflowError(pos)
-          pos + 1
-        }
-      } while (loadMore(pos))
+      var pos = head
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        pos == 0
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) pos = {
+        if (v == 0) numberError(pos - 1)
+        if (v < -214748364) intOverflowError(pos)
+        v = v * 10 + ('0' - b)
+        if (v >= 0) intOverflowError(pos)
+        pos + 1
+      }
+      head = pos
       if (negative) v
       else if (v == Int.MinValue) intOverflowError(pos - 1)
       else -v
@@ -315,20 +312,21 @@ final class JsonReader private[jsoniter_scala](
     if (negative) b = nextByte()
     if (b >= '0' && b <= '9') {
       var v: Long = '0' - b
-      var pos = 0
-      do {
-        pos = head
-        while (pos < tail && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) pos = {
-          if (v == 0) numberError(pos - 1)
-          if (v < -922337203685477580L) longOverflowError(pos)
-          v = v * 10 + ('0' - b)
-          if (v >= 0) longOverflowError(pos)
-          pos + 1
-        }
-      } while (loadMore(pos))
+      var pos = head
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        pos == 0
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) pos = {
+        if (v == 0) numberError(pos - 1)
+        if (v < -922337203685477580L) longOverflowError(pos)
+        v = v * 10 + ('0' - b)
+        if (v >= 0) longOverflowError(pos)
+        pos + 1
+      }
+      head = pos
       if (negative) v
       else if (v == Long.MinValue) longOverflowError(pos - 1)
       else -v
@@ -347,140 +345,141 @@ final class JsonReader private[jsoniter_scala](
     var isExpNeg = false
     var isZeroFirst = false
     var i = 0
-    var pos = 0
     var state = 0
-    do {
-      pos = ensureReusableCharsCapacity(i)
-      while (pos < tail) {
-        val ch = buf(pos).toChar
-        (state: @switch) match {
-          case 0 => // start
-            if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-              if (!isToken) numberError(pos)
-              state = 1
-            } else if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              posMan = ch - '0'
-              isZeroFirst = posMan == 0
-              state = 3
-            } else if (ch == '-') {
-              i = putCharAt(ch, i)
-              isNeg = true
-              state = 2
-            } else numberError(pos)
-          case 1 => // whitespaces
-            if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-              state = 1
-            } else if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              posMan = ch - '0'
-              isZeroFirst = posMan == 0
-              state = 3
-            } else if (ch == '-') {
-              i = putCharAt(ch, i)
-              isNeg = true
-              state = 2
-            } else numberError(pos)
-          case 2 => // signum
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              posMan = ch - '0'
-              isZeroFirst = posMan == 0
-              state = 3
-            } else numberError(pos)
-          case 3 => // first int digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
+    var pos = ensureReusableCharsCapacity(i, head)
+    while (pos < tail || {
+      pos = ensureReusableCharsCapacity(i, loadMore(pos))
+      pos == 0
+    }) {
+      val ch = buf(pos).toChar
+      (state: @switch) match {
+        case 0 => // start
+          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            if (!isToken) numberError(pos)
+            state = 1
+          } else if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = ch - '0'
+            isZeroFirst = posMan == 0
+            state = 3
+          } else if (ch == '-') {
+            i = putCharAt(ch, i)
+            isNeg = true
+            state = 2
+          } else numberError(pos)
+        case 1 => // whitespaces
+          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            state = 1
+          } else if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = ch - '0'
+            isZeroFirst = posMan == 0
+            state = 3
+          } else if (ch == '-') {
+            i = putCharAt(ch, i)
+            isNeg = true
+            state = 2
+          } else numberError(pos)
+        case 2 => // signum
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = ch - '0'
+            isZeroFirst = posMan == 0
+            state = 3
+          } else numberError(pos)
+        case 3 => // first int digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = posMan * 10 + (ch - '0')
+            if (isZeroFirst) numberError(pos - 1)
+            state = 4
+          } else if (ch == '.') {
+            i = putCharAt(ch, i)
+            state = 5
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 4 => // int digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            if (posMan < 922337203685477580L) posMan = posMan * 10 + (ch - '0')
+            else manExp += 1
+            state = 4
+          } else if (ch == '.') {
+            i = putCharAt(ch, i)
+            state = 5
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 5 => // dot
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            if (posMan < 922337203685477580L) {
               posMan = posMan * 10 + (ch - '0')
-              if (isZeroFirst) numberError(pos - 1)
-              state = 4
-            } else if (ch == '.') {
-              i = putCharAt(ch, i)
-              state = 5
-            } else if (ch == 'e' || ch == 'E') {
-              i = putCharAt(ch, i)
-              state = 7
-            } else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+              manExp -= 1
             }
-          case 4 => // int digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              if (posMan < 922337203685477580L) posMan = posMan * 10 + (ch - '0')
-              else manExp += 1
-              state = 4
-            } else if (ch == '.') {
-              i = putCharAt(ch, i)
-              state = 5
-            } else if (ch == 'e' || ch == 'E') {
-              i = putCharAt(ch, i)
-              state = 7
-            } else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+            state = 6
+          } else numberError(pos)
+        case 6 => // frac digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            if (posMan < 922337203685477580L) {
+              posMan = posMan * 10 + (ch - '0')
+              manExp -= 1
             }
-          case 5 => // dot
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              if (posMan < 922337203685477580L) {
-                posMan = posMan * 10 + (ch - '0')
-                manExp -= 1
-              }
-              state = 6
-            } else numberError(pos)
-          case 6 => // frac digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              if (posMan < 922337203685477580L) {
-                posMan = posMan * 10 + (ch - '0')
-                manExp -= 1
-              }
-              state = 6
-            } else if (ch == 'e' || ch == 'E') {
-              i = putCharAt(ch, i)
-              state = 7
-            } else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
-            }
-          case 7 => // e char
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              posExp = ch - '0'
-              state = 9
-            } else if (ch == '-' || ch == '+') {
-              i = putCharAt(ch, i)
-              isExpNeg = ch == '-'
-              state = 8
-            } else numberError(pos)
-          case 8 => // exp. sign
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              posExp = ch - '0'
-              state = 9
-            } else numberError(pos)
-          case 9 => // exp. digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              posExp = posExp * 10 + (ch - '0')
-              state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 214748364) 10 else 9
-            } else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
-            }
-          case 10 => // exp. digit overflow
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 10
-            } else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
-            }
-        }
-        pos += 1
+            state = 6
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 7 => // e char
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posExp = ch - '0'
+            state = 9
+          } else if (ch == '-' || ch == '+') {
+            i = putCharAt(ch, i)
+            isExpNeg = ch == '-'
+            state = 8
+          } else numberError(pos)
+        case 8 => // exp. sign
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posExp = ch - '0'
+            state = 9
+          } else numberError(pos)
+        case 9 => // exp. digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posExp = posExp * 10 + (ch - '0')
+            state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 214748364) 10 else 9
+          } else {
+            head = pos
+            return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 10 => // exp. digit overflow
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 10
+          } else {
+            head = pos
+            return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
       }
-    } while (loadMore(pos))
+      pos += 1
+    }
+    head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
     else if (state == 10) toExpOverflowDouble(isNeg, manExp, isExpNeg, posExp)
     else numberError()
@@ -511,128 +510,129 @@ final class JsonReader private[jsoniter_scala](
   private def parseBigDecimal(isToken: Boolean): java.math.BigDecimal = {
     var isZeroFirst = false
     var i = 0
-    var pos = 0
     var state = 0
-    do {
-      pos = ensureReusableCharsCapacity(i)
-      while (pos < tail) {
-        val ch = buf(pos).toChar
-        (state: @switch) match {
-          case 0 => // start
-            if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-              if (!isToken) numberError(pos)
-              state = 1
-            } else if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              isZeroFirst = ch == '0'
-              state = 3
-            } else if (ch == '-') {
-              i = putCharAt(ch, i)
-              state = 2
-            } else if (ch == 'n' && isToken) {
-              state = 10
-            } else numberError(pos)
-          case 1 => // whitespaces
-            if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-              state = 1
-            } else if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              isZeroFirst = ch == '0'
-              state = 3
-            } else if (ch == '-') {
-              i = putCharAt(ch, i)
-              state = 2
-            } else if (ch == 'n' && isToken) {
-              state = 10
-            } else numberError(pos)
-          case 2 => // signum
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              isZeroFirst = ch == '0'
-              state = 3
-            } else numberError(pos)
-          case 3 => // first int digit
-            if (ch >= '0' && ch <= '9') {
-              if (isZeroFirst) numberError(pos - 1)
-              i = putCharAt(ch, i)
-              state = 4
-            } else if (ch == '.') {
-              i = putCharAt(ch, i)
-              state = 5
-            } else if (ch == 'e' || ch == 'E') {
-              i = putCharAt(ch, i)
-              state = 7
-            } else {
-              head = pos
-              return toBigDecimal(i)
-            }
-          case 4 => // int digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 4
-            } else if (ch == '.') {
-              i = putCharAt(ch, i)
-              state = 5
-            } else if (ch == 'e' || ch == 'E') {
-              i = putCharAt(ch, i)
-              state = 7
-            } else {
-              head = pos
-              return toBigDecimal(i)
-            }
-          case 5 => // dot
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 6
-            } else numberError(pos)
-          case 6 => // frac digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 6
-            } else if (ch == 'e' || ch == 'E') {
-              i = putCharAt(ch, i)
-              state = 7
-            } else {
-              head = pos
-              return toBigDecimal(i)
-            }
-          case 7 => // e char
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 9
-            } else if (ch == '-' || ch == '+') {
-              i = putCharAt(ch, i)
-              state = 8
-            } else numberError(pos)
-          case 8 => // exp. sign
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 9
-            } else numberError(pos)
-          case 9 => // exp. digit
-            if (ch >= '0' && ch <= '9') {
-              i = putCharAt(ch, i)
-              state = 9
-            } else {
-              head = pos
-              return toBigDecimal(i)
-            }
-          case 10 => // n'u'll
-            if (ch == 'u') state = 11
-            else numberError(pos)
-          case 11 => // nu'l'l
-            if (ch == 'l') state = 12
-            else numberError(pos)
-          case 12 => // nul'l'
-            if (ch == 'l') state = 13
-            else numberError(pos)
-          case 13 => // null
+    var pos = ensureReusableCharsCapacity(i, head)
+    while (pos < tail || {
+      pos = ensureReusableCharsCapacity(i, loadMore(pos))
+      pos == 0
+    }) {
+      val ch = buf(pos).toChar
+      (state: @switch) match {
+        case 0 => // start
+          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            if (!isToken) numberError(pos)
+            state = 1
+          } else if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            isZeroFirst = ch == '0'
+            state = 3
+          } else if (ch == '-') {
+            i = putCharAt(ch, i)
+            state = 2
+          } else if (ch == 'n' && isToken) {
+            state = 10
+          } else numberError(pos)
+        case 1 => // whitespaces
+          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            state = 1
+          } else if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            isZeroFirst = ch == '0'
+            state = 3
+          } else if (ch == '-') {
+            i = putCharAt(ch, i)
+            state = 2
+          } else if (ch == 'n' && isToken) {
+            state = 10
+          } else numberError(pos)
+        case 2 => // signum
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            isZeroFirst = ch == '0'
+            state = 3
+          } else numberError(pos)
+        case 3 => // first int digit
+          if (ch >= '0' && ch <= '9') {
+            if (isZeroFirst) numberError(pos - 1)
+            i = putCharAt(ch, i)
+            state = 4
+          } else if (ch == '.') {
+            i = putCharAt(ch, i)
+            state = 5
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
             head = pos
-            return null
-        }
-        pos += 1
+            return toBigDecimal(i)
+          }
+        case 4 => // int digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 4
+          } else if (ch == '.') {
+            i = putCharAt(ch, i)
+            state = 5
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toBigDecimal(i)
+          }
+        case 5 => // dot
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 6
+          } else numberError(pos)
+        case 6 => // frac digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 6
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toBigDecimal(i)
+          }
+        case 7 => // e char
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 9
+          } else if (ch == '-' || ch == '+') {
+            i = putCharAt(ch, i)
+            state = 8
+          } else numberError(pos)
+        case 8 => // exp. sign
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 9
+          } else numberError(pos)
+        case 9 => // exp. digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 9
+          } else {
+            head = pos
+            return toBigDecimal(i)
+          }
+        case 10 => // n'u'll
+          if (ch == 'u') state = 11
+          else numberError(pos)
+        case 11 => // nu'l'l
+          if (ch == 'l') state = 12
+          else numberError(pos)
+        case 12 => // nul'l'
+          if (ch == 'l') state = 13
+          else numberError(pos)
+        case 13 => // null
+          head = pos
+          return null
       }
-    } while (loadMore(pos))
+      pos += 1
+    }
+    head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(i)
     else if (state == 13) null
     else numberError()
@@ -648,84 +648,92 @@ final class JsonReader private[jsoniter_scala](
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   @tailrec
-  private def parseString(i: Int = 0, pos: Int = ensureReusableCharsCapacity(0)): Int =
+  private def parseString(i: Int = 0, pos: Int = ensureReusableCharsCapacity(0, head)): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b ^ '\\') < 1) {
-        head = pos
-        slowParseString(i)
-      } else parseString(putCharAt(b.toChar, i), pos + 1)
-    } else if (loadMore(pos)) parseString(i, ensureReusableCharsCapacity(i))
-    else decodeError("unexpected end of input")
+      } else if ((b ^ '\\') < 1) slowParseString(i, pos)
+      else parseString(putCharAt(b.toChar, i), pos + 1)
+    } else parseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
 
   @tailrec
-  private def slowParseString(i: Int): Int = {
-    val b1 = nextByte()
-    if (b1 == '"') i
-    else slowParseString({
-      ensureReusableCharsCapacity(i + 2) // +2 extra for surrogate pair case
+  private def slowParseString(i: Int, pos: Int): Int =
+    if (pos < tail) {
+      val b1 = buf(pos)
       if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
-        if (b1 != '\\') putCharAt(b1.toChar, i)
-        else readEscapeSequence(i)
-      } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        val b2 = nextByte()
-        if (isMalformed2(b1, b2)) malformedBytes(b1, b2)
-        putCharAt(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, i) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
-      } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        val b2 = nextByte()
-        val b3 = nextByte()
+        if (b1 == '"') {
+          head = pos + 1
+          i
+        } else if (b1 != '\\') slowParseString(putCharAt(b1.toChar, i), pos + 1)
+        else if (pos + 1 < tail) {
+          (buf(pos + 1): @switch) match {
+            case 'b' => slowParseString(putCharAt('\b', i), pos + 2)
+            case 'f' => slowParseString(putCharAt('\f', i), pos + 2)
+            case 'n' => slowParseString(putCharAt('\n', i), pos + 2)
+            case 'r' => slowParseString(putCharAt('\r', i), pos + 2)
+            case 't' => slowParseString(putCharAt('\t', i), pos + 2)
+            case '"' => slowParseString(putCharAt('"', i), pos + 2)
+            case '/' => slowParseString(putCharAt('/', i), pos + 2)
+            case '\\' => slowParseString(putCharAt('\\', i), pos + 2)
+            case 'u' =>
+              if (pos + 5 < tail) {
+                val ch1 = readEscapedUnicode(pos + 2)
+                if (ch1 < 2048) slowParseString(putCharAt(ch1, i), pos + 6)
+                else if (!Character.isHighSurrogate(ch1)) {
+                  if (Character.isLowSurrogate(ch1)) decodeError("expected high surrogate character", pos + 5)
+                  slowParseString(putCharAt(ch1, i), pos + 6)
+                } else if (pos + 11 < tail) {
+                  if (buf(pos + 6) == '\\') {
+                    if (buf(pos + 7) == 'u') {
+                      val ch2 = readEscapedUnicode(pos + 8)
+                      if (!Character.isLowSurrogate(ch2)) decodeError("expected low surrogate character", pos + 11)
+                      slowParseString(putCharAt(ch2, putCharAt(ch1, i)), pos + 12)
+                    } else illegalEscapeSequenceError(pos + 7)
+                  } else illegalEscapeSequenceError(pos + 6)
+                } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+              } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+            case _ => illegalEscapeSequenceError(pos + 1)
+          }
+        } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+      } else if ((b1 >> 5) == -2 && pos + 1 < tail) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        val b2 = buf(pos + 1)
+        if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
+        slowParseString(putCharAt(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, i), pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+      } else if ((b1 >> 4) == -2 && pos + 2 < tail) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        val b2 = buf(pos + 1)
+        val b3 = buf(pos + 2)
         val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3)
-        putCharAt(ch, i)
-      } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        val b2 = nextByte()
-        val b3 = nextByte()
-        val b4 = nextByte()
+        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
+        slowParseString(putCharAt(ch, i), pos + 3)
+      } else if ((b1 >> 3) == -2 && pos + 3 < tail) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        val b2 = buf(pos + 1)
+        val b3 = buf(pos + 2)
+        val b4 = buf(pos + 3)
         val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4)
-        putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i))
-      } else malformedBytes(b1)
-    })
+        if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
+        slowParseString(putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i)), pos + 4)
+      } else if (b1 < 0) malformedBytes(b1, pos)
+      else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+    } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+
+  private def readEscapedUnicode(pos1: Int): Char = {
+    val pos2 = pos1 + 1
+    val pos3 = pos1 + 2
+    val pos4 = pos1 + 3
+    ((fromHexDigit(buf(pos1), pos1) << 12) +
+      (fromHexDigit(buf(pos2), pos2) << 8) +
+      (fromHexDigit(buf(pos3), pos3) << 4) +
+      fromHexDigit(buf(pos4), pos4)).toChar
   }
 
-  private def readEscapeSequence(i: Int): Int = (nextByte(): @switch) match {
-    case 'b' => putCharAt('\b', i)
-    case 'f' => putCharAt('\f', i)
-    case 'n' => putCharAt('\n', i)
-    case 'r' => putCharAt('\r', i)
-    case 't' => putCharAt('\t', i)
-    case '"' => putCharAt('"', i)
-    case '/' => putCharAt('/', i)
-    case '\\' => putCharAt('\\', i)
-    case 'u' =>
-      val ch1 = readEscapedUnicode()
-      if (ch1 < 2048) putCharAt(ch1, i)
-      else if (!Character.isHighSurrogate(ch1)) {
-        if (Character.isLowSurrogate(ch1)) decodeError("expected high surrogate character")
-        putCharAt(ch1, i)
-      } else if (nextByte() == '\\' && nextByte() == 'u') {
-        val ch2 = readEscapedUnicode()
-        if (!Character.isLowSurrogate(ch2)) decodeError("expected low surrogate character")
-        putCharAt(ch2, putCharAt(ch1, i))
-      } else decodeError("illegal escape sequence")
-    case _ => decodeError("illegal escape sequence")
-  }
-
-  private def readEscapedUnicode(): Char =
-    ((fromHexDigit(nextByte()) << 12) +
-      (fromHexDigit(nextByte()) << 8) +
-      (fromHexDigit(nextByte()) << 4) +
-      fromHexDigit(nextByte())).toChar
-
-  private def fromHexDigit(b: Byte): Int =
+  private def fromHexDigit(b: Byte, pos: Int): Int =
     if (b >= '0' && b <= '9') b - 48
     else {
       val b1 = b & -33
       if (b1 >= 'A' && b1 <= 'F') b1 - 55
-      else decodeError("expected hex digit")
+      else decodeError("expected hex digit", pos)
     }
 
   private def isMalformed2(b1: Byte, b2: Byte): Boolean =
@@ -737,16 +745,42 @@ final class JsonReader private[jsoniter_scala](
   private def isMalformed4(b2: Byte, b3: Byte, b4: Byte): Boolean =
     (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80
 
-  private def malformedBytes(bytes: Byte*): Nothing = {
-    val sb = new StringBuilder("malformed byte(s): ")
-    var comma = false
-    bytes.foreach { b =>
-      appendHex(b, if (comma) sb.append(", 0x") else {
-        comma = true
-        sb.append("0x")
-      })
-    }
-    decodeError(sb.toString)
+  private def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
+
+  private def malformedBytes(b1: Byte, pos: Int): Nothing = {
+    val sb = new StringBuilder("malformed byte(s): 0x")
+    appendHex(b1, sb)
+    decodeError(sb.toString, pos)
+  }
+
+  private def malformedBytes(b1: Byte, b2: Byte, pos: Int): Nothing = {
+    val sb = new StringBuilder("malformed byte(s): 0x")
+    appendHex(b1, sb)
+    sb.append(", 0x")
+    appendHex(b2, sb)
+    decodeError(sb.toString, pos + 1)
+  }
+
+  private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
+    val sb = new StringBuilder("malformed byte(s): 0x")
+    appendHex(b1, sb)
+    sb.append(", 0x")
+    appendHex(b2, sb)
+    sb.append(", 0x")
+    appendHex(b3, sb)
+    decodeError(sb.toString, pos + 2)
+  }
+
+  private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
+    val sb = new StringBuilder("malformed byte(s): 0x")
+    appendHex(b1, sb)
+    sb.append(", 0x")
+    appendHex(b2, sb)
+    sb.append(", 0x")
+    appendHex(b3, sb)
+    sb.append(", 0x")
+    appendHex(b4, sb)
+    decodeError(sb.toString, pos + 3)
   }
 
   @inline
@@ -755,18 +789,14 @@ final class JsonReader private[jsoniter_scala](
     i + 1
   }
 
-  @inline
-  private def ensureReusableCharsCapacity(i: Int): Int = {
-    val pos = head
+  private def ensureReusableCharsCapacity(i: Int, pos: Int): Int = {
     val required = tail - pos + i
-    if (required > reusableChars.length) growReusableChars(required)
+    if (required > reusableChars.length) {
+      val cs = new Array[Char](Math.max(reusableChars.length << 1, required))
+      System.arraycopy(reusableChars, 0, cs, 0, reusableChars.length)
+      reusableChars = cs
+    }
     pos
-  }
-
-  private def growReusableChars(required: Int): Unit = {
-    val cs = new Array[Char](Math.max(reusableChars.length << 1, required))
-    System.arraycopy(reusableChars, 0, cs, 0, reusableChars.length)
-    reusableChars = cs
   }
 
   @tailrec
@@ -776,8 +806,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"' && evenBackSlashes) pos + 1
       else if (b == '\\') skipString(!evenBackSlashes, pos + 1)
       else skipString(evenBackSlashes = true, pos + 1)
-    } else if (loadMore(pos)) skipString(evenBackSlashes, head)
-    else pos
+    } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
   @tailrec
   private def skipNumber(pos: Int = head): Int =
@@ -785,8 +814,7 @@ final class JsonReader private[jsoniter_scala](
       val b = buf(pos)
       if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' || b == 'E') skipNumber(pos + 1)
       else pos
-    } else if (loadMore(pos)) skipNumber(head)
-    else pos
+    } else skipNumber(loadMoreOrError(pos))
 
   @tailrec
   private def skipNested(opening: Byte, closing: Byte, level: Int = 0, pos: Int = head): Int =
@@ -798,37 +826,43 @@ final class JsonReader private[jsoniter_scala](
         else skipNested(opening, closing, level - 1, pos + 1)
       } else if (b == opening) skipNested(opening, closing, level + 1, pos + 1)
       else skipNested(opening, closing, level, pos + 1)
-    } else if (loadMore(pos)) skipNested(opening, closing, level, head)
-    else pos
+    } else skipNested(opening, closing, level, loadMoreOrError(pos))
 
   @tailrec
   private def skipFixedBytes(n: Int, pos: Int = head): Int = {
     val newPos = pos + n
     val diff = newPos - tail
     if (diff <= 0) newPos
-    else if (loadMore(tail)) skipFixedBytes(diff, head)
-    else tail
+    else skipFixedBytes(diff, loadMoreOrError(pos))
   }
 
-  @inline
-  private def loadMore(pos: Int): Boolean =
-    if (in eq null) {
-      head = pos
-      false
-    } else realLoadMore(pos)
-
-  private def realLoadMore(pos: Int): Boolean = {
-    val n = in.read(buf)
-    if (n > 0) {
-      head = 0
-      tail = n
-      totalRead += n
-      true
-    } else {
-      head = pos
-      false
+  private def loadMoreOrError(pos: Int): Int =
+    if (in eq null) endOfInput()
+    else {
+      val remaining = tail - pos
+      if (remaining > 0) {
+        System.arraycopy(buf, pos, buf, 0, remaining)
+      }
+      val n = in.read(buf, remaining, buf.length - remaining)
+      if (n > 0) {
+        tail = remaining + n
+        totalRead += n
+        0
+      } else endOfInput()
     }
-  }
+
+  private def loadMore(pos: Int): Int =
+    if (in eq null) pos
+    else {
+      val n = in.read(buf)
+      if (n > 0) {
+        tail = n
+        totalRead += n
+        0
+      } else pos
+    }
+
+  private def endOfInput(): Nothing = decodeError("unexpected end of input", tail)
 }
 
 object JsonReader {
@@ -853,7 +887,8 @@ object JsonReader {
     reader.head = 0
     reader.tail = 0
     reader.totalRead = 0
-    codec.decode(reader)
+    try codec.decode(reader)
+    finally reader.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
   }
 
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = {
