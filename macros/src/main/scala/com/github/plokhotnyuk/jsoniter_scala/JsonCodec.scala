@@ -443,7 +443,10 @@ object JsonCodec {
               ..${decoders.map { case (_, d) => d._2 }}
               ..${encoders.map { case (_, e) => e._2 }}
             }"""
-      if (c.settings.contains("print-codecs")) c.info(c.enclosingPosition, s"Generated JSON codec for type '$tpe':\n${showCode(codecForCaseClass)}", force = true)
+      if (c.settings.contains("print-codecs")) {
+        val msg = s"Generated JSON codec for type '$tpe':\n${showCode(codecForCaseClass)}"
+        c.info(c.enclosingPosition, msg, force = true)
+      }
       c.Expr[JsonCodec[A]](codecForCaseClass)
     }
   }

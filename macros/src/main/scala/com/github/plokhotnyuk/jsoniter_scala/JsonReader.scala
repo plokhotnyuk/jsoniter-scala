@@ -30,7 +30,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsString(): String = {
     readParentheses()
-    val x = reusableCharsToString(parseString(0))
+    val x = reusableCharsToString(parseString())
     readColon()
     x
   }
@@ -54,7 +54,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsChar(): Char = {
     readParentheses()
-    val len = parseString(0)
+    val len = parseString()
     val x = reusableChars(0)
     if (len != 1) decodeError("illegal value for char")
     else {
@@ -123,7 +123,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readChar(): Char = {
     readParentheses()
-    val len = parseString(0)
+    val len = parseString()
     val x = reusableChars(0)
     if (len != 1) decodeError("illegal value for char")
     x
@@ -157,7 +157,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String = null): String = {
     val b = nextToken()
-    if (b == '"') reusableCharsToString(parseString(0))
+    if (b == '"') reusableCharsToString(parseString())
     else if (b == 'n') parseNull(default)
     else decodeError("expected string value or null")
   }
@@ -170,7 +170,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsReusableChars(): Int = {
     if (nextToken() != '"') decodeError("expected '\"'")
-    val x = parseString(0)
+    val x = parseString()
     readColon()
     x
   }
@@ -647,24 +647,18 @@ final class JsonReader private[jsoniter_scala](
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   @tailrec
-  private def parseString(from: Int): Int = {
-    var i = from
-    var pos = ensureSizeOfReusableChars(from)
-    while (pos < tail) i = {
+  private def parseString(i: Int = 0, pos: Int = ensureSizeOfReusableChars(0)): Int =
+    if (pos < tail) {
       val b = buf(pos)
-      pos += 1
       if (b == '"') {
-        head = pos
-        return i
+        head = pos + 1
+        i
       } else if ((b ^ '\\') < 1) {
-        head = pos - 1
-        return slowParseString(i)
-      }
-      putCharAt(b.toChar, i)
-    }
-    if (loadMore(pos)) parseString(i)
+        head = pos
+        slowParseString(i)
+      } else parseString(putCharAt(b.toChar, i), pos + 1)
+    } else if (loadMore(pos)) parseString(i, ensureSizeOfReusableChars(i))
     else decodeError("unexpected end of input")
-  }
 
   private def slowParseString(from: Int): Int = {
     var i = from
