@@ -7,18 +7,19 @@ import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers {
   case class Device(id: Int, model: String)
-  implicit val deviceCodec = JsonCodec.materialize[Device]
+  implicit val deviceCodec: JsonCodec[Device] = JsonCodec.materialize[Device]
 
   case class User(name: String, devices: Seq[Device])
-  val userCodec = JsonCodec.materialize[User]
+  val userCodec: JsonCodec[User] = JsonCodec.materialize[User]
 
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
-  val json = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes("UTF-8")
-  val httpMessage = """HTTP/1.0 200 OK
-                      |Content-Type: application/json
-                      |Content-Length: 55
-                      |
-                      |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes("UTF-8")
+  val json: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes("UTF-8")
+  val httpMessage: Array[Byte] =
+    """HTTP/1.0 200 OK
+      |Content-Type: application/json
+      |Content-Length: 55
+      |
+      |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes("UTF-8")
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
       JsonReader.read(userCodec, new ByteArrayInputStream(json)) shouldBe user

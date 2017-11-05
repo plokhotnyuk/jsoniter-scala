@@ -6,22 +6,23 @@ import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers {
   case class Device(id: Int, model: String)
-  implicit val deviceCodec = JsonCodec.materialize[Device]
+  implicit val deviceCodec: JsonCodec[Device] = JsonCodec.materialize[Device]
 
   case class User(name: String, devices: Seq[Device])
-  val userCodec = JsonCodec.materialize[User]
+  val userCodec: JsonCodec[User] = JsonCodec.materialize[User]
 
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
   val json = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}"""
-  val prettyJson = """{
-                     |  "name": "John",
-                     |  "devices": [
-                     |    {
-                     |      "id": 2,
-                     |      "model": "iPhone X"
-                     |    }
-                     |  ]
-                     |}""".stripMargin
+  val prettyJson: String =
+    """{
+      |  "name": "John",
+      |  "devices": [
+      |    {
+      |      "id": 2,
+      |      "model": "iPhone X"
+      |    }
+      |  ]
+      |}""".stripMargin
   val buf = new Array[Byte](100)
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
