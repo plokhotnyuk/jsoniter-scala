@@ -464,9 +464,9 @@ final class JsonWriter private[jsoniter_scala](
     flushBuffer()
     if (buf.length < count + required) {
       if (isBufGrowingAllowed) {
-        val newBuf = new Array[Byte](Math.max(buf.length << 1, count + required))
-        System.arraycopy(buf, 0, newBuf, 0, buf.length)
-        buf = newBuf
+        val bs = new Array[Byte](Math.max(buf.length << 1, count + required))
+        System.arraycopy(buf, 0, bs, 0, buf.length)
+        buf = bs
       } else throw new IOException("buf is overflown")
     }
   }

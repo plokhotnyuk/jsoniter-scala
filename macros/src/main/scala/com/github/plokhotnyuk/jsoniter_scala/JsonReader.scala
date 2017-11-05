@@ -349,7 +349,7 @@ final class JsonReader private[jsoniter_scala](
     var pos = 0
     var state = 0
     do {
-      pos = ensureSizeOfReusableChars(i)
+      pos = ensureReusableCharsCapacity(i)
       while (pos < tail) {
         val ch = buf(pos).toChar
         (state: @switch) match {
@@ -513,7 +513,7 @@ final class JsonReader private[jsoniter_scala](
     var pos = 0
     var state = 0
     do {
-      pos = ensureSizeOfReusableChars(i)
+      pos = ensureReusableCharsCapacity(i)
       while (pos < tail) {
         val ch = buf(pos).toChar
         (state: @switch) match {
@@ -647,7 +647,7 @@ final class JsonReader private[jsoniter_scala](
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   @tailrec
-  private def parseString(i: Int = 0, pos: Int = ensureSizeOfReusableChars(0)): Int =
+  private def parseString(i: Int = 0, pos: Int = ensureReusableCharsCapacity(0)): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') {
@@ -657,7 +657,7 @@ final class JsonReader private[jsoniter_scala](
         head = pos
         slowParseString(i)
       } else parseString(putCharAt(b.toChar, i), pos + 1)
-    } else if (loadMore(pos)) parseString(i, ensureSizeOfReusableChars(i))
+    } else if (loadMore(pos)) parseString(i, ensureReusableCharsCapacity(i))
     else decodeError("unexpected end of input")
 
   private def slowParseString(from: Int): Int = {
@@ -667,7 +667,7 @@ final class JsonReader private[jsoniter_scala](
       b1 = nextByte()
       b1 != '"'
     }) i = {
-      ensureSizeOfReusableChars(i + 2) // +2 for surrogate pair case
+      ensureReusableCharsCapacity(i + 2) // +2 for surrogate pair case
       if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
         if (b1 != '\\') putCharAt(b1.toChar, i)
         else readEscapeSequence(i)
@@ -758,7 +758,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @inline
-  private def ensureSizeOfReusableChars(i: Int): Int = {
+  private def ensureReusableCharsCapacity(i: Int): Int = {
     val pos = head
     val required = tail - pos + i
     if (required > reusableChars.length) growReusableChars(required)
@@ -906,7 +906,7 @@ object JsonReader {
         val b = buf(pos)
         appendHex(b, hexCodes)
         hexCodes.append(' ')
-        chars.append(if (b < 32 || b > 126) '.' else b.toChar)
+        chars.append(if (b <= 31 || b >= 127) '.' else b.toChar)
       } else {
         hexCodes.append("   ")
         chars.append(' ')
