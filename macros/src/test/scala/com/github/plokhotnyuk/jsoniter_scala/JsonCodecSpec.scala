@@ -120,12 +120,15 @@ class JsonCodecSpec extends WordSpec with Matchers {
                       r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
                       r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
   "JsonCodec" should {
-    "serialize and deserialize primitives" in {
+    "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      verifyDeser(codecOfPrimitives,
+      verifySerDeser(codecOfPrimitives,
         Primitives(-128.toByte, -32768.toShort, -2147483648, -9223372036854775808L, bl = true, 'V', -1.1, -2.2f),
         """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":"V","dbl":-1.1,"f":-2.2}""".getBytes)
+    }
+    "serialize and deserialize top-level primitives" in {
+      verifySerDeser(materialize[Long], -100500L, "-100500".getBytes)
     }
     "don't deserialize and throw exception with hex dump in case of illegal input" in {
       assert(intercept[JsonException] {
@@ -216,16 +219,22 @@ class JsonCodecSpec extends WordSpec with Matchers {
         Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 0.0, 0.0f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1e-1000,"f":2.2e-2000}""".getBytes)
     }
-    "serialize and deserialize boxed primitives" in {
+    "serialize and deserialize case classes with boxed primitives" in {
       verifySerDeser(materialize[BoxedPrimitives],
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
     }
-    "serialize and deserialize standard types" in {
+    "serialize and deserialize case classes with standard types" in {
       val longStr = new String(Array.fill(100000)(' '))
       verifySerDeser(codecOfStandardTypes,
         StandardTypes(longStr, BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
         s"""{"s":"$longStr","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
+    }
+    "serialize and deserialize top-level standard types" in {
+      val longStr = new String(Array.fill(100000)(' '))
+      verifySerDeser(materialize[String], longStr, s""""$longStr"""".getBytes)
+      verifySerDeser(materialize[BigInt], BigInt("123456789012345678901234567890"), "123456789012345678901234567890".getBytes)
+      verifySerDeser(materialize[BigDecimal], BigDecimal("1234567890.12345678901234567890"), "1234567890.12345678901234567890".getBytes)
     }
     "don't deserialize unexpected or illegal values" in {
       assert(intercept[JsonException] {
@@ -311,22 +320,39 @@ class JsonCodecSpec extends WordSpec with Matchers {
       }
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
     }
-    "serialize and deserialize value classes" in {
+    "serialize and deserialize case classes with value classes" in {
       verifySerDeser(materialize[ValueClassTypes],
         ValueClassTypes(UserId("123abc"), OrderId(123123)),
         """{"uid":"123abc","oid":123123}""".getBytes)
     }
-    "serialize and deserialize options" in {
+    "serialize and deserialize top-level value classes" in {
+      verifySerDeser(materialize[UserId], UserId("123abc"), "\"123abc\"".getBytes)
+      verifySerDeser(materialize[OrderId], OrderId(123123), "123123".getBytes)
+    }
+    "serialize and deserialize case classes with options" in {
       verifySerDeser(materialize[Options],
         Options(Option("VVV"), Option(BigInt(4)), Option(Set())),
         """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
     }
-    "serialize and deserialize arrays" in {
+    "serialize and deserialize top-level options" in {
+      val codecOfStringOption = materialize[Option[String]]
+      verifySerDeser(codecOfStringOption, Some("VVV"), "\"VVV\"".getBytes)
+      verifySerDeser(codecOfStringOption, None, "null".getBytes)
+    }
+    "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
       verifySer(codecOfArrays, arrays, json)
       val parsedObj = JsonReader.read(codecOfArrays, json)
       parsedObj.aa.deep shouldBe arrays.aa.deep
       parsedObj.a.deep shouldBe arrays.a.deep
+    }
+    "serialize and deserialize top-level arrays" in {
+      val json = """[[1,2,3],[4,5,6]]""".getBytes
+      val arrayOfArray = Array(Array(1, 2, 3), Array(4, 5, 6))
+      val codecOfArrayOfArray = materialize[Array[Array[Int]]]
+      verifySer(codecOfArrayOfArray, arrayOfArray, json)
+      val parsedObj = JsonReader.read(codecOfArrayOfArray, json)
+      parsedObj.deep shouldBe arrayOfArray.deep
     }
     "don't deserialize JSON array that is not properly started/closed or with leading/trailing comma" in {
       assert(intercept[JsonException] {
@@ -342,7 +368,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
         verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3,]],"a":[]}""".getBytes)
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
-    "serialize and deserialize mutable traversables" in {
+    "serialize and deserialize case classes with mutable traversables" in {
       verifySerDeser(materialize[MutableTraversables],
         MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
           mutable.ArrayBuffer(mutable.Set[BigInt](4), mutable.Set.empty[BigInt]),
@@ -355,24 +381,34 @@ class JsonCodecSpec extends WordSpec with Matchers {
           mutable.ResizableArray(mutable.Seq(17.17, 18.18))),
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]],"ls":[15,16],"ra":[[17.17,18.18]]}""".getBytes)
     }
-    "serialize and deserialize immutable traversables" in {
+    "serialize and deserialize case classes with immutable traversables" in {
       verifySerDeser(codecOfImmutableTraversables,
         ImmutableTraversables(List(ListSet("1")), Queue(Set[BigInt](4, 5, 6)),
           IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Traversable(10L, 11L))),
         """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[[10,11]]}""".getBytes)
     }
-    "serialize and deserialize mutable maps" in {
+    "serialize and deserialize case classes with top-level traversables" in {
+      verifySerDeser(materialize[mutable.Set[List[BigDecimal]]],
+        mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
+        """[[3.3],[1.1,2.2]]""".getBytes)
+    }
+    "serialize and deserialize case classes with mutable maps" in {
       verifySerDeser(codecOfMutableMaps,
         MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
           mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> "2")),
           mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
         """{"hm":{"true":{"1.1":1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
     }
-    "serialize and deserialize immutable maps" in {
+    "serialize and deserialize case classes with immutable maps" in {
       verifySerDeser(materialize[ImmutableMaps],
         ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap('V' -> 2), "3" -> ListMap('X' -> 3)),
           SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
         """{"m":{"1":1.1},"hm":{"2":{"V":2},"3":{"X":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
+    }
+    "serialize and deserialize top-level maps" in {
+      verifySerDeser(materialize[mutable.LinkedHashMap[Int, Map[Char, Boolean]]],
+        mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
+        """{"1":{"V":true,"X":false},"2":{}}""".getBytes)
     }
     "don't deserialize JSON object that is not properly started/closed or with leading/trailing comma" in {
       val immutableMaps = ImmutableMaps(Map(1 -> 1.1), HashMap.empty, SortedMap.empty)
@@ -411,19 +447,24 @@ class JsonCodecSpec extends WordSpec with Matchers {
           """{"m":{"1":1.1},"hm":{null:{"2":2},"3":{"3":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
       }.getMessage.contains("key cannot be null"))
     }
-    "serialize and deserialize mutable long maps" in {
+    "serialize and deserialize case classes with mutable long maps" in {
       verifySerDeser(materialize[MutableLongMaps],
         MutableLongMaps(mutable.LongMap(1L -> 1.1), mutable.LongMap(3L -> "33")),
         """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""".getBytes)
     }
-    "serialize and deserialize immutable int and long maps" in {
+    "serialize and deserialize case classes with immutable int and long maps" in {
       verifySerDeser(materialize[ImmutableIntLongMaps],
         ImmutableIntLongMaps(IntMap(1 -> 1.1, 2 -> 2.2), LongMap(3L -> "33")),
         """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""".getBytes)
     }
-    "serialize and deserialize mutable & immutable bitsets" in {
+    "serialize and deserialize case classes with mutable & immutable bitsets" in {
       verifySerDeser(materialize[BitSets], BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6)),
         """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes)
+    }
+    "serialize and deserialize top-level int/long maps & bitsets" in {
+      verifySerDeser(materialize[mutable.LongMap[IntMap[mutable.BitSet]]],
+        mutable.LongMap(1L -> IntMap(2 -> mutable.BitSet(4, 5, 6), 3 -> mutable.BitSet.empty)),
+        """{"1":{"2":[4,5,6],"3":[]}}""".getBytes)
     }
     "serialize and deserialize with keys defined by fields" in {
       verifySerDeser(materialize[CamelAndSnakeCase],
@@ -447,21 +488,21 @@ class JsonCodecSpec extends WordSpec with Matchers {
       verifyDeser(codecOfIndented, indented,
         "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t]\r}".getBytes)
     }
-    "serialize and deserialize UTF-8 keys and values without hex encoding" in {
+    "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"),
         """{"გასაღები":"ვვვ"}""".getBytes("UTF-8"))
     }
-    "serialize and deserialize UTF-8 keys and values with hex encoding" in {
+    "serialize and deserialize UTF-8 keys and values of case classes with hex encoding" in {
       verifyDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes("UTF-8"))
       verifySer(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes("UTF-8"),
         WriterConfig(escapeUnicode = true))
     }
-    "serialize and deserialize with keys overridden by annotation" in {
+    "serialize and deserialize with keys of case classes overridden by annotation" in {
       verifySerDeser(materialize[KeyOverridden], KeyOverridden(oldKey = "VVV"), """{"new_key":"VVV"}""".getBytes)
     }
-    "deserialize but don't serialize default values that defined for fields" in {
+    "deserialize but don't serialize default values of case classes that defined for fields" in {
       val json = "{}".getBytes
       verifySer(codecOfDefaults, defaults, json)
       val parsedObj = JsonReader.read(codecOfDefaults, json)
@@ -470,24 +511,24 @@ class JsonCodecSpec extends WordSpec with Matchers {
       parsedObj.bi shouldBe defaults.bi
       parsedObj.a.deep shouldBe defaults.a.deep
     }
-    "don't serialize and deserialize transient and non constructor defined fields" in {
+    "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       verifySerDeser(materialize[Transient], Transient("VVV"), """{"required":"VVV"}""".getBytes)
     }
-    "don't serialize fields with none values" in {
+    "don't serialize case class fields with 'None' values" in {
       verifySer(materialize[NullAndNoneValues],
         NullAndNoneValues("VVV", null, null, null, NullAndNoneValues(null, null, null, null, null, None), None),
         """{"str":"VVV","bi":null,"bd":null,"lt":null,"nv":{"str":null,"bi":null,"bd":null,"lt":null,"nv":null}}""".getBytes)
     }
-    "don't serialize fields empty collections" in {
+    "don't serialize case class fields with empty collections" in {
       verifySer(materialize[EmptyTraversables], EmptyTraversables(List(), Set(), List()), """{}""".getBytes)
     }
-    "don't deserialize unknown fields" in {
+    "don't deserialize unknown case class fields" in {
       verifyDeser(materialize[Unknown], Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes)
     }
-    "serialize and deserialize null" in {
+    "serialize and deserialize null values of case class fields" in {
       verifyDeser(materialize[Unknown], null, """null""".getBytes)
     }
-    "deserialize null values for standard types" in {
+    "deserialize null values of case class fields for standard types" in {
       verifyDeser(codecOfStandardTypes, StandardTypes(null, null, null),
         """{"s":null,"bi":null,"bd":null}""".getBytes)
     }
@@ -504,7 +545,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
           mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(), 2.2 -> mutable.LinkedHashMap())),
         """{"hm":null,"m":{"1.1":{"2":null}},"ohm":{"1.1":null,"2.2":null}}""".getBytes)
     }
-    "throw exception in case of missing required fields detected during deserialization" in {
+    "throw exception in case of missing required case class fields detected during deserialization" in {
       assert(intercept[JsonException] {
         val obj = Required(
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9,

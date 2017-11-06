@@ -12,20 +12,20 @@ to get maximum performance of JSON parsing & serialization.
 - Parsing of strings with escaped characters for JSON field names, keys & values 
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
-- Case classes should be defined as a top-level class or directly inside of another class or object
-- Primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, arrays and value classes for all them or case classes themself are supported as case class fields 
+- Primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, 
+  arrays and value classes for all them or case classes are supported 
 - Types that supported as map keys are all which can be represented by single value, basically it is all above excluding case classes, arrays & collections  
+- Implicitly resolvable codecs for any types: primitive, collections, enums, ADTs, etc.
+- Need to materialize for all case classes used in nested structures using implicitly resolvable codecs
+- Case classes should be defined as a top-level class or directly inside of another class or object
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
-- Implicitly resolvable codecs for any types: primitive, collections, enums, ADTs, etc.
-- Need to materialize for all case classes used in nested structures using implicitly resolvable codecs
 - Key names can be overridden by field annotation
 - Field names are matched by hash and can have collisions with other keys on the same JSON object value
 - TODO: generate efficient and no-allocation collision resolving for field name matching
 - TODO: generate codecs recursively from top-level type
 - TODO: code generation option to serialize/parse all fields to/from snake_case or camelCase keys 
-- TODO: support on top-level for values, collections & arrays to avoid wrapping to redundant case classes
 - TODO: extend codecs to allow using them for serialization/parsing of types to/from map keys
 - TODO: more efficient implementation for serialization and parsing of numbers 
 - TODO: efficient specialized immutable list & set for primitive types
@@ -44,7 +44,7 @@ Add the library to your dependencies list
 libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.1-SNAPSHOT"
 ```
 
-Generate codecs for your case classes
+Generate codecs for your case classes, collections, etc.
     
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.JsonCodec

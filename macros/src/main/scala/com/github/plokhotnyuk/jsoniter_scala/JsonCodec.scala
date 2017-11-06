@@ -12,7 +12,9 @@ class JsonProperty(
     transient: Boolean = false) extends scala.annotation.StaticAnnotation
 
 abstract class JsonCodec[A] {
-  def decode(in: JsonReader, default: A = null.asInstanceOf[A]): A
+  def default: A = null.asInstanceOf[A]
+
+  def decode(in: JsonReader, default: A = default): A
 
   def encode(x: A, out: JsonWriter): Unit
 }
@@ -172,12 +174,12 @@ object JsonCodec {
       }
 
       def findImplicitCodec(tpe: Type): Option[Tree] = {
-        val codecTpe = c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe]", mode = c.TYPEmode).tpe
+        val codecTpe = c.typecheck(tq"JsonCodec[$tpe]", mode = c.TYPEmode).tpe
         val implCodec = c.inferImplicitValue(codecTpe)
         if (implCodec != EmptyTree) Some(implCodec) else None
       }
 
-      def genReadField(tpe: Type, default: Tree): Tree = {
+      def genReadVal(tpe: Type, default: Tree, isRootCodec: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe)
         if (implCodec.isDefined) {
           q"${implCodec.get}.decode(in, $default)"
@@ -199,37 +201,37 @@ object JsonCodec {
           q"in.readDouble()"
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
-          q"new $tpe(${genReadField(tpe1, defaultValue(tpe1))})"
+          q"new $tpe(${genReadVal(tpe1, defaultValue(tpe1))})"
         } else if (tpe <:< typeOf[Option[_]]) {
           val tpe1 = typeArg1(tpe)
-          q"Option(${genReadField(tpe1, defaultValue(tpe1))})"
+          q"Option(${genReadVal(tpe1, defaultValue(tpe1))})"
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadVal(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"val x = $comp.empty[$tpe1]",
-            q"x.update(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"x.update(in.readObjectFieldAsLong(), ${genReadVal(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
+            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadVal(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"val x = $comp.empty[$tpe1, $tpe2]",
-            q"x.update(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
+            q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
-            q"x = x.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
+            q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
           genReadArray(q"val x = $comp.empty", q"x.add(in.readInt())", q"x")
@@ -239,11 +241,11 @@ object JsonCodec {
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadArray(q"val x = $comp.newBuilder[$tpe1]", q"x += ${genReadField(tpe1, defaultValue(tpe1))}")
+          genReadArray(q"val x = $comp.newBuilder[$tpe1]", q"x += ${genReadVal(tpe1, defaultValue(tpe1))}")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = collection.mutable.ArrayBuilder.make[$tpe1]",
-            q"x += ${genReadField(tpe1, defaultValue(tpe1))}")
+            q"x += ${genReadVal(tpe1, defaultValue(tpe1))}")
         } else if (tpe =:= typeOf[String]) {
           q"in.readString($default)"
         } else if (tpe =:= typeOf[BigInt]) {
@@ -258,7 +260,7 @@ object JsonCodec {
                   case _: NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
                 }
               } else default"""
-        } else if (tpe =:= rootTpe) {
+        } else if (!isRootCodec && tpe =:= rootTpe) {
           q"decode(in, $default)"
         } else {
           cannotFindCodecError(tpe)
@@ -283,7 +285,7 @@ object JsonCodec {
             }
             out.writeObjectEnd()"""
 
-      def genWriteVal(m: Tree, tpe: Type): Tree = {
+      def genWriteVal(m: Tree, tpe: Type, isRootCodec: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe)
         if (implCodec.isDefined) {
           q"${implCodec.get}.encode($m, out)"
@@ -297,8 +299,10 @@ object JsonCodec {
           tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
           tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           q"out.writeVal($m)"
-        } else if (tpe <:< typeOf[Option[_]]) {
-          genWriteVal(q"$m.get", typeArg1(tpe))
+        } else if (isValueClass(tpe)) {
+          genWriteVal(q"$m.value", valueClassValueType(tpe))
+        } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(tpe, m) {
+          q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe))}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) withEncoderFor(tpe, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe)))
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(tpe, m) {
@@ -319,7 +323,7 @@ object JsonCodec {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
-        } else if (tpe =:= rootTpe) {
+        } else if (!isRootCodec && tpe =:= rootTpe) {
           q"encode($m, out)"
         } else {
           cannotFindCodecError(tpe)
@@ -330,9 +334,7 @@ object JsonCodec {
         c.abort(c.enclosingPosition, s"Cannot find implicit val or object of JSON codec for '$tpe'.")
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
-        if (isValueClass(tpe)) {
-          genWriteField(q"$m.value", valueClassValueType(tpe), name)
-        } else if (isContainer(tpe)) {
+        if (isContainer(tpe)) {
           q"""if (($m ne null) && !$m.isEmpty) {
                 c = out.writeObjectField(c, $name)
                 ..${genWriteVal(m, tpe)}
@@ -342,138 +344,150 @@ object JsonCodec {
               ..${genWriteVal(m, tpe)}"""
         }
 
-      if (!rootTpe.typeSymbol.asClass.isCaseClass) c.abort(c.enclosingPosition, s"'$rootTpe' must be a case class.")
-      val annotations: Map[Symbol, (String, Boolean)] = rootTpe.members.collect {
-        case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
-          val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
-          val name = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
-          if (jsonProperties.size > 1) {
-            c.abort(c.enclosingPosition, s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: $name.")
-          } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
-          val jsonPropertyArgs = jsonProperties.head.tree.children.tail
-          val key = jsonPropertyArgs.collectFirst {
-            case Literal(Constant(key: String)) => Option(key).getOrElse(name)
-          }.getOrElse(name)
-          val transient = jsonPropertyArgs.collectFirst {
-            case Literal(Constant(transient: Boolean)) => transient
-          }.getOrElse(false)
-          (m.getter, (key, transient))
-      }(breakOut)
+      val codec =
+        if (rootTpe.typeSymbol.asClass.isCaseClass && !isValueClass(rootTpe)) {
+          val annotations: Map[Symbol, (String, Boolean)] = rootTpe.members.collect {
+            case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
+              val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
+              val name = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
+              if (jsonProperties.size > 1) {
+                c.abort(c.enclosingPosition, s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: $name.")
+              } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
+            val jsonPropertyArgs = jsonProperties.head.tree.children.tail
+              val key = jsonPropertyArgs.collectFirst {
+                case Literal(Constant(key: String)) => Option(key).getOrElse(name)
+              }.getOrElse(name)
+              val transient = jsonPropertyArgs.collectFirst {
+                case Literal(Constant(transient: Boolean)) => transient
+              }.getOrElse(false)
+              (m.getter, (key, transient))
+          }(breakOut)
 
-      def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_._2)
+          def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_._2)
 
-      def keyName(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_._1)
+          def keyName(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_._1)
 
-      def hashCode(m: MethodSymbol): Int = {
-        val cs = keyName(m).toCharArray
-        JsonReader.toHashCode(cs, cs.length)
-      }
+          def hashCode(m: MethodSymbol): Int = {
+            val cs = keyName(m).toCharArray
+            JsonReader.toHashCode(cs, cs.length)
+          }
 
-      // FIXME: module cannot be resolved properly for deeply nested inner case classes
-      val comp = rootTpe.typeSymbol.companion
-      if (!comp.isModule) c.abort(c.enclosingPosition,
-        s"Can't find companion object for '$rootTpe'. This can happen when it's nested too deeply. " +
-          "Please consider defining it as a top-level object or directly inside of another class or object.")
-      val module = comp.asModule
-      val apply = module.typeSignature.decl(TermName("apply")).asMethod
-      // FIXME: handling only default val params from the first list because subsequent might depend on previous params
-      val params = apply.paramLists.head.map(_.asTerm)
-      val defaults: Map[String, Tree] = params.zipWithIndex.collect {
-        case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
-      }(breakOut)
-      val required = params.collect { // FIXME: should report overridden by annotation keys instead of param names
-        case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
-      }
-      val reqVarNum = required.size
-      val lastReqVarIndex = reqVarNum >> 5
-      val lastReqVarBits = (1 << reqVarNum) - 1
-      val reqVarNames = (0 to lastReqVarIndex).map(i => TermName(s"req$i"))
-      val bitmasks: Map[String, Tree] = required.zipWithIndex.map {
-        case (r, i) => (r, q"${reqVarNames(i >> 5)} &= ${~(1 << i)}")
-      }(breakOut)
-      val reqVars =
-        if (lastReqVarBits == 0) Nil
-        else reqVarNames.dropRight(1).map(n => q"var $n = -1") :+ q"var ${reqVarNames.last} = $lastReqVarBits"
-      val reqFields =
-        if (lastReqVarBits == 0) EmptyTree
-        else q"private val reqFields: Array[String] = Array(..$required)"
-      val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
-      val members: Seq[MethodSymbol] = rootTpe.members.collect {
-        case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
-      }(breakOut).reverse
-      val construct = q"new $rootTpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
-      val checkReqVarsAndConstruct =
-        if (lastReqVarBits == 0) construct
-        else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
-      val readVars = members.map { m =>
-        q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString.trim, defaultValue(methodType(m)))}"
-      }
-      val readFields = members.map { m =>
-        val varName = TermName(s"_${m.name}")
-        cq"""${hashCode(m)} =>
-            if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
-              ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
-              $varName = ${genReadField(methodType(m), q"$varName")}
-            } else in.skip()"""
-      } :+ cq"_ => in.skip()"
-      val writeFields = members.map { m =>
-        val tpe = methodType(m)
-        val writeField = genWriteField(q"x.$m", tpe, keyName(m))
-        defaults.get(m.name.toString.trim) match {
-          case Some(d) =>
-            if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"
-            else q"if (x.$m != $d) $writeField"
-          case None => writeField
+          // FIXME: module cannot be resolved properly for deeply nested inner case classes
+          val comp = rootTpe.typeSymbol.companion
+          if (!comp.isModule) c.abort(c.enclosingPosition,
+            s"Can't find companion object for '$rootTpe'. This can happen when it's nested too deeply. " +
+              "Please consider defining it as a top-level object or directly inside of another class or object.")
+          val module = comp.asModule
+          val apply = module.typeSignature.decl(TermName("apply")).asMethod
+          // FIXME: handling only default val params from the first list because subsequent might depend on previous params
+          val params = apply.paramLists.head.map(_.asTerm)
+          val defaults: Map[String, Tree] = params.zipWithIndex.collect {
+            case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
+          }(breakOut)
+          val required = params.collect { // FIXME: should report overridden by annotation keys instead of param names
+            case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
+          }
+          val reqVarNum = required.size
+          val lastReqVarIndex = reqVarNum >> 5
+          val lastReqVarBits = (1 << reqVarNum) - 1
+          val reqVarNames = (0 to lastReqVarIndex).map(i => TermName(s"req$i"))
+          val bitmasks: Map[String, Tree] = required.zipWithIndex.map {
+            case (r, i) => (r, q"${reqVarNames(i >> 5)} &= ${~(1 << i)}")
+          }(breakOut)
+          val reqVars =
+            if (lastReqVarBits == 0) Nil
+            else reqVarNames.dropRight(1).map(n => q"var $n = -1") :+ q"var ${reqVarNames.last} = $lastReqVarBits"
+          val reqFields =
+            if (lastReqVarBits == 0) EmptyTree
+            else q"private val reqFields: Array[String] = Array(..$required)"
+          val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
+          val members: Seq[MethodSymbol] = rootTpe.members.collect {
+            case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
+          }(breakOut).reverse
+          val construct = q"new $rootTpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
+          val checkReqVarsAndConstruct =
+            if (lastReqVarBits == 0) construct
+            else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
+          val readVars = members.map { m =>
+            q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString.trim, defaultValue(methodType(m)))}"
+          }
+          val readFields = members.map { m =>
+            val varName = TermName(s"_${m.name}")
+            cq"""${hashCode(m)} =>
+              if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
+                ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
+                $varName = ${genReadVal(methodType(m), q"$varName")}
+              } else in.skip()"""
+          } :+ cq"_ => in.skip()"
+          val writeFields = members.map { m =>
+            val tpe = methodType(m)
+            val writeField = genWriteField(q"x.$m", tpe, keyName(m))
+            defaults.get(m.name.toString.trim) match {
+              case Some(d) =>
+                if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"
+                else q"if (x.$m != $d) $writeField"
+              case None => writeField
+            }
+          }
+          val writeFieldsBlock =
+            if (writeFields.isEmpty) EmptyTree
+            else {
+              q"""var c = false
+                ..$writeFields"""
+            }
+          q"""import com.github.plokhotnyuk.jsoniter_scala._
+              import scala.annotation.switch
+              new JsonCodec[$rootTpe] {
+                ..$reqFields
+                override def decode(in: JsonReader, default: $rootTpe): $rootTpe =
+                  (in.nextToken(): @switch) match {
+                    case '{' =>
+                      ..$reqVars
+                      ..$readVars
+                      if (in.nextToken() != '}') {
+                        in.unreadByte()
+                        do {
+                          val l = in.readObjectFieldAsReusableChars()
+                          (in.reusableCharsToHashCode(l): @switch) match {
+                            case ..$readFields
+                          }
+                        } while (in.nextToken() == ',')
+                        in.unreadByte()
+                        if (in.nextToken() != '}') in.objectEndError()
+                      }
+                      ..$checkReqVarsAndConstruct
+                    case 'n' =>
+                      in.parseNull(default)
+                    case _ =>
+                      in.objectStartError()
+                  }
+                override def encode(x: $rootTpe, out: JsonWriter): Unit =
+                  if (x != null) {
+                    out.writeObjectStart()
+                    ..$writeFieldsBlock
+                    out.writeObjectEnd()
+                  } else out.writeNull()
+                ..${decoders.map { case (_, d) => d._2 }}
+                ..${encoders.map { case (_, e) => e._2 }}
+              }"""
+        } else {
+          q"""import com.github.plokhotnyuk.jsoniter_scala._
+              import scala.annotation.switch
+              new JsonCodec[$rootTpe] {
+                override def default: $rootTpe = ${defaultValue(rootTpe)}
+                override def decode(in: JsonReader, default: $rootTpe): $rootTpe =
+                  ${genReadVal(rootTpe, q"default", isRootCodec = true)}
+                override def encode(x: $rootTpe, out: JsonWriter): Unit =
+                  ${genWriteVal(q"x", rootTpe, isRootCodec = true)}
+                ..${decoders.map { case (_, d) => d._2 }}
+                ..${encoders.map { case (_, e) => e._2 }}
+              }"""
         }
-      }
-      val writeFieldsBlock =
-        if (writeFields.isEmpty) EmptyTree
-        else {
-          q"""var c = false
-              ..$writeFields"""
-        }
-      val codecForCaseClass =
-        q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
-            import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
-            import scala.annotation.switch
-            new com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$rootTpe] {
-              ..$reqFields
-              override def decode(in: JsonReader, default: $rootTpe): $rootTpe =
-                (in.nextToken(): @switch) match {
-                  case '{' =>
-                    ..$reqVars
-                    ..$readVars
-                    if (in.nextToken() != '}') {
-                      in.unreadByte()
-                      do {
-                        val l = in.readObjectFieldAsReusableChars()
-                        (in.reusableCharsToHashCode(l): @switch) match {
-                          case ..$readFields
-                        }
-                      } while (in.nextToken() == ',')
-                      in.unreadByte()
-                      if (in.nextToken() != '}') in.objectEndError()
-                    }
-                    ..$checkReqVarsAndConstruct
-                  case 'n' =>
-                    in.parseNull(default)
-                  case _ =>
-                    in.objectStartError()
-                }
-              override def encode(x: $rootTpe, out: JsonWriter): Unit =
-                if (x != null) {
-                  out.writeObjectStart()
-                  ..$writeFieldsBlock
-                  out.writeObjectEnd()
-                } else out.writeNull()
-              ..${decoders.map { case (_, d) => d._2 }}
-              ..${encoders.map { case (_, e) => e._2 }}
-            }"""
       if (c.settings.contains("print-codecs")) {
-        val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codecForCaseClass)}"
+        val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
         c.info(c.enclosingPosition, msg, force = true)
       }
-      c.Expr[JsonCodec[A]](codecForCaseClass)
+      c.Expr[JsonCodec[A]](codec)
     }
   }
 }

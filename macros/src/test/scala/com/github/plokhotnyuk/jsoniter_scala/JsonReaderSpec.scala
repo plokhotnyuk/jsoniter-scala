@@ -644,7 +644,7 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
   }
   "JsonReader.appendHexDump" should {
-    "print specified part of byte buffer aligned to 16 byte offset" in {
+    "print dump for specified part of the byte buffer with 16-byte aligned offset" in {
       val sb = new StringBuilder
       JsonReader.appendHexDump(json, 10, 50, 0, sb)
       sb.toString shouldBe
