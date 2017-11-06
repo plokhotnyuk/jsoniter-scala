@@ -36,6 +36,8 @@ object JsonCodec {
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
+      val rootTpe = weakTypeOf[A]
+
       def defaultValue(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           q"false"
@@ -173,8 +175,11 @@ object JsonCodec {
         if (implCodec != EmptyTree) Some(implCodec) else None
       }
 
-      def genReadField(tpe: Type, default: Tree): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
+      def genReadField(tpe: Type, default: Tree): Tree = {
+        val implCodec = findImplicitCodec(tpe)
+        if (implCodec.isDefined) {
+          q"${implCodec.get}.decode(in, $default)"
+        } else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
           q"in.readByte()"
@@ -248,12 +253,15 @@ object JsonCodec {
           q"""val v = in.readString()
               if (v ne null) {
                 try $enumSymbol.withName(v) catch {
-                  case _: java.util.NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
+                  case _: NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
                 }
               } else default"""
-        } else { // FIXME: use check matching with case class 'tpe' before using 'this'
-          q"${findImplicitCodec(tpe).getOrElse(q"this")}.decode(in, $default)"
+        } else if (tpe =:= rootTpe) {
+          q"decode(in, $default)"
+        } else {
+          cannotFindCodecError(tpe)
         }
+      }
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
@@ -273,8 +281,11 @@ object JsonCodec {
             }
             out.writeObjectEnd()"""
 
-      def genWriteVal(m: Tree, tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
+      def genWriteVal(m: Tree, tpe: Type): Tree = {
+        val implCodec = findImplicitCodec(tpe)
+        if (implCodec.isDefined) {
+          q"${implCodec.get}.encode($m, out)"
+        } else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
           tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
@@ -306,9 +317,15 @@ object JsonCodec {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
+        } else if (tpe =:= rootTpe) {
+          q"encode($m, out)"
         } else {
-          q"${findImplicitCodec(tpe).getOrElse(q"this")}.encode($m, out)" // FIXME: add checking of tpe for 'this' and add branch with compilation error
+          cannotFindCodecError(tpe)
         }
+      }
+
+      def cannotFindCodecError(tpe: Type): Nothing =
+        c.abort(c.enclosingPosition, s"Cannot find implicit val or object of JSON codec for '$tpe'.")
 
       def genWriteField(m: Tree, tpe: Type, name: String): Tree =
         if (isValueClass(tpe)) {
@@ -323,9 +340,8 @@ object JsonCodec {
               ..${genWriteVal(m, tpe)}"""
         }
 
-      val tpe = weakTypeOf[A]
-      if (!tpe.typeSymbol.asClass.isCaseClass) c.abort(c.enclosingPosition, s"'$tpe' must be a case class.")
-      val annotations: Map[Symbol, Set[Annotation]] = tpe.members.collect {
+      if (!rootTpe.typeSymbol.asClass.isCaseClass) c.abort(c.enclosingPosition, s"'$rootTpe' must be a case class.")
+      val annotations: Map[Symbol, Set[Annotation]] = rootTpe.members.collect {
         case m: TermSymbol if m.annotations.nonEmpty => (m.getter, m.annotations.toSet)
       }(breakOut)
 
@@ -344,9 +360,9 @@ object JsonCodec {
       }
 
       // FIXME: module cannot be resolved properly for deeply nested inner case classes
-      val comp = tpe.typeSymbol.companion
+      val comp = rootTpe.typeSymbol.companion
       if (!comp.isModule) c.abort(c.enclosingPosition,
-        s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
+        s"Can't find companion object for '$rootTpe'. This can happen when it's nested too deeply. " +
           "Please consider defining it as a top-level object or directly inside of another class or object.")
       val module = comp.asModule
       val apply = module.typeSignature.decl(TermName("apply")).asMethod
@@ -372,10 +388,10 @@ object JsonCodec {
         if (lastReqVarBits == 0) EmptyTree
         else q"private val reqFields: Array[String] = Array(..$required)"
       val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
-      val members: Seq[MethodSymbol] = tpe.members.collect {
+      val members: Seq[MethodSymbol] = rootTpe.members.collect {
         case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
       }(breakOut).reverse
-      val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
+      val construct = q"new $rootTpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
       val checkReqVarsAndConstruct =
         if (lastReqVarBits == 0) construct
         else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
@@ -410,9 +426,9 @@ object JsonCodec {
         q"""import com.github.plokhotnyuk.jsoniter_scala.JsonReader
             import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
             import scala.annotation.switch
-            new com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$tpe] {
+            new com.github.plokhotnyuk.jsoniter_scala.JsonCodec[$rootTpe] {
               ..$reqFields
-              override def decode(in: JsonReader, default: $tpe): $tpe =
+              override def decode(in: JsonReader, default: $rootTpe): $rootTpe =
                 (in.nextToken(): @switch) match {
                   case '{' =>
                     ..$reqVars
@@ -434,7 +450,7 @@ object JsonCodec {
                   case _ =>
                     in.objectStartError()
                 }
-              override def encode(x: $tpe, out: JsonWriter): Unit =
+              override def encode(x: $rootTpe, out: JsonWriter): Unit =
                 if (x != null) {
                   out.writeObjectStart()
                   ..$writeFieldsBlock
@@ -444,7 +460,7 @@ object JsonCodec {
               ..${encoders.map { case (_, e) => e._2 }}
             }"""
       if (c.settings.contains("print-codecs")) {
-        val msg = s"Generated JSON codec for type '$tpe':\n${showCode(codecForCaseClass)}"
+        val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codecForCaseClass)}"
         c.info(c.enclosingPosition, msg, force = true)
       }
       c.Expr[JsonCodec[A]](codecForCaseClass)

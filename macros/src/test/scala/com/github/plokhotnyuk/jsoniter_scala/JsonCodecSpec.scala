@@ -26,8 +26,6 @@ class JsonCodecSpec extends WordSpec with Matchers {
   val standardTypes = StandardTypes("VVV", 1, 1.1)
   val codecOfStandardTypes: JsonCodec[StandardTypes] = materialize[StandardTypes]
 
-  case class OuterTypes(s: String, st: StandardTypes)
-
   object LocationType extends Enumeration {
     type LocationType = Value
     val GPS: LocationType = Value(1)
@@ -36,6 +34,8 @@ class JsonCodecSpec extends WordSpec with Matchers {
   }
 
   case class Enums(lt: LocationType.LocationType)
+
+  case class OuterTypes(s: String, st: StandardTypes)
 
   case class ValueClassTypes(uid: UserId, oid: OrderId)
 
@@ -285,16 +285,31 @@ class JsonCodecSpec extends WordSpec with Matchers {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x00000019"))
     }
-    "serialize and deserialize outer types using implicit vals or objects of inner types" in {
-      implicit val codecOfNestedType: JsonCodec[StandardTypes] = codecOfStandardTypes
-      verifySerDeser(materialize[OuterTypes], OuterTypes("X", standardTypes),
-        """{"s":"X","st":{"s":"VVV","bi":1,"bd":1.1}}""".getBytes)
-    }
     "serialize and deserialize enumerations" in {
       verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
       assert(intercept[JsonException] {
         verifyDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
       }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
+    }
+    "serialize and deserialize outer types using implicit vals or objects of inner types" in {
+      implicit val codecOfNestedType: JsonCodec[StandardTypes] = codecOfStandardTypes
+      verifySerDeser(materialize[OuterTypes], OuterTypes("X", standardTypes),
+        """{"s":"X","st":{"s":"VVV","bi":1,"bd":1.1}}""".getBytes)
+      implicit object codecOfLocationType extends JsonCodec[LocationType.LocationType] {
+        override def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
+          if (in.nextToken() == 'n') in.parseNull(default)
+          else {
+            in.unreadByte()
+            val v = in.readInt()
+            try LocationType.apply(v) catch {
+              case _: NoSuchElementException => in.decodeError("invalid enum value: " + v)
+            }
+          }
+
+        override def encode(x: LocationType.LocationType, out: JsonWriter): Unit =
+          if (x ne null) out.writeVal(x.id) else out.writeNull()
+      }
+      verifySerDeser(materialize[Enums], Enums(LocationType.GPS), """{"lt":1}""".getBytes)
     }
     "serialize and deserialize value classes" in {
       verifySerDeser(materialize[ValueClassTypes],

@@ -18,13 +18,15 @@ to get maximum performance of JSON parsing & serialization.
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
-- Need to materialize for all case classes used in nested structures using implicitly resolvable encoders/decoders
+- Implicitly resolvable codecs for any types: primitive, collections, enums, ADTs, etc.
+- Need to materialize for all case classes used in nested structures using implicitly resolvable codecs
 - Key names can be overridden by field annotation
 - Field names are matched by hash and can have collisions with other keys on the same JSON object value
 - TODO: generate efficient and no-allocation collision resolving for field name matching
-- TODO: generate encoders/decoders recursively from top-level type
+- TODO: generate codecs recursively from top-level type
+- TODO: code generation option to serialize/parse all fields to/from snake_case or camelCase keys 
 - TODO: support on top-level for values, collections & arrays to avoid wrapping to redundant case classes
-- TODO: implicitly resolvable mappers for ADTs, abstract classes & traits
+- TODO: extend codecs to allow using them for serialization/parsing of types to/from map keys
 - TODO: efficient specialized immutable list & set for primitive types
 
 ## How to use
