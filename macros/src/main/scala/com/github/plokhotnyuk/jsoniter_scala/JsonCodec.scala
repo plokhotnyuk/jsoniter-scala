@@ -345,16 +345,19 @@ object JsonCodec {
       if (!rootTpe.typeSymbol.asClass.isCaseClass) c.abort(c.enclosingPosition, s"'$rootTpe' must be a case class.")
       val annotations: Map[Symbol, (String, Boolean)] = rootTpe.members.collect {
         case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
-          val jsonPropertyAnnotations  = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
-          if (jsonPropertyAnnotations.size > 1) {
-            c.abort(c.enclosingPosition, s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: ${m.name}.")
-          }
-          (m.getter, jsonPropertyAnnotations.head.tree.children.tail match {
-            case List(Literal(Constant(key: String)), Literal(Constant(transient: Boolean))) => (key, transient)
-            case List(Literal(Constant(key: String)), _) => (key, false)
-            case List(_, Literal(Constant(transient: Boolean))) => (m.name.toString, transient)
-            case _ => (m.name.toString, false)
-          })
+          val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
+          val name = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
+          if (jsonProperties.size > 1) {
+            c.abort(c.enclosingPosition, s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: $name.")
+          } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
+          val jsonPropertyArgs = jsonProperties.head.tree.children.tail
+          val key = jsonPropertyArgs.collectFirst {
+            case Literal(Constant(key: String)) => Option(key).getOrElse(name)
+          }.getOrElse(name)
+          val transient = jsonPropertyArgs.collectFirst {
+            case Literal(Constant(transient: Boolean)) => transient
+          }.getOrElse(false)
+          (m.getter, (key, transient))
       }(breakOut)
 
       def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_._2)
@@ -403,20 +406,20 @@ object JsonCodec {
         if (lastReqVarBits == 0) construct
         else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
       val readVars = members.map { m =>
-        q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString, defaultValue(methodType(m)))}"
+        q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString.trim, defaultValue(methodType(m)))}"
       }
       val readFields = members.map { m =>
         val varName = TermName(s"_${m.name}")
         cq"""${hashCode(m)} =>
             if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
-              ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
+              ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
               $varName = ${genReadField(methodType(m), q"$varName")}
             } else in.skip()"""
       } :+ cq"_ => in.skip()"
       val writeFields = members.map { m =>
         val tpe = methodType(m)
         val writeField = genWriteField(q"x.$m", tpe, keyName(m))
-        defaults.get(m.name.toString) match {
+        defaults.get(m.name.toString.trim) match {
           case Some(d) =>
             if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"
             else q"if (x.$m != $d) $writeField"
