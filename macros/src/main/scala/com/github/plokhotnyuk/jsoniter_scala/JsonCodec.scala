@@ -109,7 +109,7 @@ object JsonCodec {
           c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
         }
 
-      def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x.result()"): Tree =
+      def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x.result()"): Tree = // FIXME: dublication with genReadMap
         q"""(in.nextToken(): @switch) match {
               case '[' =>
                 if (in.nextToken() == ']') default
@@ -482,7 +482,7 @@ object JsonCodec {
                 ..${decoders.map { case (_, d) => d._2 }}
                 ..${encoders.map { case (_, e) => e._2 }}
               }"""
-        }
+        } // FIXME: Use case classes instead tuples
       if (c.settings.contains("print-codecs")) {
         val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
         c.info(c.enclosingPosition, msg, force = true)

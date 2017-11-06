@@ -21,7 +21,7 @@ final class JsonReader private[jsoniter_scala](
     var i = 0
     while (i < len) {
       if ((reqs(i >> 5) & (1 << i)) != 0) {
-        sb.append(if (sb.isEmpty) "missing required field(s) " else ", ").append('"').append(reqFields(i)).append('"')
+        sb.append(if (sb.isEmpty) "missing required field(s) \"" else ", \"").append(reqFields(i)).append('"')
       }
       i += 1
     }
@@ -46,7 +46,7 @@ final class JsonReader private[jsoniter_scala](
     readParentheses()
     val x = parseInt(isToken = false)
     if (x > Byte.MaxValue || x < Byte.MinValue) decodeError("value is too large for byte")
-    else {
+    else { // FIXME: remove else
       readParenthesesWithColon()
       x.toByte
     }
@@ -103,7 +103,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsBigInt(): BigInt = {
     readParentheses()
-    val x = new BigInt(parseBigDecimal(isToken = false).toBigInteger)
+    val x = new BigInt(parseBigDecimal(isToken = false).toBigInteger) // FIXME: rounding considered harmfull
     readParenthesesWithColon()
     x
   }
@@ -194,7 +194,7 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
-    if (i == len) true
+    if (i == len) true // FIXME simplify to a one boolean expression
     else if (reusableChars(i) != s.charAt(i)) false
     else isReusableCharsEqualsTo(len, s, i + 1)
 
@@ -298,7 +298,7 @@ final class JsonReader private[jsoniter_scala](
       else if (v == Int.MinValue) intOverflowError(pos - 1)
       else -v
     } else {
-      unreadByte()
+      unreadByte() // FIXME: use position offset in numberError instead
       numberError()
     }
   }
@@ -822,7 +822,7 @@ final class JsonReader private[jsoniter_scala](
   private def skipNested(opening: Byte, closing: Byte, level: Int = 0, pos: Int = head): Int =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == '"') skipNested(opening, closing, level, skipString(evenBackSlashes = true, pos + 1))
+      if (b == '"') skipNested(opening, closing, level, skipString(pos = pos + 1))
       else if (b == closing) {
         if (level == 0) pos + 1
         else skipNested(opening, closing, level - 1, pos + 1)
@@ -874,7 +874,7 @@ object JsonReader {
     override def get(): JsonReader = {
       val reader = super.get()
       if (reader.reusableChars.length > 16384) reader.reusableChars = new Array[Char](16384)
-      reader
+      reader // FIXME: reset too long reusableChars on exit from read() instead
     }
   }
   private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double/float

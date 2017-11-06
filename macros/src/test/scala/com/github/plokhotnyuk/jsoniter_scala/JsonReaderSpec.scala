@@ -646,16 +646,16 @@ class JsonReaderSpec extends WordSpec with Matchers {
   "JsonReader.appendHexDump" should {
     "print dump for specified part of the byte buffer with 16-byte aligned offset" in {
       val sb = new StringBuilder
-      JsonReader.appendHexDump(json, 10, 50, 0, sb)
+      JsonReader.appendHexDump(httpMessage, 10, 50, 0, sb)
       sb.toString shouldBe
         """
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
           |+----------+-------------------------------------------------+------------------+
-          || 00000000 |                               6f 68 6e 22 2c 22 |           ohn"," |
-          || 00000010 | 64 65 76 69 63 65 73 22 3a 5b 7b 22 69 64 22 3a | devices":[{"id": |
-          || 00000020 | 32 2c 22 6d 6f 64 65 6c 22 3a 22 69 50 68 6f 6e | 2,"model":"iPhon |
-          || 00000030 | 65 20                                           | e                |
+          || 00000000 |                               30 30 20 4f 4b 0a |           00 OK. |
+          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
+          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+          || 00000030 | 6f 6e                                           | on               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
     }
   }
