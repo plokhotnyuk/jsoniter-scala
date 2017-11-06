@@ -286,17 +286,17 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception on leading zero" in {
       assert(intercept[JsonException](readInt("00"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readInt("-00"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readInt("0123456789"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readInt("-0123456789"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readInt("02147483647"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readInt("-02147483648"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
   "JsonReader.readLong" should {
@@ -336,17 +336,17 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception on leading zero" in {
       assert(intercept[JsonException](readLong("00"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readLong("-00"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readLong("01234567890123456789"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readLong("-01234567890123456789"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readLong("09223372036854775807"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readLong("-09223372036854775808"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
   "JsonReader.readFloat" should {
@@ -402,13 +402,13 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception on leading zero" in {
       assert(intercept[JsonException](readFloat("00"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readFloat("-00"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readFloat("012345.6789"))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readFloat("-012345.6789"))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
   "JsonReader.readDouble" should {
@@ -463,10 +463,14 @@ class JsonReaderSpec extends WordSpec with Matchers {
       assert(intercept[JsonException](readDouble("Infinity")).getMessage.contains("illegal number, offset: 0x00000000"))
     }
     "throw parsing exception on leading zero" in {
-      assert(intercept[JsonException](readDouble("00")).getMessage.contains("illegal number"))
-      assert(intercept[JsonException](readDouble("-00")).getMessage.contains("illegal number"))
-      assert(intercept[JsonException](readDouble("012345.6789")).getMessage.contains("illegal number"))
-      assert(intercept[JsonException](readDouble("-012345.6789")).getMessage.contains("illegal number"))
+      assert(intercept[JsonException](readDouble("00"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonException](readDouble("-00"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+      assert(intercept[JsonException](readDouble("012345.6789"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonException](readDouble("-012345.6789"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
   "JsonReader.readBigInt" should {
@@ -544,13 +548,13 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception on leading zero" in {
       assert(intercept[JsonException](readBigInt("00", null))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readBigInt("-00", null))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readBigInt("012345.6789", null))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readBigInt("-012345.6789", null))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
   "JsonReader.readBigDecimal" should {
@@ -630,13 +634,13 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "throw parsing exception on leading zero" in {
       assert(intercept[JsonException](readBigDecimal("00", null))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readBigDecimal("-00", null))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
       assert(intercept[JsonException](readBigDecimal("012345.6789", null))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readBigDecimal("-012345.6789", null))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
   "JsonReader.appendHexDump" should {

@@ -27,6 +27,7 @@ to get maximum performance of JSON parsing & serialization.
 - TODO: code generation option to serialize/parse all fields to/from snake_case or camelCase keys 
 - TODO: support on top-level for values, collections & arrays to avoid wrapping to redundant case classes
 - TODO: extend codecs to allow using them for serialization/parsing of types to/from map keys
+- TODO: more efficient implementation for serialization and parsing of numbers 
 - TODO: efficient specialized immutable list & set for primitive types
 
 ## How to use

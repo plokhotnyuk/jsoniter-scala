@@ -147,19 +147,19 @@ class JsonCodecSpec extends WordSpec with Matchers {
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":01,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number, offset: 0x00000005"))
+      }.getMessage.contains("illegal number with leading zero, offset: 0x00000005"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":02,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number, offset: 0x0000000b"))
+      }.getMessage.contains("illegal number with leading zero, offset: 0x0000000b"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":03,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number, offset: 0x00000011"))
+      }.getMessage.contains("illegal number with leading zero, offset: 0x00000011"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":04,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number, offset: 0x00000017"))
+      }.getMessage.contains("illegal number with leading zero, offset: 0x00000017"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"𝄞","dbl":1.1,"f":2.2}""".getBytes)
@@ -167,11 +167,11 @@ class JsonCodecSpec extends WordSpec with Matchers {
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":01.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal number, offset: 0x00000032"))
+      }.getMessage.contains("illegal number with leading zero, offset: 0x00000032"))
       assert(intercept[JsonException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":02.2}""".getBytes)
-      }.getMessage.contains("illegal number, offset: 0x0000003a"))
+      }.getMessage.contains("illegal number with leading zero, offset: 0x0000003a"))
     }
     "don't deserialize numbers that overflow primitive types" in {
       assert(intercept[JsonException] {

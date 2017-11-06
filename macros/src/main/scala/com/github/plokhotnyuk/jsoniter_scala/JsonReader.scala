@@ -190,9 +190,7 @@ final class JsonReader private[jsoniter_scala](
 
   def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
 
-  def isReusableCharsEqualsTo(len: Int, s: String): Boolean =
-    if (len != s.length) false
-    else isReusableCharsEqualsTo(len, s, 0)
+  def isReusableCharsEqualsTo(len: Int, s: String): Boolean = len == s.length && isReusableCharsEqualsTo(len, s, 0)
 
   @tailrec
   private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
@@ -289,7 +287,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) pos = {
-        if (v == 0) numberError(pos - 1)
+        if (v == 0) leadingZeroError(pos - 1)
         if (v < -214748364) intOverflowError(pos)
         v = v * 10 + ('0' - b)
         if (v >= 0) intOverflowError(pos)
@@ -320,7 +318,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) pos = {
-        if (v == 0) numberError(pos - 1)
+        if (v == 0) leadingZeroError(pos - 1)
         if (v < -922337203685477580L) longOverflowError(pos)
         v = v * 10 + ('0' - b)
         if (v >= 0) longOverflowError(pos)
@@ -391,7 +389,7 @@ final class JsonReader private[jsoniter_scala](
           if (ch >= '0' && ch <= '9') {
             i = putCharAt(ch, i)
             posMan = posMan * 10 + (ch - '0')
-            if (isZeroFirst) numberError(pos - 1)
+            if (isZeroFirst) leadingZeroError(pos - 1)
             state = 4
           } else if (ch == '.') {
             i = putCharAt(ch, i)
@@ -553,7 +551,7 @@ final class JsonReader private[jsoniter_scala](
           } else numberError(pos)
         case 3 => // first int digit
           if (ch >= '0' && ch <= '9') {
-            if (isZeroFirst) numberError(pos - 1)
+            if (isZeroFirst) leadingZeroError(pos - 1)
             i = putCharAt(ch, i)
             state = 4
           } else if (ch == '.') {
@@ -642,6 +640,8 @@ final class JsonReader private[jsoniter_scala](
     new java.math.BigDecimal(reusableChars, 0, len)
 
   private def numberError(pos: Int = head): Nothing = decodeError("illegal number", pos)
+
+  private def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
 
   private def intOverflowError(pos: Int): Nothing = decodeError("value is too large for int", pos)
 
