@@ -7,7 +7,9 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-class key(key: String) extends scala.annotation.StaticAnnotation // FIXME: use more suitable name for this annotation
+class JsonProperty(
+    key: String = null,
+    transient: Boolean = false) extends scala.annotation.StaticAnnotation
 
 abstract class JsonCodec[A] {
   def decode(in: JsonReader, default: A = null.asInstanceOf[A]): A
@@ -205,7 +207,7 @@ object JsonCodec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})") // FIXME: use builder instead
+            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
@@ -215,7 +217,7 @@ object JsonCodec {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})") // FIXME: use builder instead
+            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadField(tpe1, defaultValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
@@ -227,7 +229,7 @@ object JsonCodec {
           val tpe2 = typeArg2(tpe)
           val comp = companion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
-            q"x = x.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})") // FIXME: use builder instead
+            q"x = x.updated(${genReadKey(tpe1)}, ${genReadField(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
           genReadArray(q"val x = $comp.empty", q"x.add(in.readInt())", q"x")
@@ -341,18 +343,23 @@ object JsonCodec {
         }
 
       if (!rootTpe.typeSymbol.asClass.isCaseClass) c.abort(c.enclosingPosition, s"'$rootTpe' must be a case class.")
-      val annotations: Map[Symbol, Set[Annotation]] = rootTpe.members.collect {
-        case m: TermSymbol if m.annotations.nonEmpty => (m.getter, m.annotations.toSet)
+      val annotations: Map[Symbol, (String, Boolean)] = rootTpe.members.collect {
+        case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
+          val jsonPropertyAnnotations  = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
+          if (jsonPropertyAnnotations.size > 1) {
+            c.abort(c.enclosingPosition, s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: ${m.name}.")
+          }
+          (m.getter, jsonPropertyAnnotations.head.tree.children.tail match {
+            case List(Literal(Constant(key: String)), Literal(Constant(transient: Boolean))) => (key, transient)
+            case List(Literal(Constant(key: String)), _) => (key, false)
+            case List(_, Literal(Constant(transient: Boolean))) => (m.name.toString, transient)
+            case _ => (m.name.toString, false)
+          })
       }(breakOut)
 
-      def nonTransient(m: MethodSymbol): Boolean =
-        !annotations.get(m).exists(_.exists(_.tree.tpe <:< c.weakTypeOf[transient])) // FIXME: consider use own annotation instead 'scala.transient'
+      def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_._2)
 
-      def keyName(m: MethodSymbol): String =
-        annotations.get(m).flatMap(_.collectFirst { case a if a.tree.tpe <:< c.weakTypeOf[key] => // FIXME: report warning in case of duplicated annotation found
-          val Literal(Constant(key: String)) = a.tree.children.tail.head
-          key
-        }).getOrElse(m.name.toString)
+      def keyName(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_._1)
 
       def hashCode(m: MethodSymbol): Int = {
         val cs = keyName(m).toCharArray
