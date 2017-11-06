@@ -7,9 +7,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-class JsonProperty(
-    key: String = null,
-    transient: Boolean = false) extends scala.annotation.StaticAnnotation
+case class JsonProperty(key: String = null, transient: Boolean = false) extends scala.annotation.StaticAnnotation
 
 abstract class JsonCodec[A] {
   def default: A = null.asInstanceOf[A]
@@ -109,67 +107,54 @@ object JsonCodec {
           c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
         }
 
-      def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x.result()"): Tree = // FIXME: dublication with genReadMap
-        q"""(in.nextToken(): @switch) match {
-              case '[' =>
-                if (in.nextToken() == ']') default
-                else {
-                  in.unreadByte()
-                  ..$newBuilder
-                  do {
-                    ..$readVal
-                  } while (in.nextToken() == ',')
-                  in.unreadByte()
-                  if (in.nextToken() == ']') {
-                    ..$result
-                  } else in.arrayEndError()
-                }
-              case 'n' =>
-                in.parseNull(default)
-              case _ =>
-                in.arrayStartError()
-            }"""
+      def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
+        genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayStartError()", q"in.arrayEndError()")
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
+        genReadCollection(newBuilder, readKV, result, q"'{'", q"'}'", q"in.objectStartError()", q"in.objectEndError()")
+
+      def genReadCollection(newBuilder: Tree, loopBody: Tree, result: Tree,
+                            open: Tree, close: Tree, startError: Tree, endError: Tree): Tree =
         q"""(in.nextToken(): @switch) match {
-              case '{' =>
-                if (in.nextToken() == '}') default
+              case $open =>
+                if (in.nextToken() == $close) default
                 else {
                   in.unreadByte()
                   ..$newBuilder
                   do {
-                    ..$readKV
+                    ..$loopBody
                   } while (in.nextToken() == ',')
                   in.unreadByte()
-                  if (in.nextToken() == '}') {
-                    ..$result
-                  } else in.objectEndError()
+                  if (in.nextToken() == $close) $result
+                  else $endError
                 }
               case 'n' =>
                 in.parseNull(default)
               case _ =>
-                in.objectStartError()
+                ..$startError
             }"""
 
-      val decoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
+      case class CodecMethod(name: TermName, tree: Tree)
+
+      val decoders = mutable.LinkedHashMap.empty[Type, CodecMethod]
 
       def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"d${decoders.size}")
-          (name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")
-        })._1
+          CodecMethod(name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")
+        }).name
         q"$decodeMethodName(in, $arg)"
       }
 
-      val encoders = mutable.LinkedHashMap.empty[Type, (TermName, Tree)]
+      val encoders = mutable.LinkedHashMap.empty[Type, CodecMethod]
 
       def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encoders.getOrElseUpdate(tpe, {
           val impl = f
           val name = TermName(s"e${encoders.size}")
-          (name, q"private def $name(out: JsonWriter, x: $tpe): Unit = $impl")
-        })._1
+          CodecMethod(name, q"private def $name(out: JsonWriter, x: $tpe): Unit = $impl")
+        }).name
         q"$encodeMethodName(out, $arg)"
       }
 
@@ -234,18 +219,18 @@ object JsonCodec {
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, defaultValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val x = $comp.empty", q"x.add(in.readInt())", q"x")
+          genReadArray(q"val x = $comp.empty", q"x.add(in.readInt())")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
           val comp = companion(tpe)
-          genReadArray(q"val x = $comp.newBuilder", q"x += in.readInt()")
+          genReadArray(q"val x = $comp.newBuilder", q"x += in.readInt()", q"x.result()")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = companion(tpe)
-          genReadArray(q"val x = $comp.newBuilder[$tpe1]", q"x += ${genReadVal(tpe1, defaultValue(tpe1))}")
+          genReadArray(q"val x = $comp.newBuilder[$tpe1]", q"x += ${genReadVal(tpe1, defaultValue(tpe1))}", q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = collection.mutable.ArrayBuilder.make[$tpe1]",
-            q"x += ${genReadVal(tpe1, defaultValue(tpe1))}")
+            q"x += ${genReadVal(tpe1, defaultValue(tpe1))}", q"x.result()")
         } else if (tpe =:= typeOf[String]) {
           q"in.readString($default)"
         } else if (tpe =:= typeOf[BigInt]) {
@@ -346,7 +331,7 @@ object JsonCodec {
 
       val codec =
         if (rootTpe.typeSymbol.asClass.isCaseClass && !isValueClass(rootTpe)) {
-          val annotations: Map[Symbol, (String, Boolean)] = rootTpe.members.collect {
+          val annotations: Map[Symbol, JsonProperty] = rootTpe.members.collect {
             case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
               val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
               val name = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
@@ -360,12 +345,12 @@ object JsonCodec {
               val transient = jsonPropertyArgs.collectFirst {
                 case Literal(Constant(transient: Boolean)) => transient
               }.getOrElse(false)
-              (m.getter, (key, transient))
+              (m.getter, JsonProperty(key, transient))
           }(breakOut)
 
-          def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_._2)
+          def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_.transient)
 
-          def keyName(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_._1)
+          def keyName(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_.key)
 
           def hashCode(m: MethodSymbol): Int = {
             val cs = keyName(m).toCharArray
@@ -467,8 +452,8 @@ object JsonCodec {
                     ..$writeFieldsBlock
                     out.writeObjectEnd()
                   } else out.writeNull()
-                ..${decoders.map { case (_, d) => d._2 }}
-                ..${encoders.map { case (_, e) => e._2 }}
+                ..${decoders.values.map(_.tree)}
+                ..${encoders.values.map(_.tree)}
               }"""
         } else {
           q"""import com.github.plokhotnyuk.jsoniter_scala._
@@ -479,10 +464,10 @@ object JsonCodec {
                   ${genReadVal(rootTpe, q"default", isRootCodec = true)}
                 override def encode(x: $rootTpe, out: JsonWriter): Unit =
                   ${genWriteVal(q"x", rootTpe, isRootCodec = true)}
-                ..${decoders.map { case (_, d) => d._2 }}
-                ..${encoders.map { case (_, e) => e._2 }}
+                ..${decoders.values.map(_.tree)}
+                ..${encoders.values.map(_.tree)}
               }"""
-        } // FIXME: Use case classes instead tuples
+        }
       if (c.settings.contains("print-codecs")) {
         val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
         c.info(c.enclosingPosition, msg, force = true)

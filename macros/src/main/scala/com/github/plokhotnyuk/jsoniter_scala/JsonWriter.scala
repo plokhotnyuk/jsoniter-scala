@@ -398,7 +398,7 @@ final class JsonWriter private[jsoniter_scala](
     if (java.lang.Float.isFinite(x)) writeAsciiString(java.lang.Float.toString(x))
     else encodeError("illegal number: " + x)
 
-  // TODO: use more efficient algorithm from RapidJSON, see https://github.com/miloyip/dtoa-benchmark
+  // TODO: use more efficient algorithm, see https://github.com/Tencent/rapidjson/blob/fe550f38669fe0f488926c1ef0feb6c101f586d6/include/rapidjson/internal/dtoa.h
   private def writeDouble(x: Double): Unit =
     if (java.lang.Double.isFinite(x)) writeAsciiString(java.lang.Double.toString(x))
     else encodeError("illegal number: " + x)
@@ -475,17 +475,13 @@ final class JsonWriter private[jsoniter_scala](
     out.write(buf, 0, count)
     count = 0
   }
+
+  private def freeTooLongBuffer(): Unit = if (buf.length > 16384) buf = new Array[Byte](16384)
 }
 
 object JsonWriter {
   private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = new JsonWriter()
-
-    override def get(): JsonWriter = {
-      val writer = super.get()
-      if (writer.buf.length > 16384) writer.buf = new Array[Byte](16384)
-      writer
-    }
   }
   private val digits: Array[Short] = (0 to 999).map { i =>
     (((if (i < 10) 2 else if (i < 100) 1 else 0) << 12) + // this nibble encodes number of leading zeroes
@@ -508,9 +504,10 @@ object JsonWriter {
     writer.indention = 0
     try codec.encode(obj, writer)
     finally {
-      writer.config = currConfig
       writer.flushBuffer()
+      writer.config = currConfig
       writer.out = null // do not close output stream, just help GC instead
+      writer.freeTooLongBuffer()
     }
   }
 
@@ -524,11 +521,15 @@ object JsonWriter {
     if (config ne null) writer.config = config
     writer.count = 0
     writer.indention = 0
-    try codec.encode(obj, writer)
-    finally writer.config = currConfig
-    val arr = new Array[Byte](writer.count)
-    System.arraycopy(writer.buf, 0, arr, 0, arr.length)
-    arr
+    try {
+      codec.encode(obj, writer)
+      val arr = new Array[Byte](writer.count)
+      System.arraycopy(writer.buf, 0, arr, 0, arr.length)
+      arr
+    } finally {
+      writer.config = currConfig
+      writer.freeTooLongBuffer()
+    }
   }
 
   final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int): Int =

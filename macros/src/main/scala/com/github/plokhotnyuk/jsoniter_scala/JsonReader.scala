@@ -46,10 +46,8 @@ final class JsonReader private[jsoniter_scala](
     readParentheses()
     val x = parseInt(isToken = false)
     if (x > Byte.MaxValue || x < Byte.MinValue) decodeError("value is too large for byte")
-    else { // FIXME: remove else
-      readParenthesesWithColon()
-      x.toByte
-    }
+    readParenthesesWithColon()
+    x.toByte
   }
 
   def readObjectFieldAsChar(): Char = {
@@ -57,20 +55,16 @@ final class JsonReader private[jsoniter_scala](
     val len = parseString()
     val x = reusableChars(0)
     if (len != 1) decodeError("illegal value for char")
-    else {
-      readColon()
-      x
-    }
+    readColon()
+    x
   }
 
   def readObjectFieldAsShort(): Short = {
     readParentheses()
     val x = parseInt(isToken = false)
     if (x > Short.MaxValue || x < Short.MinValue) decodeError("value is too large for short")
-    else {
-      readParenthesesWithColon()
-      x.toShort
-    }
+    readParenthesesWithColon()
+    x.toShort
   }
 
   def readObjectFieldAsInt(): Int = {
@@ -194,7 +188,7 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
-    if (i == len) true // FIXME simplify to a one boolean expression
+    if (i == len) true
     else if (reusableChars(i) != s.charAt(i)) false
     else isReusableCharsEqualsTo(len, s, i + 1)
 
@@ -277,9 +271,9 @@ final class JsonReader private[jsoniter_scala](
     var b = if (isToken) nextToken() else nextByte()
     val negative = b == '-'
     if (negative) b = nextByte()
+    var pos = head
     if (b >= '0' && b <= '9') {
       var v = '0' - b
-      var pos = head
       while ((pos < tail || {
         pos = loadMore(pos)
         pos == 0
@@ -297,10 +291,7 @@ final class JsonReader private[jsoniter_scala](
       if (negative) v
       else if (v == Int.MinValue) intOverflowError(pos - 1)
       else -v
-    } else {
-      unreadByte() // FIXME: use position offset in numberError instead
-      numberError()
-    }
+    } else numberError(pos - 1)
   }
 
   // TODO: consider fast path with unrolled loop for small numbers
@@ -308,9 +299,9 @@ final class JsonReader private[jsoniter_scala](
     var b = if (isToken) nextToken() else nextByte()
     val negative = b == '-'
     if (negative) b = nextByte()
+    var pos = head
     if (b >= '0' && b <= '9') {
       var v: Long = '0' - b
-      var pos = head
       while ((pos < tail || {
         pos = loadMore(pos)
         pos == 0
@@ -328,10 +319,7 @@ final class JsonReader private[jsoniter_scala](
       if (negative) v
       else if (v == Long.MinValue) longOverflowError(pos - 1)
       else -v
-    } else {
-      unreadByte()
-      numberError()
-    }
+    } else numberError(pos - 1)
   }
 
   // TODO: consider fast path with unrolled loop for small numbers
@@ -865,17 +853,14 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private def endOfInput(): Nothing = decodeError("unexpected end of input", tail)
+
+  private def freeTooLongReusableChars(): Unit =
+    if (reusableChars.length > 16384) reusableChars = new Array[Char](16384)
 }
 
 object JsonReader {
   private val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
     override def initialValue(): JsonReader = new JsonReader()
-
-    override def get(): JsonReader = {
-      val reader = super.get()
-      if (reader.reusableChars.length > 16384) reader.reusableChars = new Array[Char](16384)
-      reader // FIXME: reset too long reusableChars on exit from read() instead
-    }
   }
   private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double/float
     Array(1, 1e+01, 1e+02, 1e+03, 1e+04, 1e+05, 1e+06, 1e+07, 1e+08, 1e+09, 1e+10,
@@ -890,7 +875,10 @@ object JsonReader {
     reader.tail = 0
     reader.totalRead = 0
     try codec.decode(reader)
-    finally reader.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+    finally {
+      reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+      reader.freeTooLongReusableChars()
+    }
   }
 
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = {
@@ -910,7 +898,10 @@ object JsonReader {
     reader.tail = to
     reader.totalRead = 0
     try codec.decode(reader)
-    finally reader.buf = currBuf
+    finally {
+      reader.buf = currBuf
+      reader.freeTooLongReusableChars()
+    }
   }
 
   final def toHashCode(cs: Array[Char], len: Int): Int = {
