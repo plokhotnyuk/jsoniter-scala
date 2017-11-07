@@ -90,7 +90,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
 
   val codecOfUTF8KeysAndValues = materialize[UTF8KeysAndValues]
 
-  case class KeyOverridden(@JsonProperty(key = "new_key") oldKey: String) //FIXME: classes with field annotation should be defined in source file before materialize call
+  case class NameOverridden(@JsonProperty(name = "new_name") oldName: String) //FIXME: classes with field annotation should be defined in source file before materialize call
 
   case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, l: List[Int] = List(0),
                       a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
@@ -500,7 +500,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
         WriterConfig(escapeUnicode = true))
     }
     "serialize and deserialize with keys of case classes overridden by annotation" in {
-      verifySerDeser(materialize[KeyOverridden], KeyOverridden(oldKey = "VVV"), """{"new_key":"VVV"}""".getBytes)
+      verifySerDeser(materialize[NameOverridden], NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""".getBytes)
     }
     "deserialize but don't serialize default values of case classes that defined for fields" in {
       val json = "{}".getBytes

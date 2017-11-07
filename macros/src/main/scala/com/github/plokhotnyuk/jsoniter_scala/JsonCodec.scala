@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-case class JsonProperty(key: String = null, transient: Boolean = false) extends scala.annotation.StaticAnnotation
+case class JsonProperty(name: String = null, transient: Boolean = false) extends scala.annotation.StaticAnnotation
 
 abstract class JsonCodec[A] {
   def default: A = null.asInstanceOf[A]
@@ -334,26 +334,27 @@ object JsonCodec {
           val annotations: Map[Symbol, JsonProperty] = rootTpe.members.collect {
             case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
               val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
-              val name = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
+              val defaultName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
               if (jsonProperties.size > 1) {
-                c.abort(c.enclosingPosition, s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: $name.")
+                c.abort(c.enclosingPosition,
+                  s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: $defaultName.")
               } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
             val jsonPropertyArgs = jsonProperties.head.tree.children.tail
-              val key = jsonPropertyArgs.collectFirst {
-                case Literal(Constant(key: String)) => Option(key).getOrElse(name)
-              }.getOrElse(name)
+              val name = jsonPropertyArgs.collectFirst {
+                case Literal(Constant(name: String)) => Option(name).getOrElse(defaultName)
+              }.getOrElse(defaultName)
               val transient = jsonPropertyArgs.collectFirst {
                 case Literal(Constant(transient: Boolean)) => transient
               }.getOrElse(false)
-              (m.getter, JsonProperty(key, transient))
+              (m.getter, JsonProperty(name, transient))
           }(breakOut)
 
           def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_.transient)
 
-          def keyName(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_.key)
+          def name(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_.name)
 
           def hashCode(m: MethodSymbol): Int = {
-            val cs = keyName(m).toCharArray
+            val cs = name(m).toCharArray
             JsonReader.toHashCode(cs, cs.length)
           }
 
@@ -399,7 +400,7 @@ object JsonCodec {
           val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
               cq"""$hashCode => ${ms.foldLeft(q"in.skip()") { case (acc, m) =>
                 val varName = TermName(s"_${m.name}")
-                q"""if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
+                q"""if (in.isReusableCharsEqualsTo(l, ${name(m)})) {
                      ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
                      $varName = ${genReadVal(methodType(m), q"$varName")}
                     } else $acc"""
@@ -407,7 +408,7 @@ object JsonCodec {
             }(breakOut) :+ cq"_ => in.skip()"
           val writeFields = members.map { m =>
             val tpe = methodType(m)
-            val writeField = genWriteField(q"x.$m", tpe, keyName(m))
+            val writeField = genWriteField(q"x.$m", tpe, name(m))
             defaults.get(m.name.toString.trim) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"

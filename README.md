@@ -21,8 +21,7 @@ to get maximum performance of JSON parsing & serialization.
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
-- Key names can be overridden by field annotation
-- Field names are matched by hash and can have collisions with other keys on the same JSON object value
+- Field names can be overridden for serialization/parsing by field annotation in case classes
 - TODO: generate codecs recursively from top-level type
 - TODO: code generation option to serialize/parse all fields to/from snake_case or camelCase keys 
 - TODO: extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
