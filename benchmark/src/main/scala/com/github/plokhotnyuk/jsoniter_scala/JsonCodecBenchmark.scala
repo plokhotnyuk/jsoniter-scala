@@ -32,7 +32,11 @@ import scala.collection.mutable
   "-XX:InitialCodeCacheSize=256m",
   "-XX:ReservedCodeCacheSize=256m",
   "-XX:-UseBiasedLocking",
-  "-XX:+AlwaysPreTouch"))
+  "-XX:+AlwaysPreTouch"/*,
+  "-XX:+UnlockDiagnosticVMOptions",
+  "-XX:CompileCommand=print,*JsonReader.parseInt",
+  "-XX:PrintAssemblyOptions=intel"*/
+))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class JsonCodecBenchmark {
