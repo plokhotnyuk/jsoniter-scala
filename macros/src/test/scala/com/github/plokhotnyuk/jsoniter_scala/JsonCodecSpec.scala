@@ -492,8 +492,28 @@ class JsonCodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize with keys defined by fields" in {
       verifySerDeser(materialize[CamelAndSnakeCase],
-        CamelAndSnakeCase("VVV", "XXX"),
-        """{"camelCase":"VVV","snake_case":"XXX"}""".getBytes)
+        CamelAndSnakeCase("VVV", "WWW"),
+        """{"camelCase":"VVV","snake_case":"WWW"}""".getBytes)
+    }
+    "serialize and deserialize with names enforced to camelCase" in {
+      verifySerDeser(materializeCamelCased[CamelAndSnakeCase],
+        CamelAndSnakeCase("VVV", "WWW"),
+        """{"camelCase":"VVV","snakeCase":"WWW"}""".getBytes)
+      assert(intercept[JsonException] {
+        verifyDeser(materializeCamelCased[CamelAndSnakeCase],
+          CamelAndSnakeCase("VVV", "WWW"),
+          """{"camel_case":"VVV","snake_case":"WWW"}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", offset: 0x00000026"))
+    }
+    "serialize and deserialize with names enforced to snake_case" in {
+      verifySerDeser(materializeSnakeCased[CamelAndSnakeCase],
+        CamelAndSnakeCase("VVV", "WWW"),
+        """{"camel_case":"VVV","snake_case":"WWW"}""".getBytes)
+      assert(intercept[JsonException] {
+        verifyDeser(materializeSnakeCased[CamelAndSnakeCase],
+          CamelAndSnakeCase("VVV", "WWW"),
+          """{"camelCase":"VVV","snakeCase":"WWW"}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", offset: 0x00000024"))
     }
     "serialize and deserialize indented JSON" in {
       verifySerDeser(codecOfIndented, indented,
@@ -596,6 +616,30 @@ class JsonCodecSpec extends WordSpec with Matchers {
             |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
             |}""".stripMargin.getBytes)
       }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99", offset: 0x0000032c"""))
+    }
+  }
+  "JsonCodec.enforceCamelCase" should {
+    "transform snake_case names to camelCase" in {
+      JsonCodec.enforceCamelCase("o_o") shouldBe "oO"
+      JsonCodec.enforceCamelCase("o_ooo_") shouldBe "oOoo"
+      JsonCodec.enforceCamelCase("O_OOO_111") shouldBe "oOoo111"
+    }
+    "leave camelCase names as is" in {
+      JsonCodec.enforceCamelCase("oO") shouldBe "oO"
+      JsonCodec.enforceCamelCase("oOoo") shouldBe "oOoo"
+      JsonCodec.enforceCamelCase("OOoo111") shouldBe "OOoo111"
+    }
+  }
+  "JsonCodec.enforce_snake_case" should {
+    "transform camelCase names to snake_case" in {
+      JsonCodec.enforce_snake_case("oO") shouldBe "o_o"
+      JsonCodec.enforce_snake_case("oOoo") shouldBe "o_ooo"
+      JsonCodec.enforce_snake_case("oOoo111") shouldBe "o_ooo_111"
+    }
+    "leave snake_case names as is" in {
+      JsonCodec.enforce_snake_case("o_o") shouldBe "o_o"
+      JsonCodec.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
+      JsonCodec.enforce_snake_case("O_OOO_111") shouldBe "O_OOO_111"
     }
   }
 

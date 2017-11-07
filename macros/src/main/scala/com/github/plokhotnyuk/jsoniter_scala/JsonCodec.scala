@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
+import java.lang.Character._
+import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
 import scala.collection.{breakOut, mutable}
@@ -7,7 +9,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-case class JsonProperty(name: String = null, transient: Boolean = false) extends scala.annotation.StaticAnnotation
+case class JsonProperty(name: String = null, transient: Boolean = false) extends StaticAnnotation
 
 abstract class JsonCodec[A] {
   def default: A = null.asInstanceOf[A]
@@ -18,7 +20,13 @@ abstract class JsonCodec[A] {
 }
 
 object JsonCodec {
-  def materialize[A]: JsonCodec[A] = macro Impl.materialize[A]
+  private[jsoniter_scala] case class Param(nameMapper: String) extends StaticAnnotation
+
+  @Param("identity") def materialize[A]: JsonCodec[A] = macro Impl.materialize[A]
+
+  @Param("CamelCase") def materializeCamelCased[A]: JsonCodec[A] = macro Impl.materialize[A]
+
+  @Param("snake_case") def materializeSnakeCased[A]: JsonCodec[A] = macro Impl.materialize[A]
 
   private object Impl {
     def materialize[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonCodec[A]] = {
@@ -329,9 +337,17 @@ object JsonCodec {
               ..${genWriteVal(m, tpe)}"""
         }
 
+      val nameMapper = c.macroApplication.symbol.annotations.find(_.tree.tpe <:< typeOf[Param]).flatMap(
+        _.tree.children.tail.collectFirst {
+          case Literal(Constant(s: String)) => s match {
+            case "CamelCase" => enforceCamelCase _
+            case "snake_case" => enforce_snake_case _
+            case _ => identity[String] _
+          }
+        }).get
       val codec =
         if (rootTpe.typeSymbol.asClass.isCaseClass && !isValueClass(rootTpe)) {
-          val annotations: Map[Symbol, JsonProperty] = rootTpe.members.collect {
+          val annotations: Map[String, JsonProperty] = rootTpe.members.collect {
             case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
               val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
               val defaultName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
@@ -339,19 +355,21 @@ object JsonCodec {
                 c.abort(c.enclosingPosition,
                   s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$rootTpe' for field: $defaultName.")
               } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
-            val jsonPropertyArgs = jsonProperties.head.tree.children.tail
+              val jsonPropertyArgs = jsonProperties.head.tree.children.tail
               val name = jsonPropertyArgs.collectFirst {
                 case Literal(Constant(name: String)) => Option(name).getOrElse(defaultName)
               }.getOrElse(defaultName)
               val transient = jsonPropertyArgs.collectFirst {
                 case Literal(Constant(transient: Boolean)) => transient
               }.getOrElse(false)
-              (m.getter, JsonProperty(name, transient))
+              (defaultName, JsonProperty(name, transient))
           }(breakOut)
 
-          def nonTransient(m: MethodSymbol): Boolean = annotations.get(m).fold(true)(!_.transient)
+          def nonTransient(m: MethodSymbol): Boolean = annotations.get(m.name.toString).fold(true)(!_.transient)
 
-          def name(m: MethodSymbol): String = annotations.get(m).fold(m.name.toString)(_.name)
+          def name(m: MethodSymbol): String = mappedName(m.name.toString)
+
+          def mappedName(defaultName: String): String = annotations.get(defaultName).fold(nameMapper(defaultName))(_.name)
 
           def hashCode(m: MethodSymbol): Int = {
             val cs = name(m).toCharArray
@@ -370,7 +388,7 @@ object JsonCodec {
           val defaults: Map[String, Tree] = params.zipWithIndex.collect {
             case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
           }(breakOut)
-          val required = params.collect { // FIXME: should report overridden by annotation keys instead of param names
+          val required = params.collect {
             case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
           }
           val reqVarNum = required.size
@@ -385,7 +403,7 @@ object JsonCodec {
             else reqVarNames.dropRight(1).map(n => q"var $n = -1") :+ q"var ${reqVarNames.last} = $lastReqVarBits"
           val reqFields =
             if (lastReqVarBits == 0) EmptyTree
-            else q"private val reqFields: Array[String] = Array(..$required)"
+            else q"private val reqFields: Array[String] = Array(..${required.map(mappedName)})"
           val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
           val members: Seq[MethodSymbol] = rootTpe.members.collect {
             case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
@@ -477,5 +495,48 @@ object JsonCodec {
       }
       c.Expr[JsonCodec[A]](codec)
     }
+  }
+
+  private[jsoniter_scala] def enforceCamelCase(s: String): String =
+    if (s.indexOf("_") == -1) s
+    else {
+      val len = s.length
+      val sb = new StringBuilder(len)
+      var i = 0
+      var isPrecedingDash = false
+      while (i < len) {
+        val ch = s.charAt(i)
+        if (ch == '_') isPrecedingDash = true
+        else {
+          sb.append(if (isPrecedingDash) toUpperCase(ch) else toLowerCase(ch))
+          isPrecedingDash = false
+        }
+        i += 1
+      }
+      sb.toString
+    }
+
+  private[jsoniter_scala] def enforce_snake_case(s: String): String = {
+    val len = s.length
+    val sb = new StringBuilder(len + (len >> 1))
+    var i = 0
+    var state = 0
+    while (i < len) {
+      val ch = s.charAt(i)
+      state =
+        if (ch == '_') {
+          sb.append(ch)
+          0
+        } else if (isLowerCase(ch)) {
+          sb.append(ch)
+          1
+        } else {
+          if (state == 1) sb.append('_').append(toLowerCase(ch))
+          else sb.append(ch)
+          2
+        }
+      i += 1
+    }
+    sb.toString
   }
 }

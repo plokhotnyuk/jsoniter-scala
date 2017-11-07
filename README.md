@@ -22,8 +22,8 @@ to get maximum performance of JSON parsing & serialization.
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
+- Additional code generation methods to enforce snake_case or camelCase names for all fields
 - TODO: generate codecs recursively from top-level type
-- TODO: code generation option to serialize/parse all fields to/from snake_case or camelCase keys 
 - TODO: extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: more efficient implementation for serialization and parsing of numbers 
 - TODO: efficient specialized immutable list & set for primitive types
