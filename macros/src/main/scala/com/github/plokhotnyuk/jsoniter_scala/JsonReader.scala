@@ -164,25 +164,9 @@ final class JsonReader private[jsoniter_scala](
 
   def nextToken(): Byte = nextToken(head)
 
-  @tailrec
-  private def nextToken(pos: Int): Byte =
-    if (pos < tail) {
-      val b = buf(pos)
-      if (b != ' ' && b != '\n' && b != '\t' && b != '\r') {
-        head = pos + 1
-        b
-      } else nextToken(pos + 1)
-    } else nextToken(loadMoreOrError(pos))
-
   def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
 
   def isReusableCharsEqualsTo(len: Int, s: String): Boolean = len == s.length && isReusableCharsEqualsTo(len, s, 0)
-
-  @tailrec
-  private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
-    if (i == len) true
-    else if (reusableChars(i) != s.charAt(i)) false
-    else isReusableCharsEqualsTo(len, s, i + 1)
 
   def skip(): Unit = head = (nextToken(): @switch) match {
     case '"' => skipString()
@@ -203,6 +187,13 @@ final class JsonReader private[jsoniter_scala](
     case '{' => skipNested('{', '}')
     case '[' => skipNested('[', ']')
     case _ => decodeError("expected value")
+  }
+
+  def nextByte(): Byte = {
+    var pos = head
+    if (pos == tail) pos = loadMoreOrError(pos)
+    head = pos + 1
+    buf(pos)
   }
 
   def unreadByte(): Unit = head -= 1
@@ -228,6 +219,22 @@ final class JsonReader private[jsoniter_scala](
     throw new JsonException(sb.toString)
   }
 
+  @tailrec
+  private def nextToken(pos: Int): Byte =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b != ' ' && b != '\n' && b != '\t' && b != '\r') {
+        head = pos + 1
+        b
+      } else nextToken(pos + 1)
+    } else nextToken(loadMoreOrError(pos))
+
+  @tailrec
+  private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
+    if (i == len) true
+    else if (reusableChars(i) != s.charAt(i)) false
+    else isReusableCharsEqualsTo(len, s, i + 1)
+
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
 
   private def readParentheses(): Unit = if (nextByte() != '"') decodeError("expected '\"'")
@@ -237,13 +244,6 @@ final class JsonReader private[jsoniter_scala](
     else readColon()
 
   private def readColon(): Unit = if (nextToken() != ':') decodeError("expected ':'")
-
-  private def nextByte(): Byte = {
-    var pos = head
-    if (pos == tail) pos = loadMoreOrError(pos)
-    head = pos + 1
-    buf(pos)
-  }
 
   private def parseBoolean(isToken: Boolean): Boolean = {
     val b = if (isToken) nextToken() else nextByte()
@@ -500,7 +500,7 @@ final class JsonReader private[jsoniter_scala](
       }
       var pos = head
       if (b >= '0' && b <= '9') {
-        var isZeroFirst = b == '0'
+        val isZeroFirst = b == '0'
         i = putCharAt(b.toChar, i)
         while ((pos < tail || {
           pos = ensureReusableCharsCapacity(i, loadMore(pos))
