@@ -97,14 +97,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsBigInt(): BigInt = {
     readParentheses()
-    val x = new BigInt(parseBigDecimal(isToken = false).toBigInteger) // FIXME: rounding considered harmfull
+    val x = parseBigInt(isToken = false)
     readParenthesesWithColon()
     x
   }
 
   def readObjectFieldAsBigDecimal(): BigDecimal = {
     readParentheses()
-    val x = new BigDecimal(parseBigDecimal(isToken = false))
+    val x = parseBigDecimal(isToken = false)
     readParenthesesWithColon()
     x
   }
@@ -138,17 +138,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readFloat(): Float = parseDouble(isToken = true).toFloat
 
-  def readBigInt(default: BigInt): BigInt = {
-    val x = parseBigDecimal(isToken = true)
-    if (x eq null) default
-    else new BigInt(x.toBigInteger)
-  }
+  def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default)
 
-  def readBigDecimal(default: BigDecimal): BigDecimal = {
-    val x = parseBigDecimal(isToken = true)
-    if (x eq null) default
-    else new BigDecimal(x)
-  }
+  def readBigDecimal(default: BigDecimal): BigDecimal = parseBigDecimal(isToken = true, default)
 
   def readString(default: String = null): String = {
     val b = nextToken()
@@ -449,7 +441,7 @@ final class JsonReader private[jsoniter_scala](
           if (ch >= '0' && ch <= '9') {
             i = putCharAt(ch, i)
             posExp = posExp * 10 + (ch - '0')
-            state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 214748364) 10 else 9
+            state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 350) 10 else 9
           } else {
             head = pos
             return toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
@@ -493,7 +485,42 @@ final class JsonReader private[jsoniter_scala](
   private def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
 
   // TODO: consider fast path with unrolled loop for small numbers
-  private def parseBigDecimal(isToken: Boolean): java.math.BigDecimal = {
+  private def parseBigInt(isToken: Boolean, default: BigInt = null): BigInt = {
+    var b = if (isToken) nextToken() else nextByte()
+    if (b == 'n') {
+      if (isToken) parseNull(default)
+      else numberError()
+    } else {
+      ensureReusableCharsCapacity(2, head)
+      var i = 0
+      val negative = b == '-'
+      if (negative) {
+        i = putCharAt(b.toChar, i)
+        b = nextByte()
+      }
+      var pos = head
+      if (b >= '0' && b <= '9') {
+        var isZeroFirst = b == '0'
+        i = putCharAt(b.toChar, i)
+        while ((pos < tail || {
+          pos = ensureReusableCharsCapacity(i, loadMore(pos))
+          pos == 0
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) pos = {
+          if (isZeroFirst ) leadingZeroError(pos - 1)
+          i = putCharAt(b.toChar, i)
+          pos + 1
+        }
+        head = pos
+        new BigInt(new java.math.BigDecimal(reusableChars, 0, i).toBigInteger)
+      } else numberError(pos - 1)
+    }
+  }
+
+  // TODO: consider fast path with unrolled loop for small numbers
+  private def parseBigDecimal(isToken: Boolean, default: BigDecimal = null): BigDecimal = {
     var isZeroFirst = false
     var i = 0
     var state = 0
@@ -614,18 +641,18 @@ final class JsonReader private[jsoniter_scala](
           else numberError(pos)
         case 13 => // null
           head = pos
-          return null
+          return default
       }
       pos += 1
     }
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(i)
-    else if (state == 13) null
+    else if (state == 13) default
     else numberError()
   }
 
-  private def toBigDecimal(len: Int): java.math.BigDecimal =
-    new java.math.BigDecimal(reusableChars, 0, len)
+  private def toBigDecimal(len: Int): BigDecimal =
+    new BigDecimal(new java.math.BigDecimal(reusableChars, 0, len))
 
   private def numberError(pos: Int = head): Nothing = decodeError("illegal number", pos)
 

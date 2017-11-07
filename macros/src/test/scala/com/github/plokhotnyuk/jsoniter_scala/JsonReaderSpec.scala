@@ -482,63 +482,38 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
     "parse valid number values" in {
       readBigInt("0", null) shouldBe BigInt("0")
-      readBigInt("0e0", null) shouldBe BigInt("0")
-      readBigInt("0.0", null) shouldBe BigInt("0")
-      readBigInt("-0.0", null) shouldBe BigInt("0")
       readBigInt("12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
       readBigInt("-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
-      readBigInt("1234567890123456789.0123456789e10", null) shouldBe BigInt("12345678901234567890123456789")
-      readBigInt("1234567890123456789.0123456789e+10", null) shouldBe BigInt("12345678901234567890123456789")
-      readBigInt("-1234567890123456789.0123456789E-10", null) shouldBe BigInt("-123456789")
     }
     "parse big number values without overflow" in {
-      readBigInt("12345e6789", null) shouldBe BigInt("12345" + new String(Array.fill(6789)('0')))
-      readBigInt("-12345e6789", null) shouldBe BigInt("-12345" + new String(Array.fill(6789)('0')))
-    }
-    "parse zero on underflow" in {
-      readBigInt("12345e-6789", null) shouldBe BigInt("0")
-      readBigInt("-12345e-6789", null) shouldBe BigInt("0")
+      val bigNumber = "12345" + new String(Array.fill(6789)('0'))
+      readBigInt(bigNumber, null) shouldBe BigInt(bigNumber)
+      readBigInt("-" + bigNumber, null) shouldBe BigInt("-" + bigNumber)
     }
     "parse valid number values with skiping JSON space characters" in {
       readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
       readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
     }
-    "parse valid number values and stops on not numeric chars" in {
+    "parse valid number values and stops on not numeric or '.', 'e', 'E' chars" in {
       readBigInt("0$", null) shouldBe BigInt("0")
       readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
       readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789.0123456789e10$", null) shouldBe BigInt("12345678901234567890123456789")
-    }
-    "throw number format exception for too big exponents" in {
-      intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890", null))
-      intercept[NumberFormatException](readBigInt("-12345678901234567890e12345678901234567890", null))
-      intercept[NumberFormatException](readBigInt("12345678901234567890e-12345678901234567890", null))
-      intercept[NumberFormatException](readBigInt("-12345678901234567890e-12345678901234567890", null))
-      intercept[NumberFormatException](readBigInt("12345678901234567890e12345678901234567890$", null))
+      readBigInt("1234567890123456789e10$", null) shouldBe BigInt("1234567890123456789")
+      readBigInt("1234567890123456789E10$", null) shouldBe BigInt("1234567890123456789")
     }
     "throw parsing exception on illegal or empty input" in {
       assert(intercept[JsonException](readBigInt("", null))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
       assert(intercept[JsonException](readBigInt(" ", null))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
       assert(intercept[JsonException](readBigInt("-", null))
-        .getMessage.contains("illegal number, offset: 0x00000001"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
       assert(intercept[JsonException](readBigInt("$", null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
       assert(intercept[JsonException](readBigInt(" $", null))
         .getMessage.contains("illegal number, offset: 0x00000001"))
       assert(intercept[JsonException](readBigInt("-$", null))
         .getMessage.contains("illegal number, offset: 0x00000001"))
-      assert(intercept[JsonException](readBigInt("0e$", null))
-        .getMessage.contains("illegal number, offset: 0x00000002"))
-      assert(intercept[JsonException](readBigInt("0e-$", null))
-        .getMessage.contains("illegal number, offset: 0x00000003"))
-      assert(intercept[JsonException](readBigInt("0.E", null))
-        .getMessage.contains("illegal number, offset: 0x00000002"))
-      assert(intercept[JsonException](readBigInt("0.-", null))
-        .getMessage.contains("illegal number, offset: 0x00000002"))
-      assert(intercept[JsonException](readBigInt("0.+", null))
-        .getMessage.contains("illegal number, offset: 0x00000002"))
       assert(intercept[JsonException](readBigInt("NaN", null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
       assert(intercept[JsonException](readBigInt("Inf", null))
@@ -551,9 +526,9 @@ class JsonReaderSpec extends WordSpec with Matchers {
         .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readBigInt("-00", null))
         .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
-      assert(intercept[JsonException](readBigInt("012345.6789", null))
+      assert(intercept[JsonException](readBigInt("012345", null))
         .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
-      assert(intercept[JsonException](readBigInt("-012345.6789", null))
+      assert(intercept[JsonException](readBigInt("-012345", null))
         .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
     }
   }
