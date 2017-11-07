@@ -49,6 +49,10 @@ class JsonCodecBenchmark {
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
+  val stacklessExceptionConfig = ReaderConfig(throwStackLessException = true)
+  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStackLessException = true, appendDumpToExceptionMessage = false)
+  val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields]
+  val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
   val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
   val arraysCodec: JsonCodec[Arrays] = materialize[Arrays]
@@ -67,6 +71,7 @@ class JsonCodecBenchmark {
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val extractFieldsCodec: JsonCodec[ExtractFields] = materialize[ExtractFields]
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
+  val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
   val bitSetsJson: Array[Byte] = """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes
@@ -90,8 +95,57 @@ class JsonCodecBenchmark {
   val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
 
   @Benchmark
+  def missingReqFieldCirce(): String =
+    decode[MissingReqFields](new String(missingReqFieldJson, StandardCharsets.UTF_8)).left.get.getMessage
+
+  @Benchmark
+  def missingReqFieldJackson(): String =
+    try {
+      jacksonMapper.readValue[MissingReqFields](missingReqFieldJson)
+      null // should not be called
+    } catch {
+      case ex: Exception => ex.getMessage
+    }
+
+  @Benchmark
+  def missingReqFieldJsoniter(): String =
+    try {
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJson)
+      null // should not be called
+    } catch {
+      case ex: Exception => ex.getMessage
+    }
+
+  @Benchmark
+  def missingReqFieldJsoniterStackless(): String =
+    try {
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionConfig)
+      null // should not be called
+    } catch {
+      case ex: Exception => ex.getMessage
+    }
+
+  @Benchmark
+  def missingReqFieldJsoniterStacklessNoDump(): String =
+    try {
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionWithoutDumpConfig)
+      null // should not be called
+    } catch {
+      case ex: Exception => ex.getMessage
+    }
+
+  @Benchmark
+  def missingReqFieldPlay(): String =
+    try {
+      Json.parse(missingReqFieldJson).as[MissingReqFields](missingReqFieldFormat)
+      throw new IllegalStateException() // should not be called
+    } catch {
+      case ex: Exception => ex.getMessage
+    }
+
+  @Benchmark
   def readAnyRefsCirce(): AnyRefs =
-    decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+    decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).right.get
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
@@ -103,8 +157,7 @@ class JsonCodecBenchmark {
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
-  def readArraysCirce(): Arrays =
-    decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).right.get
 
   @Benchmark
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
@@ -117,8 +170,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readBitSetsCirce(): BitSets =
-    decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).right.get
 */
 
   @Benchmark
@@ -131,8 +183,7 @@ class JsonCodecBenchmark {
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
 
   @Benchmark
-  def readIterablesCirce(): Iterables =
-    decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).right.get
 
   @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
@@ -144,8 +195,7 @@ class JsonCodecBenchmark {
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
 
   @Benchmark
-  def readMapsCirce(): Maps =
-    decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)).right.get
 
   @Benchmark
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
@@ -158,8 +208,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
-  def readMutableMapsCirce(): MutableMaps =
-    decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).right.get
 */
 
   @Benchmark
@@ -173,8 +222,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
-  def readIntAndLongMapsCirce(): IntAndLongMaps =
-    decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).right.get
 */
 
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
@@ -189,8 +237,7 @@ class JsonCodecBenchmark {
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
-  def readPrimitivesCirce(): Primitives =
-    decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).right.get
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -202,8 +249,7 @@ class JsonCodecBenchmark {
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
 
   @Benchmark
-  def readExtractFieldsCirce(): ExtractFields =
-    decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).fold(e => throw new IllegalArgumentException(e), x => x)
+  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).right.get
 
   @Benchmark
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
@@ -314,6 +360,9 @@ class JsonCodecBenchmark {
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
 }
+
+case class MissingReqFields(@com.fasterxml.jackson.annotation.JsonProperty(required = true) s: String,
+                            @com.fasterxml.jackson.annotation.JsonProperty(required = true) i: Int)
 
 case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
 

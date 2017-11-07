@@ -23,6 +23,7 @@ to get maximum performance of JSON parsing & serialization.
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Additional code generation methods to enforce snake_case or camelCase names for all fields
+- Configurable throwing of stack-less parsing exceptions to minimize impact on performance  
 - TODO: generate codecs recursively from top-level type
 - TODO: extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: more efficient implementation for serialization and parsing of numbers 

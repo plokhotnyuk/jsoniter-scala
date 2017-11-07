@@ -483,6 +483,7 @@ object JsonWriter {
   private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = new JsonWriter()
   }
+  private val defaultConfig = WriterConfig()
   private val digits: Array[Short] = (0 to 999).map { i =>
     (((if (i < 10) 2 else if (i < 100) 1 else 0) << 12) + // this nibble encodes number of leading zeroes
       ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort // decimal digit per nibble
@@ -491,34 +492,31 @@ object JsonWriter {
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
   final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit =
-    write(codec, obj, out, null)
+    write(codec, obj, out, defaultConfig)
 
   final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream, config: WriterConfig): Unit = {
     if (codec eq null) throw new IOException("codec should be not null")
     if (out eq null) throw new IOException("out should be not null")
     val writer = pool.get
-    val currConfig = writer.config
-    if (config ne null) writer.config = config
+    writer.config = config
     writer.out = out
     writer.count = 0
     writer.indention = 0
     try codec.encode(obj, writer)
     finally {
       writer.flushBuffer()
-      writer.config = currConfig
       writer.out = null // do not close output stream, just help GC instead
       writer.freeTooLongBuffer()
     }
   }
 
   final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] =
-    write(codec, obj, null.asInstanceOf[WriterConfig])
+    write(codec, obj, defaultConfig)
 
   final def write[A](codec: JsonCodec[A], obj: A, config: WriterConfig): Array[Byte] = {
     if (codec eq null) throw new IOException("codec should be not null")
     val writer = pool.get
-    val currConfig = writer.config
-    if (config ne null) writer.config = config
+    writer.config = config
     writer.count = 0
     writer.indention = 0
     try {
@@ -527,22 +525,17 @@ object JsonWriter {
       System.arraycopy(writer.buf, 0, arr, 0, arr.length)
       arr
     } finally {
-      writer.config = currConfig
       writer.freeTooLongBuffer()
     }
   }
 
-  final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int): Int =
-    write(codec, obj, buf, from, null)
-
-  final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+  final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
     if (codec eq null) throw new IOException("codec should be not null")
     if ((buf eq null) || buf.length == 0) throw new IOException("buf should be non empty")
     if (from < 0 || from > buf.length) throw new IOException("from should be positive and not greater than buf length")
     val writer = pool.get
-    val currConfig = writer.config
     val currBuf = writer.buf
-    if (config ne null) writer.config = config
+    writer.config = config
     writer.buf = buf
     writer.count = from
     writer.indention = 0
@@ -551,7 +544,6 @@ object JsonWriter {
       codec.encode(obj, writer)
       writer.count
     } finally {
-      writer.config = currConfig
       writer.buf = currBuf
       writer.isBufGrowingAllowed = true
     }

@@ -9,6 +9,29 @@ class JsonCodecBenchmarkSpec extends WordSpec with Matchers {
   
   "CodecBenchmark" should {
     "deserialize properly" in {
+      benchmark.missingReqFieldCirce() shouldBe
+        "Attempt to decode value on failed cursor: DownField(s)"
+      benchmark.missingReqFieldJackson() shouldBe
+        """Missing required creator property 's' (index 0)
+          | at [Source: (byte[])"{}"; line: 1, column: 2]""".stripMargin
+      benchmark.missingReqFieldJsoniter() shouldBe
+        """missing required field(s) "s", "i", offset: 0x00000001, buf:
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 | 7b 7d                                           | {}               |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin
+      benchmark.missingReqFieldJsoniterStackless() shouldBe
+        """missing required field(s) "s", "i", offset: 0x00000001, buf:
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 | 7b 7d                                           | {}               |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin
+      benchmark.missingReqFieldJsoniterStacklessNoDump() shouldBe
+        """missing required field(s) "s", "i", offset: 0x00000001"""
+      benchmark.missingReqFieldPlay() shouldBe
+        "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
       benchmark.readAnyRefsCirce() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsJackson() shouldBe benchmark.anyRefsObj
       benchmark.readAnyRefsJsoniter() shouldBe benchmark.anyRefsObj

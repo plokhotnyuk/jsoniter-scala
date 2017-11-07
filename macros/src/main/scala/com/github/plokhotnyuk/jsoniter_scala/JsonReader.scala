@@ -6,7 +6,15 @@ import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
 
 import scala.annotation.{switch, tailrec}
 
-class JsonException(message: String) extends RuntimeException(message)
+class JsonException(message: String, isStackless: Boolean = false) extends RuntimeException(message) {
+  override def fillInStackTrace(): Throwable = if (isStackless) this else super.fillInStackTrace()
+}
+
+// Use an option of throwing stack-less exception for cases when parse exceptions can be not exceptional,
+// see more details here: https://shipilev.net/blog/2014/exceptional-performance/
+case class ReaderConfig(
+    throwStackLessException: Boolean = false,
+    appendDumpToExceptionMessage: Boolean = true)
 
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
@@ -14,7 +22,10 @@ final class JsonReader private[jsoniter_scala](
     private var tail: Int = 0,
     private var reusableChars: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null,
-    private var totalRead: Int = 0) {
+    private var totalRead: Int = 0,
+    private var config: ReaderConfig = ReaderConfig()) {
+  private val errorMessageBuilder = new StringBuilder // TODO: reuse reusableChars instead
+
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val sb = new StringBuilder(64)
     val len = reqFields.length
@@ -211,12 +222,15 @@ final class JsonReader private[jsoniter_scala](
   private def decodeError(msg: String, pos: Int): Nothing = {
     val from = Math.max((pos - 32) & -16, 0)
     val to = Math.min((pos + 48) & -16, tail)
-    val sb = new StringBuilder(1024).append(msg).append(", offset: 0x")
+    errorMessageBuilder.setLength(0)
+    errorMessageBuilder.append(msg).append(", offset: 0x")
     val offset = if (in eq null) 0 else totalRead - tail
-    appendHex(offset + pos, sb) // TODO: consider support of offset values beyond 2Gb
-    sb.append(", buf:")
-    appendHexDump(buf, from, to, offset, sb)
-    throw new JsonException(sb.toString)
+    appendHex(offset + pos, errorMessageBuilder) // TODO: consider support of offset values beyond 2Gb
+    if (config.appendDumpToExceptionMessage) {
+      errorMessageBuilder.append(", buf:")
+      appendHexDump(buf, from, to, offset, errorMessageBuilder)
+    }
+    throw new JsonException(errorMessageBuilder.toString, config.throwStackLessException)
   }
 
   @tailrec
@@ -889,14 +903,18 @@ object JsonReader {
   private val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
     override def initialValue(): JsonReader = new JsonReader()
   }
+  private val defaultConfig = ReaderConfig()
   private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double/float
     Array(1, 1e+01, 1e+02, 1e+03, 1e+04, 1e+05, 1e+06, 1e+07, 1e+08, 1e+09, 1e+10,
       1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21)
 
-  final def read[A](codec: JsonCodec[A], in: InputStream): A = {
+  final def read[A](codec: JsonCodec[A], in: InputStream): A = read(codec, in, defaultConfig)
+
+  final def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
     if (codec eq null) throw new JsonException("codec should be not null")
     if (in eq null) throw new JsonException("in should be not null")
     val reader = pool.get
+    reader.config = config
     reader.in = in
     reader.head = 0
     reader.tail = 0
@@ -908,18 +926,21 @@ object JsonReader {
     }
   }
 
-  final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = {
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = read(codec, buf, defaultConfig)
+
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte], config: ReaderConfig): A = {
     if (buf eq null) throw new JsonException("buf should be non empty")
-    read(codec, buf, 0, buf.length)
+    read(codec, buf, 0, buf.length, config)
   }
 
-  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int): A = {
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = null): A = {
     if (codec eq null) throw new JsonException("codec should be not null")
     if ((buf eq null) || buf.length == 0) throw new JsonException("buf should be non empty")
     if (to < 0 || to > buf.length) throw new JsonException("to should be positive and not greater than buf length")
     if (from < 0 || from > to) throw new JsonException("from should be positive and not greater than to")
     val reader = pool.get
     val currBuf = reader.buf
+    reader.config = config
     reader.buf = buf
     reader.head = from
     reader.tail = to
