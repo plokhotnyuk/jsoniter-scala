@@ -545,6 +545,9 @@ class JsonCodecSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize with keys of case classes overridden by annotation" in {
       verifySerDeser(materialize[NameOverridden], NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""".getBytes)
+      assert(intercept[JsonException] {
+        verifyDeser(materialize[NameOverridden], NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"new_name\", offset: 0x00000010"))
     }
     "deserialize but don't serialize default values of case classes that defined for fields" in {
       val json = "{}".getBytes
