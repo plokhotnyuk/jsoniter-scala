@@ -395,13 +395,14 @@ object JsonCodec {
             if (lastReqVarBits == 0) construct
             else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
           val readVars = members.map { m =>
-            q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString.trim, defaultValue(methodType(m)))}"
+            val tpe = methodType(m)
+            q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.toString, defaultValue(tpe))}"
           }
           val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
               cq"""$hashCode => ${ms.foldLeft(q"in.skip()") { case (acc, m) =>
                 val varName = TermName(s"_${m.name}")
                 q"""if (in.isReusableCharsEqualsTo(l, ${name(m)})) {
-                     ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
+                     ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
                      $varName = ${genReadVal(methodType(m), q"$varName")}
                     } else $acc"""
               }}"""
@@ -409,7 +410,7 @@ object JsonCodec {
           val writeFields = members.map { m =>
             val tpe = methodType(m)
             val writeField = genWriteField(q"x.$m", tpe, name(m))
-            defaults.get(m.name.toString.trim) match {
+            defaults.get(m.name.toString) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"
                 else q"if (x.$m != $d) $writeField"

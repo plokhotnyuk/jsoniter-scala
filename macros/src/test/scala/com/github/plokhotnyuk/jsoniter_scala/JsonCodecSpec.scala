@@ -35,7 +35,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
 
   case class Enums(lt: LocationType.LocationType)
 
-  case class OuterTypes(s: String, st: StandardTypes)
+  case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
   case class ValueClassTypes(uid: UserId, oid: OrderId)
 
@@ -301,9 +301,33 @@ class JsonCodecSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
     }
     "serialize and deserialize outer types using implicit vals or objects of inner types" in {
-      implicit val codecOfNestedType: JsonCodec[StandardTypes] = codecOfStandardTypes
-      verifySerDeser(materialize[OuterTypes], OuterTypes("X", standardTypes),
+      implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {
+        override def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
+          in.nextToken() match {
+            case '{' =>
+              in.unreadByte()
+              Right(codecOfStandardTypes.decode(in))
+            case '"' =>
+              in.unreadByte()
+              Left(in.readString())
+            case _ =>
+              in.decodeError("expected '{' or '\"'")
+          }
+
+        override def encode(x: Either[String, StandardTypes], out: JsonWriter): Unit =
+          x match {
+            case Left(s) => out.writeVal(s)
+            case Right(st) => codecOfStandardTypes.encode(st, out)
+          }
+      }
+      verifySerDeser(materialize[OuterTypes], OuterTypes("X", Right(standardTypes)),
         """{"s":"X","st":{"s":"VVV","bi":1,"bd":1.1}}""".getBytes)
+      verifySerDeser(materialize[OuterTypes], OuterTypes("X", Left("fatal error")),
+        """{"s":"X","st":"fatal error"}""".getBytes)
+      verifySerDeser(materialize[OuterTypes], OuterTypes("X", Left("error")), // st matches with default value
+        """{"s":"X"}""".getBytes)
+      verifySerDeser(materialize[OuterTypes], OuterTypes("X"),
+        """{"s":"X"}""".getBytes)
       implicit object codecOfLocationType extends JsonCodec[LocationType.LocationType] {
         override def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
           if (in.nextToken() == 'n') in.parseNull(default)
