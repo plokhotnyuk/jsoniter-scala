@@ -23,10 +23,9 @@ to get maximum performance of JSON parsing & serialization.
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Key names can be overridden by field annotation
 - Field names are matched by hash and can have collisions with other keys on the same JSON object value
-- TODO: generate efficient and no-allocation collision resolving for field name matching
 - TODO: generate codecs recursively from top-level type
 - TODO: code generation option to serialize/parse all fields to/from snake_case or camelCase keys 
-- TODO: extend codecs to allow using them for serialization/parsing of types to/from map keys
+- TODO: extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: more efficient implementation for serialization and parsing of numbers 
 - TODO: efficient specialized immutable list & set for primitive types
 

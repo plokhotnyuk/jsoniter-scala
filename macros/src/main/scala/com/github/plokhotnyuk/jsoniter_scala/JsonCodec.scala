@@ -396,14 +396,15 @@ object JsonCodec {
           val readVars = members.map { m =>
             q"var ${TermName(s"_${m.name}")}: ${methodType(m)} = ${defaults.getOrElse(m.name.toString.trim, defaultValue(methodType(m)))}"
           }
-          val readFields = members.map { m =>
-            val varName = TermName(s"_${m.name}")
-            cq"""${hashCode(m)} =>
-              if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
-                ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
-                $varName = ${genReadVal(methodType(m), q"$varName")}
-              } else in.skip()"""
-          } :+ cq"_ => in.skip()"
+          val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
+              cq"""$hashCode => ${ms.foldLeft(q"in.skip()") { case (acc, m) =>
+                val varName = TermName(s"_${m.name}")
+                q"""if (in.isReusableCharsEqualsTo(l, ${keyName(m)})) {
+                     ..${bitmasks.getOrElse(m.name.toString.trim, EmptyTree)}
+                     $varName = ${genReadVal(methodType(m), q"$varName")}
+                    } else $acc"""
+              }}"""
+            }(breakOut) :+ cq"_ => in.skip()"
           val writeFields = members.map { m =>
             val tpe = methodType(m)
             val writeField = genWriteField(q"x.$m", tpe, keyName(m))
