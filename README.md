@@ -97,8 +97,6 @@ Current results for the following environment:
 
 [./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_152-b16 64-bit
 
-[./results-5257U.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results-5257U.txt) Intel(R) Core(TM) i5-5257U CPU @ 2.70GHz (max 3.10GHz, 2 cores, 4 TH), RAM 16Gb DDR3-1867, macos 10.11.6, Oracle JDK build 1.8.0_152-b16 64-bit
-
 
 ## Acknowledges
 
