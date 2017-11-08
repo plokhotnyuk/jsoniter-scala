@@ -50,8 +50,8 @@ class JsonCodecBenchmark {
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
-  val stacklessExceptionConfig = ReaderConfig(throwStacklessException = true)
-  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStacklessException = true, appendDumpToParseError = false)
+  val stacklessExceptionConfig = ReaderConfig(throwStacklessParseException = true)
+  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStacklessParseException = true, appendHexDumpToParseException = false)
   val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields]
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
   val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs]
@@ -114,7 +114,7 @@ class JsonCodecBenchmark {
       JsonReader.read(missingReqFieldCodec, missingReqFieldJson)
       null // should not be called
     } catch {
-      case ex: JsonException => ex.getMessage
+      case ex: JsonParseException => ex.getMessage
     }
 
   @Benchmark
@@ -123,7 +123,7 @@ class JsonCodecBenchmark {
       JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionConfig)
       null // should not be called
     } catch {
-      case ex: JsonException => ex.getMessage
+      case ex: JsonParseException => ex.getMessage
     }
 
   @Benchmark
@@ -132,7 +132,7 @@ class JsonCodecBenchmark {
       JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionWithoutDumpConfig)
       null // should not be called
     } catch {
-      case ex: JsonException => ex.getMessage
+      case ex: JsonParseException => ex.getMessage
     }
 
   @Benchmark

@@ -8,8 +8,8 @@ import scala.annotation.switch
 import scala.collection.breakOut
 
 case class WriterConfig(
-  indentionStep: Int = 0,
-  escapeUnicode: Boolean = false)
+    indentionStep: Int = 0,
+    escapeUnicode: Boolean = false)
 
 final class JsonWriter private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
@@ -491,16 +491,37 @@ object JsonWriter {
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
-  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit = write(codec, obj, out, defaultConfig)
+  /**
+    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
+    * with default configuration options that minimizes output size & time to serialize.
+    *
+    * @param codec a codec for the given value
+    * @param x the value to serialize
+    * @param out an output stream to serialize into
+    * @tparam A type of value to serialize
+    * @throws NullPointerException if the `codec` or `config` is null
+    */
+  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream): Unit = write(codec, x, out, defaultConfig)
 
-  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream, config: WriterConfig): Unit = {
-    if (out eq null) throw new NullPointerException
+  /**
+    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
+    * that specified by provided configuration options.
+    *
+    * @param codec a codec for the given value
+    * @param x the value to serialize
+    * @param out an output stream to serialize into
+    * @param config a serialization configuration
+    * @tparam A type of value to serialize
+    * @throws NullPointerException if the `codec`, `out` or `config` is null
+    */
+  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
+    if ((out eq null) || (config eq null)) throw new NullPointerException
     val writer = pool.get
     writer.config = config
     writer.out = out
     writer.count = 0
     writer.indention = 0
-    try codec.encode(obj, writer)
+    try codec.encode(x, writer) // also checks that `codec` is not null before any serialization
     finally {
       writer.flushBuffer()
       writer.out = null // do not close output stream, just help GC instead
@@ -508,15 +529,37 @@ object JsonWriter {
     }
   }
 
-  final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] = write(codec, obj, defaultConfig)
+  /**
+    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format
+    * with default configuration options that minimizes output size & time to serialize.
+    *
+    * @param codec a codec for the given value
+    * @param x the value to serialize
+    * @tparam A type of value to serialize
+    * @return a byte array with `x` serialized to JSON
+    * @throws NullPointerException if the `codec` is null
+    */
+  final def write[A](codec: JsonCodec[A], x: A): Array[Byte] = write(codec, x, defaultConfig)
 
-  final def write[A](codec: JsonCodec[A], obj: A, config: WriterConfig): Array[Byte] = {
+  /**
+    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format,
+    * that specified by provided configuration options.
+    *
+    * @param codec a codec for the given value
+    * @param x the value to serialize
+    * @param config a serialization configuration
+    * @tparam A type of value to serialize
+    * @return a byte array with `x` serialized to JSON
+    * @throws NullPointerException if the `codec` or `config` is null
+    */
+  final def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
+    if (config eq null) throw new NullPointerException
     val writer = pool.get
     writer.config = config
     writer.count = 0
     writer.indention = 0
     try {
-      codec.encode(obj, writer)
+      codec.encode(x, writer) // also checks that `codec` is not null before any serialization
       val arr = new Array[Byte](writer.count)
       System.arraycopy(writer.buf, 0, arr, 0, arr.length)
       arr
@@ -525,9 +568,25 @@ object JsonWriter {
     }
   }
 
-  final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
-    if (buf eq null) throw new NullPointerException
-    if (from < 0 || from > buf.length) throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
+  /**
+    * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format
+    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
+    *
+    * @param codec a codec for the given value
+    * @param x the value to serialize
+    * @param buf a byte array where the value should be serialized
+    * @param from a position in the byte array from which serialization of the value should start
+    * @param config a serialization configuration
+    * @tparam A type of value to serialize
+    * @return number of next position after last byte serialized to `buf`
+    * @throws NullPointerException if the `codec`, `buf` or `config` is null
+    * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `buf` length or negative,
+    *                                        or `buf` length was exceeded during serialization
+    */
+  final def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
+    if (config eq null) throw new NullPointerException
+    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
+      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
     val writer = pool.get
     val currBuf = writer.buf
     writer.config = config
@@ -536,7 +595,7 @@ object JsonWriter {
     writer.indention = 0
     writer.isBufGrowingAllowed = false
     try {
-      codec.encode(obj, writer)
+      codec.encode(x, writer) // also checks that `codec` is not null before any serialization
       writer.count
     } finally {
       writer.buf = currBuf

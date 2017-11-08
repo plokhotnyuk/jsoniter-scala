@@ -5,16 +5,17 @@ import java.io.InputStream
 import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
 
 import scala.annotation.{switch, tailrec}
+import scala.util.control.NonFatal
 
-class JsonException(message: String, isStackless: Boolean = false) extends RuntimeException(message) {
+class JsonParseException(msg: String, cause: Throwable, isStackless: Boolean) extends RuntimeException(msg, cause) {
   override def fillInStackTrace(): Throwable = if (isStackless) this else super.fillInStackTrace()
 }
 
 // Use an option of throwing stack-less exception for cases when parse exceptions can be not exceptional,
 // see more details here: https://shipilev.net/blog/2014/exceptional-performance/
 case class ReaderConfig(
-  throwStacklessException: Boolean = false,
-  appendDumpToParseError: Boolean = true)
+    throwStacklessParseException: Boolean = false,
+    appendHexDumpToParseException: Boolean = true)
 
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
@@ -36,7 +37,7 @@ final class JsonReader private[jsoniter_scala](
       j += 1
     }
     i = appendString("\"", i)
-    decodeError(head - 1, i)
+    decodeError(head - 1, i, null)
   }
 
   def readObjectFieldAsString(): String = {
@@ -219,17 +220,19 @@ final class JsonReader private[jsoniter_scala](
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
-  private def decodeError(msg: String, pos: Int): Nothing = decodeError(pos, appendString(msg, 0))
+  @inline
+  private def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
+    decodeError(pos, appendString(msg, 0), cause)
 
-  private def decodeError(pos: Int, from: Int): Nothing = {
+  private def decodeError(pos: Int, from: Int, cause: Throwable): Nothing = {
     var i = appendString(", offset: 0x", from)
     val offset = if (in eq null) 0 else totalRead - tail
     i = appendHex(offset + pos, i) // TODO: consider support of offset values beyond 2Gb
-    if (config.appendDumpToParseError) {
+    if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
     }
-    throw new JsonException(reusableCharsToString(i), config.throwStacklessException)
+    throw new JsonParseException(reusableCharsToString(i), cause, config.throwStacklessParseException)
   }
 
   @tailrec
@@ -953,7 +956,7 @@ final class JsonReader private[jsoniter_scala](
       if (remaining > 0) {
         System.arraycopy(buf, pos, buf, 0, remaining)
       }
-      val n = in.read(buf, remaining, buf.length - remaining)
+      val n = externalRead(remaining, buf.length - remaining)
       if (n > 0) {
         tail = remaining + n
         totalRead += n
@@ -964,7 +967,7 @@ final class JsonReader private[jsoniter_scala](
   private def loadMore(pos: Int): Int =
     if (in eq null) pos
     else {
-      val n = in.read(buf)
+      val n = externalRead(0, buf.length)
       if (n > 0) {
         tail = n
         totalRead += n
@@ -972,7 +975,12 @@ final class JsonReader private[jsoniter_scala](
       } else pos
     }
 
-  private def endOfInput(): Nothing = decodeError("unexpected end of input", tail)
+  private def externalRead(from: Int, len: Int): Int =
+    try in.read(buf, from, len) catch {
+      case NonFatal(ex) => endOfInput(ex)
+    }
+
+  private def endOfInput(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
 
   private def freeTooLongReusableChars(): Unit =
     if (reusableChars.length > 16384) reusableChars = new Array[Char](16384)
@@ -992,32 +1000,103 @@ object JsonReader {
   private val dumpBorder =
     "\n+----------+-------------------------------------------------+------------------+"
 
+  /**
+    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
+    *
+    * @param codec a codec for the given `A` type
+    * @param in the input stream to parse from
+    * @tparam A type of the value to parse
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also if a low-level I/O problem (unexpected end of input, network error) occurs
+    *                            while some input bytes are expected
+    * @throws NullPointerException If the `codec` or `in` is null.
+    */
   final def read[A](codec: JsonCodec[A], in: InputStream): A = read(codec, in, defaultConfig)
 
+  /**
+    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
+    *
+    * @param codec a codec for the given `A` type
+    * @param in the input stream to parse from
+    * @param config a parsing configuration
+    * @tparam A type of the value to parse
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
+    *                            while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `in` or `config` is null
+    */
   final def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
-    if (in eq null) throw new NullPointerException
+    if ((in eq null) || (config eq null)) throw new NullPointerException
     val reader = pool.get
     reader.config = config
     reader.in = in
     reader.head = 0
     reader.tail = 0
     reader.totalRead = 0
-    try codec.decode(reader)
+    try codec.decode(reader) // also checks that `codec` is not null before any parsing
     finally {
       reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       reader.freeTooLongReusableChars()
     }
   }
 
+  /**
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
+    *
+    * @param codec a codec for the given `A` type
+    * @param buf the byte array to parse from
+    * @tparam A type of the value to parse
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws NullPointerException If the `codec` or `buf` is null.
+    */
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = read(codec, buf, defaultConfig)
 
+  /**
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
+    *
+    * @param codec a codec for the given `A` type
+    * @param buf the byte array to parse from
+    * @param config a parsing configuration
+    * @tparam A type of the value to parse
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `buf` or `config` is null
+    */
   final def read[A](codec: JsonCodec[A], buf: Array[Byte], config: ReaderConfig): A =
     read(codec, buf, 0, buf.length, config)
 
-  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = null): A = {
-    if (buf eq null) throw new NullPointerException
-    if (to < 0 || to > buf.length) throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
-    if (from < 0 || from > to) throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
+  /**
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
+    *
+    * @param codec
+    * @param buf the byte array to parse from
+    * @param from the start position of the provided byte array
+    * @param to the position of end of input in the provided byte array
+    * @param config a parsing configuration
+    * @tparam A type of the value to parse
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `buf` or `config` is null
+    * @throws ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
+    *                                        or `from` is greater than `to` or negative
+    */
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = defaultConfig): A = {
+    if (config eq null) throw new NullPointerException
+    if (to > buf.length || to < 0) // also checks that `buf` is not null before any parsing
+      throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
+    if (from > to || from < 0)
+      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
     val reader = pool.get
     val currBuf = reader.buf
     reader.config = config
@@ -1025,7 +1104,7 @@ object JsonReader {
     reader.head = from
     reader.tail = to
     reader.totalRead = 0
-    try codec.decode(reader)
+    try codec.decode(reader) // also checks that `codec` is not null before any parsing
     finally {
       reader.buf = currBuf
       reader.freeTooLongReusableChars()

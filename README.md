@@ -15,7 +15,7 @@ to get maximum performance of JSON parsing & serialization.
 - Primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, 
   arrays and value classes for all them or case classes are supported 
 - Types that supported as map keys are all which can be represented by single value, basically it is all above excluding case classes, arrays & collections  
-- Implicitly resolvable codecs for any types: primitive, collections, enums, ADTs, etc.
+- Implicitly resolvable codecs for all above types, so in most cases it is easy to customize except ADTs.
 - Need to materialize for all case classes used in nested structures using implicitly resolvable codecs
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
@@ -25,6 +25,7 @@ to get maximum performance of JSON parsing & serialization.
 - Additional code generation methods to enforce snake_case or camelCase names for all fields
 - Configurable throwing of stack-less parsing exceptions to minimize impact on performance  
 - TODO: generate codecs recursively from top-level type
+- TODO: generate codecs for ADTs with a specified resolving matcher
 - TODO: extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: more efficient implementation for serialization and parsing of numbers 
 - TODO: efficient specialized immutable list & set for primitive types
