@@ -520,20 +520,20 @@ object JsonCodec {
     val len = s.length
     val sb = new StringBuilder(len + (len >> 1))
     var i = 0
-    var state = 0
+    var isPrecedingLowerCased = false
     while (i < len) {
       val ch = s.charAt(i)
-      state =
+      isPrecedingLowerCased =
         if (ch == '_') {
           sb.append(ch)
-          0
+          false
         } else if (isLowerCase(ch)) {
           sb.append(ch)
-          1
+          true
         } else {
-          if (state == 1) sb.append('_').append(toLowerCase(ch))
-          else sb.append(ch)
-          2
+          if (isPrecedingLowerCased) sb.append('_')
+          sb.append(toLowerCase(ch))
+          false
         }
       i += 1
     }

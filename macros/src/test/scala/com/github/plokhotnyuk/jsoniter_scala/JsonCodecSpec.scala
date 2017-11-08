@@ -639,10 +639,10 @@ class JsonCodecSpec extends WordSpec with Matchers {
       JsonCodec.enforce_snake_case("oOoo") shouldBe "o_ooo"
       JsonCodec.enforce_snake_case("oOoo111") shouldBe "o_ooo_111"
     }
-    "leave snake_case names as is" in {
-      JsonCodec.enforce_snake_case("o_o") shouldBe "o_o"
+    "enforce lower case for snake_case names as is" in {
+      JsonCodec.enforce_snake_case("o_O") shouldBe "o_o"
       JsonCodec.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
-      JsonCodec.enforce_snake_case("O_OOO_111") shouldBe "O_OOO_111"
+      JsonCodec.enforce_snake_case("O_OOO_111") shouldBe "o_ooo_111"
     }
   }
 
