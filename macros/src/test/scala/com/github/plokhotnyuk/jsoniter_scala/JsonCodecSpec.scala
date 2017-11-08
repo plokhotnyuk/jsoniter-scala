@@ -79,7 +79,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
 
   case class BitSets(bs: BitSet, mbs: mutable.BitSet)
 
-  case class CamelAndSnakeCase(camelCase: String, snake_case: String)
+  case class CamelAndSnakeCases(camelCase: String, snake_case: String, `camel1`: String, `snake_1`: String)
 
   case class Indented(s: String, bd: BigDecimal, l: List[Int])
 
@@ -491,29 +491,29 @@ class JsonCodecSpec extends WordSpec with Matchers {
         """{"1":{"2":[4,5,6],"3":[]}}""".getBytes)
     }
     "serialize and deserialize with keys defined by fields" in {
-      verifySerDeser(materialize[CamelAndSnakeCase],
-        CamelAndSnakeCase("VVV", "WWW"),
-        """{"camelCase":"VVV","snake_case":"WWW"}""".getBytes)
+      verifySerDeser(materialize[CamelAndSnakeCases],
+        CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
+        """{"camelCase":"VVV","snake_case":"WWW","camel1":"YYY","snake_1":"ZZZ"}""".getBytes)
     }
     "serialize and deserialize with names enforced to camelCase" in {
-      verifySerDeser(materializeCamelCased[CamelAndSnakeCase],
-        CamelAndSnakeCase("VVV", "WWW"),
-        """{"camelCase":"VVV","snakeCase":"WWW"}""".getBytes)
+      verifySerDeser(materializeCamelCased[CamelAndSnakeCases],
+        CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
+        """{"camelCase":"VVV","snakeCase":"WWW","camel1":"YYY","snake1":"ZZZ"}""".getBytes)
       assert(intercept[JsonException] {
-        verifyDeser(materializeCamelCased[CamelAndSnakeCase],
-          CamelAndSnakeCase("VVV", "WWW"),
-          """{"camel_case":"VVV","snake_case":"WWW"}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", offset: 0x00000026"))
+        verifyDeser(materializeCamelCased[CamelAndSnakeCases],
+          CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
+          """{"camel_case":"VVV","snake_case":"WWW","camel_1":"YYY","snake_1":"ZZZ"}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", \"camel1\", \"snake1\", offset: 0x00000046"))
     }
     "serialize and deserialize with names enforced to snake_case" in {
-      verifySerDeser(materializeSnakeCased[CamelAndSnakeCase],
-        CamelAndSnakeCase("VVV", "WWW"),
-        """{"camel_case":"VVV","snake_case":"WWW"}""".getBytes)
+      verifySerDeser(materializeSnakeCased[CamelAndSnakeCases],
+        CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
+        """{"camel_case":"VVV","snake_case":"WWW","camel_1":"YYY","snake_1":"ZZZ"}""".getBytes)
       assert(intercept[JsonException] {
-        verifyDeser(materializeSnakeCased[CamelAndSnakeCase],
-          CamelAndSnakeCase("VVV", "WWW"),
-          """{"camelCase":"VVV","snakeCase":"WWW"}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", offset: 0x00000024"))
+        verifyDeser(materializeSnakeCased[CamelAndSnakeCases],
+          CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
+          """{"camelCase":"VVV","snakeCase":"WWW","camel1":"YYY","snake1":"ZZZ"}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", \"camel_1\", \"snake_1\", offset: 0x00000042"))
     }
     "serialize and deserialize indented JSON" in {
       verifySerDeser(codecOfIndented, indented,
