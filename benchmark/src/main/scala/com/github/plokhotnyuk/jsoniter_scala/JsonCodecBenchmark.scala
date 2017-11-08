@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -96,7 +97,7 @@ class JsonCodecBenchmark {
 
   @Benchmark
   def missingReqFieldCirce(): String =
-    decode[MissingReqFields](new String(missingReqFieldJson, StandardCharsets.UTF_8)).left.get.getMessage
+    decode[MissingReqFields](new String(missingReqFieldJson, StandardCharsets.UTF_8)).fold(_.getMessage, _ => null)
 
   @Benchmark
   def missingReqFieldJackson(): String =
@@ -104,7 +105,7 @@ class JsonCodecBenchmark {
       jacksonMapper.readValue[MissingReqFields](missingReqFieldJson)
       null // should not be called
     } catch {
-      case ex: Exception => ex.getMessage
+      case ex: MismatchedInputException => ex.getMessage
     }
 
   @Benchmark
@@ -113,7 +114,7 @@ class JsonCodecBenchmark {
       JsonReader.read(missingReqFieldCodec, missingReqFieldJson)
       null // should not be called
     } catch {
-      case ex: Exception => ex.getMessage
+      case ex: JsonException => ex.getMessage
     }
 
   @Benchmark
@@ -122,7 +123,7 @@ class JsonCodecBenchmark {
       JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionConfig)
       null // should not be called
     } catch {
-      case ex: Exception => ex.getMessage
+      case ex: JsonException => ex.getMessage
     }
 
   @Benchmark
@@ -131,21 +132,20 @@ class JsonCodecBenchmark {
       JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionWithoutDumpConfig)
       null // should not be called
     } catch {
-      case ex: Exception => ex.getMessage
+      case ex: JsonException => ex.getMessage
     }
 
   @Benchmark
   def missingReqFieldPlay(): String =
     try {
       Json.parse(missingReqFieldJson).as[MissingReqFields](missingReqFieldFormat)
-      throw new IllegalStateException() // should not be called
+      null // should not be called
     } catch {
-      case ex: Exception => ex.getMessage
+      case ex: JsResultException => ex.getMessage
     }
 
   @Benchmark
-  def readAnyRefsCirce(): AnyRefs =
-    decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).right.get
+  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).getOrElse(null)
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
@@ -157,7 +157,7 @@ class JsonCodecBenchmark {
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
-  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).right.get
+  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).getOrElse(null)
 
   @Benchmark
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
@@ -170,7 +170,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).right.get
+  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).getOrElse(null)
 */
 
   @Benchmark
@@ -183,7 +183,7 @@ class JsonCodecBenchmark {
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
 
   @Benchmark
-  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).right.get
+  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).getOrElse(null)
 
   @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
@@ -195,7 +195,7 @@ class JsonCodecBenchmark {
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
 
   @Benchmark
-  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)).right.get
+  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)) .getOrElse(null)
 
   @Benchmark
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
@@ -208,7 +208,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
-  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).right.get
+  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).getOrElse(null)
 */
 
   @Benchmark
@@ -222,7 +222,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
-  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).right.get
+  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).getOrElse(null)
 */
 
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
@@ -237,7 +237,7 @@ class JsonCodecBenchmark {
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
-  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).right.get
+  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).getOrElse(null)
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -249,7 +249,7 @@ class JsonCodecBenchmark {
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
 
   @Benchmark
-  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).right.get
+  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).getOrElse(null)
 
   @Benchmark
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
