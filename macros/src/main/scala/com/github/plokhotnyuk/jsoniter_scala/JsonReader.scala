@@ -13,8 +13,8 @@ class JsonException(message: String, isStackless: Boolean = false) extends Runti
 // Use an option of throwing stack-less exception for cases when parse exceptions can be not exceptional,
 // see more details here: https://shipilev.net/blog/2014/exceptional-performance/
 case class ReaderConfig(
-    throwStackLessException: Boolean = false,
-    appendDumpToExceptionMessage: Boolean = true)
+  throwStackLessException: Boolean = false,
+  appendDumpToParseError: Boolean = true)
 
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
@@ -24,19 +24,19 @@ final class JsonReader private[jsoniter_scala](
     private var in: InputStream = null,
     private var totalRead: Int = 0,
     private var config: ReaderConfig = ReaderConfig()) {
-  private val errorMessageBuilder = new StringBuilder // TODO: reuse reusableChars instead
-
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
-    val sb = new StringBuilder(64)
     val len = reqFields.length
     var i = 0
-    while (i < len) {
-      if ((reqs(i >> 5) & (1 << i)) != 0) {
-        sb.append(if (sb.isEmpty) "missing required field(s) \"" else ", \"").append(reqFields(i)).append('"')
+    var j = 0
+    while (j < len) {
+      if ((reqs(j >> 5) & (1 << j)) != 0) {
+        i = appendString(if (i == 0) "missing required field(s) \"" else "\", \"", i)
+        i = appendString(reqFields(j), i)
       }
-      i += 1
+      j += 1
     }
-    decodeError(sb.toString())
+    i = appendString("\"", i)
+    decodeError(head - 1, i)
   }
 
   def readObjectFieldAsString(): String = {
@@ -219,18 +219,17 @@ final class JsonReader private[jsoniter_scala](
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
-  private def decodeError(msg: String, pos: Int): Nothing = {
-    val from = Math.max((pos - 32) & -16, 0)
-    val to = Math.min((pos + 48) & -16, tail)
-    errorMessageBuilder.setLength(0)
-    errorMessageBuilder.append(msg).append(", offset: 0x")
+  private def decodeError(msg: String, pos: Int): Nothing = decodeError(pos, appendString(msg, 0))
+
+  private def decodeError(pos: Int, from: Int): Nothing = {
+    var i = appendString(", offset: 0x", from)
     val offset = if (in eq null) 0 else totalRead - tail
-    appendHex(offset + pos, errorMessageBuilder) // TODO: consider support of offset values beyond 2Gb
-    if (config.appendDumpToExceptionMessage) {
-      errorMessageBuilder.append(", buf:")
-      appendHexDump(buf, from, to, offset, errorMessageBuilder)
+    i = appendHex(offset + pos, i) // TODO: consider support of offset values beyond 2Gb
+    if (config.appendDumpToParseError) {
+      i = appendString(", buf:", i)
+      i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
     }
-    throw new JsonException(errorMessageBuilder.toString, config.throwStackLessException)
+    throw new JsonException(reusableCharsToString(i), config.throwStackLessException)
   }
 
   @tailrec
@@ -250,6 +249,17 @@ final class JsonReader private[jsoniter_scala](
     else isReusableCharsEqualsTo(len, s, i + 1)
 
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
+
+  private def appendString(s: String, from: Int): Int = {
+    val len = s.length
+    ensureReusableCharsCapacity(from + len, tail)
+    var j = 0
+    while (j < len) {
+      reusableChars(from + j) = s.charAt(j)
+      j += 1
+    }
+    from + j
+  }
 
   private def readParentheses(): Unit = if (nextByte() != '"') decodeError("expected '\"'")
 
@@ -779,43 +789,112 @@ final class JsonReader private[jsoniter_scala](
   private def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
 
   private def malformedBytes(b1: Byte, pos: Int): Nothing = {
-    val sb = new StringBuilder("malformed byte(s): 0x")
-    appendHex(b1, sb)
-    decodeError(sb.toString, pos)
+    var i = appendString("malformed byte(s): 0x", 0)
+    i = appendHex(b1, i)
+    decodeError(reusableCharsToString(i), pos)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, pos: Int): Nothing = {
-    val sb = new StringBuilder("malformed byte(s): 0x")
-    appendHex(b1, sb)
-    sb.append(", 0x")
-    appendHex(b2, sb)
-    decodeError(sb.toString, pos + 1)
+    var i = appendString("malformed byte(s): 0x", 0)
+    i = appendHex(b1, i)
+    i = appendString(", 0x", i)
+    i = appendHex(b2, i)
+    decodeError(reusableCharsToString(i), pos + 1)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
-    val sb = new StringBuilder("malformed byte(s): 0x")
-    appendHex(b1, sb)
-    sb.append(", 0x")
-    appendHex(b2, sb)
-    sb.append(", 0x")
-    appendHex(b3, sb)
-    decodeError(sb.toString, pos + 2)
+    var i = appendString("malformed byte(s): 0x", 0)
+    i = appendHex(b1, i)
+    i = appendString(", 0x", i)
+    i = appendHex(b2, i)
+    i = appendString(", 0x", i)
+    i = appendHex(b3, i)
+    decodeError(reusableCharsToString(i), pos + 2)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
-    val sb = new StringBuilder("malformed byte(s): 0x")
-    appendHex(b1, sb)
-    sb.append(", 0x")
-    appendHex(b2, sb)
-    sb.append(", 0x")
-    appendHex(b3, sb)
-    sb.append(", 0x")
-    appendHex(b4, sb)
-    decodeError(sb.toString, pos + 3)
+    var i = appendString("malformed byte(s): 0x", 0)
+    i = appendHex(b1, i)
+    i = appendString(", 0x", i)
+    i = appendHex(b2, i)
+    i = appendString(", 0x", i)
+    i = appendHex(b3, i)
+    i = appendString(", 0x", i)
+    i = appendHex(b4, i)
+    decodeError(reusableCharsToString(i), pos + 3)
   }
 
+  private def appendHexDump(start: Int, end: Int, offset: Int, from: Int): Int = {
+    val alignedAbsFrom = (start + offset) & -16
+    val alignedAbsTo = (end + offset + 15) & -16
+    val len = alignedAbsTo - alignedAbsFrom
+    val bufOffset = alignedAbsFrom - offset
+    var i = appendString(dumpHeader, from)
+    i = appendString(dumpBorder, i)
+    var j = 0
+    while (j < len) {
+      ensureReusableCharsCapacity(i + 81, tail) // 81 == dumpBorder.length
+      val linePos = j & 15
+      if (linePos == 0) {
+        i = putCharAt('\n', i)
+        i = putCharAt('|', i)
+        i = putCharAt(' ', i)
+        i = appendHex(alignedAbsFrom + j, i)
+        i = putCharAt(' ', i)
+        i = putCharAt('|', i)
+        i = putCharAt(' ', i)
+      }
+      val pos = bufOffset + j
+      if (pos >= start && pos < end) {
+        val b = buf(pos)
+        i = appendHex(b, i)
+        i = putCharAt(' ', i)
+        putCharAt(if (b <= 31 || b >= 127) '.' else b.toChar, i + 47 - (linePos << 1))
+      } else {
+        i = putCharAt(' ', i)
+        i = putCharAt(' ', i)
+        i = putCharAt(' ', i)
+        putCharAt(' ', i + 47 - (linePos << 1))
+      }
+      if (linePos == 15) {
+        i = putCharAt('|', i)
+        i = putCharAt(' ', i)
+        i = putCharAt(' ', i + 16)
+        i = putCharAt('|', i)
+      }
+      j += 1
+    }
+    appendString(dumpBorder, i)
+  }
+
+  private def appendHex(d: Int, i: Int): Int = {
+    ensureReusableCharsCapacity(i + 8, tail)
+    reusableChars(i) = toHexDigit(d >>> 28)
+    reusableChars(i + 1) = toHexDigit(d >>> 24)
+    reusableChars(i + 2) = toHexDigit(d >>> 20)
+    reusableChars(i + 3) = toHexDigit(d >>> 16)
+    reusableChars(i + 4) = toHexDigit(d >>> 12)
+    reusableChars(i + 5) = toHexDigit(d >>> 8)
+    reusableChars(i + 6) = toHexDigit(d >>> 4)
+    reusableChars(i + 7) = toHexDigit(d)
+    i + 8
+  }
+
+  private def appendHex(b: Byte, i: Int): Int = {
+    ensureReusableCharsCapacity(i + 2, tail)
+    reusableChars(i) = toHexDigit(b >>> 4)
+    reusableChars(i + 1) = toHexDigit(b)
+    i + 2
+  }
+
+  private def toHexDigit(n: Int): Char = {
+    val nibble = n & 15
+    (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
+  }.toChar
+
   @inline
-  private def putCharAt(ch: Char, i: Int) = {
+  private def putCharAt(ch: Char, i: Int): Int = {
+    // ensureReusableCharsCapacity(i + 1, tail) <- commented for better performance, so always call it externally
     reusableChars(i) = ch
     i + 1
   }
@@ -907,12 +986,16 @@ object JsonReader {
   private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double/float
     Array(1, 1e+01, 1e+02, 1e+03, 1e+04, 1e+05, 1e+06, 1e+07, 1e+08, 1e+09, 1e+10,
       1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21)
+  private val dumpHeader =
+    "\n           +-------------------------------------------------+" +
+    "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
+  private val dumpBorder =
+    "\n+----------+-------------------------------------------------+------------------+"
 
   final def read[A](codec: JsonCodec[A], in: InputStream): A = read(codec, in, defaultConfig)
 
   final def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
-    if (codec eq null) throw new JsonException("codec should be not null")
-    if (in eq null) throw new JsonException("in should be not null")
+    if (in eq null) throw new NullPointerException
     val reader = pool.get
     reader.config = config
     reader.in = in
@@ -928,16 +1011,13 @@ object JsonReader {
 
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = read(codec, buf, defaultConfig)
 
-  final def read[A](codec: JsonCodec[A], buf: Array[Byte], config: ReaderConfig): A = {
-    if (buf eq null) throw new JsonException("buf should be non empty")
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte], config: ReaderConfig): A =
     read(codec, buf, 0, buf.length, config)
-  }
 
   final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = null): A = {
-    if (codec eq null) throw new JsonException("codec should be not null")
-    if ((buf eq null) || buf.length == 0) throw new JsonException("buf should be non empty")
-    if (to < 0 || to > buf.length) throw new JsonException("to should be positive and not greater than buf length")
-    if (from < 0 || from > to) throw new JsonException("from should be positive and not greater than to")
+    if (buf eq null) throw new NullPointerException
+    if (to < 0 || to > buf.length) throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
+    if (from < 0 || from > to) throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
     val reader = pool.get
     val currBuf = reader.buf
     reader.config = config
@@ -962,51 +1042,4 @@ object JsonReader {
     }
     h
   }
-
-  private[jsoniter_scala] def appendHexDump(buf: Array[Byte], from: Int, to: Int, offset: Int, sb: StringBuilder): Unit = {
-    val hexCodes = new StringBuilder(48)
-    val chars = new StringBuilder(16)
-    val alignedAbsFrom = (from + offset) & -16
-    val alignedAbsTo = (to + offset + 15) & -16
-    val len = alignedAbsTo - alignedAbsFrom
-    val bufOffset = alignedAbsFrom - offset
-    sb.append("\n           +-------------------------------------------------+")
-    sb.append("\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |")
-    sb.append("\n+----------+-------------------------------------------------+------------------+")
-    var i = 0
-    while (i < len) {
-      val pos = bufOffset + i
-      if (pos >= from && pos < to) {
-        val b = buf(pos)
-        appendHex(b, hexCodes)
-        hexCodes.append(' ')
-        chars.append(if (b <= 31 || b >= 127) '.' else b.toChar)
-      } else {
-        hexCodes.append("   ")
-        chars.append(' ')
-      }
-      if ((i & 15) == 15) {
-        sb.append("\n| ")
-        appendHex(alignedAbsFrom + i - 15, sb)
-        sb.append(" | ").append(hexCodes).append("| ").append(chars).append(" |")
-        hexCodes.setLength(0)
-        chars.setLength(0)
-      }
-      i += 1
-    }
-    sb.append("\n+----------+-------------------------------------------------+------------------+")
-  }
-
-  private def appendHex(d: Int, sb: StringBuilder): Unit =
-    sb.append(toHexDigit(d >>> 28)).append(toHexDigit(d >>> 24))
-      .append(toHexDigit(d >>> 20)).append(toHexDigit(d >>> 16))
-      .append(toHexDigit(d >>> 12)).append(toHexDigit(d >>> 8))
-      .append(toHexDigit(d >>> 4)).append(toHexDigit(d))
-
-  private def appendHex(b: Byte, sb: StringBuilder): Unit = sb.append(toHexDigit(b >>> 4)).append(toHexDigit(b))
-
-  private def toHexDigit(n: Int): Char = {
-    val nibble = n & 15
-    (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
-  }.toChar
 }

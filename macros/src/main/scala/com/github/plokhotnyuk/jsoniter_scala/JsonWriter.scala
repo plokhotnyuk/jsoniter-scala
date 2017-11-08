@@ -467,7 +467,7 @@ final class JsonWriter private[jsoniter_scala](
         val bs = new Array[Byte](Math.max(buf.length << 1, count + required))
         System.arraycopy(buf, 0, bs, 0, buf.length)
         buf = bs
-      } else throw new IOException("buf is overflown")
+      } else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
     }
   }
 
@@ -491,12 +491,10 @@ object JsonWriter {
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
-  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit =
-    write(codec, obj, out, defaultConfig)
+  final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream): Unit = write(codec, obj, out, defaultConfig)
 
   final def write[A](codec: JsonCodec[A], obj: A, out: OutputStream, config: WriterConfig): Unit = {
-    if (codec eq null) throw new IOException("codec should be not null")
-    if (out eq null) throw new IOException("out should be not null")
+    if (out eq null) throw new NullPointerException
     val writer = pool.get
     writer.config = config
     writer.out = out
@@ -510,11 +508,9 @@ object JsonWriter {
     }
   }
 
-  final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] =
-    write(codec, obj, defaultConfig)
+  final def write[A](codec: JsonCodec[A], obj: A): Array[Byte] = write(codec, obj, defaultConfig)
 
   final def write[A](codec: JsonCodec[A], obj: A, config: WriterConfig): Array[Byte] = {
-    if (codec eq null) throw new IOException("codec should be not null")
     val writer = pool.get
     writer.config = config
     writer.count = 0
@@ -530,9 +526,8 @@ object JsonWriter {
   }
 
   final def write[A](codec: JsonCodec[A], obj: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
-    if (codec eq null) throw new IOException("codec should be not null")
-    if ((buf eq null) || buf.length == 0) throw new IOException("buf should be non empty")
-    if (from < 0 || from > buf.length) throw new IOException("from should be positive and not greater than buf length")
+    if (buf eq null) throw new NullPointerException
+    if (from < 0 || from > buf.length) throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
     val writer = pool.get
     val currBuf = writer.buf
     writer.config = config

@@ -46,22 +46,17 @@ class JsonWriterSpec extends WordSpec with Matchers {
       new String(buf, from2, to2 - from2, "UTF-8") shouldBe prettyJson
     }
     "throw i/o exception in case of the provided byte array is overflown during serialization" in {
-      assert(intercept[IOException](JsonWriter.write(userCodec, user, buf, 50))
-        .getMessage.contains("buf is overflown"))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(userCodec, user, buf, 50))
+        .getMessage.contains("`buf` length exceeded"))
     }
     "throw i/o exception in case of the provided params are invalid" in {
-      assert(intercept[IOException](JsonWriter.write(null, user))
-        .getMessage.contains("codec should be not null"))
-      assert(intercept[IOException](JsonWriter.write(null, user, new ByteArrayOutputStream()))
-        .getMessage.contains("codec should be not null"))
-      assert(intercept[IOException](JsonWriter.write(null, user, buf, 0))
-        .getMessage.contains("codec should be not null"))
-      assert(intercept[IOException](JsonWriter.write(userCodec, user, null.asInstanceOf[OutputStream]))
-        .getMessage.contains("out should be not null"))
-      assert(intercept[IOException](JsonWriter.write(userCodec, user, null, 50))
-        .getMessage.contains("buf should be non empty"))
-      assert(intercept[IOException](JsonWriter.write(userCodec, user, new Array[Byte](10), 50))
-        .getMessage.contains("from should be positive and not greater than buf length"))
+      intercept[NullPointerException](JsonWriter.write(null, user))
+      intercept[NullPointerException](JsonWriter.write(null, user, new ByteArrayOutputStream()))
+      intercept[NullPointerException](JsonWriter.write(null, user, buf, 0))
+      intercept[NullPointerException](JsonWriter.write(userCodec, user, null.asInstanceOf[OutputStream]))
+      intercept[NullPointerException](JsonWriter.write(userCodec, user, null, 50))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(userCodec, user, new Array[Byte](10), 50))
+        .getMessage.contains("`from` should be positive and not greater than `buf` length"))
     }
   }
   "JsonWriter.writeVal for boolean" should {

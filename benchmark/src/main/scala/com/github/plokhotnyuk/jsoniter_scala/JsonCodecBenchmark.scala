@@ -51,7 +51,7 @@ class JsonCodecBenchmark {
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
   val stacklessExceptionConfig = ReaderConfig(throwStackLessException = true)
-  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStackLessException = true, appendDumpToExceptionMessage = false)
+  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStackLessException = true, appendDumpToParseError = false)
   val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields]
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
   val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs]

@@ -30,23 +30,28 @@ class JsonReaderSpec extends WordSpec with Matchers {
     "parse json from the byte array within specified positions" in {
       JsonReader.read(userCodec, httpMessage, 66, httpMessage.length) shouldBe user
     }
+    "throw json exception if cannot parse input with message containing input offset & hex dump of affected part" in {
+      assert(intercept[JsonException](JsonReader.read(userCodec, httpMessage)).getMessage ==
+        """expected '{' or null, offset: 0x00000000, buf:
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
+          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
+          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
     "throw json exception in case of the provided params are invalid" in {
-      assert(intercept[JsonException](JsonReader.read(null, json))
-        .getMessage.contains("codec should be not null"))
-      assert(intercept[JsonException](JsonReader.read(null, new ByteArrayInputStream(json)))
-        .getMessage.contains("codec should be not null"))
-      assert(intercept[JsonException](JsonReader.read(null, httpMessage, 66, httpMessage.length))
-        .getMessage.contains("codec should be not null"))
-      assert(intercept[JsonException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]]))
-        .getMessage.contains("buf should be non empty"))
-      assert(intercept[JsonException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]], 0, 50))
-        .getMessage.contains("buf should be non empty"))
-      assert(intercept[JsonException](JsonReader.read(userCodec, httpMessage, 50, 200))
-        .getMessage.contains("to should be positive and not greater than buf length"))
-      assert(intercept[JsonException](JsonReader.read(userCodec, httpMessage, 50, 10))
-        .getMessage.contains("from should be positive and not greater than to"))
-      assert(intercept[JsonException](JsonReader.read(userCodec, null.asInstanceOf[InputStream]))
-        .getMessage.contains("in should be not null"))
+      intercept[NullPointerException](JsonReader.read(null, json))
+      intercept[NullPointerException](JsonReader.read(null, new ByteArrayInputStream(json)))
+      intercept[NullPointerException](JsonReader.read(null, httpMessage, 66, httpMessage.length))
+      intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]]))
+      intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]], 0, 50))
+      intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[InputStream]))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(userCodec, httpMessage, 50, 200))
+        .getMessage.contains("`to` should be positive and not greater than `buf` length"))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(userCodec, httpMessage, 50, 10))
+        .getMessage.contains("`from` should be positive and not greater than `to`"))
     }
   }
   "JsonReader.skip" should {
@@ -616,22 +621,6 @@ class JsonReaderSpec extends WordSpec with Matchers {
         .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
       assert(intercept[JsonException](readBigDecimal("-012345.6789", null))
         .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
-    }
-  }
-  "JsonReader.appendHexDump" should {
-    "print dump for specified part of the byte buffer with 16-byte aligned offset" in {
-      val sb = new StringBuilder
-      JsonReader.appendHexDump(httpMessage, 10, 50, 0, sb)
-      sb.toString shouldBe
-        """
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
-          |+----------+-------------------------------------------------+------------------+
-          || 00000000 |                               30 30 20 4f 4b 0a |           00 OK. |
-          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
-          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
-          || 00000030 | 6f 6e                                           | on               |
-          |+----------+-------------------------------------------------+------------------+""".stripMargin
     }
   }
 
