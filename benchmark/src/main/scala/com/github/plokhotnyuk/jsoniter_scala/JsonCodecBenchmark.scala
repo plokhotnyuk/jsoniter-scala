@@ -50,8 +50,8 @@ class JsonCodecBenchmark {
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   }
-  val stacklessExceptionConfig = ReaderConfig(throwStackLessException = true)
-  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStackLessException = true, appendDumpToParseError = false)
+  val stacklessExceptionConfig = ReaderConfig(throwStacklessException = true)
+  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStacklessException = true, appendDumpToParseError = false)
   val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields]
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
   val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs]
@@ -145,7 +145,7 @@ class JsonCodecBenchmark {
     }
 
   @Benchmark
-  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
@@ -157,7 +157,7 @@ class JsonCodecBenchmark {
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
-  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 
   @Benchmark
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
@@ -170,7 +170,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 */
 
   @Benchmark
@@ -183,7 +183,7 @@ class JsonCodecBenchmark {
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
 
   @Benchmark
-  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 
   @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
@@ -195,7 +195,7 @@ class JsonCodecBenchmark {
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
 
   @Benchmark
-  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)) .getOrElse(null)
+  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)) .fold(_ => null, x => x)
 
   @Benchmark
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
@@ -208,7 +208,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
-  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 */
 
   @Benchmark
@@ -222,7 +222,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
-  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 */
 
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
@@ -237,7 +237,7 @@ class JsonCodecBenchmark {
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
-  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -249,7 +249,7 @@ class JsonCodecBenchmark {
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
 
   @Benchmark
-  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).getOrElse(null)
+  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
 
   @Benchmark
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)

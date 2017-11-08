@@ -13,7 +13,7 @@ class JsonException(message: String, isStackless: Boolean = false) extends Runti
 // Use an option of throwing stack-less exception for cases when parse exceptions can be not exceptional,
 // see more details here: https://shipilev.net/blog/2014/exceptional-performance/
 case class ReaderConfig(
-  throwStackLessException: Boolean = false,
+  throwStacklessException: Boolean = false,
   appendDumpToParseError: Boolean = true)
 
 final class JsonReader private[jsoniter_scala](
@@ -229,7 +229,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
     }
-    throw new JsonException(reusableCharsToString(i), config.throwStackLessException)
+    throw new JsonException(reusableCharsToString(i), config.throwStacklessException)
   }
 
   @tailrec
