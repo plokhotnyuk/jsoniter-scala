@@ -251,14 +251,14 @@ final class JsonReader private[jsoniter_scala](
   private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
 
   private def appendString(s: String, from: Int): Int = {
-    val len = s.length
-    ensureReusableCharsCapacity(from + len, tail)
-    var j = 0
-    while (j < len) {
-      reusableChars(from + j) = s.charAt(j)
-      j += 1
+    val lim = from + s.length
+    ensureReusableCharsCapacity(lim, tail)
+    var i = from
+    while (i < lim) {
+      reusableChars(i) = s.charAt(i - from)
+      i += 1
     }
-    from + j
+    i
   }
 
   private def readParentheses(): Unit = if (nextByte() != '"') decodeError("expected '\"'")
