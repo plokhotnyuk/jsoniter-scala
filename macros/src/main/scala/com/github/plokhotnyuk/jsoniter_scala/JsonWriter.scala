@@ -156,26 +156,31 @@ final class JsonWriter private[jsoniter_scala](
     ensureCapacityAndWrite('}')
   }
 
+  @inline
   private def ensureCapacityAndWrite(b: Byte): Unit = {
     val pos = ensureBufferCapacity(1)
     count = write(b, pos)
   }
 
+  @inline
   private def ensureCapacityAndWrite(b1: Byte, b2: Byte): Unit = {
     val pos = ensureBufferCapacity(2)
     count = write(b1, b2, pos)
   }
 
+  @inline
   private def ensureCapacityAndWrite(b1: Byte, b2: Byte, b3: Byte): Unit = {
     val pos = ensureBufferCapacity(3)
     count = write(b1, b2, b3, pos)
   }
 
+  @inline
   private def ensureCapacityAndWrite(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = {
     val pos = ensureBufferCapacity(4)
     count = write(b1, b2, b3, b4, pos)
   }
 
+  @inline
   private def ensureCapacityAndWrite(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = {
     val pos = ensureBufferCapacity(5)
     count = write(b1, b2, b3, b4, b5, pos)
