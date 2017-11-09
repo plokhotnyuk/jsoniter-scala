@@ -52,25 +52,25 @@ class JsonCodecBenchmark {
   }
   val stacklessExceptionConfig = ReaderConfig(throwStacklessParseException = true)
   val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwStacklessParseException = true, appendHexDumpToParseException = false)
-  val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields]
+  val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields](CodecConfig())
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
-  val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs]
+  val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs](CodecConfig())
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
-  val arraysCodec: JsonCodec[Arrays] = materialize[Arrays]
+  val arraysCodec: JsonCodec[Arrays] = materialize[Arrays](CodecConfig())
   val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
-  val bitSetsCodec: JsonCodec[BitSets] = materialize[BitSets]
+  val bitSetsCodec: JsonCodec[BitSets] = materialize[BitSets](CodecConfig())
   val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
-  val iterablesCodec: JsonCodec[Iterables] = materialize[Iterables]
+  val iterablesCodec: JsonCodec[Iterables] = materialize[Iterables](CodecConfig())
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
-  val mapsCodec: JsonCodec[Maps] = materialize[Maps]
+  val mapsCodec: JsonCodec[Maps] = materialize[Maps](CodecConfig())
   val mapsFormat: OFormat[Maps] = Json.format[Maps]
-  val mutableMapsCodec: JsonCodec[MutableMaps] = materialize[MutableMaps]
+  val mutableMapsCodec: JsonCodec[MutableMaps] = materialize[MutableMaps](CodecConfig())
   val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
-  val intAndLongMapsCodec: JsonCodec[IntAndLongMaps] = materialize[IntAndLongMaps]
+  val intAndLongMapsCodec: JsonCodec[IntAndLongMaps] = materialize[IntAndLongMaps](CodecConfig())
   val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
-  val primitivesCodec: JsonCodec[Primitives] = materialize[Primitives]
+  val primitivesCodec: JsonCodec[Primitives] = materialize[Primitives](CodecConfig())
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
-  val extractFieldsCodec: JsonCodec[ExtractFields] = materialize[ExtractFields]
+  val extractFieldsCodec: JsonCodec[ExtractFields] = materialize[ExtractFields](CodecConfig())
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes

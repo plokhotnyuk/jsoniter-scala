@@ -40,6 +40,8 @@ final class JsonReader private[jsoniter_scala](
     decodeError(head - 1, i, null)
   }
 
+  def unexpectedFieldError(len: Int): Nothing = decodeError("unexpected field: \"" + charBufToString(len) + "\"")
+
   def readObjectFieldAsString(): String = {
     readParentheses()
     val x = charBufToString(parseString())

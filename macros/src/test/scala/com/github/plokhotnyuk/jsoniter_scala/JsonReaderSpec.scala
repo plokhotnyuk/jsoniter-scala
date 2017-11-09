@@ -7,10 +7,10 @@ import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers {
   case class Device(id: Int, model: String)
-  implicit val deviceCodec: JsonCodec[Device] = JsonCodec.materialize[Device]
+  implicit val deviceCodec: JsonCodec[Device] = JsonCodec.materialize[Device](CodecConfig())
 
   case class User(name: String, devices: Seq[Device])
-  val userCodec: JsonCodec[User] = JsonCodec.materialize[User]
+  val userCodec: JsonCodec[User] = JsonCodec.materialize[User](CodecConfig())
 
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
   val json: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes("UTF-8")

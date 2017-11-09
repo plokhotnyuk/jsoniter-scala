@@ -19,17 +19,15 @@ abstract class JsonCodec[A] {
   def encode(x: A, out: JsonWriter): Unit
 }
 
+case class CodecConfig(
+    nameMapper: String => String = identity,
+    skipUnexpectedFields: Boolean = true) extends StaticAnnotation
+
 object JsonCodec {
-  private[jsoniter_scala] case class Param(nameMapper: String) extends StaticAnnotation
-
-  @Param("identity") def materialize[A]: JsonCodec[A] = macro Impl.materialize[A]
-
-  @Param("CamelCase") def materializeCamelCased[A]: JsonCodec[A] = macro Impl.materialize[A]
-
-  @Param("snake_case") def materializeSnakeCased[A]: JsonCodec[A] = macro Impl.materialize[A]
+  def materialize[A](config: CodecConfig): JsonCodec[A] = macro Impl.materialize[A]
 
   private object Impl {
-    def materialize[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonCodec[A]] = {
+    def materialize[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecConfig]): c.Expr[JsonCodec[A]] = {
       import c.universe._
 
       def methodType(m: MethodSymbol): Type = m.returnType.dealias
@@ -47,6 +45,7 @@ object JsonCodec {
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
       val rootTpe = weakTypeOf[A]
+      val rootConfig = c.eval[CodecConfig](c.Expr[CodecConfig](c.untypecheck(config.tree)))
 
       def defaultValue(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
@@ -337,14 +336,9 @@ object JsonCodec {
               ..${genWriteVal(m, tpe)}"""
         }
 
-      val nameMapper = c.macroApplication.symbol.annotations.find(_.tree.tpe <:< typeOf[Param]).flatMap(
-        _.tree.children.tail.collectFirst {
-          case Literal(Constant(s: String)) => s match {
-            case "CamelCase" => enforceCamelCase _
-            case "snake_case" => enforce_snake_case _
-            case _ => identity[String] _
-          }
-        }).get
+      val unexpectedFieldHandler =
+        if (rootConfig.skipUnexpectedFields) q"in.skip()"
+        else q"in.unexpectedFieldError(l)"
       val codec =
         if (rootTpe.typeSymbol.asClass.isCaseClass && !isValueClass(rootTpe)) {
           val annotations: Map[String, JsonProperty] = rootTpe.members.collect {
@@ -369,7 +363,8 @@ object JsonCodec {
 
           def name(m: MethodSymbol): String = mappedName(m.name.toString)
 
-          def mappedName(defaultName: String): String = annotations.get(defaultName).fold(nameMapper(defaultName))(_.name)
+          def mappedName(defaultName: String): String =
+            annotations.get(defaultName).fold(rootConfig.nameMapper(defaultName))(_.name)
 
           def hashCode(m: MethodSymbol): Int = {
             val cs = name(m).toCharArray
@@ -417,14 +412,14 @@ object JsonCodec {
             q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.toString, defaultValue(tpe))}"
           }
           val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
-              cq"""$hashCode => ${ms.foldLeft(q"in.skip()") { case (acc, m) =>
+              cq"""$hashCode => ${ms.foldLeft(unexpectedFieldHandler) { case (acc, m) =>
                 val varName = TermName(s"_${m.name}")
                 q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
                      ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
                      $varName = ${genReadVal(methodType(m), q"$varName")}
                     } else $acc"""
               }}"""
-            }(breakOut) :+ cq"_ => in.skip()"
+            }(breakOut) :+ cq"_ => $unexpectedFieldHandler"
           val writeFields = members.map { m =>
             val tpe = methodType(m)
             val writeField = genWriteField(q"x.$m", tpe, name(m))
@@ -497,7 +492,7 @@ object JsonCodec {
     }
   }
 
-  private[jsoniter_scala] def enforceCamelCase(s: String): String =
+  def enforceCamelCase(s: String): String =
     if (s.indexOf("_") == -1) s
     else {
       val len = s.length
@@ -516,7 +511,7 @@ object JsonCodec {
       sb.toString
     }
 
-  private[jsoniter_scala] def enforce_snake_case(s: String): String = {
+  def enforce_snake_case(s: String): String = {
     val len = s.length
     val sb = new StringBuilder(len << 1)
     var i = 0
