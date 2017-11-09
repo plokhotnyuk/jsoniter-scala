@@ -210,19 +210,18 @@ object JsonCodec {
       def getJsonPropertyAnnotations(tpe: Type): Map[String, JsonProperty] = tpe.members.collect {
         case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
           val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
-          val defaultName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
+          val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
           if (jsonProperties.size > 1) {
-            c.abort(c.enclosingPosition,
-              s"Duplicated '${weakTypeOf[JsonProperty]}' found at '$tpe' for field: $defaultName.")
+            c.abort(c.enclosingPosition, s"Duplicated '${typeOf[JsonProperty]}' found at '$tpe' for field: $fieldName.")
           } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
-        val jsonPropertyArgs = jsonProperties.head.tree.children.tail
+          val jsonPropertyArgs = jsonProperties.head.tree.children.tail
           val name = jsonPropertyArgs.collectFirst {
-            case Literal(Constant(name: String)) => Option(name).getOrElse(defaultName)
-          }.getOrElse(defaultName)
+            case Literal(Constant(name: String)) => Option(name).getOrElse(fieldName)
+          }.getOrElse(fieldName)
           val transient = jsonPropertyArgs.collectFirst {
             case Literal(Constant(transient: Boolean)) => transient
           }.getOrElse(false)
-          (defaultName, JsonProperty(name, transient))
+          (fieldName, JsonProperty(name, transient))
       }(breakOut)
 
       def getModule(tpe: Type): ModuleSymbol = {
