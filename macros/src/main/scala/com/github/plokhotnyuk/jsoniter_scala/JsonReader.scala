@@ -37,16 +37,20 @@ final class JsonReader private[jsoniter_scala](
       j += 1
     }
     i = appendString("\"", i)
-    decodeError(head - 1, i, null)
+    decodeError(i, head - 1, null)
   }
 
-  def unexpectedFieldError(len: Int): Nothing = decodeError("unexpected field: \"" + charBufToString(len) + "\"")
+  def unexpectedFieldError(len: Int): Nothing = {
+    var i = prependString("unexpected field: \"", len)
+    i = appendString("\"", i)
+    decodeError(i, head - 1, null)
+  }
 
   def readObjectFieldAsString(): String = {
     readParentheses()
-    val x = charBufToString(parseString())
+    val len = parseString()
     readColon()
-    x
+    new String(charBuf, 0, len)
   }
 
   def readObjectFieldAsBoolean(): Boolean = {
@@ -66,11 +70,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsChar(): Char = {
     readParentheses()
-    val len = parseString()
-    val x = charBuf(0)
-    if (len != 1) decodeError("illegal value for char")
+    if (parseString() != 1) decodeError("illegal value for char")
     readColon()
-    x
+    charBuf(0)
   }
 
   def readObjectFieldAsShort(): Short = {
@@ -158,8 +160,10 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String = null): String = {
     val b = nextToken()
-    if (b == '"') charBufToString(parseString())
-    else if (b == 'n') parseNull(default)
+    if (b == '"') {
+      val len = parseString()
+      new String(charBuf, 0, len)
+    } else if (b == 'n') parseNull(default)
     else decodeError("expected string value or null")
   }
 
@@ -224,9 +228,9 @@ final class JsonReader private[jsoniter_scala](
 
   @inline
   private def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
-    decodeError(pos, appendString(msg, 0), cause)
+    decodeError(appendString(msg, 0), pos, cause)
 
-  private def decodeError(pos: Int, from: Int, cause: Throwable): Nothing = {
+  private def decodeError(from: Int, pos: Int, cause: Throwable) = {
     var i = appendString(", offset: 0x", from)
     val offset = if (in eq null) 0 else totalRead - tail
     i = appendHex(offset + pos, i) // TODO: consider support of offset values beyond 2Gb
@@ -234,7 +238,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
     }
-    throw new JsonParseException(charBufToString(i), cause, config.throwStacklessParseException)
+    throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwStacklessParseException)
   }
 
   @tailrec
@@ -253,8 +257,6 @@ final class JsonReader private[jsoniter_scala](
     else if (charBuf(i) != s.charAt(i)) false
     else isCharBufEqualsTo(len, s, i + 1)
 
-  private def charBufToString(len: Int): String = new String(charBuf, 0, len)
-
   private def appendString(s: String, from: Int): Int = {
     val lim = from + s.length
     ensureCharBufCapacity(lim, tail)
@@ -264,6 +266,23 @@ final class JsonReader private[jsoniter_scala](
       i += 1
     }
     i
+  }
+
+  private def prependString(s: String, from: Int): Int = {
+    val len = s.length
+    val lim = from + len
+    ensureCharBufCapacity(lim, tail)
+    var i = lim - 1
+    while (i >= len) {
+      charBuf(i) = charBuf(i - len)
+      i -= 1
+    }
+    i = 0
+    while (i < len) {
+      charBuf(i) = s.charAt(i)
+      i += 1
+    }
+    lim
   }
 
   private def readParentheses(): Unit = if (nextByte() != '"') decodeError("expected '\"'")
@@ -500,7 +519,7 @@ final class JsonReader private[jsoniter_scala](
       val maxExp = pow10.length
       if (exp >= -maxExp && exp < 0) man / pow10(-exp)
       else if (exp > 0 && exp <= maxExp) man * pow10(exp)
-      else java.lang.Double.parseDouble(charBufToString(i))
+      else java.lang.Double.parseDouble(new String(charBuf, 0, i))
     }
   }
 
@@ -796,7 +815,7 @@ final class JsonReader private[jsoniter_scala](
   private def malformedBytes(b1: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
-    decodeError(charBufToString(i), pos)
+    decodeError(i, pos, null)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, pos: Int): Nothing = {
@@ -804,7 +823,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
     i = appendHex(b2, i)
-    decodeError(charBufToString(i), pos + 1)
+    decodeError(i, pos + 1, null)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
@@ -814,7 +833,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHex(b2, i)
     i = appendString(", 0x", i)
     i = appendHex(b3, i)
-    decodeError(charBufToString(i), pos + 2)
+    decodeError(i, pos + 2, null)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
@@ -826,7 +845,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHex(b3, i)
     i = appendString(", 0x", i)
     i = appendHex(b4, i)
-    decodeError(charBufToString(i), pos + 3)
+    decodeError(i, pos + 3, null)
   }
 
   private def appendHexDump(start: Int, end: Int, offset: Int, from: Int): Int = {
@@ -904,14 +923,17 @@ final class JsonReader private[jsoniter_scala](
     i + 1
   }
 
+  @inline
   private def ensureCharBufCapacity(i: Int, pos: Int): Int = {
     val required = tail - pos + i
-    if (required > charBuf.length) {
-      val cs = new Array[Char](Math.max(charBuf.length << 1, required))
-      System.arraycopy(charBuf, 0, cs, 0, charBuf.length)
-      charBuf = cs
-    }
+    if (required > charBuf.length) growCharBuf(required)
     pos
+  }
+
+  private def growCharBuf(required: Int): Unit = {
+    val cs = new Array[Char](Math.max(charBuf.length << 1, required))
+    System.arraycopy(charBuf, 0, cs, 0, charBuf.length)
+    charBuf = cs
   }
 
   @tailrec
