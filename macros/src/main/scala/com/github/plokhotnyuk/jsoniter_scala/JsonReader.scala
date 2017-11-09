@@ -25,8 +25,8 @@ final class JsonReader private[jsoniter_scala](
     private var in: InputStream = null,
     private var totalRead: Int = 0,
     private var config: ReaderConfig = ReaderConfig()) {
-  def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
-    val len = reqFields.length
+  def reqFieldError(reqFields: Int => String, reqs: Int*): Nothing = {
+    val len = reqs.length << 5
     var i = 0
     var j = 0
     while (j < len) {

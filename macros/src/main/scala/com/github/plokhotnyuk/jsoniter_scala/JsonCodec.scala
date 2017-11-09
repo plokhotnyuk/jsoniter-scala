@@ -405,9 +405,6 @@ object JsonCodec {
           val reqVars =
             if (lastReqVarBits == 0) Nil
             else reqVarNames.dropRight(1).map(n => q"var $n = -1") :+ q"var ${reqVarNames.last} = $lastReqVarBits"
-          val reqFields =
-            if (lastReqVarBits == 0) EmptyTree
-            else q"private val reqFields: Array[String] = Array(..${required.map(mappedName)})"
           val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
           val members: Seq[MethodSymbol] = codecTpe.members.collect {
             case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
@@ -415,7 +412,15 @@ object JsonCodec {
           val construct = q"new $codecTpe(..${members.map(m => q"${m.name} = ${TermName(s"_${m.name}")}")})"
           val checkReqVarsAndConstruct =
             if (lastReqVarBits == 0) construct
-            else q"if ($checkReqVars) $construct else in.reqFieldError(reqFields, ..$reqVarNames)"
+            else {
+              val reqFieldMapping = required.zipWithIndex.map {
+                case (r, i) => cq"$i => ${mappedName(r)}"
+              }
+              q"""if ($checkReqVars) $construct
+                  else in.reqFieldError((x: Int) => (x: @switch) match {
+                    case ..$reqFieldMapping
+                  }, ..$reqVarNames)"""
+            }
           val readVars = members.map { m =>
             val tpe = methodType(m)
             q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.toString, defaultValue(tpe))}"
@@ -449,7 +454,6 @@ object JsonCodec {
               import scala.annotation.switch
               new JsonCodec[$codecTpe] {
                 ..${innerCodecs.values.map(_.tree)}
-                ..$reqFields
                 override def decode(in: JsonReader, default: $codecTpe): $codecTpe =
                   (in.nextToken(): @switch) match {
                     case '{' =>
