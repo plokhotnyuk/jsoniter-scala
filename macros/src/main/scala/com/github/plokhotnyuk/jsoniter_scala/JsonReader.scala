@@ -21,7 +21,7 @@ final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
     private var head: Int = 0,
     private var tail: Int = 0,
-    private var reusableChars: Array[Char] = new Array[Char](4096),
+    private var charBuf: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null,
     private var totalRead: Int = 0,
     private var config: ReaderConfig = ReaderConfig()) {
@@ -42,7 +42,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsString(): String = {
     readParentheses()
-    val x = reusableCharsToString(parseString())
+    val x = charBufToString(parseString())
     readColon()
     x
   }
@@ -65,7 +65,7 @@ final class JsonReader private[jsoniter_scala](
   def readObjectFieldAsChar(): Char = {
     readParentheses()
     val len = parseString()
-    val x = reusableChars(0)
+    val x = charBuf(0)
     if (len != 1) decodeError("illegal value for char")
     readColon()
     x
@@ -132,7 +132,7 @@ final class JsonReader private[jsoniter_scala](
   def readChar(): Char = {
     readParentheses()
     if (parseString() != 1) decodeError("illegal value for char")
-    reusableChars(0)
+    charBuf(0)
   }
 
   // TODO: unrolled loop
@@ -156,7 +156,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String = null): String = {
     val b = nextToken()
-    if (b == '"') reusableCharsToString(parseString())
+    if (b == '"') charBufToString(parseString())
     else if (b == 'n') parseNull(default)
     else decodeError("expected string value or null")
   }
@@ -167,7 +167,7 @@ final class JsonReader private[jsoniter_scala](
     if (nextByte() == 'u' && nextByte() == 'l' && nextByte() == 'l') default
     else decodeError("expected value or null")
 
-  def readObjectFieldAsReusableChars(): Int = {
+  def readObjectFieldAsCharBuf(): Int = {
     if (nextToken() != '"') decodeError("expected '\"'")
     val x = parseString()
     readColon()
@@ -176,9 +176,9 @@ final class JsonReader private[jsoniter_scala](
 
   def nextToken(): Byte = nextToken(head)
 
-  def reusableCharsToHashCode(len: Int): Int = toHashCode(reusableChars, len)
+  def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
 
-  def isReusableCharsEqualsTo(len: Int, s: String): Boolean = len == s.length && isReusableCharsEqualsTo(len, s, 0)
+  def isCharBufEqualsTo(len: Int, s: String): Boolean = len == s.length && isCharBufEqualsTo(len, s, 0)
 
   def skip(): Unit = head = (nextToken(): @switch) match {
     case '"' => skipString()
@@ -232,7 +232,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
     }
-    throw new JsonParseException(reusableCharsToString(i), cause, config.throwStacklessParseException)
+    throw new JsonParseException(charBufToString(i), cause, config.throwStacklessParseException)
   }
 
   @tailrec
@@ -246,19 +246,19 @@ final class JsonReader private[jsoniter_scala](
     } else nextToken(loadMoreOrError(pos))
 
   @tailrec
-  private def isReusableCharsEqualsTo(len: Int, s: String, i: Int): Boolean =
+  private def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
     if (i == len) true
-    else if (reusableChars(i) != s.charAt(i)) false
-    else isReusableCharsEqualsTo(len, s, i + 1)
+    else if (charBuf(i) != s.charAt(i)) false
+    else isCharBufEqualsTo(len, s, i + 1)
 
-  private def reusableCharsToString(len: Int): String = new String(reusableChars, 0, len)
+  private def charBufToString(len: Int): String = new String(charBuf, 0, len)
 
   private def appendString(s: String, from: Int): Int = {
     val lim = from + s.length
-    ensureReusableCharsCapacity(lim, tail)
+    ensureCharBufCapacity(lim, tail)
     var i = from
     while (i < lim) {
-      reusableChars(i) = s.charAt(i - from)
+      charBuf(i) = s.charAt(i - from)
       i += 1
     }
     i
@@ -351,9 +351,9 @@ final class JsonReader private[jsoniter_scala](
     var isZeroFirst = false
     var i = 0
     var state = 0
-    var pos = ensureReusableCharsCapacity(i, head)
+    var pos = ensureCharBufCapacity(i, head)
     while (pos < tail || {
-      pos = ensureReusableCharsCapacity(i, loadMore(pos))
+      pos = ensureCharBufCapacity(i, loadMore(pos))
       pos == 0
     }) {
       val ch = buf(pos).toChar
@@ -498,7 +498,7 @@ final class JsonReader private[jsoniter_scala](
       val maxExp = pow10.length
       if (exp >= -maxExp && exp < 0) man / pow10(-exp)
       else if (exp > 0 && exp <= maxExp) man * pow10(exp)
-      else java.lang.Double.parseDouble(reusableCharsToString(i))
+      else java.lang.Double.parseDouble(charBufToString(i))
     }
   }
 
@@ -518,7 +518,7 @@ final class JsonReader private[jsoniter_scala](
       if (isToken) parseNull(default)
       else numberError()
     } else {
-      ensureReusableCharsCapacity(2, head)
+      ensureCharBufCapacity(2, head)
       var i = 0
       val negative = b == '-'
       if (negative) {
@@ -530,7 +530,7 @@ final class JsonReader private[jsoniter_scala](
         val isZeroFirst = b == '0'
         i = putCharAt(b.toChar, i)
         while ((pos < tail || {
-          pos = ensureReusableCharsCapacity(i, loadMore(pos))
+          pos = ensureCharBufCapacity(i, loadMore(pos))
           pos == 0
         }) && {
           b = buf(pos)
@@ -541,7 +541,7 @@ final class JsonReader private[jsoniter_scala](
           pos + 1
         }
         head = pos
-        new BigInt(new java.math.BigDecimal(reusableChars, 0, i).toBigInteger)
+        new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigInteger)
       } else numberError(pos - 1)
     }
   }
@@ -551,9 +551,9 @@ final class JsonReader private[jsoniter_scala](
     var isZeroFirst = false
     var i = 0
     var state = 0
-    var pos = ensureReusableCharsCapacity(i, head)
+    var pos = ensureCharBufCapacity(i, head)
     while (pos < tail || {
-      pos = ensureReusableCharsCapacity(i, loadMore(pos))
+      pos = ensureCharBufCapacity(i, loadMore(pos))
       pos == 0
     }) {
       val ch = buf(pos).toChar
@@ -679,7 +679,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def toBigDecimal(len: Int): BigDecimal =
-    new BigDecimal(new java.math.BigDecimal(reusableChars, 0, len))
+    new BigDecimal(new java.math.BigDecimal(charBuf, 0, len))
 
   private def numberError(pos: Int = head): Nothing = decodeError("illegal number", pos)
 
@@ -690,7 +690,7 @@ final class JsonReader private[jsoniter_scala](
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   @tailrec
-  private def parseString(i: Int = 0, pos: Int = ensureReusableCharsCapacity(0, head)): Int =
+  private def parseString(i: Int = 0, pos: Int = ensureCharBufCapacity(0, head)): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') {
@@ -698,7 +698,7 @@ final class JsonReader private[jsoniter_scala](
         i
       } else if ((b ^ '\\') < 1) slowParseString(i, pos)
       else parseString(putCharAt(b.toChar, i), pos + 1)
-    } else parseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+    } else parseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
 
   @tailrec
   private def slowParseString(i: Int, pos: Int): Int = {
@@ -735,11 +735,11 @@ final class JsonReader private[jsoniter_scala](
                       slowParseString(putCharAt(ch2, putCharAt(ch1, i)), pos + 12)
                     } else illegalEscapeSequenceError(pos + 7)
                   } else illegalEscapeSequenceError(pos + 6)
-                } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
-              } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+                } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
+              } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
             case _ => illegalEscapeSequenceError(pos + 1)
           }
-        } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+        } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
       } else if ((b1 >> 5) == -2 && remaining > 1) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         val b2 = buf(pos + 1)
         if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
@@ -758,8 +758,8 @@ final class JsonReader private[jsoniter_scala](
         if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
         slowParseString(putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i)), pos + 4)
       } else if (b1 < 0) malformedBytes(b1, pos)
-      else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
-    } else slowParseString(i, ensureReusableCharsCapacity(i, loadMoreOrError(pos)))
+      else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
+    } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
   }
 
   private def readEscapedUnicode(pos1: Int): Char = {
@@ -794,7 +794,7 @@ final class JsonReader private[jsoniter_scala](
   private def malformedBytes(b1: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
-    decodeError(reusableCharsToString(i), pos)
+    decodeError(charBufToString(i), pos)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, pos: Int): Nothing = {
@@ -802,7 +802,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
     i = appendHex(b2, i)
-    decodeError(reusableCharsToString(i), pos + 1)
+    decodeError(charBufToString(i), pos + 1)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
@@ -812,7 +812,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHex(b2, i)
     i = appendString(", 0x", i)
     i = appendHex(b3, i)
-    decodeError(reusableCharsToString(i), pos + 2)
+    decodeError(charBufToString(i), pos + 2)
   }
 
   private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
@@ -824,7 +824,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHex(b3, i)
     i = appendString(", 0x", i)
     i = appendHex(b4, i)
-    decodeError(reusableCharsToString(i), pos + 3)
+    decodeError(charBufToString(i), pos + 3)
   }
 
   private def appendHexDump(start: Int, end: Int, offset: Int, from: Int): Int = {
@@ -836,7 +836,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendString(dumpBorder, i)
     var j = 0
     while (j < len) {
-      ensureReusableCharsCapacity(i + 81, tail) // 81 == dumpBorder.length
+      ensureCharBufCapacity(i + 81, tail) // 81 == dumpBorder.length
       val linePos = j & 15
       if (linePos == 0) {
         i = putCharAt('\n', i)
@@ -871,22 +871,22 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def appendHex(d: Int, i: Int): Int = {
-    ensureReusableCharsCapacity(i + 8, tail)
-    reusableChars(i) = toHexDigit(d >>> 28)
-    reusableChars(i + 1) = toHexDigit(d >>> 24)
-    reusableChars(i + 2) = toHexDigit(d >>> 20)
-    reusableChars(i + 3) = toHexDigit(d >>> 16)
-    reusableChars(i + 4) = toHexDigit(d >>> 12)
-    reusableChars(i + 5) = toHexDigit(d >>> 8)
-    reusableChars(i + 6) = toHexDigit(d >>> 4)
-    reusableChars(i + 7) = toHexDigit(d)
+    ensureCharBufCapacity(i + 8, tail)
+    charBuf(i) = toHexDigit(d >>> 28)
+    charBuf(i + 1) = toHexDigit(d >>> 24)
+    charBuf(i + 2) = toHexDigit(d >>> 20)
+    charBuf(i + 3) = toHexDigit(d >>> 16)
+    charBuf(i + 4) = toHexDigit(d >>> 12)
+    charBuf(i + 5) = toHexDigit(d >>> 8)
+    charBuf(i + 6) = toHexDigit(d >>> 4)
+    charBuf(i + 7) = toHexDigit(d)
     i + 8
   }
 
   private def appendHex(b: Byte, i: Int): Int = {
-    ensureReusableCharsCapacity(i + 2, tail)
-    reusableChars(i) = toHexDigit(b >>> 4)
-    reusableChars(i + 1) = toHexDigit(b)
+    ensureCharBufCapacity(i + 2, tail)
+    charBuf(i) = toHexDigit(b >>> 4)
+    charBuf(i + 1) = toHexDigit(b)
     i + 2
   }
 
@@ -897,17 +897,17 @@ final class JsonReader private[jsoniter_scala](
 
   @inline
   private def putCharAt(ch: Char, i: Int): Int = {
-    // ensureReusableCharsCapacity(i + 1, tail) <- commented for better performance, so always call it externally
-    reusableChars(i) = ch
+    // ensureCharBufCapacity(i + 1, tail) <- commented for better performance, so always call it externally
+    charBuf(i) = ch
     i + 1
   }
 
-  private def ensureReusableCharsCapacity(i: Int, pos: Int): Int = {
+  private def ensureCharBufCapacity(i: Int, pos: Int): Int = {
     val required = tail - pos + i
-    if (required > reusableChars.length) {
-      val cs = new Array[Char](Math.max(reusableChars.length << 1, required))
-      System.arraycopy(reusableChars, 0, cs, 0, reusableChars.length)
-      reusableChars = cs
+    if (required > charBuf.length) {
+      val cs = new Array[Char](Math.max(charBuf.length << 1, required))
+      System.arraycopy(charBuf, 0, cs, 0, charBuf.length)
+      charBuf = cs
     }
     pos
   }
@@ -982,8 +982,8 @@ final class JsonReader private[jsoniter_scala](
 
   private def endOfInput(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
 
-  private def freeTooLongReusableChars(): Unit =
-    if (reusableChars.length > 16384) reusableChars = new Array[Char](16384)
+  private def freeTooLongCharBuf(): Unit =
+    if (charBuf.length > 16384) charBuf = new Array[Char](16384)
 }
 
 object JsonReader {
@@ -1001,7 +1001,11 @@ object JsonReader {
     "\n+----------+-------------------------------------------------+------------------+"
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
+    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type 
+    * with default parsing options that maximize description of error. 
+    * 
+    * Use custom configuration to turn on racing of stack less exceptions and/or turn off a hex dump printing 
+    * to the error message. 
     *
     * @param codec a codec for the given `A` type
     * @param in the input stream to parse from
@@ -1040,12 +1044,16 @@ object JsonReader {
     try codec.decode(reader) // also checks that `codec` is not null before any parsing
     finally {
       reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-      reader.freeTooLongReusableChars()
+      reader.freeTooLongCharBuf()
     }
   }
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
+    * with default parsing options that maximize description of error. 
+    *
+    * Use custom configuration to turn on racing of stack less exceptions and/or turn off a hex dump printing 
+    * to the error message. 
     *
     * @param codec a codec for the given `A` type
     * @param buf the byte array to parse from
@@ -1059,7 +1067,8 @@ object JsonReader {
   final def read[A](codec: JsonCodec[A], buf: Array[Byte]): A = read(codec, buf, defaultConfig)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
+    * with specified parsing options.
     *
     * @param codec a codec for the given `A` type
     * @param buf the byte array to parse from
@@ -1075,7 +1084,8 @@ object JsonReader {
     read(codec, buf, 0, buf.length, config)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type with
+    * specified parsing options or with defaults that maximize description of error. 
     *
     * @param codec
     * @param buf the byte array to parse from
@@ -1107,7 +1117,7 @@ object JsonReader {
     try codec.decode(reader) // also checks that `codec` is not null before any parsing
     finally {
       reader.buf = currBuf
-      reader.freeTooLongReusableChars()
+      reader.freeTooLongCharBuf()
     }
   }
 

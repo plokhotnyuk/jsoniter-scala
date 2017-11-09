@@ -267,7 +267,7 @@ final class JsonWriter private[jsoniter_scala](
     case _ => if (config.escapeUnicode && (ch <= 31 || ch >= 127)) writeEscapedUnicode(ch, pos) else write(ch.toByte, pos)
   }
 
-  private def writeEscapedUnicode(ch: Char, pos: Int) = {
+  private def writeEscapedUnicode(ch: Char, pos: Int): Int = {
     buf(pos) = '\\'.toByte
     buf(pos + 1) = 'u'.toByte
     buf(pos + 2) = toHexDigit(ch >>> 12)
@@ -381,7 +381,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + bs.length
   }
 
-  private def writeFirstRem(r: Int, pos: Int) = {
+  private def writeFirstRem(r: Int, pos: Int): Int = {
     val d = digits(r)
     val skip = d >> 12
     if (skip == 0) write(((d >> 8) & 15 | '0').toByte, ((d >> 4) & 15 | '0').toByte, (d & 15 | '0').toByte, pos)
@@ -389,7 +389,7 @@ final class JsonWriter private[jsoniter_scala](
     else write((d & 15 | '0').toByte, pos)
   }
 
-  private def writeRem(r: Int, pos: Int) = {
+  private def writeRem(r: Int, pos: Int): Int = {
     val d = digits(r)
     write(((d >> 8) & 15 | '0').toByte, ((d >> 4) & 15 | '0').toByte, (d & 15 | '0').toByte, pos)
   }

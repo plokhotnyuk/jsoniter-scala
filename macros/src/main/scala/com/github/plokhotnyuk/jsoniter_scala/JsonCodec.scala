@@ -419,7 +419,7 @@ object JsonCodec {
           val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
               cq"""$hashCode => ${ms.foldLeft(q"in.skip()") { case (acc, m) =>
                 val varName = TermName(s"_${m.name}")
-                q"""if (in.isReusableCharsEqualsTo(l, ${name(m)})) {
+                q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
                      ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
                      $varName = ${genReadVal(methodType(m), q"$varName")}
                     } else $acc"""
@@ -453,8 +453,8 @@ object JsonCodec {
                       if (in.nextToken() != '}') {
                         in.unreadByte()
                         do {
-                          val l = in.readObjectFieldAsReusableChars()
-                          (in.reusableCharsToHashCode(l): @switch) match {
+                          val l = in.readObjectFieldAsCharBuf()
+                          (in.charBufToHashCode(l): @switch) match {
                             case ..$readFields
                           }
                         } while (in.nextToken() == ',')
@@ -504,38 +504,37 @@ object JsonCodec {
       val sb = new StringBuilder(len)
       var i = 0
       var isPrecedingDash = false
-      while (i < len) {
+      while (i < len) isPrecedingDash = {
         val ch = s.charAt(i)
-        if (ch == '_') isPrecedingDash = true
+        i += 1
+        if (ch == '_') true
         else {
           sb.append(if (isPrecedingDash) toUpperCase(ch) else toLowerCase(ch))
-          isPrecedingDash = false
+          false
         }
-        i += 1
       }
       sb.toString
     }
 
   private[jsoniter_scala] def enforce_snake_case(s: String): String = {
     val len = s.length
-    val sb = new StringBuilder(len + (len >> 1))
+    val sb = new StringBuilder(len << 1)
     var i = 0
     var isPrecedingLowerCased = false
-    while (i < len) {
+    while (i < len) isPrecedingLowerCased = {
       val ch = s.charAt(i)
-      isPrecedingLowerCased =
-        if (ch == '_') {
-          sb.append(ch)
-          false
-        } else if (isLowerCase(ch)) {
-          sb.append(ch)
-          true
-        } else {
-          if (isPrecedingLowerCased) sb.append('_')
-          sb.append(toLowerCase(ch))
-          false
-        }
       i += 1
+      if (ch == '_') {
+        sb.append(ch)
+        false
+      } else if (isLowerCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingLowerCased) sb.append('_')
+        sb.append(toLowerCase(ch))
+        false
+      }
     }
     sb.toString
   }
