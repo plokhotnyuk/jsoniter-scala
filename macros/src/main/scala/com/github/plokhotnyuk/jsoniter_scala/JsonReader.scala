@@ -25,7 +25,7 @@ final class JsonReader private[jsoniter_scala](
     private var in: InputStream = null,
     private var totalRead: Int = 0,
     private var config: ReaderConfig = ReaderConfig()) {
-  def reqFieldError(reqFields: Int => String, reqs: Int*): Nothing = {
+  def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val len = reqs.length << 5
     var i = 0
     var j = 0
@@ -1043,7 +1043,7 @@ object JsonReader {
     reader.head = 0
     reader.tail = 0
     reader.totalRead = 0
-    try codec.decode(reader) // also checks that `codec` is not null before any parsing
+    try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
     finally {
       reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       reader.freeTooLongCharBuf()
@@ -1116,7 +1116,7 @@ object JsonReader {
     reader.head = from
     reader.tail = to
     reader.totalRead = 0
-    try codec.decode(reader) // also checks that `codec` is not null before any parsing
+    try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
     finally {
       reader.buf = currBuf
       reader.freeTooLongCharBuf()

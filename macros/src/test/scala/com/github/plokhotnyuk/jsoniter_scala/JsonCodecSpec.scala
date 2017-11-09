@@ -309,7 +309,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
           in.nextToken() match {
             case '{' =>
               in.unreadByte()
-              Right(codecOfStandardTypes.decode(in))
+              Right(codecOfStandardTypes.decode(in, codecOfStandardTypes.default))
             case '"' =>
               in.unreadByte()
               Left(in.readString())
