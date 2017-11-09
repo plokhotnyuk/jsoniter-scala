@@ -102,8 +102,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def missingReqFieldJackson(): String =
     try {
-      jacksonMapper.readValue[MissingReqFields](missingReqFieldJson)
-      null // should not be called
+      jacksonMapper.readValue[MissingReqFields](missingReqFieldJson).toString // toString() should not be called
     } catch {
       case ex: MismatchedInputException => ex.getMessage
     }
@@ -111,8 +110,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def missingReqFieldJsoniter(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, missingReqFieldJson)
-      null // should not be called
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJson).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -120,8 +118,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def missingReqFieldJsoniterStackless(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionConfig)
-      null // should not be called
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -129,8 +126,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def missingReqFieldJsoniterStacklessNoDump(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionWithoutDumpConfig)
-      null // should not be called
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -138,8 +134,7 @@ class JsonCodecBenchmark {
   @Benchmark
   def missingReqFieldPlay(): String =
     try {
-      Json.parse(missingReqFieldJson).as[MissingReqFields](missingReqFieldFormat)
-      null // should not be called
+      Json.parse(missingReqFieldJson).as[MissingReqFields](missingReqFieldFormat).toString // toString() should not be called
     } catch {
       case ex: JsResultException => ex.getMessage
     }
