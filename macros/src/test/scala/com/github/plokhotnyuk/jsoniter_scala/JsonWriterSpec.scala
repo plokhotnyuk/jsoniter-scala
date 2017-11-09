@@ -54,6 +54,9 @@ class JsonWriterSpec extends WordSpec with Matchers {
       intercept[NullPointerException](JsonWriter.write(null, user, buf, 0))
       intercept[NullPointerException](JsonWriter.write(userCodec, user, null.asInstanceOf[OutputStream]))
       intercept[NullPointerException](JsonWriter.write(userCodec, user, null, 50))
+      intercept[NullPointerException](JsonWriter.write(userCodec, user, null.asInstanceOf[WriterConfig]))
+      intercept[NullPointerException](JsonWriter.write(userCodec, user, new ByteArrayOutputStream(), null))
+      intercept[NullPointerException](JsonWriter.write(userCodec, user, buf, 0, null))
       assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(userCodec, user, new Array[Byte](10), 50))
         .getMessage.contains("`from` should be positive and not greater than `buf` length"))
     }

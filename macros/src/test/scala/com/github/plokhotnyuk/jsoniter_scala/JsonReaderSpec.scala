@@ -47,6 +47,8 @@ class JsonReaderSpec extends WordSpec with Matchers {
       intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]]))
       intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]], 0, 50))
       intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[InputStream]))
+      intercept[NullPointerException](JsonReader.read(userCodec, new ByteArrayInputStream(json), null))
+      intercept[NullPointerException](JsonReader.read(userCodec, httpMessage, 66, httpMessage.length, null))
       assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(userCodec, httpMessage, 50, 200))
         .getMessage.contains("`to` should be positive and not greater than `buf` length"))
       assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(userCodec, httpMessage, 50, 10))
@@ -151,6 +153,8 @@ class JsonReaderSpec extends WordSpec with Matchers {
     "throw parsing exception for empty input and illegal or broken value" in {
       assert(intercept[JsonParseException](parse("".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonParseException](parse("x".getBytes).readBoolean())
+        .getMessage.contains("illegal boolean, offset: 0x00000000"))
       assert(intercept[JsonParseException](parse("tru".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
       assert(intercept[JsonParseException](parse("fals".getBytes).readBoolean())
@@ -623,8 +627,8 @@ class JsonReaderSpec extends WordSpec with Matchers {
     }
   }
 
-  def parse(buf: Array[Byte]): JsonReader =
-    new JsonReader(new Array[Byte](12), 0, 0, new Array[Char](1), new ByteArrayInputStream(buf))
+  def parse(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
+      0, 0, new Array[Char](1), new ByteArrayInputStream(buf))
 
   def skip(s: String): Unit = {
     val reader = parse((s + ",").getBytes)
