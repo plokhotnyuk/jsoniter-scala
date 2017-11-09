@@ -167,8 +167,15 @@ object JsonCodec {
 
       case class NamedTree(name: TermName, tree: Tree)
 
+      val innerCodecs = mutable.LinkedHashMap.empty[Type, NamedTree]
       val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
       val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
+
+      def withCodecFor(tpe: Type)(f: TermName => Tree): Tree =
+        f(innerCodecs.getOrElseUpdate(tpe, {
+          val name = TermName(s"c${innerCodecs.size}")
+          NamedTree(name, q"private val $name: JsonCodec[$tpe] = JsonCodec.materialize[$tpe]($config)")
+        }).name)
 
       def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethods.getOrElseUpdate(tpe, {
@@ -276,6 +283,8 @@ object JsonCodec {
               } else default"""
         } else if (!isRootCodec && tpe =:= codecTpe) {
           q"decode(in, $default)"
+        } else if (tpe.typeSymbol.asClass.isCaseClass) withCodecFor(tpe) { innerCodec =>
+          q"$innerCodec.decode(in, $default)"
         } else {
           cannotFindCodecError(tpe)
         }
@@ -321,6 +330,8 @@ object JsonCodec {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else if (!isRootCodec && tpe =:= codecTpe) {
           q"encode($m, out)"
+        } else if (tpe.typeSymbol.asClass.isCaseClass) withCodecFor(tpe) { innerCodec =>
+          q"$innerCodec.encode($m, out)"
         } else {
           cannotFindCodecError(tpe)
         }
@@ -437,6 +448,7 @@ object JsonCodec {
           q"""import com.github.plokhotnyuk.jsoniter_scala._
               import scala.annotation.switch
               new JsonCodec[$codecTpe] {
+                ..${innerCodecs.values.map(_.tree)}
                 ..$reqFields
                 override def decode(in: JsonReader, default: $codecTpe): $codecTpe =
                   (in.nextToken(): @switch) match {
@@ -473,6 +485,7 @@ object JsonCodec {
           q"""import com.github.plokhotnyuk.jsoniter_scala._
               import scala.annotation.switch
               new JsonCodec[$codecTpe] {
+                ..${innerCodecs.values.map(_.tree)}
                 override def default: $codecTpe = ${defaultValue(codecTpe)}
                 override def decode(in: JsonReader, default: $codecTpe): $codecTpe =
                   ${genReadVal(codecTpe, q"default", isRootCodec = true)}

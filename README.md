@@ -10,11 +10,10 @@ to get maximum performance of JSON parsing & serialization.
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
 - Support of UTF-8 encoding
 - Parsing of strings with escaped characters for JSON field names, keys & values 
-- Primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, 
-  arrays and value classes for all them or case classes with fields having all above types are supported 
+- Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, 
+  arrays and value classes for all them or case classes with fields having all listed here types 
 - Types that supported as map keys are all which can be represented by single value, basically it is all above excluding case classes, arrays & collections  
 - Implicitly resolvable codecs for all above types, so in most cases it is easy to customize except ADTs
-- Need to materialize for all case classes used in nested structures using implicitly resolvable codecs
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
@@ -26,12 +25,12 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable turning off hex dumping of affected by error part of byte buffer to minimize impact on performance
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
-- TODO: generate codecs recursively from top-level type
-- TODO: generate codecs for ADTs with a specified resolving matcher
-- TODO: extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
-- TODO: more efficient implementation for serialization and parsing of numbers 
-- TODO: efficient specialized immutable list & set for primitive types
-- TODO: add support of UTF-16 & UTF-32 binaries and parsing from JSON encoded strings
+- TODO: More efficient implementation for serialization and parsing of numbers 
+- TODO: Generate codecs for ADTs with a specified resolving matcher
+- TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
+- TODO: Add support for some popular Scala and Java classes like `Duration`, `DateTime`, `UUID`, `URL`, etc.
+- TODO: Add extension modules with code generation for 3-rd party libraries with collections that are specialized for primitive types
+- TODO: Add support of UTF-16 & UTF-32 binaries and parsing from JSON encoded strings
 
 ## How to use
 
@@ -54,22 +53,22 @@ import com.github.plokhotnyuk.jsoniter_scala.JsonCodec
 import com.github.plokhotnyuk.jsoniter_scala.CodecConfig
 
 case class Device(id: Int, model: String)
-implicit val deviceCodec = JsonCodec.materialize[Device](CodecConfig())
 
 case class User(name: String, devices: Seq[Device])
-val userCodec = JsonCodec.materialize[User](CodecConfig())
+
+val codec = JsonCodec.materialize[User](CodecConfig())
 ```
 
-That's it! You have generated couple instances of `com.github.plokhotnyuk.jsoniter_scala.Codec`.
+That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.Codec`.
 
-Now you can use them:
+Now you can use it:
 
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.JsonReader
 import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
 
-val user = JsonReader.read(userCodec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
-val jsonBytes = JsonWriter.write(userCodec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+val user = JsonReader.read(codec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
+val jsonBytes = JsonWriter.write(codec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
 To see generated code add the following line to your sbt build file
