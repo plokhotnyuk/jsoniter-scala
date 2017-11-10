@@ -7,14 +7,13 @@ import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
 import scala.annotation.{switch, tailrec}
 import scala.util.control.NonFatal
 
-class JsonParseException(msg: String, cause: Throwable, isStackless: Boolean) extends RuntimeException(msg, cause) {
-  override def fillInStackTrace(): Throwable = if (isStackless) this else super.fillInStackTrace()
-}
+class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
+  extends RuntimeException(msg, cause, true, withStackTrace)
 
 // Use an option of throwing stack-less exception for cases when parse exceptions can be not exceptional,
 // see more details here: https://shipilev.net/blog/2014/exceptional-performance/
 case class ReaderConfig(
-    throwStacklessParseException: Boolean = false,
+    throwParseExceptionWithStackTrace: Boolean = true,
     appendHexDumpToParseException: Boolean = true)
 
 final class JsonReader private[jsoniter_scala](
@@ -26,7 +25,7 @@ final class JsonReader private[jsoniter_scala](
     private var totalRead: Int = 0,
     private var config: ReaderConfig = ReaderConfig()) {
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
-    val len = reqs.length << 5
+    val len = reqFields.length
     var i = 0
     var j = 0
     while (j < len) {
@@ -238,7 +237,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
     }
-    throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwStacklessParseException)
+    throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwParseExceptionWithStackTrace)
   }
 
   @tailrec
