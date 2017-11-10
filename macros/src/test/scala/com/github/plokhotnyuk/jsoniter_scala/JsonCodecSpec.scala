@@ -90,7 +90,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
 
   val codecOfUTF8KeysAndValues = materialize[UTF8KeysAndValues](CodecConfig())
 
-  case class NameOverridden(@JsonProperty(name = "new_name") oldName: String) //FIXME: classes with field annotation should be defined in source file before materialize call
+  case class NameOverridden(@named("new_name") oldName: String) //FIXME: classes with field annotation should be defined in source file before materialize call
 
   case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, l: List[Int] = List(0),
                       a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
@@ -98,7 +98,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
   val defaults = Defaults()
   val codecOfDefaults: JsonCodec[Defaults] = materialize[Defaults](CodecConfig())
 
-  case class Transient(required: String, @JsonProperty(transient = true) transient: String = "default") {
+  case class Transient(required: String, @transient transient: String = "default") {
     val ignored: String = s"$required-$transient"
   }
 

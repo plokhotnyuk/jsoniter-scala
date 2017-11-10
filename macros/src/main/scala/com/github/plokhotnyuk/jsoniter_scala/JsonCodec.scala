@@ -10,7 +10,10 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-case class JsonProperty(name: String = null, transient: Boolean = false) extends StaticAnnotation
+class named(name: String = null) extends StaticAnnotation
+
+@field
+class transient extends StaticAnnotation
 
 abstract class JsonCodec[A] {
   def default: A = null.asInstanceOf[A]
@@ -87,72 +90,46 @@ object JsonCodec {
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
+      def enumSymbol(tpe: Type): Symbol = {
+        val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
+        enumSymbol
+      }
+
       def defaultValue(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
-          q"false"
-        } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
-          q"0.toByte"
-        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) {
-          q"0.toChar"
-        } else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
-          q"0.toShort"
-        } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
-          q"0"
-        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
-          q"0L"
-        } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
-          q"0f"
-        } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
-          q"0.0"
-        } else if (isValueClass(tpe)) {
-          q"null.asInstanceOf[$tpe]"
-        } else if (tpe <:< typeOf[Option[_]]) {
-          q"None"
-        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"false"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"0.toByte"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"0.toChar"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"0.toShort"
+        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"0"
+        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
+        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
+        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
+        else if (isValueClass(tpe)) q"null.asInstanceOf[$tpe]"
+        else if (tpe <:< typeOf[Option[_]]) q"None"
+        else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"${companion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) {
-          q"${companion(tpe)}.empty"
-        } else if (tpe <:< typeOf[Traversable[_]]) {
-          q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[Array[_]]) {
-          q"new Array[${typeArg1(tpe)}](0)"
-        } else {
-          q"null"
-        }
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${companion(tpe)}.empty"
+        else if (tpe <:< typeOf[Traversable[_]]) q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[Array[_]]) q"new Array[${typeArg1(tpe)}](0)"
+        else q"null"
 
       def genReadKey(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
-          q"in.readObjectFieldAsBoolean()"
-        } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
-          q"in.readObjectFieldAsByte()"
-        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) {
-          q"in.readObjectFieldAsChar()"
-        } else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
-          q"in.readObjectFieldAsShort()"
-        } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
-          q"in.readObjectFieldAsInt()"
-        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
-          q"in.readObjectFieldAsLong()"
-        } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
-          q"in.readObjectFieldAsFloat()"
-        } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
-          q"in.readObjectFieldAsDouble()"
-        } else if (isValueClass(tpe)) {
-          q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
-        } else if (tpe =:= typeOf[String]) {
-          q"in.readObjectFieldAsString()"
-        } else if (tpe =:= typeOf[BigInt]) {
-          q"in.readObjectFieldAsBigInt()"
-        } else if (tpe =:= typeOf[BigDecimal]) {
-          q"in.readObjectFieldAsBigDecimal()"
-        } else if (tpe <:< typeOf[Enumeration#Value]) {
-          val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-          q"$enumSymbol.withName(in.readObjectFieldAsString())"
-        } else {
-          c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
-        }
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readObjectFieldAsBoolean()"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readObjectFieldAsByte()"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readObjectFieldAsChar()"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readObjectFieldAsShort()"
+        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"in.readObjectFieldAsInt()"
+        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readObjectFieldAsLong()"
+        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readObjectFieldAsFloat()"
+        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readObjectFieldAsDouble()"
+        else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
+        else if (tpe =:= typeOf[String]) q"in.readObjectFieldAsString()"
+        else if (tpe =:= typeOf[BigInt]) q"in.readObjectFieldAsBigInt()"
+        else if (tpe =:= typeOf[BigDecimal]) q"in.readObjectFieldAsBigDecimal()"
+        else if (tpe <:< typeOf[Enumeration#Value]) q"${enumSymbol(tpe)}.withName(in.readObjectFieldAsString())"
+        else c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
         genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayStartError()", q"in.arrayEndError()")
@@ -207,30 +184,34 @@ object JsonCodec {
         if (implCodec != EmptyTree) Some(implCodec) else None
       }
 
-      def getJsonPropertyAnnotations(tpe: Type): Map[String, JsonProperty] = tpe.members.collect {
-        case m: TermSymbol if m.annotations.exists(_.tree.tpe <:< c.weakTypeOf[JsonProperty]) =>
-          val jsonProperties = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[JsonProperty])
+      case class FieldAnnotations(name: String, transient: Boolean)
+
+      def getJsonPropertyAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
+        case m: TermSymbol if m.annotations.exists(a => a.tree.tpe <:< c.weakTypeOf[named] ||
+                              a.tree.tpe <:< c.weakTypeOf[transient]) =>
           val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
-          if (jsonProperties.size > 1) {
-            c.abort(c.enclosingPosition, s"Duplicated '${typeOf[JsonProperty]}' found at '$tpe' for field: $fieldName.")
-          } // FIXME: doesn't work for named params of JsonProperty when their order differs from defined
-          val jsonPropertyArgs = jsonProperties.head.tree.children.tail
-          val name = jsonPropertyArgs.collectFirst {
+          val named = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[named])
+          if (named.size > 1) {
+            c.abort(c.enclosingPosition, s"Duplicated '${typeOf[named]}' found at '$tpe' for field: $fieldName.")
+          }
+          val trans = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[transient])
+          if (trans.size > 1) {
+            c.warning(c.enclosingPosition, s"Duplicated '${typeOf[transient]}' found at '$tpe' for field: $fieldName.")
+          } else if (named.size == 1 && trans.size == 1) {
+            c.warning(c.enclosingPosition, s"Both '${typeOf[transient]}' and '${typeOf[named]}' found at '$tpe' for field: $fieldName.")
+          }
+          val name = named.headOption.flatMap(_.tree.children.tail.collectFirst {
             case Literal(Constant(name: String)) => Option(name).getOrElse(fieldName)
-          }.getOrElse(fieldName)
-          val transient = jsonPropertyArgs.collectFirst {
-            case Literal(Constant(transient: Boolean)) => transient
-          }.getOrElse(false)
-          (fieldName, JsonProperty(name, transient))
+          }).getOrElse(fieldName)
+          (fieldName, FieldAnnotations(name, trans.nonEmpty))
       }(breakOut)
 
       def getModule(tpe: Type): ModuleSymbol = {
-        // FIXME: module cannot be resolved properly for deeply nested inner case classes
         val comp = tpe.typeSymbol.companion
         if (!comp.isModule) c.abort(c.enclosingPosition,
           s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
             "Please consider defining it as a top-level object or directly inside of another class or object.")
-        comp.asModule
+        comp.asModule // FIXME: module cannot be resolved properly for deeply nested inner case classes
       }
 
       // FIXME: handling only default val params from the first list because subsequent might depend on previous params
@@ -244,7 +225,7 @@ object JsonCodec {
         }(breakOut)
       }
 
-      def getMembers(tpe: Type, annotations: Map[String, JsonProperty]): IndexedSeq[MethodSymbol] = {
+      def getMembers(annotations: Map[String, FieldAnnotations], tpe: c.universe.Type) = {
         def nonTransient(m: MethodSymbol): Boolean = annotations.get(m.name.toString).fold(true)(!_.transient)
 
         tpe.members.collect {
@@ -257,7 +238,7 @@ object JsonCodec {
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedFieldError(l)"
 
-      def getMappedName(defaultName: String, annotations: Map[String, JsonProperty]): String =
+      def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String) =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
 
       case class NamedTree(name: TermName, tree: Tree)
@@ -267,10 +248,13 @@ object JsonCodec {
       val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
       val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
 
+      def genName(prefix: String, tpe: Type, nameCache: mutable.LinkedHashMap[Type, NamedTree]): TermName =
+        TermName(if (tpe =:= codecTpe) prefix else prefix + nameCache.size)
+
       def withReqFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val reqFieldsName = reqFields.getOrElseUpdate(tpe, {
           val impl = f
-          val name = TermName(s"r${reqFields.size}")
+          val name = genName("r", tpe, reqFields)
           NamedTree(name, q"private val $name: Array[String] = Array(..$impl)")
         }).name
         q"$reqFieldsName"
@@ -279,7 +263,7 @@ object JsonCodec {
       def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethods.getOrElseUpdate(tpe, {
           val impl = f
-          val name = TermName(if (tpe =:= codecTpe) "d" else s"d${decodeMethods.size}")
+          val name = genName("d", tpe, decodeMethods)
           NamedTree(name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")
         }).name
         q"$decodeMethodName(in, $arg)"
@@ -288,7 +272,7 @@ object JsonCodec {
       def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encodeMethods.getOrElseUpdate(tpe, {
           val impl = f
-          val name = TermName(if (tpe =:= codecTpe) "e" else s"e${encodeMethods.size}")
+          val name = genName("e", tpe, encodeMethods)
           NamedTree(name, q"private def $name(x: $tpe, out: JsonWriter): Unit = $impl")
         }).name
         q"$encodeMethodName($arg, out)"
@@ -296,25 +280,20 @@ object JsonCodec {
 
       def genReadVal(tpe: Type, default: Tree, isRootCodec: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe)
-        if (implCodec.isDefined) {
-          q"${implCodec.get}.decode(in, $default)"
-        } else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
-          q"in.readBoolean()"
-        } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
-          q"in.readByte()"
-        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) {
-          q"in.readChar()"
-        } else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
-          q"in.readShort()"
-        } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
-          q"in.readInt()"
-        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
-          q"in.readLong()"
-        } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
-          q"in.readFloat()"
-        } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
-          q"in.readDouble()"
-        } else if (isValueClass(tpe)) {
+        if (implCodec.isDefined) q"${implCodec.get}.decode(in, $default)"
+        else if (!isRootCodec && tpe =:= codecTpe) q"d(in, $default)"
+        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readByte()"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readShort()"
+        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"in.readInt()"
+        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readLong()"
+        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readFloat()"
+        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readDouble()"
+        else if (tpe =:= typeOf[String]) q"in.readString($default)"
+        else if (tpe =:= typeOf[BigInt]) q"in.readBigInt($default)"
+        else if (tpe =:= typeOf[BigDecimal]) q"in.readBigDecimal($default)"
+        else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, defaultValue(tpe1))})"
         } else if (tpe <:< typeOf[Option[_]]) {
@@ -361,33 +340,24 @@ object JsonCodec {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = collection.mutable.ArrayBuilder.make[$tpe1]",
             q"x += ${genReadVal(tpe1, defaultValue(tpe1))}", q"x.result()")
-        } else if (tpe =:= typeOf[String]) {
-          q"in.readString($default)"
-        } else if (tpe =:= typeOf[BigInt]) {
-          q"in.readBigInt($default)"
-        } else if (tpe =:= typeOf[BigDecimal]) {
-          q"in.readBigDecimal($default)"
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
-          val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
           q"""val v = in.readString()
               if (v ne null) {
-                try $enumSymbol.withName(v) catch {
+                try ${enumSymbol(tpe)}.withName(v) catch {
                   case _: NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
                 }
               } else default"""
-        } else if (!isRootCodec && tpe =:= codecTpe) {
-          q"d(in, $default)"
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(tpe, default) {
-          val annotations: Map[String, JsonProperty] = getJsonPropertyAnnotations(tpe)
+          val annotations = getJsonPropertyAnnotations(tpe)
 
-          def name(m: MethodSymbol): String = getMappedName(m.name.toString, annotations)
+          def name(m: MethodSymbol): String = getMappedName(annotations, m.name.toString)
 
           def hashCode(m: MethodSymbol): Int = {
             val cs = name(m).toCharArray
             JsonReader.toHashCode(cs, cs.length)
           }
 
-          val members = getMembers(tpe, annotations)
+          val members = getMembers(annotations, tpe)
           val params = getParams(getModule(tpe))
           val required = params.collect {
             case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
@@ -408,7 +378,7 @@ object JsonCodec {
             if (lastReqVarBits == 0) construct
             else {
               val reqFieldNames = withReqFieldsFor(tpe) {
-                required.map(r => getMappedName(r, annotations))
+                required.map(r => getMappedName(annotations, r))
               }
               q"""if ($checkReqVars) $construct
                   else in.reqFieldError($reqFieldNames, ..$reqVarNames)"""
@@ -448,16 +418,14 @@ object JsonCodec {
                 case _ =>
                   in.objectStartError()
               }"""
-        } else {
-          cannotFindCodecError(tpe)
-        }
+        } else cannotFindCodecError(tpe)
       }
 
       def genWriteVal(m: Tree, tpe: Type, isRootCodec: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe)
-        if (implCodec.isDefined) {
-          q"${implCodec.get}.encode($m, out)"
-        } else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
+        if (implCodec.isDefined) q"${implCodec.get}.encode($m, out)"
+        else if (!isRootCodec && tpe =:= codecTpe) q"e($m, out)"
+        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
           tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
@@ -465,9 +433,8 @@ object JsonCodec {
           tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long] ||
           tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
           tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
-          tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
-          q"out.writeVal($m)"
-        } else if (isValueClass(tpe)) {
+          tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) q"out.writeVal($m)"
+        else if (isValueClass(tpe)) {
           genWriteVal(q"$m.value", valueClassValueType(tpe))
         } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(tpe, m) {
           q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe))}"
@@ -491,19 +458,20 @@ object JsonCodec {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
-        } else if (!isRootCodec && tpe =:= codecTpe) {
-          q"e($m, out)"
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
-          val annotations: Map[String, JsonProperty] = getJsonPropertyAnnotations(tpe)
-          val members = getMembers(tpe, annotations)
+          val annotations = getJsonPropertyAnnotations(tpe)
+          val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
             val tpe = methodType(m)
-            val name = getMappedName(m.name.toString, annotations)
+            val name = getMappedName(annotations, m.name.toString)
             val writeField = if (isContainer(tpe)) {
-              q"""if ((x.$m ne null) && !x.$m.isEmpty) {
-                    c = out.writeObjectField(c, $name)
-                    ..${genWriteVal(q"x.$m", tpe)}
+              q"""{
+                    val v = x.$m
+                    if ((v ne null) && !v.isEmpty) {
+                      c = out.writeObjectField(c, $name)
+                      ..${genWriteVal(q"v", tpe)}
+                    }
                   }"""
             } else {
               q"""c = out.writeObjectField(c, $name)
@@ -527,9 +495,7 @@ object JsonCodec {
                 ..$writeFieldsBlock
                 out.writeObjectEnd()
               } else out.writeNull()"""
-        } else {
-          cannotFindCodecError(tpe)
-        }
+        } else cannotFindCodecError(tpe)
       }
 
       val codec =
