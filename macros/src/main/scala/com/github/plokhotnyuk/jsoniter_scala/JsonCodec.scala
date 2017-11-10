@@ -542,8 +542,8 @@ object JsonCodec {
               def decode(in: JsonReader, default: $rootTpe): $rootTpe = ${genReadVal(rootTpe, q"default", isRoot = true)}
               def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe, isRoot = true)}
               ..${reqFields.values.map(_.tree)}
-              ..${decodeMethods.values.map(_.tree)}
-              ..${encodeMethods.values.map(_.tree)}
+              ..${decodeMethods.values.toSeq.reverse.map(_.tree)}
+              ..${encodeMethods.values.toSeq.reverse.map(_.tree)}
             }"""
       if (c.settings.contains("print-codecs")) {
         val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
