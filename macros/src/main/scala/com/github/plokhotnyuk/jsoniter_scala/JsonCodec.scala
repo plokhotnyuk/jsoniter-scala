@@ -387,8 +387,8 @@ object JsonCodec {
             val tpe = methodType(m)
             q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.toString, defaultValue(tpe))}"
           }
-          val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
-            val checkNameAndReadValue = ms.foldLeft(unexpectedFieldHandler) { case (acc, m) =>
+          val readFields = groupByOrdered(members)(hashCode).map { case (hashCode, ms) =>
+            val checkNameAndReadValue = ms.foldRight(unexpectedFieldHandler) { case (m, acc) =>
               val varName = TermName(s"_${m.name}")
               val readValue = q"$varName = ${genReadVal(methodType(m), q"$varName")}"
               val resetReqFieldFlag = bitmasks.getOrElse(m.name.toString, EmptyTree)
@@ -551,5 +551,14 @@ object JsonCodec {
       }
       c.Expr[JsonCodec[A]](codec)
     }
+  }
+
+  private def groupByOrdered[A, K](xs: Traversable[A])(f: A => K): mutable.Map[K, mutable.Buffer[A]] = {
+    val m = mutable.LinkedHashMap.empty[K, mutable.Buffer[A]].withDefault(_ => mutable.Buffer.empty[A])
+    xs.foreach { x =>
+      val k = f(x)
+      m(k) = m(k) :+ x
+    }
+    m
   }
 }
