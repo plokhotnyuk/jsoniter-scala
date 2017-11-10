@@ -180,10 +180,8 @@ object JsonCodec {
       def cannotFindCodecError(tpe: Type): Nothing =
         c.abort(c.enclosingPosition, s"Cannot find implicit val or object of JSON codec for '$tpe'.")
 
-      def findImplicitCodec(tpe: Type): Option[Tree] = {
-        val implCodec = c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", mode = c.TYPEmode).tpe)
-        if (implCodec != EmptyTree) Some(implCodec) else None
-      }
+      def findImplicitCodec(tpe: Type): Tree =
+        c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", mode = c.TYPEmode).tpe)
 
       case class FieldAnnotations(name: String, transient: Boolean)
 
@@ -234,6 +232,12 @@ object JsonCodec {
         }(breakOut).reverse
       }
 
+      case class NamedTree(name: TermName, tree: Tree)
+
+      val rootTpe = weakTypeOf[A]
+      val reqFields = mutable.LinkedHashMap.empty[Type, NamedTree]
+      val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
+      val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
       val codecConfig = c.eval[CodecConfig](c.Expr[CodecConfig](c.untypecheck(config.tree)))
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
@@ -241,13 +245,6 @@ object JsonCodec {
 
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String) =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
-
-      case class NamedTree(name: TermName, tree: Tree)
-
-      val rootTpe = weakTypeOf[A]
-      val reqFields = mutable.LinkedHashMap.empty[Type, NamedTree]
-      val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
-      val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
 
       def genName(prefix: String, tpe: Type, nameCache: mutable.LinkedHashMap[Type, NamedTree]): TermName =
         TermName(if (tpe =:= rootTpe) prefix else prefix + nameCache.size)
@@ -281,7 +278,7 @@ object JsonCodec {
 
       def genReadVal(tpe: Type, default: Tree, isRoot: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
-        if (implCodec.isDefined) q"${implCodec.get}.decode(in, $default)"
+        if (implCodec != EmptyTree) q"$implCodec.decode(in, $default)"
         // FIXME: add testing that checking for rootTpe is before encode method generations
         else if (!isRoot && tpe =:= rootTpe) q"d(in, $default)" // to avoid stack overflow during generation of encode method for rootTpe
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
@@ -391,13 +388,16 @@ object JsonCodec {
             q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.toString, defaultValue(tpe))}"
           }
           val readFields = members.groupBy(hashCode).map { case (hashCode, ms) =>
-            cq"""$hashCode => ${ms.foldLeft(unexpectedFieldHandler) { case (acc, m) =>
+            val checkNameAndReadValue = ms.foldLeft(unexpectedFieldHandler) { case (acc, m) =>
               val varName = TermName(s"_${m.name}")
+              val readValue = q"$varName = ${genReadVal(methodType(m), q"$varName")}"
+              val resetReqFieldFlag = bitmasks.getOrElse(m.name.toString, EmptyTree)
               q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
-                     ..${bitmasks.getOrElse(m.name.toString, EmptyTree)}
-                     $varName = ${genReadVal(methodType(m), q"$varName")}
-                    } else $acc"""
-            }}"""
+                    ..$readValue
+                    ..$resetReqFieldFlag
+                  } else $acc"""
+            }
+            cq"$hashCode => $checkNameAndReadValue"
           }(breakOut) :+ cq"_ => $unexpectedFieldHandler"
           q"""(in.nextToken(): @switch) match {
                 case '{' =>
@@ -425,7 +425,7 @@ object JsonCodec {
 
       def genWriteVal(m: Tree, tpe: Type, isRoot: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
-        if (implCodec.isDefined) q"${implCodec.get}.encode($m, out)"
+        if (implCodec != EmptyTree) q"$implCodec.encode($m, out)"
         // FIXME: add testing that checking for rootTpe is before encode method generations
         else if (!isRoot && tpe =:= rootTpe) q"e($m, out)" // to avoid stack overflow during generation of encode method for rootTpe
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
@@ -538,11 +538,9 @@ object JsonCodec {
         q"""import com.github.plokhotnyuk.jsoniter_scala._
             import scala.annotation.switch
             new JsonCodec[$rootTpe] {
-              final override def default: $rootTpe = ${defaultValue(rootTpe)}
-              final def decode(in: JsonReader, default: $rootTpe): $rootTpe =
-                ${genReadVal(rootTpe, q"default", isRoot = true)}
-              final def encode(x: $rootTpe, out: JsonWriter): Unit =
-                ${genWriteVal(q"x", rootTpe, isRoot = true)}
+              override def default: $rootTpe = ${defaultValue(rootTpe)}
+              def decode(in: JsonReader, default: $rootTpe): $rootTpe = ${genReadVal(rootTpe, q"default", isRoot = true)}
+              def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe, isRoot = true)}
               ..${reqFields.values.map(_.tree)}
               ..${decodeMethods.values.map(_.tree)}
               ..${encodeMethods.values.map(_.tree)}
