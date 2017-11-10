@@ -86,9 +86,10 @@ object JsonCodec {
 
       def isValueClass(tpe: Type): Boolean = tpe <:< typeOf[AnyVal] && tpe.typeSymbol.asClass.isDerivedValueClass
 
-      def isContainer(tpe: Type): Boolean = tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]]
-
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
+
+      def isContainer(tpe: Type): Boolean =
+        tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
 
       def enumSymbol(tpe: Type): Symbol = {
         val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
@@ -186,7 +187,7 @@ object JsonCodec {
 
       case class FieldAnnotations(name: String, transient: Boolean)
 
-      def getJsonPropertyAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
+      def getFieldAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
         case m: TermSymbol if m.annotations.exists(a => a.tree.tpe <:< c.weakTypeOf[named] ||
                               a.tree.tpe <:< c.weakTypeOf[transient]) =>
           val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
@@ -243,13 +244,13 @@ object JsonCodec {
 
       case class NamedTree(name: TermName, tree: Tree)
 
-      val codecTpe = weakTypeOf[A]
+      val rootTpe = weakTypeOf[A]
       val reqFields = mutable.LinkedHashMap.empty[Type, NamedTree]
       val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
       val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
 
       def genName(prefix: String, tpe: Type, nameCache: mutable.LinkedHashMap[Type, NamedTree]): TermName =
-        TermName(if (tpe =:= codecTpe) prefix else prefix + nameCache.size)
+        TermName(if (tpe =:= rootTpe) prefix else prefix + nameCache.size)
 
       def withReqFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val reqFieldsName = reqFields.getOrElseUpdate(tpe, {
@@ -278,10 +279,11 @@ object JsonCodec {
         q"$encodeMethodName($arg, out)"
       }
 
-      def genReadVal(tpe: Type, default: Tree, isRootCodec: Boolean = false): Tree = {
-        val implCodec = findImplicitCodec(tpe)
+      def genReadVal(tpe: Type, default: Tree, isRoot: Boolean = false): Tree = {
+        val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         if (implCodec.isDefined) q"${implCodec.get}.decode(in, $default)"
-        else if (!isRootCodec && tpe =:= codecTpe) q"d(in, $default)"
+        // FIXME: add testing that checking for rootTpe is before encode method generations
+        else if (!isRoot && tpe =:= rootTpe) q"d(in, $default)" // to avoid stack overflow during generation of encode method for rootTpe
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readByte()"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
@@ -348,7 +350,7 @@ object JsonCodec {
                 }
               } else default"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(tpe, default) {
-          val annotations = getJsonPropertyAnnotations(tpe)
+          val annotations = getFieldAnnotations(tpe)
 
           def name(m: MethodSymbol): String = getMappedName(annotations, m.name.toString)
 
@@ -421,10 +423,11 @@ object JsonCodec {
         } else cannotFindCodecError(tpe)
       }
 
-      def genWriteVal(m: Tree, tpe: Type, isRootCodec: Boolean = false): Tree = {
-        val implCodec = findImplicitCodec(tpe)
+      def genWriteVal(m: Tree, tpe: Type, isRoot: Boolean = false): Tree = {
+        val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         if (implCodec.isDefined) q"${implCodec.get}.encode($m, out)"
-        else if (!isRootCodec && tpe =:= codecTpe) q"e($m, out)"
+        // FIXME: add testing that checking for rootTpe is before encode method generations
+        else if (!isRoot && tpe =:= rootTpe) q"e($m, out)" // to avoid stack overflow during generation of encode method for rootTpe
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
@@ -434,9 +437,8 @@ object JsonCodec {
           tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
           tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
           tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) q"out.writeVal($m)"
-        else if (isValueClass(tpe)) {
-          genWriteVal(q"$m.value", valueClassValueType(tpe))
-        } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(tpe, m) {
+        else if (isValueClass(tpe)) genWriteVal(q"$m.value", valueClassValueType(tpe))
+        else if (tpe <:< typeOf[Option[_]]) withEncoderFor(tpe, m) {
           q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe))}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) withEncoderFor(tpe, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe)))
@@ -459,29 +461,63 @@ object JsonCodec {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
-          val annotations = getJsonPropertyAnnotations(tpe)
+          val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
             val tpe = methodType(m)
             val name = getMappedName(annotations, m.name.toString)
-            val writeField = if (isContainer(tpe)) {
-              q"""{
-                    val v = x.$m
-                    if ((v ne null) && !v.isEmpty) {
-                      c = out.writeObjectField(c, $name)
-                      ..${genWriteVal(q"v", tpe)}
-                    }
-                  }"""
-            } else {
-              q"""c = out.writeObjectField(c, $name)
-                  ..${genWriteVal(q"x.$m", tpe)}"""
-            }
             defaults.get(m.name.toString) match {
               case Some(d) =>
-                if (tpe <:< typeOf[Array[_]]) q"if (x.$m.length != $d.length && x.$m.deep != $d.deep) $writeField"
-                else q"if (x.$m != $d) $writeField"
-              case None => writeField
+                if (tpe <:< typeOf[Array[_]]) {
+                  q"""{
+                        val v = x.$m
+                        if ((v ne null) && v.length > 0 && {
+                            val d = $d
+                            v.length != d.length && v.deep != d.deep
+                          }) {
+                          c = out.writeObjectField(c, $name)
+                          ..${genWriteVal(q"v", tpe)}
+                        }
+                      }"""
+                } else if (isContainer(tpe)) {
+                  q"""{
+                        val v = x.$m
+                        if ((v ne null) && !v.isEmpty && v != $d) {
+                          c = out.writeObjectField(c, $name)
+                          ..${genWriteVal(q"v", tpe)}
+                        }
+                      }"""
+                } else {
+                  q"""{
+                        val v = x.$m
+                        if (v != $d) {
+                          c = out.writeObjectField(c, $name)
+                          ..${genWriteVal(q"v", tpe)}
+                        }
+                      }"""
+                }
+              case None =>
+                if (tpe <:< typeOf[Array[_]]) {
+                  q"""{
+                        val v = x.$m
+                        if ((v ne null) && v.length > 0) {
+                          c = out.writeObjectField(c, $name)
+                          ..${genWriteVal(q"v", tpe)}
+                        }
+                      }"""
+                } else if (isContainer(tpe)) {
+                  q"""{
+                        val v = x.$m
+                        if ((v ne null) && !v.isEmpty) {
+                          c = out.writeObjectField(c, $name)
+                          ..${genWriteVal(q"v", tpe)}
+                        }
+                      }"""
+                } else {
+                  q"""c = out.writeObjectField(c, $name)
+                      ..${genWriteVal(q"x.$m", tpe)}"""
+                }
             }
           }
           val writeFieldsBlock =
@@ -501,18 +537,18 @@ object JsonCodec {
       val codec =
         q"""import com.github.plokhotnyuk.jsoniter_scala._
             import scala.annotation.switch
-            new JsonCodec[$codecTpe] {
-              final override def default: $codecTpe = ${defaultValue(codecTpe)}
-              final def decode(in: JsonReader, default: $codecTpe): $codecTpe =
-                ${genReadVal(codecTpe, q"default", isRootCodec = true)}
-              final def encode(x: $codecTpe, out: JsonWriter): Unit =
-                ${genWriteVal(q"x", codecTpe, isRootCodec = true)}
+            new JsonCodec[$rootTpe] {
+              final override def default: $rootTpe = ${defaultValue(rootTpe)}
+              final def decode(in: JsonReader, default: $rootTpe): $rootTpe =
+                ${genReadVal(rootTpe, q"default", isRoot = true)}
+              final def encode(x: $rootTpe, out: JsonWriter): Unit =
+                ${genWriteVal(q"x", rootTpe, isRoot = true)}
               ..${reqFields.values.map(_.tree)}
               ..${decodeMethods.values.map(_.tree)}
               ..${encodeMethods.values.map(_.tree)}
             }"""
       if (c.settings.contains("print-codecs")) {
-        val msg = s"Generated JSON codec for type '$codecTpe':\n${showCode(codec)}"
+        val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
         c.info(c.enclosingPosition, msg, force = true)
       }
       c.Expr[JsonCodec[A]](codec)

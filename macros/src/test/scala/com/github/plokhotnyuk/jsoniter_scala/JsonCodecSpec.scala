@@ -382,6 +382,14 @@ class JsonCodecSpec extends WordSpec with Matchers {
       val parsedObj = JsonReader.read(codecOfArrayOfArray, json)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
+    "do not serialize fields of case classes with empty arrays" in {
+      val json = """{"aa":[[],[]]}""".getBytes
+      val arrays = Arrays(Array(Array(), Array()), Array())
+      verifySer(codecOfArrays, arrays, json)
+      val parsedObj = JsonReader.read(codecOfArrays, json)
+      parsedObj.aa.deep shouldBe arrays.aa.deep
+      parsedObj.a.deep shouldBe arrays.a.deep
+    }
     "don't deserialize JSON array that is not properly started/closed or with leading/trailing comma" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfArrays, arrays, """{"aa":[{1,2,3]],"a":[]}""".getBytes)
