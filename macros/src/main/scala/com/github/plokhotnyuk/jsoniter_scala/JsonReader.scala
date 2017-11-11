@@ -69,9 +69,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsChar(): Char = {
     readParentheses()
-    if (parseString() != 1) decodeError("illegal value for char")
-    readColon()
-    charBuf(0)
+    val x = parseChar()
+    readParenthesesWithColon()
+    x
   }
 
   def readObjectFieldAsShort(): Short = {
@@ -98,7 +98,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsFloat(): Float = {
     readParentheses()
-    val x = parseDouble(isToken = false).toFloat
+    val x = parseFloat(isToken = false)
     readParenthesesWithColon()
     x
   }
@@ -131,14 +131,14 @@ final class JsonReader private[jsoniter_scala](
     x.toByte
   }
 
-  // TODO: use more efficient unrolled loop
   def readChar(): Char = {
     readParentheses()
-    if (parseString() != 1) decodeError("illegal value for char")
-    charBuf(0)
+    val x = parseChar()
+    readParentheses()
+    x
   }
 
-  // TODO: unrolled loop
+  // TODO: use more efficient unrolled loop
   def readShort(): Short = {
     val x = parseInt(isToken = true)
     if (x > Short.MaxValue || x < Short.MinValue) decodeError("value is too large for short")
@@ -151,7 +151,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readDouble(): Double = parseDouble(isToken = true)
 
-  def readFloat(): Float = parseDouble(isToken = true).toFloat
+  def readFloat(): Float = parseFloat(isToken = true)
 
   def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default)
 
@@ -510,23 +510,197 @@ final class JsonReader private[jsoniter_scala](
     else numberError()
   }
 
-  private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double = {
-    val man = if (isNeg) -posMan else posMan
-    val exp = toExp(manExp, isExpNeg, posExp)
-    if (exp == 0) man
-    else {
-      val maxExp = pow10.length
-      if (exp >= -maxExp && exp < 0) man / pow10(-exp)
-      else if (exp > 0 && exp <= maxExp) man * pow10(exp)
-      else java.lang.Double.parseDouble(new String(charBuf, 0, i))
-    }
-  }
+  private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double =
+    if (posMan <= 999999999999999L) {
+      val man = if (isNeg) -posMan else posMan
+      val exp = toExp(manExp, isExpNeg, posExp)
+      if (exp == 0) man
+      else {
+        val maxExp = pow10d.length
+        if (exp > -maxExp && exp < 0) man / pow10d(-exp)
+        else if (exp > 0 && exp < maxExp) man * pow10d(exp)
+        else toDouble(i)
+      }
+    } else toDouble(i)
+
+  private def toDouble(i: Int): Double = java.lang.Double.parseDouble(new String(charBuf, 0, i))
 
   private def toExpOverflowDouble(isNeg: Boolean, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
     if (toExp(manExp, isExpNeg, posExp) > 0) {
       if (isNeg) Double.NegativeInfinity else Double.PositiveInfinity
     } else {
       if (isNeg) -0.0 else 0.0
+    }
+
+  // TODO: consider fast path with unrolled loop for small numbers
+  private def parseFloat(isToken: Boolean): Float = {
+    var posMan = 0
+    var manExp = 0
+    var posExp = 0
+    var isNeg = false
+    var isExpNeg = false
+    var isZeroFirst = false
+    var i = 0
+    var state = 0
+    var pos = ensureCharBufCapacity(i, head)
+    while (pos < tail || {
+      pos = ensureCharBufCapacity(i, loadMore(pos))
+      pos == 0
+    }) {
+      val ch = buf(pos).toChar
+      (state: @switch) match {
+        case 0 => // start
+          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            if (!isToken) numberError(pos)
+            state = 1
+          } else if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = ch - '0'
+            isZeroFirst = posMan == 0
+            state = 3
+          } else if (ch == '-') {
+            i = putCharAt(ch, i)
+            isNeg = true
+            state = 2
+          } else numberError(pos)
+        case 1 => // whitespaces
+          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            state = 1
+          } else if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = ch - '0'
+            isZeroFirst = posMan == 0
+            state = 3
+          } else if (ch == '-') {
+            i = putCharAt(ch, i)
+            isNeg = true
+            state = 2
+          } else numberError(pos)
+        case 2 => // signum
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = ch - '0'
+            isZeroFirst = posMan == 0
+            state = 3
+          } else numberError(pos)
+        case 3 => // first int digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posMan = posMan * 10 + (ch - '0')
+            if (isZeroFirst) leadingZeroError(pos - 1)
+            state = 4
+          } else if (ch == '.') {
+            i = putCharAt(ch, i)
+            state = 5
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 4 => // int digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            if (posMan < 214748364) posMan = posMan * 10 + (ch - '0')
+            else manExp += 1
+            state = 4
+          } else if (ch == '.') {
+            i = putCharAt(ch, i)
+            state = 5
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 5 => // dot
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            if (posMan < 214748364) {
+              posMan = posMan * 10 + (ch - '0')
+              manExp -= 1
+            }
+            state = 6
+          } else numberError(pos)
+        case 6 => // frac digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            if (posMan < 214748364) {
+              posMan = posMan * 10 + (ch - '0')
+              manExp -= 1
+            }
+            state = 6
+          } else if (ch == 'e' || ch == 'E') {
+            i = putCharAt(ch, i)
+            state = 7
+          } else {
+            head = pos
+            return toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 7 => // e char
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posExp = ch - '0'
+            state = 9
+          } else if (ch == '-' || ch == '+') {
+            i = putCharAt(ch, i)
+            isExpNeg = ch == '-'
+            state = 8
+          } else numberError(pos)
+        case 8 => // exp. sign
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posExp = ch - '0'
+            state = 9
+          } else numberError(pos)
+        case 9 => // exp. digit
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            posExp = posExp * 10 + (ch - '0')
+            state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 55) 10 else 9
+          } else {
+            head = pos
+            return toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+        case 10 => // exp. digit overflow
+          if (ch >= '0' && ch <= '9') {
+            i = putCharAt(ch, i)
+            state = 10
+          } else {
+            head = pos
+            return toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
+          }
+      }
+      pos += 1
+    }
+    head = pos
+    if (state == 3 || state == 4 || state == 6 || state == 9) toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
+    else if (state == 10) toExpOverflowFloat(isNeg, manExp, isExpNeg, posExp)
+    else numberError()
+  }
+
+  private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float =
+    if (posMan <= 9999999) {
+      val man = if (isNeg) -posMan else posMan
+      val exp = toExp(manExp, isExpNeg, posExp)
+      if (exp == 0) man
+      else {
+        val maxExp = pow10f.length
+        if (exp > -maxExp && exp < 0) man / pow10f(-exp)
+        else if (exp > 0 && exp < maxExp) man * pow10f(exp)
+        else toFloat(i)
+      }
+    } else toFloat(i)
+
+  private def toFloat(i: Int): Float = java.lang.Float.parseFloat(new String(charBuf, 0, i))
+
+  private def toExpOverflowFloat(isNeg: Boolean, manExp: Int, isExpNeg: Boolean, posExp: Int): Float =
+    if (toExp(manExp, isExpNeg, posExp) > 0) {
+      if (isNeg) Float.NegativeInfinity else Float.PositiveInfinity
+    } else {
+      if (isNeg) -0.0f else 0.0f
     }
 
   private def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
@@ -782,6 +956,55 @@ final class JsonReader private[jsoniter_scala](
     } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
   }
 
+  @tailrec
+  private def parseChar(pos: Int = head): Char = {
+    val remaining = tail - pos
+    if (remaining > 0) {
+      val b1 = buf(pos)
+      if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
+        if (b1 == '"') decodeError("illegal value for char")
+        else if (b1 != '\\') returnChar(b1.toChar, pos + 1)
+        else if (remaining > 1) {
+          (buf(pos + 1): @switch) match {
+            case 'b' => returnChar('\b', pos + 2)
+            case 'f' => returnChar('\f', pos + 2)
+            case 'n' => returnChar('\n', pos + 2)
+            case 'r' => returnChar('\r', pos + 2)
+            case 't' => returnChar('\t', pos + 2)
+            case '"' => returnChar('"', pos + 2)
+            case '/' => returnChar('/', pos + 2)
+            case '\\' => returnChar('\\', pos + 2)
+            case 'u' =>
+              if (remaining > 5) {
+                val ch1 = readEscapedUnicode(pos + 2)
+                if (Character.isSurrogate(ch1)) decodeError("illegal surrogate character", pos + 5)
+                returnChar(ch1, pos + 6)
+              } else parseChar(loadMoreOrError(pos))
+            case _ => illegalEscapeSequenceError(pos + 1)
+          }
+        } else parseChar(loadMoreOrError(pos))
+      } else if ((b1 >> 5) == -2 && remaining > 1) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        val b2 = buf(pos + 1)
+        if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
+        returnChar(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+      } else if ((b1 >> 4) == -2 && remaining > 2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        val b2 = buf(pos + 1)
+        val b3 = buf(pos + 2)
+        val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+        if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
+        returnChar(ch, pos + 3)
+      } else if ((b1 >> 3) == -2 && remaining > 3) decodeError("illegal surrogate character", pos + 3)
+      else if (b1 < 0) malformedBytes(b1, pos)
+      else parseChar(loadMoreOrError(pos))
+    } else parseChar(loadMoreOrError(pos))
+  }
+
+  @inline
+  private def returnChar(ch: Char, pos: Int): Char = {
+    head = pos
+    ch
+  }
+
   private def readEscapedUnicode(pos1: Int): Char = {
     val pos2 = pos1 + 1
     val pos3 = pos1 + 2
@@ -1014,9 +1237,11 @@ object JsonReader {
     override def initialValue(): JsonReader = new JsonReader()
   }
   private val defaultConfig = ReaderConfig()
-  private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double/float
-    Array(1, 1e+01, 1e+02, 1e+03, 1e+04, 1e+05, 1e+06, 1e+07, 1e+08, 1e+09, 1e+10,
-      1e+11, 1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21)
+  private val pow10d: Array[Double] = // all powers of 10 that can be represented exactly in double
+    Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
+      1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
+  private val pow10f: Array[Float] = // all powers of 10 that can be represented exactly in float
+    Array(1f, 1e+1f, 1e+2f, 1e+3f, 1e+4f, 1e+5f, 1e+6f, 1e+7f, 1e+8f, 1e+9f, 1e+10f)
   private val dumpHeader =
     "\n           +-------------------------------------------------+" +
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"

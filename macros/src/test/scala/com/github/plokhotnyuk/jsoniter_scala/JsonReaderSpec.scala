@@ -3,9 +3,10 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets
 
+import org.scalatest.prop.Checkers
 import org.scalatest.{Matchers, WordSpec}
 
-class JsonReaderSpec extends WordSpec with Matchers {
+class JsonReaderSpec extends WordSpec with Matchers with Checkers {
   case class Device(id: Int, model: String)
 
   case class User(name: String, devices: Seq[Device])
@@ -257,14 +258,95 @@ class JsonReaderSpec extends WordSpec with Matchers {
         .getMessage.contains("malformed byte(s): 0xf0, 0x9d, 0x84, 0x0e, offset: 0x00000004"))
     }
   }
+  "JsonReader.readChar" should {
+    "parse char from string with length == 1" in {
+      readChar("V") shouldBe 'V'
+    }
+    "throw parsing exception for string with length > 1" in {
+      assert(intercept[JsonParseException](readChar("ZZZ"))
+        .getMessage.contains("expected '\"', offset: 0x00000002"))
+    }
+    "throw parsing exception for empty input and illegal or broken string" in {
+      assert(intercept[JsonParseException](parse("".getBytes).readChar())
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonParseException](parse("\"".getBytes).readChar())
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonParseException](parse("\"\\".getBytes).readChar())
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
+    }
+    "throw parsing exception for null, boolean values & numbers" in {
+      assert(intercept[JsonParseException](parse("null".getBytes).readChar())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+      assert(intercept[JsonParseException](parse("true".getBytes).readChar())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+      assert(intercept[JsonParseException](parse("false".getBytes).readChar())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+      assert(intercept[JsonParseException](parse("12345".getBytes).readChar())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "get the same char value for escaped & non-escaped field names" in {
+      readChar("""\b""") shouldBe readChar("\b")
+      readChar("""\f""") shouldBe readChar("\f")
+      readChar("""\n""") shouldBe readChar("\n")
+      readChar("""\r""") shouldBe readChar("\r")
+      readChar("""\t""") shouldBe readChar("\t")
+      readChar("""\/""") shouldBe readChar("/")
+      readChar("""\\""") shouldBe readChar("\\\\")
+      readChar("\\u0008") shouldBe readChar("\b")
+      readChar("\\u000C") shouldBe readChar("\f")
+      readChar("\\u000a") shouldBe readChar("\n")
+      readChar("\\u000D") shouldBe readChar("\r")
+      readChar("\\u0009") shouldBe readChar("\t")
+      readChar("\\u002F") shouldBe readChar("/")
+      readChar("\\u0041") shouldBe readChar("A")
+      readChar("\\u0438") shouldBe readChar("и")
+      readChar("\\u10d1") shouldBe readChar("ბ")
+    }
+    "throw parsing exception in case of illegal escape sequence" in {
+      assert(intercept[JsonParseException](readChar("\\x0008"))
+        .getMessage.contains("illegal escape sequence, offset: 0x00000002"))
+      assert(intercept[JsonParseException](readChar("\\u000Z"))
+        .getMessage.contains("expected hex digit, offset: 0x00000006"))
+      assert(intercept[JsonParseException](readChar("\\u000"))
+        .getMessage.contains("expected hex digit, offset: 0x00000006"))
+      assert(intercept[JsonParseException](readChar("\\u00"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000006"))
+      assert(intercept[JsonParseException](readChar("\\u0"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000005"))
+      assert(intercept[JsonParseException](readChar("\\"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonParseException](readChar("\\udd1e"))
+        .getMessage.contains("illegal surrogate character, offset: 0x00000006"))
+      assert(intercept[JsonParseException](readChar("\\ud834"))
+        .getMessage.contains("illegal surrogate character, offset: 0x00000006"))
+    }
+    "throw parsing exception in case of illegal byte sequence" in {
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xF0.toByte)))
+        .getMessage.contains("malformed byte(s): 0xf0, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0x80, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xC0.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xc0, 0x80, offset: 0x00000002"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xC8.toByte, 0x08.toByte)))
+        .getMessage.contains("malformed byte(s): 0xc8, 0x08, offset: 0x00000002"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xC8.toByte, 0xFF.toByte)))
+        .getMessage.contains("malformed byte(s): 0xc8, 0xff, offset: 0x00000002"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xe0, 0x80, 0x80, offset: 0x00000003"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte)))
+        .getMessage.contains("malformed byte(s): 0xe0, 0xff, 0x80, offset: 0x00000003"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte)))
+        .getMessage.contains("malformed byte(s): 0xe8, 0x88, 0x08, offset: 0x00000003"))
+      assert(intercept[JsonParseException](readChar(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte)))
+        .getMessage.contains("illegal surrogate character, offset: 0x00000004"))
+    }
+  }
   "JsonReader.readInt" should {
     "parse valid int values" in {
-      readInt("0") shouldBe 0
-      readInt("-0") shouldBe -0
-      readInt("123456789") shouldBe 123456789
-      readInt("-123456789") shouldBe -123456789
-      readInt("2147483647") shouldBe 2147483647
-      readInt("-2147483648") shouldBe -2147483648
+      check((n: Int) => {
+        val s = n.toString
+        readInt(s) == java.lang.Integer.parseInt(s)
+      }, minSuccessful(10000))
     }
     "parse valid int values with skiping JSON space characters" in {
       readInt(" \n\t\r123456789") shouldBe 123456789
@@ -309,12 +391,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
   }
   "JsonReader.readLong" should {
     "parse valid long values" in {
-      readLong("0") shouldBe 0L
-      readLong("-0") shouldBe -0L
-      readLong("1234567890123456789") shouldBe 1234567890123456789L
-      readLong("-1234567890123456789") shouldBe -1234567890123456789L
-      readLong("9223372036854775807") shouldBe 9223372036854775807L
-      readLong("-9223372036854775808") shouldBe -9223372036854775808L
+      check((n: Long) => {
+        val s = n.toString
+        readLong(s) == java.lang.Long.parseLong(s)
+      }, minSuccessful(10000))
     }
     "parse valid long values with skiping JSON space characters" in {
       readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
@@ -359,15 +439,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
   }
   "JsonReader.readFloat" should {
     "parse valid float values" in {
-      readFloat("0") shouldBe 0.0f
-      readFloat("0e0") shouldBe 0.0f
-      readFloat("0.0") shouldBe 0.0f
-      readFloat("-0.0") shouldBe -0.0f
-      readFloat("12345.6789") shouldBe 12345.6789f
-      readFloat("-12345.6789") shouldBe -12345.6789f
-      readFloat("12345.6789e10") shouldBe 1.23456788e14f
-      readFloat("12345.6789e+10") shouldBe 1.23456788e14f
-      readFloat("-12345.6789E-10") shouldBe -1.2345679e-6f
+      check((n: Float) => {
+        val s = n.toString
+        readFloat(s) == java.lang.Float.parseFloat(s)
+      }, minSuccessful(10000))
     }
     "parse infinity on float overflow" in {
       readFloat("12345e6789") shouldBe Float.PositiveInfinity
@@ -421,15 +496,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
   }
   "JsonReader.readDouble" should {
     "parse valid double values" in {
-      readDouble("0") shouldBe 0.0
-      readDouble("0e0") shouldBe 0.0
-      readDouble("0.0") shouldBe 0.0
-      readDouble("-0.0") shouldBe -0.0
-      readDouble("123456789.12345678") shouldBe 1.2345678912345678e8
-      readDouble("-123456789.12345678") shouldBe -1.2345678912345678e8
-      readDouble("123456789.123456789e10") shouldBe 1.23456789123456794e18
-      readDouble("123456789.123456789e+10") shouldBe 1.23456789123456794e18
-      readDouble("-123456789.123456789E-10") shouldBe -0.012345678912345679
+      check((n: Double) => {
+        val s = n.toString
+        readDouble(s) == java.lang.Double.parseDouble(s)
+      }, minSuccessful(10000))
     }
     "parse infinity on double overflow" in {
       readDouble("12345e6789") shouldBe Double.PositiveInfinity
@@ -489,9 +559,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
     }
     "parse valid number values" in {
-      readBigInt("0", null) shouldBe BigInt("0")
-      readBigInt("12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
-      readBigInt("-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
+      check((n: BigInt) => {
+        val s = n.toString
+        readBigInt(s, null) == BigInt(s)
+      }, minSuccessful(10000))
     }
     "parse big number values without overflow" in {
       val bigNumber = "12345" + new String(Array.fill(6789)('0'))
@@ -548,15 +619,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
       readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
     "parse valid number values" in {
-      readBigDecimal("0", null) shouldBe BigDecimal("0")
-      readBigDecimal("0e0", null) shouldBe BigDecimal("0")
-      readBigDecimal("0.0", null) shouldBe BigDecimal("0")
-      readBigDecimal("-0.0", null) shouldBe BigDecimal("0")
-      readBigDecimal("1234567890123456789.0123456789", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal("-1234567890123456789.0123456789", null) shouldBe BigDecimal("-1234567890123456789.0123456789")
-      readBigDecimal("1234567890123456789.0123456789e10", null) shouldBe BigDecimal("12345678901234567890123456789")
-      readBigDecimal("1234567890123456789.0123456789e+10", null) shouldBe BigDecimal("12345678901234567890123456789")
-      readBigDecimal("-1234567890123456789.0123456789E-10", null) shouldBe BigDecimal("-123456789.01234567890123456789")
+      check((n: BigDecimal) => {
+        val s = n.toString
+        readBigDecimal(s, null) == BigDecimal(s)
+      }, minSuccessful(10000))
     }
     "parse big number values without overflow" in {
       readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
@@ -639,6 +705,10 @@ class JsonReaderSpec extends WordSpec with Matchers {
   def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
 
   def readString(buf: Array[Byte]): String = parse('"'.toByte +: buf :+ '"'.toByte).readString()
+
+  def readChar(s: String): Char = readChar(s.getBytes(StandardCharsets.UTF_8))
+
+  def readChar(buf: Array[Byte]): Char = parse('"'.toByte +: buf :+ '"'.toByte).readChar()
 
   def readInt(s: String): Int = readInt(s.getBytes(StandardCharsets.UTF_8))
 

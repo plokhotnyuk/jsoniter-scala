@@ -166,7 +166,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"𝄞","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal value for char, offset: 0x0000002d"))
+      }.getMessage.contains("illegal surrogate character, offset: 0x0000002c"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":01.1,"f":2.2}""".getBytes)
@@ -204,7 +204,7 @@ class JsonCodecSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfPrimitives, primitives,
           """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"1000000","dbl":1.1,"f":2.2}""".getBytes)
-      }.getMessage.contains("illegal value for char, offset: 0x00000030"))
+      }.getMessage.contains("expected '\"', offset: 0x0000002a"))
     }
     "deserialize too big numbers as infinity for floating point types" in {
       verifyDeser(codecOfPrimitives,
