@@ -943,13 +943,13 @@ final class JsonReader private[jsoniter_scala](
         if (remaining > 1) {
           val b2 = buf(pos + 1)
           if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
-          slowParseString(putCharAt(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, i), pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+          slowParseString(putCharAt(((b1 << 6) ^ b2 ^ 0xF80).toChar, i), pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
       } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         if (remaining > 2) {
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
-          val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+          val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
           if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
           slowParseString(putCharAt(ch, i), pos + 3)
         } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
@@ -958,7 +958,7 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
           val b4 = buf(pos + 3)
-          val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+          val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ b4 ^ 0x381F80 // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
           if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
           slowParseString(putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i)), pos + 4)
         } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
@@ -997,13 +997,13 @@ final class JsonReader private[jsoniter_scala](
         if (remaining > 1) {
           val b2 = buf(pos + 1)
           if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
-          returnChar(((b1 << 6) ^ (b2 ^ 0xF80)).toChar, pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+          returnChar(((b1 << 6) ^ b2 ^ 0xF80).toChar, pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else parseChar(loadMoreOrError(pos))
       } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         if (remaining > 2) {
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
-          val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+          val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
           if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
           returnChar(ch, pos + 3)
         } else parseChar(loadMoreOrError(pos))
