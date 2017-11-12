@@ -1,12 +1,12 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, InputStream}
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets._
 
-import org.scalatest.prop.Checkers
+import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
-class JsonReaderSpec extends WordSpec with Matchers with Checkers {
+class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   case class Device(id: Int, model: String)
 
   case class User(name: String, devices: Seq[Device])
@@ -169,15 +169,12 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
     "return supplied default value instead of null value" in {
       parse("null".getBytes).readString("VVV") shouldBe "VVV"
     }
-    "parse long string" in {
-      val text =
-        """
-          |JavaScript Object Notation (JSON) is a lightweight, text-based,
-          |language-independent data interchange format.  It was derived from
-          |the ECMAScript Programming Language Standard.  JSON defines a small
-          |set of formatting rules for the portable representation of structured
-          |data.""".stripMargin
-      readString(text) shouldBe text
+    "parse string with non-escaped and non-surrogate chars" in {
+      forAll(minSuccessful(10000)) { (s: String) =>
+        whenever(!s.exists(ch => ch == '"' || ch == '\\' || Character.isSurrogate(ch))) {
+          readString(s) == s
+        }
+      }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
       assert(intercept[JsonParseException](parse("".getBytes).readString())
@@ -228,8 +225,6 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
         .getMessage.contains("expected low surrogate character, offset: 0x0000000c"))
     }
     "throw parsing exception in case of illegal byte sequence" in {
-      assert(intercept[JsonParseException](readString(Array[Byte](0xF0.toByte)))
-        .getMessage.contains("malformed byte(s): 0xf0, offset: 0x00000001"))
       assert(intercept[JsonParseException](readString(Array[Byte](0x80.toByte)))
         .getMessage.contains("malformed byte(s): 0x80, offset: 0x00000001"))
       assert(intercept[JsonParseException](readString(Array[Byte](0xC0.toByte, 0x80.toByte)))
@@ -259,8 +254,12 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
     }
   }
   "JsonReader.readChar" should {
-    "parse char from string with length == 1" in {
-      readChar("V") shouldBe 'V'
+    "parse non-escaped and non-surrogate char from string with length == 1" in {
+      forAll(minSuccessful(10000)) { (ch: Char) =>
+        whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
+          readChar(ch.toString) == ch
+        }
+      }
     }
     "throw parsing exception for string with length > 1" in {
       assert(intercept[JsonParseException](readChar("ZZZ"))
@@ -321,8 +320,6 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
         .getMessage.contains("illegal surrogate character, offset: 0x00000006"))
     }
     "throw parsing exception in case of illegal byte sequence" in {
-      assert(intercept[JsonParseException](readChar(Array[Byte](0xF0.toByte)))
-        .getMessage.contains("malformed byte(s): 0xf0, offset: 0x00000001"))
       assert(intercept[JsonParseException](readChar(Array[Byte](0x80.toByte)))
         .getMessage.contains("malformed byte(s): 0x80, offset: 0x00000001"))
       assert(intercept[JsonParseException](readChar(Array[Byte](0xC0.toByte, 0x80.toByte)))
@@ -343,10 +340,10 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
   }
   "JsonReader.readInt" should {
     "parse valid int values" in {
-      check((n: Int) => {
+      forAll(minSuccessful(10000)) { (n: Int) =>
         val s = n.toString
         readInt(s) == java.lang.Integer.parseInt(s)
-      }, minSuccessful(10000))
+      }
     }
     "parse valid int values with skiping JSON space characters" in {
       readInt(" \n\t\r123456789") shouldBe 123456789
@@ -391,10 +388,10 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
   }
   "JsonReader.readLong" should {
     "parse valid long values" in {
-      check((n: Long) => {
+      forAll(minSuccessful(10000)) { (n: Long) =>
         val s = n.toString
         readLong(s) == java.lang.Long.parseLong(s)
-      }, minSuccessful(10000))
+      }
     }
     "parse valid long values with skiping JSON space characters" in {
       readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
@@ -439,10 +436,10 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
   }
   "JsonReader.readFloat" should {
     "parse valid float values" in {
-      check((n: Float) => {
+      forAll(minSuccessful(10000)) { (n: Float) =>
         val s = n.toString
         readFloat(s) == java.lang.Float.parseFloat(s)
-      }, minSuccessful(10000))
+      }
     }
     "parse infinity on float overflow" in {
       readFloat("12345e6789") shouldBe Float.PositiveInfinity
@@ -496,10 +493,10 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
   }
   "JsonReader.readDouble" should {
     "parse valid double values" in {
-      check((n: Double) => {
+      forAll(minSuccessful(10000)) { (n: Double) =>
         val s = n.toString
         readDouble(s) == java.lang.Double.parseDouble(s)
-      }, minSuccessful(10000))
+      }
     }
     "parse infinity on double overflow" in {
       readDouble("12345e6789") shouldBe Double.PositiveInfinity
@@ -559,10 +556,10 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
       readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
     }
     "parse valid number values" in {
-      check((n: BigInt) => {
+      forAll(minSuccessful(10000)) { (n: BigInt) =>
         val s = n.toString
         readBigInt(s, null) == BigInt(s)
-      }, minSuccessful(10000))
+      }
     }
     "parse big number values without overflow" in {
       val bigNumber = "12345" + new String(Array.fill(6789)('0'))
@@ -619,10 +616,10 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
       readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
     "parse valid number values" in {
-      check((n: BigDecimal) => {
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
         val s = n.toString
         readBigDecimal(s, null) == BigDecimal(s)
-      }, minSuccessful(10000))
+      }
     }
     "parse big number values without overflow" in {
       readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
@@ -702,36 +699,36 @@ class JsonReaderSpec extends WordSpec with Matchers with Checkers {
     reader.nextToken().toChar shouldBe ','
   }
 
-  def readString(s: String): String = readString(s.getBytes(StandardCharsets.UTF_8))
+  def readString(s: String): String = readString(s.getBytes(UTF_8))
 
   def readString(buf: Array[Byte]): String = parse('"'.toByte +: buf :+ '"'.toByte).readString()
 
-  def readChar(s: String): Char = readChar(s.getBytes(StandardCharsets.UTF_8))
+  def readChar(s: String): Char = readChar(s.getBytes(UTF_8))
 
   def readChar(buf: Array[Byte]): Char = parse('"'.toByte +: buf :+ '"'.toByte).readChar()
 
-  def readInt(s: String): Int = readInt(s.getBytes(StandardCharsets.UTF_8))
+  def readInt(s: String): Int = readInt(s.getBytes(UTF_8))
 
   def readInt(buf: Array[Byte]): Int = parse(buf).readInt()
 
-  def readLong(s: String): Long = readLong(s.getBytes(StandardCharsets.UTF_8))
+  def readLong(s: String): Long = readLong(s.getBytes(UTF_8))
 
   def readLong(buf: Array[Byte]): Long = parse(buf).readLong()
 
-  def readFloat(s: String): Float = readFloat(s.getBytes(StandardCharsets.UTF_8))
+  def readFloat(s: String): Float = readFloat(s.getBytes(UTF_8))
 
   def readFloat(buf: Array[Byte]): Float = parse(buf).readFloat()
 
-  def readDouble(s: String): Double = readDouble(s.getBytes(StandardCharsets.UTF_8))
+  def readDouble(s: String): Double = readDouble(s.getBytes(UTF_8))
 
   def readDouble(buf: Array[Byte]): Double = parse(buf).readDouble()
 
-  def readBigInt(s: String, default: BigInt): BigInt = readBigInt(s.getBytes(StandardCharsets.UTF_8), default)
+  def readBigInt(s: String, default: BigInt): BigInt = readBigInt(s.getBytes(UTF_8), default)
 
   def readBigInt(buf: Array[Byte], default: BigInt): BigInt = parse(buf).readBigInt(default)
 
   def readBigDecimal(s: String, default: BigDecimal): BigDecimal =
-    readBigDecimal(s.getBytes(StandardCharsets.UTF_8), default)
+    readBigDecimal(s.getBytes(UTF_8), default)
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = parse(buf).readBigDecimal(default)
 }
