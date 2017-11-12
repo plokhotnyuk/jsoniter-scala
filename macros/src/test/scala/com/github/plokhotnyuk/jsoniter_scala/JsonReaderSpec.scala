@@ -170,9 +170,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       parse("null".getBytes).readString("VVV") shouldBe "VVV"
     }
     "parse string with non-escaped and non-surrogate chars" in {
-      forAll(minSuccessful(10000)) { (s: String) =>
+      forAll(minSuccessful(100000)) { (s: String) =>
         whenever(!s.exists(ch => ch == '"' || ch == '\\' || Character.isSurrogate(ch))) {
-          readString(s) == s
+          readString(s) shouldBe s
         }
       }
     }
@@ -255,9 +255,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readChar" should {
     "parse non-escaped and non-surrogate char from string with length == 1" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(100000)) { (ch: Char) =>
         whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
-          readChar(ch.toString) == ch
+          readChar(ch.toString) shouldBe ch
         }
       }
     }
@@ -340,9 +340,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readInt" should {
     "parse valid int values" in {
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
         val s = n.toString
-        readInt(s) == java.lang.Integer.parseInt(s)
+        readInt(s) shouldBe java.lang.Integer.parseInt(s)
       }
     }
     "parse valid int values with skiping JSON space characters" in {
@@ -388,9 +388,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readLong" should {
     "parse valid long values" in {
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(100000)) { (n: Long) =>
         val s = n.toString
-        readLong(s) == java.lang.Long.parseLong(s)
+        readLong(s) shouldBe java.lang.Long.parseLong(s)
       }
     }
     "parse valid long values with skiping JSON space characters" in {
@@ -436,9 +436,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readFloat" should {
     "parse valid float values" in {
-      forAll(minSuccessful(10000)) { (n: Float) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         val s = n.toString
-        readFloat(s) == java.lang.Float.parseFloat(s)
+        readFloat(s) shouldBe java.lang.Float.parseFloat(s)
       }
     }
     "parse infinity on float overflow" in {
@@ -493,9 +493,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readDouble" should {
     "parse valid double values" in {
-      forAll(minSuccessful(10000)) { (n: Double) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         val s = n.toString
-        readDouble(s) == java.lang.Double.parseDouble(s)
+        readDouble(s) shouldBe java.lang.Double.parseDouble(s)
       }
     }
     "parse infinity on double overflow" in {
@@ -556,9 +556,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
     }
     "parse valid number values" in {
-      forAll(minSuccessful(10000)) { (n: BigInt) =>
+      forAll(minSuccessful(100000)) { (n: BigInt) =>
         val s = n.toString
-        readBigInt(s, null) == BigInt(s)
+        readBigInt(s, null) shouldBe BigInt(s)
       }
     }
     "parse big number values without overflow" in {
@@ -616,9 +616,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
     "parse valid number values" in {
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         val s = n.toString
-        readBigDecimal(s, null) == BigDecimal(s)
+        readBigDecimal(s, null) shouldBe BigDecimal(s)
       }
     }
     "parse big number values without overflow" in {

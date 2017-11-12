@@ -506,7 +506,7 @@ final class JsonReader private[jsoniter_scala](
     }
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
-    else if (state == 10) toExpOverflowDouble(isNeg, manExp, isExpNeg, posExp)
+    else if (state == 10) toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
     else numberError()
   }
 
@@ -525,8 +525,8 @@ final class JsonReader private[jsoniter_scala](
 
   private def toDouble(i: Int): Double = java.lang.Double.parseDouble(new String(charBuf, 0, i))
 
-  private def toExpOverflowDouble(isNeg: Boolean, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
-    if (toExp(manExp, isExpNeg, posExp) > 0) {
+  private def toExpOverflowDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
+    if (toExp(manExp, isExpNeg, posExp) > 0 && posMan != 0) {
       if (isNeg) Double.NegativeInfinity else Double.PositiveInfinity
     } else {
       if (isNeg) -0.0 else 0.0
@@ -677,7 +677,7 @@ final class JsonReader private[jsoniter_scala](
     }
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
-    else if (state == 10) toExpOverflowFloat(isNeg, manExp, isExpNeg, posExp)
+    else if (state == 10) toExpOverflowFloat(isNeg, posMan, manExp, isExpNeg, posExp)
     else numberError()
   }
 
@@ -687,17 +687,22 @@ final class JsonReader private[jsoniter_scala](
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
       else {
-        val maxExp = pow10f.length
-        if (exp > -maxExp && exp < 0) man / pow10f(-exp)
-        else if (exp > 0 && exp < maxExp) man * pow10f(exp)
-        else toFloat(i)
+        val maxFloatExp = pow10f.length
+        if (exp > -maxFloatExp && exp < 0) man / pow10f(-exp)
+        else if (exp > 0 && exp < maxFloatExp) man * pow10f(exp)
+        else {
+          val maxDoubleExp = pow10d.length
+          if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
+          else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
+          else toFloat(i)
+        }
       }
     } else toFloat(i)
 
   private def toFloat(i: Int): Float = java.lang.Float.parseFloat(new String(charBuf, 0, i))
 
-  private def toExpOverflowFloat(isNeg: Boolean, manExp: Int, isExpNeg: Boolean, posExp: Int): Float =
-    if (toExp(manExp, isExpNeg, posExp) > 0) {
+  private def toExpOverflowFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int): Float =
+    if (toExp(manExp, isExpNeg, posExp) > 0 && posMan != 0) {
       if (isNeg) Float.NegativeInfinity else Float.PositiveInfinity
     } else {
       if (isNeg) -0.0f else 0.0f
@@ -1245,11 +1250,11 @@ object JsonReader {
     override def initialValue(): JsonReader = new JsonReader()
   }
   private val defaultConfig = ReaderConfig()
+  private val pow10f: Array[Float] = // all powers of 10 that can be represented exactly in float
+    Array(1f, 1e+1f, 1e+2f, 1e+3f, 1e+4f, 1e+5f, 1e+6f, 1e+7f, 1e+8f, 1e+9f, 1e+10f)
   private val pow10d: Array[Double] = // all powers of 10 that can be represented exactly in double
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
-  private val pow10f: Array[Float] = // all powers of 10 that can be represented exactly in float
-    Array(1f, 1e+1f, 1e+2f, 1e+3f, 1e+4f, 1e+5f, 1e+6f, 1e+7f, 1e+8f, 1e+9f, 1e+10f)
   private val dumpHeader =
     "\n           +-------------------------------------------------+" +
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
