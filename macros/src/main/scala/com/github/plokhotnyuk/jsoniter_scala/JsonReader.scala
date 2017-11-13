@@ -511,7 +511,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double =
-    if (posMan <= 999999999999999L) { // 10^15 - 1, where max mantissa that can be converted w/o rounding error by double ops
+    if (posMan <= 999999999999999L) { // max mantissa that can be converted w/o rounding error by double mult or div
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
@@ -684,13 +684,13 @@ final class JsonReader private[jsoniter_scala](
   private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float = {
     val man = if (isNeg) -posMan else posMan
     val exp = toExp(manExp, isExpNeg, posExp)
-    if (posMan <= 9999999) { // 10^7 - 1, max mantissa that can be converted w/o rounding error by float ops
+    if (posMan <= 99999999) { // max mantissa that can be converted w/o rounding error by float mult or div
       if (exp == 0) man
       else {
         val maxFloatExp = pow10f.length
         if (exp > -maxFloatExp && exp < 0) man / pow10f(-exp)
         else if (exp > 0 && exp < maxFloatExp) man * pow10f(exp)
-        else {
+        else { // using double mult or div instead of two float mults with greater rounding error
           val maxDoubleExp = pow10d.length
           if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
           else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
