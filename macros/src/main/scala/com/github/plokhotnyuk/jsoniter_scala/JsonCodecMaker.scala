@@ -10,7 +10,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-class named(name: String = null) extends StaticAnnotation
+class named(name: String) extends StaticAnnotation
 
 @field
 class transient extends StaticAnnotation
@@ -21,7 +21,7 @@ case class CodecMakerConfig(
 
 object JsonCodecMaker {
   def enforceCamelCase(s: String): String =
-    if (s.indexOf("_") == -1) s
+    if (s.indexOf('_') == -1) s
     else {
       val len = s.length
       val sb = new StringBuilder(len)
