@@ -45,7 +45,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       val to2 = JsonWriter.write(userCodec, user, buf, from2, WriterConfig(indentionStep = 2))
       new String(buf, from2, to2 - from2, "UTF-8") shouldBe prettyJson
     }
-    "throw i/o exception in case of the provided byte array is overflown during serialization" in {
+    "throw array index out of bounds exception in case of the provided byte array is overflown during serialization" in {
       assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(userCodec, user, buf, 50))
         .getMessage.contains("`buf` length exceeded"))
     }
@@ -72,17 +72,21 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "write null value" in {
       serialized(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
     }
-    "write ascii chars" in {
-      val text = new String(Array.fill[Char]('a')(10000))
-      serialized(_.writeVal(text)) shouldBe '"' + text + '"'
+    "write string of Unicode chars which are non-surrogate and should not be escaped" in {
+      forAll(minSuccessful(100000)) { (s: String) =>
+        whenever(!s.exists(ch => Character.isSurrogate(ch) ||
+          ch == '\b' || ch == '\f' || ch == '\n' || ch == '\r' || ch == '\t' || ch == '\\' || ch == '"')) {
+          serialized(_.writeVal(s)) shouldBe '"' + s + '"'
+        }
+      }
     }
-    "write strings with escaped whitespace chars" in {
+    "write strings with chars that should be escaped" in {
       serialized(_.writeVal("\b\f\n\r\t\\\"")) shouldBe """"\b\f\n\r\t\\\"""""
     }
-    "write strings with unicode chars" in {
-      serialized(_.writeVal("иბ𝄞")) shouldBe "\"иბ\ud834\udd1e\""
+    "write strings with valid surrogate pair chars" in {
+      serialized(_.writeVal("𝄞")) shouldBe "\"\ud834\udd1e\""
     }
-    "write strings with escaped unicode chars" in {
+    "write strings with escaped unicode chars if it is specified by provided writer config" in {
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u0000")) shouldBe "\"\\u0000\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u001f")) shouldBe "\"\\u001f\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal("\u007F")) shouldBe "\"\\u007f\""
@@ -103,10 +107,15 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal for char" should {
-    "write ascii chars" in {
-      serialized(_.writeVal('a')) shouldBe "\"a\""
+    "write string with Unicode chars which are non-surrogate or should not be escaped" in {
+      forAll(minSuccessful(100000)) { (ch: Char) =>
+        whenever(!Character.isSurrogate(ch) &&
+            ch != '\b' && ch != '\f' && ch != '\n' && ch != '\r' && ch != '\t' && ch != '\\' && ch != '"') {
+          serialized(_.writeVal(ch)) shouldBe "\"" + ch + "\""
+        }
+      }
     }
-    "write escaped whitespace chars" in {
+    "write string with chars that should be escaped" in {
       serialized(_.writeVal('\b')) shouldBe """"\b""""
       serialized(_.writeVal('\f')) shouldBe """"\f""""
       serialized(_.writeVal('\n')) shouldBe """"\n""""
@@ -115,11 +124,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       serialized(_.writeVal('\\')) shouldBe """"\\""""
       serialized(_.writeVal('\"')) shouldBe """"\"""""
     }
-    "write strings with unicode chars" in {
-      serialized(_.writeVal('и')) shouldBe "\"и\""
-      serialized(_.writeVal('ბ')) shouldBe "\"ბ\""
-    }
-    "write strings with escaped unicode chars" in {
+    "write string with escaped Unicode chars if it is specified by provided writer config" in {
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u0000')) shouldBe "\"\\u0000\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u001f')) shouldBe "\"\\u001f\""
       serialized(WriterConfig(escapeUnicode = true))(_.writeVal('\u007F')) shouldBe "\"\\u007f\""

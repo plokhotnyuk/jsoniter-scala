@@ -169,7 +169,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "return supplied default value instead of null value" in {
       parse("null".getBytes).readString("VVV") shouldBe "VVV"
     }
-    "parse string with non-escaped and non-surrogate chars" in {
+    "parse string with Unicode chars which are not escaped and are non-surrogate" in {
       forAll(minSuccessful(100000)) { (s: String) =>
         whenever(!s.exists(ch => ch == '"' || ch == '\\' || Character.isSurrogate(ch))) {
           readString(s) shouldBe s
@@ -192,13 +192,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[JsonParseException](parse("12345".getBytes).readString())
         .getMessage.contains("expected string value or null, offset: 0x00000000"))
     }
-    "get the same string value for escaped & non-escaped field names" in {
-      readString("""Hello""") shouldBe readString("Hello")
-      readString("""Hello""") shouldBe readString("\\u0048\\u0065\\u006C\\u006c\\u006f")
+    "get the same string value for escaped strings as for non-escaped" in {
       readString("""\b\f\n\r\t\/\\""") shouldBe readString("\b\f\n\r\t/\\\\")
-      readString("""\b\f\n\r\t\/Aиბ""") shouldBe
-        readString("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1")
-      readString("𝄞") shouldBe readString("\\ud834\\udd1e")
+      readString("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1\\ud834\\udd1e") shouldBe
+        readString("\b\f\n\r\t/Aиბ𝄞")
     }
     "throw parsing exception in case of illegal escape sequence" in {
       assert(intercept[JsonParseException](readString("\\x0008"))
@@ -254,7 +251,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readChar" should {
-    "parse non-escaped and non-surrogate char from string with length == 1" in {
+    "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
       forAll(minSuccessful(100000)) { (ch: Char) =>
         whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           readChar(ch.toString) shouldBe ch
@@ -283,7 +280,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[JsonParseException](parse("12345".getBytes).readChar())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
-    "get the same char value for escaped & non-escaped field names" in {
+    "get the same char value for escaped strings as for non-escaped" in {
       readChar("""\b""") shouldBe readChar("\b")
       readChar("""\f""") shouldBe readChar("\f")
       readChar("""\n""") shouldBe readChar("\n")
