@@ -88,26 +88,6 @@ object JsonCodecMaker {
         enumSymbol
       }
 
-      def defaultValue(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"false"
-        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"0.toByte"
-        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"0.toChar"
-        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"0.toShort"
-        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"0"
-        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
-        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
-        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
-        else if (isValueClass(tpe)) q"null.asInstanceOf[$tpe]"
-        else if (tpe <:< typeOf[Option[_]]) q"None"
-        else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
-          q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
-          q"${companion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${companion(tpe)}.empty"
-        else if (tpe <:< typeOf[Traversable[_]]) q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
-        else if (tpe <:< typeOf[Array[_]]) q"new Array[${typeArg1(tpe)}](0)"
-        else q"null"
-
       def genReadKey(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readObjectFieldAsBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readObjectFieldAsByte()"
@@ -226,6 +206,7 @@ object JsonCodecMaker {
       case class NamedTree(name: TermName, tree: Tree)
 
       val rootTpe = weakTypeOf[A]
+      val defaultValueFields = mutable.LinkedHashMap.empty[Type, NamedTree]
       val reqFields = mutable.LinkedHashMap.empty[Type, NamedTree]
       val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
       val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
@@ -239,6 +220,16 @@ object JsonCodecMaker {
 
       def genName(prefix: String, tpe: Type, nameCache: mutable.LinkedHashMap[Type, NamedTree]): TermName =
         TermName(if (tpe =:= rootTpe) prefix else prefix + nameCache.size)
+
+      // use it only for immutable values which doesn't have public constants
+      def withDefaultValueFor(tpe: Type)(f: => Tree): Tree = {
+        val defaultValueName = reqFields.getOrElseUpdate(tpe, {
+          val impl = f
+          val name = genName("v", tpe, reqFields)
+          NamedTree(name, q"private val $name: $tpe = $impl")
+        }).name
+        q"$defaultValueName"
+      }
 
       def withReqFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val reqFieldsName = reqFields.getOrElseUpdate(tpe, {
@@ -266,6 +257,27 @@ object JsonCodecMaker {
         }).name
         q"$encodeMethodName($arg, out)"
       }
+
+      def defaultValue(tpe: Type): Tree =
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"false"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"0.toByte"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"0.toChar"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"0.toShort"
+        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"0"
+        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
+        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
+        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
+        else if (isValueClass(tpe)) q"null.asInstanceOf[$tpe]"
+        else if (tpe <:< typeOf[Option[_]]) q"None"
+        else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
+          q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
+        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
+          q"${companion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${companion(tpe)}.empty"
+        else if (tpe <:< typeOf[Traversable[_]]) q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[Array[_]]) withDefaultValueFor(tpe) {
+          q"new Array[${typeArg1(tpe)}](0)"
+        } else q"null"
 
       def genReadVal(tpe: Type, default: Tree, isRoot: Boolean = false): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
@@ -532,6 +544,7 @@ object JsonCodecMaker {
               def default: $rootTpe = ${defaultValue(rootTpe)}
               def decode(in: JsonReader, default: $rootTpe): $rootTpe = ${genReadVal(rootTpe, q"default", isRoot = true)}
               def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe, isRoot = true)}
+              ..${defaultValueFields.values.map(_.tree)}
               ..${reqFields.values.map(_.tree)}
               ..${decodeMethods.values.toSeq.reverse.map(_.tree)}
               ..${encodeMethods.values.toSeq.reverse.map(_.tree)}
