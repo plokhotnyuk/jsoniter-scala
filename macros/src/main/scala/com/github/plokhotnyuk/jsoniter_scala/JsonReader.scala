@@ -690,16 +690,14 @@ final class JsonReader private[jsoniter_scala](
         val maxFloatExp = pow10f.length
         if (exp > -maxFloatExp && exp < 0) man / pow10f(-exp)
         else if (exp > 0 && exp < maxFloatExp) man * pow10f(exp)
-        else toFloat(man, exp, i)
+        else {
+          val maxDoubleExp = pow10d.length
+          if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
+          else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
+          else toFloat(i)
+        }
       }
-    } else toFloat(i) //FIXME: use toFloat(man, exp, i) here to get better accuracy than `java.lang.Float.parseFloat`
-  }
-
-  private def toFloat(man: Int, exp: Int, i: Int): Float = {
-    val maxDoubleExp = pow10d.length
-    if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
-    else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
-    else toFloat(i)
+    } else toFloat(i)
   }
 
   private def toFloat(i: Int): Float = java.lang.Float.parseFloat(new String(charBuf, 0, i))
