@@ -9,22 +9,22 @@ to get maximum performance of JSON parsing & serialization.
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
 - Support of UTF-8 encoding
+- Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
+- Configurable indenting of output
 - Parsing of strings with escaped characters for JSON field names, keys & values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, 
   arrays, value classes and case classes with values/fields having any of types listed here 
-- Case classes should have one argument list in constructor and should be defined as a top-level class or directly inside of another class or object
+- Case classes should be defined as a top-level class or directly inside of another class or object
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for any of them 
 - Implicitly resolvable codecs for all above types, so in most cases it is easy to customize except ADTs
-- Fields with default values that defined in a constructor are optional, other fields are required (no special annotation required)
+- Fields with default values that defined in a first list of arguments of the constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
-- Configurable mapping function for names between case classes and JSON, including predefined functions of that enforce snake_case or camelCase names for all fields
+- Configurable mapping function for names between case classes and JSON, including predefined functions which enforce snake_case or camelCase names for all fields
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
-- Configurable turning off hex dumping of affected by error part of byte buffer to minimize impact on performance
-- Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
-- Configurable indenting of output
+- Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
 - TODO: More efficient implementation for serialization and parsing of numbers 
 - TODO: Generate codecs for ADTs with a specified resolving matcher
 - TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
