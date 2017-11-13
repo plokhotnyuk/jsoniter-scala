@@ -49,17 +49,17 @@ libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.
 Generate codecs for your case classes, collections, etc.
     
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodec
-import com.github.plokhotnyuk.jsoniter_scala.CodecConfig
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.CodecMakerConfig
 
 case class Device(id: Int, model: String)
 
 case class User(name: String, devices: Seq[Device])
 
-val codec = JsonCodec.materialize[User](CodecConfig())
+val codec = JsonCodecMaker.make[User](CodecMakerConfig())
 ```
 
-That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.Codec`.
+That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.JsonCodec`.
 
 Now you can use it:
 
@@ -78,7 +78,7 @@ scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
 For more features & examples, please, check out
-[JsonCodecSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/JsonCodecSpec.scala)
+[JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/JsonCodecMakerSpec.scala)
 
 
 ## How to develop
@@ -94,7 +94,7 @@ sbt clean +coverage +test +coverageReport
 Run benchmarks
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecBenchmark.*' >results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
 ```
 
 Current results for the following environment:

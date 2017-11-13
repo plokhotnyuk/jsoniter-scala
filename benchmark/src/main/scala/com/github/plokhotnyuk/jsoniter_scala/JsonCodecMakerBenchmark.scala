@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodec.materialize
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
 import org.openjdk.jmh.annotations._
@@ -52,25 +52,25 @@ class JsonCodecBenchmark {
   }
   val stacklessExceptionConfig = ReaderConfig(throwParseExceptionWithStackTrace = false)
   val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
-  val missingReqFieldCodec: JsonCodec[MissingReqFields] = materialize[MissingReqFields](CodecConfig())
+  val missingReqFieldCodec: JsonCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
-  val anyRefsCodec: JsonCodec[AnyRefs] = materialize[AnyRefs](CodecConfig())
+  val anyRefsCodec: JsonCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
-  val arraysCodec: JsonCodec[Arrays] = materialize[Arrays](CodecConfig())
+  val arraysCodec: JsonCodec[Arrays] = make[Arrays](CodecMakerConfig())
   val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
-  val bitSetsCodec: JsonCodec[BitSets] = materialize[BitSets](CodecConfig())
+  val bitSetsCodec: JsonCodec[BitSets] = make[BitSets](CodecMakerConfig())
   val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
-  val iterablesCodec: JsonCodec[Iterables] = materialize[Iterables](CodecConfig())
+  val iterablesCodec: JsonCodec[Iterables] = make[Iterables](CodecMakerConfig())
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
-  val mapsCodec: JsonCodec[Maps] = materialize[Maps](CodecConfig())
+  val mapsCodec: JsonCodec[Maps] = make[Maps](CodecMakerConfig())
   val mapsFormat: OFormat[Maps] = Json.format[Maps]
-  val mutableMapsCodec: JsonCodec[MutableMaps] = materialize[MutableMaps](CodecConfig())
+  val mutableMapsCodec: JsonCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
   val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
-  val intAndLongMapsCodec: JsonCodec[IntAndLongMaps] = materialize[IntAndLongMaps](CodecConfig())
+  val intAndLongMapsCodec: JsonCodec[IntAndLongMaps] = make[IntAndLongMaps](CodecMakerConfig())
   val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
-  val primitivesCodec: JsonCodec[Primitives] = materialize[Primitives](CodecConfig())
+  val primitivesCodec: JsonCodec[Primitives] = make[Primitives](CodecMakerConfig())
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
-  val extractFieldsCodec: JsonCodec[ExtractFields] = materialize[ExtractFields](CodecConfig())
+  val extractFieldsCodec: JsonCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes

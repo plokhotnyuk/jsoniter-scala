@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets
 
 import org.scalatest.{Matchers, WordSpec}
 
-class JsonCodecBenchmarkSpec extends WordSpec with Matchers {
+class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
   val benchmark = new JsonCodecBenchmark
   
   "CodecBenchmark" should {

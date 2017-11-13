@@ -10,7 +10,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
   case class User(name: String, devices: Seq[Device])
 
-  val userCodec: JsonCodec[User] = JsonCodec.materialize[User](CodecConfig())
+  val userCodec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
   val json = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}"""
   val prettyJson: String =
