@@ -11,7 +11,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   case class User(name: String, devices: Seq[Device])
 
-  val userCodec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
+  val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
   val json: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes("UTF-8")
   val httpMessage: Array[Byte] =
@@ -22,16 +22,16 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes("UTF-8")
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
-      JsonReader.read(userCodec, new ByteArrayInputStream(json)) shouldBe user
+      JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe user
     }
     "parse json from the byte array" in {
-      JsonReader.read(userCodec, json) shouldBe user
+      JsonReader.read(codec, json) shouldBe user
     }
     "parse json from the byte array within specified positions" in {
-      JsonReader.read(userCodec, httpMessage, 66, httpMessage.length) shouldBe user
+      JsonReader.read(codec, httpMessage, 66, httpMessage.length) shouldBe user
     }
     "throw json exception if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](JsonReader.read(userCodec, httpMessage)).getMessage ==
+      assert(intercept[JsonParseException](JsonReader.read(codec, httpMessage)).getMessage ==
         """expected '{' or null, offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -45,14 +45,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       intercept[NullPointerException](JsonReader.read(null, json))
       intercept[NullPointerException](JsonReader.read(null, new ByteArrayInputStream(json)))
       intercept[NullPointerException](JsonReader.read(null, httpMessage, 66, httpMessage.length))
-      intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]]))
-      intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[Array[Byte]], 0, 50))
-      intercept[NullPointerException](JsonReader.read(userCodec, null.asInstanceOf[InputStream]))
-      intercept[NullPointerException](JsonReader.read(userCodec, new ByteArrayInputStream(json), null))
-      intercept[NullPointerException](JsonReader.read(userCodec, httpMessage, 66, httpMessage.length, null))
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(userCodec, httpMessage, 50, 200))
+      intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[Array[Byte]]))
+      intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[Array[Byte]], 0, 50))
+      intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[InputStream]))
+      intercept[NullPointerException](JsonReader.read(codec, new ByteArrayInputStream(json), null))
+      intercept[NullPointerException](JsonReader.read(codec, httpMessage, 66, httpMessage.length, null))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(codec, httpMessage, 50, 200))
         .getMessage.contains("`to` should be positive and not greater than `buf` length"))
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(userCodec, httpMessage, 50, 10))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(codec, httpMessage, 50, 10))
         .getMessage.contains("`from` should be positive and not greater than `to`"))
     }
   }
@@ -342,7 +342,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readInt(s) shouldBe java.lang.Integer.parseInt(s)
       }
     }
-    "parse valid int values with skiping JSON space characters" in {
+    "parse valid int values with skiping of JSON space characters" in {
       readInt(" \n\t\r123456789") shouldBe 123456789
       readInt(" \n\t\r-123456789") shouldBe -123456789
     }
@@ -390,7 +390,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readLong(s) shouldBe java.lang.Long.parseLong(s)
       }
     }
-    "parse valid long values with skiping JSON space characters" in {
+    "parse valid long values with skiping of JSON space characters" in {
       readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
       readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
     }
@@ -450,7 +450,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readFloat("12345678901234567890e-12345678901234567890") shouldBe 0.0f
       readFloat("-12345678901234567890e-12345678901234567890") shouldBe -0.0f
     }
-    "parse valid float values with skiping JSON space characters" in {
+    "parse valid float values with skiping of JSON space characters" in {
       readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
       readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
     }
@@ -507,7 +507,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readDouble("12345678901234567890e-12345678901234567890") shouldBe 0.0
       readDouble("-1234567890123456789e-12345678901234567890") shouldBe -0.0
     }
-    "parse valid double values with skiping JSON space characters" in {
+    "parse valid double values with skiping of JSON space characters" in {
       readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
       readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
     }
@@ -563,7 +563,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigInt(bigNumber, null) shouldBe BigInt(bigNumber)
       readBigInt("-" + bigNumber, null) shouldBe BigInt("-" + bigNumber)
     }
-    "parse valid number values with skiping JSON space characters" in {
+    "parse valid number values with skiping of JSON space characters" in {
       readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
       readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
     }
@@ -626,7 +626,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
       readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
     }
-    "parse valid number values with skiping JSON space characters" in {
+    "parse valid number values with skiping of JSON space characters" in {
       readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe
         BigDecimal("1234567890123456789.0123456789")
       readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe
@@ -687,9 +687,6 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
 
-  def parse(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
-      0, 0, new Array[Char](1), new ByteArrayInputStream(buf))
-
   def skip(s: String): Unit = {
     val reader = parse((s + ",").getBytes)
     reader.skip()
@@ -728,4 +725,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     readBigDecimal(s.getBytes(UTF_8), default)
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = parse(buf).readBigDecimal(default)
+
+  def parse(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
+    0, 0, new Array[Char](0), new ByteArrayInputStream(buf))
 }

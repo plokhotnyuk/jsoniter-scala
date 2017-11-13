@@ -10,7 +10,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
   case class User(name: String, devices: Seq[Device])
 
-  val userCodec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
+  val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
   val json = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}"""
   val prettyJson: String =
@@ -27,38 +27,38 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
-      JsonWriter.write(userCodec, user, out1)
+      JsonWriter.write(codec, user, out1)
       out1.toString("UTF-8") shouldBe json
       val out2 = new ByteArrayOutputStream()
-      JsonWriter.write(userCodec, user, out2, WriterConfig(indentionStep = 2))
+      JsonWriter.write(codec, user, out2, WriterConfig(indentionStep = 2))
       out2.toString("UTF-8") shouldBe prettyJson
     }
     "serialize an object to a new instance of byte array" in {
-      new String(JsonWriter.write(userCodec, user), "UTF-8") shouldBe json
-      new String(JsonWriter.write(userCodec, user, WriterConfig(indentionStep = 2)), "UTF-8") shouldBe prettyJson
+      new String(JsonWriter.write(codec, user), "UTF-8") shouldBe json
+      new String(JsonWriter.write(codec, user, WriterConfig(indentionStep = 2)), "UTF-8") shouldBe prettyJson
     }
     "serialize an object to the provided byte array from specified position" in {
       val from1 = 10
-      val to1 = JsonWriter.write(userCodec, user, buf, from1)
+      val to1 = JsonWriter.write(codec, user, buf, from1)
       new String(buf, from1, to1 - from1, "UTF-8") shouldBe json
       val from2 = 0
-      val to2 = JsonWriter.write(userCodec, user, buf, from2, WriterConfig(indentionStep = 2))
+      val to2 = JsonWriter.write(codec, user, buf, from2, WriterConfig(indentionStep = 2))
       new String(buf, from2, to2 - from2, "UTF-8") shouldBe prettyJson
     }
     "throw array index out of bounds exception in case of the provided byte array is overflown during serialization" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(userCodec, user, buf, 50))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(codec, user, buf, 50))
         .getMessage.contains("`buf` length exceeded"))
     }
     "throw i/o exception in case of the provided params are invalid" in {
       intercept[NullPointerException](JsonWriter.write(null, user))
       intercept[NullPointerException](JsonWriter.write(null, user, new ByteArrayOutputStream()))
       intercept[NullPointerException](JsonWriter.write(null, user, buf, 0))
-      intercept[NullPointerException](JsonWriter.write(userCodec, user, null.asInstanceOf[OutputStream]))
-      intercept[NullPointerException](JsonWriter.write(userCodec, user, null, 50))
-      intercept[NullPointerException](JsonWriter.write(userCodec, user, null.asInstanceOf[WriterConfig]))
-      intercept[NullPointerException](JsonWriter.write(userCodec, user, new ByteArrayOutputStream(), null))
-      intercept[NullPointerException](JsonWriter.write(userCodec, user, buf, 0, null))
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(userCodec, user, new Array[Byte](10), 50))
+      intercept[NullPointerException](JsonWriter.write(codec, user, null.asInstanceOf[OutputStream]))
+      intercept[NullPointerException](JsonWriter.write(codec, user, null, 50))
+      intercept[NullPointerException](JsonWriter.write(codec, user, null.asInstanceOf[WriterConfig]))
+      intercept[NullPointerException](JsonWriter.write(codec, user, new ByteArrayOutputStream(), null))
+      intercept[NullPointerException](JsonWriter.write(codec, user, buf, 0, null))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(codec, user, new Array[Byte](10), 50))
         .getMessage.contains("`from` should be positive and not greater than `buf` length"))
     }
   }
@@ -152,6 +152,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal long" should {
     "write any long values" in {
+      forAll(minSuccessful(100000)) { (n: Int) =>
+        serialized(_.writeVal(n.toLong)) shouldBe n.toString
+      }
       forAll(minSuccessful(100000)) { (n: Long) =>
         serialized(_.writeVal(n)) shouldBe n.toString
       }
@@ -165,10 +168,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         }
       }
     }
-    "throw i/o exception on illegal JSON numbers" in {
-      assert(intercept[IOException](serialized(_.writeVal(0.0f/0.0f))).getMessage.contains("illegal number"))
-      assert(intercept[IOException](serialized(_.writeVal(1.0f/0.0f))).getMessage.contains("illegal number"))
-      assert(intercept[IOException](serialized(_.writeVal(-1.0f/0.0f))).getMessage.contains("illegal number"))
+    "throw i/o exception on non-finite numbers" in {
+      assert(intercept[IOException](serialized(_.writeVal(Float.NaN))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(Float.PositiveInfinity))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(Float.NegativeInfinity))).getMessage.contains("illegal number"))
     }
   }
   "JsonWriter.writeVal for double" should {
@@ -179,10 +182,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         }
       }
     }
-    "throw i/o exception on illegal JSON numbers" in {
-      assert(intercept[IOException](serialized(_.writeVal(0.0/0.0))).getMessage.contains("illegal number"))
-      assert(intercept[IOException](serialized(_.writeVal(1.0/0.0))).getMessage.contains("illegal number"))
-      assert(intercept[IOException](serialized(_.writeVal(-1.0/0.0))).getMessage.contains("illegal number"))
+    "throw i/o exception on non-finite numbers" in {
+      assert(intercept[IOException](serialized(_.writeVal(Double.NaN))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(Double.PositiveInfinity))).getMessage.contains("illegal number"))
+      assert(intercept[IOException](serialized(_.writeVal(Double.NegativeInfinity))).getMessage.contains("illegal number"))
     }
   }
   "JsonWriter.writeVal for BigInt" should {
@@ -209,8 +212,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   def serialized(f: JsonWriter => Unit): String = serialized(WriterConfig())(f)
 
   def serialized(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
-    val out = new ByteArrayOutputStream(1024)
-    val writer = new JsonWriter(new Array[Byte](1), 0, 0, out, true, cfg)
+    val out = new ByteArrayOutputStream(256)
+    val writer = new JsonWriter(new Array[Byte](0), 0, 0, out, true, cfg)
     try f(writer)
     finally writer.flushBuffer()
     out.toString("UTF-8")
