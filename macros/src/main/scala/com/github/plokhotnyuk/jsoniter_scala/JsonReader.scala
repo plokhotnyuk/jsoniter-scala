@@ -511,7 +511,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double =
-    if (posMan <= 999999999999999L) {
+    if (posMan <= 999999999999999L) { // 10^15 - 1, where max mantissa that can be converted w/o rounding error by double ops
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
@@ -681,23 +681,26 @@ final class JsonReader private[jsoniter_scala](
     else numberError()
   }
 
-  private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float =
-    if (posMan <= 9999999) {
-      val man = if (isNeg) -posMan else posMan
-      val exp = toExp(manExp, isExpNeg, posExp)
+  private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float = {
+    val man = if (isNeg) -posMan else posMan
+    val exp = toExp(manExp, isExpNeg, posExp)
+    if (posMan <= 9999999) { // 10^7 - 1, max mantissa that can be converted w/o rounding error by float ops
       if (exp == 0) man
       else {
         val maxFloatExp = pow10f.length
         if (exp > -maxFloatExp && exp < 0) man / pow10f(-exp)
         else if (exp > 0 && exp < maxFloatExp) man * pow10f(exp)
-        else {
-          val maxDoubleExp = pow10d.length
-          if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
-          else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
-          else toFloat(i)
-        }
+        else toFloat(man, exp, i)
       }
-    } else toFloat(i)
+    } else toFloat(i) //FIXME: use toFloat(man, exp, i) here to get better accuracy than `java.lang.Float.parseFloat`
+  }
+
+  private def toFloat(man: Int, exp: Int, i: Int): Float = {
+    val maxDoubleExp = pow10d.length
+    if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
+    else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
+    else toFloat(i)
+  }
 
   private def toFloat(i: Int): Float = java.lang.Float.parseFloat(new String(charBuf, 0, i))
 
@@ -1348,7 +1351,7 @@ object JsonReader {
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type with
     * specified parsing options or with defaults that maximize description of error. 
     *
-    * @param codec
+    * @param codec a codec for the given `A` type
     * @param buf the byte array to parse from
     * @param from the start position of the provided byte array
     * @param to the position of end of input in the provided byte array
