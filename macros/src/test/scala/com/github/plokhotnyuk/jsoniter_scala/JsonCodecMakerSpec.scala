@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
+import java.nio.charset.StandardCharsets.UTF_8
 
 import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker.make
 import org.scalatest.{Matchers, WordSpec}
@@ -478,13 +479,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"),
-        """{"გასაღები":"ვვვ"}""".getBytes("UTF-8"))
+        """{"გასაღები":"ვვვ"}""".getBytes(UTF_8))
     }
     "serialize and deserialize UTF-8 keys and values of case classes with hex encoding" in {
       verifyDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
-        "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes("UTF-8"))
+        "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t\\/\"}".getBytes(UTF_8))
       verifySer(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
-        "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes("UTF-8"),
+        "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes(UTF_8),
         WriterConfig(escapeUnicode = true))
     }
     "deserialize but don't serialize default values of case classes that defined for fields" in {
@@ -603,5 +604,5 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     JsonReader.read(codec, json) shouldBe obj
   }
 
-  def toString(json: Array[Byte]): String = new String(json, 0, json.length, "UTF-8")
+  def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)
 }

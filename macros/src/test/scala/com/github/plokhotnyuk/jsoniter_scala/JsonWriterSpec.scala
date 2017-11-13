@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
+import java.nio.charset.StandardCharsets.UTF_8
 
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
@@ -34,16 +35,16 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       out2.toString("UTF-8") shouldBe prettyJson
     }
     "serialize an object to a new instance of byte array" in {
-      new String(JsonWriter.write(codec, user), "UTF-8") shouldBe json
-      new String(JsonWriter.write(codec, user, WriterConfig(indentionStep = 2)), "UTF-8") shouldBe prettyJson
+      new String(JsonWriter.write(codec, user), UTF_8) shouldBe json
+      new String(JsonWriter.write(codec, user, WriterConfig(indentionStep = 2)), UTF_8) shouldBe prettyJson
     }
     "serialize an object to the provided byte array from specified position" in {
       val from1 = 10
       val to1 = JsonWriter.write(codec, user, buf, from1)
-      new String(buf, from1, to1 - from1, "UTF-8") shouldBe json
+      new String(buf, from1, to1 - from1, UTF_8) shouldBe json
       val from2 = 0
       val to2 = JsonWriter.write(codec, user, buf, from2, WriterConfig(indentionStep = 2))
-      new String(buf, from2, to2 - from2, "UTF-8") shouldBe prettyJson
+      new String(buf, from2, to2 - from2, UTF_8) shouldBe prettyJson
     }
     "throw array index out of bounds exception in case of the provided byte array is overflown during serialization" in {
       assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(codec, user, buf, 50))

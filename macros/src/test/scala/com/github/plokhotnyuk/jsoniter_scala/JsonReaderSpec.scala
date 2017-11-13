@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{ByteArrayInputStream, InputStream}
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets.UTF_8
 
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
@@ -13,13 +13,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
-  val json: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes("UTF-8")
+  val json: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes(UTF_8)
   val httpMessage: Array[Byte] =
     """HTTP/1.0 200 OK
       |Content-Type: application/json
       |Content-Length: 55
       |
-      |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes("UTF-8")
+      |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes(UTF_8)
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
       JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe user
