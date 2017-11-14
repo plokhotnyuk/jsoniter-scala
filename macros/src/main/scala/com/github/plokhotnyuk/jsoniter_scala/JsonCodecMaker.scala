@@ -473,49 +473,39 @@ object JsonCodecMaker {
             defaults.get(m.name.toString) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) {
-                  q"""{
-                        val v = x.$m
-                        if ((v ne null) && v.length > 0 && {
-                            val d = $d
-                            v.length != d.length && v.deep != d.deep
-                          }) {
-                          c = out.writeObjectField(c, $name)
-                          ..${genWriteVal(q"v", tpe)}
-                        }
+                  q"""val v = x.$m
+                      if ((v ne null) && v.length > 0 && {
+                          val d = $d
+                          v.length != d.length && v.deep != d.deep
+                        }) {
+                        c = out.writeObjectField(c, $name)
+                        ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
-                  q"""{
-                        val v = x.$m
-                        if ((v ne null) && !v.isEmpty && v != $d) {
-                          c = out.writeObjectField(c, $name)
-                          ..${genWriteVal(q"v", tpe)}
-                        }
+                  q"""val v = x.$m
+                      if ((v ne null) && !v.isEmpty && v != $d) {
+                        c = out.writeObjectField(c, $name)
+                        ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""{
-                        val v = x.$m
-                        if (v != $d) {
-                          c = out.writeObjectField(c, $name)
-                          ..${genWriteVal(q"v", tpe)}
-                        }
+                  q"""val v = x.$m
+                      if (v != $d) {
+                        c = out.writeObjectField(c, $name)
+                        ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
               case None =>
                 if (tpe <:< typeOf[Array[_]]) {
-                  q"""{
-                        val v = x.$m
-                        if ((v ne null) && v.length > 0) {
-                          c = out.writeObjectField(c, $name)
-                          ..${genWriteVal(q"v", tpe)}
-                        }
+                  q"""val v = x.$m
+                      if ((v ne null) && v.length > 0) {
+                        c = out.writeObjectField(c, $name)
+                        ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
-                  q"""{
-                        val v = x.$m
-                        if ((v ne null) && !v.isEmpty) {
-                          c = out.writeObjectField(c, $name)
-                          ..${genWriteVal(q"v", tpe)}
-                        }
+                  q"""val v = x.$m
+                      if ((v ne null) && !v.isEmpty) {
+                        c = out.writeObjectField(c, $name)
+                        ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""c = out.writeObjectField(c, $name)
