@@ -214,8 +214,6 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected high surrogate character, offset: 0x00000006"))
       assert(intercept[JsonParseException](readString("\\ud834"))
         .getMessage.contains("unexpected end of input, offset: 0x00000008"))
-      assert(intercept[JsonParseException](readString("\\ud834x"))
-        .getMessage.contains("unexpected end of input, offset: 0x00000009"))
       assert(intercept[JsonParseException](readString("\\ud834\\"))
         .getMessage.contains("unexpected end of input, offset: 0x00000009"))
       assert(intercept[JsonParseException](readString("\\ud834\\x"))
