@@ -61,10 +61,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsByte(): Byte = {
     readParentheses()
-    val x = parseInt(isToken = false)
-    if (x > Byte.MaxValue || x < Byte.MinValue) decodeError("value is too large for byte")
+    val x = parseByte(isToken = false)
     readParenthesesWithColon()
-    x.toByte
+    x
   }
 
   def readObjectFieldAsChar(): Char = {
@@ -76,8 +75,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsShort(): Short = {
     readParentheses()
-    val x = parseInt(isToken = false)
-    if (x > Short.MaxValue || x < Short.MinValue) decodeError("value is too large for short")
+    val x = parseShort(isToken = false)
     readParenthesesWithColon()
     x.toShort
   }
@@ -124,12 +122,7 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  // TODO: use more efficient unrolled loop
-  def readByte(): Byte = {
-    val x = parseInt(isToken = true)
-    if (x > Byte.MaxValue || x < Byte.MinValue) decodeError("value is too large for byte")
-    x.toByte
-  }
+  def readByte(): Byte = parseByte(isToken = true)
 
   def readChar(): Char = {
     readParentheses()
@@ -138,12 +131,7 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  // TODO: use more efficient unrolled loop
-  def readShort(): Short = {
-    val x = parseInt(isToken = true)
-    if (x > Short.MaxValue || x < Short.MinValue) decodeError("value is too large for short")
-    x.toShort
-  }
+  def readShort(): Short = parseShort(isToken = true)
 
   def readInt(): Int = parseInt(isToken = true)
 
@@ -304,6 +292,60 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def booleanError(pos: Int = head - 1): Nothing = decodeError("illegal boolean", pos)
+
+  // TODO: consider fast path with unrolled loop
+  private def parseByte(isToken: Boolean): Byte = {
+    var b = if (isToken) nextToken() else nextByte()
+    val negative = b == '-'
+    if (negative) b = nextByte()
+    var pos = head
+    if (b >= '0' && b <= '9') {
+      var v = '0' - b
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        pos == 0
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) pos = {
+        if (v == 0) leadingZeroError(pos - 1)
+        v = v * 10 + ('0' - b)
+        if (v < Byte.MinValue) byteOverflowError(pos)
+        pos + 1
+      }
+      head = pos
+      if (negative) v.toByte
+      else if (v == Byte.MinValue) byteOverflowError(pos - 1)
+      else (-v).toByte
+    } else numberError(pos - 1)
+  }
+
+  // TODO: consider fast path with unrolled loop
+  private def parseShort(isToken: Boolean): Short = {
+    var b = if (isToken) nextToken() else nextByte()
+    val negative = b == '-'
+    if (negative) b = nextByte()
+    var pos = head
+    if (b >= '0' && b <= '9') {
+      var v = '0' - b
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        pos == 0
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) pos = {
+        if (v == 0) leadingZeroError(pos - 1)
+        v = v * 10 + ('0' - b)
+        if (v < Short.MinValue) shortOverflowError(pos)
+        pos + 1
+      }
+      head = pos
+      if (negative) v.toShort
+      else if (v == Short.MinValue) shortOverflowError(pos - 1)
+      else (-v).toShort
+    } else numberError(pos - 1)
+  }
 
   // TODO: consider fast path with unrolled loop for small numbers
   private def parseInt(isToken: Boolean): Int = {
@@ -884,6 +926,10 @@ final class JsonReader private[jsoniter_scala](
   private def numberError(pos: Int = head): Nothing = decodeError("illegal number", pos)
 
   private def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
+
+  private def byteOverflowError(pos: Int): Nothing = decodeError("value is too large for byte", pos)
+
+  private def shortOverflowError(pos: Int): Nothing = decodeError("value is too large for short", pos)
 
   private def intOverflowError(pos: Int): Nothing = decodeError("value is too large for int", pos)
 

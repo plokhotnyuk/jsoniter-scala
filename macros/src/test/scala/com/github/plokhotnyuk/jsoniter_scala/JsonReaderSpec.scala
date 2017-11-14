@@ -170,7 +170,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       parse("null".getBytes).readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
-      forAll(minSuccessful(100000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { (s: String) =>
         whenever(!s.exists(ch => ch == '"' || ch == '\\' || Character.isSurrogate(ch))) {
           readString(s) shouldBe s
         }
@@ -252,7 +252,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readChar" should {
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
-      forAll(minSuccessful(100000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           readChar(ch.toString) shouldBe ch
         }
@@ -335,9 +335,97 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("illegal surrogate character, offset: 0x00000004"))
     }
   }
+  "JsonReader.readByte" should {
+    "parse valid byte values" in {
+      forAll(minSuccessful(10000)) { (n: Byte) =>
+        val s = n.toString
+        readByte(s) shouldBe java.lang.Byte.parseByte(s)
+      }
+    }
+    "parse valid byte values with skiping of JSON space characters" in {
+      readByte(" \n\t\r123") shouldBe 123.toByte
+      readByte(" \n\t\r-123") shouldBe -123.toByte
+    }
+    "parse valid byte values and stops on not numeric chars" in {
+      readByte("0$") shouldBe 0
+    }
+    "throw parsing exception on illegal or empty input" in {
+      assert(intercept[JsonParseException](readByte("")).getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readByte("-")).getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readByte("x")).getMessage.contains("illegal number, offset: 0x00000000"))
+    }
+    "throw parsing exception on byte overflow" in {
+      assert(intercept[JsonParseException](readByte("128"))
+        .getMessage.contains("value is too large for byte, offset: 0x00000002"))
+      assert(intercept[JsonParseException](readByte("-129"))
+        .getMessage.contains("value is too large for byte, offset: 0x00000003"))
+      assert(intercept[JsonParseException](readByte("12345"))
+        .getMessage.contains("value is too large for byte, offset: 0x00000003"))
+      assert(intercept[JsonParseException](readByte("-12345"))
+        .getMessage.contains("value is too large for byte, offset: 0x00000004"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[JsonParseException](readByte("00"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readByte("-00"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readByte("0123"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readByte("-0123"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readByte("0128"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readByte("-0128"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+    }
+  }
+  "JsonReader.readShort" should {
+    "parse valid short values" in {
+      forAll(minSuccessful(10000)) { (n: Short) =>
+        val s = n.toString
+        readShort(s) shouldBe java.lang.Short.parseShort(s)
+      }
+    }
+    "parse valid short values with skiping of JSON space characters" in {
+      readShort(" \n\t\r12345") shouldBe 12345.toShort
+      readShort(" \n\t\r-12345") shouldBe -12345.toShort
+    }
+    "parse valid short values and stops on not numeric chars" in {
+      readShort("0$") shouldBe 0
+    }
+    "throw parsing exception on illegal or empty input" in {
+      assert(intercept[JsonParseException](readShort("")).getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readShort("-")).getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readShort("x")).getMessage.contains("illegal number, offset: 0x00000000"))
+    }
+    "throw parsing exception on short overflow" in {
+      assert(intercept[JsonParseException](readShort("32768"))
+        .getMessage.contains("value is too large for short, offset: 0x00000004"))
+      assert(intercept[JsonParseException](readShort("-32769"))
+        .getMessage.contains("value is too large for short, offset: 0x00000005"))
+      assert(intercept[JsonParseException](readShort("12345678901"))
+        .getMessage.contains("value is too large for short, offset: 0x00000005"))
+      assert(intercept[JsonParseException](readShort("-12345678901"))
+        .getMessage.contains("value is too large for short, offset: 0x00000006"))
+    }
+    "throw parsing exception on leading zero" in {
+      assert(intercept[JsonParseException](readShort("00"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readShort("-00"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readShort("012345"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readShort("-012345"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+      assert(intercept[JsonParseException](readShort("032767"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
+      assert(intercept[JsonParseException](readShort("-032768"))
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+    }
+  }
   "JsonReader.readInt" should {
     "parse valid int values" in {
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         val s = n.toString
         readInt(s) shouldBe java.lang.Integer.parseInt(s)
       }
@@ -385,7 +473,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readLong" should {
     "parse valid long values" in {
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         val s = n.toString
         readLong(s) shouldBe java.lang.Long.parseLong(s)
       }
@@ -433,7 +521,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readFloat" should {
     "parse valid float values" in {
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
         val s = n.toString
         readFloat(s) shouldBe java.lang.Float.parseFloat(s)
       }
@@ -490,7 +578,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readDouble" should {
     "parse valid double values" in {
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
         val s = n.toString
         readDouble(s) shouldBe java.lang.Double.parseDouble(s)
       }
@@ -553,7 +641,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
     }
     "parse valid number values" in {
-      forAll(minSuccessful(100000)) { (n: BigInt) =>
+      forAll(minSuccessful(10000)) { (n: BigInt) =>
         val s = n.toString
         readBigInt(s, null) shouldBe BigInt(s)
       }
@@ -613,7 +701,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
     "parse valid number values" in {
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
         val s = n.toString
         readBigDecimal(s, null) shouldBe BigDecimal(s)
       }
@@ -700,6 +788,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readChar(s: String): Char = readChar(s.getBytes(UTF_8))
 
   def readChar(buf: Array[Byte]): Char = parse('"'.toByte +: buf :+ '"'.toByte).readChar()
+
+  def readByte(s: String): Byte = readByte(s.getBytes(UTF_8))
+
+  def readByte(buf: Array[Byte]): Byte = parse(buf).readByte()
+
+  def readShort(s: String): Short = readShort(s.getBytes(UTF_8))
+
+  def readShort(buf: Array[Byte]): Short = parse(buf).readShort()
 
   def readInt(s: String): Int = readInt(s.getBytes(UTF_8))
 

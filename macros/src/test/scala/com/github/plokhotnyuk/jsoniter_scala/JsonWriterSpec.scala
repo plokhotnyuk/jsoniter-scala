@@ -109,7 +109,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal for char" should {
     "write string with Unicode chars which are non-surrogate or should not be escaped" in {
-      forAll(minSuccessful(100000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(!Character.isSurrogate(ch) &&
             ch != '\b' && ch != '\f' && ch != '\n' && ch != '\r' && ch != '\t' && ch != '\\' && ch != '"') {
           serialized(_.writeVal(ch)) shouldBe "\"" + ch + "\""
@@ -146,24 +146,24 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal for int" should {
     "write any int values" in {
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         serialized(_.writeVal(n)) shouldBe n.toString
       }
     }
   }
   "JsonWriter.writeVal long" should {
     "write any long values" in {
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         serialized(_.writeVal(n.toLong)) shouldBe n.toString
       }
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         serialized(_.writeVal(n)) shouldBe n.toString
       }
     }
   }
   "JsonWriter.writeVal for float" should {
     "write finite float values" in {
-      forAll(minSuccessful(100000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { (n: Float) =>
         whenever(java.lang.Float.isFinite(n)) {
           serialized(_.writeVal(n)) shouldBe n.toString
         }
@@ -177,7 +177,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal for double" should {
     "write finite double values" in {
-      forAll(minSuccessful(100000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { (n: Double) =>
         whenever(java.lang.Double.isFinite(n)) {
           serialized(_.writeVal(n)) shouldBe n.toString
         }
@@ -194,7 +194,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       serialized(_.writeVal(null.asInstanceOf[BigInt])) shouldBe "null"
     }
     "write number values" in {
-      forAll(minSuccessful(100000)) { (n: BigInt) =>
+      forAll(minSuccessful(10000)) { (n: BigInt) =>
         serialized(_.writeVal(n)) shouldBe n.toString
       }
     }
@@ -204,7 +204,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       serialized(_.writeVal(null.asInstanceOf[BigDecimal])) shouldBe "null"
     }
     "write number values" in {
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
         serialized(_.writeVal(n)) shouldBe n.toString
       }
     }
