@@ -174,7 +174,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         s"""{"s":"$text","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
     }
     "serialize and deserialize null values of case classes" in {
-      verifyDeser(codecOfStandardTypes, null, """null""".getBytes)
+      verifyDeser(codecOfStandardTypes, null, "null".getBytes)
+    }
+    "throw parse exception in case of illegal value for case classes" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStandardTypes, null, "nux".getBytes)
+      }.getMessage.contains("expected value or null, offset: 0x00000002"))
     }
     "serialize and deserialize top-level standard types" in {
       val text =
