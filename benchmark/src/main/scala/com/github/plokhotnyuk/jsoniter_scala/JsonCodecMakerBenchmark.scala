@@ -8,18 +8,19 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
-import org.openjdk.jmh.annotations._
+import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker._
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
+import org.openjdk.jmh.annotations._
 import play.api.libs.json.{Json, _}
 
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap, Map}
 import scala.collection.mutable
+import scala.reflect.io.Streamable
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
@@ -40,7 +41,7 @@ import scala.collection.mutable
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-class JsonCodecBenchmark {
+class JsonCodecMakerBenchmark {
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     registerModule(new SimpleModule()
@@ -72,6 +73,10 @@ class JsonCodecBenchmark {
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val extractFieldsCodec: JsonCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
+  val twitterApiCodec: JsonCodec[List[TwitterAPI.RootInterface]] = make[List[TwitterAPI.RootInterface]](CodecMakerConfig())
+/* FIXME: format doesn't compile
+  val twitterApiFormat: OFormat[List[TwitterAPI.RootInterface]] = Json.format[List[TwitterAPI.RootInterface]]
+*/
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -140,7 +145,7 @@ class JsonCodecBenchmark {
     }
 
   @Benchmark
-  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
@@ -152,7 +157,7 @@ class JsonCodecBenchmark {
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
-  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
@@ -165,7 +170,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 */
 
   @Benchmark
@@ -178,7 +183,7 @@ class JsonCodecBenchmark {
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
 
   @Benchmark
-  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
@@ -190,7 +195,7 @@ class JsonCodecBenchmark {
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
 
   @Benchmark
-  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)) .fold(_ => null, x => x)
+  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)) .fold(throw _, x => x)
 
   @Benchmark
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
@@ -203,7 +208,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
-  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 */
 
   @Benchmark
@@ -217,7 +222,7 @@ class JsonCodecBenchmark {
 
 /* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
-  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 */
 
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
@@ -232,7 +237,7 @@ class JsonCodecBenchmark {
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
-  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -244,7 +249,7 @@ class JsonCodecBenchmark {
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
 
   @Benchmark
-  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).fold(_ => null, x => x)
+  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
@@ -255,6 +260,19 @@ class JsonCodecBenchmark {
   @Benchmark
   def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
 
+  @Benchmark
+  def readTwitterAPICirce(): List[TwitterAPI.RootInterface] = decode[List[TwitterAPI.RootInterface]](new String(TwitterAPI.json, StandardCharsets.UTF_8)).fold(throw _, x => x)
+
+  @Benchmark
+  def readTwitterAPIJackson(): List[TwitterAPI.RootInterface] = jacksonMapper.readValue[List[TwitterAPI.RootInterface]](TwitterAPI.json)
+
+  @Benchmark
+  def readTwitterAPIJsoniter(): List[TwitterAPI.RootInterface] = JsonReader.read(twitterApiCodec, TwitterAPI.json)
+
+/* FIXME: format doesn't compile
+  @Benchmark
+  def readTwitterAPIPlay(): List[TwitterAPI.RootInterface] = Json.parse(TwitterAPI.json).as[List[TwitterAPI.RootInterface]](twitterApiFormat)
+*/
   @Benchmark
   def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
@@ -376,3 +394,129 @@ case class IntAndLongMaps(m: IntMap[Double], mm: mutable.LongMap[LongMap[Double]
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
 case class ExtractFields(s: String, l: Long)
+
+object TwitterAPI {
+  case class Entities(
+    hashtags: List[String],
+    symbols: List[String],
+    user_mentions: List[UserMentions],
+    urls: List[Urls])
+
+  case class Entities1(
+    url: Url,
+    description: Url)
+
+  case class RetweetedStatus(
+    created_at: String,
+    id: Long,
+    id_str: String,
+    text: String,
+    truncated: Boolean,
+    entities: Entities,
+    source: String,
+    in_reply_to_status_id: Option[String],
+    in_reply_to_status_id_str: Option[String],
+    in_reply_to_user_id: Option[String],
+    in_reply_to_user_id_str: Option[String],
+    in_reply_to_screen_name: Option[String],
+    user: User,
+    geo: Option[String],
+    coordinates: Option[String],
+    place: Option[String],
+    contributors: Option[String],
+    is_quote_status: Boolean,
+    retweet_count: Int,
+    favorite_count: Int,
+    favorited: Boolean,
+    retweeted: Boolean,
+    possibly_sensitive: Option[Boolean],
+    lang: String)
+
+  case class RootInterface(
+    created_at: String,
+    id: Long,
+    id_str: String,
+    text: String,
+    truncated: Boolean,
+    entities: Entities,
+    source: String,
+    in_reply_to_status_id: Option[String],
+    in_reply_to_status_id_str: Option[String],
+    in_reply_to_user_id: Option[String],
+    in_reply_to_user_id_str: Option[String],
+    in_reply_to_screen_name: Option[String],
+    user: User,
+    geo: Option[String],
+    coordinates: Option[String],
+    place: Option[String],
+    contributors: Option[String],
+    retweeted_status: RetweetedStatus,
+    is_quote_status: Boolean,
+    retweet_count: Int,
+    favorite_count: Int,
+    favorited: Boolean,
+    retweeted: Boolean,
+    possibly_sensitive: Option[Boolean],
+    lang: String)
+
+  case class Url(urls: List[Urls])
+
+  case class Urls(
+    url: String,
+    expanded_url: String,
+    display_url: String,
+    indices: List[Int])
+
+  case class User(
+    id: Long,
+    id_str: String,
+    name: String,
+    screen_name: String,
+    location: String,
+    description: String,
+    url: String,
+    entities: Entities1,
+    `protected`: Boolean,
+    followers_count: Int,
+    friends_count: Int,
+    listed_count: Int,
+    created_at: String,
+    favourites_count: Int,
+    utc_offset: Int,
+    time_zone: String,
+    geo_enabled: Boolean,
+    verified: Boolean,
+    statuses_count: Int,
+    lang: String,
+    contributors_enabled: Boolean,
+    is_translator: Boolean,
+    is_translation_enabled: Boolean,
+    profile_background_color: String,
+    profile_background_image_url: String,
+    profile_background_image_url_https: String,
+    profile_background_tile: Boolean,
+    profile_image_url: String,
+    profile_image_url_https: String,
+    profile_banner_url: String,
+    profile_link_color: String,
+    profile_sidebar_border_color: String,
+    profile_sidebar_fill_color: String,
+    profile_text_color: String,
+    profile_use_background_image: Boolean,
+    has_extended_profile: Boolean,
+    default_profile: Boolean,
+    default_profile_image: Boolean,
+    following: Boolean,
+    follow_request_sent: Boolean,
+    notifications: Boolean,
+    translator_type: String)
+
+  case class UserMentions(
+    screen_name: String,
+    name: String,
+    id: Long,
+    id_str: String,
+    indices: List[Int])
+
+  val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+}

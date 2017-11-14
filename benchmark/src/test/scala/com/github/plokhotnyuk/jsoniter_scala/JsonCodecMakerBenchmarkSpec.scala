@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
-  val benchmark = new JsonCodecBenchmark
+  val benchmark = new JsonCodecMakerBenchmark
   
   "CodecBenchmark" should {
     "deserialize properly" in {
@@ -74,6 +74,8 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readExtractFieldsJackson() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsJsoniter() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsPlay() shouldBe benchmark.extractFieldsObj
+      benchmark.readTwitterAPICirce() shouldBe benchmark.readTwitterAPIJsoniter()
+      benchmark.readTwitterAPIJackson() shouldBe benchmark.readTwitterAPIJsoniter()
     }
     "serialize properly" in {
       toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJson)
