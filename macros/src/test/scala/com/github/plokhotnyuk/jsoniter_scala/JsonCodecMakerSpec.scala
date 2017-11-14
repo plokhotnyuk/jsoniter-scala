@@ -226,7 +226,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
       implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {
-        val default: Either[String, StandardTypes] = Left("unexpected error")
+        val default: Either[String, StandardTypes] = null
 
         def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
           in.nextToken() match {
