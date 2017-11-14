@@ -5,7 +5,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
     inThisBuild(Seq(
       organization := "com.github.plokhotnyuk.jsoniter-scala",
       scalaVersion := "2.12.4",
-      crossScalaVersions := Seq("2.12.4", "2.11.11"),
+      crossScalaVersions := Seq("2.12.4", "2.11.12"),
       startYear := Some(2017),
       organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
       homepage := Some(url("http://github.com/plokhotnyuk/jsoniter-scala")),
