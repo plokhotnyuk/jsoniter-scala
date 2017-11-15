@@ -152,10 +152,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       parse("false".getBytes).readBoolean() shouldBe false
     }
     "throw parsing exception for empty input and illegal or broken value" in {
-      assert(intercept[JsonParseException](parse("".getBytes).readBoolean())
-        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
       assert(intercept[JsonParseException](parse("x".getBytes).readBoolean())
         .getMessage.contains("illegal boolean, offset: 0x00000000"))
+      assert(intercept[JsonParseException](parse("trae".getBytes).readBoolean())
+        .getMessage.contains("illegal boolean, offset: 0x00000002"))
+      assert(intercept[JsonParseException](parse("folse".getBytes).readBoolean())
+        .getMessage.contains("illegal boolean, offset: 0x00000001"))
+      assert(intercept[JsonParseException](parse("".getBytes).readBoolean())
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
       assert(intercept[JsonParseException](parse("tru".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
       assert(intercept[JsonParseException](parse("fals".getBytes).readBoolean())
