@@ -82,9 +82,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class CamelAndSnakeCases(camelCase: String, snake_case: String, `camel1`: String, `snake_1`: String)
 
-  case class Indented(s: String, bd: BigDecimal, l: List[Int])
+  case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Double])
 
-  val indented = Indented("VVV", 1.1, List(1, 2, 3))
+  val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> -90.0, 'N' -> 90.0, 'W' -> -180.0, 'E' -> 180.0))
   val codecOfIndented: JsonCodec[Indented] = make[Indented](CodecMakerConfig())
 
   case class UTF8KeysAndValues(გასაღები: String)
@@ -476,13 +476,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |    1,
           |    2,
           |    3
-          |  ]
+          |  ],
+          |  "m": {
+          |    "S": -90.0,
+          |    "N": 90.0,
+          |    "W": -180.0,
+          |    "E": 180.0
+          |  }
           |}""".stripMargin.getBytes,
         WriterConfig(indentionStep = 2))
     }
     "deserialize JSON with tabs & line returns" in {
       verifyDeser(codecOfIndented, indented,
-        "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t]\r}".getBytes)
+        "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\r\t\t\"S\":\t-90.0,\r\t\t\"N\":\t90.0,\r\t\t\"W\":\t-180.0,\r\t\t\"E\":\t180.0\r\t}\r}".getBytes)
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"),

@@ -45,6 +45,13 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def readObjectFieldAsCharBuf(): Int = {
+    readParentheses()
+    val x = parseString()
+    readColon()
+    x
+  }
+
   def readObjectFieldAsString(): String = {
     readParentheses()
     val len = parseString()
@@ -160,13 +167,6 @@ final class JsonReader private[jsoniter_scala](
     if (nextByte() == 'u' && nextByte() == 'l' && nextByte() == 'l') default
     else decodeError("expected value or null")
 
-  def readObjectFieldAsCharBuf(): Int = {
-    if (nextToken() != '"') decodeError("expected '\"'")
-    val x = parseString()
-    readColon()
-    x
-  }
-
   def nextToken(): Byte = nextToken(head)
 
   def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
@@ -272,7 +272,7 @@ final class JsonReader private[jsoniter_scala](
     lim
   }
 
-  private def readParentheses(): Unit = if (nextByte() != '"') decodeError("expected '\"'")
+  private def readParentheses(): Unit = if (nextToken() != '"') decodeError("expected '\"'")
 
   private def readParenthesesWithColon(): Unit =
     if (nextByte() != '"') decodeError("expected '\"'")
