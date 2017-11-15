@@ -95,18 +95,38 @@ sbt clean +coverage +test +coverageReport
 
 ### Run benchmarks
 
-JMH plugin allow to run benchmark with different profilers. 
+Sbt plugin for JMH tool is used for benchmarking, to see all their features & options please check [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](http://openjdk.java.net/projects/code-tools/jmh/). 
 
-To see throughput & allocation rate of generated codecs run following command:
+Learn how to write benchmarks in [JMH samples](http://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/) and JMH articles posted in [Aleksey Shipilёv’s](https://shipilev.net/) and [Nitsan Wakart’s](http://psy-lob-saw.blogspot.com/p/jmh-related-posts.html) blogs. 
+
+List of available option can be printed by:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
+sbt 'benchmark/jmh:run -h'
 ```
 
-To get result for some benchmarks in flight recording file which you can then open and analyse offline using JMC use following command:
+JMH allows to run benchmarks with different profilers, to get list of supported use:
+
+```sh
+sbt 'benchmark/jmh:run -lprof'
+```
+
+To get result for some benchmarks in flight recording file (which you can then open and analyse offline using JMC) use command like this:
 
 ```sh
 sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readTwitterAPIJsoniter.*'
+```
+
+On Linux the perf profiler can be used to see CPU & system statistics normalized per ops:
+
+```sh
+sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_results.txt
+```
+
+To see throughput & allocation rate of generated codecs run benchmarks with GC profiler using following command:
+
+```sh
+sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
 ```
 
 Current results for the following environment:

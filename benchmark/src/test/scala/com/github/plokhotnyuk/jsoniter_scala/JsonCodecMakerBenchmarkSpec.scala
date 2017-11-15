@@ -74,8 +74,9 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readExtractFieldsJackson() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsJsoniter() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsPlay() shouldBe benchmark.extractFieldsObj
-      benchmark.readTwitterAPICirce() shouldBe benchmark.readTwitterAPIJsoniter()
-      benchmark.readTwitterAPIJackson() shouldBe benchmark.readTwitterAPIJsoniter()
+      benchmark.readTwitterAPICirce() shouldBe TwitterAPI.obj
+      benchmark.readTwitterAPIJackson() shouldBe TwitterAPI.obj
+      benchmark.readTwitterAPIJsoniter() shouldBe TwitterAPI.obj
     }
     "serialize properly" in {
       toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJson)

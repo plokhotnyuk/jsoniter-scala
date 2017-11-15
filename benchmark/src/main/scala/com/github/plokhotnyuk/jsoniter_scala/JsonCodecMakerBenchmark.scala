@@ -519,4 +519,6 @@ object TwitterAPI {
     indices: List[Int])
 
   val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  // TODO consider to make the obj explicitly defined instead of reading from file by a generated codec
+  val obj: List[TwitterAPI.RootInterface] = JsonReader.read(make[List[TwitterAPI.RootInterface]](CodecMakerConfig()), json)
 }
