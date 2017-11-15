@@ -87,16 +87,26 @@ For more features & examples, please, check out
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by creating pull requests (code or/and tests are highly appreciated)
 
-Run tests and check coverage
+### Run tests and check coverage
 
 ```sh
 sbt clean +coverage +test +coverageReport
 ```
 
-Run benchmarks
+### Run benchmarks
+
+JMH plugin allow to run benchmark with different profilers. 
+
+To see throughput & allocation rate of generated codecs run following command:
 
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
+```
+
+To get result for some benchmarks in flight recording file which you can then open and analyse offline using JMC use following command:
+
+```sh
+sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readTwitterAPIJsoniter.*'
 ```
 
 Current results for the following environment:
