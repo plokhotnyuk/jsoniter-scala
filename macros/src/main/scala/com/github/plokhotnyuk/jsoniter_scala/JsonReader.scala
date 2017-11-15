@@ -246,7 +246,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def appendString(s: String, from: Int): Int = {
     val lim = from + s.length
-    ensureCharBufCapacity(lim, tail)
+    if (lim > charBuf.length) growCharBuf(lim)
     var i = from
     while (i < lim) {
       charBuf(i) = s.charAt(i - from)
@@ -258,7 +258,7 @@ final class JsonReader private[jsoniter_scala](
   private def prependString(s: String, from: Int): Int = {
     val len = s.length
     val lim = from + len
-    ensureCharBufCapacity(lim, tail)
+    if (lim > charBuf.length) growCharBuf(lim)
     var i = lim - 1
     while (i >= len) {
       charBuf(i) = charBuf(i - len)
@@ -411,13 +411,15 @@ final class JsonReader private[jsoniter_scala](
     var isNeg = false
     var isExpNeg = false
     var isZeroFirst = false
+    var lim = charBuf.length
     var i = 0
     var state = 0
-    var pos = ensureCharBufCapacity(i, head)
+    var pos = head
     while (pos < tail || {
-      pos = ensureCharBufCapacity(i, loadMore(pos))
+      pos = loadMore(pos)
       pos == 0
     }) {
+      if (i >= lim) lim = growCharBuf(i + 1)
       val ch = buf(pos).toChar
       (state: @switch) match {
         case 0 => // start
@@ -425,12 +427,14 @@ final class JsonReader private[jsoniter_scala](
             if (!isToken) numberError(pos)
             state = 1
           } else if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = ch - '0'
             isZeroFirst = posMan == 0
             state = 3
           } else if (ch == '-') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isNeg = true
             state = 2
           } else numberError(pos)
@@ -438,33 +442,39 @@ final class JsonReader private[jsoniter_scala](
           if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
             state = 1
           } else if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = ch - '0'
             isZeroFirst = posMan == 0
             state = 3
           } else if (ch == '-') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isNeg = true
             state = 2
           } else numberError(pos)
         case 2 => // signum
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = ch - '0'
             isZeroFirst = posMan == 0
             state = 3
           } else numberError(pos)
         case 3 => // first int digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = posMan * 10 + (ch - '0')
             if (isZeroFirst) leadingZeroError(pos - 1)
             state = 4
           } else if (ch == '.') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 5
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -472,15 +482,18 @@ final class JsonReader private[jsoniter_scala](
           }
         case 4 => // int digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             if (posMan < 922337203685477580L) posMan = posMan * 10 + (ch - '0')
             else manExp += 1
             state = 4
           } else if (ch == '.') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 5
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -488,7 +501,8 @@ final class JsonReader private[jsoniter_scala](
           }
         case 5 => // dot
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             if (posMan < 922337203685477580L) {
               posMan = posMan * 10 + (ch - '0')
               manExp -= 1
@@ -497,14 +511,16 @@ final class JsonReader private[jsoniter_scala](
           } else numberError(pos)
         case 6 => // frac digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             if (posMan < 922337203685477580L) {
               posMan = posMan * 10 + (ch - '0')
               manExp -= 1
             }
             state = 6
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -512,23 +528,27 @@ final class JsonReader private[jsoniter_scala](
           }
         case 7 => // e char
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posExp = ch - '0'
             state = 9
           } else if (ch == '-' || ch == '+') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isExpNeg = ch == '-'
             state = 8
           } else numberError(pos)
         case 8 => // exp. sign
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posExp = ch - '0'
             state = 9
           } else numberError(pos)
         case 9 => // exp. digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posExp = posExp * 10 + (ch - '0')
             state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 350) 10 else 9
           } else {
@@ -537,7 +557,8 @@ final class JsonReader private[jsoniter_scala](
           }
         case 10 => // exp. digit overflow
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 10
           } else {
             head = pos
@@ -582,13 +603,15 @@ final class JsonReader private[jsoniter_scala](
     var isNeg = false
     var isExpNeg = false
     var isZeroFirst = false
+    var lim = charBuf.length
     var i = 0
     var state = 0
-    var pos = ensureCharBufCapacity(i, head)
+    var pos = head
     while (pos < tail || {
-      pos = ensureCharBufCapacity(i, loadMore(pos))
+      pos = loadMore(pos)
       pos == 0
     }) {
+      if (i >= lim) lim = growCharBuf(i + 1)
       val ch = buf(pos).toChar
       (state: @switch) match {
         case 0 => // start
@@ -596,12 +619,14 @@ final class JsonReader private[jsoniter_scala](
             if (!isToken) numberError(pos)
             state = 1
           } else if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = ch - '0'
             isZeroFirst = posMan == 0
             state = 3
           } else if (ch == '-') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isNeg = true
             state = 2
           } else numberError(pos)
@@ -609,33 +634,39 @@ final class JsonReader private[jsoniter_scala](
           if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
             state = 1
           } else if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = ch - '0'
             isZeroFirst = posMan == 0
             state = 3
           } else if (ch == '-') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isNeg = true
             state = 2
           } else numberError(pos)
         case 2 => // signum
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = ch - '0'
             isZeroFirst = posMan == 0
             state = 3
           } else numberError(pos)
         case 3 => // first int digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posMan = posMan * 10 + (ch - '0')
             if (isZeroFirst) leadingZeroError(pos - 1)
             state = 4
           } else if (ch == '.') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 5
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -643,15 +674,18 @@ final class JsonReader private[jsoniter_scala](
           }
         case 4 => // int digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             if (posMan < 214748364) posMan = posMan * 10 + (ch - '0')
             else manExp += 1
             state = 4
           } else if (ch == '.') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 5
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -659,7 +693,8 @@ final class JsonReader private[jsoniter_scala](
           }
         case 5 => // dot
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             if (posMan < 214748364) {
               posMan = posMan * 10 + (ch - '0')
               manExp -= 1
@@ -668,14 +703,16 @@ final class JsonReader private[jsoniter_scala](
           } else numberError(pos)
         case 6 => // frac digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             if (posMan < 214748364) {
               posMan = posMan * 10 + (ch - '0')
               manExp -= 1
             }
             state = 6
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -683,23 +720,27 @@ final class JsonReader private[jsoniter_scala](
           }
         case 7 => // e char
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posExp = ch - '0'
             state = 9
           } else if (ch == '-' || ch == '+') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isExpNeg = ch == '-'
             state = 8
           } else numberError(pos)
         case 8 => // exp. sign
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posExp = ch - '0'
             state = 9
           } else numberError(pos)
         case 9 => // exp. digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             posExp = posExp * 10 + (ch - '0')
             state = if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 55) 10 else 9
           } else {
@@ -708,7 +749,8 @@ final class JsonReader private[jsoniter_scala](
           }
         case 10 => // exp. digit overflow
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 10
           } else {
             head = pos
@@ -760,26 +802,30 @@ final class JsonReader private[jsoniter_scala](
       if (isToken) parseNull(default)
       else numberError()
     } else {
-      ensureCharBufCapacity(2, head)
+      var lim = if (2 > charBuf.length) growCharBuf(2) else charBuf.length
       var i = 0
       val negative = b == '-'
       if (negative) {
-        i = putCharAt(b.toChar, i)
+        charBuf(i) = b.toChar
+        i += 1
         b = nextByte()
       }
       var pos = head
       if (b >= '0' && b <= '9') {
         val isZeroFirst = b == '0'
-        i = putCharAt(b.toChar, i)
+        charBuf(i) = b.toChar
+        i += 1
         while ((pos < tail || {
-          pos = ensureCharBufCapacity(i, loadMore(pos))
+          pos = loadMore(pos)
           pos == 0
         }) && {
           b = buf(pos)
           b >= '0' && b <= '9'
         }) pos = {
           if (isZeroFirst ) leadingZeroError(pos - 1)
-          i = putCharAt(b.toChar, i)
+          if (i >= lim) lim = growCharBuf(i + 1)
+          charBuf(i) = b.toChar
+          i += 1
           pos + 1
         }
         head = pos
@@ -791,13 +837,15 @@ final class JsonReader private[jsoniter_scala](
   // TODO: consider fast path with unrolled loop for small numbers
   private def parseBigDecimal(isToken: Boolean, default: BigDecimal = null): BigDecimal = {
     var isZeroFirst = false
+    var lim = charBuf.length
     var i = 0
     var state = 0
-    var pos = ensureCharBufCapacity(i, head)
+    var pos = head
     while (pos < tail || {
-      pos = ensureCharBufCapacity(i, loadMore(pos))
+      pos = loadMore(pos)
       pos == 0
     }) {
+      if (i >= lim) lim = growCharBuf(i + 1)
       val ch = buf(pos).toChar
       (state: @switch) match {
         case 0 => // start
@@ -805,11 +853,13 @@ final class JsonReader private[jsoniter_scala](
             if (!isToken) numberError(pos)
             state = 1
           } else if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isZeroFirst = ch == '0'
             state = 3
           } else if (ch == '-') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 2
           } else if (ch == 'n' && isToken) {
             state = 10
@@ -818,31 +868,37 @@ final class JsonReader private[jsoniter_scala](
           if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
             state = 1
           } else if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isZeroFirst = ch == '0'
             state = 3
           } else if (ch == '-') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 2
           } else if (ch == 'n' && isToken) {
             state = 10
           } else numberError(pos)
         case 2 => // signum
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             isZeroFirst = ch == '0'
             state = 3
           } else numberError(pos)
         case 3 => // first int digit
           if (ch >= '0' && ch <= '9') {
             if (isZeroFirst) leadingZeroError(pos - 1)
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 4
           } else if (ch == '.') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 5
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -850,13 +906,16 @@ final class JsonReader private[jsoniter_scala](
           }
         case 4 => // int digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 4
           } else if (ch == '.') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 5
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -864,15 +923,18 @@ final class JsonReader private[jsoniter_scala](
           }
         case 5 => // dot
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 6
           } else numberError(pos)
         case 6 => // frac digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 6
           } else if (ch == 'e' || ch == 'E') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 7
           } else {
             head = pos
@@ -880,20 +942,24 @@ final class JsonReader private[jsoniter_scala](
           }
         case 7 => // e char
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 9
           } else if (ch == '-' || ch == '+') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 8
           } else numberError(pos)
         case 8 => // exp. sign
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 9
           } else numberError(pos)
         case 9 => // exp. digit
           if (ch >= '0' && ch <= '9') {
-            i = putCharAt(ch, i)
+            charBuf(i) = ch
+            i += 1
             state = 9
           } else {
             head = pos
@@ -936,82 +1002,114 @@ final class JsonReader private[jsoniter_scala](
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   @tailrec
-  private def parseString(i: Int = 0, pos: Int = ensureCharBufCapacity(0, head)): Int =
+  private def parseString(i: Int = 0, lim: Int = charBuf.length, pos: Int = head): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b ^ '\\') < 1) slowParseString(i, pos)
-      else parseString(putCharAt(b.toChar, i), pos + 1)
-    } else parseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
+      } else if ((b ^ '\\') < 1 || i >= lim) slowParseString(i, lim, pos)
+      else {
+        charBuf(i) = b.toChar
+        parseString(i + 1, lim, pos + 1)
+      }
+    } else parseString(i, lim, loadMoreOrError(pos))
 
   @tailrec
-  private def slowParseString(i: Int, pos: Int): Int = {
-    val remaining = tail - pos
-    if (remaining > 0) {
-      val b1 = buf(pos)
-      if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
-        if (b1 == '"') {
-          head = pos + 1
-          i
-        } else if (b1 != '\\') slowParseString(putCharAt(b1.toChar, i), pos + 1)
-        else if (remaining > 1) {
-          (buf(pos + 1): @switch) match {
-            case 'b' => slowParseString(putCharAt('\b', i), pos + 2)
-            case 'f' => slowParseString(putCharAt('\f', i), pos + 2)
-            case 'n' => slowParseString(putCharAt('\n', i), pos + 2)
-            case 'r' => slowParseString(putCharAt('\r', i), pos + 2)
-            case 't' => slowParseString(putCharAt('\t', i), pos + 2)
-            case '"' => slowParseString(putCharAt('"', i), pos + 2)
-            case '/' => slowParseString(putCharAt('/', i), pos + 2)
-            case '\\' => slowParseString(putCharAt('\\', i), pos + 2)
-            case 'u' =>
-              if (remaining > 5) {
-                val ch1 = readEscapedUnicode(pos + 2)
-                if (ch1 < 2048) slowParseString(putCharAt(ch1, i), pos + 6)
-                else if (!Character.isHighSurrogate(ch1)) {
-                  if (Character.isLowSurrogate(ch1)) decodeError("expected high surrogate character", pos + 5)
-                  slowParseString(putCharAt(ch1, i), pos + 6)
-                } else if (remaining > 11) {
-                  if (buf(pos + 6) == '\\') {
-                    if (buf(pos + 7) == 'u') {
-                      val ch2 = readEscapedUnicode(pos + 8)
-                      if (!Character.isLowSurrogate(ch2)) decodeError("expected low surrogate character", pos + 11)
-                      slowParseString(putCharAt(ch2, putCharAt(ch1, i)), pos + 12)
-                    } else illegalEscapeSequenceError(pos + 7)
-                  } else illegalEscapeSequenceError(pos + 6)
-                } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-              } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-            case _ => illegalEscapeSequenceError(pos + 1)
-          }
-        } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-      } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        if (remaining > 1) {
-          val b2 = buf(pos + 1)
-          if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
-          slowParseString(putCharAt(((b1 << 6) ^ b2 ^ 0xF80).toChar, i), pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
-        } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-      } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        if (remaining > 2) {
-          val b2 = buf(pos + 1)
-          val b3 = buf(pos + 2)
-          val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
-          slowParseString(putCharAt(ch, i), pos + 3)
-        } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-      } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        if (remaining > 3) {
-          val b2 = buf(pos + 1)
-          val b3 = buf(pos + 2)
-          val b4 = buf(pos + 3)
-          val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ b4 ^ 0x381F80 // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
-          slowParseString(putCharAt(Character.lowSurrogate(cp), putCharAt(Character.highSurrogate(cp), i)), pos + 4)
-        } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-      } else malformedBytes(b1, pos)
-    } else slowParseString(i, ensureCharBufCapacity(i, loadMoreOrError(pos)))
-  }
+  private def slowParseString(i: Int, lim: Int, pos: Int): Int =
+    if (i >= lim) slowParseString(i, growCharBuf(i + 2), pos) // 2 is length of surrogate pair
+    else {
+      val remaining = tail - pos
+      if (remaining > 0) {
+        val b1 = buf(pos)
+        if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
+          if (b1 == '"') {
+            head = pos + 1
+            i
+          } else if (b1 != '\\') {
+            charBuf(i) = b1.toChar
+            slowParseString(i + 1, lim, pos + 1)
+          } else if (remaining > 1) {
+            (buf(pos + 1): @switch) match {
+              case 'b' =>
+                charBuf(i) = '\b'
+                slowParseString(i + 1, lim, pos + 2)
+              case 'f' =>
+                charBuf(i) = '\f'
+                slowParseString(i + 1, lim, pos + 2)
+              case 'n' =>
+                charBuf(i) = '\n'
+                slowParseString(i + 1, lim, pos + 2)
+              case 'r' =>
+                charBuf(i) = '\r'
+                slowParseString(i + 1, lim, pos + 2)
+              case 't' =>
+                charBuf(i) = '\t'
+                slowParseString(i + 1, lim, pos + 2)
+              case '"' =>
+                charBuf(i) = '"'
+                slowParseString(i + 1, lim, pos + 2)
+              case '/' =>
+                charBuf(i) = '/'
+                slowParseString(i + 1, lim, pos + 2)
+              case '\\' =>
+                charBuf(i) = '\\'
+                slowParseString(i + 1, lim, pos + 2)
+              case 'u' =>
+                if (remaining > 5) {
+                  val ch1 = readEscapedUnicode(pos + 2)
+                  if (ch1 < 2048) {
+                    charBuf(i) = ch1
+                    slowParseString(i + 1, lim, pos + 6)
+                  } else if (!Character.isHighSurrogate(ch1)) {
+                    if (Character.isLowSurrogate(ch1)) decodeError("expected high surrogate character", pos + 5)
+                    charBuf(i) = ch1
+                    slowParseString(i + 1, lim, pos + 6)
+                  } else if (remaining > 11) {
+                    if (buf(pos + 6) == '\\') {
+                      if (buf(pos + 7) == 'u') {
+                        val ch2 = readEscapedUnicode(pos + 8)
+                        if (!Character.isLowSurrogate(ch2)) decodeError("expected low surrogate character", pos + 11)
+                        charBuf(i) = ch1
+                        charBuf(i + 1) = ch2
+                        slowParseString(i + 2, lim, pos + 12)
+                      } else illegalEscapeSequenceError(pos + 7)
+                    } else illegalEscapeSequenceError(pos + 6)
+                  } else slowParseString(i, lim, loadMoreOrError(pos))
+                } else slowParseString(i, lim, loadMoreOrError(pos))
+              case _ => illegalEscapeSequenceError(pos + 1)
+            }
+          } else slowParseString(i, lim, loadMoreOrError(pos))
+        } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+          if (remaining > 1) {
+            val b2 = buf(pos + 1)
+            if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
+            charBuf(i) = ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+            slowParseString(i + 1, lim, pos + 2)
+          } else slowParseString(i, lim, loadMoreOrError(pos))
+        } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+          if (remaining > 2) {
+            val b2 = buf(pos + 1)
+            val b3 = buf(pos + 2)
+            val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+            if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
+            charBuf(i) = ch
+            slowParseString(i + 1, lim, pos + 3)
+          } else slowParseString(i, lim, loadMoreOrError(pos))
+        } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+          if (remaining > 3) {
+            val b2 = buf(pos + 1)
+            val b3 = buf(pos + 2)
+            val b4 = buf(pos + 3)
+            val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ b4 ^ 0x381F80 // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+            if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
+            charBuf(i) = Character.highSurrogate(cp)
+            charBuf(i + 1) = Character.lowSurrogate(cp)
+            slowParseString(i + 2, lim, pos + 4)
+          } else slowParseString(i, lim, loadMoreOrError(pos))
+        } else malformedBytes(b1, pos)
+      } else slowParseString(i, lim, loadMoreOrError(pos))
+    }
 
   @tailrec
   private def parseChar(pos: Int = head): Char = {
@@ -1020,22 +1118,41 @@ final class JsonReader private[jsoniter_scala](
       val b1 = buf(pos)
       if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
         if (b1 == '"') decodeError("illegal value for char")
-        else if (b1 != '\\') returnChar(b1.toChar, pos + 1)
-        else if (remaining > 1) {
+        else if (b1 != '\\') {
+          head = pos + 1
+          b1.toChar
+        } else if (remaining > 1) {
           (buf(pos + 1): @switch) match {
-            case 'b' => returnChar('\b', pos + 2)
-            case 'f' => returnChar('\f', pos + 2)
-            case 'n' => returnChar('\n', pos + 2)
-            case 'r' => returnChar('\r', pos + 2)
-            case 't' => returnChar('\t', pos + 2)
-            case '"' => returnChar('"', pos + 2)
-            case '/' => returnChar('/', pos + 2)
-            case '\\' => returnChar('\\', pos + 2)
+            case 'b' =>
+              head = pos + 2
+              '\b'
+            case 'f' =>
+              head = pos + 2
+              '\f'
+            case 'n' =>
+              head = pos + 2
+              '\n'
+            case 'r' =>
+              head = pos + 2
+              '\r'
+            case 't' =>
+              head = pos + 2
+              '\t'
+            case '"' =>
+              head = pos + 2
+              '"'
+            case '/' =>
+              head = pos + 2
+              '/'
+            case '\\' =>
+              head = pos + 2
+              '\\'
             case 'u' =>
               if (remaining > 5) {
                 val ch1 = readEscapedUnicode(pos + 2)
                 if (Character.isSurrogate(ch1)) decodeError("illegal surrogate character", pos + 5)
-                returnChar(ch1, pos + 6)
+                head = pos + 6
+                ch1
               } else parseChar(loadMoreOrError(pos))
             case _ => illegalEscapeSequenceError(pos + 1)
           }
@@ -1044,7 +1161,8 @@ final class JsonReader private[jsoniter_scala](
         if (remaining > 1) {
           val b2 = buf(pos + 1)
           if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
-          returnChar(((b1 << 6) ^ b2 ^ 0xF80).toChar, pos + 2) // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+          head = pos + 2
+          ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else parseChar(loadMoreOrError(pos))
       } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         if (remaining > 2) {
@@ -1052,36 +1170,26 @@ final class JsonReader private[jsoniter_scala](
           val b3 = buf(pos + 2)
           val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
           if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
-          returnChar(ch, pos + 3)
+          head = pos + 3
+          ch
         } else parseChar(loadMoreOrError(pos))
       } else if ((b1 >> 3) == -2) decodeError("illegal surrogate character", pos + 3)
       else malformedBytes(b1, pos)
     } else parseChar(loadMoreOrError(pos))
   }
 
-  @inline
-  private def returnChar(ch: Char, pos: Int): Char = {
-    head = pos
-    ch
-  }
+  private def readEscapedUnicode(pos: Int): Char =
+    ((fromHexDigit(pos) << 12) + (fromHexDigit(pos + 1) << 8) + (fromHexDigit(pos + 2) << 4) + fromHexDigit(pos + 3)).toChar
 
-  private def readEscapedUnicode(pos1: Int): Char = {
-    val pos2 = pos1 + 1
-    val pos3 = pos1 + 2
-    val pos4 = pos1 + 3
-    ((fromHexDigit(buf(pos1), pos1) << 12) +
-      (fromHexDigit(buf(pos2), pos2) << 8) +
-      (fromHexDigit(buf(pos3), pos3) << 4) +
-      fromHexDigit(buf(pos4), pos4)).toChar
-  }
-
-  private def fromHexDigit(b: Byte, pos: Int): Int =
+  private def fromHexDigit(pos: Int): Int = {
+    val b = buf(pos)
     if (b >= '0' && b <= '9') b - 48
     else {
       val b1 = b & -33
       if (b1 >= 'A' && b1 <= 'F') b1 - 55
       else decodeError("expected hex digit", pos)
     }
+  }
 
   private def isMalformed2(b1: Byte, b2: Byte): Boolean =
     (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
@@ -1137,36 +1245,41 @@ final class JsonReader private[jsoniter_scala](
     val bufOffset = alignedAbsFrom - offset
     var i = appendString(dumpHeader, from)
     i = appendString(dumpBorder, i)
+    var lim = charBuf.length
     var j = 0
     while (j < len) {
-      ensureCharBufCapacity(i + 81, tail) // 81 == dumpBorder.length
       val linePos = j & 15
       if (linePos == 0) {
-        i = putCharAt('\n', i)
-        i = putCharAt('|', i)
-        i = putCharAt(' ', i)
-        i = appendHex(alignedAbsFrom + j, i)
-        i = putCharAt(' ', i)
-        i = putCharAt('|', i)
-        i = putCharAt(' ', i)
+        if (i + 81 >= lim) lim = growCharBuf(i + 81) // 81 == dumpBorder.length
+        charBuf(i) = '\n'
+        charBuf(i + 1) = '|'
+        charBuf(i + 2) = ' '
+        putHex(alignedAbsFrom + j, i + 3)
+        charBuf(i + 11) = ' '
+        charBuf(i + 12) = '|'
+        charBuf(i + 13) = ' '
+        i += 14
       }
       val pos = bufOffset + j
-      if (pos >= start && pos < end) {
-        val b = buf(pos)
-        i = appendHex(b, i)
-        i = putCharAt(' ', i)
-        putCharAt(if (b <= 31 || b >= 127) '.' else b.toChar, i + 47 - (linePos << 1))
-      } else {
-        i = putCharAt(' ', i)
-        i = putCharAt(' ', i)
-        i = putCharAt(' ', i)
-        putCharAt(' ', i + 47 - (linePos << 1))
-      }
+      charBuf(i + 50 - (linePos << 1)) =
+        if (pos >= start && pos < end) {
+          val b = buf(pos)
+          putHex(b, i)
+          charBuf(i + 2) = ' '
+          if (b <= 31 || b >= 127) '.' else b.toChar
+        } else {
+          charBuf(i) = ' '
+          charBuf(i + 1) = ' '
+          charBuf(i + 2) = ' '
+          ' '
+        }
+      i += 3
       if (linePos == 15) {
-        i = putCharAt('|', i)
-        i = putCharAt(' ', i)
-        i = putCharAt(' ', i + 16)
-        i = putCharAt('|', i)
+        charBuf(i) = '|'
+        charBuf(i + 1) = ' '
+        charBuf(i + 18) = ' '
+        charBuf(i + 19) = '|'
+        i += 20
       }
       j += 1
     }
@@ -1174,7 +1287,12 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def appendHex(d: Int, i: Int): Int = {
-    ensureCharBufCapacity(i + 8, tail)
+    if (i + 8 >= charBuf.length) growCharBuf(i + 8)
+    putHex(d, i)
+    i + 8
+  }
+
+  private def putHex(d: Int, i: Int): Unit = {
     charBuf(i) = toHexDigit(d >>> 28)
     charBuf(i + 1) = toHexDigit(d >>> 24)
     charBuf(i + 2) = toHexDigit(d >>> 20)
@@ -1183,14 +1301,17 @@ final class JsonReader private[jsoniter_scala](
     charBuf(i + 5) = toHexDigit(d >>> 8)
     charBuf(i + 6) = toHexDigit(d >>> 4)
     charBuf(i + 7) = toHexDigit(d)
-    i + 8
   }
 
   private def appendHex(b: Byte, i: Int): Int = {
-    ensureCharBufCapacity(i + 2, tail)
+    if (i + 2 >= charBuf.length) growCharBuf(i + 2)
+    putHex(b, i)
+    i + 2
+  }
+
+  private def putHex(b: Byte, i: Int): Unit = {
     charBuf(i) = toHexDigit(b >>> 4)
     charBuf(i + 1) = toHexDigit(b)
-    i + 2
   }
 
   private def toHexDigit(n: Int): Char = {
@@ -1198,24 +1319,13 @@ final class JsonReader private[jsoniter_scala](
     (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
   }.toChar
 
-  @inline
-  private def putCharAt(ch: Char, i: Int): Int = {
-    // ensureCharBufCapacity(i + 1, tail) <- commented for better performance, so always call it externally
-    charBuf(i) = ch
-    i + 1
-  }
-
-  @inline
-  private def ensureCharBufCapacity(i: Int, pos: Int): Int = {
-    val required = tail - pos + i
-    if (required > charBuf.length) growCharBuf(required)
-    pos
-  }
-
-  private def growCharBuf(required: Int): Unit = {
-    val cs = new Array[Char](Math.max(charBuf.length << 1, required))
-    System.arraycopy(charBuf, 0, cs, 0, charBuf.length)
+  private def growCharBuf(required: Int): Int = {
+    val lim = charBuf.length
+    val newLim = Math.max(lim << 1, required)
+    val cs = new Array[Char](newLim)
+    System.arraycopy(charBuf, 0, cs, 0, lim)
     charBuf = cs
+    newLim
   }
 
   @tailrec
