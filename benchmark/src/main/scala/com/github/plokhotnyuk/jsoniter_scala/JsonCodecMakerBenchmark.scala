@@ -3,6 +3,8 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
@@ -50,6 +52,8 @@ class JsonCodecMakerBenchmark {
       .addDeserializer(classOf[BitSet], new BitSetDeserializer)
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
+    setSerializationInclusion(Include.NON_EMPTY)
   }
   val stacklessExceptionConfig = ReaderConfig(throwParseExceptionWithStackTrace = false)
   val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
@@ -73,10 +77,6 @@ class JsonCodecMakerBenchmark {
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val extractFieldsCodec: JsonCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
-  val twitterApiCodec: JsonCodec[List[TwitterAPI.RootInterface]] = make[List[TwitterAPI.RootInterface]](CodecMakerConfig())
-/* FIXME: format doesn't compile
-  val twitterApiFormat: OFormat[List[TwitterAPI.RootInterface]] = Json.format[List[TwitterAPI.RootInterface]]
-*/
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -267,11 +267,11 @@ class JsonCodecMakerBenchmark {
   def readTwitterAPIJackson(): List[TwitterAPI.RootInterface] = jacksonMapper.readValue[List[TwitterAPI.RootInterface]](TwitterAPI.json)
 
   @Benchmark
-  def readTwitterAPIJsoniter(): List[TwitterAPI.RootInterface] = JsonReader.read(twitterApiCodec, TwitterAPI.json)
+  def readTwitterAPIJsoniter(): List[TwitterAPI.RootInterface] = JsonReader.read(TwitterAPI.codec, TwitterAPI.json)
 
 /* FIXME: format doesn't compile
   @Benchmark
-  def readTwitterAPIPlay(): List[TwitterAPI.RootInterface] = Json.parse(TwitterAPI.json).as[List[TwitterAPI.RootInterface]](twitterApiFormat)
+  def readTwitterAPIPlay(): List[TwitterAPI.RootInterface] = Json.parse(TwitterAPI.json).as[List[TwitterAPI.RootInterface]](TwitterAPI.format)
 */
   @Benchmark
   def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -372,6 +372,20 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
+
+  @Benchmark
+  def writeTwitterAPICirce(): Array[Byte] = TwitterAPI.obj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+  @Benchmark
+  def writeTwitterAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(TwitterAPI.obj)
+
+  @Benchmark
+  def writeTwitterAPIJsoniter(): Array[Byte] = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj)
+
+/* FIXME: format doesn't compile
+  @Benchmark
+  def writeTwitterAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(TwitterAPI.obj)(TwitterAPI.format))
+*/
 }
 
 case class MissingReqFields(@com.fasterxml.jackson.annotation.JsonProperty(required = true) s: String,
@@ -518,7 +532,12 @@ object TwitterAPI {
     id_str: String,
     indices: List[Int])
 
+  /* FIXME: format doesn't compile
+    val format: OFormat[List[TwitterAPI.RootInterface]] = Json.format[List[TwitterAPI.RootInterface]]
+  */
+  val codec: JsonCodec[List[RootInterface]] = make[List[TwitterAPI.RootInterface]](CodecMakerConfig())
   val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
-  // TODO consider to make the obj explicitly defined instead of reading from file by a generated codec
-  val obj: List[TwitterAPI.RootInterface] = JsonReader.read(make[List[TwitterAPI.RootInterface]](CodecMakerConfig()), json)
+  // TODO consider to make obj & compactJson explicitly defined instead of reading from file by a generated codec
+  val obj: List[TwitterAPI.RootInterface] = JsonReader.read(codec, json)
+  val compactJson: Array[Byte] = JsonWriter.write(codec, obj)
 }
