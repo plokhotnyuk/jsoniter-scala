@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets._
 import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
@@ -102,7 +102,7 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def missingReqFieldCirce(): String =
-    decode[MissingReqFields](new String(missingReqFieldJson, StandardCharsets.UTF_8)).fold(_.getMessage, _ => null)
+    decode[MissingReqFields](new String(missingReqFieldJson, UTF_8)).fold(_.getMessage, _ => null)
 
   @Benchmark
   def missingReqFieldJackson(): String =
@@ -145,7 +145,7 @@ class JsonCodecMakerBenchmark {
     }
 
   @Benchmark
-  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
@@ -157,7 +157,7 @@ class JsonCodecMakerBenchmark {
   def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
-  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
@@ -183,7 +183,7 @@ class JsonCodecMakerBenchmark {
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
 
   @Benchmark
-  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
@@ -195,7 +195,7 @@ class JsonCodecMakerBenchmark {
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
 
   @Benchmark
-  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, StandardCharsets.UTF_8)) .fold(throw _, x => x)
+  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, UTF_8)) .fold(throw _, x => x)
 
   @Benchmark
   def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
@@ -237,7 +237,7 @@ class JsonCodecMakerBenchmark {
   def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
-  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
@@ -249,7 +249,7 @@ class JsonCodecMakerBenchmark {
   def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
 
   @Benchmark
-  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
@@ -261,20 +261,32 @@ class JsonCodecMakerBenchmark {
   def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
 
   @Benchmark
-  def readTwitterAPICirce(): List[TwitterAPI.RootInterface] = decode[List[TwitterAPI.RootInterface]](new String(TwitterAPI.json, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readGoogleMapsAPICirce(): GoogleMapsAPI.DistanceMatrix = decode[GoogleMapsAPI.DistanceMatrix](new String(GoogleMapsAPI.json, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readTwitterAPIJackson(): List[TwitterAPI.RootInterface] = jacksonMapper.readValue[List[TwitterAPI.RootInterface]](TwitterAPI.json)
+  def readGoogleMapsAPIJackson(): GoogleMapsAPI.DistanceMatrix = jacksonMapper.readValue[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.json)
 
   @Benchmark
-  def readTwitterAPIJsoniter(): List[TwitterAPI.RootInterface] = JsonReader.read(TwitterAPI.codec, TwitterAPI.json)
+  def readGoogleMapsAPIJsoniter(): GoogleMapsAPI.DistanceMatrix = JsonReader.read(GoogleMapsAPI.codec, GoogleMapsAPI.json)
+/* FIXME: format doesn't compile
+  @Benchmark
+  def readGoogleMapsAPIPlay(): GoogleMapsAPI.DistanceMatrix = Json.parse(TwitterAPI.json).as[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.format)
+*/
+  @Benchmark
+  def readTwitterAPICirce(): Seq[TwitterAPI.Tweet] = decode[Seq[TwitterAPI.Tweet]](new String(TwitterAPI.json, UTF_8)).fold(throw _, x => x)
+
+  @Benchmark
+  def readTwitterAPIJackson(): Seq[TwitterAPI.Tweet] = jacksonMapper.readValue[Seq[TwitterAPI.Tweet]](TwitterAPI.json)
+
+  @Benchmark
+  def readTwitterAPIJsoniter(): Seq[TwitterAPI.Tweet] = JsonReader.read(TwitterAPI.codec, TwitterAPI.json)
 
 /* FIXME: format doesn't compile
   @Benchmark
-  def readTwitterAPIPlay(): List[TwitterAPI.RootInterface] = Json.parse(TwitterAPI.json).as[List[TwitterAPI.RootInterface]](TwitterAPI.format)
+  def readTwitterAPIPlay(): Seq[TwitterAPI.Tweet] = Json.parse(TwitterAPI.json).as[Seq[TwitterAPI.Tweet]](TwitterAPI.format)
 */
   @Benchmark
-  def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writeAnyRefsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(anyRefsObj)
@@ -286,7 +298,7 @@ class JsonCodecMakerBenchmark {
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
 
   @Benchmark
-  def writeArraysCirce(): Array[Byte] = arraysObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeArraysCirce(): Array[Byte] = arraysObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writeArraysJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(arraysObj)
@@ -312,7 +324,7 @@ class JsonCodecMakerBenchmark {
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
 
   @Benchmark
-  def writeIterablesCirce(): Array[Byte] = iterablesObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeIterablesCirce(): Array[Byte] = iterablesObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writeIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(iterablesObj)
@@ -324,7 +336,7 @@ class JsonCodecMakerBenchmark {
   def writeIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(iterablesObj)(iterablesFormat))
 
   @Benchmark
-  def writeMapsCirce(): Array[Byte] = mapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeMapsCirce(): Array[Byte] = mapsObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writeMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mapsObj)
@@ -336,7 +348,7 @@ class JsonCodecMakerBenchmark {
   def writeMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mapsObj)(mapsFormat))
 
   @Benchmark
-  def writeMutableMapsCirce(): Array[Byte] = mutableMapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeMutableMapsCirce(): Array[Byte] = mutableMapsObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
@@ -362,7 +374,7 @@ class JsonCodecMakerBenchmark {
   def writeIntAndLongMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(intAndLongMapsObj)(intAndLongMapsFormat))
 
   @Benchmark
-  def writePrimitivesCirce(): Array[Byte] = primitivesObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writePrimitivesCirce(): Array[Byte] = primitivesObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
@@ -374,7 +386,19 @@ class JsonCodecMakerBenchmark {
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
 
   @Benchmark
-  def writeTwitterAPICirce(): Array[Byte] = TwitterAPI.obj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeGoogleMapsAPICirce(): Array[Byte] = GoogleMapsAPI.obj.asJson.noSpaces.getBytes(UTF_8)
+
+  @Benchmark
+  def writeGoogleMapsAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(GoogleMapsAPI.obj)
+
+  @Benchmark
+  def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj)
+/* FIXME: format doesn't compile
+  @Benchmark
+  def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(GoogleMapsAPI.obj)(GoogleMapsAPI.format))
+*/
+  @Benchmark
+  def writeTwitterAPICirce(): Array[Byte] = TwitterAPI.obj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
   def writeTwitterAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(TwitterAPI.obj)
@@ -409,135 +433,165 @@ case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char,
 
 case class ExtractFields(s: String, l: Long)
 
-object TwitterAPI {
-  case class Entities(
-    hashtags: List[String],
-    symbols: List[String],
-    user_mentions: List[UserMentions],
-    urls: List[Urls])
-
-  case class Entities1(
-    url: Url,
-    description: Url)
-
-  case class RetweetedStatus(
-    created_at: String,
-    id: Long,
-    id_str: String,
+object GoogleMapsAPI {
+  case class Distance(
     text: String,
-    truncated: Boolean,
-    entities: Entities,
-    source: String,
-    in_reply_to_status_id: Option[String],
-    in_reply_to_status_id_str: Option[String],
-    in_reply_to_user_id: Option[String],
-    in_reply_to_user_id_str: Option[String],
-    in_reply_to_screen_name: Option[String],
-    user: User,
-    geo: Option[String],
-    coordinates: Option[String],
-    place: Option[String],
-    contributors: Option[String],
-    is_quote_status: Boolean,
-    retweet_count: Int,
-    favorite_count: Int,
-    favorited: Boolean,
-    retweeted: Boolean,
-    possibly_sensitive: Option[Boolean],
-    lang: String)
+    value: Int)
 
-  case class RootInterface(
-    created_at: String,
-    id: Long,
-    id_str: String,
-    text: String,
-    truncated: Boolean,
-    entities: Entities,
-    source: String,
-    in_reply_to_status_id: Option[String],
-    in_reply_to_status_id_str: Option[String],
-    in_reply_to_user_id: Option[String],
-    in_reply_to_user_id_str: Option[String],
-    in_reply_to_screen_name: Option[String],
-    user: User,
-    geo: Option[String],
-    coordinates: Option[String],
-    place: Option[String],
-    contributors: Option[String],
-    retweeted_status: RetweetedStatus,
-    is_quote_status: Boolean,
-    retweet_count: Int,
-    favorite_count: Int,
-    favorited: Boolean,
-    retweeted: Boolean,
-    possibly_sensitive: Option[Boolean],
-    lang: String)
+  case class Elements(
+    distance: Distance,
+    duration: Distance,
+    status: String)
 
-  case class Url(urls: List[Urls])
+  case class DistanceMatrix(
+    destination_addresses: Seq[String],
+    origin_addresses: Seq[String],
+    rows: Seq[Rows],
+    status: String)
 
-  case class Urls(
-    url: String,
-    expanded_url: String,
-    display_url: String,
-    indices: List[Int])
-
-  case class User(
-    id: Long,
-    id_str: String,
-    name: String,
-    screen_name: String,
-    location: String,
-    description: String,
-    url: String,
-    entities: Entities1,
-    `protected`: Boolean,
-    followers_count: Int,
-    friends_count: Int,
-    listed_count: Int,
-    created_at: String,
-    favourites_count: Int,
-    utc_offset: Int,
-    time_zone: String,
-    geo_enabled: Boolean,
-    verified: Boolean,
-    statuses_count: Int,
-    lang: String,
-    contributors_enabled: Boolean,
-    is_translator: Boolean,
-    is_translation_enabled: Boolean,
-    profile_background_color: String,
-    profile_background_image_url: String,
-    profile_background_image_url_https: String,
-    profile_background_tile: Boolean,
-    profile_image_url: String,
-    profile_image_url_https: String,
-    profile_banner_url: String,
-    profile_link_color: String,
-    profile_sidebar_border_color: String,
-    profile_sidebar_fill_color: String,
-    profile_text_color: String,
-    profile_use_background_image: Boolean,
-    has_extended_profile: Boolean,
-    default_profile: Boolean,
-    default_profile_image: Boolean,
-    following: Boolean,
-    follow_request_sent: Boolean,
-    notifications: Boolean,
-    translator_type: String)
-
-  case class UserMentions(
-    screen_name: String,
-    name: String,
-    id: Long,
-    id_str: String,
-    indices: List[Int])
+  case class Rows(elements: Seq[Elements])
 
   /* FIXME: format doesn't compile
-    val format: OFormat[List[TwitterAPI.RootInterface]] = Json.format[List[TwitterAPI.RootInterface]]
+  val format: OFormat[GoogleMapsAPI.DistanceMatrix] = Json.format[GoogleMapsAPI.DistanceMatrix]
   */
-  val codec: JsonCodec[List[RootInterface]] = make[List[TwitterAPI.RootInterface]](CodecMakerConfig())
-  val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  val codec: JsonCodec[GoogleMapsAPI.DistanceMatrix] = make[GoogleMapsAPI.DistanceMatrix](CodecMakerConfig())
+  //Distance Matrix API call for top-10 by population cities in US:
+  //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
+  val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response.json"))
   // TODO consider to make obj & compactJson explicitly defined instead of reading from file by a generated codec
-  val obj: List[TwitterAPI.RootInterface] = JsonReader.read(codec, json)
+  val obj: GoogleMapsAPI.DistanceMatrix = JsonReader.read(codec, json)
   val compactJson: Array[Byte] = JsonWriter.write(codec, obj)
+}
+
+object TwitterAPI {
+case class Entities(
+  hashtags: Seq[String],
+  symbols: Seq[String],
+  user_mentions: Seq[UserMentions],
+  urls: Seq[Urls])
+
+case class Entities1(
+  url: Url,
+  description: Url)
+
+case class RetweetedStatus(
+  created_at: String,
+  id: Long,
+  id_str: String,
+  text: String,
+  truncated: Boolean,
+  entities: Entities,
+  source: String,
+  in_reply_to_status_id: Option[String],
+  in_reply_to_status_id_str: Option[String],
+  in_reply_to_user_id: Option[String],
+  in_reply_to_user_id_str: Option[String],
+  in_reply_to_screen_name: Option[String],
+  user: User,
+  geo: Option[String],
+  coordinates: Option[String],
+  place: Option[String],
+  contributors: Option[String],
+  is_quote_status: Boolean,
+  retweet_count: Int,
+  favorite_count: Int,
+  favorited: Boolean,
+  retweeted: Boolean,
+  possibly_sensitive: Option[Boolean],
+  lang: String)
+
+case class Tweet(
+  created_at: String,
+  id: Long,
+  id_str: String,
+  text: String,
+  truncated: Boolean,
+  entities: Entities,
+  source: String,
+  in_reply_to_status_id: Option[String],
+  in_reply_to_status_id_str: Option[String],
+  in_reply_to_user_id: Option[String],
+  in_reply_to_user_id_str: Option[String],
+  in_reply_to_screen_name: Option[String],
+  user: User,
+  geo: Option[String],
+  coordinates: Option[String],
+  place: Option[String],
+  contributors: Option[String],
+  retweeted_status: RetweetedStatus,
+  is_quote_status: Boolean,
+  retweet_count: Int,
+  favorite_count: Int,
+  favorited: Boolean,
+  retweeted: Boolean,
+  possibly_sensitive: Option[Boolean],
+  lang: String)
+
+case class Url(urls: Seq[Urls])
+
+case class Urls(
+  url: String,
+  expanded_url: String,
+  display_url: String,
+  indices: Seq[Int])
+
+case class User(
+  id: Long,
+  id_str: String,
+  name: String,
+  screen_name: String,
+  location: String,
+  description: String,
+  url: String,
+  entities: Entities1,
+  `protected`: Boolean,
+  followers_count: Int,
+  friends_count: Int,
+  listed_count: Int,
+  created_at: String,
+  favourites_count: Int,
+  utc_offset: Int,
+  time_zone: String,
+  geo_enabled: Boolean,
+  verified: Boolean,
+  statuses_count: Int,
+  lang: String,
+  contributors_enabled: Boolean,
+  is_translator: Boolean,
+  is_translation_enabled: Boolean,
+  profile_background_color: String,
+  profile_background_image_url: String,
+  profile_background_image_url_https: String,
+  profile_background_tile: Boolean,
+  profile_image_url: String,
+  profile_image_url_https: String,
+  profile_banner_url: String,
+  profile_link_color: String,
+  profile_sidebar_border_color: String,
+  profile_sidebar_fill_color: String,
+  profile_text_color: String,
+  profile_use_background_image: Boolean,
+  has_extended_profile: Boolean,
+  default_profile: Boolean,
+  default_profile_image: Boolean,
+  following: Boolean,
+  follow_request_sent: Boolean,
+  notifications: Boolean,
+  translator_type: String)
+
+case class UserMentions(
+  screen_name: String,
+  name: String,
+  id: Long,
+  id_str: String,
+  indices: Seq[Int])
+
+/* FIXME: format doesn't compile
+  val format: OFormat[Seq[TwitterAPI.Tweet]] = Json.format[Seq[TwitterAPI.Tweet]]
+*/
+val codec: JsonCodec[Seq[Tweet]] = make[Seq[TwitterAPI.Tweet]](CodecMakerConfig())
+val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+// TODO consider to make obj & compactJson explicitly defined instead of reading from file by a generated codec
+val obj: Seq[TwitterAPI.Tweet] = JsonReader.read(codec, json)
+val compactJson: Array[Byte] = JsonWriter.write(codec, obj)
 }
