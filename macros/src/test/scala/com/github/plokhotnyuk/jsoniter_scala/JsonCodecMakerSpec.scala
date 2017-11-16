@@ -179,7 +179,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "throw parse exception in case of illegal value for case classes" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, null, "nux".getBytes)
-      }.getMessage.contains("expected value or null, offset: 0x00000002"))
+      }.getMessage.contains("unexpected end of input, offset: 0x00000003"))
     }
     "serialize and deserialize top-level standard types" in {
       val text =
