@@ -150,7 +150,7 @@ object JsonCodecMaker {
             out.writeObjectEnd()"""
 
       def cannotFindCodecError(tpe: Type): Nothing =
-        c.abort(c.enclosingPosition, s"Cannot find implicit val or object of JSON codec for '$tpe'.")
+        c.abort(c.enclosingPosition, s"No implicit '${typeOf[JsonCodec[_]]}' defined for '$tpe'.")
 
       def findImplicitCodec(tpe: Type): Tree = c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", c.TYPEmode).tpe)
 
@@ -162,13 +162,13 @@ object JsonCodecMaker {
           val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
           val named = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[named])
           if (named.size > 1) {
-            c.abort(c.enclosingPosition, s"Duplicated '${typeOf[named]}' found at '$tpe' for field: $fieldName.")
+            c.abort(c.enclosingPosition, s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
           }
           val trans = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[transient])
           if (trans.size > 1) {
-            c.warning(c.enclosingPosition, s"Duplicated '${typeOf[transient]}' found at '$tpe' for field: $fieldName.")
+            c.warning(c.enclosingPosition, s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
           } else if (named.size == 1 && trans.size == 1) {
-            c.warning(c.enclosingPosition, s"Both '${typeOf[transient]}' and '${typeOf[named]}' found at '$tpe' for field: $fieldName.")
+            c.warning(c.enclosingPosition, s"Both '${typeOf[transient]}' and '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
           }
           val name = named.headOption.flatMap(_.tree.children.tail.collectFirst {
             case Literal(Constant(name: String)) => Option(name).getOrElse(fieldName)
