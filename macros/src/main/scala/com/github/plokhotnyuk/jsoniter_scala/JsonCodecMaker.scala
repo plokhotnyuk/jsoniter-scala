@@ -17,6 +17,7 @@ class transient extends StaticAnnotation
 
 case class CodecMakerConfig(
     nameMapper: String => String = identity,
+    descriptorFieldName: String = "type",
     skipUnexpectedFields: Boolean = true) extends StaticAnnotation
 
 object JsonCodecMaker {
@@ -279,7 +280,7 @@ object JsonCodecMaker {
           q"new Array[${typeArg1(tpe)}](0)"
         } else q"null"
 
-      def genReadVal(tpe: Type, default: Tree, isRoot: Boolean = false): Tree = {
+      def genReadVal(tpe: Type, default: Tree, isRoot: Boolean = false, extraFields: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         if (implCodec != EmptyTree) q"$implCodec.decode(in, $default)"
         // FIXME: add testing that checking for rootTpe is before encode method generations
@@ -401,7 +402,10 @@ object JsonCodecMaker {
                   } else $acc"""
             }
             cq"$hashCode => $checkNameAndReadValue"
-          }(breakOut) :+ cq"_ => $unexpectedFieldHandler"
+          }(breakOut)
+          val readFieldsBlock =
+            (if (extraFields == EmptyTree) readFields
+            else readFields :+ extraFields) :+ cq"_ => $unexpectedFieldHandler"
           q"""(in.nextToken(): @switch) match {
                 case '{' =>
                   ..$reqVars
@@ -411,7 +415,7 @@ object JsonCodecMaker {
                     do {
                       val l = in.readObjectFieldAsCharBuf()
                       (in.charBufToHashCode(l): @switch) match {
-                        case ..$readFields
+                        case ..$readFieldsBlock
                       }
                     } while (in.nextToken() == ',')
                     in.unreadByte()
@@ -423,10 +427,46 @@ object JsonCodecMaker {
                 case _ =>
                   in.objectStartError()
               }"""
+        } else if (tpe.typeSymbol.asClass.isTrait) withDecoderFor(tpe, default) {
+          val readSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
+            val tpe = s.asClass.toType
+            val annotations = getFieldAnnotations(tpe)
+
+            getMembers(annotations, tpe).foreach { m =>
+              if (getMappedName(annotations, m.name.toString) == codecConfig.descriptorFieldName) {
+                c.abort(c.enclosingPosition, s"'$tpe' define JSON name that matches with descriptor field name.")
+              }
+            }
+
+            val typeName = tpe.toString
+            val descriptorFieldNameHash = {
+              val cs = codecConfig.descriptorFieldName.toCharArray
+              JsonReader.toHashCode(cs, cs.length)
+            }
+            val extraFields = cq"$descriptorFieldNameHash => in.skip()"
+            cq"""$typeName =>
+                   in.rollbackToMark()
+                   ${genReadVal(tpe, defaultValue(tpe), isRoot = false, extraFields)}"""
+          }
+          val illegalDescriptorError = s"""illegal value of descriptor field "${codecConfig.descriptorFieldName}""""
+          q"""in.setMark()
+              (in.nextToken(): @switch) match {
+                case '{' =>
+                  in.scanToField(${codecConfig.descriptorFieldName})
+                  in.readString(null) match {
+                    case ..$readSubclasses
+                    case _ => in.decodeError($illegalDescriptorError)
+                  }
+                case 'n' =>
+                  in.resetMark()
+                  in.parseNull(default)
+                case _ =>
+                  in.objectStartError()
+              }"""
         } else cannotFindCodecError(tpe)
       }
 
-      def genWriteVal(m: Tree, tpe: Type, isRoot: Boolean = false): Tree = {
+      def genWriteVal(m: Tree, tpe: Type, isRoot: Boolean = false, extraFields: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         if (implCodec != EmptyTree) q"$implCodec.encode($m, out)"
         // FIXME: add testing that checking for rootTpe is before encode method generations
@@ -467,7 +507,7 @@ object JsonCodecMaker {
           val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
-          val writeFields = members.map { m =>
+          val writeFields = extraFields +: members.map { m =>
             val tpe = methodType(m)
             val name = getMappedName(annotations, m.name.toString)
             defaults.get(m.name.toString) match {
@@ -524,6 +564,20 @@ object JsonCodecMaker {
                 ..$writeFieldsBlock
                 out.writeObjectEnd()
               } else out.writeNull()"""
+        } else if (tpe.typeSymbol.asClass.isTrait) withEncoderFor(tpe, m) {
+          val writeSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
+            val tpe = s.asClass.toType
+            val typeName = tpe.toString
+            val extraFields =
+              q"""c = out.writeObjectField(c, "type")
+                  out.writeVal($typeName)"""
+            cq"x: $tpe => ${genWriteVal(q"x", tpe, isRoot = false, extraFields)}"
+          }
+          q"""x match {
+                case ..$writeSubclasses
+                case null => out.writeNull()
+                case _ => ()
+              }"""
         } else cannotFindCodecError(tpe)
       }
 

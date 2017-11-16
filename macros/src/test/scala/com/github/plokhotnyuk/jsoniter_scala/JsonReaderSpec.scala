@@ -827,5 +827,5 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = parse(buf).readBigDecimal(default)
 
   def parse(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
-    0, 0, new Array[Char](0), new ByteArrayInputStream(buf))
+    0, 0, -1, new Array[Char](0), new ByteArrayInputStream(buf))
 }

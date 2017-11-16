@@ -120,6 +120,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                       r70: Int, r71: Int, r72: Int, r73: Int, r74: Int, r75: Int, r76: Int, r77: Int, r78: Int, r79: Int,
                       r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
                       r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
+
+  sealed trait AlgebraicDataType
+
+  case class A(a: Int) extends AlgebraicDataType
+
+  case class B(a: String) extends AlgebraicDataType
+
+  case class C(a: Int, b: String) extends AlgebraicDataType
+
+  val codecOfADTList: JsonCodec[List[AlgebraicDataType]] = make[List[AlgebraicDataType]](CodecMakerConfig())
+
   "JsonCodec" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
@@ -573,6 +584,23 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
             |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
             |}""".stripMargin.getBytes)
       }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99", offset: 0x0000032c"""))
+    }
+    "serialize and deserialize ADTs using descriptor field" in {
+      verifySerDeser(codecOfADTList,
+        List(A(1), B("VVV"), C(1, "VVV"), null),
+        """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},null]""".getBytes)
+      val longStr = new String(Array.fill(100000)('W'))
+      verifyDeser(make[List[AlgebraicDataType]](CodecMakerConfig(descriptorFieldName = "t", skipUnexpectedFields = false)),
+        List(C(2, longStr), C(1, "VVV")),
+        s"""[{"a":2,"b":"$longStr","t":"JsonCodecMakerSpec.this.C"},{"a":1,"t":"JsonCodecMakerSpec.this.C","b":"VVV"}]""".getBytes)
+    }
+    "throw parse exception in case of missing descriptor field or illegal value of descriptor field" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1}]""".getBytes)
+      }.getMessage.contains("""missing required field "type", offset: 0x00000007"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":"A"}]""".getBytes)
+      }.getMessage.contains("""illegal value of descriptor field "type", offset: 0x00000011"""))
     }
   }
   "JsonCodec.enforceCamelCase" should {

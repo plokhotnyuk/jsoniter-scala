@@ -16,12 +16,13 @@ to get maximum performance of JSON parsing & serialization.
   arrays, value classes and case classes with values/fields having any of types listed here 
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for any of them 
-- Implicitly resolvable codecs for all above types, so in most cases it is easy to customize except ADTs
+- Implicitly resolvable codecs for all above types
 - Fields with default values that defined in a first list of arguments of the constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Configurable mapping function for names between case classes and JSON, including predefined functions which enforce snake_case or camelCase names for all fields
+- Configurable name of descriptor field for ADTs
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance

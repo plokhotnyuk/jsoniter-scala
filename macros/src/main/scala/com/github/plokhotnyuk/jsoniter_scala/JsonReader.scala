@@ -20,6 +20,7 @@ final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
     private var head: Int = 0,
     private var tail: Int = 0,
+    private var mark: Int = -1,
     private var charBuf: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null,
     private var totalRead: Int = 0,
@@ -44,6 +45,25 @@ final class JsonReader private[jsoniter_scala](
     i = appendString("\"", i)
     decodeError(i, head - 1, null)
   }
+
+  def setMark(): Unit = mark = head
+
+  def scanToField(s: String): Unit =
+    while ({
+      if (isCharBufEqualsTo(readObjectFieldAsCharBuf(), s)) false
+      else {
+        skip()
+        if (nextToken(head) == ',') true
+        else reqFieldError(s)
+      }
+    }) ()
+
+  def rollbackToMark(): Unit = {
+    head = mark
+    resetMark()
+  }
+
+  def resetMark(): Unit = mark = -1
 
   def readObjectFieldAsCharBuf(): Int = {
     readParentheses()
@@ -194,6 +214,13 @@ final class JsonReader private[jsoniter_scala](
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
+  private def reqFieldError(s: String): Nothing = {
+    var i = appendString("missing required field \"", 0)
+    i = appendString(s, i)
+    i = appendString("\"", i)
+    decodeError(i, head - 1, null)
+  }
+
   @inline
   private def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
     decodeError(appendString(msg, 0), pos, cause)
@@ -326,7 +353,7 @@ final class JsonReader private[jsoniter_scala](
       var v = '0' - b
       while ((pos < tail || {
         pos = loadMore(pos)
-        pos == 0
+        pos < tail
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
@@ -353,7 +380,7 @@ final class JsonReader private[jsoniter_scala](
       var v = '0' - b
       while ((pos < tail || {
         pos = loadMore(pos)
-        pos == 0
+        pos < tail
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
@@ -380,7 +407,7 @@ final class JsonReader private[jsoniter_scala](
       var v = '0' - b
       while ((pos < tail || {
         pos = loadMore(pos)
-        pos == 0
+        pos < tail
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
@@ -408,7 +435,7 @@ final class JsonReader private[jsoniter_scala](
       var v: Long = '0' - b
       while ((pos < tail || {
         pos = loadMore(pos)
-        pos == 0
+        pos < tail
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
@@ -440,7 +467,7 @@ final class JsonReader private[jsoniter_scala](
     var pos = head
     while (pos < tail || {
       pos = loadMore(pos)
-      pos == 0
+      pos < tail
     }) {
       if (i >= lim) lim = growCharBuf(i + 1)
       val ch = buf(pos).toChar
@@ -632,7 +659,7 @@ final class JsonReader private[jsoniter_scala](
     var pos = head
     while (pos < tail || {
       pos = loadMore(pos)
-      pos == 0
+      pos < tail
     }) {
       if (i >= lim) lim = growCharBuf(i + 1)
       val ch = buf(pos).toChar
@@ -840,7 +867,7 @@ final class JsonReader private[jsoniter_scala](
         i += 1
         while ((pos < tail || {
           pos = loadMore(pos)
-          pos == 0
+          pos < tail
         }) && {
           b = buf(pos)
           b >= '0' && b <= '9'
@@ -866,7 +893,7 @@ final class JsonReader private[jsoniter_scala](
     var pos = head
     while (pos < tail || {
       pos = loadMore(pos)
-      pos == 0
+      pos < tail
     }) {
       if (i >= lim) lim = growCharBuf(i + 1)
       val ch = buf(pos).toChar
@@ -1390,29 +1417,43 @@ final class JsonReader private[jsoniter_scala](
   private def loadMoreOrError(pos: Int): Int =
     if (in eq null) endOfInput()
     else {
-      val remaining = tail - pos
-      if (remaining > 0) {
-        System.arraycopy(buf, pos, buf, 0, remaining)
-      }
-      tail = remaining
-      val n = externalRead(remaining, buf.length - remaining)
+      val minPos = ensureBufCapacity(pos)
+      val n = externalRead(tail, buf.length - tail)
       if (n > 0) {
         tail += n
         totalRead += n
-        0
+        pos - minPos
       } else endOfInput()
     }
 
   private def loadMore(pos: Int): Int =
     if (in eq null) pos
     else {
-      val n = externalRead(0, buf.length)
+      val minPos = ensureBufCapacity(pos)
+      val n = externalRead(tail, buf.length - tail)
       if (n > 0) {
-        tail = n
+        tail += n
         totalRead += n
-        0
-      } else pos
+      }
+      pos - minPos
     }
+
+  private def ensureBufCapacity(pos: Int): Int = {
+    val minPos = if (mark >= 0) mark else pos
+    if (minPos > 0) {
+      val remaining = tail - minPos
+      if (remaining > 0) {
+        System.arraycopy(buf, minPos, buf, 0, remaining)
+        mark -= (if (mark >= 0) minPos else 0)
+      }
+      tail = remaining
+    } else if (tail > 0) {
+      val bs = new Array[Byte](buf.length << 1)
+      System.arraycopy(buf, 0, bs, 0, buf.length)
+      buf = bs
+    }
+    minPos
+  }
 
   private def externalRead(from: Int, len: Int): Int =
     try in.read(buf, from, len) catch {
@@ -1421,8 +1462,10 @@ final class JsonReader private[jsoniter_scala](
 
   private def endOfInput(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
 
-  private def freeTooLongCharBuf(): Unit =
+  private def freeTooLongBufs(): Unit = {
+    if (buf.length > 16384) buf = new Array[Byte](16384)
     if (charBuf.length > 16384) charBuf = new Array[Char](16384)
+  }
 }
 
 object JsonReader {
@@ -1481,11 +1524,12 @@ object JsonReader {
     reader.in = in
     reader.head = 0
     reader.tail = 0
+    reader.mark = -1
     reader.totalRead = 0
     try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
     finally {
       reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-      reader.freeTooLongCharBuf()
+      reader.freeTooLongBufs()
     }
   }
 
@@ -1554,11 +1598,12 @@ object JsonReader {
     reader.buf = buf
     reader.head = from
     reader.tail = to
+    reader.mark = -1
     reader.totalRead = 0
     try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
     finally {
       reader.buf = currBuf
-      reader.freeTooLongCharBuf()
+      reader.freeTooLongBufs()
     }
   }
 
