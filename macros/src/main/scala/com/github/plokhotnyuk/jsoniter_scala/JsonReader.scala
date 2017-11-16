@@ -47,14 +47,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsCharBuf(): Int = {
     readParentheses()
-    val x = parseString()
+    val x = parseString(0, charBuf.length, head)
     readColon()
     x
   }
 
   def readObjectFieldAsString(): String = {
     readParentheses()
-    val len = parseString()
+    val len = parseString(0, charBuf.length, head)
     readColon()
     new String(charBuf, 0, len)
   }
@@ -75,7 +75,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsChar(): Char = {
     readParentheses()
-    val x = parseChar()
+    val x = parseChar(head)
     readParenthesesWithColon()
     x
   }
@@ -124,7 +124,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readObjectFieldAsBigDecimal(): BigDecimal = {
     readParentheses()
-    val x = parseBigDecimal(isToken = false)
+    val x = parseBigDecimal(isToken = false, null)
     readParenthesesWithColon()
     x
   }
@@ -133,7 +133,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readChar(): Char = {
     readParentheses()
-    val x = parseChar()
+    val x = parseChar(head)
     readParentheses()
     x
   }
@@ -155,7 +155,7 @@ final class JsonReader private[jsoniter_scala](
   def readString(default: String = null): String = {
     val b = nextToken(head)
     if (b == '"') {
-      val len = parseString()
+      val len = parseString(0, charBuf.length, head)
       new String(charBuf, 0, len)
     } else if (b == 'n') parseNull(default, head)
     else decodeError("expected string value or null")
@@ -171,25 +171,15 @@ final class JsonReader private[jsoniter_scala](
 
   def isCharBufEqualsTo(len: Int, s: String): Boolean = len == s.length && isCharBufEqualsTo(len, s, 0)
 
-  def skip(): Unit = head = (nextToken(head): @switch) match {
-    case '"' => skipString()
-    case '0' => skipNumber()
-    case '1' => skipNumber()
-    case '2' => skipNumber()
-    case '3' => skipNumber()
-    case '4' => skipNumber()
-    case '5' => skipNumber()
-    case '6' => skipNumber()
-    case '7' => skipNumber()
-    case '8' => skipNumber()
-    case '9' => skipNumber()
-    case '-' => skipNumber()
-    case 'n' => skipFixedBytes(3)
-    case 't' => skipFixedBytes(3)
-    case 'f' => skipFixedBytes(4)
-    case '{' => skipNested('{', '}')
-    case '[' => skipNested('[', ']')
-    case _ => decodeError("expected value")
+  def skip(): Unit = head = {
+    val b = nextToken(head)
+    if (b == '"') skipString(evenBackSlashes = true, head)
+    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
+    else if (b == 'n' || b == 't') skipFixedBytes(3, head)
+    else if (b == 'f') skipFixedBytes(4, head)
+    else if (b == '{') skipNested('{', '}', 0, head)
+    else if (b == '[') skipNested('[', ']', 0, head)
+    else decodeError("expected value", head - 1)
   }
 
   def unreadByte(): Unit = head -= 1
@@ -296,7 +286,7 @@ final class JsonReader private[jsoniter_scala](
     (if (isToken) nextToken(head) else nextByte(head): @switch) match {
       case 't' => parseTrue(head)
       case 'f' => parseFalse(head)
-      case _ => booleanError()
+      case _ => booleanError(head - 1)
     }
 
   @tailrec
@@ -324,7 +314,7 @@ final class JsonReader private[jsoniter_scala](
       }
     } else parseFalse(loadMoreOrError(pos))
 
-  private def booleanError(pos: Int = head - 1): Nothing = decodeError("illegal boolean", pos)
+  private def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 
   // TODO: consider fast path with unrolled loop
   private def parseByte(isToken: Boolean): Byte = {
@@ -603,7 +593,7 @@ final class JsonReader private[jsoniter_scala](
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toDouble(isNeg, posMan, manExp, isExpNeg, posExp, i)
     else if (state == 10) toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-    else numberError()
+    else numberError(pos)
   }
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double =
@@ -795,7 +785,7 @@ final class JsonReader private[jsoniter_scala](
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toFloat(isNeg, posMan, manExp, isExpNeg, posExp, i)
     else if (state == 10) toExpOverflowFloat(isNeg, posMan, manExp, isExpNeg, posExp)
-    else numberError()
+    else numberError(pos)
   }
 
   private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float = {
@@ -833,7 +823,7 @@ final class JsonReader private[jsoniter_scala](
     var b = if (isToken) nextToken(head) else nextByte(head)
     if (b == 'n') {
       if (isToken) parseNull(default, head)
-      else numberError()
+      else numberError(head)
     } else {
       var lim = if (2 > charBuf.length) growCharBuf(2) else charBuf.length
       var i = 0
@@ -868,7 +858,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   // TODO: consider fast path with unrolled loop for small numbers
-  private def parseBigDecimal(isToken: Boolean, default: BigDecimal = null): BigDecimal = {
+  private def parseBigDecimal(isToken: Boolean, default: BigDecimal): BigDecimal = {
     var isZeroFirst = false
     var lim = charBuf.length
     var i = 0
@@ -1016,13 +1006,12 @@ final class JsonReader private[jsoniter_scala](
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(i)
     else if (state == 13) default
-    else numberError()
+    else numberError(pos)
   }
 
-  private def toBigDecimal(len: Int): BigDecimal =
-    new BigDecimal(new java.math.BigDecimal(charBuf, 0, len))
+  private def toBigDecimal(len: Int): BigDecimal = new BigDecimal(new java.math.BigDecimal(charBuf, 0, len))
 
-  private def numberError(pos: Int = head): Nothing = decodeError("illegal number", pos)
+  private def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
 
   private def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
 
@@ -1035,7 +1024,7 @@ final class JsonReader private[jsoniter_scala](
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   @tailrec
-  private def parseString(i: Int = 0, lim: Int = charBuf.length, pos: Int = head): Int =
+  private def parseString(i: Int, lim: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') {
@@ -1145,7 +1134,7 @@ final class JsonReader private[jsoniter_scala](
     }
 
   @tailrec
-  private def parseChar(pos: Int = head): Char = {
+  private def parseChar(pos: Int): Char = {
     val remaining = tail - pos
     if (remaining > 0) {
       val b1 = buf(pos)
@@ -1362,7 +1351,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @tailrec
-  private def skipString(evenBackSlashes: Boolean = true, pos: Int = head): Int =
+  private def skipString(evenBackSlashes: Boolean, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"' && evenBackSlashes) pos + 1
@@ -1371,7 +1360,7 @@ final class JsonReader private[jsoniter_scala](
     } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
   @tailrec
-  private def skipNumber(pos: Int = head): Int =
+  private def skipNumber(pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
       if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' || b == 'E') skipNumber(pos + 1)
@@ -1379,10 +1368,10 @@ final class JsonReader private[jsoniter_scala](
     } else skipNumber(loadMoreOrError(pos))
 
   @tailrec
-  private def skipNested(opening: Byte, closing: Byte, level: Int = 0, pos: Int = head): Int =
+  private def skipNested(opening: Byte, closing: Byte, level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == '"') skipNested(opening, closing, level, skipString(pos = pos + 1))
+      if (b == '"') skipNested(opening, closing, level, skipString(evenBackSlashes = true, pos + 1))
       else if (b == closing) {
         if (level == 0) pos + 1
         else skipNested(opening, closing, level - 1, pos + 1)
@@ -1391,7 +1380,7 @@ final class JsonReader private[jsoniter_scala](
     } else skipNested(opening, closing, level, loadMoreOrError(pos))
 
   @tailrec
-  private def skipFixedBytes(n: Int, pos: Int = head): Int = {
+  private def skipFixedBytes(n: Int, pos: Int): Int = {
     val newPos = pos + n
     val diff = newPos - tail
     if (diff <= 0) newPos

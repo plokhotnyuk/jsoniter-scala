@@ -114,7 +114,7 @@ sbt 'benchmark/jmh:run -lprof'
 To get result for some benchmarks in flight recording file (which you can then open and analyse offline using JMC) use command like this:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readTwitterAPIJsoniter.*'
+sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readGoogleMapsAPIJsoniter.*'
 ```
 
 On Linux the perf profiler can be used to see CPU & system statistics normalized per ops:
