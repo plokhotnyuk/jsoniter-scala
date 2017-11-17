@@ -24,7 +24,9 @@ final class JsonReader private[jsoniter_scala](
     private var charBuf: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null,
     private var totalRead: Int = 0,
-    private var config: ReaderConfig = ReaderConfig()) {
+    private var config: ReaderConfig = ReaderConfig(),
+    private val preferredBufSize: Int = 16384,
+    private val preferredCharBufSize: Int = 16384) {
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val len = reqFields.length
     var i = 0
@@ -1455,17 +1457,16 @@ final class JsonReader private[jsoniter_scala](
     minPos
   }
 
-  private def externalRead(from: Int, len: Int): Int =
-    try in.read(buf, from, len) catch {
-      case NonFatal(ex) => endOfInput(ex)
-    }
+  private def externalRead(from: Int, len: Int): Int = try in.read(buf, from, len) catch {
+    case NonFatal(ex) => endOfInput(ex)
+  }
 
   private def endOfInput(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
 
-  private def freeTooLongBufs(): Unit = {
-    if (buf.length > 16384) buf = new Array[Byte](16384)
-    if (charBuf.length > 16384) charBuf = new Array[Char](16384)
-  }
+  private def freeTooLongBuf(): Unit = if (buf.length > preferredBufSize) buf = new Array[Byte](preferredBufSize)
+
+  private def freeTooLongCharBuf(): Unit =
+    if (charBuf.length > preferredCharBufSize) charBuf = new Array[Char](preferredCharBufSize)
 }
 
 object JsonReader {
@@ -1529,7 +1530,8 @@ object JsonReader {
     try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
     finally {
       reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-      reader.freeTooLongBufs()
+      reader.freeTooLongBuf()
+      reader.freeTooLongCharBuf()
     }
   }
 
@@ -1603,7 +1605,7 @@ object JsonReader {
     try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
     finally {
       reader.buf = currBuf
-      reader.freeTooLongBufs()
+      reader.freeTooLongCharBuf()
     }
   }
 

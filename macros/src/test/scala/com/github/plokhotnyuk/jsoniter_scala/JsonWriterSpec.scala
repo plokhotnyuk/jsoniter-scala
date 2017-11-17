@@ -214,7 +214,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
   def serialized(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val out = new ByteArrayOutputStream(256)
-    val writer = new JsonWriter(new Array[Byte](0), 0, 0, out, true, cfg)
+    val writer = new JsonWriter(new Array[Byte](0), 0, 0, out, true, cfg, 3)
     try f(writer)
     finally writer.flushBuffer()
     out.toString("UTF-8")

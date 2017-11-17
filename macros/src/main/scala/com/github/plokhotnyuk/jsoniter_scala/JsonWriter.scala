@@ -17,7 +17,8 @@ final class JsonWriter private[jsoniter_scala](
     private var indention: Int = 0,
     private var out: OutputStream = null,
     private var isBufGrowingAllowed: Boolean = true,
-    private var config: WriterConfig = WriterConfig()) {
+    private var config: WriterConfig = WriterConfig(),
+    private val preferredBufSize: Int = 16384) {
   def writeComma(comma: Boolean): Boolean = {
     if (comma) ensureCapacityAndWrite(',')
     writeIndention(0)
@@ -481,7 +482,7 @@ final class JsonWriter private[jsoniter_scala](
     count = 0
   }
 
-  private def freeTooLongBuffer(): Unit = if (buf.length > 16384) buf = new Array[Byte](16384)
+  private def freeTooLongBuf(): Unit = if (buf.length > preferredBufSize) buf = new Array[Byte](preferredBufSize)
 }
 
 object JsonWriter {
@@ -530,7 +531,7 @@ object JsonWriter {
     finally {
       writer.flushBuffer()
       writer.out = null // do not close output stream, just help GC instead
-      writer.freeTooLongBuffer()
+      writer.freeTooLongBuf()
     }
   }
 
@@ -569,7 +570,7 @@ object JsonWriter {
       System.arraycopy(writer.buf, 0, arr, 0, arr.length)
       arr
     } finally {
-      writer.freeTooLongBuffer()
+      writer.freeTooLongBuf()
     }
   }
 
