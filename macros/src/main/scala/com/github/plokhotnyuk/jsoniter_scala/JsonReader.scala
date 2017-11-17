@@ -1054,12 +1054,13 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private def parseString(i: Int, lim: Int, pos: Int): Int =
-    if (pos < tail) {
+    if (i >= lim) parseString(i, growCharBuf(i + 1), pos)
+    else if (pos < tail) {
       val b = buf(pos)
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b ^ '\\') < 1 || i >= lim) slowParseString(i, lim, pos)
+      } else if ((b ^ '\\') < 1) parseEncodedString(i, lim, pos)
       else {
         charBuf(i) = b.toChar
         parseString(i + 1, lim, pos + 1)
@@ -1067,8 +1068,8 @@ final class JsonReader private[jsoniter_scala](
     } else parseString(i, lim, loadMoreOrError(pos))
 
   @tailrec
-  private def slowParseString(i: Int, lim: Int, pos: Int): Int =
-    if (i >= lim) slowParseString(i, growCharBuf(i + 2), pos) // 2 is length of surrogate pair
+  private def parseEncodedString(i: Int, lim: Int, pos: Int): Int =
+    if (i >= lim) parseEncodedString(i, growCharBuf(i + 2), pos) // 2 is length of surrogate pair
     else {
       val remaining = tail - pos
       if (remaining > 0) {
@@ -1079,43 +1080,43 @@ final class JsonReader private[jsoniter_scala](
             i
           } else if (b1 != '\\') {
             charBuf(i) = b1.toChar
-            slowParseString(i + 1, lim, pos + 1)
+            parseEncodedString(i + 1, lim, pos + 1)
           } else if (remaining > 1) {
             (buf(pos + 1): @switch) match {
               case 'b' =>
                 charBuf(i) = '\b'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case 'f' =>
                 charBuf(i) = '\f'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case 'n' =>
                 charBuf(i) = '\n'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case 'r' =>
                 charBuf(i) = '\r'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case 't' =>
                 charBuf(i) = '\t'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case '"' =>
                 charBuf(i) = '"'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case '/' =>
                 charBuf(i) = '/'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case '\\' =>
                 charBuf(i) = '\\'
-                slowParseString(i + 1, lim, pos + 2)
+                parseEncodedString(i + 1, lim, pos + 2)
               case 'u' =>
                 if (remaining > 5) {
                   val ch1 = readEscapedUnicode(pos + 2)
                   if (ch1 < 2048) {
                     charBuf(i) = ch1
-                    slowParseString(i + 1, lim, pos + 6)
+                    parseEncodedString(i + 1, lim, pos + 6)
                   } else if (!Character.isHighSurrogate(ch1)) {
                     if (Character.isLowSurrogate(ch1)) decodeError("expected high surrogate character", pos + 5)
                     charBuf(i) = ch1
-                    slowParseString(i + 1, lim, pos + 6)
+                    parseEncodedString(i + 1, lim, pos + 6)
                   } else if (remaining > 11) {
                     if (buf(pos + 6) == '\\') {
                       if (buf(pos + 7) == 'u') {
@@ -1123,21 +1124,21 @@ final class JsonReader private[jsoniter_scala](
                         if (!Character.isLowSurrogate(ch2)) decodeError("expected low surrogate character", pos + 11)
                         charBuf(i) = ch1
                         charBuf(i + 1) = ch2
-                        slowParseString(i + 2, lim, pos + 12)
+                        parseEncodedString(i + 2, lim, pos + 12)
                       } else illegalEscapeSequenceError(pos + 7)
                     } else illegalEscapeSequenceError(pos + 6)
-                  } else slowParseString(i, lim, loadMoreOrError(pos))
-                } else slowParseString(i, lim, loadMoreOrError(pos))
+                  } else parseEncodedString(i, lim, loadMoreOrError(pos))
+                } else parseEncodedString(i, lim, loadMoreOrError(pos))
               case _ => illegalEscapeSequenceError(pos + 1)
             }
-          } else slowParseString(i, lim, loadMoreOrError(pos))
+          } else parseEncodedString(i, lim, loadMoreOrError(pos))
         } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
           if (remaining > 1) {
             val b2 = buf(pos + 1)
             if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
             charBuf(i) = ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
-            slowParseString(i + 1, lim, pos + 2)
-          } else slowParseString(i, lim, loadMoreOrError(pos))
+            parseEncodedString(i + 1, lim, pos + 2)
+          } else parseEncodedString(i, lim, loadMoreOrError(pos))
         } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
           if (remaining > 2) {
             val b2 = buf(pos + 1)
@@ -1145,8 +1146,8 @@ final class JsonReader private[jsoniter_scala](
             val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
             if (isMalformed3(b1, b2, b3) || Character.isSurrogate(ch)) malformedBytes(b1, b2, b3, pos)
             charBuf(i) = ch
-            slowParseString(i + 1, lim, pos + 3)
-          } else slowParseString(i, lim, loadMoreOrError(pos))
+            parseEncodedString(i + 1, lim, pos + 3)
+          } else parseEncodedString(i, lim, loadMoreOrError(pos))
         } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
           if (remaining > 3) {
             val b2 = buf(pos + 1)
@@ -1156,10 +1157,10 @@ final class JsonReader private[jsoniter_scala](
             if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
             charBuf(i) = Character.highSurrogate(cp)
             charBuf(i + 1) = Character.lowSurrogate(cp)
-            slowParseString(i + 2, lim, pos + 4)
-          } else slowParseString(i, lim, loadMoreOrError(pos))
+            parseEncodedString(i + 2, lim, pos + 4)
+          } else parseEncodedString(i, lim, loadMoreOrError(pos))
         } else malformedBytes(b1, pos)
-      } else slowParseString(i, lim, loadMoreOrError(pos))
+      } else parseEncodedString(i, lim, loadMoreOrError(pos))
     }
 
   @tailrec

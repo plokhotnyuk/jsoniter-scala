@@ -208,11 +208,11 @@ final class JsonWriter private[jsoniter_scala](
     if (i == to) write('"', pos)
     else { // for the remaining parts we process with utf-8 encoding and escape unicode support
       count = pos
-      writeStringSlowPath(s, i, to)
+      writeEncodedString(s, i, to)
     }
   }
 
-  private def writeStringSlowPath(s: String, from: Int, to: Int): Int = {
+  private def writeEncodedString(s: String, from: Int, to: Int): Int = {
     var pos = ensureBufferCapacity((to - from) * (if (config.escapeUnicode) 6 else 3) + 1) // max 6 or 3 bytes per char + the closing quotes
     var i = from
     while (i < to) pos = {
