@@ -204,13 +204,7 @@ object JsonCodecMaker {
         }(breakOut).reverse
       }
 
-      case class NamedTree(name: TermName, tree: Tree)
-
       val rootTpe = weakTypeOf[A]
-      val defaultValueFields = mutable.LinkedHashMap.empty[Type, NamedTree]
-      val reqFields = mutable.LinkedHashMap.empty[Type, NamedTree]
-      val decodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
-      val encodeMethods = mutable.LinkedHashMap.empty[Type, NamedTree]
       val codecConfig = c.eval[CodecMakerConfig](c.Expr[CodecMakerConfig](c.untypecheck(config.tree)))
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
@@ -219,43 +213,52 @@ object JsonCodecMaker {
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
 
-      def genName(prefix: String, tpe: Type, nameCache: mutable.LinkedHashMap[Type, NamedTree]): TermName =
-        TermName(if (tpe =:= rootTpe) prefix else prefix + nameCache.size)
+      val defaultValueNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val defaultValueTrees = mutable.LinkedHashMap.empty[Type, Tree]
 
       // use it only for immutable values which doesn't have public constants
       def withDefaultValueFor(tpe: Type)(f: => Tree): Tree = {
-        val defaultValueName = reqFields.getOrElseUpdate(tpe, {
+        val defaultValueName = defaultValueNames.getOrElseUpdate(tpe, TermName("v" + defaultValueNames.size))
+        defaultValueTrees.getOrElseUpdate(tpe, {
           val impl = f
-          val name = genName("v", tpe, reqFields)
-          NamedTree(name, q"private val $name: $tpe = $impl")
-        }).name
+          q"private val $defaultValueName: $tpe = $impl"
+        })
         q"$defaultValueName"
       }
 
+      val reqFieldNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val reqFieldTrees = mutable.LinkedHashMap.empty[Type, Tree]
+
       def withReqFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
-        val reqFieldsName = reqFields.getOrElseUpdate(tpe, {
+        val reqFieldName = reqFieldNames.getOrElseUpdate(tpe, TermName("r" + reqFieldNames.size))
+        reqFieldTrees.getOrElseUpdate(tpe, {
           val impl = f
-          val name = genName("r", tpe, reqFields)
-          NamedTree(name, q"private val $name: Array[String] = Array(..$impl)")
-        }).name
-        q"$reqFieldsName"
+          q"private val $reqFieldName: Array[String] = Array(..$impl)"
+        })
+        q"$reqFieldName"
       }
 
+      val decodeMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val decodeMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+
       def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
-        val decodeMethodName = decodeMethods.getOrElseUpdate(tpe, {
+        val decodeMethodName = decodeMethodNames.getOrElseUpdate(tpe, TermName("d" + decodeMethodNames.size))
+        decodeMethodTrees.getOrElseUpdate(tpe, {
           val impl = f
-          val name = genName("d", tpe, decodeMethods)
-          NamedTree(name, q"private def $name(in: JsonReader, default: $tpe): $tpe = $impl")
-        }).name
+          q"private def $decodeMethodName(in: JsonReader, default: $tpe): $tpe = $impl"
+        })
         q"$decodeMethodName(in, $arg)"
       }
 
+      val encodeMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val encodeMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+
       def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
-        val encodeMethodName = encodeMethods.getOrElseUpdate(tpe, {
+        val encodeMethodName = encodeMethodNames.getOrElseUpdate(tpe, TermName("e" + encodeMethodNames.size))
+        encodeMethodTrees.getOrElseUpdate(tpe, {
           val impl = f
-          val name = genName("e", tpe, encodeMethods)
-          NamedTree(name, q"private def $name(x: $tpe, out: JsonWriter): Unit = $impl")
-        }).name
+          q"private def $encodeMethodName(x: $tpe, out: JsonWriter): Unit = $impl"
+        })
         q"$encodeMethodName($arg, out)"
       }
 
@@ -280,11 +283,11 @@ object JsonCodecMaker {
           q"new Array[${typeArg1(tpe)}](0)"
         } else q"null"
 
-      def genReadVal(tpe: Type, default: Tree, isRoot: Boolean = false, extraFields: Tree = EmptyTree): Tree = {
+      def genReadVal(tpe: Type, default: Tree, extraFields: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
+        val decodeMethodName = decodeMethodNames.get(tpe)
         if (implCodec != EmptyTree) q"$implCodec.decode(in, $default)"
-        // FIXME: add testing that checking for rootTpe is before encode method generations
-        else if (!isRoot && tpe =:= rootTpe) q"d(in, $default)" // to avoid stack overflow during generation of encode method for rootTpe
+        else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)" // to avoid stack overflow during generation for recursive structures
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readByte()"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
@@ -446,7 +449,7 @@ object JsonCodecMaker {
             val extraFields = cq"$descriptorFieldNameHash => in.skip()"
             cq"""$typeName =>
                    in.rollbackToMark()
-                   ${genReadVal(tpe, defaultValue(tpe), isRoot = false, extraFields)}"""
+                   ${genReadVal(tpe, defaultValue(tpe), extraFields)}"""
           }
           val illegalDescriptorError = s"""illegal value of descriptor field "${codecConfig.descriptorFieldName}""""
           q"""in.setMark()
@@ -466,11 +469,11 @@ object JsonCodecMaker {
         } else cannotFindCodecError(tpe)
       }
 
-      def genWriteVal(m: Tree, tpe: Type, isRoot: Boolean = false, extraFields: Tree = EmptyTree): Tree = {
+      def genWriteVal(m: Tree, tpe: Type, extraFields: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
+        val encodeMethodName = encodeMethodNames.get(tpe)
         if (implCodec != EmptyTree) q"$implCodec.encode($m, out)"
-        // FIXME: add testing that checking for rootTpe is before encode method generations
-        else if (!isRoot && tpe =:= rootTpe) q"e($m, out)" // to avoid stack overflow during generation of encode method for rootTpe
+        else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)" // to avoid stack overflow during generation for recursive structures
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
@@ -571,7 +574,7 @@ object JsonCodecMaker {
             val extraFields =
               q"""c = out.writeObjectField(c, "type")
                   out.writeVal($typeName)"""
-            cq"x: $tpe => ${genWriteVal(q"x", tpe, isRoot = false, extraFields)}"
+            cq"x: $tpe => ${genWriteVal(q"x", tpe, extraFields)}"
           }
           q"""x match {
                 case ..$writeSubclasses
@@ -586,12 +589,12 @@ object JsonCodecMaker {
             import scala.annotation.switch
             new JsonCodec[$rootTpe] {
               def default: $rootTpe = ${defaultValue(rootTpe)}
-              def decode(in: JsonReader, default: $rootTpe): $rootTpe = ${genReadVal(rootTpe, q"default", isRoot = true)}
-              def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe, isRoot = true)}
-              ..${defaultValueFields.values.map(_.tree)}
-              ..${reqFields.values.map(_.tree)}
-              ..${decodeMethods.values.toSeq.reverseMap(_.tree)}
-              ..${encodeMethods.values.toSeq.reverseMap(_.tree)}
+              def decode(in: JsonReader, default: $rootTpe): $rootTpe = ${genReadVal(rootTpe, q"default")}
+              def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe)}
+              ..${defaultValueTrees.values}
+              ..${reqFieldTrees.values}
+              ..${decodeMethodTrees.values}
+              ..${encodeMethodTrees.values}
             }"""
       if (c.settings.contains("print-codecs")) {
         val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"

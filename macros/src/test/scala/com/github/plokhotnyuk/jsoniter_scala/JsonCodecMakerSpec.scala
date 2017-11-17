@@ -528,6 +528,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(make[NullAndNoneValues](CodecMakerConfig()),
         NullAndNoneValues("VVV", null, null, null, NullAndNoneValues(null, null, null, null, null, None), None),
         """{"str":"VVV","bi":null,"bd":null,"lt":null,"nv":{"str":null,"bi":null,"bd":null,"lt":null,"nv":null}}""".getBytes)
+      verifySer(make[List[NullAndNoneValues]](CodecMakerConfig()),
+        List(NullAndNoneValues("VVV", null, null, null, null, None)),
+        """[{"str":"VVV","bi":null,"bd":null,"lt":null,"nv":null}]""".getBytes)
     }
     "don't serialize case class fields with empty collections" in {
       verifySer(make[EmptyTraversables](CodecMakerConfig()), EmptyTraversables(List(), Set(), List()), """{}""".getBytes)
