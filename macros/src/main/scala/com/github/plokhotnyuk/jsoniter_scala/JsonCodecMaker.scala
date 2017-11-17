@@ -593,8 +593,8 @@ object JsonCodecMaker {
               def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe)}
               ..${defaultValueTrees.values}
               ..${reqFieldTrees.values}
-              ..${decodeMethodTrees.values}
-              ..${encodeMethodTrees.values}
+              ..${decodeMethodTrees.values.toSeq.reverse}
+              ..${encodeMethodTrees.values.toSeq.reverse}
             }"""
       if (c.settings.contains("print-codecs")) {
         val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
