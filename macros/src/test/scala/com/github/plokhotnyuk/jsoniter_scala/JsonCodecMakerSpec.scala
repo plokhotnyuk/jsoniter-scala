@@ -129,6 +129,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class C(a: Int, b: String) extends AlgebraicDataType
 
+  case object D extends AlgebraicDataType
+
   val codecOfADTList: JsonCodec[List[AlgebraicDataType]] = make[List[AlgebraicDataType]](CodecMakerConfig())
 
   "JsonCodec" should {
@@ -590,8 +592,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize ADTs using descriptor field" in {
       verifySerDeser(codecOfADTList,
-        List(A(1), B("VVV"), C(1, "VVV"), null),
-        """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},null]""".getBytes)
+        List(A(1), B("VVV"), C(1, "VVV"), D, null),
+        """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"},null]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
       verifyDeser(make[List[AlgebraicDataType]](CodecMakerConfig(descriptorFieldName = "t", skipUnexpectedFields = false)),
         List(C(2, longStr), C(1, "VVV")),

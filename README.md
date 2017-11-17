@@ -13,7 +13,7 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable indenting of output
 - Parsing of strings with escaped characters for JSON field names, keys & values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala collections, 
-  arrays, value classes and case classes with values/fields having any of types listed here 
+  arrays, module classes, value classes and case classes with values/fields having any of types listed here 
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for any of them 
 - Implicitly resolvable codecs for all above types

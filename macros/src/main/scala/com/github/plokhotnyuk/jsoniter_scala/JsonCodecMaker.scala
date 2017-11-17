@@ -281,6 +281,8 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[Traversable[_]]) q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withDefaultValueFor(tpe) {
           q"new Array[${typeArg1(tpe)}](0)"
+        } else if (tpe.typeSymbol.isModuleClass) {
+          q"${tpe.typeSymbol.asClass.module}"
         } else q"null"
 
       def genReadVal(tpe: Type, default: Tree, extraFields: Tree = EmptyTree): Tree = {
@@ -353,6 +355,15 @@ object JsonCodecMaker {
                   case _: NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
                 }
               } else default"""
+        } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(tpe, default) {
+          q"""(in.nextToken(): @switch) match {
+                case '{' =>
+                  in.unreadByte()
+                  in.skip()
+                  ${tpe.typeSymbol.asClass.module}
+                case 'n' => in.parseNull(default)
+                case _ => in.objectStartError()
+              }"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(tpe, default) {
           val annotations = getFieldAnnotations(tpe)
 
@@ -506,6 +517,18 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
+        } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(tpe, m) {
+          val writeFieldsBlock =
+            if (extraFields.isEmpty) EmptyTree
+            else {
+              q"""var c = false
+                  ..$extraFields"""
+            }
+          q"""if (x != null) {
+                out.writeObjectStart()
+                ..$writeFieldsBlock
+                out.writeObjectEnd()
+              } else out.writeNull()"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
           val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
@@ -579,7 +602,7 @@ object JsonCodecMaker {
           q"""x match {
                 case ..$writeSubclasses
                 case null => out.writeNull()
-                case _ => ()
+                case _ => out.encodeError("unexpected type: " + x.getClass)
               }"""
         } else cannotFindCodecError(tpe)
       }
