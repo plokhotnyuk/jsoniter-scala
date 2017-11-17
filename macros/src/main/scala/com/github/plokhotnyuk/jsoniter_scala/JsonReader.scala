@@ -1083,11 +1083,8 @@ final class JsonReader private[jsoniter_scala](
             parseEncodedString(i + 1, lim, pos + 1)
           } else if (remaining > 1) {
             (buf(pos + 1): @switch) match {
-              case 'b' =>
-                charBuf(i) = '\b'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 'f' =>
-                charBuf(i) = '\f'
+              case '"' =>
+                charBuf(i) = '"'
                 parseEncodedString(i + 1, lim, pos + 2)
               case 'n' =>
                 charBuf(i) = '\n'
@@ -1098,14 +1095,17 @@ final class JsonReader private[jsoniter_scala](
               case 't' =>
                 charBuf(i) = '\t'
                 parseEncodedString(i + 1, lim, pos + 2)
-              case '"' =>
-                charBuf(i) = '"'
+              case 'b' =>
+                charBuf(i) = '\b'
                 parseEncodedString(i + 1, lim, pos + 2)
-              case '/' =>
-                charBuf(i) = '/'
+              case 'f' =>
+                charBuf(i) = '\f'
                 parseEncodedString(i + 1, lim, pos + 2)
               case '\\' =>
                 charBuf(i) = '\\'
+                parseEncodedString(i + 1, lim, pos + 2)
+              case '/' =>
+                charBuf(i) = '/'
                 parseEncodedString(i + 1, lim, pos + 2)
               case 'u' =>
                 if (remaining > 5) {
