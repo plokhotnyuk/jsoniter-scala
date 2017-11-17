@@ -14,7 +14,9 @@ class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
 // see more details here: https://shipilev.net/blog/2014/exceptional-performance/
 case class ReaderConfig(
     throwParseExceptionWithStackTrace: Boolean = true,
-    appendHexDumpToParseException: Boolean = true)
+    appendHexDumpToParseException: Boolean = true,
+    preferredBufSize: Int = 16384,
+    preferredCharBufSize: Int = 16384)
 
 final class JsonReader private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
@@ -24,9 +26,7 @@ final class JsonReader private[jsoniter_scala](
     private var charBuf: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null,
     private var totalRead: Int = 0,
-    private var config: ReaderConfig = ReaderConfig(),
-    private val preferredBufSize: Int = 16384,
-    private val preferredCharBufSize: Int = 16384) {
+    private var config: ReaderConfig = ReaderConfig()) {
   def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val len = reqFields.length
     var i = 0
@@ -1464,10 +1464,11 @@ final class JsonReader private[jsoniter_scala](
 
   private def endOfInput(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
 
-  private def freeTooLongBuf(): Unit = if (buf.length > preferredBufSize) buf = new Array[Byte](preferredBufSize)
+  private def freeTooLongBuf(): Unit =
+    if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)
 
   private def freeTooLongCharBuf(): Unit =
-    if (charBuf.length > preferredCharBufSize) charBuf = new Array[Char](preferredCharBufSize)
+    if (charBuf.length > config.preferredCharBufSize) charBuf = new Array[Char](config.preferredCharBufSize)
 }
 
 object JsonReader {

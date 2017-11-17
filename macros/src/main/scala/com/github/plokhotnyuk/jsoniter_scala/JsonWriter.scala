@@ -9,7 +9,8 @@ import scala.collection.breakOut
 
 case class WriterConfig(
     indentionStep: Int = 0,
-    escapeUnicode: Boolean = false)
+    escapeUnicode: Boolean = false,
+    preferredBufSize: Int = 16384)
 
 final class JsonWriter private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
@@ -17,8 +18,7 @@ final class JsonWriter private[jsoniter_scala](
     private var indention: Int = 0,
     private var out: OutputStream = null,
     private var isBufGrowingAllowed: Boolean = true,
-    private var config: WriterConfig = WriterConfig(),
-    private val preferredBufSize: Int = 16384) {
+    private var config: WriterConfig = WriterConfig()) {
   def writeComma(comma: Boolean): Boolean = {
     if (comma) write(',')
     writeIndention(0)
@@ -514,7 +514,8 @@ final class JsonWriter private[jsoniter_scala](
     count = 0
   }
 
-  private def freeTooLongBuf(): Unit = if (buf.length > preferredBufSize) buf = new Array[Byte](preferredBufSize)
+  private def freeTooLongBuf(): Unit =
+    if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)
 }
 
 object JsonWriter {
