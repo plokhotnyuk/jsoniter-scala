@@ -533,7 +533,7 @@ object JsonCodecMaker {
           val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
-          val writeFields = extraFields +: members.map { m =>
+          val writeFields = members.map { m =>
             val tpe = methodType(m)
             val name = getMappedName(annotations, m.name.toString)
             defaults.get(m.name.toString) match {
@@ -579,11 +579,14 @@ object JsonCodecMaker {
                 }
             }
           }
+          val allWriteFields =
+            if (extraFields == EmptyTree) writeFields
+            else extraFields +: writeFields
           val writeFieldsBlock =
-            if (writeFields.isEmpty) EmptyTree
+            if (allWriteFields.isEmpty) EmptyTree
             else {
               q"""var c = false
-                  ..$writeFields"""
+                  ..$allWriteFields"""
             }
           q"""if (x != null) {
                 out.writeObjectStart()
