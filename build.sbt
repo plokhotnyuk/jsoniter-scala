@@ -37,11 +37,11 @@ lazy val benchmark = project
   .enablePlugins(JmhPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.1",
-      "io.circe" %% "circe-core" % "0.9.0-M1",
-      "io.circe" %% "circe-generic" % "0.9.0-M1",
-      "io.circe" %% "circe-parser" % "0.9.0-M1",
-      "com.typesafe.play" %% "play-json" % "2.6.6",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.2",
+      "io.circe" %% "circe-core" % "0.9.0-M2",
+      "io.circe" %% "circe-generic" % "0.9.0-M2",
+      "io.circe" %% "circe-parser" % "0.9.0-M2",
+      "com.typesafe.play" %% "play-json" % "2.6.7",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.2.27",
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
