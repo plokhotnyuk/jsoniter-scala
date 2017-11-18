@@ -27,7 +27,7 @@ final class JsonReader private[jsoniter_scala](
     private var in: InputStream = null,
     private var totalRead: Int = 0,
     private var config: ReaderConfig = ReaderConfig()) {
-  def reqFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
+  def requiredObjectFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
     val len = reqFields.length
     var i = 0
     var j = 0
@@ -42,7 +42,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  def unexpectedFieldError(len: Int): Nothing = {
+  def unexpectedObjectFieldError(len: Int): Nothing = {
     var i = prependString("unexpected field: \"", len)
     i = appendString("\"", i)
     decodeError(i, head - 1, null)
@@ -50,7 +50,7 @@ final class JsonReader private[jsoniter_scala](
 
   def setMark(): Unit = mark = head
 
-  def scanToField(s: String): Unit =
+  def scanToObjectField(s: String): Unit =
     while ({
       if (isCharBufEqualsTo(readObjectFieldAsCharBuf(), s)) false
       else {

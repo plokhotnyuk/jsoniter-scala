@@ -126,10 +126,8 @@ object JsonCodecMaker {
                   if (in.nextToken() == $close) $result
                   else $endError
                 }
-              case 'n' =>
-                in.parseNull(default)
-              case _ =>
-                ..$startError
+              case 'n' => in.parseNull(default)
+              case _ => ..$startError
             }"""
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
@@ -208,7 +206,7 @@ object JsonCodecMaker {
       val codecConfig = c.eval[CodecMakerConfig](c.Expr[CodecMakerConfig](c.untypecheck(config.tree)))
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
-        else q"in.unexpectedFieldError(l)"
+        else q"in.unexpectedObjectFieldError(l)"
 
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
@@ -398,7 +396,7 @@ object JsonCodecMaker {
                 required.map(r => getMappedName(annotations, r))
               }
               q"""if ($checkReqVars) $construct
-                  else in.reqFieldError($reqFieldNames, ..$reqVarNames)"""
+                  else in.requiredObjectFieldError($reqFieldNames, ..$reqVarNames)"""
             }
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
@@ -436,10 +434,8 @@ object JsonCodecMaker {
                     if (in.nextToken() != '}') in.objectEndError()
                   }
                   ..$checkReqVarsAndConstruct
-                case 'n' =>
-                  in.parseNull(default)
-                case _ =>
-                  in.objectStartError()
+                case 'n' => in.parseNull(default)
+                case _ => in.objectStartError()
               }"""
         } else if (tpe.typeSymbol.asClass.isTrait) withDecoderFor(tpe, default) {
           val readSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
@@ -466,7 +462,7 @@ object JsonCodecMaker {
           q"""in.setMark()
               (in.nextToken(): @switch) match {
                 case '{' =>
-                  in.scanToField(${codecConfig.descriptorFieldName})
+                  in.scanToObjectField(${codecConfig.descriptorFieldName})
                   in.readString(null) match {
                     case ..$readSubclasses
                     case _ => in.decodeError($illegalDescriptorError)
@@ -474,8 +470,7 @@ object JsonCodecMaker {
                 case 'n' =>
                   in.resetMark()
                   in.parseNull(default)
-                case _ =>
-                  in.objectStartError()
+                case _ => in.objectStartError()
               }"""
         } else cannotFindCodecError(tpe)
       }
