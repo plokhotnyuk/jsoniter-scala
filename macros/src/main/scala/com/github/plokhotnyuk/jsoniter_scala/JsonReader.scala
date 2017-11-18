@@ -1529,7 +1529,7 @@ object JsonReader {
     reader.tail = 0
     reader.mark = -1
     reader.totalRead = 0
-    try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
+    try codec.decode(reader, codec.nullValue) // also checks that `codec` is not null before any parsing
     finally {
       reader.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       reader.freeTooLongBuf()
@@ -1604,7 +1604,7 @@ object JsonReader {
     reader.tail = to
     reader.mark = -1
     reader.totalRead = 0
-    try codec.decode(reader, codec.default) // also checks that `codec` is not null before any parsing
+    try codec.decode(reader, codec.nullValue) // also checks that `codec` is not null before any parsing
     finally {
       reader.buf = currBuf
       reader.freeTooLongCharBuf()

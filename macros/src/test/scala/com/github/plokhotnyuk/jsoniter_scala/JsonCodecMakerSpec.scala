@@ -246,13 +246,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
       implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {
-        val default: Either[String, StandardTypes] = null
+        val nullValue: Either[String, StandardTypes] = null
 
         def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
           in.nextToken() match {
             case '{' =>
               in.unreadByte()
-              Right(codecOfStandardTypes.decode(in, codecOfStandardTypes.default))
+              Right(codecOfStandardTypes.decode(in, codecOfStandardTypes.nullValue))
             case '"' =>
               in.unreadByte()
               Left(in.readString())
@@ -276,7 +276,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfOuterTypes, OuterTypes("X"),
         """{"s":"X"}""".getBytes)
       implicit object codecOfLocationType extends JsonCodec[LocationType.LocationType] {
-        val default: LocationType.LocationType = null
+        val nullValue: LocationType.LocationType = null
 
         def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
           if (in.nextToken() == 'n') in.parseNull(default)
