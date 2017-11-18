@@ -434,13 +434,13 @@ case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char,
 case class ExtractFields(s: String, l: Long)
 
 object GoogleMapsAPI {
-  case class Distance(
+  case class Value(
     text: String,
     value: Int)
 
   case class Elements(
-    distance: Distance,
-    duration: Distance,
+    distance: Value,
+    duration: Value,
     status: String)
 
   case class DistanceMatrix(
