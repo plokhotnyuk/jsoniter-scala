@@ -286,8 +286,11 @@ object JsonCodecMaker {
       def genReadVal(tpe: Type, default: Tree, extraFields: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         val decodeMethodName = decodeMethodNames.get(tpe)
+        if (decodeMethodName.isDefined && extraFields != EmptyTree)
+          c.warning(c.enclosingPosition,
+            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to read some extra field(s).")
         if (implCodec != EmptyTree) q"$implCodec.decode(in, $default)"
-        else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)" // to avoid stack overflow during generation for recursive structures
+        else if (decodeMethodName.isDefined && extraFields == EmptyTree) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readByte()"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
@@ -478,8 +481,11 @@ object JsonCodecMaker {
       def genWriteVal(m: Tree, tpe: Type, extraFields: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         val encodeMethodName = encodeMethodNames.get(tpe)
+        if (encodeMethodName.isDefined && extraFields != EmptyTree)
+          c.warning(c.enclosingPosition,
+            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to write some extra field(s).")
         if (implCodec != EmptyTree) q"$implCodec.encode($m, out)"
-        else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)" // to avoid stack overflow during generation for recursive structures
+        else if (encodeMethodName.isDefined && extraFields == EmptyTree) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
