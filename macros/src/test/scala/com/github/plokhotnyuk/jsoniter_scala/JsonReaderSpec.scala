@@ -13,7 +13,17 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
-  val json: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes(UTF_8)
+  val json: Array[Byte] =
+    """{
+      |  "name": "John",
+      |  "devices": [
+      |    {
+      |      "id": 2,
+      |      "model": "iPhone X"
+      |    }
+      |  ]
+      |}""".stripMargin.getBytes(UTF_8)
+  val compactJson: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes(UTF_8)
   val httpMessage: Array[Byte] =
     """HTTP/1.0 200 OK
       |Content-Type: application/json
@@ -22,10 +32,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes(UTF_8)
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
-      JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe user
+      JsonReader.read(codec, new ByteArrayInputStream(compactJson)) shouldBe user
     }
     "parse json from the byte array" in {
-      JsonReader.read(codec, json) shouldBe user
+      JsonReader.read(codec, compactJson) shouldBe user
     }
     "parse json from the byte array within specified positions" in {
       JsonReader.read(codec, httpMessage, 66, httpMessage.length) shouldBe user
@@ -42,13 +52,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
     "throw json exception in case of the provided params are invalid" in {
-      intercept[NullPointerException](JsonReader.read(null, json))
-      intercept[NullPointerException](JsonReader.read(null, new ByteArrayInputStream(json)))
+      intercept[NullPointerException](JsonReader.read(null, compactJson))
+      intercept[NullPointerException](JsonReader.read(null, new ByteArrayInputStream(compactJson)))
       intercept[NullPointerException](JsonReader.read(null, httpMessage, 66, httpMessage.length))
       intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[Array[Byte]]))
       intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[Array[Byte]], 0, 50))
       intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[InputStream]))
-      intercept[NullPointerException](JsonReader.read(codec, new ByteArrayInputStream(json), null))
+      intercept[NullPointerException](JsonReader.read(codec, new ByteArrayInputStream(compactJson), null))
       intercept[NullPointerException](JsonReader.read(codec, httpMessage, 66, httpMessage.length, null))
       assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(codec, httpMessage, 50, 200))
         .getMessage.contains("`to` should be positive and not greater than `buf` length"))
@@ -146,32 +156,75 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[JsonParseException](skip(":")).getMessage.contains("expected value, offset: 0x00000000"))
     }
   }
+  "JsonReader.nextToken" should {
+    "find next non-whitespace byte of input" in {
+      val r = reader(json)
+      assert(r.nextToken() == '{')
+      assert(r.nextToken() == '"')
+    }
+    "throw parse exception in case of end of input" in {
+      val r = reader(json)
+      r.skip()
+      assert(intercept[JsonParseException](r.nextToken() == '{')
+        .getMessage.contains("unexpected end of input, offset: 0x0000005d"))
+    }
+  }
+  "JsonReader.nextByte" should {
+    "return next byte of input" in {
+      val r = reader(json)
+      assert(r.nextByte() == '{')
+      assert(r.nextByte() == '\n')
+      assert(r.nextByte() == ' ')
+      assert(r.nextByte() == ' ')
+      assert(r.nextByte() == '"')
+    }
+    "throw parse exception in case of end of input" in {
+      val r = reader(json)
+      r.skip()
+      assert(intercept[JsonParseException](r.nextByte() == '{')
+        .getMessage.contains("unexpected end of input, offset: 0x0000005d"))
+    }
+  }
+  "JsonReader.unreadByte" should {
+    "rollback of reading last byte of input" in {
+      val r = reader(json)
+      assert(r.nextByte() == '{')
+      r.unreadByte()
+      assert(r.nextToken() == '{')
+      r.unreadByte()
+      assert(r.nextByte() == '{')
+    }
+    "throw array index out of bounds in case of missing preceding call of 'nextToken()' or 'nextByte()'" in {
+      assert(intercept[ArrayIndexOutOfBoundsException](reader(json).unreadByte())
+        .getMessage.contains("expected preceding call of 'nextToken()' or 'nextByte()'"))
+    }
+  }
   "JsonReader.readBoolean" should {
     "parse valid true and false values" in {
-      parse("true".getBytes).readBoolean() shouldBe true
-      parse("false".getBytes).readBoolean() shouldBe false
+      reader("true".getBytes).readBoolean() shouldBe true
+      reader("false".getBytes).readBoolean() shouldBe false
     }
     "throw parsing exception for empty input and illegal or broken value" in {
-      assert(intercept[JsonParseException](parse("x".getBytes).readBoolean())
+      assert(intercept[JsonParseException](reader("x".getBytes).readBoolean())
         .getMessage.contains("illegal boolean, offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("trae".getBytes).readBoolean())
+      assert(intercept[JsonParseException](reader("trae".getBytes).readBoolean())
         .getMessage.contains("illegal boolean, offset: 0x00000002"))
-      assert(intercept[JsonParseException](parse("folse".getBytes).readBoolean())
+      assert(intercept[JsonParseException](reader("folse".getBytes).readBoolean())
         .getMessage.contains("illegal boolean, offset: 0x00000001"))
-      assert(intercept[JsonParseException](parse("".getBytes).readBoolean())
+      assert(intercept[JsonParseException](reader("".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input, offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("tru".getBytes).readBoolean())
+      assert(intercept[JsonParseException](reader("tru".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
-      assert(intercept[JsonParseException](parse("fals".getBytes).readBoolean())
+      assert(intercept[JsonParseException](reader("fals".getBytes).readBoolean())
         .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
   }
   "JsonReader.readString" should {
     "parse null value" in {
-      parse("null".getBytes).readString() shouldBe null
+      reader("null".getBytes).readString() shouldBe null
     }
     "return supplied default value instead of null value" in {
-      parse("null".getBytes).readString("VVV") shouldBe "VVV"
+      reader("null".getBytes).readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
       forAll(minSuccessful(10000)) { (s: String) =>
@@ -181,19 +234,19 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
-      assert(intercept[JsonParseException](parse("".getBytes).readString())
+      assert(intercept[JsonParseException](reader("".getBytes).readString())
         .getMessage.contains("unexpected end of input, offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("\"".getBytes).readString())
+      assert(intercept[JsonParseException](reader("\"".getBytes).readString())
         .getMessage.contains("unexpected end of input, offset: 0x00000001"))
-      assert(intercept[JsonParseException](parse("\"\\".getBytes).readString())
+      assert(intercept[JsonParseException](reader("\"\\".getBytes).readString())
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "throw parsing exception for boolean values & numbers" in {
-      assert(intercept[JsonParseException](parse("true".getBytes).readString())
+      assert(intercept[JsonParseException](reader("true".getBytes).readString())
         .getMessage.contains("expected string value or null, offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("false".getBytes).readString())
+      assert(intercept[JsonParseException](reader("false".getBytes).readString())
         .getMessage.contains("expected string value or null, offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("12345".getBytes).readString())
+      assert(intercept[JsonParseException](reader("12345".getBytes).readString())
         .getMessage.contains("expected string value or null, offset: 0x00000000"))
     }
     "get the same string value for escaped strings as for non-escaped" in {
@@ -267,21 +320,21 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000002"))
     }
     "throw parsing exception for empty input and illegal or broken string" in {
-      assert(intercept[JsonParseException](parse("".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("".getBytes).readChar())
         .getMessage.contains("unexpected end of input, offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("\"".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("\"".getBytes).readChar())
         .getMessage.contains("unexpected end of input, offset: 0x00000001"))
-      assert(intercept[JsonParseException](parse("\"\\".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("\"\\".getBytes).readChar())
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "throw parsing exception for null, boolean values & numbers" in {
-      assert(intercept[JsonParseException](parse("null".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("null".getBytes).readChar())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("true".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("true".getBytes).readChar())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("false".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("false".getBytes).readChar())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](parse("12345".getBytes).readChar())
+      assert(intercept[JsonParseException](reader("12345".getBytes).readChar())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "get the same char value for escaped strings as for non-escaped" in {
@@ -780,52 +833,52 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
 
   def skip(s: String): Unit = {
-    val reader = parse((s + ",").getBytes)
-    reader.skip()
-    reader.nextToken().toChar shouldBe ','
+    val r = reader((s + ",").getBytes)
+    r.skip()
+    r.nextToken().toChar shouldBe ','
   }
 
   def readString(s: String): String = readString(s.getBytes(UTF_8))
 
-  def readString(buf: Array[Byte]): String = parse('"'.toByte +: buf :+ '"'.toByte).readString()
+  def readString(buf: Array[Byte]): String = reader('"'.toByte +: buf :+ '"'.toByte).readString()
 
   def readChar(s: String): Char = readChar(s.getBytes(UTF_8))
 
-  def readChar(buf: Array[Byte]): Char = parse('"'.toByte +: buf :+ '"'.toByte).readChar()
+  def readChar(buf: Array[Byte]): Char = reader('"'.toByte +: buf :+ '"'.toByte).readChar()
 
   def readByte(s: String): Byte = readByte(s.getBytes(UTF_8))
 
-  def readByte(buf: Array[Byte]): Byte = parse(buf).readByte()
+  def readByte(buf: Array[Byte]): Byte = reader(buf).readByte()
 
   def readShort(s: String): Short = readShort(s.getBytes(UTF_8))
 
-  def readShort(buf: Array[Byte]): Short = parse(buf).readShort()
+  def readShort(buf: Array[Byte]): Short = reader(buf).readShort()
 
   def readInt(s: String): Int = readInt(s.getBytes(UTF_8))
 
-  def readInt(buf: Array[Byte]): Int = parse(buf).readInt()
+  def readInt(buf: Array[Byte]): Int = reader(buf).readInt()
 
   def readLong(s: String): Long = readLong(s.getBytes(UTF_8))
 
-  def readLong(buf: Array[Byte]): Long = parse(buf).readLong()
+  def readLong(buf: Array[Byte]): Long = reader(buf).readLong()
 
   def readFloat(s: String): Float = readFloat(s.getBytes(UTF_8))
 
-  def readFloat(buf: Array[Byte]): Float = parse(buf).readFloat()
+  def readFloat(buf: Array[Byte]): Float = reader(buf).readFloat()
 
   def readDouble(s: String): Double = readDouble(s.getBytes(UTF_8))
 
-  def readDouble(buf: Array[Byte]): Double = parse(buf).readDouble()
+  def readDouble(buf: Array[Byte]): Double = reader(buf).readDouble()
 
   def readBigInt(s: String, default: BigInt): BigInt = readBigInt(s.getBytes(UTF_8), default)
 
-  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = parse(buf).readBigInt(default)
+  def readBigInt(buf: Array[Byte], default: BigInt): BigInt = reader(buf).readBigInt(default)
 
   def readBigDecimal(s: String, default: BigDecimal): BigDecimal =
     readBigDecimal(s.getBytes(UTF_8), default)
 
-  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = parse(buf).readBigDecimal(default)
+  def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = reader(buf).readBigDecimal(default)
 
-  def parse(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
+  def reader(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
     0, 0, -1, new Array[Char](0), new ByteArrayInputStream(buf), 0, ReaderConfig())
 }

@@ -189,6 +189,14 @@ final class JsonReader private[jsoniter_scala](
 
   def nextToken(): Byte = nextToken(head)
 
+  def nextByte(): Byte = nextByte(head)
+
+  def unreadByte(): Unit = {
+    val pos = head
+    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'nextByte()'")
+    head = pos - 1
+  }
+
   def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
 
   def isCharBufEqualsTo(len: Int, s: String): Boolean = len == s.length && isCharBufEqualsTo(len, s, 0)
@@ -203,8 +211,6 @@ final class JsonReader private[jsoniter_scala](
     else if (b == '[') skipNested('[', ']', 0, head)
     else decodeError("expected value", head - 1)
   }
-
-  def unreadByte(): Unit = head -= 1
 
   def arrayStartError(): Nothing = decodeError("expected '[' or null")
 
