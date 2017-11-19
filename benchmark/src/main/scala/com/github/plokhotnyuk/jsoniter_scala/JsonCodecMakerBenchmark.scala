@@ -270,7 +270,7 @@ class JsonCodecMakerBenchmark {
   def readGoogleMapsAPIJsoniter(): GoogleMapsAPI.DistanceMatrix = JsonReader.read(GoogleMapsAPI.codec, GoogleMapsAPI.json)
 /* FIXME: format doesn't compile
   @Benchmark
-  def readGoogleMapsAPIPlay(): GoogleMapsAPI.DistanceMatrix = Json.parse(TwitterAPI.json).as[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.format)
+  def readGoogleMapsAPIPlay(): GoogleMapsAPI.DistanceMatrix = Json.parse(GoogleMapsAPI.json).as[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.format)
 */
   @Benchmark
   def readTwitterAPICirce(): Seq[TwitterAPI.Tweet] = decode[Seq[TwitterAPI.Tweet]](new String(TwitterAPI.json, UTF_8)).fold(throw _, x => x)
@@ -458,9 +458,8 @@ object GoogleMapsAPI {
   //Distance Matrix API call for top-10 by population cities in US:
   //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
   val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response.json"))
-  // TODO consider to make obj & compactJson explicitly defined instead of reading from file by a generated codec
+  val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_compact_response.json"))
   val obj: GoogleMapsAPI.DistanceMatrix = JsonReader.read(codec, json)
-  val compactJson: Array[Byte] = JsonWriter.write(codec, obj)
 }
 
 object TwitterAPI {
@@ -591,7 +590,6 @@ object TwitterAPI {
   */
   val codec: JsonCodec[Seq[Tweet]] = make[Seq[TwitterAPI.Tweet]](CodecMakerConfig())
   val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
-  // TODO consider to make obj & compactJson explicitly defined instead of reading from file by a generated codec
+  val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
   val obj: Seq[TwitterAPI.Tweet] = JsonReader.read(codec, json)
-  val compactJson: Array[Byte] = JsonWriter.write(codec, obj)
 }
