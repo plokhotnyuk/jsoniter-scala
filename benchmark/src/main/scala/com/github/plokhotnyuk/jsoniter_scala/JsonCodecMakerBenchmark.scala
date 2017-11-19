@@ -268,10 +268,10 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def readGoogleMapsAPIJsoniter(): GoogleMapsAPI.DistanceMatrix = JsonReader.read(GoogleMapsAPI.codec, GoogleMapsAPI.json)
-/* FIXME: format doesn't compile
+
   @Benchmark
   def readGoogleMapsAPIPlay(): GoogleMapsAPI.DistanceMatrix = Json.parse(GoogleMapsAPI.json).as[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.format)
-*/
+
   @Benchmark
   def readTwitterAPICirce(): Seq[TwitterAPI.Tweet] = decode[Seq[TwitterAPI.Tweet]](new String(TwitterAPI.json, UTF_8)).fold(throw _, x => x)
 
@@ -393,10 +393,10 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj)
-/* FIXME: format doesn't compile
+
   @Benchmark
   def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(GoogleMapsAPI.obj)(GoogleMapsAPI.format))
-*/
+
   @Benchmark
   def writeTwitterAPICirce(): Array[Byte] = TwitterAPI.obj.asJson.noSpaces.getBytes(UTF_8)
 
@@ -451,15 +451,18 @@ object GoogleMapsAPI {
 
   case class Rows(elements: Seq[Elements])
 
-  /* FIXME: format doesn't compile
-  val format: OFormat[GoogleMapsAPI.DistanceMatrix] = Json.format[GoogleMapsAPI.DistanceMatrix]
-  */
-  val codec: JsonCodec[GoogleMapsAPI.DistanceMatrix] = make[GoogleMapsAPI.DistanceMatrix](CodecMakerConfig())
+  val format: OFormat[GoogleMapsAPI.DistanceMatrix] = {
+    implicit lazy val format3 = Json.format[Value]
+    implicit lazy val format2 = Json.format[Elements]
+    implicit lazy val format1 = Json.format[Rows]
+    Json.format[DistanceMatrix]
+  }
+  val codec: JsonCodec[DistanceMatrix] = make[DistanceMatrix](CodecMakerConfig())
   //Distance Matrix API call for top-10 by population cities in US:
   //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
   val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response.json"))
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_compact_response.json"))
-  val obj: GoogleMapsAPI.DistanceMatrix = JsonReader.read(codec, json)
+  val obj: DistanceMatrix = JsonReader.read(codec, json)
 }
 
 object TwitterAPI {
@@ -584,12 +587,20 @@ object TwitterAPI {
     id: Long,
     id_str: String,
     indices: Seq[Int])
-
-  /* FIXME: format doesn't compile
-  val format: OFormat[Seq[TwitterAPI.Tweet]] = Json.format[Seq[TwitterAPI.Tweet]]
-  */
-  val codec: JsonCodec[Seq[Tweet]] = make[Seq[TwitterAPI.Tweet]](CodecMakerConfig())
+/* FIXME: doesn't compile
+  val format: OFormat[Tweet] = {
+    implicit lazy val format7 = Json.format[Urls]
+    implicit lazy val format6 = Json.format[Url]
+    implicit lazy val format5 = Json.format[UserEntities]
+    implicit lazy val format4 = Json.format[UserMentions]
+    implicit lazy val format3 = Json.format[Entities]
+    implicit lazy val format2 = Json.format[User]
+    implicit lazy val format1 = Json.format[RetweetedStatus]
+    Json.format[Tweet]
+  }
+*/
+  val codec: JsonCodec[Seq[Tweet]] = make[Seq[Tweet]](CodecMakerConfig())
   val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
-  val obj: Seq[TwitterAPI.Tweet] = JsonReader.read(codec, json)
+  val obj: Seq[Tweet] = JsonReader.read(codec, json)
 }

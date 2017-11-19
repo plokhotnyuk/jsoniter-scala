@@ -77,8 +77,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readGoogleMapsAPICirce() shouldBe GoogleMapsAPI.obj
       benchmark.readGoogleMapsAPIJackson() shouldBe GoogleMapsAPI.obj
       benchmark.readGoogleMapsAPIJsoniter() shouldBe GoogleMapsAPI.obj
-      //FIXME: format doesn't compile
-      //benchmark.readGoogleMapsAPIPlay() shouldBe GoogleMapsAPI.obj
+      benchmark.readGoogleMapsAPIPlay() shouldBe GoogleMapsAPI.obj
       benchmark.readTwitterAPICirce() shouldBe TwitterAPI.obj
       benchmark.readTwitterAPIJackson() shouldBe TwitterAPI.obj
       benchmark.readTwitterAPIJsoniter() shouldBe TwitterAPI.obj
@@ -127,8 +126,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(GoogleMapsAPI.compactJson)
-      // FIXME: format doesn't compile
-      //toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(GoogleMapsAPI.compactJson)
+      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(GoogleMapsAPI.compactJson)
       // FIXME: circe serializes empty collections
       //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(TwitterAPI.compactJson)
       toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(TwitterAPI.compactJson)

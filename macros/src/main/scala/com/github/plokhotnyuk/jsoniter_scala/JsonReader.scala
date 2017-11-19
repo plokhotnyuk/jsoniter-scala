@@ -189,11 +189,9 @@ final class JsonReader private[jsoniter_scala](
 
   def nextToken(): Byte = nextToken(head)
 
-  def nextByte(): Byte = nextByte(head)
-
-  def unreadByte(): Unit = {
+  def rollbackToken(): Unit = {
     val pos = head
-    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'nextByte()'")
+    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()'")
     head = pos - 1
   }
 

@@ -117,12 +117,12 @@ object JsonCodecMaker {
               case $open =>
                 if (in.nextToken() == $close) default
                 else {
-                  in.unreadByte()
+                  in.rollbackToken()
                   ..$newBuilder
                   do {
                     ..$loopBody
                   } while (in.nextToken() == ',')
-                  in.unreadByte()
+                  in.rollbackToken()
                   if (in.nextToken() == $close) $result
                   else $endError
                 }
@@ -359,7 +359,7 @@ object JsonCodecMaker {
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(tpe, default) {
           q"""(in.nextToken(): @switch) match {
                 case '{' =>
-                  in.unreadByte()
+                  in.rollbackToken()
                   in.skip()
                   ${tpe.typeSymbol.asClass.module}
                 case 'n' => in.parseNull(default)
@@ -426,14 +426,14 @@ object JsonCodecMaker {
                   ..$reqVars
                   ..$readVars
                   if (in.nextToken() != '}') {
-                    in.unreadByte()
+                    in.rollbackToken()
                     do {
                       val l = in.readObjectFieldAsCharBuf()
                       (in.charBufToHashCode(l): @switch) match {
                         case ..$readFieldsBlock
                       }
                     } while (in.nextToken() == ',')
-                    in.unreadByte()
+                    in.rollbackToken()
                     if (in.nextToken() != '}') in.objectEndError()
                   }
                   ..$checkReqVarsAndConstruct

@@ -169,34 +169,19 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("unexpected end of input, offset: 0x0000005d"))
     }
   }
-  "JsonReader.nextByte" should {
-    "return next byte of input" in {
-      val r = reader(json)
-      assert(r.nextByte() == '{')
-      assert(r.nextByte() == '\n')
-      assert(r.nextByte() == ' ')
-      assert(r.nextByte() == ' ')
-      assert(r.nextByte() == '"')
-    }
-    "throw parse exception in case of end of input" in {
-      val r = reader(json)
-      r.skip()
-      assert(intercept[JsonParseException](r.nextByte() == '{')
-        .getMessage.contains("unexpected end of input, offset: 0x0000005d"))
-    }
-  }
   "JsonReader.unreadByte" should {
     "rollback of reading last byte of input" in {
       val r = reader(json)
-      assert(r.nextByte() == '{')
-      r.unreadByte()
       assert(r.nextToken() == '{')
-      r.unreadByte()
-      assert(r.nextByte() == '{')
+      r.rollbackToken()
+      assert(r.nextToken() == '{')
+      assert(r.nextToken() == '"')
+      r.rollbackToken()
+      assert(r.nextToken() == '"')
     }
-    "throw array index out of bounds in case of missing preceding call of 'nextToken()' or 'nextByte()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader(json).unreadByte())
-        .getMessage.contains("expected preceding call of 'nextToken()' or 'nextByte()'"))
+    "throw array index out of bounds in case of missing preceding call of 'nextToken()'" in {
+      assert(intercept[ArrayIndexOutOfBoundsException](reader(json).rollbackToken())
+        .getMessage.contains("expected preceding call of 'nextToken()'"))
     }
   }
   "JsonReader.readBoolean" should {

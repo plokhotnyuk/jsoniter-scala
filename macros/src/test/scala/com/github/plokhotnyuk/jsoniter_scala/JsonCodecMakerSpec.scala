@@ -251,10 +251,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
           in.nextToken() match {
             case '{' =>
-              in.unreadByte()
+              in.rollbackToken()
               Right(codecOfStandardTypes.decode(in, codecOfStandardTypes.nullValue))
             case '"' =>
-              in.unreadByte()
+              in.rollbackToken()
               Left(in.readString())
             case _ =>
               in.decodeError("expected '{' or '\"'")
@@ -281,7 +281,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
           if (in.nextToken() == 'n') in.parseNull(default)
           else {
-            in.unreadByte()
+            in.rollbackToken()
             val v = in.readInt()
             try LocationType.apply(v) catch {
               case _: NoSuchElementException => in.decodeError("invalid enum value: " + v)
