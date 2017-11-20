@@ -11,8 +11,8 @@ scala:
 jdk: oraclejdk8
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
-  - sbt -no-colors ++$TRAVIS_SCALA_VERSION 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*'
+  - sbt -no-colors ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  - sbt -no-colors ++$TRAVIS_SCALA_VERSION clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*'
