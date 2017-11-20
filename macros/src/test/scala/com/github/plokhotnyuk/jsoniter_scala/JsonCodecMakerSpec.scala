@@ -592,22 +592,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
             |}""".stripMargin.getBytes)
       }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99", offset: 0x0000032c"""))
     }
-    "serialize and deserialize ADTs using descriptor field" in {
+    "serialize and deserialize ADTs using discriminator field" in {
       verifySerDeser(codecOfADTList,
         List(A(1), B("VVV"), null, C(1, "VVV"), D),
         """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},null,{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"}]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
-      verifyDeser(make[List[AlgebraicDataType]](CodecMakerConfig(descriptorFieldName = "t", skipUnexpectedFields = false)),
+      verifyDeser(make[List[AlgebraicDataType]](CodecMakerConfig(discriminatorFieldName = "t", skipUnexpectedFields = false)),
         List(C(2, longStr), C(1, "VVV")),
         s"""[{"a":2,"b":"$longStr","t":"JsonCodecMakerSpec.this.C"},{"a":1,"t":"JsonCodecMakerSpec.this.C","b":"VVV"}]""".getBytes)
     }
-    "throw parse exception in case of missing descriptor field or illegal value of descriptor field" in {
+    "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1}]""".getBytes)
       }.getMessage.contains("""missing required field "type", offset: 0x00000007"""))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":"A"}]""".getBytes)
-      }.getMessage.contains("""illegal value of descriptor field "type", offset: 0x00000011"""))
+      }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000011"""))
     }
   }
   "JsonCodec.enforceCamelCase" should {

@@ -17,7 +17,7 @@ class transient extends StaticAnnotation
 
 case class CodecMakerConfig(
     nameMapper: String => String = identity,
-    descriptorFieldName: String = "type",
+    discriminatorFieldName: String = "type",
     skipUnexpectedFields: Boolean = true) extends StaticAnnotation
 
 object JsonCodecMaker {
@@ -209,9 +209,22 @@ object JsonCodecMaker {
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedObjectFieldError(l)"
+      val skipDiscriminatorField = {
+        val cs = codecConfig.discriminatorFieldName.toCharArray
+        cq"${JsonReader.toHashCode(cs, cs.length)} => in.skip()"
+      }
 
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
+
+      def checkCollisionWithDiscriminator(tpe: c.universe.Type): Unit = {
+        val annotations = getFieldAnnotations(tpe)
+        getMembers(annotations, tpe).foreach { m =>
+          if (getMappedName(annotations, m.name.toString) == codecConfig.discriminatorFieldName) {
+            c.abort(c.enclosingPosition, s"'$tpe' define JSON name that matches with descriptor field name.")
+          }
+        }
+      }
 
       val nullValueNames = mutable.LinkedHashMap.empty[Type, TermName]
       val nullValueTrees = mutable.LinkedHashMap.empty[Type, Tree]
@@ -449,29 +462,16 @@ object JsonCodecMaker {
         } else if (tpe.typeSymbol.asClass.isTrait) withDecoderFor(tpe, default) {
           val readSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
             val tpe = s.asClass.toType
-            val annotations = getFieldAnnotations(tpe)
-
-            getMembers(annotations, tpe).foreach { m =>
-              if (getMappedName(annotations, m.name.toString) == codecConfig.descriptorFieldName) {
-                c.abort(c.enclosingPosition, s"'$tpe' define JSON name that matches with descriptor field name.")
-              }
-            }
-
-            val typeName = tpe.toString
-            val descriptorFieldNameHash = {
-              val cs = codecConfig.descriptorFieldName.toCharArray
-              JsonReader.toHashCode(cs, cs.length)
-            }
-            val extraFields = cq"$descriptorFieldNameHash => in.skip()"
-            cq"""$typeName =>
+            checkCollisionWithDiscriminator(tpe)
+            cq"""${tpe.toString} =>
                    in.rollbackToMark()
-                   ${genReadVal(tpe, nullValue(tpe), extraFields)}"""
+                   ${genReadVal(tpe, nullValue(tpe), skipDiscriminatorField)}"""
           }
-          val illegalDescriptorError = s"""illegal value of descriptor field "${codecConfig.descriptorFieldName}""""
+          val illegalDescriptorError = s"""illegal value of discriminator field "${codecConfig.discriminatorFieldName}""""
           q"""in.setMark()
               (in.nextToken(): @switch) match {
                 case '{' =>
-                  in.scanToObjectField(${codecConfig.descriptorFieldName})
+                  in.scanToObjectField(${codecConfig.discriminatorFieldName})
                   in.readString(null) match {
                     case ..$readSubclasses
                     case _ => in.decodeError($illegalDescriptorError)
@@ -603,11 +603,11 @@ object JsonCodecMaker {
         } else if (tpe.typeSymbol.asClass.isTrait) withEncoderFor(tpe, m) {
           val writeSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
             val tpe = s.asClass.toType
-            val typeName = tpe.toString
-            val extraFields =
+            checkCollisionWithDiscriminator(tpe)
+            val writeDiscriminatorField =
               q"""c = out.writeObjectField(c, "type")
-                  out.writeVal($typeName)"""
-            cq"x: $tpe => ${genWriteVal(q"x", tpe, extraFields)}"
+                  out.writeVal(${tpe.toString})"""
+            cq"x: $tpe => ${genWriteVal(q"x", tpe, writeDiscriminatorField)}"
           }
           q"""x match {
                 case ..$writeSubclasses
