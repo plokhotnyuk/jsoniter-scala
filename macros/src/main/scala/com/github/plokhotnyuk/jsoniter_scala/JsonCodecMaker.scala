@@ -217,12 +217,15 @@ object JsonCodecMaker {
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
 
-      def checkCollisionWithDiscriminator(tpe: c.universe.Type): Unit = {
-        val annotations = getFieldAnnotations(tpe)
-        getMembers(annotations, tpe).foreach { m =>
-          if (getMappedName(annotations, m.name.toString) == codecConfig.discriminatorFieldName) {
-            c.abort(c.enclosingPosition, s"'$tpe' define JSON name that matches with descriptor field name.")
-          }
+      def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
+        val collisions = names.groupBy(identity).collect { case (x, ys) if ys.lengthCompare(1) > 0 => x }
+        if (collisions.nonEmpty) {
+          val formattedCollisions = collisions.mkString("'", "', '", "'")
+          c.abort(c.enclosingPosition,
+            s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
+              s"Names(s) defined by '${typeOf[named]}' annotation(s), " +
+              s"name of discriminator field specified by 'config.discriminatorFieldName' " +
+              s"and name(s) returned by 'config.nameMapper' for non-annotated fields should not match.")
         }
       }
 
@@ -298,14 +301,14 @@ object JsonCodecMaker {
           q"${tpe.typeSymbol.asClass.module}"
         } else q"null"
 
-      def genReadVal(tpe: Type, default: Tree, extraFields: Tree = EmptyTree): Tree = {
+      def genReadVal(tpe: Type, default: Tree, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         val decodeMethodName = decodeMethodNames.get(tpe)
-        if (decodeMethodName.isDefined && extraFields != EmptyTree)
+        if (decodeMethodName.isDefined && !discriminator.isEmpty)
           c.warning(c.enclosingPosition,
-            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to read some extra field(s).")
-        if (implCodec != EmptyTree) q"$implCodec.decode(in, $default)"
-        else if (decodeMethodName.isDefined && extraFields == EmptyTree) q"${decodeMethodName.get}(in, $default)"
+            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to read the discriminator field.")
+        if (!implCodec.isEmpty) q"$implCodec.decode(in, $default)"
+        else if (decodeMethodName.isDefined && discriminator.isEmpty) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readByte()"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
@@ -393,6 +396,8 @@ object JsonCodecMaker {
           }
 
           val members = getMembers(annotations, tpe)
+          checkFieldNameCollisions(tpe,
+            (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
           val params = getParams(getModule(tpe))
           val required = params.collect {
             case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
@@ -436,8 +441,8 @@ object JsonCodecMaker {
             cq"$hashCode => $checkNameAndReadValue"
           }(breakOut)
           val readFieldsBlock =
-            (if (extraFields == EmptyTree) readFields
-            else readFields :+ extraFields) :+ cq"_ => $unexpectedFieldHandler"
+            (if (discriminator.isEmpty) readFields
+            else readFields :+ discriminator) :+ cq"_ => $unexpectedFieldHandler"
           q"""(in.nextToken(): @switch) match {
                 case '{' =>
                   ..$reqVars
@@ -462,7 +467,6 @@ object JsonCodecMaker {
         } else if (tpe.typeSymbol.asClass.isTrait) withDecoderFor(tpe, default) {
           val readSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
             val tpe = s.asClass.toType
-            checkCollisionWithDiscriminator(tpe)
             cq"""${tpe.toString} =>
                    in.rollbackToMark()
                    ${genReadVal(tpe, nullValue(tpe), skipDiscriminatorField)}"""
@@ -484,14 +488,14 @@ object JsonCodecMaker {
         } else cannotFindCodecError(tpe)
       }
 
-      def genWriteVal(m: Tree, tpe: Type, extraFields: Tree = EmptyTree): Tree = {
+      def genWriteVal(m: Tree, tpe: Type, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         val encodeMethodName = encodeMethodNames.get(tpe)
-        if (encodeMethodName.isDefined && extraFields != EmptyTree)
+        if (encodeMethodName.isDefined && !discriminator.isEmpty)
           c.warning(c.enclosingPosition,
-            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to write some extra field(s).")
-        if (implCodec != EmptyTree) q"$implCodec.encode($m, out)"
-        else if (encodeMethodName.isDefined && extraFields == EmptyTree) q"${encodeMethodName.get}($m, out)"
+            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to write the discriminator field.")
+        if (!implCodec.isEmpty) q"$implCodec.encode($m, out)"
+        else if (encodeMethodName.isDefined && discriminator.isEmpty) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
@@ -526,10 +530,10 @@ object JsonCodecMaker {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(tpe, m) {
           val writeFieldsBlock =
-            if (extraFields.isEmpty) EmptyTree
+            if (discriminator.isEmpty) EmptyTree
             else {
               q"""var c = false
-                  ..$extraFields"""
+                  ..$discriminator"""
             }
           q"""if (x != null) {
                 out.writeObjectStart()
@@ -538,11 +542,15 @@ object JsonCodecMaker {
               } else out.writeNull()"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
           val annotations = getFieldAnnotations(tpe)
+
+          def name(m: MethodSymbol): String = getMappedName(annotations, m.name.toString)
+
           val members = getMembers(annotations, tpe)
+          checkFieldNameCollisions(tpe,
+            (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
             val tpe = methodType(m)
-            val name = getMappedName(annotations, m.name.toString)
             defaults.get(m.name.toString) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) {
@@ -551,19 +559,19 @@ object JsonCodecMaker {
                           val d = $d
                           v.length != d.length && v.deep != d.deep
                         }) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeObjectField(c, ${name(m)})
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty && v != $d) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeObjectField(c, ${name(m)})
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeObjectField(c, ${name(m)})
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
@@ -571,24 +579,24 @@ object JsonCodecMaker {
                 if (tpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if ((v ne null) && v.length > 0) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeObjectField(c, ${name(m)})
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeObjectField(c, ${name(m)})
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""c = out.writeObjectField(c, $name)
+                  q"""c = out.writeObjectField(c, ${name(m)})
                       ..${genWriteVal(q"x.$m", tpe)}"""
                 }
             }
           }
           val allWriteFields =
-            if (extraFields == EmptyTree) writeFields
-            else extraFields +: writeFields
+            if (discriminator.isEmpty) writeFields
+            else discriminator +: writeFields
           val writeFieldsBlock =
             if (allWriteFields.isEmpty) EmptyTree
             else {
@@ -603,7 +611,6 @@ object JsonCodecMaker {
         } else if (tpe.typeSymbol.asClass.isTrait) withEncoderFor(tpe, m) {
           val writeSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
             val tpe = s.asClass.toType
-            checkCollisionWithDiscriminator(tpe)
             val writeDiscriminatorField =
               q"""c = out.writeObjectField(c, "type")
                   out.writeVal(${tpe.toString})"""
