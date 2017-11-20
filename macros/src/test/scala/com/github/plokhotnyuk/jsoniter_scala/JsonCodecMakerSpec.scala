@@ -279,8 +279,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         val nullValue: LocationType.LocationType = null
 
         def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
-          if (in.nextToken() == 'n') in.parseNull(default)
-          else {
+          if (in.nextToken() == 'n') {
+            in.rollbackToken()
+            in.readNull(default)
+          } else {
             in.rollbackToken()
             val v = in.readInt()
             try LocationType.apply(v) catch {
@@ -592,8 +594,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize ADTs using descriptor field" in {
       verifySerDeser(codecOfADTList,
-        List(A(1), B("VVV"), C(1, "VVV"), D, null),
-        """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"},null]""".getBytes)
+        List(A(1), B("VVV"), null, C(1, "VVV"), D),
+        """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},null,{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"}]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
       verifyDeser(make[List[AlgebraicDataType]](CodecMakerConfig(descriptorFieldName = "t", skipUnexpectedFields = false)),
         List(C(2, longStr), C(1, "VVV")),

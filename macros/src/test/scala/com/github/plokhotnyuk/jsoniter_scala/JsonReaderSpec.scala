@@ -169,7 +169,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("unexpected end of input, offset: 0x0000005d"))
     }
   }
-  "JsonReader.unreadByte" should {
+  "JsonReader.rollbackToken" should {
     "rollback of reading last byte of input" in {
       val r = reader(json)
       assert(r.nextToken() == '{')

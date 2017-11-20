@@ -126,7 +126,9 @@ object JsonCodecMaker {
                   if (in.nextToken() == $close) $result
                   else $endError
                 }
-              case 'n' => in.parseNull(default)
+              case 'n' =>
+                in.rollbackToken()
+                in.readNull(default)
               case _ => ..$startError
             }"""
 
@@ -362,7 +364,9 @@ object JsonCodecMaker {
                   in.rollbackToken()
                   in.skip()
                   ${tpe.typeSymbol.asClass.module}
-                case 'n' => in.parseNull(default)
+                case 'n' =>
+                  in.rollbackToken()
+                  in.readNull(default)
                 case _ => in.objectStartError()
               }"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(tpe, default) {
@@ -437,7 +441,9 @@ object JsonCodecMaker {
                     if (in.nextToken() != '}') in.objectEndError()
                   }
                   ..$checkReqVarsAndConstruct
-                case 'n' => in.parseNull(default)
+                case 'n' =>
+                  in.rollbackToken()
+                  in.readNull(default)
                 case _ => in.objectStartError()
               }"""
         } else if (tpe.typeSymbol.asClass.isTrait) withDecoderFor(tpe, default) {
@@ -471,8 +477,8 @@ object JsonCodecMaker {
                     case _ => in.decodeError($illegalDescriptorError)
                   }
                 case 'n' =>
-                  in.resetMark()
-                  in.parseNull(default)
+                  in.rollbackToMark()
+                  in.readNull(default)
                 case _ => in.objectStartError()
               }"""
         } else cannotFindCodecError(tpe)
