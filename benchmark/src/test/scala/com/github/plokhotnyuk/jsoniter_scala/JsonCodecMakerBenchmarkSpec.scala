@@ -49,6 +49,11 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readIterablesJackson() shouldBe benchmark.iterablesObj
       benchmark.readIterablesJsoniter() shouldBe benchmark.iterablesObj
       benchmark.readIterablesPlay() shouldBe benchmark.iterablesObj
+      benchmark.readMutableIterablesCirce() shouldBe benchmark.mutableIterablesObj
+      //FIXME: Jackson-module-scala doesn't support parsing of tree sets
+      //benchmark.readMutableIterablesJackson() shouldBe benchmark.mutableIterablesObj
+      benchmark.readMutableIterablesJsoniter() shouldBe benchmark.mutableIterablesObj
+      benchmark.readMutableIterablesPlay() shouldBe benchmark.mutableIterablesObj
       benchmark.readMapsCirce() shouldBe benchmark.mapsObj
       //FIXME: Jackson-module-scala parse keys as String
       // benchmark.readMapsJackson() shouldBe benchmark.mapsObj
@@ -102,6 +107,10 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeIterablesJackson()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeIterablesJsoniter()) shouldBe toString(benchmark.iterablesJson)
       toString(benchmark.writeIterablesPlay()) shouldBe toString(benchmark.iterablesJson)
+      toString(benchmark.writeMutableIterablesCirce()) shouldBe toString(benchmark.mutableIterablesJson)
+      toString(benchmark.writeMutableIterablesJackson()) shouldBe toString(benchmark.mutableIterablesJson)
+      toString(benchmark.writeMutableIterablesJsoniter()) shouldBe toString(benchmark.mutableIterablesJson)
+      toString(benchmark.writeMutableIterablesPlay()) shouldBe toString(benchmark.mutableIterablesJson)
       toString(benchmark.writeMapsCirce()) shouldBe toString(benchmark.mapsJson)
       // FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
       //toString(benchmark.writeMapsJackson()) shouldBe toString(benchmark.mapsJson)

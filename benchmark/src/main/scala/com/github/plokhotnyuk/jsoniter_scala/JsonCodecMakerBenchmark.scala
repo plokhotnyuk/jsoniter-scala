@@ -20,7 +20,7 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations._
 import play.api.libs.json.{Json, _}
 
-import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap, Map}
+import scala.collection.immutable.{BitSet, HashMap, HashSet, IntMap, LongMap, Map}
 import scala.collection.mutable
 import scala.reflect.io.Streamable
 
@@ -67,6 +67,8 @@ class JsonCodecMakerBenchmark {
   val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
   val iterablesCodec: JsonCodec[Iterables] = make[Iterables](CodecMakerConfig())
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
+  val mutableIterablesCodec: JsonCodec[MutableIterables] = make[MutableIterables](CodecMakerConfig())
+  val mutableIterablesFormat: OFormat[MutableIterables] = Json.format[MutableIterables]
   val mapsCodec: JsonCodec[Maps] = make[Maps](CodecMakerConfig())
   val mapsFormat: OFormat[Maps] = Json.format[Maps]
   val mutableMapsCodec: JsonCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
@@ -82,6 +84,7 @@ class JsonCodecMakerBenchmark {
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
   val bitSetsJson: Array[Byte] = """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes
   val iterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
+  val mutableIterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
   val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
   val mutableMapsJson: Array[Byte] = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
   val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
@@ -91,7 +94,9 @@ class JsonCodecMakerBenchmark {
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
-  val iterablesObj: Iterables = Iterables(List("1", "2", "3"), Set(4, 5, 6), List(Set(1, 2), Set()))
+  val iterablesObj: Iterables = Iterables(Vector("1", "2", "3"), Set(4, 5, 6), List(HashSet(1, 2), HashSet()))
+  val mutableIterablesObj: MutableIterables = MutableIterables(mutable.ArrayBuffer("1", "2", "3"), mutable.TreeSet(4, 5, 6),
+    mutable.ResizableArray(mutable.Set(1, 2), mutable.Set()))
   val mapsObj: Maps = Maps(HashMap("1" -> 1.1, "2" -> 2.2), Map(1 -> HashMap(3L -> 3.3), 2 -> HashMap.empty[Long, Double]))
   val mutableMapsObj: MutableMaps = MutableMaps(mutable.HashMap("1" -> 1.1, "2" -> 2.2),
     mutable.Map(1 -> mutable.OpenHashMap(3L -> 3.3), 2 -> mutable.OpenHashMap.empty[Long, Double]))
@@ -193,6 +198,20 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
+
+  @Benchmark
+  def readMutableIterablesCirce(): MutableIterables = decode[MutableIterables](new String(mutableIterablesJson, UTF_8)).fold(throw _, x => x)
+
+/* FIXME: Jackson-module-scala doesn't support parsing of tree sets
+  @Benchmark
+  def readMutableIterablesJackson(): MutableIterables = jacksonMapper.readValue[MutableIterables](mutableIterablesJson)
+*/
+
+  @Benchmark
+  def readMutableIterablesJsoniter(): MutableIterables = JsonReader.read(mutableIterablesCodec, mutableIterablesJson)
+
+  @Benchmark
+  def readMutableIterablesPlay(): MutableIterables = Json.parse(mutableIterablesJson).as[MutableIterables](mutableIterablesFormat)
 
   @Benchmark
   def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, UTF_8)) .fold(throw _, x => x)
@@ -336,6 +355,18 @@ class JsonCodecMakerBenchmark {
   def writeIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(iterablesObj)(iterablesFormat))
 
   @Benchmark
+  def writeMutableIterablesCirce(): Array[Byte] = mutableIterablesObj.asJson.noSpaces.getBytes(UTF_8)
+
+  @Benchmark
+  def writeMutableIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableIterablesObj)
+
+  @Benchmark
+  def writeMutableIterablesJsoniter(): Array[Byte] = JsonWriter.write(mutableIterablesCodec, mutableIterablesObj)
+
+  @Benchmark
+  def writeMutableIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableIterablesObj)(mutableIterablesFormat))
+
+  @Benchmark
   def writeMapsCirce(): Array[Byte] = mapsObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
@@ -419,7 +450,9 @@ case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
 
 case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
-case class Iterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
+case class Iterables(l: Vector[String], s: Set[Int], ls: List[HashSet[Long]])
+
+case class MutableIterables(l: mutable.ArrayBuffer[String], s: mutable.TreeSet[Int], ls: mutable.ResizableArray[mutable.Set[Long]])
 
 case class BitSets(bs: BitSet, mbs: mutable.BitSet)
 

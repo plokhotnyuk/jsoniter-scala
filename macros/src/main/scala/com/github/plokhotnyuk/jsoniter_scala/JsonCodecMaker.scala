@@ -4,6 +4,7 @@ import java.lang.Character._
 
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
+import scala.collection.generic.Growable
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
 import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
@@ -75,14 +76,21 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
 
-      def companion(tpe: Type): Tree = Ident(tpe.typeSymbol.companion)
-
       def isValueClass(tpe: Type): Boolean = tpe <:< typeOf[AnyVal] && tpe.typeSymbol.asClass.isDerivedValueClass
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
+
+      def containerCompanion(tpe: Type): Tree = {
+        val comp = tpe.typeSymbol.companion
+        if (!comp.isModule || !comp.fullName.startsWith("scala.")) {
+          c.abort(c.enclosingPosition, s"Unsupported collection type '$tpe'. " +
+            s"Please consider using a custom implicitly accessible codec for it.")
+        }
+        Ident(comp)
+      }
 
       def enumSymbol(tpe: Type): Symbol = {
         val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
@@ -179,9 +187,11 @@ object JsonCodecMaker {
 
       def getModule(tpe: Type): ModuleSymbol = {
         val comp = tpe.typeSymbol.companion
-        if (!comp.isModule) c.abort(c.enclosingPosition,
-          s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
-            "Please consider defining it as a top-level object or directly inside of another class or object.")
+        if (!comp.isModule) {
+          c.abort(c.enclosingPosition,
+            s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
+              "Please consider defining it as a top-level object or directly inside of another class or object.")
+        }
         comp.asModule // FIXME: module cannot be resolved properly for deeply nested inner case classes
       }
 
@@ -290,11 +300,11 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) q"null.asInstanceOf[$tpe]"
         else if (tpe <:< typeOf[Option[_]]) q"None"
         else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
-          q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
+          q"${containerCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
-          q"${companion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${companion(tpe)}.empty"
-        else if (tpe <:< typeOf[Traversable[_]]) q"${companion(tpe)}.empty[${typeArg1(tpe)}]"
+          q"${containerCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${containerCompanion(tpe)}.empty"
+        else if (tpe <:< typeOf[Traversable[_]]) q"${containerCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe) {
           q"new Array[${typeArg1(tpe)}](0)"
         } else if (tpe.typeSymbol.isModuleClass) {
@@ -328,40 +338,46 @@ object JsonCodecMaker {
           q"Option(${genReadVal(tpe1, nullValue(tpe1))})"
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
             q"x = x.updated(in.readObjectFieldAsInt(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
             q"x.update(in.readObjectFieldAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
             q"x = x.updated(in.readObjectFieldAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
             q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2))})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadArray(q"val x = if (default.isEmpty) default else $comp.empty", q"x.add(in.readInt())")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder", q"x += in.readInt()", q"x.result()")
+        } else if (tpe <:< typeOf[mutable.Traversable[_]] && tpe <:< typeOf[Growable[_]] &&
+            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(tpe, default) { // array stack use 'push' for '+='
+          val tpe1 = typeArg1(tpe)
+          val comp = containerCompanion(tpe)
+          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
+            q"x += ${genReadVal(tpe1, nullValue(tpe1))}")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = companion(tpe)
+          val comp = containerCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder[$tpe1]", q"x += ${genReadVal(tpe1, nullValue(tpe1))}", q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
