@@ -70,6 +70,12 @@ object JsonCodecMaker {
     def make[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonCodec[A]] = {
       import c.universe._
 
+      def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
+
+      def warn(msg: String): Unit = c.warning(c.enclosingPosition, msg)
+
+      def info(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
+
       def methodType(m: MethodSymbol): Type = m.returnType.dealias
 
       def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
@@ -80,16 +86,20 @@ object JsonCodecMaker {
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
+      def isAdtBase(tpe: Type): Boolean = {
+        val classSymbol = tpe.typeSymbol.asClass
+        (classSymbol.isAbstract || classSymbol.isTrait) && classSymbol.isSealed
+      }
+
+      def adtLeafClasses(tpe: Type): Set[Type] = tpe.typeSymbol.asClass.knownDirectSubclasses.map(_.asClass.toType)
+
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
 
       def containerCompanion(tpe: Type): Tree = {
         val comp = tpe.typeSymbol.companion
         if (comp.isModule && (tpe <:< typeOf[Option[_]] || comp.fullName.startsWith("scala.collection."))) Ident(comp)
-        else {
-          c.abort(c.enclosingPosition,
-            s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
-        }
+        else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
       }
 
       def enumSymbol(tpe: Type): Symbol = {
@@ -111,7 +121,7 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[BigInt]) q"in.readObjectFieldAsBigInt()"
         else if (tpe =:= typeOf[BigDecimal]) q"in.readObjectFieldAsBigDecimal()"
         else if (tpe <:< typeOf[Enumeration#Value]) q"${enumSymbol(tpe)}.withName(in.readObjectFieldAsString())"
-        else c.abort(c.enclosingPosition, s"Unsupported type to be used as map key '$tpe'.")
+        else fail(s"Unsupported type to be used as map key '$tpe'.")
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
         genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayStartError()", q"in.arrayEndError()")
@@ -158,8 +168,7 @@ object JsonCodecMaker {
             }
             out.writeObjectEnd()"""
 
-      def cannotFindCodecError(tpe: Type): Nothing =
-        c.abort(c.enclosingPosition, s"No implicit '${typeOf[JsonCodec[_]]}' defined for '$tpe'.")
+      def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonCodec[_]]}' defined for '$tpe'.")
 
       def findImplicitCodec(tpe: Type): Tree = c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", c.TYPEmode).tpe)
 
@@ -170,14 +179,11 @@ object JsonCodecMaker {
                               a.tree.tpe <:< c.weakTypeOf[transient]) =>
           val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
           val named = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[named])
-          if (named.size > 1) {
-            c.abort(c.enclosingPosition, s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
-          }
+          if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
           val trans = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[transient])
-          if (trans.size > 1) {
-            c.warning(c.enclosingPosition, s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
-          } else if (named.size == 1 && trans.size == 1) {
-            c.warning(c.enclosingPosition, s"Both '${typeOf[transient]}' and '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
+          if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
+          else if (named.size == 1 && trans.size == 1) {
+            warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
           }
           val name = named.headOption.flatMap(_.tree.children.tail.collectFirst {
             case Literal(Constant(name: String)) => Option(name).getOrElse(fieldName)
@@ -188,8 +194,7 @@ object JsonCodecMaker {
       def getModule(tpe: Type): ModuleSymbol = {
         val comp = tpe.typeSymbol.companion
         if (!comp.isModule) {
-          c.abort(c.enclosingPosition,
-            s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
+          fail(s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
               "Please consider defining it as a top-level object or directly inside of another class or object.")
         }
         comp.asModule // FIXME: module cannot be resolved properly for deeply nested inner case classes
@@ -231,11 +236,10 @@ object JsonCodecMaker {
         val collisions = names.groupBy(identity).collect { case (x, ys) if ys.lengthCompare(1) > 0 => x }
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          c.abort(c.enclosingPosition,
-            s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
+          fail(s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
               s"Names(s) defined by '${typeOf[named]}' annotation(s), " +
-              s"name of discriminator field specified by 'config.discriminatorFieldName' " +
-              s"and name(s) returned by 'config.nameMapper' for non-annotated fields should not match.")
+              "name of discriminator field specified by 'config.discriminatorFieldName' " +
+              "and name(s) returned by 'config.nameMapper' for non-annotated fields should not match.")
         }
       }
 
@@ -314,9 +318,9 @@ object JsonCodecMaker {
       def genReadVal(tpe: Type, default: Tree, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         val decodeMethodName = decodeMethodNames.get(tpe)
-        if (decodeMethodName.isDefined && !discriminator.isEmpty)
-          c.warning(c.enclosingPosition,
-            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to read the discriminator field.")
+        if (decodeMethodName.isDefined && !discriminator.isEmpty) {
+          warn(s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to read the discriminator field.")
+        }
         if (!implCodec.isEmpty) q"$implCodec.decode(in, $default)"
         else if (decodeMethodName.isDefined && discriminator.isEmpty) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readBoolean()"
@@ -480,12 +484,11 @@ object JsonCodecMaker {
                   in.readNull(default)
                 case _ => in.objectStartError()
               }"""
-        } else if (tpe.typeSymbol.asClass.isTrait) withDecoderFor(tpe, default) {
-          val readSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
-            val tpe = s.asClass.toType
-            cq"""${tpe.toString} =>
+        } else if (isAdtBase(tpe)) withDecoderFor(tpe, default) {
+          val readSubclasses = adtLeafClasses(tpe).map { subTpe =>
+            cq"""${subTpe.toString} =>
                    in.rollbackToMark()
-                   ${genReadVal(tpe, nullValue(tpe), skipDiscriminatorField)}"""
+                   ${genReadVal(subTpe, nullValue(subTpe), skipDiscriminatorField)}"""
           }
           val illegalDescriptorError = s"""illegal value of discriminator field "${codecConfig.discriminatorFieldName}""""
           q"""in.setMark()
@@ -507,9 +510,9 @@ object JsonCodecMaker {
       def genWriteVal(m: Tree, tpe: Type, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
         val encodeMethodName = encodeMethodNames.get(tpe)
-        if (encodeMethodName.isDefined && !discriminator.isEmpty)
-          c.warning(c.enclosingPosition,
-            s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to write the discriminator field.")
+        if (encodeMethodName.isDefined && !discriminator.isEmpty) {
+          warn(s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to write the discriminator field.")
+        }
         if (!implCodec.isEmpty) q"$implCodec.encode($m, out)"
         else if (encodeMethodName.isDefined && discriminator.isEmpty) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
@@ -624,13 +627,12 @@ object JsonCodecMaker {
                 ..$writeFieldsBlock
                 out.writeObjectEnd()
               } else out.writeNull()"""
-        } else if (tpe.typeSymbol.asClass.isTrait) withEncoderFor(tpe, m) {
-          val writeSubclasses = tpe.typeSymbol.asClass.knownDirectSubclasses.map { s =>
-            val tpe = s.asClass.toType
+        } else if (isAdtBase(tpe)) withEncoderFor(tpe, m) {
+          val writeSubclasses = adtLeafClasses(tpe).map { subTpe =>
             val writeDiscriminatorField =
               q"""c = out.writeObjectField(c, "type")
-                  out.writeVal(${tpe.toString})"""
-            cq"x: $tpe => ${genWriteVal(q"x", tpe, writeDiscriminatorField)}"
+                  out.writeVal(${subTpe.toString})"""
+            cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }
           q"""x match {
                 case ..$writeSubclasses
@@ -652,10 +654,7 @@ object JsonCodecMaker {
               ..${decodeMethodTrees.values.toSeq.reverse}
               ..${encodeMethodTrees.values.toSeq.reverse}
             }"""
-      if (c.settings.contains("print-codecs")) {
-        val msg = s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}"
-        c.info(c.enclosingPosition, msg, force = true)
-      }
+      if (c.settings.contains("print-codecs")) info(s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}")
       c.Expr[JsonCodec[A]](codec)
     }
   }

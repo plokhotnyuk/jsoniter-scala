@@ -121,7 +121,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                       r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
                       r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
 
-  sealed trait AlgebraicDataType
+  sealed abstract class AlgebraicDataType // or trait
 
   case class A(a: Int) extends AlgebraicDataType
 

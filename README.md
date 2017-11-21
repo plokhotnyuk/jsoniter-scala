@@ -17,16 +17,19 @@ to get maximum performance of JSON parsing & serialization.
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for any of them 
 - Implicitly resolvable codecs for all above types
+- Support of ADTs with sealed trait or abstract class base and direct subclassing of leaf classes
 - Fields with default values that defined in a first list of arguments of the constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Configurable mapping function for names between case classes and JSON, including predefined functions which enforce snake_case or camelCase names for all fields
-- Configurable name of discriminator field for ADTs
+- Configurable name of a discriminator field for ADTs
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
-- TODO: Generate codecs for ADTs with a specified resolving matcher
+- TODO: Support of non-direct subclassing of leaf classes of ADTs
+- TODO: Consider whether ADTs should use sealed abstract classes only
+- TODO: Generate codecs for ADTs with a specified resolving matcher for the discriminator field value
 - TODO: Add ability to read/write numbers from/to string values and vice versa   
 - TODO: More efficient implementation for serialization and parsing of numbers 
 - TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
