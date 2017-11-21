@@ -177,13 +177,17 @@ final class JsonReader private[jsoniter_scala](
     if (b == '"') {
       val len = parseString(0, charBuf.length, head)
       new String(charBuf, 0, len)
-    } else if (b == 'n') parseNull(default, head - 1)
+    } else if (b == 'n') parseNull(default, head)
     else decodeError("expected string value or null")
   }
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
-  def readNull[A](default: A): A = parseNull(default, head)
+  def readNull[A](default: A): A = {
+    val b = nextToken(head)
+    if (b == 'n') parseNull(default, head)
+    else nullError(head)
+  }
 
   def nextToken(): Byte = nextToken(head)
 
@@ -259,13 +263,12 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private def parseNull[A](default: A, pos: Int): A =
-    if (pos + 3 < tail) {
-      if (buf(pos) != 'n') nullError(pos)
-      else if (buf(pos + 1) != 'u') nullError(pos + 1)
+    if (pos + 2 < tail) {
+      if (buf(pos) != 'u') nullError(pos)
+      else if (buf(pos + 1) != 'l') nullError(pos + 1)
       else if (buf(pos + 2) != 'l') nullError(pos + 2)
-      else if (buf(pos + 3) != 'l') nullError(pos + 3)
       else {
-        head = pos + 4
+        head = pos + 3
         default
       }
     } else parseNull(default, loadMoreOrError(pos))
@@ -854,7 +857,7 @@ final class JsonReader private[jsoniter_scala](
   private def parseBigInt(isToken: Boolean, default: BigInt = null): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     if (b == 'n') {
-      if (isToken) parseNull(default, head - 1)
+      if (isToken) parseNull(default, head)
       else numberError(head)
     } else {
       var lim = if (2 > charBuf.length) growCharBuf(2) else charBuf.length
