@@ -85,11 +85,11 @@ object JsonCodecMaker {
 
       def containerCompanion(tpe: Type): Tree = {
         val comp = tpe.typeSymbol.companion
-        if (!comp.isModule || !comp.fullName.startsWith("scala.")) {
-          c.abort(c.enclosingPosition, s"Unsupported collection type '$tpe'. " +
-            s"Please consider using a custom implicitly accessible codec for it.")
+        if (comp.isModule && (tpe <:< typeOf[Option[_]] || comp.fullName.startsWith("scala.collection."))) Ident(comp)
+        else {
+          c.abort(c.enclosingPosition,
+            s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
         }
-        Ident(comp)
       }
 
       def enumSymbol(tpe: Type): Symbol = {

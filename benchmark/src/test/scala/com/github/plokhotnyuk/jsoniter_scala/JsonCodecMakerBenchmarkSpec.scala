@@ -7,7 +7,7 @@ import org.scalatest.{Matchers, WordSpec}
 class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
   val benchmark = new JsonCodecMakerBenchmark
   
-  "CodecBenchmark" should {
+  "JsonCodecMakerBenchmark" should {
     "deserialize properly" in {
       benchmark.missingReqFieldCirce() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"
