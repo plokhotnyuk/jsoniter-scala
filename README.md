@@ -130,9 +130,11 @@ To see throughput & allocation rate of generated codecs run benchmarks with GC p
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
 ```
 
-Current results for the following environment:
+Current results for the following environment(s):
 
 [./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_152-b16 64-bit
+
+[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 9.0.1+11 64-bit
 
 
 ## Acknowledges
