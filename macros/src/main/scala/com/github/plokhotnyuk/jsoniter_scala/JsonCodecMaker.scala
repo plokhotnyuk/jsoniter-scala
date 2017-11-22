@@ -381,8 +381,8 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
           val comp = containerCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder", q"x += in.readInt()", q"x.result()")
-        } else if (tpe <:< typeOf[mutable.Traversable[_]] && tpe <:< typeOf[Growable[_]] &&
-            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(tpe, default) { // array stack use 'push' for '+='
+        } else if (tpe <:< typeOf[mutable.Traversable[_] with Growable[_]] &&
+            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(tpe, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",

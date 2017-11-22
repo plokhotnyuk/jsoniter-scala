@@ -27,9 +27,8 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
-- TODO: Consider whether ADTs should use sealed abstract classes only
 - TODO: Generate codecs for ADTs with a specified resolving matcher for the discriminator field value
-- TODO: Add ability to read/write numbers from/to string values and vice versa   
+- TODO: Add ability to read/write numbers from/to string values and vice versa
 - TODO: More efficient implementation for serialization and parsing of numbers 
 - TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: Add support for configurable decimal number formatting for writing   
