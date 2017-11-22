@@ -601,9 +601,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         List(A(1), B("VVV"), null, C(1, "VVV"), D),
         """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},null,{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"}]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
-      verifyDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t", skipUnexpectedFields = false)),
+      verifyDeser(codecOfADTList,
         List(C(2, longStr), C(1, "VVV")),
-        s"""[{"a":2,"b":"$longStr","t":"JsonCodecMakerSpec.this.C"},{"a":1,"t":"JsonCodecMakerSpec.this.C","b":"VVV"}]""".getBytes)
+        s"""[{"a":2,"b":"$longStr","type":"JsonCodecMakerSpec.this.C"},{"a":1,"type":"JsonCodecMakerSpec.this.C","b":"VVV"}]""".getBytes)
+      verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t")),
+        List(C(2, "WWW"), C(1, "VVV")),
+        s"""[{"t":"JsonCodecMakerSpec.this.C","a":2,"b":"WWW"},{"t":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"}]""".getBytes)
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {

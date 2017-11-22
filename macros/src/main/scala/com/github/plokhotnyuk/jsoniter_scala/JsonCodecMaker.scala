@@ -635,7 +635,7 @@ object JsonCodecMaker {
         } else if (isAdtBase(tpe)) withEncoderFor(tpe, m) {
           val writeSubclasses = adtLeafClasses(tpe).map { subTpe =>
             val writeDiscriminatorField =
-              q"""c = out.writeObjectField(c, "type")
+              q"""c = out.writeObjectField(c, ${codecConfig.discriminatorFieldName})
                   out.writeVal(${subTpe.toString})"""
             cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }
