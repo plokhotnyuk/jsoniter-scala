@@ -88,14 +88,17 @@ object JsonCodecMaker {
 
       def isAdtBase(tpe: Type): Boolean = {
         val classSymbol = tpe.typeSymbol.asClass
-        (classSymbol.isAbstract || classSymbol.isTrait) && classSymbol.isSealed
+        (classSymbol.isAbstract || classSymbol.isTrait) &&
+          (if (classSymbol.isSealed) true
+          else fail("Only sealed traits & abstract classes are supported for ADTs. Please consider adding " +
+            s"of a sealed definition for '$tpe' or using a custom implicitly accessible codec for the ADT base."))
       }
 
       def adtLeafClasses(tpe: Type): Set[Type] =
         tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
-          val classSymbol = s.asClass
-          if (classSymbol.isAbstract || classSymbol.isTrait) adtLeafClasses(classSymbol.toType)
-          else Set(classSymbol.toType)
+          val subTpe = s.asClass.toType
+          if (isAdtBase(subTpe)) adtLeafClasses(subTpe)
+          else Set(subTpe)
         }
 
       def isContainer(tpe: Type): Boolean =
