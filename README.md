@@ -17,7 +17,7 @@ to get maximum performance of JSON parsing & serialization.
 - Case classes should be defined as a top-level class or directly inside of another class or object
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value classes for any of them 
 - Implicitly resolvable codecs for all above types
-- Support of ADTs with sealed trait or abstract class base and direct subclassing of leaf classes
+- Support of ADTs with sealed trait or abstract class base
 - Fields with default values that defined in a first list of arguments of the constructor are optional, other fields are required (no special annotation required)
 - Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
@@ -27,7 +27,6 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
-- TODO: Support of non-direct subclassing of leaf classes of ADTs
 - TODO: Consider whether ADTs should use sealed abstract classes only
 - TODO: Generate codecs for ADTs with a specified resolving matcher for the discriminator field value
 - TODO: Add ability to read/write numbers from/to string values and vice versa   

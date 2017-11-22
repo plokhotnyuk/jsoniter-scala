@@ -91,7 +91,12 @@ object JsonCodecMaker {
         (classSymbol.isAbstract || classSymbol.isTrait) && classSymbol.isSealed
       }
 
-      def adtLeafClasses(tpe: Type): Set[Type] = tpe.typeSymbol.asClass.knownDirectSubclasses.map(_.asClass.toType)
+      def adtLeafClasses(tpe: Type): Set[Type] =
+        tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
+          val classSymbol = s.asClass
+          if (classSymbol.isAbstract || classSymbol.isTrait) adtLeafClasses(classSymbol.toType)
+          else Set(classSymbol.toType)
+        }
 
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]

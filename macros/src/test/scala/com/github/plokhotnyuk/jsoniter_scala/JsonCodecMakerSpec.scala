@@ -121,9 +121,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                       r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
                       r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
 
-  sealed trait AdtBase extends Product with Serializable // abstract class also supported as base for ADT
+  sealed trait AdtBase extends Product with Serializable
 
-  final case class A(a: Int) extends AdtBase
+  sealed abstract class Inner extends AdtBase
+
+  final case class A(a: Int) extends Inner
 
   final case class B(a: String) extends AdtBase
 
