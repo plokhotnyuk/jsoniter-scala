@@ -121,17 +121,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                       r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
                       r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
 
-  sealed abstract class AlgebraicDataType // or trait
+  sealed trait AdtBase extends Product with Serializable // abstract class also supported as base for ADT
 
-  case class A(a: Int) extends AlgebraicDataType
+  final case class A(a: Int) extends AdtBase
 
-  case class B(a: String) extends AlgebraicDataType
+  final case class B(a: String) extends AdtBase
 
-  case class C(a: Int, b: String) extends AlgebraicDataType
+  final case class C(a: Int, b: String) extends AdtBase
 
-  case object D extends AlgebraicDataType
+  final case object D extends AdtBase
 
-  val codecOfADTList: JsonCodec[List[AlgebraicDataType]] = make[List[AlgebraicDataType]](CodecMakerConfig())
+  val codecOfADTList: JsonCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
   "JsonCodec" should {
     "serialize and deserialize case classes with primitives" in {
@@ -597,7 +597,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         List(A(1), B("VVV"), null, C(1, "VVV"), D),
         """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},null,{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"}]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
-      verifyDeser(make[List[AlgebraicDataType]](CodecMakerConfig(discriminatorFieldName = "t", skipUnexpectedFields = false)),
+      verifyDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t", skipUnexpectedFields = false)),
         List(C(2, longStr), C(1, "VVV")),
         s"""[{"a":2,"b":"$longStr","t":"JsonCodecMakerSpec.this.C"},{"a":1,"t":"JsonCodecMakerSpec.this.C","b":"VVV"}]""".getBytes)
     }
