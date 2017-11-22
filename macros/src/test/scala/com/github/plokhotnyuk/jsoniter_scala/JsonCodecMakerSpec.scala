@@ -64,7 +64,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val codecOfImmutableTraversables: JsonCodec[ImmutableTraversables] = make[ImmutableTraversables](CodecMakerConfig())
 
   case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
-                         m: mutable.Map[Float, mutable.WeakHashMap[BigInt, String]],
+                         m: mutable.Map[Float, mutable.ListMap[BigInt, String]],
                          ohm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
 
   val codecOfMutableMaps: JsonCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
@@ -382,7 +382,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize case classes with mutable maps" in {
       verifySerDeser(codecOfMutableMaps,
         MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
-          mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> "2")),
+          mutable.Map(1.1f -> mutable.ListMap(BigInt(2) -> "2")),
           mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
         """{"hm":{"true":{"1.1":1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
     }
@@ -416,14 +416,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[IOException] {
         verifySer(codecOfMutableMaps,
           MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(null.asInstanceOf[BigDecimal] -> 1)),
-            mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> "2")),
+            mutable.Map(1.1f -> mutable.ListMap(BigInt(2) -> "2")),
             mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
           """{"hm":{"true":{null:1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
       }.getMessage.contains("key cannot be null"))
       assert(intercept[IOException] {
         verifySer(codecOfMutableMaps,
           MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
-            mutable.Map(1.1f -> mutable.WeakHashMap(null.asInstanceOf[BigInt] -> "2")),
+            mutable.Map(1.1f -> mutable.ListMap(null.asInstanceOf[BigInt] -> "2")),
             mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
           """{"hm":{"true":{"1.1":1}},"m":{"1.1":{null:"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
       }.getMessage.contains("key cannot be null"))
@@ -564,7 +564,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "deserialize null values for standard types of map values" in {
       verifyDeser(codecOfMutableMaps,
         MutableMaps(mutable.HashMap(),
-          mutable.Map(1.1f -> mutable.WeakHashMap(BigInt(2) -> null.asInstanceOf[String])),
+          mutable.Map(1.1f -> mutable.ListMap(BigInt(2) -> null.asInstanceOf[String])),
           mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(), 2.2 -> mutable.LinkedHashMap())),
         """{"hm":null,"m":{"1.1":{"2":null}},"ohm":{"1.1":null,"2.2":null}}""".getBytes)
     }
