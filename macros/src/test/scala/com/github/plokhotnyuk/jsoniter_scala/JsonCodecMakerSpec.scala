@@ -123,15 +123,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   sealed trait AdtBase extends Product with Serializable
 
-  sealed abstract class Inner extends AdtBase
+  sealed abstract class Inner extends AdtBase {
+    def a: Int
+  }
 
-  final case class A(a: Int) extends Inner
+  case class A(a: Int) extends Inner
 
-  final case class B(a: String) extends AdtBase
+  case class B(a: String) extends AdtBase
 
-  final case class C(a: Int, b: String) extends AdtBase
+  case class C(a: Int, b: String) extends Inner
 
-  final case object D extends AdtBase
+  case object D extends AdtBase
 
   val codecOfADTList: JsonCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
