@@ -241,7 +241,7 @@ object JsonCodecMaker {
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
 
       def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
-        val collisions = names.groupBy(identity).collect { case (x, ys) if ys.lengthCompare(1) > 0 => x }
+        val collisions = names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
