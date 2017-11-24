@@ -29,13 +29,14 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
 - TODO: Generate codecs for ADTs with a specified resolving matcher for the discriminator field value
 - TODO: Add ability to read/write numbers from/to string values and vice versa
-- TODO: More efficient implementation for serialization and parsing of numbers 
+- TODO: More efficient implementation for serialization and parsing of numbers  
 - TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: Add support for configurable decimal number formatting for writing   
 - TODO: Add support for some popular Scala classes like `Duration`, etc.
 - TODO: Add support for Java classes like `DateTime`, `UUID`, `URL`, POJOs & collections, etc.
 - TODO: Add extension modules with code generation for 3-rd party libraries with collections that are specialized for primitive types
 - TODO: Add support of UTF-16 & UTF-32 binaries and JSON encoded strings as input/output
+- TODO: Use [scala-chart](https://github.com/wookietreiber/scala-chart) for plotting of benchmark results
 
 ## How to use
 
@@ -134,9 +135,9 @@ sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >r
 
 Current results for the following environment(s):
 
-[./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 1.8.0_152-b16 64-bit
+[./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, Oracle JDK build 1.8.0_151-b12 64-bit
 
-[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 15.04, Linux 4.4.0-38-generic, Oracle JDK build 9.0.1+11 64-bit
+[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, Oracle JDK build 9.0.1+11 64-bit
 
 
 ## Acknowledges
