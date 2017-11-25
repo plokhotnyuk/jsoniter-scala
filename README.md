@@ -23,6 +23,7 @@ to get maximum performance of JSON parsing & serialization.
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Configurable mapping function for names between case classes and JSON, including predefined functions which enforce snake_case or camelCase names for all fields
+- Configurable mapping function for values of a discriminator field that is used for distinguish classes of ADTs
 - Configurable name of a discriminator field for ADTs
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
@@ -137,7 +138,7 @@ Current results for the following environment(s):
 
 [./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, Oracle JDK build 1.8.0_151-b12 64-bit
 
-[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, Oracle JDK build 9.0.1+11 64-bit
+[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9.txt) Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, Oracle JDK build 9.0.1+11 64-bit
 
 
 ## Acknowledges

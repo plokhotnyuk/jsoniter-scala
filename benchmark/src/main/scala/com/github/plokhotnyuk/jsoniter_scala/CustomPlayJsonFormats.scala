@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
+import julienrf.json.derived.flat
 import play.api.libs.json._
 
 import scala.collection.breakOut
@@ -65,4 +66,12 @@ object CustomPlayJsonFormats {
   implicit val format10: Format[Array[BigInt]] = Format(
     Reads[Array[BigInt]]{js => JsSuccess(js.as[Array[JsNumber]].map(_.value.toBigInt()))},
     Writes[Array[BigInt]](a => JsArray(a.map(v => JsNumber(BigDecimal(v))))))
+
+  implicit val format11: OFormat[A] = Json.format[A]
+
+  implicit val format12: OFormat[B] = Json.format[B]
+
+  implicit val format13: OFormat[C] = Json.format[C]
+
+  implicit val format14: OFormat[AdtBase] = flat.oformat((__ \ "type").format[String])
 }

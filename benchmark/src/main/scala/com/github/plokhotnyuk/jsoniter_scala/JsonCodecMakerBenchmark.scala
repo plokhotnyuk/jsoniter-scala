@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets._
 import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type
+import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -79,6 +81,8 @@ class JsonCodecMakerBenchmark {
   val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val extractFieldsCodec: JsonCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
+  val adtCodec: JsonCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
+  val adtFormat: OFormat[AdtBase] = format14
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -91,6 +95,8 @@ class JsonCodecMakerBenchmark {
   val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}""".getBytes
   val extractFieldsJson: Array[Byte] =
     """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}""".getBytes
+  val adtJson: Array[Byte] =
+    """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}""".getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
@@ -104,6 +110,7 @@ class JsonCodecMakerBenchmark {
     mutable.LongMap(1L -> LongMap(3L -> 3.3), 2L -> LongMap.empty[Double]))
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
   val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
+  val adtObj: AdtBase = C(A(1), B("VVV"))
 
   @Benchmark
   def missingReqFieldCirce(): String =
@@ -279,6 +286,19 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
 
+/* FIXME: don't know how circe can parse ADTs with discriminator
+  @Benchmark
+  def readAdtCirce(): AdtBase = decode[AdtBase](new String(adtJson, UTF_8)).fold(throw _, x => x)
+*/
+  @Benchmark
+  def readAdtJackson(): AdtBase = jacksonMapper.readValue[AdtBase](adtJson)
+
+  @Benchmark
+  def readAdtJsoniter(): AdtBase = JsonReader.read(adtCodec, adtJson)
+
+  @Benchmark
+  def readAdtPlay(): AdtBase = Json.parse(adtJson).as[AdtBase](adtFormat)
+
   @Benchmark
   def readGoogleMapsAPICirce(): GoogleMapsAPI.DistanceMatrix = decode[GoogleMapsAPI.DistanceMatrix](new String(GoogleMapsAPI.json, UTF_8)).fold(throw _, x => x)
 
@@ -415,6 +435,18 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
+/* FIXME: don't know how circe can parse ADTs with discriminator
+  @Benchmark
+  def writeAdtCirce(): Array[Byte] = adtObj.asJson.noSpaces.getBytes(UTF_8)
+*/
+  @Benchmark
+  def writeAdtJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(adtObj)
+
+  @Benchmark
+  def writeAdtJsoniter(): Array[Byte] = JsonWriter.write(adtCodec, adtObj)
+
+  @Benchmark
+  def writeAdtPlay(): Array[Byte] = Json.toBytes(Json.toJson(adtObj)(adtFormat))
 
   @Benchmark
   def writeGoogleMapsAPICirce(): Array[Byte] = GoogleMapsAPI.obj.asJson.noSpaces.getBytes(UTF_8)
@@ -465,6 +497,20 @@ case class IntAndLongMaps(m: IntMap[Double], mm: mutable.LongMap[LongMap[Double]
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
 case class ExtractFields(s: String, l: Long)
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes(Array(
+  new Type(value = classOf[A], name = "A"),
+  new Type(value = classOf[B], name = "B"),
+  new Type(value = classOf[C], name = "C")
+))
+sealed trait AdtBase extends Product with Serializable
+
+case class A(a: Int) extends AdtBase
+
+case class B(b: String) extends AdtBase
+
+case class C(l: AdtBase, r: AdtBase) extends AdtBase
 
 object GoogleMapsAPI {
   case class Value(

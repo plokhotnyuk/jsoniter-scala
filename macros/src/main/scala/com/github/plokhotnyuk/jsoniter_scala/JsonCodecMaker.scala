@@ -18,6 +18,7 @@ class transient extends StaticAnnotation
 
 case class CodecMakerConfig(
     nameMapper: String => String = identity,
+    classNameMapper: String => String = JsonCodecMaker.simpleClassName,
     discriminatorFieldName: String = "type",
     skipUnexpectedFields: Boolean = true) extends StaticAnnotation
 
@@ -63,6 +64,9 @@ object JsonCodecMaker {
     }
     sb.toString
   }
+
+  def simpleClassName(fullClassName: String): String =
+    fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
 
   def make[A](config: CodecMakerConfig): JsonCodec[A] = macro Impl.make[A]
 
@@ -236,6 +240,8 @@ object JsonCodecMaker {
         val cs = codecConfig.discriminatorFieldName.toCharArray
         cq"${JsonReader.toHashCode(cs, cs.length)} => in.skip()"
       }
+
+      def discriminatorValue(tpe: Type): String = codecConfig.classNameMapper(tpe.typeSymbol.fullName)
 
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
@@ -494,7 +500,7 @@ object JsonCodecMaker {
               }"""
         } else if (isAdtBase(tpe)) withDecoderFor(tpe, default) {
           val readSubclasses = adtLeafClasses(tpe).map { subTpe =>
-            cq"""${subTpe.toString} =>
+            cq"""${discriminatorValue(subTpe)} =>
                    in.rollbackToMark()
                    ${genReadVal(subTpe, nullValue(subTpe), skipDiscriminatorField)}"""
           }
@@ -639,7 +645,7 @@ object JsonCodecMaker {
           val writeSubclasses = adtLeafClasses(tpe).map { subTpe =>
             val writeDiscriminatorField =
               q"""c = out.writeObjectField(c, ${codecConfig.discriminatorFieldName})
-                  out.writeVal(${subTpe.toString})"""
+                  out.writeVal(${discriminatorValue(subTpe)})"""
             cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }
           q"""x match {

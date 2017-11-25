@@ -79,6 +79,11 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readExtractFieldsJackson() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsJsoniter() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsPlay() shouldBe benchmark.extractFieldsObj
+      // FIXME: don't know how circe can parse ADTs with discriminator
+      //benchmark.readAdtCirce() shouldBe benchmark.adtObj
+      benchmark.readAdtJackson() shouldBe benchmark.adtObj
+      benchmark.readAdtJsoniter() shouldBe benchmark.adtObj
+      benchmark.readAdtPlay() shouldBe benchmark.adtObj
       benchmark.readGoogleMapsAPICirce() shouldBe GoogleMapsAPI.obj
       benchmark.readGoogleMapsAPIJackson() shouldBe GoogleMapsAPI.obj
       benchmark.readGoogleMapsAPIJsoniter() shouldBe GoogleMapsAPI.obj
@@ -131,6 +136,11 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesPlay()) shouldBe toString(benchmark.primitivesJson)
+      // FIXME: don't know how circe can serialize ADTs with discriminator
+      //toString(benchmark.writeAdtCirce()) shouldBe toString(benchmark.adtJson)
+      toString(benchmark.writeAdtJackson()) shouldBe toString(benchmark.adtJson)
+      toString(benchmark.writeAdtJsoniter()) shouldBe toString(benchmark.adtJson)
+      toString(benchmark.writeAdtPlay()) shouldBe toString(benchmark.adtJson)
       // FIXME: circe serializes empty collections
       //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)

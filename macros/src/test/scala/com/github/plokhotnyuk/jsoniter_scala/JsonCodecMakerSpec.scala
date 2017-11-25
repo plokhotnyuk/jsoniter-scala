@@ -599,22 +599,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize ADTs using discriminator field" in {
       verifySerDeser(codecOfADTList,
         List(A(1), B("VVV"), null, C(1, "VVV"), D),
-        """[{"type":"JsonCodecMakerSpec.this.A","a":1},{"type":"JsonCodecMakerSpec.this.B","a":"VVV"},null,{"type":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"},{"type":"JsonCodecMakerSpec.this.D.type"}]""".getBytes)
+        """[{"type":"A","a":1},{"type":"B","a":"VVV"},null,{"type":"C","a":1,"b":"VVV"},{"type":"D"}]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
       verifyDeser(codecOfADTList,
         List(C(2, longStr), C(1, "VVV")),
-        s"""[{"a":2,"b":"$longStr","type":"JsonCodecMakerSpec.this.C"},{"a":1,"type":"JsonCodecMakerSpec.this.C","b":"VVV"}]""".getBytes)
+        s"""[{"a":2,"b":"$longStr","type":"C"},{"a":1,"type":"C","b":"VVV"}]""".getBytes)
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t")),
         List(C(2, "WWW"), C(1, "VVV")),
-        s"""[{"t":"JsonCodecMakerSpec.this.C","a":2,"b":"WWW"},{"t":"JsonCodecMakerSpec.this.C","a":1,"b":"VVV"}]""".getBytes)
+        s"""[{"t":"C","a":2,"b":"WWW"},{"t":"C","a":1,"b":"VVV"}]""".getBytes)
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1}]""".getBytes)
       }.getMessage.contains("""missing required field "type", offset: 0x00000007"""))
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":"A"}]""".getBytes)
-      }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000011"""))
+        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":"AAA"}]""".getBytes)
+      }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000013"""))
     }
   }
   "JsonCodec.enforceCamelCase" should {
@@ -639,6 +639,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforce_snake_case("o_O") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
       JsonCodecMaker.enforce_snake_case("O_OOO_111") shouldBe "o_ooo_111"
+    }
+  }
+  "JsonCodec.simpleClassName" should {
+    "shorten full class name to simple class name" in {
+      JsonCodecMaker.simpleClassName("com.github.plohkotnyuk.jsoniter_scala.Test") shouldBe "Test"
+      JsonCodecMaker.simpleClassName("JsonCodecMakerSpec.this.Test") shouldBe "Test"
+      JsonCodecMaker.simpleClassName(".Test") shouldBe "Test"
+      JsonCodecMaker.simpleClassName("Test") shouldBe "Test"
     }
   }
 
