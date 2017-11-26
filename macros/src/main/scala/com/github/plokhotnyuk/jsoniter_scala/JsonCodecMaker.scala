@@ -499,19 +499,29 @@ object JsonCodecMaker {
                 case _ => in.objectStartError()
               }"""
         } else if (isAdtBase(tpe)) withDecoderFor(tpe, default) {
-          val readSubclasses = adtLeafClasses(tpe).map { subTpe =>
-            cq"""${discriminatorValue(subTpe)} =>
-                   in.rollbackToMark()
-                   ${genReadVal(subTpe, nullValue(subTpe), skipDiscriminatorField)}"""
+          def hashCode(subTpe: Type): Int = {
+            val cs = discriminatorValue(subTpe).toCharArray
+            JsonReader.toHashCode(cs, cs.length)
           }
-          val illegalDescriptorError = s"""illegal value of discriminator field "${codecConfig.discriminatorFieldName}""""
+
+          val discriminatorValueError = q"in.discriminatorValueError(${codecConfig.discriminatorFieldName})"
+          val readSubclasses = groupByOrdered(adtLeafClasses(tpe))(hashCode).map { case (hashCode, subTpes) =>
+            val checkNameAndReadValue = subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
+              q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
+                    in.rollbackToMark()
+                    ..${genReadVal(subTpe, nullValue(subTpe), skipDiscriminatorField)}
+                  } else $acc"""
+            }
+            cq"$hashCode => $checkNameAndReadValue"
+          }(breakOut)
           q"""in.setMark()
               (in.nextToken(): @switch) match {
                 case '{' =>
                   in.scanToObjectField(${codecConfig.discriminatorFieldName})
-                  in.readString(null) match {
+                  val l = in.readValueAsCharBuf()
+                  (in.charBufToHashCode(l): @switch) match {
                     case ..$readSubclasses
-                    case _ => in.decodeError($illegalDescriptorError)
+                    case _ => $discriminatorValueError
                   }
                 case 'n' =>
                   in.rollbackToMark()

@@ -48,6 +48,13 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def discriminatorValueError(discriminatorFieldName: String): Nothing = {
+    var i = appendString("illegal value of discriminator field \"", 0)
+    i = appendString(discriminatorFieldName, i)
+    i = appendString("\"", i)
+    decodeError(i, head - 1, null)
+  }
+
   def setMark(): Unit = mark = head
 
   def scanToObjectField(s: String): Unit =
@@ -70,6 +77,12 @@ final class JsonReader private[jsoniter_scala](
     val x = parseString(0, charBuf.length, head)
     readColon()
     x
+  }
+
+  def readValueAsCharBuf(): Int = {
+    val b = nextToken(head)
+    if (b == '"') parseString(0, charBuf.length, head)
+    else decodeError("expected string value")
   }
 
   def readObjectFieldAsString(): String = {
