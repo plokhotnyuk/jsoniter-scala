@@ -79,8 +79,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readExtractFieldsJackson() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsJsoniter() shouldBe benchmark.extractFieldsObj
       benchmark.readExtractFieldsPlay() shouldBe benchmark.extractFieldsObj
-      // FIXME: don't know how circe can parse ADTs with discriminator
-      //benchmark.readAdtCirce() shouldBe benchmark.adtObj
+      benchmark.readAdtCirce() shouldBe benchmark.adtObj
       benchmark.readAdtJackson() shouldBe benchmark.adtObj
       benchmark.readAdtJsoniter() shouldBe benchmark.adtObj
       benchmark.readAdtPlay() shouldBe benchmark.adtObj
@@ -136,7 +135,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesPlay()) shouldBe toString(benchmark.primitivesJson)
-      // FIXME: don't know how circe can serialize ADTs with discriminator
+      // FIXME: circe appends discriminator as a last field
       //toString(benchmark.writeAdtCirce()) shouldBe toString(benchmark.adtJson)
       toString(benchmark.writeAdtJackson()) shouldBe toString(benchmark.adtJson)
       toString(benchmark.writeAdtJsoniter()) shouldBe toString(benchmark.adtJson)

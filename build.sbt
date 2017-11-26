@@ -39,6 +39,7 @@ lazy val benchmark = project
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.2",
       "io.circe" %% "circe-generic" % "0.9.0-M2",
+      "io.circe" %% "circe-generic-extras" % "0.9.0-M2",
       "io.circe" %% "circe-parser" % "0.9.0-M2",
       "com.typesafe.play" %% "play-json" % "2.6.7",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",

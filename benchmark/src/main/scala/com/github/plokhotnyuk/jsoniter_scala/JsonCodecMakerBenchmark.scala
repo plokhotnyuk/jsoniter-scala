@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
+import com.github.plokhotnyuk.jsoniter_scala.CustomCirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker._
@@ -286,10 +287,9 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
 
-/* FIXME: don't know how circe can parse ADTs with discriminator
   @Benchmark
   def readAdtCirce(): AdtBase = decode[AdtBase](new String(adtJson, UTF_8)).fold(throw _, x => x)
-*/
+
   @Benchmark
   def readAdtJackson(): AdtBase = jacksonMapper.readValue[AdtBase](adtJson)
 
@@ -435,10 +435,10 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
-/* FIXME: don't know how circe can parse ADTs with discriminator
+
   @Benchmark
   def writeAdtCirce(): Array[Byte] = adtObj.asJson.noSpaces.getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeAdtJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(adtObj)
 
