@@ -94,7 +94,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class NameOverridden(@named("new_name") oldName: String) //FIXME: classes with field annotation should be defined in source file before materialize call
 
   case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, l: List[Int] = List(0),
-                      a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
+                      a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)),
+                      ml: mutable.LongMap[Int] = null, mm: mutable.Map[Int, Int] = null,
+                      ms: mutable.BitSet = null, mb: mutable.Buffer[Int] = null)
 
   val defaults = Defaults()
   val codecOfDefaults: JsonCodec[Defaults] = make[Defaults](CodecMakerConfig())
@@ -528,6 +530,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       parsedObj.i shouldBe defaults.i
       parsedObj.bi shouldBe defaults.bi
       parsedObj.a.deep shouldBe defaults.a.deep
+      parsedObj.ml shouldBe defaults.ml
+      parsedObj.mm shouldBe defaults.mm
+      parsedObj.ms shouldBe defaults.ms
+      parsedObj.mb shouldBe defaults.mb
+    }
+    "deserialize values of mutable collections in case of null defaults are defined" in {
+      val json = """{"ml":{"1":1},"mm":{"2":2},"ms":[3],"mb":[4]}""".getBytes
+      val parsedObj = JsonReader.read(codecOfDefaults, json)
+      parsedObj.ml shouldBe mutable.LongMap[Int](1L -> 1)
+      parsedObj.mm shouldBe mutable.Map[Int, Int](2 -> 2)
+      parsedObj.ms shouldBe mutable.BitSet(3)
+      parsedObj.mb shouldBe mutable.Buffer[Int](4)
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       verifySerDeser(make[Transient](CodecMakerConfig()), Transient("VVV"), """{"required":"VVV"}""".getBytes)

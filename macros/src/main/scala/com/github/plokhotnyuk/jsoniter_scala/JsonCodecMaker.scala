@@ -362,7 +362,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
-          genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
+          genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
             q"x.update(in.readObjectFieldAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
@@ -373,7 +373,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = containerCompanion(tpe)
-          genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
+          genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
             q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2))})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
@@ -383,7 +383,7 @@ object JsonCodecMaker {
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2))})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
           val comp = containerCompanion(tpe)
-          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty", q"x.add(in.readInt())")
+          genReadArray(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty", q"x.add(in.readInt())")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
           val comp = containerCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder", q"x += in.readInt()", q"x.result()")
@@ -391,7 +391,7 @@ object JsonCodecMaker {
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(tpe, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
-          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
+          genReadArray(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1))}")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
