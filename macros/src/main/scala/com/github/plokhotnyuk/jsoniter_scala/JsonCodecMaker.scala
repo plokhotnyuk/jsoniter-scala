@@ -246,7 +246,7 @@ object JsonCodecMaker {
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
 
-      def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
+      def checkFieldNameCollisions(tpe: Type, names: Traversable[String]): Unit = {
         val collisions = names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
@@ -254,6 +254,15 @@ object JsonCodecMaker {
               s"Names(s) defined by '${typeOf[named]}' annotation(s), " +
               "name of discriminator field specified by 'config.discriminatorFieldName' " +
               "and name(s) returned by 'config.nameMapper' for non-annotated fields should not match.")
+        }
+      }
+
+      def checkDiscriminatorValueCollisions(discriminatorFieldName: String, names: Traversable[String]): Unit = {
+        val collisions = names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
+        if (collisions.nonEmpty) {
+          val formattedCollisions = collisions.mkString("'", "', '", "'")
+          fail(s"Duplicated value(s) defined for '$discriminatorFieldName': $formattedCollisions. " +
+            s"Values(s) returned by 'config.classNameMapper' should not match.")
         }
       }
 
@@ -504,8 +513,10 @@ object JsonCodecMaker {
             JsonReader.toHashCode(cs, cs.length)
           }
 
+          val leafClasses = adtLeafClasses(tpe)
+          checkDiscriminatorValueCollisions(codecConfig.discriminatorFieldName, leafClasses.map(discriminatorValue))
           val discriminatorValueError = q"in.discriminatorValueError(${codecConfig.discriminatorFieldName})"
-          val readSubclasses = groupByOrdered(adtLeafClasses(tpe))(hashCode).map { case (hashCode, subTpes) =>
+          val readSubclasses = groupByOrdered(leafClasses)(hashCode).map { case (hashCode, subTpes) =>
             val checkNameAndReadValue = subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
               q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
                     in.rollbackToMark()
@@ -585,15 +596,11 @@ object JsonCodecMaker {
               } else out.writeNull()"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
           val annotations = getFieldAnnotations(tpe)
-
-          def name(m: MethodSymbol): String = getMappedName(annotations, m.name.toString)
-
           val members = getMembers(annotations, tpe)
-          checkFieldNameCollisions(tpe,
-            (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
             val tpe = methodType(m)
+            val name = getMappedName(annotations, m.name.toString)
             defaults.get(m.name.toString) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) {
@@ -602,19 +609,19 @@ object JsonCodecMaker {
                           val d = $d
                           v.length != d.length && v.deep != d.deep
                         }) {
-                        c = out.writeObjectField(c, ${name(m)})
+                        c = out.writeObjectField(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty && v != $d) {
-                        c = out.writeObjectField(c, ${name(m)})
+                        c = out.writeObjectField(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        c = out.writeObjectField(c, ${name(m)})
+                        c = out.writeObjectField(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
@@ -622,17 +629,17 @@ object JsonCodecMaker {
                 if (tpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if ((v ne null) && v.length > 0) {
-                        c = out.writeObjectField(c, ${name(m)})
+                        c = out.writeObjectField(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty) {
-                        c = out.writeObjectField(c, ${name(m)})
+                        c = out.writeObjectField(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""c = out.writeObjectField(c, ${name(m)})
+                  q"""c = out.writeObjectField(c, $name)
                       ..${genWriteVal(q"x.$m", tpe)}"""
                 }
             }
@@ -652,7 +659,8 @@ object JsonCodecMaker {
                 out.writeObjectEnd()
               } else out.writeNull()"""
         } else if (isAdtBase(tpe)) withEncoderFor(tpe, m) {
-          val writeSubclasses = adtLeafClasses(tpe).map { subTpe =>
+          val leafClasses = adtLeafClasses(tpe)
+          val writeSubclasses = leafClasses.map { subTpe =>
             val writeDiscriminatorField =
               q"""c = out.writeObjectField(c, ${codecConfig.discriminatorFieldName})
                   out.writeVal(${discriminatorValue(subTpe)})"""
