@@ -94,7 +94,7 @@ object JsonCodecMaker {
         val classSymbol = tpe.typeSymbol.asClass
         (classSymbol.isAbstract || classSymbol.isTrait) &&
           (if (classSymbol.isSealed) true
-          else fail("Only sealed traits & abstract classes are supported for ADTs. Please consider adding " +
+          else fail("Only sealed traits & abstract classes are supported for an ADT base. Please consider adding " +
             s"of a sealed definition for '$tpe' or using a custom implicitly accessible codec for the ADT base."))
       }
 
@@ -102,7 +102,9 @@ object JsonCodecMaker {
         tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
           val subTpe = s.asClass.toType
           if (isAdtBase(subTpe)) adtLeafClasses(subTpe)
-          else Set(subTpe)
+          else if (s.asClass.isCaseClass) Set(subTpe)
+          else fail("Only case classes & case objects are supported for an ADT leaf classes. Please consider using " +
+            s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
         }
 
       def isContainer(tpe: Type): Boolean =
@@ -209,17 +211,17 @@ object JsonCodecMaker {
           fail(s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
               "Please consider defining it as a top-level object or directly inside of another class or object.")
         }
-        comp.asModule // FIXME: module cannot be resolved properly for deeply nested inner case classes
+        comp.asModule //FIXME: module cannot be resolved properly for deeply nested inner case classes
       }
 
-      // FIXME: handling only default val params from the first list because subsequent might depend on previous params
-      def getParams(module: ModuleSymbol): Seq[TermSymbol] =
-        module.typeSignature.decl(TermName("apply")).asMethod.paramLists.head.map(_.asTerm)
+      def getParams(tpe: Type): Seq[TermSymbol] = tpe.decl(termNames.CONSTRUCTOR).asTerm.alternatives.flatMap {
+        case m: MethodSymbol => m.paramLists.head.map(_.asTerm)
+      } //FIXME: handling only default val params from the first list because subsequent might depend on previous params
 
       def getDefaults(tpe: Type): Map[String, Tree] = {
         val module = getModule(tpe)
-        getParams(module).zipWithIndex.collect {
-          case (p, i) if p.isParamWithDefault => (p.name.toString, q"$module.${TermName("apply$default$" + (i + 1))}")
+        getParams(tpe).zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
+          (p.name.toString, q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }(breakOut)
       }
 
@@ -441,7 +443,7 @@ object JsonCodecMaker {
           val members = getMembers(annotations, tpe)
           checkFieldNameCollisions(tpe,
             (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
-          val params = getParams(getModule(tpe))
+          val params = getParams(tpe)
           val required = params.collect {
             case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
           }
@@ -683,8 +685,8 @@ object JsonCodecMaker {
               def encode(x: $rootTpe, out: JsonWriter): Unit = ${genWriteVal(q"x", rootTpe)}
               ..${nullValueTrees.values}
               ..${reqFieldTrees.values}
-              ..${decodeMethodTrees.values.toSeq.reverse}
-              ..${encodeMethodTrees.values.toSeq.reverse}
+              ..${decodeMethodTrees.values}
+              ..${encodeMethodTrees.values}
             }"""
       if (c.settings.contains("print-codecs")) info(s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}")
       c.Expr[JsonCodec[A]](codec)

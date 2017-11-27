@@ -8,36 +8,40 @@ to get maximum performance of JSON parsing & serialization.
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
+- Support specifying of position of `Array[Byte]` for reading/writing from/to
 - Support of UTF-8 encoding
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
 - Parsing of strings with escaped characters for JSON field names, keys & values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala 
   collections, arrays, module classes, value classes and case classes with values/fields having any of types listed here 
-- Case classes should be defined as a top-level class or directly inside of another class or object
+- Case classes should be defined as a top-level class or directly inside of another class or object and with public 
+  constructor that has one list of arguments for all non-transient fields
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value 
   classes for any of them 
-- Implicitly resolvable codecs for all above types
-- Support of ADTs with sealed trait or abstract class base
-- Fields with default values that defined in a first list of arguments of the constructor are optional, other fields are
-  required (no special annotation required)
-- Fields with default values, empty options & empty collections/arrays are not serialized to provide sparse output 
+- Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
+  using discriminator field with string type of value
+- Implicitly resolvable codecs for any types
+- Fields with default values that defined in the constructor are optional, other fields are required (no special 
+  annotation required)
+- Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to 
+  provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Configurable mapping function for names between case classes and JSON, including predefined functions which enforce 
   snake_case or camelCase names for all fields
-- Configurable mapping function for values of a discriminator field that is used for distinguish classes of ADTs
 - Configurable name of a discriminator field for ADTs
+- Configurable mapping function for values of a discriminator field that is used for distinguish classes of ADTs
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
-- TODO: Generate codecs for ADTs with a specified resolving matcher for the discriminator field value
+- TODO: Generate codecs for ADTs with a specified resolving matcher for different types of the discriminator field value 
 - TODO: Add ability to read/write numbers from/to string values and vice versa
 - TODO: More efficient implementation for serialization and parsing of numbers  
 - TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: Add support for configurable decimal number formatting for writing   
 - TODO: Add support for some popular Scala classes like `Duration`, etc.
-- TODO: Add support for Java classes like `DateTime`, `UUID`, `URL`, POJOs & collections, etc.
+- TODO: Add support for Java classes like `Instant`, `UUID`, `URL`, POJOs & collections, etc.
 - TODO: Add extension modules with code generation for 3-rd party libraries with collections that are specialized for 
   primitive types
 - TODO: Add support of UTF-16 & UTF-32 binaries and JSON encoded strings as input/output
@@ -95,7 +99,7 @@ For more features & examples, please, check out
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
-creating pull requests (code or/and tests are highly appreciated)
+creating pull requests (fixes and improvements of docs, code/tests are highly appreciated)
 
 ### Run tests and check coverage
 
