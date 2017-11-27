@@ -103,7 +103,7 @@ object JsonCodecMaker {
           val subTpe = s.asClass.toType
           if (isAdtBase(subTpe)) adtLeafClasses(subTpe)
           else if (s.asClass.isCaseClass) Set(subTpe)
-          else fail("Only case classes & case objects are supported for an ADT leaf classes. Please consider using " +
+          else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
             s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
         }
 
@@ -248,8 +248,11 @@ object JsonCodecMaker {
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
 
+      def getCollisions(names: Traversable[String]): Traversable[String] =
+        names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
+
       def checkFieldNameCollisions(tpe: Type, names: Traversable[String]): Unit = {
-        val collisions = names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
+        val collisions = getCollisions(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
@@ -260,7 +263,7 @@ object JsonCodecMaker {
       }
 
       def checkDiscriminatorValueCollisions(discriminatorFieldName: String, names: Traversable[String]): Unit = {
-        val collisions = names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
+        val collisions = getCollisions(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated value(s) defined for '$discriminatorFieldName': $formattedCollisions. " +
@@ -414,11 +417,10 @@ object JsonCodecMaker {
             q"x += ${genReadVal(tpe1, nullValue(tpe1))}", q"x.result()")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
           q"""val v = in.readString()
-              if (v ne null) {
-                try ${enumSymbol(tpe)}.withName(v) catch {
-                  case _: NoSuchElementException => in.decodeError("illegal enum value: \"" + v + "\"")
-                }
-              } else default"""
+              if (v eq null) default
+              else try ${enumSymbol(tpe)}.withName(v) catch {
+                case _: NoSuchElementException => in.enumValueError(v)
+              }"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(tpe, default) {
           q"""(in.nextToken(): @switch) match {
                 case '{' =>

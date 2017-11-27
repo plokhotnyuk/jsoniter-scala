@@ -55,6 +55,13 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def enumValueError(value: String): Nothing = {
+    var i = appendString("illegal enum value: \"", 0)
+    i = appendString(value, i)
+    i = appendString("\"", i)
+    decodeError(i, head - 1, null)
+  }
+
   def setMark(): Unit = mark = head
 
   def scanToObjectField(s: String): Unit =
