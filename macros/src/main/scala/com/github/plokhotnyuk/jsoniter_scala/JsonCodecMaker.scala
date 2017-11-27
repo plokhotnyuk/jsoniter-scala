@@ -17,10 +17,10 @@ class named(name: String) extends StaticAnnotation
 class transient extends StaticAnnotation
 
 case class CodecMakerConfig(
-    nameMapper: String => String = identity,
-    classNameMapper: String => String = JsonCodecMaker.simpleClassName,
-    discriminatorFieldName: String = "type",
-    skipUnexpectedFields: Boolean = true) extends StaticAnnotation
+  fieldNameMapper: String => String = identity,
+  adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
+  discriminatorFieldName: String = "type",
+  skipUnexpectedFields: Boolean = true) extends StaticAnnotation
 
 object JsonCodecMaker {
   def enforceCamelCase(s: String): String =
@@ -98,14 +98,13 @@ object JsonCodecMaker {
             s"of a sealed definition for '$tpe' or using a custom implicitly accessible codec for the ADT base."))
       }
 
-      def adtLeafClasses(tpe: Type): Set[Type] =
-        tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
-          val subTpe = s.asClass.toType
-          if (isAdtBase(subTpe)) adtLeafClasses(subTpe)
-          else if (s.asClass.isCaseClass) Set(subTpe)
-          else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
-            s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
-        }
+      def adtLeafClasses(tpe: Type): Set[Type] = tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
+        val subTpe = s.asClass.toType
+        if (isAdtBase(subTpe)) adtLeafClasses(subTpe)
+        else if (s.asClass.isCaseClass) Set(subTpe)
+        else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
+          s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
+      }
 
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
@@ -243,10 +242,10 @@ object JsonCodecMaker {
         cq"${JsonReader.toHashCode(cs, cs.length)} => in.skip()"
       }
 
-      def discriminatorValue(tpe: Type): String = codecConfig.classNameMapper(tpe.typeSymbol.fullName)
+      def discriminatorValue(tpe: Type): String = codecConfig.adtLeafClassNameMapper(tpe.typeSymbol.fullName)
 
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
-        annotations.get(defaultName).fold(codecConfig.nameMapper(defaultName))(_.name)
+        annotations.get(defaultName).fold(codecConfig.fieldNameMapper(defaultName))(_.name)
 
       def getCollisions(names: Traversable[String]): Traversable[String] =
         names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }

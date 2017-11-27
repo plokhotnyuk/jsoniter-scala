@@ -39,10 +39,7 @@ import scala.reflect.io.Streamable
   "-XX:InitialCodeCacheSize=256m",
   "-XX:ReservedCodeCacheSize=256m",
   "-XX:-UseBiasedLocking",
-  "-XX:+AlwaysPreTouch"/*,
-  "-XX:+UnlockDiagnosticVMOptions",
-  "-XX:CompileCommand=print,*JsonReader.parseInt",
-  "-XX:PrintAssemblyOptions=intel"*/
+  "-XX:+AlwaysPreTouch"
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
