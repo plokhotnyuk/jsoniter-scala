@@ -80,7 +80,7 @@ class JsonCodecMakerBenchmark {
   val extractFieldsCodec: JsonCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
   val adtCodec: JsonCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
-  val adtFormat: OFormat[AdtBase] = format14
+  val adtFormat: OFormat[AdtBase] = v14
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
