@@ -162,6 +162,12 @@ Oracle JDK build 9.0.1+11 64-bit
 
 [Jsoniter Java](https://github.com/json-iterator/java)
 
+[RapidJson](https://github.com/Tencent/rapidjson)
+
+[sajson](https://github.com/chadaustin/sajson) 
+
+[pjson](https://github.com/chadaustin/Web-Benchmarks/blob/master/json/third-party/pjson/pjson.h) 
+
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros)
 
 [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
