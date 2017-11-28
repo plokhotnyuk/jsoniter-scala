@@ -58,10 +58,18 @@ object CustomPlayJsonFormats {
     Reads[Char](js => JsSuccess(js.as[String].charAt(0))),
     Writes[Char](c => JsString(c.toString)))
   implicit val v10: Format[Array[BigInt]] = Format(
-    Reads[Array[BigInt]]{js => JsSuccess(js.as[Array[JsNumber]].map(_.value.toBigInt()))},
+    Reads[Array[BigInt]](js => JsSuccess(js.as[Array[JsNumber]].map(_.value.toBigInt()))),
     Writes[Array[BigInt]](a => JsArray(a.map(v => JsNumber(BigDecimal(v))))))
   implicit val v11: OFormat[A] = Json.format[A]
   implicit val v12: OFormat[B] = Json.format[B]
   implicit val v13: OFormat[C] = Json.format[C]
   implicit val v14: OFormat[AdtBase] = flat.oformat((__ \ "type").format[String])
+  implicit def optionFormat[T: Format]: Format[Option[T]] = new Format[Option[T]]{
+    override def reads(json: JsValue): JsResult[Option[T]] = json.validateOpt[T]
+
+    override def writes(o: Option[T]): JsValue = o match {
+      case Some(t) => implicitly[Writes[T]].writes(t)
+      case None => JsNull
+    }
+  }
 }

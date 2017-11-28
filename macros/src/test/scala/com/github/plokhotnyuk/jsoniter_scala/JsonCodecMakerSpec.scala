@@ -664,19 +664,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
   }
 
-  def verifySerDeser[A](codec: JsonCodec[A], obj: A, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
+  def verifySerDeser[T](codec: JsonCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)
   }
 
-  def verifySer[A](codec: JsonCodec[A], obj: A, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
+  def verifySer[T](codec: JsonCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     val baos = new ByteArrayOutputStream
     JsonWriter.write(codec, obj, baos, cfg)
     toString(baos.toByteArray) shouldBe toString(json)
     toString(JsonWriter.write(codec, obj, cfg)) shouldBe toString(json)
   }
 
-  def verifyDeser[A](codec: JsonCodec[A], obj: A, json: Array[Byte]): Unit = {
+  def verifyDeser[T](codec: JsonCodec[T], obj: T, json: Array[Byte]): Unit = {
     JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe obj
     JsonReader.read(codec, json) shouldBe obj
   }

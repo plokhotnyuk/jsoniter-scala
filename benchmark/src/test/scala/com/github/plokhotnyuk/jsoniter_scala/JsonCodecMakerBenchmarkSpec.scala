@@ -90,8 +90,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readTwitterAPICirce() shouldBe TwitterAPI.obj
       benchmark.readTwitterAPIJackson() shouldBe TwitterAPI.obj
       benchmark.readTwitterAPIJsoniter() shouldBe TwitterAPI.obj
-      //FIXME: format doesn't compile
-      //benchmark.readTwitterAPIPlay() shouldBe TwitterAPI.obj
+      benchmark.readTwitterAPIPlay() shouldBe TwitterAPI.obj
     }
     "serialize properly" in {
       toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJson)
@@ -153,7 +152,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(TwitterAPI.compactJson)
       toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(TwitterAPI.compactJson)
       toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(TwitterAPI.compactJson)
-      // FIXME: format doesn't compile
+      // FIXME: Play-JSON serializes empty collections
       //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(TwitterAPI.compactJson)
     }
   }
