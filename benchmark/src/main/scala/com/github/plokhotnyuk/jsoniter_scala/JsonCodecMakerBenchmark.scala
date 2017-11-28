@@ -109,6 +109,7 @@ class JsonCodecMakerBenchmark {
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
   val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
   val adtObj: AdtBase = C(A(1), B("VVV"))
+  val preallocatedBuf: Array[Byte] = new Array[Byte](100000)
 
   @Benchmark
   def missingReqFieldCirce(): String =
@@ -331,6 +332,9 @@ class JsonCodecMakerBenchmark {
   def writeAnyRefsJsoniter(): Array[Byte] = JsonWriter.write(anyRefsCodec, anyRefsObj)
 
   @Benchmark
+  def writeAnyRefsJsoniterPrealloc(): Int = JsonWriter.write(anyRefsCodec, anyRefsObj, preallocatedBuf, 0)
+
+  @Benchmark
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
 
   @Benchmark
@@ -431,6 +435,9 @@ class JsonCodecMakerBenchmark {
   def writePrimitivesJsoniter(): Array[Byte] = JsonWriter.write(primitivesCodec, primitivesObj)
 
   @Benchmark
+  def writePrimitivesJsoniterPrealloc(): Int = JsonWriter.write(primitivesCodec, primitivesObj, preallocatedBuf, 0)
+
+  @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
 
   @Benchmark
@@ -455,6 +462,9 @@ class JsonCodecMakerBenchmark {
   def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj)
 
   @Benchmark
+  def writeGoogleMapsAPIJsoniterPrealloc(): Int = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj, preallocatedBuf, 0)
+
+  @Benchmark
   def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(GoogleMapsAPI.obj)(GoogleMapsAPI.format))
 
   @Benchmark
@@ -465,6 +475,9 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def writeTwitterAPIJsoniter(): Array[Byte] = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj)
+
+  @Benchmark
+  def writeTwitterAPIJsoniterPrealloc(): Int = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj, preallocatedBuf, 0)
 
 /* FIXME: format doesn't compile
   @Benchmark
@@ -499,8 +512,7 @@ case class ExtractFields(s: String, l: Long)
 @JsonSubTypes(Array(
   new Type(value = classOf[A], name = "A"),
   new Type(value = classOf[B], name = "B"),
-  new Type(value = classOf[C], name = "C")
-))
+  new Type(value = classOf[C], name = "C")))
 sealed trait AdtBase extends Product with Serializable
 
 case class A(a: Int) extends AdtBase
@@ -528,9 +540,9 @@ object GoogleMapsAPI {
   case class Rows(elements: Seq[Elements])
 
   val format: OFormat[GoogleMapsAPI.DistanceMatrix] = {
-    implicit lazy val format3 = Json.format[Value]
-    implicit lazy val format2 = Json.format[Elements]
-    implicit lazy val format1 = Json.format[Rows]
+    implicit val format3 = Json.format[Value]
+    implicit val format2 = Json.format[Elements]
+    implicit val format1 = Json.format[Rows]
     Json.format[DistanceMatrix]
   }
   val codec: JsonCodec[DistanceMatrix] = make[DistanceMatrix](CodecMakerConfig())

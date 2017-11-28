@@ -97,6 +97,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeAnyRefsJackson()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeAnyRefsJsoniter()) shouldBe toString(benchmark.anyRefsJson)
+      toString(benchmark.writeAnyRefsJsoniterPrealloc()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeAnyRefsPlay()) shouldBe toString(benchmark.anyRefsJson)
       toString(benchmark.writeArraysCirce()) shouldBe toString(benchmark.arraysJson)
       toString(benchmark.writeArraysJackson()) shouldBe toString(benchmark.arraysJson)
@@ -134,6 +135,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writePrimitivesCirce()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJson)
+      toString(benchmark.writePrimitivesJsoniterPrealloc()) shouldBe toString(benchmark.primitivesJson)
       toString(benchmark.writePrimitivesPlay()) shouldBe toString(benchmark.primitivesJson)
       // FIXME: circe appends discriminator as a last field
       //toString(benchmark.writeAdtCirce()) shouldBe toString(benchmark.adtJson)
@@ -144,17 +146,21 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(GoogleMapsAPI.compactJson)
+      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(GoogleMapsAPI.compactJson)
       // FIXME: circe serializes empty collections
       //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(TwitterAPI.compactJson)
       toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(TwitterAPI.compactJson)
       toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(TwitterAPI.compactJson)
+      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(TwitterAPI.compactJson)
       // FIXME: format doesn't compile
       //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(TwitterAPI.compactJson)
     }
   }
 
   private def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
+
+  private def toString(len: Int): String = new String(benchmark.preallocatedBuf, 0, len, StandardCharsets.UTF_8)
 
   private def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
     parsedObj.aa.deep shouldBe obj.aa.deep
