@@ -8,7 +8,8 @@ to get maximum performance of JSON parsing & serialization.
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
-- Support specifying of position of `Array[Byte]` for reading/writing from/to
+- Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
+- Support writing to pre-allocated `Array[Byte]` by specifying of position of writing from
 - Support of UTF-8 encoding
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
@@ -128,6 +129,12 @@ JMH allows to run benchmarks with different profilers, to get list of supported 
 sbt 'benchmark/jmh:run -lprof'
 ```
 
+Help for profiler options can be printed by following command:
+
+```sh
+sbt 'benchmark/jmh:run -prof <profiler_name>:help'
+```
+
 To get result for some benchmarks in flight recording file (which you can then open and analyse offline using JMC) use 
 command like this:
 
@@ -135,10 +142,19 @@ command like this:
 sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readGoogleMapsAPIJsoniter.*'
 ```
 
-On Linux the perf profiler can be used to see CPU & system statistics normalized per ops:
+On Linux the perf profiler can be used to see CPU & system events normalized per ops (do 
+`sudo apt-get install linux-tools` to install perf on Ubuntu):
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm_results.txt
+```
+
+Following command can be used to profile & print assembly code of hottest methods, but it requires [setup of an 
+additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html) 
+(just do `sudo apt-get install libhsdis0-fcml` for Ubuntu):
+
+```sh
+sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*readAdtJsoniter.*' >read_adt_perfasm_results.txt
 ```
 
 To see throughput & allocation rate of generated codecs run benchmarks with GC profiler using following command:
