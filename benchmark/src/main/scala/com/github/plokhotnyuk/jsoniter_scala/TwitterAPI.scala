@@ -131,12 +131,12 @@ object TwitterAPI {
     indices: Seq[Int])
 
   val format: Format[Seq[Tweet]] = {
-    implicit lazy val format7: OFormat[Urls] = Json.format[Urls]
-    implicit lazy val format6: OFormat[Url] = Json.format[Url]
-    implicit lazy val format5: OFormat[UserEntities] = Json.format[UserEntities]
-    implicit lazy val format4: OFormat[UserMentions] = Json.format[UserMentions]
-    implicit lazy val format3: OFormat[Entities] = Json.format[Entities]
-    implicit lazy val format20: OFormat[(Long, String, String, String, String, String, String,
+    implicit val format7: OFormat[Urls] = Json.format[Urls]
+    implicit val format6: OFormat[Url] = Json.format[Url]
+    implicit val format5: OFormat[UserEntities] = Json.format[UserEntities]
+    implicit val format4: OFormat[UserMentions] = Json.format[UserMentions]
+    implicit val format3: OFormat[Entities] = Json.format[Entities]
+    implicit val format20: OFormat[(Long, String, String, String, String, String, String,
       UserEntities, Boolean, Int, Int, Int, String, Int, Int, String, Boolean, Boolean, Int, String, Boolean)] =
       ((__ \ "id").format[Long] and
         (__ \ "id_str").format[String] and
@@ -159,7 +159,7 @@ object TwitterAPI {
         (__ \ "statuses_count").format[Int] and
         (__ \ "lang").format[String] and
         (__ \ "contributors_enabled").format[Boolean]).tupled
-    implicit lazy val format21: OFormat[(Boolean, Boolean, String, String, String, Boolean, String,
+    implicit val format21: OFormat[(Boolean, Boolean, String, String, String, Boolean, String,
       String, String, String, String, String, String, Boolean, Boolean, Boolean, Boolean, Boolean,
       Boolean, Boolean, String)] =
       ((__ \ "is_translator").format[Boolean] and
@@ -183,7 +183,7 @@ object TwitterAPI {
         (__ \ "follow_request_sent").format[Boolean] and
         (__ \ "notifications").format[Boolean] and
         (__ \ "translator_type").format[String]).tupled
-    implicit lazy val format2: Format[User] = (format20 and format21).apply({
+    implicit val format2: Format[User] = (format20 and format21).apply({
       case ((id, id_str, name, screen_name, location, description, url, entities, _protected, followers_count,
       friends_count, listed_count, created_at, favourites_count, utc_offset, time_zone, geo_enabled, verified,
       statuses_count, lang, contributors_enabled),
@@ -207,7 +207,7 @@ object TwitterAPI {
         u.profile_banner_url, u.profile_link_color, u.profile_sidebar_border_color, u.profile_sidebar_fill_color,
         u.profile_text_color, u.profile_use_background_image, u.has_extended_profile, u.default_profile,
         u.default_profile_image, u.following, u.follow_request_sent, u.notifications, u.translator_type)))
-    implicit lazy val format10: OFormat[(String, Long, String, String, Boolean, Entities, String, Option[String],
+    implicit val format10: OFormat[(String, Long, String, String, Boolean, Entities, String, Option[String],
       Option[String], Option[String], Option[String], Option[String])] =
       ((__ \ "created_at").format[String] and
         (__ \ "id").format[Long] and
@@ -221,7 +221,7 @@ object TwitterAPI {
         (__ \ "in_reply_to_user_id").format[Option[String]] and
         (__ \ "in_reply_to_user_id_str").format[Option[String]] and
         (__ \ "in_reply_to_screen_name").format[Option[String]]).tupled
-    implicit lazy val format11: OFormat[(User, Option[String], Option[String], Option[String], Option[String],
+    implicit val format11: OFormat[(User, Option[String], Option[String], Option[String], Option[String],
       Boolean, Int, Int, Boolean, Boolean, Boolean, String)] =
       ((__ \ "user").format[User] and
         (__ \ "geo").format[Option[String]] and
@@ -235,7 +235,7 @@ object TwitterAPI {
         (__ \ "retweeted").format[Boolean] and
         (__ \ "possibly_sensitive").format[Boolean] and
         (__ \ "lang").format[String]).tupled
-    implicit lazy val format1: Format[RetweetedStatus] = (format10 and format11).apply({
+    implicit val format1: Format[RetweetedStatus] = (format10 and format11).apply({
       case ((created_at, id, id_str, text, truncated, entities, source, in_reply_to_status_id,
       in_reply_to_status_id_str, in_reply_to_user_id, in_reply_to_user_id_str, in_reply_to_screen_name),
       (user, geo, coordinates, place, contributors, is_quote_status, retweet_count, favorite_count,
@@ -248,7 +248,7 @@ object TwitterAPI {
       s.in_reply_to_status_id_str, s.in_reply_to_user_id, s.in_reply_to_user_id_str, s.in_reply_to_screen_name),
       (s.user, s.geo, s.coordinates, s.place, s.contributors, s.is_quote_status, s.retweet_count,
         s.favorite_count, s.favorited, s.retweeted, s.possibly_sensitive, s.lang)))
-    implicit lazy val format00: OFormat[(String, Long, String, String, Boolean, Entities, String, Option[String],
+    implicit val format00: OFormat[(String, Long, String, String, Boolean, Entities, String, Option[String],
       Option[String], Option[String], Option[String], Option[String])] =
       ((__ \ "created_at").format[String] and
         (__ \ "id").format[Long] and
@@ -262,7 +262,7 @@ object TwitterAPI {
         (__ \ "in_reply_to_user_id").format[Option[String]] and
         (__ \ "in_reply_to_user_id_str").format[Option[String]] and
         (__ \ "in_reply_to_screen_name").format[Option[String]]).tupled
-    implicit lazy val format01: OFormat[(User, Option[String], Option[String], Option[String], Option[String],
+    implicit val format01: OFormat[(User, Option[String], Option[String], Option[String], Option[String],
       RetweetedStatus, Boolean, Int, Int, Boolean, Boolean, Boolean, String)] =
       ((__ \ "user").format[User] and
         (__ \ "geo").format[Option[String]] and
@@ -277,7 +277,7 @@ object TwitterAPI {
         (__ \ "retweeted").format[Boolean] and
         (__ \ "possibly_sensitive").format[Boolean] and
         (__ \ "lang").format[String]).tupled
-    implicit lazy val format0: Format[Tweet] = (format00 and format01).apply({
+    implicit val format0: Format[Tweet] = (format00 and format01).apply({
       case ((created_at, id, id_str, text, truncated, entities, source, in_reply_to_status_id,
       in_reply_to_status_id_str, in_reply_to_user_id, in_reply_to_user_id_str, in_reply_to_screen_name),
       (user, geo, coordinates, place, contributors, retweeted_status, is_quote_status, retweet_count, favorite_count,
