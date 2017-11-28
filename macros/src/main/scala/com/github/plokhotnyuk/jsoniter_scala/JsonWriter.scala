@@ -216,7 +216,7 @@ final class JsonWriter private[jsoniter_scala](
     var i = from
     var ch: Char = 0 // the fast path without utf8 and escape support
     while (i < to && {
-      val ch = s.charAt(i)
+      ch = s.charAt(i)
       ch > 31 && ch < 127 && ch != '"' && ch != '\\'
     }) pos = {
       i += 1
