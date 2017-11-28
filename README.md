@@ -41,8 +41,8 @@ to get maximum performance of JSON parsing & serialization.
 - TODO: More efficient implementation for serialization and parsing of numbers  
 - TODO: Extend codecs to allow using them for customization of serialization/parsing of types to/from map keys
 - TODO: Add support for configurable decimal number formatting for writing   
-- TODO: Add support for some popular Scala classes like `Duration`, etc.
-- TODO: Add support for Java classes like `Instant`, `UUID`, `URL`, POJOs & collections, etc.
+- TODO: Add support for some popular Scala classes like `Duration`, non-case classes, etc.
+- TODO: Add support for some popular Java classes like `Instant`, `UUID`, `URL`, POJOs, JDK collections, etc.
 - TODO: Add extension modules with code generation for 3-rd party libraries with collections that are specialized for 
   primitive types
 - TODO: Add support of UTF-16 & UTF-32 binaries and JSON encoded strings as input/output

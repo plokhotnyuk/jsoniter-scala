@@ -24,9 +24,9 @@ object GoogleMapsAPI {
   case class Rows(elements: Seq[Elements])
 
   val format: OFormat[GoogleMapsAPI.DistanceMatrix] = {
-    implicit val format3: OFormat[Value] = Json.format[Value]
-    implicit val format2: OFormat[Elements] = Json.format[Elements]
-    implicit val format1: OFormat[Rows] = Json.format[Rows]
+    implicit val v1: OFormat[Value] = Json.format[Value]
+    implicit val v2: OFormat[Elements] = Json.format[Elements]
+    implicit val v3: OFormat[Rows] = Json.format[Rows]
     Json.format[DistanceMatrix]
   }
   val codec: JsonCodec[DistanceMatrix] = make[DistanceMatrix](CodecMakerConfig())
