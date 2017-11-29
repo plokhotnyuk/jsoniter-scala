@@ -36,6 +36,7 @@ to get maximum performance of JSON parsing & serialization.
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
+- TODO: Extract core module for `JsonCodec`, `JsonReader` & `JsonWriter` and test them by Scala check properly
 - TODO: Generate codecs for ADTs with a specified resolving matcher for different types of the discriminator field value 
 - TODO: Add ability to read/write numbers from/to string values and vice versa
 - TODO: More efficient implementation for serialization and parsing of numbers  
@@ -44,9 +45,13 @@ to get maximum performance of JSON parsing & serialization.
 - TODO: Add support for some popular Scala classes like `Duration`, non-case classes, etc.
 - TODO: Add support for some popular Java classes like `Instant`, `UUID`, `URL`, POJOs, JDK collections, etc.
 - TODO: Add extension modules with code generation for 3-rd party libraries with collections that are specialized for 
-  primitive types
+  primitive types & uses compression: [HPPC](https://github.com/carrotsearch/hppc),
+  [fastutil](https://github.com/vigna/fastutil), 
+  [JavaFastPFOR](https://github.com/lemire/JavaFastPFOR), 
+  [RoaringBitmap](https://github.com/RoaringBitmap/RoaringBitmap), etc.
 - TODO: Add support of UTF-16 & UTF-32 binaries and JSON encoded strings as input/output
 - TODO: Use [scala-chart](https://github.com/wookietreiber/scala-chart) for plotting of benchmark results
+- TODO: Consider using of some macros for generation of specialized collections with feaures required by user
 
 ## How to use
 
