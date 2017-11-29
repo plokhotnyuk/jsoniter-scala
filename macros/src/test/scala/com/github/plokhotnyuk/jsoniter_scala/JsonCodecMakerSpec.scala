@@ -101,7 +101,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val defaults = Defaults()
   val codecOfDefaults: JsonCodec[Defaults] = make[Defaults](CodecMakerConfig())
 
-  case class Transient(required: String, @transient transient: String = "default") {
+  case class Transient(@transient transient: String = "default", required: String) {
     val ignored: String = s"$required-$transient"
   }
 
@@ -544,7 +544,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       parsedObj.mb shouldBe mutable.Buffer[Int](4)
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
-      verifySerDeser(make[Transient](CodecMakerConfig()), Transient("VVV"), """{"required":"VVV"}""".getBytes)
+      verifySerDeser(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"required":"VVV"}""".getBytes)
     }
     "don't serialize case class fields with 'None' values" in {
       verifySer(make[NullAndNoneValues](CodecMakerConfig()),
