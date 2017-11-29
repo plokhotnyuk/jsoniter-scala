@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.CustomCirceEncodersDecoders._
@@ -50,6 +51,7 @@ class JsonCodecMakerBenchmark {
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
       .addDeserializer(classOf[BitSet], new BitSetDeserializer)
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
+    registerModule(new AfterburnerModule)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
     setSerializationInclusion(Include.NON_EMPTY)

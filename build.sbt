@@ -38,6 +38,7 @@ lazy val benchmark = project
   .settings(
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.2",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.2",
       "io.circe" %% "circe-generic" % "0.9.0-M2",
       "io.circe" %% "circe-generic-extras" % "0.9.0-M2",
       "io.circe" %% "circe-parser" % "0.9.0-M2",
