@@ -211,6 +211,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeString(s: String, from: Int, to: Int): Unit = count = {
     var pos = ensureBufferCapacity((to - from) + 2) // 1 byte per char (suppose that they are ASCII only) + make room for the quotes
+    val buf = this.buf
     buf(pos) = '"'
     pos += 1
     var i = from
@@ -228,27 +229,52 @@ final class JsonWriter private[jsoniter_scala](
       pos + 1
     } else { // for the remaining parts we process with utf-8 encoding and escape unicode support
       count = pos
-      writeEncodedString(s, i, to)
+      if (config.escapeUnicode) writeEscapedString(s, i, to)
+      else writeEncodedString(s, i, to)
     }
   }
 
   private def writeEncodedString(s: String, from: Int, to: Int): Int = {
-    var pos = ensureBufferCapacity((to - from) * (if (config.escapeUnicode) 6 else 3) + 1) // max 6 or 3 bytes per char + the closing quotes
+    var pos = ensureBufferCapacity((to - from) * 3 + 1) // max 3 bytes per char + the closing quotes
+    val buf = this.buf
     var i = from
     while (i < to) pos = {
       val ch1 = s.charAt(i)
       i += 1
-      if (ch1 < 128) writeAscii(ch1, pos) // 1 byte, 7 bits: 0xxxxxxx
-      else if (config.escapeUnicode) {
-        if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
-          if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
-          writeEscapedUnicode(ch1, pos)
-        } else if (i < to) {
-          val ch2 = s.charAt(i)
-          i += 1
-          if (!Character.isLowSurrogate(ch2)) illegalSurrogateError()
-          writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos))
-        } else illegalSurrogateError()
+      if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
+        (ch1: @switch) match {
+          case '"' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = '"'
+            pos + 2
+          case '\n' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'n'
+            pos + 2
+          case '\r' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'r'
+            pos + 2
+          case '\t' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 't'
+            pos + 2
+          case '\b' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'b'
+            pos + 2
+          case '\f' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'f'
+            pos + 2
+          case '\\' => // TODO: consider should '/' be escaped too?
+            buf(pos) = '\\'
+            buf(pos + 1) = '\\'
+            pos + 2
+          case _ =>
+            buf(pos) = ch1.toByte
+            pos + 1
+        }
       } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
@@ -275,15 +301,105 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
+  private def writeEscapedString(s: String, from: Int, to: Int): Int = {
+    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char + the closing quotes
+    val buf = this.buf
+    var i = from
+    while (i < to) pos = {
+      val ch1 = s.charAt(i)
+      i += 1
+      if (ch1 < 128) {
+        (ch1: @switch) match {
+          case '"' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = '"'
+            pos + 2
+          case '\n' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'n'
+            pos + 2
+          case '\r' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'r'
+            pos + 2
+          case '\t' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 't'
+            pos + 2
+          case '\b' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'b'
+            pos + 2
+          case '\f' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'f'
+            pos + 2
+          case '\\' => // TODO: consider should '/' be escaped too?
+            buf(pos) = '\\'
+            buf(pos + 1) = '\\'
+            pos + 2
+          case _ => if (ch1 <= 31 || ch1 >= 127) writeEscapedUnicode(ch1, buf, pos) else {
+            buf(pos) = ch1.toByte
+            pos + 1
+          }
+        }
+      } else if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
+        if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
+        writeEscapedUnicode(ch1, buf, pos)
+      } else if (i < to) {
+        val ch2 = s.charAt(i)
+        i += 1
+        if (!Character.isLowSurrogate(ch2)) illegalSurrogateError()
+        writeEscapedUnicode(ch2, buf, writeEscapedUnicode(ch1, buf, pos))
+      } else illegalSurrogateError()
+    }
+    buf(pos) = '"'
+    pos + 1
+  }
+
   private def writeChar(ch: Char): Unit = count = {
     var pos = ensureBufferCapacity((if (config.escapeUnicode) 6 else 3) + 2) // 6 or 3 bytes per char for encoded unicode + make room for the quotes
     buf(pos) = '"'
     pos += 1
     pos = {
-      if (ch < 128) writeAscii(ch, pos) // 1 byte, 7 bits: 0xxxxxxx
-      else if (config.escapeUnicode) {
+      if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
+        (ch: @switch) match {
+          case '"' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = '"'
+            pos + 2
+          case '\n' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'n'
+            pos + 2
+          case '\r' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'r'
+            pos + 2
+          case '\t' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 't'
+            pos + 2
+          case '\b' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'b'
+            pos + 2
+          case '\f' =>
+            buf(pos) = '\\'
+            buf(pos + 1) = 'f'
+            pos + 2
+          case '\\' => // TODO: consider should '/' be escaped too?
+            buf(pos) = '\\'
+            buf(pos + 1) = '\\'
+            pos + 2
+          case _ => if (config.escapeUnicode && (ch <= 31 || ch >= 127)) writeEscapedUnicode(ch, buf, pos) else {
+            buf(pos) = ch.toByte
+            pos + 1
+          }
+        }
+      } else if (config.escapeUnicode) {
         if (Character.isSurrogate(ch)) illegalSurrogateError()
-        writeEscapedUnicode(ch, pos)
+        writeEscapedUnicode(ch, buf, pos)
       } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
@@ -299,27 +415,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private def writeAscii(ch: Char, pos: Int) = (ch: @switch) match {
-    case '"' => writeEscapedAscii('"', pos)
-    case '\n' => writeEscapedAscii('n', pos)
-    case '\r' => writeEscapedAscii('r', pos)
-    case '\t' => writeEscapedAscii('t', pos)
-    case '\b' => writeEscapedAscii('b', pos)
-    case '\f' => writeEscapedAscii('f', pos)
-    case '\\' => writeEscapedAscii('\\', pos) // TODO: consider should '/' be escaped too?
-    case _ => if (config.escapeUnicode && (ch <= 31 || ch >= 127)) writeEscapedUnicode(ch, pos) else {
-      buf(pos) = ch.toByte
-      pos + 1
-    }
-  }
-
-  private def writeEscapedAscii(ch: Char, pos: Int): Int = {
-    buf(pos) = '\\'
-    buf(pos + 1) = ch.toByte
-    pos + 2
-  }
-
-  private def writeEscapedUnicode(ch: Char, pos: Int): Int = {
+  private def writeEscapedUnicode(ch: Char, buf: Array[Byte], pos: Int): Int = {
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = toHexDigit(ch >>> 12)

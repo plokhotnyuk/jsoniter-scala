@@ -84,6 +84,7 @@ class JsonCodecMakerBenchmark {
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
   val adtCodec: JsonCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
   val adtFormat: OFormat[AdtBase] = v14
+  val stringCodec: JsonCodec[String] = make[String](CodecMakerConfig())
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -98,6 +99,8 @@ class JsonCodecMakerBenchmark {
     """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}""".getBytes
   val adtJson: Array[Byte] =
     """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}""".getBytes
+  val stringJson: Array[Byte] =
+    """"\b\f\n\r\t\\\"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"""".getBytes("UTF-8")
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
@@ -112,6 +115,8 @@ class JsonCodecMakerBenchmark {
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
   val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
   val adtObj: AdtBase = C(A(1), B("VVV"))
+  val stringObj: String =
+    "\b\f\n\r\t\\\"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
   val preallocatedBuf: Array[Byte] = new Array[Byte](100000)
 
   @Benchmark
@@ -301,6 +306,18 @@ class JsonCodecMakerBenchmark {
   def readAdtPlay(): AdtBase = Json.parse(adtJson).as[AdtBase](adtFormat)
 
   @Benchmark
+  def readStringCirce(): String = decode[String](new String(stringJson, UTF_8)).fold(throw _, x => x)
+
+  @Benchmark
+  def readStringJackson(): String = jacksonMapper.readValue[String](stringJson)
+
+  @Benchmark
+  def readStringJsoniter(): String = JsonReader.read(stringCodec, stringJson)
+
+  @Benchmark
+  def readStringPlay(): String = Json.parse(stringJson).toString()
+
+  @Benchmark
   def readGoogleMapsAPICirce(): GoogleMapsAPI.DistanceMatrix = decode[GoogleMapsAPI.DistanceMatrix](new String(GoogleMapsAPI.json, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
@@ -453,6 +470,21 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def writeAdtPlay(): Array[Byte] = Json.toBytes(Json.toJson(adtObj)(adtFormat))
+
+  @Benchmark
+  def writeStringCirce(): Array[Byte] = stringObj.asJson.noSpaces.getBytes(UTF_8)
+
+  @Benchmark
+  def writeStringJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(stringObj)
+
+  @Benchmark
+  def writeStringJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, stringObj)
+
+  @Benchmark
+  def writeStringJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, stringObj, preallocatedBuf, 0)
+
+  @Benchmark
+  def writeStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(stringObj))
 
   @Benchmark
   def writeGoogleMapsAPICirce(): Array[Byte] = GoogleMapsAPI.obj.asJson.noSpaces.getBytes(UTF_8)

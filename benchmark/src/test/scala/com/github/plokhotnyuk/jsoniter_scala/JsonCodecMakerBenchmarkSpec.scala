@@ -83,6 +83,11 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readAdtJackson() shouldBe benchmark.adtObj
       benchmark.readAdtJsoniter() shouldBe benchmark.adtObj
       benchmark.readAdtPlay() shouldBe benchmark.adtObj
+      benchmark.readStringCirce() shouldBe benchmark.stringObj
+      benchmark.readStringJackson() shouldBe benchmark.stringObj
+      benchmark.readStringJsoniter() shouldBe benchmark.stringObj
+      // FIXME: find proper way to parse string value in Play JSON
+      //benchmark.readStringPlay() shouldBe benchmark.stringObj
       benchmark.readGoogleMapsAPICirce() shouldBe GoogleMapsAPI.obj
       benchmark.readGoogleMapsAPIJackson() shouldBe GoogleMapsAPI.obj
       benchmark.readGoogleMapsAPIJsoniter() shouldBe GoogleMapsAPI.obj
@@ -141,6 +146,11 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeAdtJackson()) shouldBe toString(benchmark.adtJson)
       toString(benchmark.writeAdtJsoniter()) shouldBe toString(benchmark.adtJson)
       toString(benchmark.writeAdtPlay()) shouldBe toString(benchmark.adtJson)
+      toString(benchmark.writeStringCirce()) shouldBe toString(benchmark.stringJson)
+      toString(benchmark.writeStringJackson()) shouldBe toString(benchmark.stringJson)
+      toString(benchmark.writeStringJsoniter()) shouldBe toString(benchmark.stringJson)
+      toString(benchmark.writeStringJsoniterPrealloc()) shouldBe toString(benchmark.stringJson)
+      toString(benchmark.writeStringPlay()) shouldBe toString(benchmark.stringJson)
       // FIXME: circe serializes empty collections
       //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
       toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)
