@@ -698,9 +698,7 @@ object JsonWriter {
       val arr = new Array[Byte](writer.count)
       System.arraycopy(writer.buf, 0, arr, 0, arr.length)
       arr
-    } finally {
-      writer.freeTooLongBuf()
-    }
+    } finally writer.freeTooLongBuf()
   }
 
   /**
