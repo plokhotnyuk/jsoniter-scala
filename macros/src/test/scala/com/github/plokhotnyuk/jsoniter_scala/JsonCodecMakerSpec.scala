@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker.make
 import org.scalatest.{Matchers, WordSpec}
 
+import scala.annotation.switch
 import scala.collection.immutable._
 import scala.collection.mutable
 
@@ -255,7 +256,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         val nullValue: Either[String, StandardTypes] = null
 
         def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
-          in.nextToken() match {
+          (in.nextToken(): @switch) match {
             case '{' =>
               in.rollbackToken()
               Right(codecOfStandardTypes.decode(in, codecOfStandardTypes.nullValue))
@@ -285,7 +286,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         val nullValue: LocationType.LocationType = null
 
         def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
-          if (in.nextToken() == 'n') {
+          if (in.isNextToken('n')) {
             in.rollbackToken()
             in.readNull(default)
           } else {

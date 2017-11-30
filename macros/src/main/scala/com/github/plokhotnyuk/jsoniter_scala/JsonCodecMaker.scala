@@ -137,31 +137,25 @@ object JsonCodecMaker {
         else fail(s"Unsupported type to be used as map key '$tpe'.")
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
-        genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayStartError()", q"in.arrayEndError()")
+        genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayEndError()")
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        genReadCollection(newBuilder, readKV, result, q"'{'", q"'}'", q"in.objectStartError()", q"in.objectEndError()")
+        genReadCollection(newBuilder, readKV, result, q"'{'", q"'}'", q"in.objectEndError()")
 
       def genReadCollection(newBuilder: Tree, loopBody: Tree, result: Tree,
-                            open: Tree, close: Tree, startError: Tree, endError: Tree): Tree =
-        q"""(in.nextToken(): @switch) match {
-              case $open =>
-                if (in.nextToken() == $close) default
-                else {
-                  in.rollbackToken()
-                  ..$newBuilder
-                  do {
-                    ..$loopBody
-                  } while (in.nextToken() == ',')
-                  in.rollbackToken()
-                  if (in.nextToken() == $close) $result
-                  else $endError
-                }
-              case 'n' =>
+                            open: Tree, close: Tree, endError: Tree): Tree =
+        q"""if (in.isNextToken($open)) {
+              if (in.isNextToken($close)) default
+              else {
                 in.rollbackToken()
-                in.readNull(default)
-              case _ => ..$startError
-            }"""
+                ..$newBuilder
+                do {
+                  ..$loopBody
+                } while (in.isNextToken(','))
+                if (in.isCurrentToken($close)) $result
+                else $endError
+              }
+            } else in.readNullOrTokenError(default, $open)"""
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
@@ -421,16 +415,11 @@ object JsonCodecMaker {
                 case _: NoSuchElementException => in.enumValueError(v)
               }"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(tpe, default) {
-          q"""(in.nextToken(): @switch) match {
-                case '{' =>
-                  in.rollbackToken()
-                  in.skip()
-                  ${tpe.typeSymbol.asClass.module}
-                case 'n' =>
-                  in.rollbackToken()
-                  in.readNull(default)
-                case _ => in.objectStartError()
-              }"""
+          q"""if (in.isNextToken('{')) {
+                in.rollbackToken()
+                in.skip()
+                ${tpe.typeSymbol.asClass.module}
+              } else in.readNullOrTokenError(default, '{')"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(tpe, default) {
           val annotations = getFieldAnnotations(tpe)
 
@@ -489,27 +478,21 @@ object JsonCodecMaker {
           val readFieldsBlock =
             (if (discriminator.isEmpty) readFields
             else readFields :+ discriminator) :+ cq"_ => $unexpectedFieldHandler"
-          q"""(in.nextToken(): @switch) match {
-                case '{' =>
-                  ..$reqVars
-                  ..$readVars
-                  if (in.nextToken() != '}') {
-                    in.rollbackToken()
-                    do {
-                      val l = in.readObjectFieldAsCharBuf()
-                      (in.charBufToHashCode(l): @switch) match {
-                        case ..$readFieldsBlock
-                      }
-                    } while (in.nextToken() == ',')
-                    in.rollbackToken()
-                    if (in.nextToken() != '}') in.objectEndError()
-                  }
-                  ..$checkReqVarsAndConstruct
-                case 'n' =>
+          q"""if (in.isNextToken('{')) {
+                ..$readVars
+                ..$reqVars
+                if (!in.isNextToken('}')) {
                   in.rollbackToken()
-                  in.readNull(default)
-                case _ => in.objectStartError()
-              }"""
+                  do {
+                    val l = in.readObjectFieldAsCharBuf()
+                    (in.charBufToHashCode(l): @switch) match {
+                      case ..$readFieldsBlock
+                    }
+                  } while (in.isNextToken(','))
+                  if (!in.isCurrentToken('}')) in.objectEndError()
+                }
+                ..$checkReqVarsAndConstruct
+              } else in.readNullOrTokenError(default, '{')"""
         } else if (isAdtBase(tpe)) withDecoderFor(tpe, default) {
           def hashCode(subTpe: Type): Int = {
             val cs = discriminatorValue(subTpe).toCharArray
@@ -529,19 +512,14 @@ object JsonCodecMaker {
             cq"$hashCode => $checkNameAndReadValue"
           }(breakOut)
           q"""in.setMark()
-              (in.nextToken(): @switch) match {
-                case '{' =>
-                  in.scanToObjectField(${codecConfig.discriminatorFieldName})
-                  val l = in.readValueAsCharBuf()
-                  (in.charBufToHashCode(l): @switch) match {
-                    case ..$readSubclasses
-                    case _ => $discriminatorValueError
-                  }
-                case 'n' =>
-                  in.rollbackToMark()
-                  in.readNull(default)
-                case _ => in.objectStartError()
-              }"""
+              if (in.isNextToken('{')) {
+                in.scanToObjectField(${codecConfig.discriminatorFieldName})
+                val l = in.readValueAsCharBuf()
+                (in.charBufToHashCode(l): @switch) match {
+                  case ..$readSubclasses
+                  case _ => $discriminatorValueError
+                }
+              } else in.readNullOrTokenError(default, '{')"""
         } else cannotFindCodecError(tpe)
       }
 

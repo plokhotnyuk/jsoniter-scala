@@ -69,7 +69,7 @@ final class JsonReader private[jsoniter_scala](
       if (isCharBufEqualsTo(readObjectFieldAsCharBuf(), s)) false
       else {
         skip()
-        if (nextToken(head) == ',') true
+        if (isNextToken(',', head)) true
         else reqFieldError(s)
       }
     }) ()
@@ -86,11 +86,9 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readValueAsCharBuf(): Int = {
-    val b = nextToken(head)
-    if (b == '"') parseString(0, charBuf.length, head)
+  def readValueAsCharBuf(): Int =
+    if (isNextToken('"', head)) parseString(0, charBuf.length, head)
     else decodeError("expected string value")
-  }
 
   def readObjectFieldAsString(): String = {
     readParentheses()
@@ -192,24 +190,28 @@ final class JsonReader private[jsoniter_scala](
 
   def readBigDecimal(default: BigDecimal): BigDecimal = parseBigDecimal(isToken = true, default)
 
-  def readString(default: String = null): String = {
-    val b = nextToken(head)
-    if (b == '"') {
+  def readString(default: String = null): String =
+    if (isNextToken('"', head)) {
       val len = parseString(0, charBuf.length, head)
       new String(charBuf, 0, len)
-    } else if (b == 'n') parseNull(default, head)
+    } else if (isCurrentToken('n', head)) parseNull(default, head)
     else decodeError("expected string value or null")
-  }
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
-  def readNull[A](default: A): A = {
-    val b = nextToken(head)
-    if (b == 'n') parseNull(default, head)
+  def readNull[A](default: A): A =
+    if (isNextToken('n', head)) parseNull(default, head)
     else nullError(head)
-  }
+
+  def readNullOrTokenError[A](default: A, b: Byte): A =
+    if (isCurrentToken('n', head)) parseNull(default, head)
+    else tokenOrNullError(b)
 
   def nextToken(): Byte = nextToken(head)
+
+  def isNextToken(b: Byte): Boolean = isNextToken(b, head)
+
+  def isCurrentToken(b: Byte): Boolean = isCurrentToken(b, head)
 
   def rollbackToken(): Unit = {
     val pos = head
@@ -241,6 +243,13 @@ final class JsonReader private[jsoniter_scala](
   def objectEndError(): Nothing = decodeError("expected '}' or ','")
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
+
+  private def tokenOrNullError(b: Byte): Nothing = {
+    var i = appendString("expected '", 0)
+    charBuf(i) = b.toChar
+    i = appendString("' or null", i + 1)
+    decodeError(i, head - 1, null)
+  }
 
   private def reqFieldError(s: String): Nothing = {
     var i = appendString("missing required field \"", 0)
@@ -280,6 +289,23 @@ final class JsonReader private[jsoniter_scala](
         b
       } else nextToken(pos + 1)
     } else nextToken(loadMoreOrError(pos))
+
+  @tailrec
+  private def isNextToken(t: Byte, pos: Int): Boolean =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == t) {
+        head = pos + 1
+        true
+      } else if (b != ' ' && b != '\n' && b != '\t' && b != '\r') {
+        head = pos + 1
+        false
+      } else isNextToken(t, pos + 1)
+    } else isNextToken(t, loadMoreOrError(pos))
+
+  private def isCurrentToken(b: Byte, pos: Int): Boolean =
+    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()'")
+    else buf(pos - 1) == b
 
   @tailrec
   private def parseNull[A](default: A, pos: Int): A =
@@ -329,13 +355,13 @@ final class JsonReader private[jsoniter_scala](
     lim
   }
 
-  private def readParentheses(): Unit = if (nextToken(head) != '"') decodeError("expected '\"'")
+  private def readParentheses(): Unit = if (!isNextToken('"', head)) decodeError("expected '\"'")
 
   private def readParenthesesWithColon(): Unit =
     if (nextByte(head) != '"') decodeError("expected '\"'")
     else readColon()
 
-  private def readColon(): Unit = if (nextToken(head) != ':') decodeError("expected ':'")
+  private def readColon(): Unit = if (!isNextToken(':', head)) decodeError("expected ':'")
 
   private def parseBoolean(isToken: Boolean): Boolean =
     (if (isToken) nextToken(head) else nextByte(head): @switch) match {
