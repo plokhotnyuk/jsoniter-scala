@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
-import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.{JsonFactory, JsonParser}
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
@@ -44,7 +44,9 @@ import scala.collection.mutable
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class JsonCodecMakerBenchmark {
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper with ScalaObjectMapper {
+  val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
+    disable(JsonFactory.Feature.INTERN_FIELD_NAMES)
+  }) with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     registerModule(new SimpleModule()
       .addSerializer(classOf[BitSet], new BitSetSerializer)
