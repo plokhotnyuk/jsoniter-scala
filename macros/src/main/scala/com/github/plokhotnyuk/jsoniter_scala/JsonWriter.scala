@@ -157,14 +157,12 @@ final class JsonWriter private[jsoniter_scala](
     write('}')
   }
 
-  @inline
   private def write(b: Byte): Unit = count = {
     val pos = ensureBufferCapacity(1)
     buf(pos) = b
     pos + 1
   }
 
-  @inline
   private def write(b1: Byte, b2: Byte): Unit = count = {
     val pos = ensureBufferCapacity(2)
     buf(pos) = b1
@@ -172,7 +170,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 2
   }
 
-  @inline
   private def write(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
     val pos = ensureBufferCapacity(3)
     buf(pos) = b1
@@ -181,7 +178,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 3
   }
 
-  @inline
   private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
     val pos = ensureBufferCapacity(4)
     buf(pos) = b1
@@ -191,7 +187,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
-  @inline
   private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
     val pos = ensureBufferCapacity(5)
     buf(pos) = b1
@@ -572,7 +567,6 @@ final class JsonWriter private[jsoniter_scala](
     if (java.lang.Double.isFinite(x)) writeAsciiString(java.lang.Double.toString(x))
     else encodeError("illegal number: " + x)
 
-  @inline
   private def writeIndention(delta: Int): Unit = if (indention != 0) writeNewLineAndSpaces(delta)
 
   private def writeNewLineAndSpaces(delta: Int): Unit = count = {
@@ -588,7 +582,6 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
-  @inline
   private def ensureBufferCapacity(required: Int): Int = {
     if (buf.length < count + required) growBuffer(required)
     count
