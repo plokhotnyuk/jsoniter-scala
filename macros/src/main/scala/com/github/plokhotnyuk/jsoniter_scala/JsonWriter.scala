@@ -218,7 +218,7 @@ final class JsonWriter private[jsoniter_scala](
     var ch: Char = 0 // the fast path without utf8 encoding and unicode escaping
     while (i < to && {
       ch = s.charAt(i)
-      ch > 31 & ch < 127 & ch != '"' & ch != '\\'
+      ch > 31 && ch < 127 && ch != '"' && ch != '\\'
     }) pos = {
       i += 1
       buf(pos) = ch.toByte
