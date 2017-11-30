@@ -158,48 +158,48 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @inline
-  private def write(b: Byte): Unit = {
+  private def write(b: Byte): Unit = count = {
     val pos = ensureBufferCapacity(1)
     buf(pos) = b
-    count = pos + 1
+    pos + 1
   }
 
   @inline
-  private def write(b1: Byte, b2: Byte): Unit = {
+  private def write(b1: Byte, b2: Byte): Unit = count = {
     val pos = ensureBufferCapacity(2)
     buf(pos) = b1
     buf(pos + 1) = b2
-    count = pos + 2
+    pos + 2
   }
 
   @inline
-  private def write(b1: Byte, b2: Byte, b3: Byte): Unit = {
+  private def write(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
     val pos = ensureBufferCapacity(3)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
-    count = pos + 3
+    pos + 3
   }
 
   @inline
-  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = {
+  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
     val pos = ensureBufferCapacity(4)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
     buf(pos + 3) = b4
-    count = pos + 4
+    pos + 4
   }
 
   @inline
-  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = {
+  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
     val pos = ensureBufferCapacity(5)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
     buf(pos + 3) = b4
     buf(pos + 4) = b5
-    count = pos + 5
+    pos + 5
   }
 
   private def writeAsciiString(s: String): Unit = count = {
@@ -215,7 +215,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     var i = from
-    var ch: Char = 0 // the fast path without utf8 and escape support
+    var ch: Char = 0 // the fast path without utf8 encoding and unicode escaping
     while (i < to && {
       ch = s.charAt(i)
       ch > 31 && ch < 127 && ch != '"' && ch != '\\'
@@ -227,7 +227,7 @@ final class JsonWriter private[jsoniter_scala](
     if (i == to) {
       buf(pos) = '"'
       pos + 1
-    } else { // for the remaining parts we process with utf-8 encoding and escape unicode support
+    } else { // for the remaining parts we process with utf-8 encoding and unicode escaping
       count = pos
       if (config.escapeUnicode) writeEscapedString(s, i, to)
       else writeEncodedString(s, i, to)
