@@ -114,8 +114,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x, 0, x.length)
 
   def writeVal(x: Boolean): Unit =
-    if (x) write('t'.toByte, 'r'.toByte, 'u'.toByte, 'e'.toByte)
-    else write('f'.toByte, 'a'.toByte, 'l'.toByte, 's'.toByte, 'e'.toByte)
+    if (x) write('t', 'r', 'u', 'e')
+    else write('f', 'a', 'l', 's', 'e')
 
   def writeVal(x: Byte): Unit = writeInt(x.toInt)
 
@@ -131,7 +131,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Double): Unit = writeDouble(x)
 
-  def writeNull(): Unit = write('n'.toByte, 'u'.toByte, 'l'.toByte, 'l'.toByte)
+  def writeNull(): Unit = write('n', 'u', 'l', 'l')
 
   def writeArrayStart(): Unit = {
     indention += config.indentionStep
@@ -218,7 +218,7 @@ final class JsonWriter private[jsoniter_scala](
     var ch: Char = 0 // the fast path without utf8 encoding and unicode escaping
     while (i < to && {
       ch = s.charAt(i)
-      ch > 31 && ch < 127 && ch != '"' && ch != '\\'
+      ch > 31 & ch < 127 & ch != '"' & ch != '\\'
     }) pos = {
       i += 1
       buf(pos) = ch.toByte
@@ -439,12 +439,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeParenthesesWithColon(): Unit =
-    if (config.indentionStep > 0) write('"'.toByte, ':'.toByte, ' '.toByte)
-    else write('"'.toByte, ':'.toByte)
+    if (config.indentionStep > 0) write('"', ':', ' ')
+    else write('"', ':')
 
   private def writeColon(): Unit =
-    if (config.indentionStep > 0) write(':'.toByte, ' '.toByte)
-    else write(':'.toByte)
+    if (config.indentionStep > 0) write(':', ' ')
+    else write(':')
 
   private def writeInt(x: Int): Unit = count = {
     var pos = ensureBufferCapacity(11) // minIntBytes.length
