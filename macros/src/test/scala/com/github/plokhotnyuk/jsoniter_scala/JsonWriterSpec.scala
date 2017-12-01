@@ -74,15 +74,14 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
     }
     "write string of Unicode chars which are non-surrogate and should not be escaped" in {
-      forAll(minSuccessful(100000)) { (s: String) =>
-        whenever(!s.exists(ch => Character.isSurrogate(ch) ||
-          ch == '\b' || ch == '\f' || ch == '\n' || ch == '\r' || ch == '\t' || ch == '\\' || ch == '"')) {
+      forAll(minSuccessful(10000)) { (s: String) =>
+        whenever(!s.exists(ch => Character.isSurrogate(ch) || ch < ' ' || ch == '\\' || ch == '"')) {
           withWriter(_.writeVal(s)) shouldBe '"' + s + '"'
         }
       }
     }
     "write strings with chars that should be escaped" in {
-      withWriter(_.writeVal("\b\f\n\r\t\\\"")) shouldBe """"\b\f\n\r\t\\\"""""
+      withWriter(_.writeVal("\b\f\n\r\t\\\"\u0000\u001f")) shouldBe "\"\\b\\f\\n\\r\\t\\\\\\\"\\u0000\\u001f\""
     }
     "write strings with valid surrogate pair chars" in {
       withWriter(_.writeVal("𝄞")) shouldBe "\"\ud834\udd1e\""
@@ -120,8 +119,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal for char" should {
     "write string with Unicode chars which are non-surrogate or should not be escaped" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
-        whenever(!Character.isSurrogate(ch) &&
-            ch != '\b' && ch != '\f' && ch != '\n' && ch != '\r' && ch != '\t' && ch != '\\' && ch != '"') {
+        whenever(!Character.isSurrogate(ch) && ch >= ' ' && ch != '\\' && ch != '"') {
           withWriter(_.writeVal(ch)) shouldBe "\"" + ch + "\""
         }
       }
@@ -134,6 +132,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       withWriter(_.writeVal('\t')) shouldBe """"\t""""
       withWriter(_.writeVal('\\')) shouldBe """"\\""""
       withWriter(_.writeVal('\"')) shouldBe """"\"""""
+      withWriter(_.writeVal('\u0000')) shouldBe "\"\\u0000\""
+      withWriter(_.writeVal('\u001f')) shouldBe "\"\\u001f\""
     }
     "write string with escaped Unicode chars if it is specified by provided writer config" in {
       withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\u0000')) shouldBe "\"\\u0000\""

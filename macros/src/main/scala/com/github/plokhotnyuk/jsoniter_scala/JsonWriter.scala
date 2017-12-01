@@ -224,7 +224,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeEncodedString(s: String, from: Int, to: Int): Int = {
-    var pos = ensureBufferCapacity((to - from) * 3 + 1) // max 3 bytes per char + the closing quotes
+    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 3 bytes per char for encoded unicode + the closing quotes
     val buf = this.buf
     var i = from
     while (i < to) pos = {
@@ -261,8 +261,11 @@ final class JsonWriter private[jsoniter_scala](
             buf(pos + 1) = '\\'
             pos + 2
           case _ =>
-            buf(pos) = ch1.toByte
-            pos + 1
+            if (ch1 <= 31) writeEscapedUnicode(ch1, buf, pos)
+            else {
+              buf(pos) = ch1.toByte
+              pos + 1
+            }
         }
       } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
@@ -291,7 +294,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeEscapedString(s: String, from: Int, to: Int): Int = {
-    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char + the closing quotes
+    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char for encoded unicode + the closing quotes
     val buf = this.buf
     var i = from
     while (i < to) pos = {
@@ -327,10 +330,12 @@ final class JsonWriter private[jsoniter_scala](
             buf(pos) = '\\'
             buf(pos + 1) = '\\'
             pos + 2
-          case _ => if (ch1 <= 31 || ch1 >= 127) writeEscapedUnicode(ch1, buf, pos) else {
-            buf(pos) = ch1.toByte
-            pos + 1
-          }
+          case _ =>
+            if (ch1 <= 31 || ch1 >= 127) writeEscapedUnicode(ch1, buf, pos)
+            else {
+              buf(pos) = ch1.toByte
+              pos + 1
+            }
         }
       } else if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
         if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
@@ -347,7 +352,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeChar(ch: Char): Unit = count = {
-    var pos = ensureBufferCapacity((if (config.escapeUnicode) 6 else 3) + 2) // 6 or 3 bytes per char for encoded unicode + make room for the quotes
+    var pos = ensureBufferCapacity(8) // 6 bytes per char for encoded unicode + make room for the quotes
     buf(pos) = '"'
     pos += 1
     pos = {
@@ -381,10 +386,12 @@ final class JsonWriter private[jsoniter_scala](
             buf(pos) = '\\'
             buf(pos + 1) = '\\'
             pos + 2
-          case _ => if (config.escapeUnicode && (ch <= 31 || ch >= 127)) writeEscapedUnicode(ch, buf, pos) else {
-            buf(pos) = ch.toByte
-            pos + 1
-          }
+          case _ =>
+            if (ch <= 31 || (config.escapeUnicode && ch >= 127)) writeEscapedUnicode(ch, buf, pos)
+            else {
+              buf(pos) = ch.toByte
+              pos + 1
+            }
         }
       } else if (config.escapeUnicode) {
         if (Character.isSurrogate(ch)) illegalSurrogateError()
