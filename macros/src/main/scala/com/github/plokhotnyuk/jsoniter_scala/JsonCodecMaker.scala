@@ -121,19 +121,19 @@ object JsonCodecMaker {
       }
 
       def genReadKey(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readObjectFieldAsBoolean()"
-        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readObjectFieldAsByte()"
-        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readObjectFieldAsChar()"
-        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readObjectFieldAsShort()"
-        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"in.readObjectFieldAsInt()"
-        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readObjectFieldAsLong()"
-        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readObjectFieldAsFloat()"
-        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readObjectFieldAsDouble()"
+        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readKeyAsByte()"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readKeyAsChar()"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readKeyAsShort()"
+        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"in.readKeyAsInt()"
+        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readKeyAsLong()"
+        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
+        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
         else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
-        else if (tpe =:= typeOf[String]) q"in.readObjectFieldAsString()"
-        else if (tpe =:= typeOf[BigInt]) q"in.readObjectFieldAsBigInt()"
-        else if (tpe =:= typeOf[BigDecimal]) q"in.readObjectFieldAsBigDecimal()"
-        else if (tpe <:< typeOf[Enumeration#Value]) q"${enumSymbol(tpe)}.withName(in.readObjectFieldAsString())"
+        else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
+        else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt()"
+        else if (tpe =:= typeOf[BigDecimal]) q"in.readKeyAsBigDecimal()"
+        else if (tpe <:< typeOf[Enumeration#Value]) q"${enumSymbol(tpe)}.withName(in.readKeyAsString())"
         else fail(s"Unsupported type to be used as map key '$tpe'.")
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
@@ -170,7 +170,7 @@ object JsonCodecMaker {
         q"""out.writeObjectStart()
             var c = false
             $m.foreach { kv =>
-              c = out.writeObjectField(c, kv._1)
+              c = out.writeKey(c, kv._1)
               ..$writeKV
             }
             out.writeObjectEnd()"""
@@ -230,7 +230,7 @@ object JsonCodecMaker {
       val codecConfig = c.eval[CodecMakerConfig](c.Expr[CodecMakerConfig](c.untypecheck(config.tree)))
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
-        else q"in.unexpectedObjectFieldError(l)"
+        else q"in.unexpectedKeyError(l)"
       val skipDiscriminatorField = {
         val cs = codecConfig.discriminatorFieldName.toCharArray
         cq"${JsonReader.toHashCode(cs, cs.length)} => in.skip()"
@@ -365,17 +365,17 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsInt(), ${genReadVal(tpe1, nullValue(tpe1))})")
+            q"x = x.updated(in.readKeyAsInt(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
-            q"x.update(in.readObjectFieldAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
+            q"x.update(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
-            q"x = x.updated(in.readObjectFieldAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
+            q"x = x.updated(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1))})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
@@ -456,7 +456,7 @@ object JsonCodecMaker {
                 required.map(r => getMappedName(annotations, r))
               }
               q"""if ($checkReqVars) $construct
-                  else in.requiredObjectFieldError($reqFieldNames, ..$reqVarNames)"""
+                  else in.requiredKeyError($reqFieldNames, ..$reqVarNames)"""
             }
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
@@ -484,7 +484,7 @@ object JsonCodecMaker {
                 if (!in.isNextToken('}')) {
                   in.rollbackToken()
                   do {
-                    val l = in.readObjectFieldAsCharBuf()
+                    val l = in.readKeyAsCharBuf()
                     (in.charBufToHashCode(l): @switch) match {
                       case ..$readFieldsBlock
                     }
@@ -513,7 +513,7 @@ object JsonCodecMaker {
           }(breakOut)
           q"""in.setMark()
               if (in.isNextToken('{')) {
-                in.scanToObjectField(${codecConfig.discriminatorFieldName})
+                in.scanToKey(${codecConfig.discriminatorFieldName})
                 val l = in.readValueAsCharBuf()
                 (in.charBufToHashCode(l): @switch) match {
                   case ..$readSubclasses
@@ -590,19 +590,19 @@ object JsonCodecMaker {
                           val d = $d
                           v.length != d.length && v.deep != d.deep
                         }) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeKey(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty && v != $d) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeKey(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeKey(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
@@ -610,17 +610,17 @@ object JsonCodecMaker {
                 if (tpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if ((v ne null) && v.length > 0) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeKey(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty) {
-                        c = out.writeObjectField(c, $name)
+                        c = out.writeKey(c, $name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""c = out.writeObjectField(c, $name)
+                  q"""c = out.writeKey(c, $name)
                       ..${genWriteVal(q"x.$m", tpe)}"""
                 }
             }
@@ -643,7 +643,7 @@ object JsonCodecMaker {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
             val writeDiscriminatorField =
-              q"""c = out.writeObjectField(c, ${codecConfig.discriminatorFieldName})
+              q"""c = out.writeKey(c, ${codecConfig.discriminatorFieldName})
                   out.writeVal(${discriminatorValue(subTpe)})"""
             cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }

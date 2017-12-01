@@ -26,8 +26,8 @@ final class JsonReader private[jsoniter_scala](
     private var charBuf: Array[Char] = new Array[Char](4096),
     private var in: InputStream = null,
     private var totalRead: Int = 0,
-    private var config: ReaderConfig = ReaderConfig()) {
-  def requiredObjectFieldError(reqFields: Array[String], reqs: Int*): Nothing = {
+    private var config: ReaderConfig = new ReaderConfig) {
+  def requiredKeyError(reqFields: Array[String], reqs: Int*): Nothing = {
     val len = reqFields.length
     var i = 0
     var j = 0
@@ -42,7 +42,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  def unexpectedObjectFieldError(len: Int): Nothing = {
+  def unexpectedKeyError(len: Int): Nothing = {
     var i = prependString("unexpected field: \"", len)
     i = appendString("\"", i)
     decodeError(i, head - 1, null)
@@ -64,22 +64,19 @@ final class JsonReader private[jsoniter_scala](
 
   def setMark(): Unit = mark = head
 
-  def scanToObjectField(s: String): Unit =
-    while ({
-      if (isCharBufEqualsTo(readObjectFieldAsCharBuf(), s)) false
-      else {
-        skip()
-        if (isNextToken(',', head)) true
-        else reqFieldError(s)
-      }
-    }) ()
+  @tailrec
+  def scanToKey(s: String): Unit = if (!isCharBufEqualsTo(readKeyAsCharBuf(), s)) {
+    skip()
+    if (isNextToken(',', head)) scanToKey(s)
+    else reqFieldError(s)
+  }
 
   def rollbackToMark(): Unit = {
     head = mark
     mark = -1
   }
 
-  def readObjectFieldAsCharBuf(): Int = {
+  def readKeyAsCharBuf(): Int = {
     readParentheses()
     val x = parseString(0, charBuf.length, head)
     readColon()
@@ -90,77 +87,77 @@ final class JsonReader private[jsoniter_scala](
     if (isNextToken('"', head)) parseString(0, charBuf.length, head)
     else decodeError("expected string value")
 
-  def readObjectFieldAsString(): String = {
+  def readKeyAsString(): String = {
     readParentheses()
     val len = parseString(0, charBuf.length, head)
     readColon()
     new String(charBuf, 0, len)
   }
 
-  def readObjectFieldAsBoolean(): Boolean = {
+  def readKeyAsBoolean(): Boolean = {
     readParentheses()
     val x = parseBoolean(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsByte(): Byte = {
+  def readKeyAsByte(): Byte = {
     readParentheses()
     val x = parseByte(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsChar(): Char = {
+  def readKeyAsChar(): Char = {
     readParentheses()
     val x = parseChar(head)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsShort(): Short = {
+  def readKeyAsShort(): Short = {
     readParentheses()
     val x = parseShort(isToken = false)
     readParenthesesWithColon()
     x.toShort
   }
 
-  def readObjectFieldAsInt(): Int = {
+  def readKeyAsInt(): Int = {
     readParentheses()
     val x = parseInt(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsLong(): Long = {
+  def readKeyAsLong(): Long = {
     readParentheses()
     val x = parseLong(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsFloat(): Float = {
+  def readKeyAsFloat(): Float = {
     readParentheses()
     val x = parseFloat(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsDouble(): Double = {
+  def readKeyAsDouble(): Double = {
     readParentheses()
     val x = parseDouble(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsBigInt(): BigInt = {
+  def readKeyAsBigInt(): BigInt = {
     readParentheses()
     val x = parseBigInt(isToken = false)
     readParenthesesWithColon()
     x
   }
 
-  def readObjectFieldAsBigDecimal(): BigDecimal = {
+  def readKeyAsBigDecimal(): BigDecimal = {
     readParentheses()
     val x = parseBigDecimal(isToken = false, null)
     readParenthesesWithColon()
@@ -215,7 +212,7 @@ final class JsonReader private[jsoniter_scala](
 
   def rollbackToken(): Unit = {
     val pos = head
-    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()'")
+    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
     head = pos - 1
   }
 
@@ -303,7 +300,7 @@ final class JsonReader private[jsoniter_scala](
     } else isNextToken(t, loadMoreOrError(pos))
 
   private def isCurrentToken(b: Byte, pos: Int): Boolean =
-    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()'")
+    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
     else buf(pos - 1) == b
 
   @tailrec
@@ -1524,7 +1521,7 @@ final class JsonReader private[jsoniter_scala](
 
 object JsonReader {
   private val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
-    override def initialValue(): JsonReader = new JsonReader()
+    override def initialValue(): JsonReader = new JsonReader
   }
   private val defaultConfig = ReaderConfig()
   private val pow10f: Array[Float] = // all powers of 10 that can be represented exactly in float
