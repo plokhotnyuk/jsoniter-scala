@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
+import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
@@ -25,6 +26,11 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       |  ]
       |}""".stripMargin
   val buf = new Array[Byte](100)
+  val surrogateChars: Gen[Char] = Gen.choose('\ud800', '\udfff')
+  val highSurrogateChars: Gen[Char] = Gen.choose('\ud800', '\udbff')
+  val lowSurrogateChars: Gen[Char] = Gen.choose('\udc00', '\udfff')
+  val controlChars: Gen[Char] = Gen.choose('\u0000', '\u001f')
+  val allwaysEscapedChars: Gen[Char] = Gen.oneOf(controlChars, Gen.oneOf('\\', '"'))
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
@@ -81,39 +87,45 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "write strings with chars that should be escaped" in {
-      withWriter(_.writeVal("\b\f\n\r\t\\\"\u0000\u001f")) shouldBe "\"\\b\\f\\n\\r\\t\\\\\\\"\\u0000\\u001f\""
-    }
-    "write strings with valid surrogate pair chars" in {
-      withWriter(_.writeVal("𝄞")) shouldBe "\"\ud834\udd1e\""
+      def check(s: String, escapeUnicode: Boolean): Unit =
+        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
+
+      forAll(Gen.listOf(allwaysEscapedChars), Gen.oneOf(true, false)) { (cs: List[Char], escapeUnicode: Boolean) =>
+        check(cs.mkString, escapeUnicode)
+      }
     }
     "write strings with escaped unicode chars if it is specified by provided writer config" in {
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\u0000")) shouldBe "\"\\u0000\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\u001f")) shouldBe "\"\\u001f\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\u007F")) shouldBe "\"\\u007f\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\b\f\n\r\t")) shouldBe "\"\\b\\f\\n\\r\\t\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("/Aиბ𝄞")) shouldBe "\"/A\\u0438\\u10d1\\ud834\\udd1e\""
+      def check(s: String): Unit =
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
+
+      forAll(minSuccessful(10000)) { (s: String) =>
+        whenever(s.forall(ch => ch <= 31 || ch >= 127 || ch == '"' || ch == '\\')) {
+          check(s)
+        }
+      }
+    }
+    "write strings with valid character surrogate pair" in {
+      def check(s: String): Unit = {
+        withWriter(WriterConfig(escapeUnicode = false))(_.writeVal(s)) shouldBe "\"" + s + "\""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
+      }
+
+      forAll(highSurrogateChars, lowSurrogateChars) { (ch1: Char, ch2: Char) =>
+        check(ch1.toString + ch2.toString)
+      }
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
-      assert(intercept[IOException](withWriter(_.writeVal("\udd1e")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(_.writeVal("\ud834")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(_.writeVal("\udd1e\udd1e")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(_.writeVal("\ud834\ud834")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(_.writeVal("\udd1e\ud834")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\udd1e")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\ud834\ud834")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("\udd1e\ud834")))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
+      def check(s: String, escapeUnicode: Boolean): Unit =
+        assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)))
+          .getMessage.contains("illegal char sequence of surrogate pair"))
+
+      forAll(surrogateChars, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
+        check(ch.toString, escapeUnicode)
+        check(ch.toString + ch.toString, escapeUnicode)
+      }
+      forAll(lowSurrogateChars, highSurrogateChars, Gen.oneOf(true, false)) { (ch1: Char, ch2: Char, escapeUnicode: Boolean) =>
+        check(ch1.toString + ch2.toString, escapeUnicode)
+      }
     }
   }
   "JsonWriter.writeVal for char" should {
@@ -125,37 +137,24 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "write string with chars that should be escaped" in {
-      withWriter(_.writeVal('\b')) shouldBe """"\b""""
-      withWriter(_.writeVal('\f')) shouldBe """"\f""""
-      withWriter(_.writeVal('\n')) shouldBe """"\n""""
-      withWriter(_.writeVal('\r')) shouldBe """"\r""""
-      withWriter(_.writeVal('\t')) shouldBe """"\t""""
-      withWriter(_.writeVal('\\')) shouldBe """"\\""""
-      withWriter(_.writeVal('\"')) shouldBe """"\"""""
-      withWriter(_.writeVal('\u0000')) shouldBe "\"\\u0000\""
-      withWriter(_.writeVal('\u001f')) shouldBe "\"\\u001f\""
+      forAll(allwaysEscapedChars) { (ch: Char) =>
+        whenever(ch <= 31 || ch == '"' || ch == '\\') {
+          withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
+        }
+      }
     }
     "write string with escaped Unicode chars if it is specified by provided writer config" in {
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\u0000')) shouldBe "\"\\u0000\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\u001f')) shouldBe "\"\\u001f\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\u007F')) shouldBe "\"\\u007f\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\b')) shouldBe "\"\\b\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\f')) shouldBe "\"\\f\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\n')) shouldBe "\"\\n\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\r')) shouldBe "\"\\r\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\t')) shouldBe "\"\\t\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('и')) shouldBe "\"\\u0438\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('ბ')) shouldBe "\"\\u10d1\""
+      forAll(minSuccessful(10000)) { (ch: Char) =>
+        whenever(ch <= 31 || ch >= 127 || ch == '"' || ch == '\\') {
+          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
+        }
+      }
     }
     "throw i/o exception in case of surrogate pair character" in {
-      assert(intercept[IOException](withWriter(_.writeVal('\udd1e')))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(_.writeVal('\ud834')))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\udd1e')))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
-      assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = true))(_.writeVal('\ud834')))
-        .getMessage.contains("illegal char sequence of surrogate pair"))
+      forAll(surrogateChars, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
+        assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(ch)))
+          .getMessage.contains("illegal char sequence of surrogate pair"))
+      }
     }
   }
   "JsonWriter.writeVal for int" should {
@@ -184,12 +183,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "throw i/o exception on non-finite numbers" in {
-      assert(intercept[IOException](withWriter(_.writeVal(Float.NaN)))
-        .getMessage.contains("illegal number"))
-      assert(intercept[IOException](withWriter(_.writeVal(Float.PositiveInfinity)))
-        .getMessage.contains("illegal number"))
-      assert(intercept[IOException](withWriter(_.writeVal(Float.NegativeInfinity)))
-        .getMessage.contains("illegal number"))
+      forAll(Gen.oneOf(Float.NaN, Float.PositiveInfinity, Float.NegativeInfinity)) { (n: Float) =>
+        assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
+      }
     }
   }
   "JsonWriter.writeVal for double" should {
@@ -201,12 +197,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "throw i/o exception on non-finite numbers" in {
-      assert(intercept[IOException](withWriter(_.writeVal(Double.NaN)))
-        .getMessage.contains("illegal number"))
-      assert(intercept[IOException](withWriter(_.writeVal(Double.PositiveInfinity)))
-        .getMessage.contains("illegal number"))
-      assert(intercept[IOException](withWriter(_.writeVal(Double.NegativeInfinity)))
-        .getMessage.contains("illegal number"))
+      forAll(Gen.oneOf(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) { (n: Double) =>
+        assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
+      }
     }
   }
   "JsonWriter.writeVal for BigInt" should {
@@ -239,4 +232,18 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     finally writer.flushBuffer()
     out.toString("UTF-8")
   }
+
+  def toEscaped(ch: Char): String = ch match {
+    case '"' => """\""""
+    case '\\' => """\\"""
+    case '\b' => """\b"""
+    case '\b' => """\b"""
+    case '\f' => """\f"""
+    case '\n' => """\n"""
+    case '\r' => """\r"""
+    case '\t' => """\t"""
+    case _ => toHexEscaped(ch)
+  }
+
+  def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
 }
