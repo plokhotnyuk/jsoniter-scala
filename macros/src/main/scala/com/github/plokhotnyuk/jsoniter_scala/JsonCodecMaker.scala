@@ -90,7 +90,7 @@ object JsonCodecMaker {
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
 
-      def isAdtBase(tpe: Type): Boolean = {
+      def isSealedAdtBase(tpe: Type): Boolean = {
         val classSymbol = tpe.typeSymbol.asClass
         (classSymbol.isAbstract || classSymbol.isTrait) &&
           (if (classSymbol.isSealed) true
@@ -100,7 +100,7 @@ object JsonCodecMaker {
 
       def adtLeafClasses(tpe: Type): Set[Type] = tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
         val subTpe = s.asClass.toType
-        if (isAdtBase(subTpe)) adtLeafClasses(subTpe)
+        if (isSealedAdtBase(subTpe)) adtLeafClasses(subTpe)
         else if (s.asClass.isCaseClass) Set(subTpe)
         else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
           s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
@@ -493,7 +493,7 @@ object JsonCodecMaker {
                 }
                 ..$checkReqVarsAndConstruct
               } else in.readNullOrTokenError(default, '{')"""
-        } else if (isAdtBase(tpe)) withDecoderFor(tpe, default) {
+        } else if (isSealedAdtBase(tpe)) withDecoderFor(tpe, default) {
           def hashCode(subTpe: Type): Int = {
             val cs = discriminatorValue(subTpe).toCharArray
             JsonReader.toHashCode(cs, cs.length)
@@ -639,7 +639,7 @@ object JsonCodecMaker {
                 ..$writeFieldsBlock
                 out.writeObjectEnd()
               } else out.writeNull()"""
-        } else if (isAdtBase(tpe)) withEncoderFor(tpe, m) {
+        } else if (isSealedAdtBase(tpe)) withEncoderFor(tpe, m) {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
             val writeDiscriminatorField =
@@ -650,7 +650,6 @@ object JsonCodecMaker {
           q"""x match {
                 case ..$writeSubclasses
                 case null => out.writeNull()
-                case _ => out.encodeError("unexpected type: " + x.getClass)
               }"""
         } else cannotFindCodecError(tpe)
       }
