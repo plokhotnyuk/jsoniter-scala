@@ -258,7 +258,6 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  @inline
   private def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
     decodeError(appendString(msg, 0), pos, cause)
 
