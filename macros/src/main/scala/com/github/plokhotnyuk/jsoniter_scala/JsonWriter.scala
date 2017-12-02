@@ -224,48 +224,44 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeEncodedString(s: String, from: Int, to: Int): Int = {
-    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 3 bytes per char for encoded unicode + the closing quotes
+    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char for escaped unicode + the closing quotes
     val buf = this.buf
     var i = from
     while (i < to) pos = {
       val ch1 = s.charAt(i)
       i += 1
       if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        (ch1: @switch) match {
-          case '"' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = '"'
-            pos + 2
-          case '\n' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'n'
-            pos + 2
-          case '\r' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'r'
-            pos + 2
-          case '\t' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 't'
-            pos + 2
-          case '\b' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'b'
-            pos + 2
-          case '\f' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'f'
-            pos + 2
-          case '\\' => // TODO: consider should '/' be escaped too?
-            buf(pos) = '\\'
-            buf(pos + 1) = '\\'
-            pos + 2
-          case _ =>
-            if (ch1 <= 31) writeEscapedUnicode(ch1, buf, pos)
-            else {
-              buf(pos) = ch1.toByte
-              pos + 1
-            }
+        if (ch1 <= 31) {
+          (ch1: @switch) match {
+            case '\n' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'n'
+              pos + 2
+            case '\r' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'r'
+              pos + 2
+            case '\t' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 't'
+              pos + 2
+            case '\b' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'b'
+              pos + 2
+            case '\f' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'f'
+              pos + 2
+            case _ => writeEscapedUnicode(ch1, buf, pos)
+          }
+        } else if (ch1 == '\\' || ch1 == '"') {
+          buf(pos) = '\\'
+          buf(pos + 1) = ch1.toByte
+          pos + 2
+        } else {
+          buf(pos) = ch1.toByte
+          pos + 1
         }
       } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
@@ -294,49 +290,45 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeEscapedString(s: String, from: Int, to: Int): Int = {
-    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char for encoded unicode + the closing quotes
+    var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char for escaped unicode + the closing quotes
     val buf = this.buf
     var i = from
     while (i < to) pos = {
       val ch1 = s.charAt(i)
       i += 1
       if (ch1 < 128) {
-        (ch1: @switch) match {
-          case '"' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = '"'
-            pos + 2
-          case '\n' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'n'
-            pos + 2
-          case '\r' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'r'
-            pos + 2
-          case '\t' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 't'
-            pos + 2
-          case '\b' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'b'
-            pos + 2
-          case '\f' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'f'
-            pos + 2
-          case '\\' => // TODO: consider should '/' be escaped too?
-            buf(pos) = '\\'
-            buf(pos + 1) = '\\'
-            pos + 2
-          case _ =>
-            if (ch1 <= 31 || ch1 >= 127) writeEscapedUnicode(ch1, buf, pos)
-            else {
-              buf(pos) = ch1.toByte
-              pos + 1
-            }
-        }
+        if (ch1 < 32) {
+          (ch1: @switch) match {
+            case '\n' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'n'
+              pos + 2
+            case '\r' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'r'
+              pos + 2
+            case '\t' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 't'
+              pos + 2
+            case '\b' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'b'
+              pos + 2
+            case '\f' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'f'
+              pos + 2
+            case _ => writeEscapedUnicode(ch1, buf, pos)
+          }
+        } else if (ch1 == '\\' || ch1 == '"') {
+          buf(pos) = '\\'
+          buf(pos + 1) = ch1.toByte
+          pos + 2
+        } else if (ch1 < 127) {
+          buf(pos) = ch1.toByte
+          pos + 1
+        } else writeEscapedUnicode(ch1, buf, pos)
       } else if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
         if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
         writeEscapedUnicode(ch1, buf, pos)
@@ -352,47 +344,43 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeChar(ch: Char): Unit = count = {
-    var pos = ensureBufferCapacity(8) // 6 bytes per char for encoded unicode + make room for the quotes
+    var pos = ensureBufferCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
     buf(pos) = '"'
     pos += 1
     pos = {
       if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        (ch: @switch) match {
-          case '"' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = '"'
-            pos + 2
-          case '\n' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'n'
-            pos + 2
-          case '\r' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'r'
-            pos + 2
-          case '\t' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 't'
-            pos + 2
-          case '\b' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'b'
-            pos + 2
-          case '\f' =>
-            buf(pos) = '\\'
-            buf(pos + 1) = 'f'
-            pos + 2
-          case '\\' => // TODO: consider should '/' be escaped too?
-            buf(pos) = '\\'
-            buf(pos + 1) = '\\'
-            pos + 2
-          case _ =>
-            if (ch <= 31 || (config.escapeUnicode && ch >= 127)) writeEscapedUnicode(ch, buf, pos)
-            else {
-              buf(pos) = ch.toByte
-              pos + 1
-            }
-        }
+        if (ch < 32) {
+          (ch: @switch) match {
+            case '\n' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'n'
+              pos + 2
+            case '\r' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'r'
+              pos + 2
+            case '\t' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 't'
+              pos + 2
+            case '\b' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'b'
+              pos + 2
+            case '\f' =>
+              buf(pos) = '\\'
+              buf(pos + 1) = 'f'
+              pos + 2
+            case _ => writeEscapedUnicode(ch, buf, pos)
+          }
+        } else if (ch == '\\' || ch == '"') {
+          buf(pos) = '\\'
+          buf(pos + 1) = ch.toByte
+          pos + 2
+        } else if (ch < 127 || !config.escapeUnicode) {
+          buf(pos) = ch.toByte
+          pos + 1
+        } else writeEscapedUnicode(ch, buf, pos)
       } else if (config.escapeUnicode) {
         if (Character.isSurrogate(ch)) illegalSurrogateError()
         writeEscapedUnicode(ch, buf, pos)
@@ -563,7 +551,6 @@ final class JsonWriter private[jsoniter_scala](
     if (java.lang.Float.isFinite(x)) writeAsciiString(java.lang.Float.toString(x))
     else encodeError("illegal number: " + x)
 
-  // TODO: use more efficient algorithm, see https://github.com/Tencent/rapidjson/blob/fe550f38669fe0f488926c1ef0feb6c101f586d6/include/rapidjson/internal/dtoa.h
   private def writeDouble(x: Double): Unit =
     if (java.lang.Double.isFinite(x)) writeAsciiString(java.lang.Double.toString(x))
     else encodeError("illegal number: " + x)
