@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{IOException, OutputStream}
 
-import com.github.plokhotnyuk.jsoniter_scala.JsonWriter._
+import com.github.plokhotnyuk.jsoniter_scala.JsonWriter.{escapedChars, _}
 
 import scala.annotation.switch
 import scala.collection.breakOut
@@ -200,14 +200,15 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeString(s: String, from: Int, to: Int): Unit = count = {
     var pos = ensureBufferCapacity((to - from) + 2) // 1 byte per char (suppose that they are ASCII only) + make room for the quotes
+    val escapedChars = JsonWriter.escapedChars
     val buf = this.buf
+    var i = from
+    var ch: Char = 0
     buf(pos) = '"'
     pos += 1
-    var i = from
-    var ch: Char = 0 // the fast path without utf8 encoding and unicode escaping
-    while (i < to && {
+    while (i < to && { // the fast path without utf8 encoding and unicode escaping
       ch = s.charAt(i)
-      ch > 31 && ch < 127 && ch != '"' && ch != '\\'
+      ch < 128 && escapedChars(ch) == 0
     }) pos = {
       i += 1
       buf(pos) = ch.toByte
@@ -225,44 +226,23 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeEncodedString(s: String, from: Int, to: Int): Int = {
     var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char for escaped unicode + the closing quotes
+    val escapedChars = JsonWriter.escapedChars
     val buf = this.buf
     var i = from
+    var ch1: Char = 0
     while (i < to) pos = {
-      val ch1 = s.charAt(i)
+      ch1 = s.charAt(i)
       i += 1
       if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        if (ch1 <= 31) {
-          (ch1: @switch) match {
-            case '\n' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'n'
-              pos + 2
-            case '\r' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'r'
-              pos + 2
-            case '\t' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 't'
-              pos + 2
-            case '\b' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'b'
-              pos + 2
-            case '\f' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'f'
-              pos + 2
-            case _ => writeEscapedUnicode(ch1, buf, pos)
-          }
-        } else if (ch1 == '\\' || ch1 == '"') {
-          buf(pos) = '\\'
-          buf(pos + 1) = ch1.toByte
-          pos + 2
-        } else {
+        val esc = escapedChars(ch1)
+        if (esc == 0) {
           buf(pos) = ch1.toByte
           pos + 1
-        }
+        } else if (esc > 0) {
+          buf(pos) = '\\'
+          buf(pos + 1) = esc
+          pos + 2
+        } else writeEscapedUnicode(ch1, buf, pos)
       } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
@@ -291,43 +271,22 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeEscapedString(s: String, from: Int, to: Int): Int = {
     var pos = ensureBufferCapacity((to - from) * 6 + 1) // max 6 bytes per char for escaped unicode + the closing quotes
+    val escapedChars = JsonWriter.escapedChars
     val buf = this.buf
     var i = from
+    var ch1: Char = 0
     while (i < to) pos = {
-      val ch1 = s.charAt(i)
+      ch1 = s.charAt(i)
       i += 1
       if (ch1 < 128) {
-        if (ch1 < 32) {
-          (ch1: @switch) match {
-            case '\n' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'n'
-              pos + 2
-            case '\r' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'r'
-              pos + 2
-            case '\t' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 't'
-              pos + 2
-            case '\b' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'b'
-              pos + 2
-            case '\f' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'f'
-              pos + 2
-            case _ => writeEscapedUnicode(ch1, buf, pos)
-          }
-        } else if (ch1 == '\\' || ch1 == '"') {
-          buf(pos) = '\\'
-          buf(pos + 1) = ch1.toByte
-          pos + 2
-        } else if (ch1 < 127) {
+        val esc = escapedChars(ch1)
+        if (esc == 0) {
           buf(pos) = ch1.toByte
           pos + 1
+        } else if (esc > 0) {
+          buf(pos) = '\\'
+          buf(pos + 1) = esc
+          pos + 2
         } else writeEscapedUnicode(ch1, buf, pos)
       } else if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
         if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
@@ -349,37 +308,14 @@ final class JsonWriter private[jsoniter_scala](
     pos += 1
     pos = {
       if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
-        if (ch < 32) {
-          (ch: @switch) match {
-            case '\n' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'n'
-              pos + 2
-            case '\r' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'r'
-              pos + 2
-            case '\t' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 't'
-              pos + 2
-            case '\b' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'b'
-              pos + 2
-            case '\f' =>
-              buf(pos) = '\\'
-              buf(pos + 1) = 'f'
-              pos + 2
-            case _ => writeEscapedUnicode(ch, buf, pos)
-          }
-        } else if (ch == '\\' || ch == '"') {
-          buf(pos) = '\\'
-          buf(pos + 1) = ch.toByte
-          pos + 2
-        } else if (ch < 127 || !config.escapeUnicode) {
+        val esc = escapedChars(ch)
+        if (esc == 0) {
           buf(pos) = ch.toByte
           pos + 1
+        } else if (esc > 0) {
+          buf(pos) = '\\'
+          buf(pos + 1) = esc
+          pos + 2
         } else writeEscapedUnicode(ch, buf, pos)
       } else if (config.escapeUnicode) {
         if (Character.isSurrogate(ch)) illegalSurrogateError()
@@ -600,6 +536,19 @@ object JsonWriter {
     override def initialValue(): JsonWriter = new JsonWriter
   }
   private val defaultConfig = WriterConfig()
+  private val escapedChars: Array[Byte] = (0 to 127).map { b =>
+    ((b: @switch) match {
+      case '\n' => 'n'
+      case '\r' => 'r'
+      case '\t' => 't'
+      case '\b' => 'b'
+      case '\f' => 'f'
+      case '\\' => '\\'
+      case '\"' => '"'
+      case x if x <= 31 || x >= 127 => 255 // hex escaped chars
+      case _ => 0 // non-escaped chars
+    }).toByte
+  }(breakOut)
   private val digits: Array[Short] = (0 to 999).map { i =>
     (((if (i < 10) 2 else if (i < 100) 1 else 0) << 12) + // this nibble encodes number of leading zeroes
       ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort // decimal digit per nibble

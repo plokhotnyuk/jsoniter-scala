@@ -29,8 +29,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   val surrogateChars: Gen[Char] = Gen.choose('\ud800', '\udfff')
   val highSurrogateChars: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val lowSurrogateChars: Gen[Char] = Gen.choose('\udc00', '\udfff')
-  val controlChars: Gen[Char] = Gen.choose('\u0000', '\u001f')
-  val allwaysEscapedChars: Gen[Char] = Gen.oneOf(controlChars, Gen.oneOf('\\', '"'))
+  val allwaysEscapedChars: Gen[Char] = Gen.oneOf(Gen.choose('\u0000', '\u001f'), Gen.oneOf('\\', '"', '\u007f'))
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
@@ -81,7 +80,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "write string of Unicode chars which are non-surrogate and should not be escaped" in {
       forAll(minSuccessful(10000)) { (s: String) =>
-        whenever(!s.exists(ch => Character.isSurrogate(ch) || ch < ' ' || ch == '\\' || ch == '"')) {
+        whenever(!s.exists(ch => Character.isSurrogate(ch) || isEscapedAscii(ch))) {
           withWriter(_.writeVal(s)) shouldBe '"' + s + '"'
         }
       }
@@ -94,12 +93,12 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         check(cs.mkString, escapeUnicode)
       }
     }
-    "write strings with escaped unicode chars if it is specified by provided writer config" in {
+    "write strings with escaped Unicode chars if it is specified by provided writer config" in {
       def check(s: String): Unit =
         withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
 
       forAll(minSuccessful(10000)) { (s: String) =>
-        whenever(s.forall(ch => ch <= 31 || ch >= 127 || ch == '"' || ch == '\\')) {
+        whenever(s.forall(ch => isEscapedAscii(ch) || ch >= 128)) {
           check(s)
         }
       }
@@ -131,21 +130,19 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal for char" should {
     "write string with Unicode chars which are non-surrogate or should not be escaped" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
-        whenever(!Character.isSurrogate(ch) && ch >= ' ' && ch != '\\' && ch != '"') {
+        whenever(!Character.isSurrogate(ch) && !isEscapedAscii(ch)) {
           withWriter(_.writeVal(ch)) shouldBe "\"" + ch + "\""
         }
       }
     }
     "write string with chars that should be escaped" in {
       forAll(allwaysEscapedChars) { (ch: Char) =>
-        whenever(ch <= 31 || ch == '"' || ch == '\\') {
-          withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
-        }
+        withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
       }
     }
     "write string with escaped Unicode chars if it is specified by provided writer config" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
-        whenever(ch <= 31 || ch >= 127 || ch == '"' || ch == '\\') {
+        whenever(isEscapedAscii(ch) || ch >= 128) {
           withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
         }
       }
@@ -232,6 +229,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     finally writer.flushBuffer()
     out.toString("UTF-8")
   }
+
+  def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'
 
   def toEscaped(ch: Char): String = ch match {
     case '"' => """\""""
