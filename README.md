@@ -156,7 +156,7 @@ sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >r
 
 Current results for the following environment(s):
 
-[./results.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results.txt) 
+[./results_jdk8.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8.txt) 
 Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, 
 Oracle JDK build 1.8.0_151-b12 64-bit
 
