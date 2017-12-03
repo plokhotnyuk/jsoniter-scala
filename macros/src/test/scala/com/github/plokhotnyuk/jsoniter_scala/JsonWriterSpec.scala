@@ -236,7 +236,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     case '"' => """\""""
     case '\\' => """\\"""
     case '\b' => """\b"""
-    case '\b' => """\b"""
     case '\f' => """\f"""
     case '\n' => """\n"""
     case '\r' => """\r"""
