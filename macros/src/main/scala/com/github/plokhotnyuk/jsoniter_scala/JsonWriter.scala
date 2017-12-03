@@ -377,18 +377,18 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      val q1 = q0 / 1000
-      if (q1 == 0) writeFirstRem(q0, pos)
+      if (q0 < 1000) writeFirstRem(q0, pos)
       else {
+        val q1 = q0 / 1000
         val r1 = q0 - q1 * 1000
-        val q2 = q1 / 1000
-        if (q2 == 0) writeRem(r1, writeFirstRem(q1, pos))
+        if (q1 < 1000) writeRem(r1, writeFirstRem(q1, pos))
         else {
+          val q2 = q1 / 1000
           val r2 = q1 - q2 * 1000
-          val q3 = q2 / 1000
           writeRem(r1, writeRem(r2, {
-            if (q3 == 0) writeFirstRem(q2, pos)
+            if (q2 < 1000) writeFirstRem(q2, pos)
             else {
+              val q3 = q2 / 1000
               val r3 = q2 - q3 * 1000
               writeRem(r3, {
                 buf(pos) = (q3 + '0').toByte
@@ -413,30 +413,30 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      val q1 = q0 / 1000
-      if (q1 == 0) writeFirstRem(q0.toInt, pos)
+      if (q0 < 1000) writeFirstRem(q0.toInt, pos)
       else {
+        val q1 = q0 / 1000
         val r1 = (q0 - q1 * 1000).toInt
-        val q2 = q1 / 1000
-        if (q2 == 0) writeRem(r1, writeFirstRem(q1.toInt, pos))
+        if (q1 < 1000) writeRem(r1, writeFirstRem(q1.toInt, pos))
         else {
+          val q2 = q1 / 1000
           val r2 = (q1 - q2 * 1000).toInt
-          val q3 = q2 / 1000
-          if (q3 == 0) writeRem(r1, writeRem(r2, writeFirstRem(q2.toInt, pos)))
+          if (q2 < 1000) writeRem(r1, writeRem(r2, writeFirstRem(q2.toInt, pos)))
           else {
+            val q3 = q2 / 1000
             val r3 = (q2 - q3 * 1000).toInt
-            val q4 = (q3 / 1000).toInt
-            if (q4 == 0) writeRem(r1, writeRem(r2, writeRem(r3, writeFirstRem(q3.toInt, pos))))
+            if (q3 < 1000) writeRem(r1, writeRem(r2, writeRem(r3, writeFirstRem(q3.toInt, pos))))
             else {
+              val q4 = (q3 / 1000).toInt
               val r4 = (q3 - q4 * 1000).toInt
-              val q5 = q4 / 1000
-              if (q5 == 0) writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeFirstRem(q4, pos)))))
+              if (q4 < 1000) writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeFirstRem(q4, pos)))))
               else {
+                val q5 = q4 / 1000
                 val r5 = q4 - q5 * 1000
-                val q6 = q5 / 1000
                 writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeRem(r5, {
-                  if (q6 == 0) writeFirstRem(q5, pos)
+                  if (q5 < 1000) writeFirstRem(q5, pos)
                   else {
+                    val q6 = q5 / 1000
                     val r6 = q5 - q6 * 1000
                     writeRem(r6, {
                       buf(pos) = (q6 + '0').toByte
