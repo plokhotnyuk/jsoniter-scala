@@ -117,7 +117,9 @@ class JsonCodecMakerBenchmark {
   val adtObj: AdtBase = C(A(1), B("VVV"))
   val stringObj: String =
     "In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204.\nThere are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."
-  val preallocatedBuf: Array[Byte] = new Array[Byte](100000)
+  val preallocatedBuf: ThreadLocal[Array[Byte]] = new ThreadLocal[Array[Byte]] {
+    override def initialValue(): Array[Byte] = new Array(100000)
+  }
 
   @Benchmark
   def missingReqFieldCirce(): String =
@@ -351,7 +353,7 @@ class JsonCodecMakerBenchmark {
   def writeAnyRefsJsoniter(): Array[Byte] = JsonWriter.write(anyRefsCodec, anyRefsObj)
 
   @Benchmark
-  def writeAnyRefsJsoniterPrealloc(): Int = JsonWriter.write(anyRefsCodec, anyRefsObj, preallocatedBuf, 0)
+  def writeAnyRefsJsoniterPrealloc(): Int = JsonWriter.write(anyRefsCodec, anyRefsObj, preallocatedBuf.get, 0)
 
   @Benchmark
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
@@ -454,7 +456,7 @@ class JsonCodecMakerBenchmark {
   def writePrimitivesJsoniter(): Array[Byte] = JsonWriter.write(primitivesCodec, primitivesObj)
 
   @Benchmark
-  def writePrimitivesJsoniterPrealloc(): Int = JsonWriter.write(primitivesCodec, primitivesObj, preallocatedBuf, 0)
+  def writePrimitivesJsoniterPrealloc(): Int = JsonWriter.write(primitivesCodec, primitivesObj, preallocatedBuf.get, 0)
 
   @Benchmark
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
@@ -481,7 +483,7 @@ class JsonCodecMakerBenchmark {
   def writeStringJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, stringObj)
 
   @Benchmark
-  def writeStringJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, stringObj, preallocatedBuf, 0)
+  def writeStringJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, stringObj, preallocatedBuf.get, 0)
 
   @Benchmark
   def writeStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(stringObj))
@@ -496,7 +498,7 @@ class JsonCodecMakerBenchmark {
   def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj)
 
   @Benchmark
-  def writeGoogleMapsAPIJsoniterPrealloc(): Int = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj, preallocatedBuf, 0)
+  def writeGoogleMapsAPIJsoniterPrealloc(): Int = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj, preallocatedBuf.get, 0)
 
   @Benchmark
   def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(GoogleMapsAPI.obj)(GoogleMapsAPI.format))
@@ -511,7 +513,7 @@ class JsonCodecMakerBenchmark {
   def writeTwitterAPIJsoniter(): Array[Byte] = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj)
 
   @Benchmark
-  def writeTwitterAPIJsoniterPrealloc(): Int = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj, preallocatedBuf, 0)
+  def writeTwitterAPIJsoniterPrealloc(): Int = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj, preallocatedBuf.get, 0)
 
   @Benchmark
   def writeTwitterAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(TwitterAPI.obj)(TwitterAPI.format))

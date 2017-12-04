@@ -169,7 +169,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
 
   private def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
 
-  private def toString(len: Int): String = new String(benchmark.preallocatedBuf, 0, len, StandardCharsets.UTF_8)
+  private def toString(len: Int): String = new String(benchmark.preallocatedBuf.get, 0, len, StandardCharsets.UTF_8)
 
   private def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
     parsedObj.aa.deep shouldBe obj.aa.deep
