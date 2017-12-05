@@ -159,18 +159,16 @@ object JsonCodecMaker {
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
-            var c = false
             $m.foreach { x =>
-              c = out.writeComma(c)
+              out.writeComma()
               ..$writeVal
             }
             out.writeArrayEnd()"""
 
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
         q"""out.writeObjectStart()
-            var c = false
             $m.foreach { kv =>
-              c = out.writeKey(c, kv._1)
+              out.writeKey(kv._1)
               ..$writeKV
             }
             out.writeObjectEnd()"""
@@ -556,7 +554,7 @@ object JsonCodecMaker {
               val l = x.length
               var i = 0
               while (i < l) {
-                out.writeComma(i != 0)
+                out.writeComma()
                 ..${genWriteVal(q"x(i)", typeArg1(tpe))}
                 i += 1
               }
@@ -564,15 +562,9 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(tpe, m) {
-          val writeFieldsBlock =
-            if (discriminator.isEmpty) EmptyTree
-            else {
-              q"""var c = false
-                  ..$discriminator"""
-            }
           q"""if (x != null) {
                 out.writeObjectStart()
-                ..$writeFieldsBlock
+                ..$discriminator
                 out.writeObjectEnd()
               } else out.writeNull()"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
@@ -590,19 +582,19 @@ object JsonCodecMaker {
                           val d = $d
                           v.length != d.length && v.deep != d.deep
                         }) {
-                        c = out.writeKey(c, $name)
+                        out.writeKey($name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty && v != $d) {
-                        c = out.writeKey(c, $name)
+                        out.writeKey($name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        c = out.writeKey(c, $name)
+                        out.writeKey($name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
@@ -610,17 +602,17 @@ object JsonCodecMaker {
                 if (tpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if ((v ne null) && v.length > 0) {
-                        c = out.writeKey(c, $name)
+                        out.writeKey($name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty) {
-                        c = out.writeKey(c, $name)
+                        out.writeKey($name)
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""c = out.writeKey(c, $name)
+                  q"""out.writeKey($name)
                       ..${genWriteVal(q"x.$m", tpe)}"""
                 }
             }
@@ -628,22 +620,16 @@ object JsonCodecMaker {
           val allWriteFields =
             if (discriminator.isEmpty) writeFields
             else discriminator +: writeFields
-          val writeFieldsBlock =
-            if (allWriteFields.isEmpty) EmptyTree
-            else {
-              q"""var c = false
-                  ..$allWriteFields"""
-            }
           q"""if (x != null) {
                 out.writeObjectStart()
-                ..$writeFieldsBlock
+                ..$allWriteFields
                 out.writeObjectEnd()
               } else out.writeNull()"""
         } else if (isSealedAdtBase(tpe)) withEncoderFor(tpe, m) {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
             val writeDiscriminatorField =
-              q"""c = out.writeKey(c, ${codecConfig.discriminatorFieldName})
+              q"""out.writeKey(${codecConfig.discriminatorFieldName})
                   out.writeVal(${discriminatorValue(subTpe)})"""
             cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }

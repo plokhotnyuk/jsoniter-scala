@@ -224,7 +224,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val out = new ByteArrayOutputStream(256)
-    val writer = new JsonWriter(new Array[Byte](0), 0, 0, out, true, cfg)
+    val writer = new JsonWriter(new Array[Byte](0), 0, 0, false, true, out, cfg)
     try f(writer)
     finally writer.flushBuffer()
     out.toString("UTF-8")

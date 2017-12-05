@@ -16,93 +16,83 @@ final class JsonWriter private[jsoniter_scala](
     private var buf: Array[Byte] = new Array[Byte](4096),
     private var count: Int = 0,
     private var indention: Int = 0,
-    private var out: OutputStream = null,
+    private var comma: Boolean = false,
     private var isBufGrowingAllowed: Boolean = true,
+    private var out: OutputStream = null,
     private var config: WriterConfig = new WriterConfig) {
-  def writeComma(comma: Boolean): Boolean = {
+  def writeComma(): Unit = {
     if (comma) write(',')
+    else comma = true
     writeIndention(0)
-    true
   }
 
-  def writeKey(comma: Boolean, x: Boolean): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Boolean): Unit = {
+    writeCommaWithParentheses()
     writeVal(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Byte): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Byte): Unit = {
+    writeCommaWithParentheses()
     writeInt(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Char): Boolean = {
-    writeComma(comma)
+  def writeKey(x: Char): Unit = {
+    writeComma()
     writeChar(x)
     writeColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Short): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Short): Unit = {
+    writeCommaWithParentheses()
     writeInt(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Int): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Int): Unit = {
+    writeCommaWithParentheses()
     writeInt(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Long): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Long): Unit = {
+    writeCommaWithParentheses()
     writeLong(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Float): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Float): Unit = {
+    writeCommaWithParentheses()
     writeFloat(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: Double): Boolean = {
-    writeCommaWithParentheses(comma)
+  def writeKey(x: Double): Unit = {
+    writeCommaWithParentheses()
     writeDouble(x)
     writeParenthesesWithColon()
-    true
   }
 
-  def writeKey(comma: Boolean, x: BigInt): Boolean =
+  def writeKey(x: BigInt): Unit =
     if (x ne null) {
-      writeCommaWithParentheses(comma)
+      writeCommaWithParentheses()
       writeAsciiStringWithoutParentheses(x.toString)
       writeParenthesesWithColon()
-      true
     } else encodeError("key cannot be null")
 
-  def writeKey(comma: Boolean, x: BigDecimal): Boolean =
+  def writeKey(x: BigDecimal): Unit =
     if (x ne null) {
-      writeCommaWithParentheses(comma)
+      writeCommaWithParentheses()
       writeAsciiStringWithoutParentheses(x.toString)
       writeParenthesesWithColon()
-      true
     } else encodeError("key cannot be null")
 
-  def writeKey(comma: Boolean, x: String): Boolean =
+  def writeKey(x: String): Unit =
     if (x ne null) {
-      writeComma(comma)
+      writeComma()
       writeString(x, 0, x.length)
       writeColon()
-      true
     } else encodeError("key cannot be null")
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
@@ -141,6 +131,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
+    comma = false
     write(b)
   }
 
@@ -148,6 +139,7 @@ final class JsonWriter private[jsoniter_scala](
     val indentionStep = config.indentionStep
     writeIndention(indentionStep)
     indention -= indentionStep
+    comma = true
     write(b)
   }
 
@@ -333,8 +325,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  private def writeCommaWithParentheses(comma: Boolean): Unit = {
+  private def writeCommaWithParentheses(): Unit = {
     if (comma) write(',')
+    else comma = true
     writeIndention(0)
     write('"')
   }
