@@ -13,15 +13,15 @@ case class WriterConfig(
     preferredBufSize: Int = 16384)
 
 final class JsonWriter private[jsoniter_scala](
-    private var buf: Array[Byte] = new Array[Byte](4096),
-    private var count: Int = 0,
-    private var indention: Int = 0,
-    private var comma: Boolean = false,
-    private var isBufGrowingAllowed: Boolean = true,
-    private var out: OutputStream = null,
-    private var config: WriterConfig = new WriterConfig) {
+    private[this] var buf: Array[Byte] = new Array[Byte](1024),
+    private[this] var count: Int = 0,
+    private[this] var indention: Int = 0,
+    private[this] var comma: Boolean = false,
+    private[this] var isBufGrowingAllowed: Boolean = true,
+    private[this] var out: OutputStream = null,
+    private[this] var config: WriterConfig = null) {
   def writeComma(): Unit = {
-    if (comma) write(',')
+    if (comma) writeBytes(',')
     else comma = true
     writeIndention(0)
   }
@@ -103,7 +103,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x, 0, x.length)
 
-  def writeVal(x: Boolean): Unit = if (x) write('t', 'r', 'u', 'e') else write('f', 'a', 'l', 's', 'e')
+  def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
 
   def writeVal(x: Byte): Unit = writeInt(x.toInt)
 
@@ -119,7 +119,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Double): Unit = writeDouble(x)
 
-  def writeNull(): Unit = write('n', 'u', 'l', 'l')
+  def writeNull(): Unit = writeBytes('n', 'u', 'l', 'l')
 
   def writeArrayStart(): Unit = writeNestedStart('[')
 
@@ -129,10 +129,56 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
+  private def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
+    if ((out eq null) || (config eq null)) throw new NullPointerException
+    this.config = config
+    this.out = out
+    this.count = 0
+    this.indention = 0
+    try codec.encode(x, this) // also checks that `codec` is not null before any serialization
+    finally {
+      flushBuffer()
+      this.out = null // do not close output stream, just help GC instead
+      freeTooLongBuf()
+    }
+  }
+
+  private def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
+    if (config eq null) throw new NullPointerException
+    this.config = config
+    this.count = 0
+    this.indention = 0
+    try {
+      codec.encode(x, this) // also checks that `codec` is not null before any serialization
+      val arr = new Array[Byte](this.count)
+      System.arraycopy(this.buf, 0, arr, 0, arr.length)
+      arr
+    } finally freeTooLongBuf()
+  }
+
+  private def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+    if (config eq null) throw new NullPointerException
+    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
+      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
+    val currBuf = this.buf
+    this.config = config
+    this.buf = buf
+    this.count = from
+    this.indention = 0
+    this.isBufGrowingAllowed = false
+    try {
+      codec.encode(x, this) // also checks that `codec` is not null before any serialization
+      this.count
+    } finally {
+      this.buf = currBuf
+      this.isBufGrowingAllowed = true
+    }
+  }
+
   private def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
     comma = false
-    write(b)
+    writeBytes(b)
   }
 
   private def writeNestedEnd(b: Byte): Unit = {
@@ -140,23 +186,23 @@ final class JsonWriter private[jsoniter_scala](
     writeIndention(indentionStep)
     indention -= indentionStep
     comma = true
-    write(b)
+    writeBytes(b)
   }
 
-  private def write(b: Byte): Unit = count = {
+  private def writeBytes(b: Byte): Unit = count = {
     val pos = ensureBufferCapacity(1)
     buf(pos) = b
     pos + 1
   }
 
-  private def write(b1: Byte, b2: Byte): Unit = count = {
+  private def writeBytes(b1: Byte, b2: Byte): Unit = count = {
     val pos = ensureBufferCapacity(2)
     buf(pos) = b1
     buf(pos + 1) = b2
     pos + 2
   }
 
-  private def write(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
+  private def writeBytes(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
     val pos = ensureBufferCapacity(3)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -164,7 +210,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 3
   }
 
-  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
+  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
     val pos = ensureBufferCapacity(4)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -173,7 +219,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
-  private def write(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
+  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
     val pos = ensureBufferCapacity(5)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -326,23 +372,23 @@ final class JsonWriter private[jsoniter_scala](
   private def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
   private def writeCommaWithParentheses(): Unit = {
-    if (comma) write(',')
+    if (comma) writeBytes(',')
     else comma = true
     writeIndention(0)
-    write('"')
+    writeBytes('"')
   }
 
   private def writeParenthesesWithColon(): Unit =
-    if (config.indentionStep > 0) write('"', ':', ' ')
-    else write('"', ':')
+    if (config.indentionStep > 0) writeBytes('"', ':', ' ')
+    else writeBytes('"', ':')
 
   private def writeColon(): Unit =
-    if (config.indentionStep > 0) write(':', ' ')
-    else write(':')
+    if (config.indentionStep > 0) writeBytes(':', ' ')
+    else writeBytes(':')
 
   private def writeInt(x: Int): Unit = count = {
     var pos = ensureBufferCapacity(11) // minIntBytes.length
-    if (x == Integer.MIN_VALUE) writeBytes(minIntBytes, pos)
+    if (x == Integer.MIN_VALUE) writeByteArray(minIntBytes, pos)
     else {
       val q0 =
         if (x >= 0) x
@@ -378,7 +424,7 @@ final class JsonWriter private[jsoniter_scala](
   // TODO: consider more cache-aware algorithm from RapidJSON, see https://github.com/miloyip/itoa-benchmark/blob/master/src/branchlut.cpp
   private def writeLong(x: Long): Unit = count = {
     var pos = ensureBufferCapacity(20) // minLongBytes.length
-    if (x == java.lang.Long.MIN_VALUE) writeBytes(minLongBytes, pos)
+    if (x == java.lang.Long.MIN_VALUE) writeByteArray(minLongBytes, pos)
     else {
       val q0 =
         if (x >= 0) x
@@ -426,7 +472,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private def writeBytes(bs: Array[Byte], pos: Int): Int = {
+  private def writeByteArray(bs: Array[Byte], pos: Int): Int = {
     System.arraycopy(bs, 0, buf, pos, bs.length)
     pos + bs.length
   }
@@ -546,7 +592,7 @@ object JsonWriter {
     * @tparam A type of value to serialize
     * @throws NullPointerException if the `codec` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream): Unit = write(codec, x, out, defaultConfig)
+  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream): Unit = pool.get.write(codec, x, out, defaultConfig)
 
   /**
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
@@ -559,20 +605,8 @@ object JsonWriter {
     * @tparam A type of value to serialize
     * @throws NullPointerException if the `codec`, `out` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
-    if ((out eq null) || (config eq null)) throw new NullPointerException
-    val writer = pool.get
-    writer.config = config
-    writer.out = out
-    writer.count = 0
-    writer.indention = 0
-    try codec.encode(x, writer) // also checks that `codec` is not null before any serialization
-    finally {
-      writer.flushBuffer()
-      writer.out = null // do not close output stream, just help GC instead
-      writer.freeTooLongBuf()
-    }
-  }
+  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit =
+    pool.get.write(codec, x, out, config)
 
   /**
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format
@@ -584,7 +618,7 @@ object JsonWriter {
     * @return a byte array with `x` serialized to JSON
     * @throws NullPointerException if the `codec` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A): Array[Byte] = write(codec, x, defaultConfig)
+  final def write[A](codec: JsonCodec[A], x: A): Array[Byte] = pool.get.write(codec, x, defaultConfig)
 
   /**
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format,
@@ -597,19 +631,7 @@ object JsonWriter {
     * @return a byte array with `x` serialized to JSON
     * @throws NullPointerException if the `codec` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
-    if (config eq null) throw new NullPointerException
-    val writer = pool.get
-    writer.config = config
-    writer.count = 0
-    writer.indention = 0
-    try {
-      codec.encode(x, writer) // also checks that `codec` is not null before any serialization
-      val arr = new Array[Byte](writer.count)
-      System.arraycopy(writer.buf, 0, arr, 0, arr.length)
-      arr
-    } finally writer.freeTooLongBuf()
-  }
+  final def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = pool.get.write(codec, x, config)
 
   /**
     * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format
@@ -626,23 +648,6 @@ object JsonWriter {
     * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `buf` length or negative,
     *                                        or `buf` length was exceeded during serialization
     */
-  final def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
-    if (config eq null) throw new NullPointerException
-    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
-      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
-    val writer = pool.get
-    val currBuf = writer.buf
-    writer.config = config
-    writer.buf = buf
-    writer.count = from
-    writer.indention = 0
-    writer.isBufGrowingAllowed = false
-    try {
-      codec.encode(x, writer) // also checks that `codec` is not null before any serialization
-      writer.count
-    } finally {
-      writer.buf = currBuf
-      writer.isBufGrowingAllowed = true
-    }
-  }
+  final def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int =
+    pool.get.write(codec, x, buf, from, config)
 }
