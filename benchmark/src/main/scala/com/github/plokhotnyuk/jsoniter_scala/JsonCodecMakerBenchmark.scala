@@ -39,7 +39,8 @@ import scala.collection.mutable
   "-XX:InitialCodeCacheSize=256m",
   "-XX:ReservedCodeCacheSize=256m",
   "-XX:-UseBiasedLocking",
-  "-XX:+AlwaysPreTouch"
+  "-XX:+AlwaysPreTouch",
+  "-XX:+UseParallelGC"
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)

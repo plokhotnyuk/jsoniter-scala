@@ -163,15 +163,15 @@ final class JsonWriter private[jsoniter_scala](
     val currBuf = this.buf
     this.config = config
     this.buf = buf
-    this.count = from
-    this.indention = 0
-    this.isBufGrowingAllowed = false
+    count = from
+    indention = 0
+    isBufGrowingAllowed = false
     try {
       codec.encode(x, this) // also checks that `codec` is not null before any serialization
       this.count
     } finally {
       this.buf = currBuf
-      this.isBufGrowingAllowed = true
+      isBufGrowingAllowed = true
     }
   }
 
@@ -421,7 +421,6 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  // TODO: consider more cache-aware algorithm from RapidJSON, see https://github.com/miloyip/itoa-benchmark/blob/master/src/branchlut.cpp
   private def writeLong(x: Long): Unit = count = {
     var pos = ensureBufferCapacity(20) // minLongBytes.length
     if (x == java.lang.Long.MIN_VALUE) writeByteArray(minLongBytes, pos)

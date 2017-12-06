@@ -250,10 +250,10 @@ final class JsonReader private[jsoniter_scala](
     val currBuf = this.buf
     this.config = config
     this.buf = buf
-    this.head = from
-    this.tail = to
-    this.mark = -1
-    this.totalRead = 0
+    head = from
+    tail = to
+    mark = -1
+    totalRead = 0
     try codec.decode(this, codec.nullValue) // also checks that `codec` is not null before any parsing
     finally {
       this.buf = currBuf
@@ -265,10 +265,10 @@ final class JsonReader private[jsoniter_scala](
     if ((in eq null) || (config eq null)) throw new NullPointerException
     this.config = config
     this.in = in
-    this.head = 0
-    this.tail = 0
-    this.mark = -1
-    this.totalRead = 0
+    head = 0
+    tail = 0
+    mark = -1
+    totalRead = 0
     try codec.decode(this, codec.nullValue) // also checks that `codec` is not null before any parsing
     finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
