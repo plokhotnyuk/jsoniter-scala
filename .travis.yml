@@ -14,10 +14,6 @@ matrix:
       sudo: false
       jdk: oraclejdk9
       scala: 2.12.4
-      addons:
-        apt:
-          packages:
-            - oracle-java9-installer # Forces use of even newer JDK 9 build
 
 script:
   - sbt -no-colors ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
