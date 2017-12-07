@@ -30,6 +30,13 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   val lowSurrogateChars: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val surrogateChars: Gen[Char] = Gen.oneOf(highSurrogateChars, lowSurrogateChars)
   val escapedAsciiChars: Gen[Char] = Gen.oneOf(Gen.choose('\u0000', '\u001f'), Gen.oneOf('\\', '"', '\u007f'))
+  "JsonWriter.isNonEscapedAscii" should {
+    "return false for all escaped ASCII or non-ASCII chars" in {
+      forAll(minSuccessful(10000)) { (ch: Char) =>
+        JsonWriter.isNonEscapedAscii(ch) shouldBe !isEscapedAscii(ch) && ch < 128
+      }
+    }
+  }
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()

@@ -138,6 +138,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case object D extends AdtBase
 
+  sealed abstract class База
+
+  case class А(а: Int) extends База
+
+  case class Б(б: String) extends База
+
   val codecOfADTList: JsonCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
   "JsonCodec" should {
@@ -611,7 +617,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
             |}""".stripMargin.getBytes)
       }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99", offset: 0x0000032c"""))
     }
-    "serialize and deserialize ADTs using discriminator field" in {
+    "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList,
         List(A(1), B("VVV"), null, C(1, "VVV"), D),
         """[{"type":"A","a":1},{"type":"B","a":"VVV"},null,{"type":"C","a":1,"b":"VVV"},{"type":"D"}]""".getBytes)
@@ -622,6 +628,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t")),
         List(C(2, "WWW"), C(1, "VVV")),
         s"""[{"t":"C","a":2,"b":"WWW"},{"t":"C","a":1,"b":"VVV"}]""".getBytes)
+    }
+    "serialize and deserialize ADTs using non-ASCII discriminator field & value" in {
+      verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип")),
+        List(А(1), Б("VVV")),
+        """[{"тип":"А","а":1},{"тип":"Б","б":"VVV"}]""".getBytes)
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {

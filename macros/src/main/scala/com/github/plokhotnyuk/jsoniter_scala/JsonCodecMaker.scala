@@ -574,6 +574,9 @@ object JsonCodecMaker {
           val writeFields = members.map { m =>
             val tpe = methodType(m)
             val name = getMappedName(annotations, m.name.toString)
+            val writeKey =
+              if (name.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiKey($name)"
+              else q"out.writeKey($name)"
             defaults.get(m.name.toString) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) {
@@ -582,19 +585,19 @@ object JsonCodecMaker {
                           val d = $d
                           v.length != d.length && v.deep != d.deep
                         }) {
-                        out.writeKey($name)
+                        ..$writeKey
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty && v != $d) {
-                        out.writeKey($name)
+                        ..$writeKey
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        out.writeKey($name)
+                        ..$writeKey
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
@@ -602,17 +605,17 @@ object JsonCodecMaker {
                 if (tpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if ((v ne null) && v.length > 0) {
-                        out.writeKey($name)
+                        ..$writeKey
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty) {
-                        out.writeKey($name)
+                        ..$writeKey
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""out.writeKey($name)
+                  q"""..$writeKey
                       ..${genWriteVal(q"x.$m", tpe)}"""
                 }
             }
@@ -628,9 +631,17 @@ object JsonCodecMaker {
         } else if (isSealedAdtBase(tpe)) withEncoderFor(tpe, m) {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
+            val name = codecConfig.discriminatorFieldName
+            val writeKey =
+              if (name.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiKey($name)"
+              else q"out.writeKey($name)"
+            val value = discriminatorValue(subTpe)
+            val writeVal =
+              if (value.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiVal($value)"
+              else q"out.writeVal($value)"
             val writeDiscriminatorField =
-              q"""out.writeKey(${codecConfig.discriminatorFieldName})
-                  out.writeVal(${discriminatorValue(subTpe)})"""
+              q"""..$writeKey
+                  ..$writeVal"""
             cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }
           q"""x match {
