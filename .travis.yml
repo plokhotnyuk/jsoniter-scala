@@ -1,14 +1,24 @@
-sudo: false
-
-dist: trusty
-
 language: scala
 
 scala:
   - 2.11.12
   - 2.12.4
 
-jdk: oraclejdk8
+matrix:
+  include:
+    - os: linux
+      sudo: false
+      jdk: oraclejdk8
+    - os: linux
+      sudo: false
+      jdk: openjdk8
+    - os: linux
+      sudo: false
+      jdk: oraclejdk9
+      addons:
+        apt:
+          packages:
+            - oracle-java9-installer # Forces use of even newer JDK 9 build
 
 script:
   - sbt -no-colors ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport
