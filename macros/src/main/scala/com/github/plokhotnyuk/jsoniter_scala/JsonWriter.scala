@@ -133,11 +133,12 @@ final class JsonWriter private[jsoniter_scala](
     if ((out eq null) || (config eq null)) throw new NullPointerException
     this.config = config
     this.out = out
-    this.count = 0
-    this.indention = 0
-    try codec.encode(x, this) // also checks that `codec` is not null before any serialization
-    finally {
-      flushBuffer()
+    count = 0
+    indention = 0
+    try {
+      codec.encode(x, this) // also checks that `codec` is not null before any serialization
+      flushBuffer() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
+    } finally {
       this.out = null // do not close output stream, just help GC instead
       freeTooLongBuf()
     }
@@ -150,8 +151,8 @@ final class JsonWriter private[jsoniter_scala](
     this.indention = 0
     try {
       codec.encode(x, this) // also checks that `codec` is not null before any serialization
-      val arr = new Array[Byte](this.count)
-      System.arraycopy(this.buf, 0, arr, 0, arr.length)
+      val arr = new Array[Byte](count)
+      System.arraycopy(buf, 0, arr, 0, arr.length)
       arr
     } finally freeTooLongBuf()
   }
@@ -168,7 +169,7 @@ final class JsonWriter private[jsoniter_scala](
     isBufGrowingAllowed = false
     try {
       codec.encode(x, this) // also checks that `codec` is not null before any serialization
-      this.count
+      count
     } finally {
       this.buf = currBuf
       isBufGrowingAllowed = true
