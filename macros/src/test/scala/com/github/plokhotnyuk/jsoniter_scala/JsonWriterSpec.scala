@@ -26,10 +26,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       |  ]
       |}""".stripMargin
   val buf = new Array[Byte](100)
-  val surrogateChars: Gen[Char] = Gen.choose('\ud800', '\udfff')
   val highSurrogateChars: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val lowSurrogateChars: Gen[Char] = Gen.choose('\udc00', '\udfff')
-  val allwaysEscapedChars: Gen[Char] = Gen.oneOf(Gen.choose('\u0000', '\u001f'), Gen.oneOf('\\', '"', '\u007f'))
+  val surrogateChars: Gen[Char] = Gen.oneOf(highSurrogateChars, lowSurrogateChars)
+  val escapedAsciiChars: Gen[Char] = Gen.oneOf(Gen.choose('\u0000', '\u001f'), Gen.oneOf('\\', '"', '\u007f'))
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
@@ -89,8 +89,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       def check(s: String, escapeUnicode: Boolean): Unit =
         withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
 
-      forAll(Gen.listOf(allwaysEscapedChars), Gen.oneOf(true, false)) { (cs: List[Char], escapeUnicode: Boolean) =>
-        check(cs.mkString, escapeUnicode)
+      forAll(Gen.listOf(escapedAsciiChars).map(_.mkString), Gen.oneOf(true, false)) { (s: String, escapeUnicode: Boolean) =>
+        check(s, escapeUnicode)
       }
     }
     "write strings with escaped Unicode chars if it is specified by provided writer config" in {
@@ -120,6 +120,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       forAll(surrogateChars, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
         check(ch.toString, escapeUnicode)
+      }
+      forAll(surrogateChars, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
         check(ch.toString + ch.toString, escapeUnicode)
       }
       forAll(lowSurrogateChars, highSurrogateChars, Gen.oneOf(true, false)) { (ch1: Char, ch2: Char, escapeUnicode: Boolean) =>
@@ -136,7 +138,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "write string with chars that should be escaped" in {
-      forAll(allwaysEscapedChars) { (ch: Char) =>
+      forAll(escapedAsciiChars) { (ch: Char) =>
         withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
       }
     }
