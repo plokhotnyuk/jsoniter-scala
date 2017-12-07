@@ -1666,12 +1666,11 @@ object JsonReader {
     pool.get.read(codec, buf, from, to, config)
 
   final def toHashCode(cs: Array[Char], len: Int): Int = {
+    var h = 0
     var i = 0
-    var h = 777767777
-    while (i < len) {
-      h = (h ^ cs(i)) * 1500450271
-      h ^= (h >>> 21) // mix highest bits to reduce probability of zeroing and loosing part of hash from preceding chars
-      i += 1
+    while (i < len) i = {
+      h = (h << 5) - h + cs(i)
+      i + 1
     }
     h
   }
