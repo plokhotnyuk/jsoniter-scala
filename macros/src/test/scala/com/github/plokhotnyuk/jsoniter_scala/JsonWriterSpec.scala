@@ -86,9 +86,11 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
     }
     "write string of Unicode chars which are non-surrogate and should not be escaped" in {
+      def check(s: String): Unit = withWriter(_.writeVal(s)) shouldBe '"' + s + '"'
+
       forAll(minSuccessful(10000)) { (s: String) =>
         whenever(!s.exists(ch => Character.isSurrogate(ch) || isEscapedAscii(ch))) {
-          withWriter(_.writeVal(s)) shouldBe '"' + s + '"'
+          check(s)
         }
       }
     }

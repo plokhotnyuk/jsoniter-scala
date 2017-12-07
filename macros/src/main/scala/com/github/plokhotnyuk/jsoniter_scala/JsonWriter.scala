@@ -376,7 +376,7 @@ final class JsonWriter private[jsoniter_scala](
           writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEncodedString(bs, from + 1, to, writeEscapedUnicode(b, pos), posLim, escapedChars)
       } else { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
-        buf(pos) = (0xC0 | (b >> 6) & 0x1F).toByte
+        buf(pos) = (0xC0 | ((b & 0xFF) >> 6)).toByte
         buf(pos + 1) = (0x80 | (b & 0x3F)).toByte
         writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
       }
