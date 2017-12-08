@@ -91,7 +91,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: String): Unit =
     if (x ne null) {
       writeComma()
-      writeString(x, 0, x.length)
+      writeString(x)
       writeColon()
     } else encodeError("key cannot be null")
 
@@ -110,7 +110,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: BigInt): Unit =
     if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
 
-  def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x, 0, x.length)
+  def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
 
   def writeNonEscapedAsciiVal(x: String): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x)
 
@@ -257,13 +257,13 @@ final class JsonWriter private[jsoniter_scala](
     pos + len + 2
   }
 
-  private def writeString(s: String, from: Int, to: Int): Unit = count = {
+  private def writeString(s: String): Unit = count = {
     var pos = ensureBufferCapacity(2)
     buf(pos) = '"'
     pos = {
       val bs = UnsafeUtils.getLatin1Array(s)
-      if (bs eq null) writeString(s, from, to, pos + 1, buf.length, escapedChars)
-      else writeString(bs, from, to, pos + 1, buf.length, escapedChars)
+      if (bs eq null) writeString(s, 0, s.length, pos + 1, buf.length, escapedChars)
+      else writeString(bs, 0, s.length, pos + 1, buf.length, escapedChars)
     }
     buf(pos) = '"'
     pos + 1

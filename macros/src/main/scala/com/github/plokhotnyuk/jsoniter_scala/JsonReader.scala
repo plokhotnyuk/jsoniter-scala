@@ -362,31 +362,25 @@ final class JsonReader private[jsoniter_scala](
     else isCharBufEqualsTo(len, s, i + 1)
 
   private def appendString(s: String, from: Int): Int = {
-    val lim = from + s.length
-    if (lim > charBuf.length) growCharBuf(lim)
-    var i = from
-    while (i < lim) {
-      charBuf(i) = s.charAt(i - from)
-      i += 1
-    }
-    i
+    val len = s.length
+    val required = from + len
+    if (required > charBuf.length) growCharBuf(required)
+    s.getChars(0, len, charBuf, from)
+    required
   }
 
   private def prependString(s: String, from: Int): Int = {
     val len = s.length
-    val lim = from + len
-    if (lim > charBuf.length) growCharBuf(lim)
-    var i = lim - 1
+    val required = from + len
+    if (required > charBuf.length) growCharBuf(required)
+    var i = required - 1
     while (i >= len) {
       charBuf(i) = charBuf(i - len)
       i -= 1
     }
     i = 0
-    while (i < len) {
-      charBuf(i) = s.charAt(i)
-      i += 1
-    }
-    lim
+    s.getChars(0, len, charBuf, 0)
+    required
   }
 
   private def readParentheses(): Unit = if (!isNextToken('"', head)) decodeError("expected '\"'")
