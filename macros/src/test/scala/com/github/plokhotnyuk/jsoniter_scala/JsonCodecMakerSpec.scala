@@ -307,6 +307,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           if (x ne null) out.writeVal(x.id) else out.writeNull()
       }
       verifySerDeser(make[Enums](CodecMakerConfig()), Enums(LocationType.GPS), """{"lt":1}""".getBytes)
+      verifySerDeser(make[Enums](CodecMakerConfig()), Enums(null), """{"lt":null}""".getBytes)
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[Enums](CodecMakerConfig()), Enums(null), """{"lt":none}""".getBytes)
+      }.getMessage.contains("expected value or null, offset: 0x00000007"))
     }
     "serialize and deserialize case classes with value classes" in {
       verifySerDeser(make[ValueClassTypes](CodecMakerConfig()),
@@ -641,6 +645,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":"AAA"}]""".getBytes)
       }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000013"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":123}]""".getBytes)
+      }.getMessage.contains("""expected string value, offset: 0x0000000f"""))
     }
   }
   "JsonCodec.enforceCamelCase" should {

@@ -1140,7 +1140,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b ^ '\\') < 1) parseEncodedString(i, lim, pos)
+      } else if ((b ^ '\\') <= 0) parseEncodedString(i, lim, pos)
       else {
         charBuf(i) = b.toChar
         parseString(i + 1, lim, pos + 1)
