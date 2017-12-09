@@ -4,20 +4,20 @@ matrix:
   include:
     - os: linux
       sudo: false
-      jdk: oraclejdk8
-      scala: 2.12.4
-    - os: linux
-      sudo: false
-      jdk: openjdk8
-      scala: 2.11.12
-    - os: linux
-      sudo: false
       jdk: oraclejdk9
       scala: 2.12.4
       addons:
         apt:
           packages:
             - oracle-java9-installer # Forces use of newer JDK 9 build
+    - os: linux
+      sudo: false
+      jdk: oraclejdk8
+      scala: 2.12.4
+    - os: linux
+      sudo: false
+      jdk: openjdk8
+      scala: 2.11.12
 
 script:
   - sbt -no-colors ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport

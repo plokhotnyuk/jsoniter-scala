@@ -157,6 +157,14 @@ object JsonCodecMaker {
               }
             } else in.readNullOrTokenError(default, $open)"""
 
+      def genWriteConstantKey(name: String): Tree =
+        if (name.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiKey($name)"
+        else q"out.writeKey($name)"
+
+      def genWriteConstantVal(value: String): Tree =
+        if (value.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiVal($value)"
+        else q"out.writeVal($value)"
+
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
             $m.foreach { x =>
@@ -328,11 +336,9 @@ object JsonCodecMaker {
           q"${containerCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${containerCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[Traversable[_]]) q"${containerCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe) {
-          q"new Array[${typeArg1(tpe)}](0)"
-        } else if (tpe.typeSymbol.isModuleClass) {
-          q"${tpe.typeSymbol.asClass.module}"
-        } else q"null"
+        else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
+        else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
+        else q"null"
 
       def genReadVal(tpe: Type, default: Tree, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
@@ -574,9 +580,6 @@ object JsonCodecMaker {
           val writeFields = members.map { m =>
             val tpe = methodType(m)
             val name = getMappedName(annotations, m.name.toString)
-            val writeKey =
-              if (name.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiKey($name)"
-              else q"out.writeKey($name)"
             defaults.get(m.name.toString) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Array[_]]) {
@@ -585,19 +588,19 @@ object JsonCodecMaker {
                           val d = $d
                           v.length != d.length && v.deep != d.deep
                         }) {
-                        ..$writeKey
+                        ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty && v != $d) {
-                        ..$writeKey
+                        ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        ..$writeKey
+                        ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 }
@@ -605,17 +608,17 @@ object JsonCodecMaker {
                 if (tpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if ((v ne null) && v.length > 0) {
-                        ..$writeKey
+                        ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else if (isContainer(tpe)) {
                   q"""val v = x.$m
                       if ((v ne null) && !v.isEmpty) {
-                        ..$writeKey
+                        ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe)}
                       }"""
                 } else {
-                  q"""..$writeKey
+                  q"""..${genWriteConstantKey(name)}
                       ..${genWriteVal(q"x.$m", tpe)}"""
                 }
             }
@@ -631,17 +634,9 @@ object JsonCodecMaker {
         } else if (isSealedAdtBase(tpe)) withEncoderFor(tpe, m) {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
-            val name = codecConfig.discriminatorFieldName
-            val writeKey =
-              if (name.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiKey($name)"
-              else q"out.writeKey($name)"
-            val value = discriminatorValue(subTpe)
-            val writeVal =
-              if (value.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiVal($value)"
-              else q"out.writeVal($value)"
             val writeDiscriminatorField =
-              q"""..$writeKey
-                  ..$writeVal"""
+              q"""..${genWriteConstantKey(codecConfig.discriminatorFieldName)}
+                  ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
             cq"x: $subTpe => ${genWriteVal(q"x", subTpe, writeDiscriminatorField)}"
           }
           q"""x match {
