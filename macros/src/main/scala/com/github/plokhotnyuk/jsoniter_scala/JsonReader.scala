@@ -555,10 +555,7 @@ final class JsonReader private[jsoniter_scala](
       val ch = buf(pos).toChar
       (state: @switch) match {
         case 0 => // start
-          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-            if (!isToken) numberError(pos)
-            state = 1
-          } else if (ch >= '0' && ch <= '9') {
+          if (ch >= '0' && ch <= '9') {
             charBuf(i) = ch
             i += 1
             posMan = ch - '0'
@@ -569,6 +566,9 @@ final class JsonReader private[jsoniter_scala](
             i += 1
             isNeg = true
             state = 2
+          } else if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            if (!isToken) numberError(pos)
+            state = 1
           } else numberError(pos)
         case 1 => // whitespaces
           if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
@@ -747,10 +747,7 @@ final class JsonReader private[jsoniter_scala](
       val ch = buf(pos).toChar
       (state: @switch) match {
         case 0 => // start
-          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-            if (!isToken) numberError(pos)
-            state = 1
-          } else if (ch >= '0' && ch <= '9') {
+          if (ch >= '0' && ch <= '9') {
             charBuf(i) = ch
             i += 1
             posMan = ch - '0'
@@ -761,6 +758,9 @@ final class JsonReader private[jsoniter_scala](
             i += 1
             isNeg = true
             state = 2
+          } else if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            if (!isToken) numberError(pos)
+            state = 1
           } else numberError(pos)
         case 1 => // whitespaces
           if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
@@ -954,7 +954,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) pos = {
-          if (isZeroFirst ) leadingZeroError(pos - 1)
+          if (isZeroFirst) leadingZeroError(pos - 1)
           if (i >= lim) lim = growCharBuf(i + 1)
           charBuf(i) = b.toChar
           i += 1
@@ -981,10 +981,7 @@ final class JsonReader private[jsoniter_scala](
       val ch = buf(pos).toChar
       (state: @switch) match {
         case 0 => // start
-          if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
-            if (!isToken) numberError(pos)
-            state = 1
-          } else if (ch >= '0' && ch <= '9') {
+          if (ch >= '0' && ch <= '9') {
             charBuf(i) = ch
             i += 1
             isZeroFirst = ch == '0'
@@ -995,6 +992,9 @@ final class JsonReader private[jsoniter_scala](
             state = 2
           } else if (ch == 'n' && isToken) {
             state = 10
+          } else if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
+            if (!isToken) numberError(pos)
+            state = 1
           } else numberError(pos)
         case 1 => // whitespaces
           if (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r') {
@@ -1555,7 +1555,7 @@ object JsonReader {
   private val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
     override def initialValue(): JsonReader = new JsonReader
   }
-  private val defaultConfig = ReaderConfig()
+  private val defaultConfig = new ReaderConfig
   private val pow10f: Array[Float] = // all powers of 10 that can be represented exactly in float
     Array(1f, 1e+1f, 1e+2f, 1e+3f, 1e+4f, 1e+5f, 1e+6f, 1e+7f, 1e+8f, 1e+9f, 1e+10f)
   private val pow10d: Array[Double] = // all powers of 10 that can be represented exactly in double

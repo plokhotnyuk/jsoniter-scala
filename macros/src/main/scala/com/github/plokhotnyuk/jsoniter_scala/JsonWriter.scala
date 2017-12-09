@@ -650,7 +650,7 @@ object JsonWriter {
   private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = new JsonWriter
   }
-  private val defaultConfig = WriterConfig()
+  private val defaultConfig = new WriterConfig
   private val escapedChars: Array[Byte] = (0 to 127).map { b =>
     ((b: @switch) match {
       case '\n' => 'n'
@@ -660,7 +660,7 @@ object JsonWriter {
       case '\f' => 'f'
       case '\\' => '\\'
       case '\"' => '"'
-      case x if x <= 31 || x >= 127 => 255 // hex escaped chars
+      case x if x <= 31 || x >= 127 => -1 // hex escaped chars
       case _ => 0 // non-escaped chars
     }).toByte
   }(breakOut)

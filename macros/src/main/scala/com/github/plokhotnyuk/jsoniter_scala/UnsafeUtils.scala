@@ -4,7 +4,7 @@ import sun.misc.Unsafe
 
 import scala.util.Try
 
-// FIXME: remove when perf. degradation of String.charAt for ASCII strings will be fixed on JDK 9
+// FIXME: remove when perf. degradation of String.charAt for ASCII strings will be fixed in JDK 9
 object UnsafeUtils {
   private[this] val (unsafe, stringValueOffset, stringCoderOffset) = Try {
     val u = {
