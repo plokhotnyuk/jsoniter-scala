@@ -425,6 +425,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1,},"hm":{},"sm":{}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x0000000e"))
     }
+    "throw parse exception in case of illegal keys found during deserialization of maps" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfMutableMaps,
+          MutableMaps(null, mutable.Map(1.1f -> mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
+          """{"m":{"1.1":{"null":"2"}}""".getBytes)
+      }.getMessage.contains("illegal number, offset: 0x0000000f"))
+    }
     "don't serialize null keys for maps" in {
       assert(intercept[IOException] {
         verifySer(codecOfMutableMaps,
