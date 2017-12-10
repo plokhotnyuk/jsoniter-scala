@@ -22,7 +22,15 @@ lazy val `jsoniter-scala` = project.in(file("."))
         "-Xmacro-settings:print-codecs"
       )
     ))
-  ).aggregate(macros, benchmark)
+  ).aggregate(core, macros, benchmark)
+
+lazy val core = project
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test
+    )
+  )
 
 lazy val macros = project
   .settings(
@@ -31,7 +39,7 @@ lazy val macros = project
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
-  )
+  ).dependsOn(core)
 
 lazy val benchmark = project
   .enablePlugins(JmhPlugin)
