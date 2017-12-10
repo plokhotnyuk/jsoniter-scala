@@ -3,36 +3,14 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
+import com.github.plokhotnyuk.jsoniter_scala.UserAPI._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
-  case class Device(id: Int, model: String)
-
-  case class User(name: String, devices: Seq[Device])
-
-  val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
-  val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
-  val json: Array[Byte] =
-    """{
-      |  "name": "John",
-      |  "devices": [
-      |    {
-      |      "id": 2,
-      |      "model": "iPhone X"
-      |    }
-      |  ]
-      |}""".stripMargin.getBytes(UTF_8)
-  val compactJson: Array[Byte] = """{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".getBytes(UTF_8)
-  val httpMessage: Array[Byte] =
-    """HTTP/1.0 200 OK
-      |Content-Type: application/json
-      |Content-Length: 55
-      |
-      |{"name":"John","devices":[{"id":2,"model":"iPhone X"}]}""".stripMargin.getBytes(UTF_8)
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
-      JsonReader.read(codec, new ByteArrayInputStream(compactJson)) shouldBe user
+      JsonReader.read(codec, getClass.getResourceAsStream("user_api_response.json")) shouldBe user
     }
     "parse json from the byte array" in {
       JsonReader.read(codec, compactJson) shouldBe user
@@ -158,20 +136,20 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.nextToken" should {
     "find next non-whitespace byte of input" in {
-      val r = reader(json)
+      val r = reader("{}".getBytes)
       assert(r.nextToken() == '{')
-      assert(r.nextToken() == '"')
+      assert(r.nextToken() == '}')
     }
     "throw parse exception in case of end of input" in {
-      val r = reader(json)
+      val r = reader("{}".getBytes)
       r.skip()
       assert(intercept[JsonParseException](r.nextToken() == '{')
-        .getMessage.contains("unexpected end of input, offset: 0x0000005d"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
   }
   "JsonReader.rollbackToken" should {
     "rollback of reading last byte of input" in {
-      val r = reader(json)
+      val r = reader("""{"x":1}""".getBytes)
       assert(r.nextToken() == '{')
       r.rollbackToken()
       assert(r.nextToken() == '{')
@@ -180,7 +158,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(r.nextToken() == '"')
     }
     "throw array index out of bounds in case of missing preceding call of 'nextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader(json).rollbackToken())
+      assert(intercept[ArrayIndexOutOfBoundsException](reader("{}".getBytes).rollbackToken())
         .getMessage.contains("expected preceding call of 'nextToken()'"))
     }
   }

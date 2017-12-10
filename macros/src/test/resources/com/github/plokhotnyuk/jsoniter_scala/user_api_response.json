@@ -1,0 +1,9 @@
+{
+  "name": "John",
+  "devices": [
+    {
+      "id": 2,
+      "model": "iPhone X"
+    }
+  ]
+}
