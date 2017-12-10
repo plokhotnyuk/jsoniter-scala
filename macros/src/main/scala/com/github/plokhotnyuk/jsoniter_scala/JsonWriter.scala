@@ -302,22 +302,22 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-      } else if (!Character.isHighSurrogate(ch1)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
-        if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
+      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         buf(pos) = (0xE0 | (ch1 >> 12)).toByte
         buf(pos + 1) = (0x80 | ((ch1 >> 6) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | (ch1 & 0x3F)).toByte
         writeEncodedString(s, from + 1, to, pos + 3, posLim, escapedChars)
-      } else if (from + 1 < to) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      } else { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
-        if (!Character.isLowSurrogate(ch2)) illegalSurrogateError()
+        if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
         val cp = Character.toCodePoint(ch1, ch2)
         buf(pos) = (0xF0 | (cp >> 18)).toByte
         buf(pos + 1) = (0x80 | ((cp >> 12) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | ((cp >> 6) & 0x3F)).toByte
         buf(pos + 3) = (0x80 | (cp & 0x3F)).toByte
         writeEncodedString(s, from + 2, to, pos + 4, posLim, escapedChars)
-      } else illegalSurrogateError()
+      }
     }
 
   @tailrec
@@ -336,14 +336,14 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = esc
           writeEscapedString(s, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos), posLim, escapedChars)
-      } else if (ch1 < 2048 || !Character.isHighSurrogate(ch1)) {
-        if (Character.isLowSurrogate(ch1)) illegalSurrogateError()
+      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) {
         writeEscapedString(s, from + 1, to, writeEscapedUnicode(ch1, pos), posLim, escapedChars)
-      } else if (from + 1 < to) {
+      } else {
+        if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
-        if (!Character.isLowSurrogate(ch2)) illegalSurrogateError()
+        if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
         writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos)), posLim, escapedChars)
-      } else illegalSurrogateError()
+      }
     }
 
   @tailrec
@@ -417,13 +417,13 @@ final class JsonWriter private[jsoniter_scala](
           pos + 2
         } else writeEscapedUnicode(ch.toByte, pos)
       } else if (config.escapeUnicode) {
-        if (Character.isSurrogate(ch)) illegalSurrogateError()
+        if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
         writeEscapedUnicode(ch, pos)
       } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         buf(pos) = (0xC0 | (ch >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
         pos + 2
-      } else if (!Character.isSurrogate(ch)) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+      } else if (ch < 0xD800 || ch > 0xDFFF) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         buf(pos) = (0xE0 | (ch >> 12)).toByte
         buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte

@@ -253,7 +253,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[JsonParseException](readString("\\"))
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
       assert(intercept[JsonParseException](readString("\\udd1e"))
-        .getMessage.contains("expected high surrogate character, offset: 0x00000006"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000008"))
       assert(intercept[JsonParseException](readString("\\ud834"))
         .getMessage.contains("unexpected end of input, offset: 0x00000008"))
       assert(intercept[JsonParseException](readString("\\ud834\\"))
@@ -261,7 +261,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[JsonParseException](readString("\\ud834\\x"))
         .getMessage.contains("unexpected end of input, offset: 0x0000000a"))
       assert(intercept[JsonParseException](readString("\\ud834\\ud834"))
-        .getMessage.contains("expected low surrogate character, offset: 0x0000000c"))
+        .getMessage.contains("illegal surrogate character pair, offset: 0x0000000c"))
     }
     "throw parsing exception in case of illegal byte sequence" in {
       assert(intercept[JsonParseException](readString(Array[Byte](0x80.toByte)))

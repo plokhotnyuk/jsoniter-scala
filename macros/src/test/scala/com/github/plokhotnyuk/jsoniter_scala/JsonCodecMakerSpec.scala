@@ -224,7 +224,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "throw parse exception in case of illegal JSON escaped field names" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}".getBytes)
-      }.getMessage.contains("expected high surrogate character, offset: 0x00000007"))
+      }.getMessage.contains("illegal escape sequence, offset: 0x00000008"))
     }
     "throw parse exception in case of missing or illegal tokens" in {
       assert(intercept[JsonParseException] {
