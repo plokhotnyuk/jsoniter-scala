@@ -341,7 +341,7 @@ final class JsonWriter private[jsoniter_scala](
       } else {
         if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
-        if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
+        if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
         writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos)), posLim, escapedChars)
       }
     }
