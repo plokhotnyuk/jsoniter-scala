@@ -1,4 +1,4 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.core
 
 import sun.misc.Unsafe
 

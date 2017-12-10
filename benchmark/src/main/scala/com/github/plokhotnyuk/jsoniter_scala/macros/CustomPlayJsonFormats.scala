@@ -1,11 +1,10 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import julienrf.json.derived.flat
 import play.api.libs.json._
 
-import scala.collection.breakOut
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap}
-import scala.collection.mutable
+import scala.collection.{breakOut, mutable}
 
 object CustomPlayJsonFormats {
   implicit val v1: OFormat[HashMap[String, Double]] = OFormat(

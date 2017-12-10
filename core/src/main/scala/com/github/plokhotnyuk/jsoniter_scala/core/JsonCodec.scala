@@ -1,4 +1,4 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.core
 
 abstract class JsonCodec[A] {
   def nullValue: A

@@ -1,8 +1,8 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
 
-import com.github.plokhotnyuk.jsoniter_scala.JsonReader._
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
 import scala.util.control.NonFatal

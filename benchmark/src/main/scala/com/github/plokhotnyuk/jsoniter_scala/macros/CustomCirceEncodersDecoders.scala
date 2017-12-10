@@ -1,4 +1,4 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import io.circe._
 import io.circe.generic.extras._

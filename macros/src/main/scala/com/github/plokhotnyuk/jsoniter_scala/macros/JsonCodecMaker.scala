@@ -1,6 +1,8 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.lang.Character._
+
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, JsonReader, JsonWriter}
 
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
@@ -647,7 +649,7 @@ object JsonCodecMaker {
       }
 
       val codec =
-        q"""import com.github.plokhotnyuk.jsoniter_scala._
+        q"""import com.github.plokhotnyuk.jsoniter_scala.core._
             import scala.annotation.switch
             new JsonCodec[$rootTpe] {
               def nullValue: $rootTpe = ${nullValue(rootTpe)}

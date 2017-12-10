@@ -1,9 +1,10 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.github.plokhotnyuk.jsoniter_scala.UserAPI._
+import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
+import com.github.plokhotnyuk.jsoniter_scala.core.WriterConfig
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}

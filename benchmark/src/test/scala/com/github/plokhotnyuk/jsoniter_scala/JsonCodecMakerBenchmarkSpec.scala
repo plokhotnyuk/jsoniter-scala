@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.nio.charset.StandardCharsets
 
+import com.github.plokhotnyuk.jsoniter_scala.macros.{Arrays, GoogleMapsAPI, JsonCodecMakerBenchmark, TwitterAPI}
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {

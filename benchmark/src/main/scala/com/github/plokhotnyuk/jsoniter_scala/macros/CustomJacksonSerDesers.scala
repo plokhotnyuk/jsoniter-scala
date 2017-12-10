@@ -1,7 +1,7 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.fasterxml.jackson.core.JsonToken._
-import com.fasterxml.jackson.core.{JsonGenerator, JsonParseException => ParseException, JsonParser}
+import com.fasterxml.jackson.core.{JsonGenerator, JsonParser, JsonParseException => ParseException}
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.databind.{DeserializationContext, SerializerProvider}

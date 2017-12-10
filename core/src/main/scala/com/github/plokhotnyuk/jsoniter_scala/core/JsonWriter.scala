@@ -1,8 +1,8 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
 
-import com.github.plokhotnyuk.jsoniter_scala.JsonWriter.{escapedChars, _}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
 
 import scala.annotation.{switch, tailrec}
 import scala.collection.breakOut

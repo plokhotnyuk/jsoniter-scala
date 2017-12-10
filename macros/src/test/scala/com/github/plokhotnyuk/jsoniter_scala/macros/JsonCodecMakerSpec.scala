@@ -1,9 +1,10 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker.make
+import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.annotation.switch

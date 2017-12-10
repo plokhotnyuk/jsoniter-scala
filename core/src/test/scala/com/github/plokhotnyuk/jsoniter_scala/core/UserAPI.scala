@@ -1,4 +1,4 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.core
 
 import scala.annotation.switch
 import scala.reflect.io.Streamable

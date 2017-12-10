@@ -1,4 +1,4 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 import java.util.concurrent.TimeUnit
@@ -13,11 +13,11 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.github.plokhotnyuk.jsoniter_scala.CustomCirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.CustomJacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.CustomPlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker._
-import io.circe._
+import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CustomCirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CustomJacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CustomPlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._

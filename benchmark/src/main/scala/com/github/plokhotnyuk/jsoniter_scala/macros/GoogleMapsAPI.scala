@@ -1,6 +1,7 @@
-package com.github.plokhotnyuk.jsoniter_scala
+package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker.make
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, JsonReader}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import play.api.libs.json.{Json, OFormat}
 
 import scala.reflect.io.Streamable

@@ -56,8 +56,8 @@ libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.
 Generate codecs for your case classes, collections, etc.
     
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.JsonCodecMaker
-import com.github.plokhotnyuk.jsoniter_scala.CodecMakerConfig
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
 
 case class Device(id: Int, model: String)
 
@@ -66,13 +66,13 @@ case class User(name: String, devices: Seq[Device])
 val codec = JsonCodecMaker.make[User](CodecMakerConfig())
 ```
 
-That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.JsonCodec`.
+That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec`.
 
 Now you can use it:
 
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.JsonReader
-import com.github.plokhotnyuk.jsoniter_scala.JsonWriter
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
 
 val user = JsonReader.read(codec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
 val jsonBytes = JsonWriter.write(codec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
@@ -85,7 +85,7 @@ scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
 For more features & examples, please, check out
-[JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/JsonCodecMakerSpec.scala)
+[JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
 
 
 ## How to develop
