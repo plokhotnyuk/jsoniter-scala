@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.nio.charset.StandardCharsets
 
-import com.github.plokhotnyuk.jsoniter_scala.macros.{Arrays, GoogleMapsAPI, JsonCodecMakerBenchmark, TwitterAPI}
+import com.github.plokhotnyuk.jsoniter_scala.macros.{Arrays, JsonCodecMakerBenchmark, JsoniterCodecs}
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
@@ -89,14 +89,14 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readStringJsoniter() shouldBe benchmark.stringObj
       // FIXME: find proper way to parse string value in Play JSON
       //benchmark.readStringPlay() shouldBe benchmark.stringObj
-      benchmark.readGoogleMapsAPICirce() shouldBe GoogleMapsAPI.obj
-      benchmark.readGoogleMapsAPIJackson() shouldBe GoogleMapsAPI.obj
-      benchmark.readGoogleMapsAPIJsoniter() shouldBe GoogleMapsAPI.obj
-      benchmark.readGoogleMapsAPIPlay() shouldBe GoogleMapsAPI.obj
-      benchmark.readTwitterAPICirce() shouldBe TwitterAPI.obj
-      benchmark.readTwitterAPIJackson() shouldBe TwitterAPI.obj
-      benchmark.readTwitterAPIJsoniter() shouldBe TwitterAPI.obj
-      benchmark.readTwitterAPIPlay() shouldBe TwitterAPI.obj
+      benchmark.readGoogleMapsAPICirce() shouldBe benchmark.googleMapsAPIObj
+      benchmark.readGoogleMapsAPIJackson() shouldBe benchmark.googleMapsAPIObj
+      benchmark.readGoogleMapsAPIJsoniter() shouldBe benchmark.googleMapsAPIObj
+      benchmark.readGoogleMapsAPIPlay() shouldBe benchmark.googleMapsAPIObj
+      benchmark.readTwitterAPICirce() shouldBe benchmark.twitterAPIObj
+      benchmark.readTwitterAPIJackson() shouldBe benchmark.twitterAPIObj
+      benchmark.readTwitterAPIJsoniter() shouldBe benchmark.twitterAPIObj
+      benchmark.readTwitterAPIPlay() shouldBe benchmark.twitterAPIObj
     }
     "serialize properly" in {
       toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJson)
@@ -153,24 +153,24 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeStringJsoniterPrealloc()) shouldBe toString(benchmark.stringJson)
       toString(benchmark.writeStringPlay()) shouldBe toString(benchmark.stringJson)
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(GoogleMapsAPI.compactJson)
+      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(benchmark.googleMapsAPICompactJson)
+      toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(benchmark.googleMapsAPICompactJson)
+      toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(benchmark.googleMapsAPICompactJson)
+      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe toString(benchmark.googleMapsAPICompactJson)
+      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(benchmark.googleMapsAPICompactJson)
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(TwitterAPI.compactJson)
-      toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(TwitterAPI.compactJson)
-      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(TwitterAPI.compactJson)
-      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(TwitterAPI.compactJson)
+      //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(benchmark.twitterAPICompactJson)
+      toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(benchmark.twitterAPICompactJson)
+      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(benchmark.twitterAPICompactJson)
+      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(benchmark.twitterAPICompactJson)
       // FIXME: Play-JSON serializes empty collections
-      //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(TwitterAPI.compactJson)
+      //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(benchmark.twitterAPICompactJson)
     }
   }
 
   private def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
 
-  private def toString(len: Int): String = new String(benchmark.preallocatedBuf.get, 0, len, StandardCharsets.UTF_8)
+  private def toString(len: Int): String = new String(JsoniterCodecs.preallocatedBuf.get, 0, len, StandardCharsets.UTF_8)
 
   private def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
     parsedObj.aa.deep shouldBe obj.aa.deep

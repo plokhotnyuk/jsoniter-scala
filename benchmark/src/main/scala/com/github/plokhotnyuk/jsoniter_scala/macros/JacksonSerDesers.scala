@@ -1,15 +1,20 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.JsonToken._
-import com.fasterxml.jackson.core.{JsonGenerator, JsonParser, JsonParseException => ParseException}
+import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonParseException => ParseException}
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.databind.{DeserializationContext, SerializerProvider}
+import com.fasterxml.jackson.databind.{DeserializationContext, DeserializationFeature, ObjectMapper, SerializerProvider}
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
-object CustomJacksonSerDesers {
+object JacksonSerDesers {
   class BitSetDeserializer extends StdDeserializer[BitSet](classOf[BitSet]) {
     override def deserialize(p: JsonParser, ctxt: DeserializationContext): BitSet =
       if (p.getCurrentToken != START_ARRAY) throw new ParseException(p, "expected '[' or null")
@@ -57,5 +62,20 @@ object CustomJacksonSerDesers {
     }
 
     override def isEmpty(provider: SerializerProvider, value: mutable.BitSet): Boolean = value.isEmpty
+  }
+
+  val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
+    disable(JsonFactory.Feature.INTERN_FIELD_NAMES)
+  }) with ScalaObjectMapper {
+    registerModule(DefaultScalaModule)
+    registerModule(new SimpleModule()
+      .addSerializer(classOf[BitSet], new BitSetSerializer)
+      .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
+      .addDeserializer(classOf[BitSet], new BitSetDeserializer)
+      .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
+    registerModule(new AfterburnerModule)
+    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
+    setSerializationInclusion(Include.NON_EMPTY)
   }
 }

@@ -4,7 +4,7 @@ import io.circe._
 import io.circe.generic.extras._
 import io.circe.generic.extras.semiauto._
 
-object CustomCirceEncodersDecoders {
+object CirceEncodersDecoders {
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
   implicit val aEncoder: Encoder[A] = deriveEncoder[A]
   implicit val aDecoder: Decoder[A] = deriveDecoder[A]

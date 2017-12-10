@@ -3,21 +3,14 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 import java.util.concurrent.TimeUnit
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
-import com.fasterxml.jackson.core.{JsonFactory, JsonParser}
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros.CustomCirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.macros.CustomJacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.macros.CustomPlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
@@ -26,6 +19,7 @@ import play.api.libs.json.{Json, _}
 
 import scala.collection.immutable.{BitSet, HashMap, HashSet, IntMap, LongMap, Map}
 import scala.collection.mutable
+import scala.reflect.io.Streamable
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
@@ -45,47 +39,6 @@ import scala.collection.mutable
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class JsonCodecMakerBenchmark {
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
-    disable(JsonFactory.Feature.INTERN_FIELD_NAMES)
-  }) with ScalaObjectMapper {
-    registerModule(DefaultScalaModule)
-    registerModule(new SimpleModule()
-      .addSerializer(classOf[BitSet], new BitSetSerializer)
-      .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
-      .addDeserializer(classOf[BitSet], new BitSetDeserializer)
-      .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
-    registerModule(new AfterburnerModule)
-    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
-    setSerializationInclusion(Include.NON_EMPTY)
-  }
-  val stacklessExceptionConfig = ReaderConfig(throwParseExceptionWithStackTrace = false)
-  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
-  val missingReqFieldCodec: JsonCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())
-  val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
-  val anyRefsCodec: JsonCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
-  val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
-  val arraysCodec: JsonCodec[Arrays] = make[Arrays](CodecMakerConfig())
-  val arraysFormat: OFormat[Arrays] = Json.format[Arrays]
-  val bitSetsCodec: JsonCodec[BitSets] = make[BitSets](CodecMakerConfig())
-  val bitSetsFormat: OFormat[BitSets] = Json.format[BitSets]
-  val iterablesCodec: JsonCodec[Iterables] = make[Iterables](CodecMakerConfig())
-  val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
-  val mutableIterablesCodec: JsonCodec[MutableIterables] = make[MutableIterables](CodecMakerConfig())
-  val mutableIterablesFormat: OFormat[MutableIterables] = Json.format[MutableIterables]
-  val mapsCodec: JsonCodec[Maps] = make[Maps](CodecMakerConfig())
-  val mapsFormat: OFormat[Maps] = Json.format[Maps]
-  val mutableMapsCodec: JsonCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
-  val mutableMapsFormat: OFormat[MutableMaps] = Json.format[MutableMaps]
-  val intAndLongMapsCodec: JsonCodec[IntAndLongMaps] = make[IntAndLongMaps](CodecMakerConfig())
-  val intAndLongMapsFormat: OFormat[IntAndLongMaps] = Json.format[IntAndLongMaps]
-  val primitivesCodec: JsonCodec[Primitives] = make[Primitives](CodecMakerConfig())
-  val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
-  val extractFieldsCodec: JsonCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
-  val extractFieldsFormat: OFormat[ExtractFields] = Json.format[ExtractFields]
-  val adtCodec: JsonCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
-  val adtFormat: OFormat[AdtBase] = v14
-  val stringCodec: JsonCodec[String] = make[String](CodecMakerConfig())
   val missingReqFieldJson: Array[Byte] = """{}""".getBytes
   val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
   val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -104,6 +57,12 @@ class JsonCodecMakerBenchmark {
     """"In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204.\nThere are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."""".getBytes("UTF-8")
   //  """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"""".getBytes("UTF-8")
   //  """"Інвертований індекс (англ. inverted index) — структура даних, в якій для кожного слова колекції документів у відповідному списку перераховані всі документи в колекції — в яких воно зустрілося. Інвертований індекс використовується для пошуку за текстами."""".getBytes("UTF-8")
+  //Distance Matrix API call for top-10 by population cities in US:
+  //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
+  val googleMapsAPIJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response.json"))
+  val googleMapsAPICompactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_compact_response.json"))
+  val twitterAPIJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  val twitterAPICompactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
@@ -122,9 +81,8 @@ class JsonCodecMakerBenchmark {
     "In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204.\nThere are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."
   //  "倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
   //  "Інвертований індекс (англ. inverted index) — структура даних, в якій для кожного слова колекції документів у відповідному списку перераховані всі документи в колекції — в яких воно зустрілося. Інвертований індекс використовується для пошуку за текстами."
-  val preallocatedBuf: ThreadLocal[Array[Byte]] = new ThreadLocal[Array[Byte]] {
-    override def initialValue(): Array[Byte] = new Array(100000)
-  }
+  val googleMapsAPIObj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, googleMapsAPIJson)
+  val twitterAPIObj: Seq[Tweet] = JsonReader.read(twitterAPICodec, twitterAPIJson)
 
   @Benchmark
   def missingReqFieldCirce(): String =
@@ -325,28 +283,28 @@ class JsonCodecMakerBenchmark {
   def readStringPlay(): String = Json.parse(stringJson).toString()
 
   @Benchmark
-  def readGoogleMapsAPICirce(): GoogleMapsAPI.DistanceMatrix = decode[GoogleMapsAPI.DistanceMatrix](new String(GoogleMapsAPI.json, UTF_8)).fold(throw _, x => x)
+  def readGoogleMapsAPICirce(): DistanceMatrix = decode[DistanceMatrix](new String(googleMapsAPIJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readGoogleMapsAPIJackson(): GoogleMapsAPI.DistanceMatrix = jacksonMapper.readValue[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.json)
+  def readGoogleMapsAPIJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](googleMapsAPIJson)
 
   @Benchmark
-  def readGoogleMapsAPIJsoniter(): GoogleMapsAPI.DistanceMatrix = JsonReader.read(GoogleMapsAPI.codec, GoogleMapsAPI.json)
+  def readGoogleMapsAPIJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, googleMapsAPIJson)
 
   @Benchmark
-  def readGoogleMapsAPIPlay(): GoogleMapsAPI.DistanceMatrix = Json.parse(GoogleMapsAPI.json).as[GoogleMapsAPI.DistanceMatrix](GoogleMapsAPI.format)
+  def readGoogleMapsAPIPlay(): DistanceMatrix = Json.parse(googleMapsAPIJson).as[DistanceMatrix](googleMapsAPIFormat)
 
   @Benchmark
-  def readTwitterAPICirce(): Seq[TwitterAPI.Tweet] = decode[Seq[TwitterAPI.Tweet]](new String(TwitterAPI.json, UTF_8)).fold(throw _, x => x)
+  def readTwitterAPICirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(twitterAPIJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readTwitterAPIJackson(): Seq[TwitterAPI.Tweet] = jacksonMapper.readValue[Seq[TwitterAPI.Tweet]](TwitterAPI.json)
+  def readTwitterAPIJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](twitterAPIJson)
 
   @Benchmark
-  def readTwitterAPIJsoniter(): Seq[TwitterAPI.Tweet] = JsonReader.read(TwitterAPI.codec, TwitterAPI.json)
+  def readTwitterAPIJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, twitterAPIJson)
 
   @Benchmark
-  def readTwitterAPIPlay(): Seq[TwitterAPI.Tweet] = Json.parse(TwitterAPI.json).as[Seq[TwitterAPI.Tweet]](TwitterAPI.format)
+  def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(twitterAPIJson).as[Seq[Tweet]](twitterAPIFormat)
 
   @Benchmark
   def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(UTF_8)
@@ -494,34 +452,34 @@ class JsonCodecMakerBenchmark {
   def writeStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(stringObj))
 
   @Benchmark
-  def writeGoogleMapsAPICirce(): Array[Byte] = GoogleMapsAPI.obj.asJson.noSpaces.getBytes(UTF_8)
+  def writeGoogleMapsAPICirce(): Array[Byte] = googleMapsAPIObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
-  def writeGoogleMapsAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(GoogleMapsAPI.obj)
+  def writeGoogleMapsAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(googleMapsAPIObj)
 
   @Benchmark
-  def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj)
+  def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(googleMapsAPICodec, googleMapsAPIObj)
 
   @Benchmark
-  def writeGoogleMapsAPIJsoniterPrealloc(): Int = JsonWriter.write(GoogleMapsAPI.codec, GoogleMapsAPI.obj, preallocatedBuf.get, 0)
+  def writeGoogleMapsAPIJsoniterPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, googleMapsAPIObj, preallocatedBuf.get, 0)
 
   @Benchmark
-  def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(GoogleMapsAPI.obj)(GoogleMapsAPI.format))
+  def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(googleMapsAPIObj)(googleMapsAPIFormat))
 
   @Benchmark
-  def writeTwitterAPICirce(): Array[Byte] = TwitterAPI.obj.asJson.noSpaces.getBytes(UTF_8)
+  def writeTwitterAPICirce(): Array[Byte] = twitterAPIObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
-  def writeTwitterAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(TwitterAPI.obj)
+  def writeTwitterAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(twitterAPIObj)
 
   @Benchmark
-  def writeTwitterAPIJsoniter(): Array[Byte] = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj)
+  def writeTwitterAPIJsoniter(): Array[Byte] = JsonWriter.write(twitterAPICodec, twitterAPIObj)
 
   @Benchmark
-  def writeTwitterAPIJsoniterPrealloc(): Int = JsonWriter.write(TwitterAPI.codec, TwitterAPI.obj, preallocatedBuf.get, 0)
+  def writeTwitterAPIJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, twitterAPIObj, preallocatedBuf.get, 0)
 
   @Benchmark
-  def writeTwitterAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(TwitterAPI.obj)(TwitterAPI.format))
+  def writeTwitterAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(twitterAPIObj)(twitterAPIFormat))
 }
 
 case class MissingReqFields(
