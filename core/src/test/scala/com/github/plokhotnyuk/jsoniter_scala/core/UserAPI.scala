@@ -3,11 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 import scala.annotation.switch
 import scala.reflect.io.Streamable
 
+case class Device(id: Int, model: String)
+
+case class User(name: String, devices: Seq[Device])
+
 object UserAPI {
-  case class Device(id: Int, model: String)
-
-  case class User(name: String, devices: Seq[Device])
-
   val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
   val prettyJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_response.json"))
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_compact_response.json"))
@@ -87,7 +87,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (in.isCurrentToken('}').`unary_!`) in.objectEndError()
         }
-        if (req0.==(0)) new User(name = _name, devices = _devices)
+        if (req0 == 0) new User(name = _name, devices = _devices)
         else in.requiredKeyError(r0, req0)
       } else in.readNullOrTokenError(default, '{')
 

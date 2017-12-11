@@ -570,7 +570,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(tpe, m) {
-          q"""if (x != null) {
+          q"""if (x ne null) {
                 out.writeObjectStart()
                 ..$discriminator
                 out.writeObjectEnd()
@@ -628,7 +628,7 @@ object JsonCodecMaker {
           val allWriteFields =
             if (discriminator.isEmpty) writeFields
             else discriminator +: writeFields
-          q"""if (x != null) {
+          q"""if (x ne null) {
                 out.writeObjectStart()
                 ..$allWriteFields
                 out.writeObjectEnd()

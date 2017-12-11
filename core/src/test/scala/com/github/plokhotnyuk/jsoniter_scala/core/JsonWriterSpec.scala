@@ -25,23 +25,22 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
       JsonWriter.write(codec, user, out1)
-      out1.toString("UTF-8") shouldBe new String(compactJson, UTF_8)
+      out1.toString("UTF-8") shouldBe toString(compactJson)
       val out2 = new ByteArrayOutputStream()
       JsonWriter.write(codec, user, out2, WriterConfig(indentionStep = 2))
-      out2.toString("UTF-8") shouldBe new String(prettyJson, UTF_8)
+      out2.toString("UTF-8") shouldBe toString(prettyJson)
     }
     "serialize an object to a new instance of byte array" in {
-      new String(JsonWriter.write(codec, user), UTF_8) shouldBe new String(compactJson, UTF_8)
-      new String(JsonWriter.write(codec, user, WriterConfig(indentionStep = 2)), UTF_8) shouldBe
-        new String(prettyJson, UTF_8)
+      toString(JsonWriter.write(codec, user)) shouldBe toString(compactJson)
+      toString(JsonWriter.write(codec, user, WriterConfig(indentionStep = 2))) shouldBe toString(prettyJson)
     }
     "serialize an object to the provided byte array from specified position" in {
       val from1 = 10
       val to1 = JsonWriter.write(codec, user, buf, from1)
-      new String(buf, from1, to1 - from1, UTF_8) shouldBe new String(compactJson, UTF_8)
+      new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
       val from2 = 0
       val to2 = JsonWriter.write(codec, user, buf, from2, WriterConfig(indentionStep = 2))
-      new String(buf, from2, to2 - from2, UTF_8) shouldBe new String(prettyJson, UTF_8)
+      new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
     }
     "throw array index out of bounds exception in case of the provided byte array is overflown during serialization" in {
       assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(codec, user, buf, 50))
@@ -240,4 +239,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
 
   def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
+
+  def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)
 }
