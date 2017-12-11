@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import scala.reflect.io.Streamable
+
 case class Entities(
   hashtags: Seq[String],
   symbols: Seq[String],
@@ -121,3 +123,8 @@ case class UserMentions(
   id: Long,
   id_str: String,
   indices: Seq[Int])
+
+object TwitterAPI {
+  val json: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
+}

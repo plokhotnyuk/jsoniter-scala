@@ -53,16 +53,12 @@ class JsonCodecMakerBenchmark {
     """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}""".getBytes
   val adtJson: Array[Byte] =
     """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}""".getBytes
-  val stringJson: Array[Byte] =
-    """"In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204.\nThere are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."""".getBytes("UTF-8")
-  //  """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"""".getBytes("UTF-8")
-  //  """"Інвертований індекс (англ. inverted index) — структура даних, в якій для кожного слова колекції документів у відповідному списку перераховані всі документи в колекції — в яких воно зустрілося. Інвертований індекс використовується для пошуку за текстами."""".getBytes("UTF-8")
+  val asciiStringJson: Array[Byte] =
+    """"In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204. There are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."""".getBytes("UTF-8")
+  val nonAsciiStringJson: Array[Byte] =
+    """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"""".getBytes("UTF-8")
   //Distance Matrix API call for top-10 by population cities in US:
   //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
-  val googleMapsAPIJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response.json"))
-  val googleMapsAPICompactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_compact_response.json"))
-  val twitterAPIJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
-  val twitterAPICompactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
@@ -77,12 +73,12 @@ class JsonCodecMakerBenchmark {
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
   val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
   val adtObj: AdtBase = C(A(1), B("VVV"))
-  val stringObj: String =
-    "In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204.\nThere are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."
-  //  "倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
-  //  "Інвертований індекс (англ. inverted index) — структура даних, в якій для кожного слова колекції документів у відповідному списку перераховані всі документи в колекції — в яких воно зустрілося. Інвертований індекс використовується для пошуку за текстами."
-  val googleMapsAPIObj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, googleMapsAPIJson)
-  val twitterAPIObj: Seq[Tweet] = JsonReader.read(twitterAPICodec, twitterAPIJson)
+  val asciiStringObj: String =
+    "In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204. There are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."
+  val nonAsciiStringObj: String =
+    "倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
+  val googleMapsAPIObj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.json)
+  val twitterAPIObj: Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.json)
 
   @Benchmark
   def missingReqFieldCirce(): String =
@@ -271,40 +267,54 @@ class JsonCodecMakerBenchmark {
   def readAdtPlay(): AdtBase = Json.parse(adtJson).as[AdtBase](adtFormat)
 
   @Benchmark
-  def readStringCirce(): String = decode[String](new String(stringJson, UTF_8)).fold(throw _, x => x)
+  def readAsciiStringCirce(): String = decode[String](new String(asciiStringJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readStringJackson(): String = jacksonMapper.readValue[String](stringJson)
+  def readAsciiStringJackson(): String = jacksonMapper.readValue[String](asciiStringJson)
 
   @Benchmark
-  def readStringJsoniter(): String = JsonReader.read(stringCodec, stringJson)
+  def readAsciiStringJsoniter(): String = JsonReader.read(stringCodec, asciiStringJson)
+
+/* FIXME: find proper way to parse string value in Play JSON
+  @Benchmark
+  def readAsciiStringPlay(): String = Json.parse(asciiStringJson).toString()
+*/
+  @Benchmark
+  def readNonAsciiStringCirce(): String = decode[String](new String(nonAsciiStringJson, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readStringPlay(): String = Json.parse(stringJson).toString()
+  def readNonAsciiStringJackson(): String = jacksonMapper.readValue[String](nonAsciiStringJson)
 
   @Benchmark
-  def readGoogleMapsAPICirce(): DistanceMatrix = decode[DistanceMatrix](new String(googleMapsAPIJson, UTF_8)).fold(throw _, x => x)
+  def readNonAsciiStringJsoniter(): String = JsonReader.read(stringCodec, nonAsciiStringJson)
+
+/* FIXME: find proper way to parse string value in Play JSON
+  @Benchmark
+  def readNonAsciiStringPlay(): String = Json.parse(nonAsciiStringJson).toString()
+*/
+  @Benchmark
+  def readGoogleMapsAPICirce(): DistanceMatrix = decode[DistanceMatrix](new String(GoogleMapsAPI.json, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readGoogleMapsAPIJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](googleMapsAPIJson)
+  def readGoogleMapsAPIJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](GoogleMapsAPI.json)
 
   @Benchmark
-  def readGoogleMapsAPIJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, googleMapsAPIJson)
+  def readGoogleMapsAPIJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.json)
 
   @Benchmark
-  def readGoogleMapsAPIPlay(): DistanceMatrix = Json.parse(googleMapsAPIJson).as[DistanceMatrix](googleMapsAPIFormat)
+  def readGoogleMapsAPIPlay(): DistanceMatrix = Json.parse(GoogleMapsAPI.json).as[DistanceMatrix](googleMapsAPIFormat)
 
   @Benchmark
-  def readTwitterAPICirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(twitterAPIJson, UTF_8)).fold(throw _, x => x)
+  def readTwitterAPICirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(TwitterAPI.json, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readTwitterAPIJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](twitterAPIJson)
+  def readTwitterAPIJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](TwitterAPI.json)
 
   @Benchmark
-  def readTwitterAPIJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, twitterAPIJson)
+  def readTwitterAPIJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.json)
 
   @Benchmark
-  def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(twitterAPIJson).as[Seq[Tweet]](twitterAPIFormat)
+  def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(TwitterAPI.json).as[Seq[Tweet]](twitterAPIFormat)
 
   @Benchmark
   def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(UTF_8)
@@ -437,19 +447,34 @@ class JsonCodecMakerBenchmark {
   def writeAdtPlay(): Array[Byte] = Json.toBytes(Json.toJson(adtObj)(adtFormat))
 
   @Benchmark
-  def writeStringCirce(): Array[Byte] = stringObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeAsciiStringCirce(): Array[Byte] = asciiStringObj.asJson.noSpaces.getBytes(UTF_8)
 
   @Benchmark
-  def writeStringJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(stringObj)
+  def writeAsciiStringJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(asciiStringObj)
 
   @Benchmark
-  def writeStringJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, stringObj)
+  def writeAsciiStringJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, asciiStringObj)
 
   @Benchmark
-  def writeStringJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, stringObj, preallocatedBuf.get, 0)
+  def writeAsciiStringJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, asciiStringObj, preallocatedBuf.get, 0)
 
   @Benchmark
-  def writeStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(stringObj))
+  def writeAsciiStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(asciiStringObj))
+
+  @Benchmark
+  def writeNonAsciiStringCirce(): Array[Byte] = nonAsciiStringObj.asJson.noSpaces.getBytes(UTF_8)
+
+  @Benchmark
+  def writeNonAsciiStringJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(nonAsciiStringObj)
+
+  @Benchmark
+  def writeNonAsciiStringJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, nonAsciiStringObj)
+
+  @Benchmark
+  def writeNonAsciiStringJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, nonAsciiStringObj, preallocatedBuf.get, 0)
+
+  @Benchmark
+  def writeNonAsciiStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(nonAsciiStringObj))
 
   @Benchmark
   def writeGoogleMapsAPICirce(): Array[Byte] = googleMapsAPIObj.asJson.noSpaces.getBytes(UTF_8)

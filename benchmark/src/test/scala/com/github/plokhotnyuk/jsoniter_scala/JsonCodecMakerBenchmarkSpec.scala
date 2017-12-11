@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala
 
 import java.nio.charset.StandardCharsets
 
-import com.github.plokhotnyuk.jsoniter_scala.macros.{Arrays, JsonCodecMakerBenchmark, JsoniterCodecs}
+import com.github.plokhotnyuk.jsoniter_scala.macros._
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
@@ -84,11 +84,16 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readAdtJackson() shouldBe benchmark.adtObj
       benchmark.readAdtJsoniter() shouldBe benchmark.adtObj
       benchmark.readAdtPlay() shouldBe benchmark.adtObj
-      benchmark.readStringCirce() shouldBe benchmark.stringObj
-      benchmark.readStringJackson() shouldBe benchmark.stringObj
-      benchmark.readStringJsoniter() shouldBe benchmark.stringObj
+      benchmark.readAsciiStringCirce() shouldBe benchmark.asciiStringObj
+      benchmark.readAsciiStringJackson() shouldBe benchmark.asciiStringObj
+      benchmark.readAsciiStringJsoniter() shouldBe benchmark.asciiStringObj
       // FIXME: find proper way to parse string value in Play JSON
-      //benchmark.readStringPlay() shouldBe benchmark.stringObj
+      //benchmark.readAsciiStringPlay() shouldBe benchmark.asciiStringObj
+      benchmark.readNonAsciiStringCirce() shouldBe benchmark.nonAsciiStringObj
+      benchmark.readNonAsciiStringJackson() shouldBe benchmark.nonAsciiStringObj
+      benchmark.readNonAsciiStringJsoniter() shouldBe benchmark.nonAsciiStringObj
+      // FIXME: find proper way to parse string value in Play JSON
+      //benchmark.readNonAsciiStringPlay() shouldBe benchmark.nonAsciiStringObj
       benchmark.readGoogleMapsAPICirce() shouldBe benchmark.googleMapsAPIObj
       benchmark.readGoogleMapsAPIJackson() shouldBe benchmark.googleMapsAPIObj
       benchmark.readGoogleMapsAPIJsoniter() shouldBe benchmark.googleMapsAPIObj
@@ -147,24 +152,29 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeAdtJackson()) shouldBe toString(benchmark.adtJson)
       toString(benchmark.writeAdtJsoniter()) shouldBe toString(benchmark.adtJson)
       toString(benchmark.writeAdtPlay()) shouldBe toString(benchmark.adtJson)
-      toString(benchmark.writeStringCirce()) shouldBe toString(benchmark.stringJson)
-      toString(benchmark.writeStringJackson()) shouldBe toString(benchmark.stringJson)
-      toString(benchmark.writeStringJsoniter()) shouldBe toString(benchmark.stringJson)
-      toString(benchmark.writeStringJsoniterPrealloc()) shouldBe toString(benchmark.stringJson)
-      toString(benchmark.writeStringPlay()) shouldBe toString(benchmark.stringJson)
+      toString(benchmark.writeAsciiStringCirce()) shouldBe toString(benchmark.asciiStringJson)
+      toString(benchmark.writeAsciiStringJackson()) shouldBe toString(benchmark.asciiStringJson)
+      toString(benchmark.writeAsciiStringJsoniter()) shouldBe toString(benchmark.asciiStringJson)
+      toString(benchmark.writeAsciiStringJsoniterPrealloc()) shouldBe toString(benchmark.asciiStringJson)
+      toString(benchmark.writeAsciiStringPlay()) shouldBe toString(benchmark.asciiStringJson)
+      toString(benchmark.writeNonAsciiStringCirce()) shouldBe toString(benchmark.nonAsciiStringJson)
+      toString(benchmark.writeNonAsciiStringJackson()) shouldBe toString(benchmark.nonAsciiStringJson)
+      toString(benchmark.writeNonAsciiStringJsoniter()) shouldBe toString(benchmark.nonAsciiStringJson)
+      toString(benchmark.writeNonAsciiStringJsoniterPrealloc()) shouldBe toString(benchmark.nonAsciiStringJson)
+      toString(benchmark.writeNonAsciiStringPlay()) shouldBe toString(benchmark.nonAsciiStringJson)
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(benchmark.googleMapsAPICompactJson)
-      toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(benchmark.googleMapsAPICompactJson)
-      toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(benchmark.googleMapsAPICompactJson)
-      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe toString(benchmark.googleMapsAPICompactJson)
-      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(benchmark.googleMapsAPICompactJson)
+      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
+      toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)
+      toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(GoogleMapsAPI.compactJson)
+      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe toString(GoogleMapsAPI.compactJson)
+      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(GoogleMapsAPI.compactJson)
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(benchmark.twitterAPICompactJson)
-      toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(benchmark.twitterAPICompactJson)
-      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(benchmark.twitterAPICompactJson)
-      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(benchmark.twitterAPICompactJson)
+      //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(TwitterAPI.compactJson)
+      toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(TwitterAPI.compactJson)
+      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(TwitterAPI.compactJson)
+      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(TwitterAPI.compactJson)
       // FIXME: Play-JSON serializes empty collections
-      //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(benchmark.twitterAPICompactJson)
+      //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(TwitterAPI.compactJson)
     }
   }
 

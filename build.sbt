@@ -50,9 +50,9 @@ lazy val benchmark = project
       "io.circe" %% "circe-generic" % "0.9.0-M2",
       "io.circe" %% "circe-generic-extras" % "0.9.0-M2",
       "io.circe" %% "circe-parser" % "0.9.0-M2",
-      "com.typesafe.play" %% "play-json" % "2.6.7",
+      "com.typesafe.play" %% "play-json" % "2.6.8",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
-      "pl.project13.scala" % "sbt-jmh-extras" % "0.2.27",
+      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.0",
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
   ).dependsOn(macros)
