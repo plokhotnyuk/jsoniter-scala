@@ -29,13 +29,18 @@ to get maximum performance of JSON parsing & serialization.
   provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
+- Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and optionally
+  hex dump of affected by error part of an internal byte buffer
+- Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
+- Configurable turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on 
+  performance
 - Configurable mapping function for names between case classes and JSON, including predefined functions which enforce 
   snake_case or camelCase names for all fields
 - Configurable name of a discriminator field for ADTs
 - Configurable mapping function for values of a discriminator field that is used for distinguish classes of ADTs
 - Configurable skipping of unexpected fields or throwing of parse exceptions
-- Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
-- Configurable turning off hex dumping of affected by error part of byte buffer to reduce impact on performance
+- Configurable size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`, no extra 
+  buffering are required  
 
 For upcoming features and fixes see [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 
@@ -153,6 +158,9 @@ To see throughput & allocation rate of generated codecs run benchmarks with GC p
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
 ```
+
+More info about extras, incuding `jmh.extras.Async` and ability to generate flame graphs see in
+[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 Current results for the following environment(s):
 

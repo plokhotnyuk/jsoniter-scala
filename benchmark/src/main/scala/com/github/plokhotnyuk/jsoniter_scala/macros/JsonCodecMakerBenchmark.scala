@@ -19,7 +19,6 @@ import play.api.libs.json.{Json, _}
 
 import scala.collection.immutable.{BitSet, HashMap, HashSet, IntMap, LongMap, Map}
 import scala.collection.mutable
-import scala.reflect.io.Streamable
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
