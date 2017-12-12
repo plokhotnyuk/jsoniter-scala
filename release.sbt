@@ -7,7 +7,6 @@ releaseProcess := Seq[ReleaseStep](
   inquireVersions,
   runClean,
   runTest,
-  releaseStepCommand("sonatypeOpen \"com.github.plokhotnyuk\" \"jsoniter-scala release\""),
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
