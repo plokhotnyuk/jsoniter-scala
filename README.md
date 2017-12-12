@@ -46,16 +46,10 @@ For upcoming features and fixes see [Issues page](https://github.com/plokhotnyuk
 
 ## How to use
 
-Build and publish locally for both Scala versions (release to Sonatype repo is coming)
-
-```sh
-sbt clean +publishLocal
-```
-
 Add the library to your dependencies list
 
 ```sbt
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.1-SNAPSHOT"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.1"
 ```
 
 Generate codecs for your case classes, collections, etc.
