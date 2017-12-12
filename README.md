@@ -83,14 +83,14 @@ To see generated code add the following line to your sbt build file
 scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
-For more features & examples, please, check out
+For more use cases & examples, please, check out
 [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
 
 
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
-creating pull requests (fixes and improvements of docs, code/tests are highly appreciated)
+creating pull requests (fixes and improvements of docs, code and tests are highly appreciated)
 
 ### Run tests and check coverage
 
@@ -170,12 +170,6 @@ Oracle JDK build 9.0.1+11 64-bit
 ## Acknowledges
 
 [Jsoniter Java](https://github.com/json-iterator/java)
-
-[RapidJson](https://github.com/Tencent/rapidjson)
-
-[sajson](https://github.com/chadaustin/sajson) 
-
-[pjson](https://github.com/chadaustin/Web-Benchmarks/blob/master/json/third-party/pjson/pjson.h) 
 
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros)
 
