@@ -1,3 +1,4 @@
+import com.typesafe.sbt.pgp.PgpKeys._
 import sbt.Keys.scalacOptions
 import sbt.url
 
@@ -45,7 +46,12 @@ lazy val publishSettings = Seq(
     )
   ),
   publishMavenStyle := true,
-  pomIncludeRepository := { _ => false }
+  pomIncludeRepository := { _ => false },
+  // FIXME: remove setting of overwrite flag when the following issue will be fixed: https://github.com/sbt/sbt/issues/3725
+  publishConfiguration := publishConfiguration.value.withOverwrite(isSnapshot.value),
+  publishSignedConfiguration := publishSignedConfiguration.value.withOverwrite(isSnapshot.value),
+  publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(isSnapshot.value),
+  publishLocalSignedConfiguration := publishLocalSignedConfiguration.value.withOverwrite(isSnapshot.value)
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))

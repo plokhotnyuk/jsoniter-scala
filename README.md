@@ -73,7 +73,7 @@ val codec = JsonCodecMaker.make[User](CodecMakerConfig())
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec`.
 
-Now you can use it:
+Now you can use it with reader & writer APIs for parsing & serialization accordingly:
 
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader
