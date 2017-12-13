@@ -16,7 +16,7 @@ matrix:
       scala: 2.12.4
     - os: linux
       sudo: false
-      jdk: openjdk8
+      jdk: oraclejdk7
       scala: 2.11.12
 
 script:

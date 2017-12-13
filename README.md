@@ -5,6 +5,16 @@
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
+## Goals
+
+Initially this library was developed for requirements of real-time bidding in ad-tech and goal was simple:
+do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & collections and back 
+and do it crazily fast w/o reflection, intermediate syntax tree or events, w/ minimum allocations & copying.
+
+It targets JDK 8 and above w/o any platform restrictions, but may works good enough on JDK 7 with Scala 2.11.
+
+Support of Scala.js & Scala Native is not a goal for the moment. 
+
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
@@ -169,8 +179,10 @@ Oracle JDK build 9.0.1+11 64-bit
 
 ## Acknowledges
 
-[Jsoniter Java](https://github.com/json-iterator/java)
+This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
+generated codecs for them but than evolved to have own core of mechanics for parsing & serialization. 
 
-[Kryo Macros](https://github.com/evolution-gaming/kryo-macros)
-
-[AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
+Idea to generate codecs by Scala macros & main details was borrowed from 
+[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of JSON domain. 
+  
+Other Scala macros features was peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
