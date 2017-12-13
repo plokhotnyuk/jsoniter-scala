@@ -180,7 +180,7 @@ Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubu
 Oracle JDK build 9.0.1+11 64-bit
 
 
-## Acknowledges
+## Acknowledgements
 
 This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
 generated codecs for them but than evolved to have own core of mechanics for parsing & serialization. 
