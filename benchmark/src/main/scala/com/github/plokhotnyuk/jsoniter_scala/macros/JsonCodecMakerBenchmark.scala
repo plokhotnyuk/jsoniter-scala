@@ -38,55 +38,66 @@ import scala.collection.mutable
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 class JsonCodecMakerBenchmark {
-  val missingReqFieldJson: Array[Byte] = """{}""".getBytes
-  val anyRefsJson: Array[Byte] = """{"s":"s","bd":1,"os":"os"}""".getBytes
-  val arraysJson: Array[Byte] = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
-  val bitSetsJson: Array[Byte] = """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes
-  val iterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
-  val mutableIterablesJson: Array[Byte] = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}""".getBytes
-  val mapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}""".getBytes
-  val mutableMapsJson: Array[Byte] = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
-  val intAndLongMapsJson: Array[Byte] = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}""".getBytes
-  val primitivesJson: Array[Byte] = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}""".getBytes
-  val extractFieldsJson: Array[Byte] =
-    """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}""".getBytes
-  val adtJson: Array[Byte] =
-    """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}""".getBytes
-  val asciiStringJson: Array[Byte] =
-    """"In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204. There are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."""".getBytes("UTF-8")
-  val nonAsciiStringJson: Array[Byte] =
-    """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"""".getBytes("UTF-8")
-  //Distance Matrix API call for top-10 by population cities in US:
-  //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
+  val missingReqFieldJsonString: String = """{}"""
+  val missingReqFieldJsonBytes: Array[Byte] = missingReqFieldJsonString.getBytes
   val anyRefsObj: AnyRefs = AnyRefs("s", 1, Some("os"))
+  val anyRefsJsonString: String = """{"s":"s","bd":1,"os":"os"}"""
+  val anyRefsJsonBytes: Array[Byte] = anyRefsJsonString.getBytes
   val arraysObj: Arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array(BigInt(7)))
+  val arraysJsonString: String = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}"""
+  val arraysJsonBytes: Array[Byte] = arraysJsonString.getBytes
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
+  val bitSetsJsonString: String = """{"bs":[1,2,3],"mbs":[4,5,6]}"""
+  val bitSetsJsonBytes: Array[Byte] = bitSetsJsonString.getBytes
   val iterablesObj: Iterables = Iterables(Vector("1", "2", "3"), Set(4, 5, 6), List(HashSet(1, 2), HashSet()))
+  val iterablesJsonString: String = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}"""
+  val iterablesJsonBytes: Array[Byte] = iterablesJsonString.getBytes
   val mutableIterablesObj: MutableIterables = MutableIterables(mutable.ArrayBuffer("1", "2", "3"), mutable.TreeSet(4, 5, 6),
     mutable.ResizableArray(mutable.Set(1, 2), mutable.Set()))
+  val mutableIterablesJsonString: String = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}"""
+  val mutableIterablesJsonBytes: Array[Byte] = mutableIterablesJsonString.getBytes
   val mapsObj: Maps = Maps(HashMap("1" -> 1.1, "2" -> 2.2), Map(1 -> HashMap(3L -> 3.3), 2 -> HashMap.empty[Long, Double]))
+  val mapsJsonString: String = """{"m":{"1":1.1,"2":2.2},"mm":{"1":{"3":3.3},"2":{}}}"""
+  val mapsJsonBytes: Array[Byte] = mapsJsonString.getBytes
   val mutableMapsObj: MutableMaps = MutableMaps(mutable.HashMap("1" -> 1.1, "2" -> 2.2),
     mutable.Map(1 -> mutable.OpenHashMap(3L -> 3.3), 2 -> mutable.OpenHashMap.empty[Long, Double]))
+  val mutableMapsJsonString: String = """{"m":{"2":2.2,"1":1.1},"mm":{"2":{},"1":{"3":3.3}}}"""
+  val mutableMapsJsonBytes: Array[Byte] = mutableMapsJsonString.getBytes
   val intAndLongMapsObj: IntAndLongMaps = IntAndLongMaps(IntMap(1 -> 1.1, 2 -> 2.2),
     mutable.LongMap(1L -> LongMap(3L -> 3.3), 2L -> LongMap.empty[Double]))
+  val intAndLongMapsJsonString: String = """{"m":{"1":1.1,"2":2.2},"mm":{"2":{},"1":{"3":3.3}}}"""
+  val intAndLongMapsJsonBytes: Array[Byte] = intAndLongMapsJsonString.getBytes
   val primitivesObj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
+  val primitivesJsonString: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
+  val primitivesJsonBytes: Array[Byte] = primitivesJsonString.getBytes
   val extractFieldsObj: ExtractFields = ExtractFields("s", 1L)
+  val extractFieldsJsonString: String =
+    """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}"""
+  val extractFieldsJsonBytes: Array[Byte] = extractFieldsJsonString.getBytes
   val adtObj: AdtBase = C(A(1), B("VVV"))
+  val adtJsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
+  val adtJsonBytes: Array[Byte] = adtJsonString.getBytes
   val asciiStringObj: String =
     "In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204. There are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created."
+  val asciiStringJsonString: String =
+    """"In computer science, an inverted index (also referred to as postings file or inverted file) is an index data structure storing a mapping from content, such as words or numbers, to its locations in a database file, or in a document or a set of documents (named in contrast to a Forward Index, which maps from documents to content). The purpose of an inverted index is to allow fast full text searches, at a cost of increased processing when a document is added to the database. The inverted file may be the database file itself, rather than its index. It is the most popular data structure used in document retrieval systems,[1] used on a large scale for example in search engines. Additionally, several significant general-purpose mainframe-based database management systems have used inverted list architectures, including ADABAS, DATACOM/DB, and Model 204. There are two main variants of inverted indexes: A record-level inverted index (or inverted file index or just inverted file) contains a list of references to documents for each word. A word-level inverted index (or full inverted index or inverted list) additionally contains the positions of each word within a document. The latter form offers more functionality (like phrase searches), but needs more processing power and space to be created.""""
+  val asciiStringJsonBytes: Array[Byte] = asciiStringJsonString.getBytes("UTF-8")
   val nonAsciiStringObj: String =
     "倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
+  val nonAsciiStringJsonString: String =
+    """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。""""
+  val nonAsciiStringJsonBytes: Array[Byte] = nonAsciiStringJsonString.getBytes("UTF-8")
   val googleMapsAPIObj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.json)
   val twitterAPIObj: Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.json)
 
   @Benchmark
   def missingReqFieldCirce(): String =
-    decode[MissingReqFields](new String(missingReqFieldJson, UTF_8)).fold(_.getMessage, _ => null)
+    decode[MissingReqFields](new String(missingReqFieldJsonBytes, UTF_8)).fold(_.getMessage, _ => null)
 
   @Benchmark
   def missingReqFieldJackson(): String =
     try {
-      jacksonMapper.readValue[MissingReqFields](missingReqFieldJson).toString // toString() should not be called
+      jacksonMapper.readValue[MissingReqFields](missingReqFieldJsonBytes).toString // toString() should not be called
     } catch {
       case ex: MismatchedInputException => ex.getMessage
     }
@@ -94,7 +105,7 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def missingReqFieldJsoniter(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, missingReqFieldJson).toString // toString() should not be called
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJsonBytes).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -102,7 +113,7 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def missingReqFieldJsoniterStackless(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionConfig).toString // toString() should not be called
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJsonBytes, stacklessExceptionConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -110,7 +121,7 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def missingReqFieldJsoniterStacklessNoDump(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, missingReqFieldJson, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
+      JsonReader.read(missingReqFieldCodec, missingReqFieldJsonBytes, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -118,34 +129,34 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def missingReqFieldPlay(): String =
     try {
-      Json.parse(missingReqFieldJson).as[MissingReqFields](missingReqFieldFormat).toString // toString() should not be called
+      Json.parse(missingReqFieldJsonBytes).as[MissingReqFields](missingReqFieldFormat).toString // toString() should not be called
     } catch {
       case ex: JsResultException => ex.getMessage
     }
 
   @Benchmark
-  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJson, UTF_8)).fold(throw _, x => x)
+  def readAnyRefsCirce(): AnyRefs = decode[AnyRefs](new String(anyRefsJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJson)
+  def readAnyRefsJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](anyRefsJsonBytes)
 
   @Benchmark
-  def readAnyRefsJsoniter(): AnyRefs = JsonReader.read(anyRefsCodec, anyRefsJson)
+  def readAnyRefsJsoniter(): AnyRefs = JsonReader.read(anyRefsCodec, anyRefsJsonBytes)
 
   @Benchmark
-  def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJson).as[AnyRefs](anyRefsFormat)
+  def readAnyRefsPlay(): AnyRefs = Json.parse(anyRefsJsonBytes).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
-  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJson, UTF_8)).fold(throw _, x => x)
+  def readArraysCirce(): Arrays = decode[Arrays](new String(arraysJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJson)
+  def readArraysJackson(): Arrays = jacksonMapper.readValue[Arrays](arraysJsonBytes)
 
   @Benchmark
-  def readArraysJsoniter(): Arrays = JsonReader.read(arraysCodec, arraysJson)
+  def readArraysJsoniter(): Arrays = JsonReader.read(arraysCodec, arraysJsonBytes)
 
   @Benchmark
-  def readArraysPlay(): Arrays = Json.parse(arraysJson).as[Arrays](arraysFormat)
+  def readArraysPlay(): Arrays = Json.parse(arraysJsonBytes).as[Arrays](arraysFormat)
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
@@ -153,28 +164,28 @@ class JsonCodecMakerBenchmark {
 */
 
   @Benchmark
-  def readBitSetsJackson(): BitSets = jacksonMapper.readValue[BitSets](bitSetsJson)
+  def readBitSetsJackson(): BitSets = jacksonMapper.readValue[BitSets](bitSetsJsonBytes)
 
   @Benchmark
-  def readBitSetsJsoniter(): BitSets = JsonReader.read(bitSetsCodec, bitSetsJson)
+  def readBitSetsJsoniter(): BitSets = JsonReader.read(bitSetsCodec, bitSetsJsonBytes)
 
   @Benchmark
-  def readBitSetsPlay(): BitSets = Json.parse(bitSetsJson).as[BitSets](bitSetsFormat)
+  def readBitSetsPlay(): BitSets = Json.parse(bitSetsJsonBytes).as[BitSets](bitSetsFormat)
 
   @Benchmark
-  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJson, UTF_8)).fold(throw _, x => x)
+  def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJson)
+  def readIterablesJackson(): Iterables = jacksonMapper.readValue[Iterables](iterablesJsonBytes)
 
   @Benchmark
-  def readIterablesJsoniter(): Iterables = JsonReader.read(iterablesCodec, iterablesJson)
+  def readIterablesJsoniter(): Iterables = JsonReader.read(iterablesCodec, iterablesJsonBytes)
 
   @Benchmark
-  def readIterablesPlay(): Iterables = Json.parse(iterablesJson).as[Iterables](iterablesFormat)
+  def readIterablesPlay(): Iterables = Json.parse(iterablesJsonBytes).as[Iterables](iterablesFormat)
 
   @Benchmark
-  def readMutableIterablesCirce(): MutableIterables = decode[MutableIterables](new String(mutableIterablesJson, UTF_8)).fold(throw _, x => x)
+  def readMutableIterablesCirce(): MutableIterables = decode[MutableIterables](new String(mutableIterablesJsonBytes, UTF_8)).fold(throw _, x => x)
 
 /* FIXME: Jackson-module-scala doesn't support parsing of tree sets
   @Benchmark
@@ -182,22 +193,22 @@ class JsonCodecMakerBenchmark {
 */
 
   @Benchmark
-  def readMutableIterablesJsoniter(): MutableIterables = JsonReader.read(mutableIterablesCodec, mutableIterablesJson)
+  def readMutableIterablesJsoniter(): MutableIterables = JsonReader.read(mutableIterablesCodec, mutableIterablesJsonBytes)
 
   @Benchmark
-  def readMutableIterablesPlay(): MutableIterables = Json.parse(mutableIterablesJson).as[MutableIterables](mutableIterablesFormat)
+  def readMutableIterablesPlay(): MutableIterables = Json.parse(mutableIterablesJsonBytes).as[MutableIterables](mutableIterablesFormat)
 
   @Benchmark
-  def readMapsCirce(): Maps = decode[Maps](new String(mapsJson, UTF_8)) .fold(throw _, x => x)
+  def readMapsCirce(): Maps = decode[Maps](new String(mapsJsonBytes, UTF_8)) .fold(throw _, x => x)
 
   @Benchmark
-  def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJson)
+  def readMapsJackson(): Maps = jacksonMapper.readValue[Maps](mapsJsonBytes)
 
   @Benchmark
-  def readMapsJsoniter(): Maps = JsonReader.read(mapsCodec, mapsJson)
+  def readMapsJsoniter(): Maps = JsonReader.read(mapsCodec, mapsJsonBytes)
 
   @Benchmark
-  def readMapsPlay(): Maps = Json.parse(mapsJson).as[Maps](mapsFormat)
+  def readMapsPlay(): Maps = Json.parse(mapsJsonBytes).as[Maps](mapsFormat)
 
 /* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
@@ -205,13 +216,13 @@ class JsonCodecMakerBenchmark {
 */
 
   @Benchmark
-  def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJson)
+  def readMutableMapsJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](mutableMapsJsonBytes)
 
   @Benchmark
-  def readMutableMapsJsoniter(): MutableMaps = JsonReader.read(mutableMapsCodec, mutableMapsJson)
+  def readMutableMapsJsoniter(): MutableMaps = JsonReader.read(mutableMapsCodec, mutableMapsJsonBytes)
 
   @Benchmark
-  def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJson).as[MutableMaps](mutableMapsFormat)
+  def readMutableMapsPlay(): MutableMaps = Json.parse(mutableMapsJsonBytes).as[MutableMaps](mutableMapsFormat)
 
 /* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
@@ -224,68 +235,68 @@ class JsonCodecMakerBenchmark {
 */
 
   @Benchmark
-  def readIntAndLongMapsJsoniter(): IntAndLongMaps = JsonReader.read(intAndLongMapsCodec, intAndLongMapsJson)
+  def readIntAndLongMapsJsoniter(): IntAndLongMaps = JsonReader.read(intAndLongMapsCodec, intAndLongMapsJsonBytes)
 
   @Benchmark
-  def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJson).as[IntAndLongMaps](intAndLongMapsFormat)
+  def readIntAndLongMapsPlay(): IntAndLongMaps = Json.parse(intAndLongMapsJsonBytes).as[IntAndLongMaps](intAndLongMapsFormat)
 
   @Benchmark
-  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJson, UTF_8)).fold(throw _, x => x)
+  def readPrimitivesCirce(): Primitives = decode[Primitives](new String(primitivesJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJson)
+  def readPrimitivesJackson(): Primitives = jacksonMapper.readValue[Primitives](primitivesJsonBytes)
 
   @Benchmark
-  def readPrimitivesJsoniter(): Primitives = JsonReader.read(primitivesCodec, primitivesJson)
+  def readPrimitivesJsoniter(): Primitives = JsonReader.read(primitivesCodec, primitivesJsonBytes)
 
   @Benchmark
-  def readPrimitivesPlay(): Primitives = Json.parse(primitivesJson).as[Primitives](primitivesFormat)
+  def readPrimitivesPlay(): Primitives = Json.parse(primitivesJsonBytes).as[Primitives](primitivesFormat)
 
   @Benchmark
-  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJson, UTF_8)).fold(throw _, x => x)
+  def readExtractFieldsCirce(): ExtractFields = decode[ExtractFields](new String(extractFieldsJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJson)
+  def readExtractFieldsJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](extractFieldsJsonBytes)
 
   @Benchmark
-  def readExtractFieldsJsoniter(): ExtractFields = JsonReader.read(extractFieldsCodec, extractFieldsJson)
+  def readExtractFieldsJsoniter(): ExtractFields = JsonReader.read(extractFieldsCodec, extractFieldsJsonBytes)
 
   @Benchmark
-  def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJson).as[ExtractFields](extractFieldsFormat)
+  def readExtractFieldsPlay(): ExtractFields = Json.parse(extractFieldsJsonBytes).as[ExtractFields](extractFieldsFormat)
 
   @Benchmark
-  def readAdtCirce(): AdtBase = decode[AdtBase](new String(adtJson, UTF_8)).fold(throw _, x => x)
+  def readAdtCirce(): AdtBase = decode[AdtBase](new String(adtJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readAdtJackson(): AdtBase = jacksonMapper.readValue[AdtBase](adtJson)
+  def readAdtJackson(): AdtBase = jacksonMapper.readValue[AdtBase](adtJsonBytes)
 
   @Benchmark
-  def readAdtJsoniter(): AdtBase = JsonReader.read(adtCodec, adtJson)
+  def readAdtJsoniter(): AdtBase = JsonReader.read(adtCodec, adtJsonBytes)
 
   @Benchmark
-  def readAdtPlay(): AdtBase = Json.parse(adtJson).as[AdtBase](adtFormat)
+  def readAdtPlay(): AdtBase = Json.parse(adtJsonBytes).as[AdtBase](adtFormat)
 
   @Benchmark
-  def readAsciiStringCirce(): String = decode[String](new String(asciiStringJson, UTF_8)).fold(throw _, x => x)
+  def readAsciiStringCirce(): String = decode[String](new String(asciiStringJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readAsciiStringJackson(): String = jacksonMapper.readValue[String](asciiStringJson)
+  def readAsciiStringJackson(): String = jacksonMapper.readValue[String](asciiStringJsonBytes)
 
   @Benchmark
-  def readAsciiStringJsoniter(): String = JsonReader.read(stringCodec, asciiStringJson)
+  def readAsciiStringJsoniter(): String = JsonReader.read(stringCodec, asciiStringJsonBytes)
 
 /* FIXME: find proper way to parse string value in Play JSON
   @Benchmark
   def readAsciiStringPlay(): String = Json.parse(asciiStringJson).toString()
 */
   @Benchmark
-  def readNonAsciiStringCirce(): String = decode[String](new String(nonAsciiStringJson, UTF_8)).fold(throw _, x => x)
+  def readNonAsciiStringCirce(): String = decode[String](new String(nonAsciiStringJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readNonAsciiStringJackson(): String = jacksonMapper.readValue[String](nonAsciiStringJson)
+  def readNonAsciiStringJackson(): String = jacksonMapper.readValue[String](nonAsciiStringJsonBytes)
 
   @Benchmark
-  def readNonAsciiStringJsoniter(): String = JsonReader.read(stringCodec, nonAsciiStringJson)
+  def readNonAsciiStringJsoniter(): String = JsonReader.read(stringCodec, nonAsciiStringJsonBytes)
 
 /* FIXME: find proper way to parse string value in Play JSON
   @Benchmark
