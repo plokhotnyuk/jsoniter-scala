@@ -327,7 +327,7 @@ class JsonCodecMakerBenchmark {
   def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(TwitterAPI.jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
 
   @Benchmark
-  def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeAnyRefsCirce(): Array[Byte] = printer.pretty(anyRefsObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeAnyRefsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(anyRefsObj)
@@ -342,7 +342,7 @@ class JsonCodecMakerBenchmark {
   def writeAnyRefsPlay(): Array[Byte] = Json.toBytes(Json.toJson(anyRefsObj)(anyRefsFormat))
 
   @Benchmark
-  def writeArraysCirce(): Array[Byte] = arraysObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeArraysCirce(): Array[Byte] = printer.pretty(arraysObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeArraysJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(arraysObj)
@@ -355,7 +355,7 @@ class JsonCodecMakerBenchmark {
 
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
-  def writeBitSetsCirce(): Array[Byte] = bitSetsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeBitSetsCirce(): Array[Byte] = printer.pretty(bitSetsObj.asJson).getBytes(UTF_8)
 */
 
   @Benchmark
@@ -368,7 +368,7 @@ class JsonCodecMakerBenchmark {
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
 
   @Benchmark
-  def writeIterablesCirce(): Array[Byte] = iterablesObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeIterablesCirce(): Array[Byte] = printer.pretty(iterablesObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(iterablesObj)
@@ -380,7 +380,7 @@ class JsonCodecMakerBenchmark {
   def writeIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(iterablesObj)(iterablesFormat))
 
   @Benchmark
-  def writeMutableIterablesCirce(): Array[Byte] = mutableIterablesObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeMutableIterablesCirce(): Array[Byte] = printer.pretty(mutableIterablesObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeMutableIterablesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableIterablesObj)
@@ -392,7 +392,7 @@ class JsonCodecMakerBenchmark {
   def writeMutableIterablesPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableIterablesObj)(mutableIterablesFormat))
 
   @Benchmark
-  def writeMapsCirce(): Array[Byte] = mapsObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeMapsCirce(): Array[Byte] = printer.pretty(mapsObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mapsObj)
@@ -404,7 +404,7 @@ class JsonCodecMakerBenchmark {
   def writeMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mapsObj)(mapsFormat))
 
   @Benchmark
-  def writeMutableMapsCirce(): Array[Byte] = mutableMapsObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeMutableMapsCirce(): Array[Byte] = printer.pretty(mutableMapsObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeMutableMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(mutableMapsObj)
@@ -417,7 +417,7 @@ class JsonCodecMakerBenchmark {
 
 /* FIXME: Circe doesn't support writing of int & long maps
   @Benchmark
-  def writeIntAndLongMapsCirce(): Array[Byte] = intAndLongMapsObj.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+  def writeIntAndLongMapsCirce(): Array[Byte] = printer.pretty(intAndLongMapsObj.asJson).getBytes(UTF_8)
 */
 
   @Benchmark
@@ -430,7 +430,7 @@ class JsonCodecMakerBenchmark {
   def writeIntAndLongMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(intAndLongMapsObj)(intAndLongMapsFormat))
 
   @Benchmark
-  def writePrimitivesCirce(): Array[Byte] = primitivesObj.asJson.noSpaces.getBytes(UTF_8)
+  def writePrimitivesCirce(): Array[Byte] = printer.pretty(primitivesObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writePrimitivesJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(primitivesObj)
@@ -445,7 +445,7 @@ class JsonCodecMakerBenchmark {
   def writePrimitivesPlay(): Array[Byte] = Json.toBytes(Json.toJson(primitivesObj)(primitivesFormat))
 
   @Benchmark
-  def writeAdtCirce(): Array[Byte] = adtObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeAdtCirce(): Array[Byte] = printer.pretty(adtObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeAdtJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(adtObj)
@@ -457,7 +457,7 @@ class JsonCodecMakerBenchmark {
   def writeAdtPlay(): Array[Byte] = Json.toBytes(Json.toJson(adtObj)(adtFormat))
 
   @Benchmark
-  def writeAsciiStringCirce(): Array[Byte] = asciiStringObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeAsciiStringCirce(): Array[Byte] = printer.pretty(asciiStringObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeAsciiStringJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(asciiStringObj)
@@ -472,7 +472,7 @@ class JsonCodecMakerBenchmark {
   def writeAsciiStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(asciiStringObj))
 
   @Benchmark
-  def writeNonAsciiStringCirce(): Array[Byte] = nonAsciiStringObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeNonAsciiStringCirce(): Array[Byte] = printer.pretty(nonAsciiStringObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeNonAsciiStringJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(nonAsciiStringObj)
@@ -487,7 +487,7 @@ class JsonCodecMakerBenchmark {
   def writeNonAsciiStringPlay(): Array[Byte] = Json.toBytes(Json.toJson(nonAsciiStringObj))
 
   @Benchmark
-  def writeGoogleMapsAPICirce(): Array[Byte] = googleMapsAPIObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeGoogleMapsAPICirce(): Array[Byte] = printer.pretty(googleMapsAPIObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeGoogleMapsAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(googleMapsAPIObj)
@@ -502,7 +502,7 @@ class JsonCodecMakerBenchmark {
   def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(googleMapsAPIObj)(googleMapsAPIFormat))
 
   @Benchmark
-  def writeTwitterAPICirce(): Array[Byte] = twitterAPIObj.asJson.noSpaces.getBytes(UTF_8)
+  def writeTwitterAPICirce(): Array[Byte] = printer.pretty(twitterAPIObj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def writeTwitterAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(twitterAPIObj)

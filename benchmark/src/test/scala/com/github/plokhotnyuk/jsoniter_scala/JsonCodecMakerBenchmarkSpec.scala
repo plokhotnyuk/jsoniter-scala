@@ -162,8 +162,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeNonAsciiStringJsoniter()) shouldBe benchmark.nonAsciiStringJsonString
       toString(benchmark.writeNonAsciiStringJsoniterPrealloc()) shouldBe benchmark.nonAsciiStringJsonString
       toString(benchmark.writeNonAsciiStringPlay()) shouldBe benchmark.nonAsciiStringJsonString
-      // FIXME: circe serializes empty collections
-      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeGoogleMapsAPICirce()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
