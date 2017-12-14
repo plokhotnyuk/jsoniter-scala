@@ -104,77 +104,77 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readTwitterAPIPlay() shouldBe benchmark.twitterAPIObj
     }
     "serialize properly" in {
-      toString(benchmark.writeAnyRefsCirce()) shouldBe toString(benchmark.anyRefsJsonBytes)
-      toString(benchmark.writeAnyRefsJackson()) shouldBe toString(benchmark.anyRefsJsonBytes)
-      toString(benchmark.writeAnyRefsJsoniter()) shouldBe toString(benchmark.anyRefsJsonBytes)
-      toString(benchmark.writeAnyRefsJsoniterPrealloc()) shouldBe toString(benchmark.anyRefsJsonBytes)
-      toString(benchmark.writeAnyRefsPlay()) shouldBe toString(benchmark.anyRefsJsonBytes)
-      toString(benchmark.writeArraysCirce()) shouldBe toString(benchmark.arraysJsonBytes)
-      toString(benchmark.writeArraysJackson()) shouldBe toString(benchmark.arraysJsonBytes)
-      toString(benchmark.writeArraysJsoniter()) shouldBe toString(benchmark.arraysJsonBytes)
-      toString(benchmark.writeArraysPlay()) shouldBe toString(benchmark.arraysJsonBytes)
+      toString(benchmark.writeAnyRefsCirce()) shouldBe benchmark.anyRefsJsonString
+      toString(benchmark.writeAnyRefsJackson()) shouldBe benchmark.anyRefsJsonString
+      toString(benchmark.writeAnyRefsJsoniter()) shouldBe benchmark.anyRefsJsonString
+      toString(benchmark.writeAnyRefsJsoniterPrealloc()) shouldBe benchmark.anyRefsJsonString
+      toString(benchmark.writeAnyRefsPlay()) shouldBe benchmark.anyRefsJsonString
+      toString(benchmark.writeArraysCirce()) shouldBe benchmark.arraysJsonString
+      toString(benchmark.writeArraysJackson()) shouldBe benchmark.arraysJsonString
+      toString(benchmark.writeArraysJsoniter()) shouldBe benchmark.arraysJsonString
+      toString(benchmark.writeArraysPlay()) shouldBe benchmark.arraysJsonString
       //FIXME: Circe doesn't support writing of bitsets
-      // toString(benchmark.writeBitSetsCirce()) shouldBe toString(benchmark.bitSetsJson)
-      toString(benchmark.writeBitSetsJackson()) shouldBe toString(benchmark.bitSetsJsonBytes)
-      toString(benchmark.writeBitSetsJsoniter()) shouldBe toString(benchmark.bitSetsJsonBytes)
-      toString(benchmark.writeBitSetsPlay()) shouldBe toString(benchmark.bitSetsJsonBytes)
-      toString(benchmark.writeIterablesCirce()) shouldBe toString(benchmark.iterablesJsonBytes)
-      toString(benchmark.writeIterablesJackson()) shouldBe toString(benchmark.iterablesJsonBytes)
-      toString(benchmark.writeIterablesJsoniter()) shouldBe toString(benchmark.iterablesJsonBytes)
-      toString(benchmark.writeIterablesPlay()) shouldBe toString(benchmark.iterablesJsonBytes)
-      toString(benchmark.writeMutableIterablesCirce()) shouldBe toString(benchmark.mutableIterablesJsonBytes)
-      toString(benchmark.writeMutableIterablesJackson()) shouldBe toString(benchmark.mutableIterablesJsonBytes)
-      toString(benchmark.writeMutableIterablesJsoniter()) shouldBe toString(benchmark.mutableIterablesJsonBytes)
-      toString(benchmark.writeMutableIterablesPlay()) shouldBe toString(benchmark.mutableIterablesJsonBytes)
-      toString(benchmark.writeMapsCirce()) shouldBe toString(benchmark.mapsJsonBytes)
+      // toString(benchmark.writeBitSetsCirce()) shouldBe benchmark.bitSetsJsonString
+      toString(benchmark.writeBitSetsJackson()) shouldBe benchmark.bitSetsJsonString
+      toString(benchmark.writeBitSetsJsoniter()) shouldBe benchmark.bitSetsJsonString
+      toString(benchmark.writeBitSetsPlay()) shouldBe benchmark.bitSetsJsonString
+      toString(benchmark.writeIterablesCirce()) shouldBe benchmark.iterablesJsonString
+      toString(benchmark.writeIterablesJackson()) shouldBe benchmark.iterablesJsonString
+      toString(benchmark.writeIterablesJsoniter()) shouldBe benchmark.iterablesJsonString
+      toString(benchmark.writeIterablesPlay()) shouldBe benchmark.iterablesJsonString
+      toString(benchmark.writeMutableIterablesCirce()) shouldBe benchmark.mutableIterablesJsonString
+      toString(benchmark.writeMutableIterablesJackson()) shouldBe benchmark.mutableIterablesJsonString
+      toString(benchmark.writeMutableIterablesJsoniter()) shouldBe benchmark.mutableIterablesJsonString
+      toString(benchmark.writeMutableIterablesPlay()) shouldBe benchmark.mutableIterablesJsonString
+      toString(benchmark.writeMapsCirce()) shouldBe benchmark.mapsJsonString
       // FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
-      //toString(benchmark.writeMapsJackson()) shouldBe toString(benchmark.mapsJson)
-      toString(benchmark.writeMapsJsoniter()) shouldBe toString(benchmark.mapsJsonBytes)
-      toString(benchmark.writeMapsPlay()) shouldBe toString(benchmark.mapsJsonBytes)
-      toString(benchmark.writeMutableMapsCirce()) shouldBe toString(benchmark.mutableMapsJsonBytes)
+      //toString(benchmark.writeMapsJackson()) shouldBe benchmark.mapsJsonString
+      toString(benchmark.writeMapsJsoniter()) shouldBe benchmark.mapsJsonString
+      toString(benchmark.writeMapsPlay()) shouldBe benchmark.mapsJsonString
+      toString(benchmark.writeMutableMapsCirce()) shouldBe benchmark.mutableMapsJsonString
       // FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
-      //toString(benchmark.writeMutableMapsJackson()) shouldBe toString(benchmark.mutableMapsJson)
-      toString(benchmark.writeMutableMapsJsoniter()) shouldBe toString(benchmark.mutableMapsJsonBytes)
-      toString(benchmark.writeMutableMapsPlay()) shouldBe toString(benchmark.mutableMapsJsonBytes)
+      //toString(benchmark.writeMutableMapsJackson()) shouldBe benchmark.mutableMapsJsonString
+      toString(benchmark.writeMutableMapsJsoniter()) shouldBe benchmark.mutableMapsJsonString
+      toString(benchmark.writeMutableMapsPlay()) shouldBe benchmark.mutableMapsJsonString
       //FIXME: Circe doesn't support writing of int & long maps
-      // toString(benchmark.writeIntAndLongMapsCirce()) shouldBe toString(benchmark.intAndLongMapsJson)
+      // toString(benchmark.writeIntAndLongMapsCirce()) shouldBe benchmark.intAndLongMapsJsonString
       // FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
-      //toString(benchmark.writeIntAndLongMapsJackson()) shouldBe toString(benchmark.intAndLongMapsJson)
-      toString(benchmark.writeIntAndLongMapsJsoniter()) shouldBe toString(benchmark.intAndLongMapsJsonBytes)
-      toString(benchmark.writeIntAndLongMapsPlay()) shouldBe toString(benchmark.intAndLongMapsJsonBytes)
-      toString(benchmark.writePrimitivesCirce()) shouldBe toString(benchmark.primitivesJsonBytes)
-      toString(benchmark.writePrimitivesJackson()) shouldBe toString(benchmark.primitivesJsonBytes)
-      toString(benchmark.writePrimitivesJsoniter()) shouldBe toString(benchmark.primitivesJsonBytes)
-      toString(benchmark.writePrimitivesJsoniterPrealloc()) shouldBe toString(benchmark.primitivesJsonBytes)
-      toString(benchmark.writePrimitivesPlay()) shouldBe toString(benchmark.primitivesJsonBytes)
+      //toString(benchmark.writeIntAndLongMapsJackson()) shouldBe benchmark.intAndLongMapsJsonString
+      toString(benchmark.writeIntAndLongMapsJsoniter()) shouldBe benchmark.intAndLongMapsJsonString
+      toString(benchmark.writeIntAndLongMapsPlay()) shouldBe benchmark.intAndLongMapsJsonString
+      toString(benchmark.writePrimitivesCirce()) shouldBe benchmark.primitivesJsonString
+      toString(benchmark.writePrimitivesJackson()) shouldBe benchmark.primitivesJsonString
+      toString(benchmark.writePrimitivesJsoniter()) shouldBe benchmark.primitivesJsonString
+      toString(benchmark.writePrimitivesJsoniterPrealloc()) shouldBe benchmark.primitivesJsonString
+      toString(benchmark.writePrimitivesPlay()) shouldBe benchmark.primitivesJsonString
       // FIXME: circe appends discriminator as a last field
-      //toString(benchmark.writeAdtCirce()) shouldBe toString(benchmark.adtJson)
-      toString(benchmark.writeAdtJackson()) shouldBe toString(benchmark.adtJsonBytes)
-      toString(benchmark.writeAdtJsoniter()) shouldBe toString(benchmark.adtJsonBytes)
-      toString(benchmark.writeAdtPlay()) shouldBe toString(benchmark.adtJsonBytes)
-      toString(benchmark.writeAsciiStringCirce()) shouldBe toString(benchmark.asciiStringJsonBytes)
-      toString(benchmark.writeAsciiStringJackson()) shouldBe toString(benchmark.asciiStringJsonBytes)
-      toString(benchmark.writeAsciiStringJsoniter()) shouldBe toString(benchmark.asciiStringJsonBytes)
-      toString(benchmark.writeAsciiStringJsoniterPrealloc()) shouldBe toString(benchmark.asciiStringJsonBytes)
-      toString(benchmark.writeAsciiStringPlay()) shouldBe toString(benchmark.asciiStringJsonBytes)
-      toString(benchmark.writeNonAsciiStringCirce()) shouldBe toString(benchmark.nonAsciiStringJsonBytes)
-      toString(benchmark.writeNonAsciiStringJackson()) shouldBe toString(benchmark.nonAsciiStringJsonBytes)
-      toString(benchmark.writeNonAsciiStringJsoniter()) shouldBe toString(benchmark.nonAsciiStringJsonBytes)
-      toString(benchmark.writeNonAsciiStringJsoniterPrealloc()) shouldBe toString(benchmark.nonAsciiStringJsonBytes)
-      toString(benchmark.writeNonAsciiStringPlay()) shouldBe toString(benchmark.nonAsciiStringJsonBytes)
+      //toString(benchmark.writeAdtCirce()) shouldBe benchmark.adtJsonString
+      toString(benchmark.writeAdtJackson()) shouldBe benchmark.adtJsonString
+      toString(benchmark.writeAdtJsoniter()) shouldBe benchmark.adtJsonString
+      toString(benchmark.writeAdtPlay()) shouldBe benchmark.adtJsonString
+      toString(benchmark.writeAsciiStringCirce()) shouldBe benchmark.asciiStringJsonString
+      toString(benchmark.writeAsciiStringJackson()) shouldBe benchmark.asciiStringJsonString
+      toString(benchmark.writeAsciiStringJsoniter()) shouldBe benchmark.asciiStringJsonString
+      toString(benchmark.writeAsciiStringJsoniterPrealloc()) shouldBe benchmark.asciiStringJsonString
+      toString(benchmark.writeAsciiStringPlay()) shouldBe benchmark.asciiStringJsonString
+      toString(benchmark.writeNonAsciiStringCirce()) shouldBe benchmark.nonAsciiStringJsonString
+      toString(benchmark.writeNonAsciiStringJackson()) shouldBe benchmark.nonAsciiStringJsonString
+      toString(benchmark.writeNonAsciiStringJsoniter()) shouldBe benchmark.nonAsciiStringJsonString
+      toString(benchmark.writeNonAsciiStringJsoniterPrealloc()) shouldBe benchmark.nonAsciiStringJsonString
+      toString(benchmark.writeNonAsciiStringPlay()) shouldBe benchmark.nonAsciiStringJsonString
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe toString(GoogleMapsAPI.compactJson)
-      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe toString(GoogleMapsAPI.compactJson)
+      //toString(benchmark.writeGoogleMapsAPICirce()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeGoogleMapsAPIJackson()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeGoogleMapsAPIJsoniter()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeGoogleMapsAPIJsoniterPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeGoogleMapsAPIPlay()) shouldBe GoogleMapsAPI.compactJsonString
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeTwitterAPICirce()) shouldBe toString(TwitterAPI.compactJson)
-      toString(benchmark.writeTwitterAPIJackson()) shouldBe toString(TwitterAPI.compactJson)
-      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe toString(TwitterAPI.compactJson)
-      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe toString(TwitterAPI.compactJson)
+      //toString(benchmark.writeTwitterAPICirce()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeTwitterAPIJackson()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe TwitterAPI.compactJsonString
       // FIXME: Play-JSON serializes empty collections
-      //toString(benchmark.writeTwitterAPIPlay()) shouldBe toString(TwitterAPI.compactJson)
+      //toString(benchmark.writeTwitterAPIPlay()) shouldBe TwitterAPI.compactJsonString
     }
   }
 

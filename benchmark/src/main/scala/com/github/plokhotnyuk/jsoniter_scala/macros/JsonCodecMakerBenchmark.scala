@@ -87,8 +87,8 @@ class JsonCodecMakerBenchmark {
   val nonAsciiStringJsonString: String =
     """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。""""
   val nonAsciiStringJsonBytes: Array[Byte] = nonAsciiStringJsonString.getBytes("UTF-8")
-  val googleMapsAPIObj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.json)
-  val twitterAPIObj: Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.json)
+  val googleMapsAPIObj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.jsonBytes)
+  val twitterAPIObj: Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.jsonBytes)
 
   @Benchmark
   def missingReqFieldCirce(): String =
@@ -303,28 +303,28 @@ class JsonCodecMakerBenchmark {
   def readNonAsciiStringPlay(): String = Json.parse(nonAsciiStringJson).toString()
 */
   @Benchmark
-  def readGoogleMapsAPICirce(): DistanceMatrix = decode[DistanceMatrix](new String(GoogleMapsAPI.json, UTF_8)).fold(throw _, x => x)
+  def readGoogleMapsAPICirce(): DistanceMatrix = decode[DistanceMatrix](new String(GoogleMapsAPI.jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readGoogleMapsAPIJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](GoogleMapsAPI.json)
+  def readGoogleMapsAPIJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](GoogleMapsAPI.jsonBytes)
 
   @Benchmark
-  def readGoogleMapsAPIJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.json)
+  def readGoogleMapsAPIJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, GoogleMapsAPI.jsonBytes)
 
   @Benchmark
-  def readGoogleMapsAPIPlay(): DistanceMatrix = Json.parse(GoogleMapsAPI.json).as[DistanceMatrix](googleMapsAPIFormat)
+  def readGoogleMapsAPIPlay(): DistanceMatrix = Json.parse(GoogleMapsAPI.jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
 
   @Benchmark
-  def readTwitterAPICirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(TwitterAPI.json, UTF_8)).fold(throw _, x => x)
+  def readTwitterAPICirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(TwitterAPI.jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readTwitterAPIJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](TwitterAPI.json)
+  def readTwitterAPIJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](TwitterAPI.jsonBytes)
 
   @Benchmark
-  def readTwitterAPIJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.json)
+  def readTwitterAPIJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, TwitterAPI.jsonBytes)
 
   @Benchmark
-  def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(TwitterAPI.json).as[Seq[Tweet]](twitterAPIFormat)
+  def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(TwitterAPI.jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
 
   @Benchmark
   def writeAnyRefsCirce(): Array[Byte] = anyRefsObj.asJson.noSpaces.getBytes(UTF_8)
