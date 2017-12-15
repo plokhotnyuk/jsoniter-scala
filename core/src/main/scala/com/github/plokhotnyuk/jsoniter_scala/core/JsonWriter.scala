@@ -130,6 +130,51 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Double): Unit = writeDouble(x)
 
+  def writeValAsString(x: BigDecimal): Unit =
+    if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeValAsString(x: BigInt): Unit =
+    if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeValAsString(x: Boolean): Unit =
+    if (x) writeBytes('"', 't', 'r', 'u', 'e', '"') else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')
+
+  def writeValAsString(x: Byte): Unit = {
+    writeBytes('"')
+    writeInt(x.toInt)
+    writeBytes('"')
+  }
+
+  def writeValAsString(x: Short): Unit = {
+    writeBytes('"')
+    writeInt(x.toInt)
+    writeBytes('"')
+  }
+
+  def writeValAsString(x: Int): Unit = {
+    writeBytes('"')
+    writeInt(x)
+    writeBytes('"')
+  }
+
+  def writeValAsString(x: Long): Unit = {
+    writeBytes('"')
+    writeLong(x)
+    writeBytes('"')
+  }
+
+  def writeValAsString(x: Float): Unit = {
+    writeBytes('"')
+    writeFloat(x)
+    writeBytes('"')
+  }
+
+  def writeValAsString(x: Double): Unit = {
+    writeBytes('"')
+    writeDouble(x)
+    writeBytes('"')
+  }
+
   def writeNull(): Unit = writeBytes('n', 'u', 'l', 'l')
 
   def writeArrayStart(): Unit = writeNestedStart('[')
@@ -239,6 +284,29 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 3) = b4
     buf(pos + 4) = b5
     pos + 5
+  }
+
+  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): Unit = count = {
+    val pos = ensureBufferCapacity(6)
+    buf(pos) = b1
+    buf(pos + 1) = b2
+    buf(pos + 2) = b3
+    buf(pos + 3) = b4
+    buf(pos + 4) = b5
+    buf(pos + 5) = b6
+    pos + 6
+  }
+
+  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte, b7: Byte): Unit = count = {
+    val pos = ensureBufferCapacity(7)
+    buf(pos) = b1
+    buf(pos + 1) = b2
+    buf(pos + 2) = b3
+    buf(pos + 3) = b4
+    buf(pos + 4) = b5
+    buf(pos + 5) = b6
+    buf(pos + 6) = b7
+    pos + 7
   }
 
   private def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {

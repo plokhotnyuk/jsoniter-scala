@@ -77,9 +77,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def readKeyAsCharBuf(): Int = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseString(0, charBuf.length, head)
-    readColon()
+    readColonToken()
     x
   }
 
@@ -88,88 +88,88 @@ final class JsonReader private[jsoniter_scala](
     else decodeError("expected string value")
 
   def readKeyAsString(): String = {
-    readParentheses()
+    readParenthesesToken()
     val len = parseString(0, charBuf.length, head)
-    readColon()
+    readColonToken()
     new String(charBuf, 0, len)
   }
 
   def readKeyAsBoolean(): Boolean = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseBoolean(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsByte(): Byte = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseByte(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsChar(): Char = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseChar(head)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsShort(): Short = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseShort(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x.toShort
   }
 
   def readKeyAsInt(): Int = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseInt(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsLong(): Long = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseLong(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsFloat(): Float = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseFloat(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsDouble(): Double = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseDouble(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsBigInt(): BigInt = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseBigInt(isToken = false)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readKeyAsBigDecimal(): BigDecimal = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseBigDecimal(isToken = false, null)
-    readParenthesesWithColon()
+    readParenthesesByteWithColonToken()
     x
   }
 
   def readByte(): Byte = parseByte(isToken = true)
 
   def readChar(): Char = {
-    readParentheses()
+    readParenthesesToken()
     val x = parseChar(head)
-    readParentheses()
+    readParenthesesByte()
     x
   }
 
@@ -195,6 +195,71 @@ final class JsonReader private[jsoniter_scala](
     else decodeError("expected string value or null")
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
+
+  def readStringAsByte(): Byte = {
+    readParenthesesToken()
+    val x = parseByte(isToken = false)
+    readParenthesesByte()
+    x
+  }
+
+  def readStringAsShort(): Short = {
+    readParenthesesToken()
+    val x = parseShort(isToken = false)
+    readParenthesesByte()
+    x
+  }
+
+  def readStringAsInt(): Int = {
+    readParenthesesToken()
+    val x = parseInt(isToken = false)
+    readParenthesesByte()
+    x
+  }
+
+  def readStringAsLong(): Long = {
+    readParenthesesToken()
+    val x = parseLong(isToken = false)
+    readParenthesesByte()
+    x
+  }
+
+  def readStringAsDouble(): Double = {
+    readParenthesesToken()
+    val x = parseDouble(isToken = false)
+    readParenthesesByte()
+    x
+  }
+
+  def readStringAsFloat(): Float = {
+    readParenthesesToken()
+    val x = parseFloat(isToken = false)
+    readParenthesesByte()
+    x
+  }
+
+  def readStringAsBigInt(default: BigInt): BigInt =
+    if (isNextToken('"', head)) {
+      val x = parseBigInt(isToken = false, default)
+      readParenthesesByte()
+      x
+    } else if (isCurrentToken('n', head)) parseNull(default, head)
+    else decodeError("expected string value or null")
+
+  def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
+    if (isNextToken('"', head)) {
+      val x = parseBigDecimal(isToken = false, default)
+      readParenthesesByte()
+      x
+    } else if (isCurrentToken('n', head)) parseNull(default, head)
+    else decodeError("expected string value or null")
+
+  def readStringAsBoolean(): Boolean = {
+    readParenthesesToken()
+    val x = parseBoolean(isToken = false)
+    readParenthesesByte()
+    x
+  }
 
   def readNull[A](default: A): A =
     if (isNextToken('n', head)) parseNull(default, head)
@@ -383,13 +448,16 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
-  private def readParentheses(): Unit = if (!isNextToken('"', head)) decodeError("expected '\"'")
+  private def readParenthesesToken(): Unit = if (!isNextToken('"', head)) decodeError("expected '\"'")
 
-  private def readParenthesesWithColon(): Unit =
-    if (nextByte(head) != '"') decodeError("expected '\"'")
-    else readColon()
+  private def readParenthesesByteWithColonToken(): Unit = {
+    readParenthesesByte()
+    readColonToken()
+  }
 
-  private def readColon(): Unit = if (!isNextToken(':', head)) decodeError("expected ':'")
+  private def readParenthesesByte(): Unit = if (nextByte(head) != '"') decodeError("expected '\"'")
+
+  private def readColonToken(): Unit = if (!isNextToken(':', head)) decodeError("expected ':'")
 
   private def parseBoolean(isToken: Boolean): Boolean =
     (if (isToken) nextToken(head) else nextByte(head): @switch) match {

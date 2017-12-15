@@ -51,6 +51,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
   snake_case or camelCase names for all fields
 - Configurable name of a discriminator field for ADTs
 - Configurable mapping function for values of a discriminator field that is used for distinguish classes of ADTs
+- Configurable by field annotation or by code generation ability to read/write numbers from/to string values
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`, no extra 
   buffering are required  

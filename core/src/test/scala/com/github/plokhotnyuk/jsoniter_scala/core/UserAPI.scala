@@ -8,7 +8,7 @@ case class Device(id: Int, model: String)
 case class User(name: String, devices: Seq[Device])
 
 object UserAPI {
-  val user = User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X")))
+  val user = User(name = "John", devices = Seq(Device(id = 1, model = "HTC One X"), Device(id = 2, model = "iPhone X")))
   val prettyJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_response.json"))
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_compact_response.json"))
   val httpMessage: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_http_response.txt"))
