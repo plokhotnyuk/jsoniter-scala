@@ -203,7 +203,7 @@ object JsonCodecMaker {
           if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
           val strings = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[stringified])
           if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
-          else if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
+          if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
             warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
               s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
           }
@@ -369,15 +369,13 @@ object JsonCodecMaker {
           if (isStringified) q"in.readStringAsShort()" else q"in.readShort()"
         } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
           if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
-        }
-        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
+        } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
           if (isStringified) q"in.readStringAsLong()" else q"in.readLong()"
         } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
           if (isStringified) q"in.readStringAsFloat()" else q"in.readFloat()"
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
           if (isStringified) q"in.readStringAsDouble()" else q"in.readDouble()"
-        }
-        else if (tpe =:= typeOf[String]) q"in.readString($default)"
+        } else if (tpe =:= typeOf[String]) q"in.readString($default)"
         else if (tpe =:= typeOf[BigInt]) {
           if (isStringified) q"in.readStringAsBigInt($default)" else q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
