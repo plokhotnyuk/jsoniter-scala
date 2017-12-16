@@ -61,7 +61,7 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readMapsJsoniter() shouldBe benchmark.mapsObj
       benchmark.readMapsPlay() shouldBe benchmark.mapsObj
       //FIXME: Circe doesn't support parsing of mutable maps
-      // benchmark.readMutableMapsCirce() shouldBe benchmark.mutableMapsObj
+      //benchmark.readMutableMapsCirce() shouldBe benchmark.mutableMapsObj
       //FIXME: Jackson-module-scala parse keys as String
       //benchmark.readMutableMapsJackson() shouldBe benchmark.mutableMapsObj
       benchmark.readMutableMapsJsoniter() shouldBe benchmark.mutableMapsObj

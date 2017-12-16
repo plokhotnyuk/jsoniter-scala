@@ -160,7 +160,7 @@ class JsonCodecMakerBenchmark {
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readBitSetsCirce(): BitSets = decode[BitSets](new String(bitSetsJsonBytes, UTF_8)).fold(throw _, x => x)
 */
 
   @Benchmark
@@ -189,7 +189,7 @@ class JsonCodecMakerBenchmark {
 
 /* FIXME: Jackson-module-scala doesn't support parsing of tree sets
   @Benchmark
-  def readMutableIterablesJackson(): MutableIterables = jacksonMapper.readValue[MutableIterables](mutableIterablesJson)
+  def readMutableIterablesJackson(): MutableIterables = jacksonMapper.readValue[MutableIterables](mutableIterablesJsonBytes)
 */
 
   @Benchmark
@@ -212,7 +212,7 @@ class JsonCodecMakerBenchmark {
 
 /* FIXME: Circe doesn't support parsing of mutable maps
   @Benchmark
-  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readMutableMapsCirce(): MutableMaps = decode[MutableMaps](new String(mutableMapsJsonBytes, UTF_8)).fold(throw _, x => x)
 */
 
   @Benchmark
@@ -226,12 +226,12 @@ class JsonCodecMakerBenchmark {
 
 /* FIXME: Circe doesn't support parsing of int & long maps
   @Benchmark
-  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJson, StandardCharsets.UTF_8)).fold(throw _, x => x)
+  def readIntAndLongMapsCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(intAndLongMapsJsonBytes, UTF_8)).fold(throw _, x => x)
 */
 
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
   @Benchmark
-  def readIntAndLongMapsJackson(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](intAndLongMapsJson)
+  def readIntAndLongMapsJackson(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](intAndLongMapsJsonBytes)
 */
 
   @Benchmark
