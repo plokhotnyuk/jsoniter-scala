@@ -864,6 +864,79 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
+  "JsonReader.requiredKeyError" should {
+    val jsonReader = reader("{}".getBytes)
+    jsonReader.nextToken()
+    "throw parsing exception with list of missing required fields that specified by bits" in {
+      def check(bits: Int, error: String): Unit =
+        assert(intercept[JsonParseException](jsonReader.requiredKeyError(Array("name", "device"), bits))
+          .getMessage.contains(error))
+
+      check(3, "missing required field(s) \"name\", \"device\", offset: 0x00000000")
+      check(2, "missing required field(s) \"device\", offset: 0x00000000")
+      check(1, "missing required field(s) \"name\", offset: 0x00000000")
+    }
+    "throw illegal argument exception in case of missing required fields cannot be selected" in {
+      assert(intercept[IllegalArgumentException](jsonReader.requiredKeyError(Array("name", "device"), 0))
+        .getMessage.contains("requirement failed: reqFields = Array(name, device), reqBits = WrappedArray(0)"))
+    }
+  }
+  "JsonReader.unexpectedKeyError" should {
+    "throw parsing exception with name of unexpected key" in {
+      val jsonReader = reader("\"xxx\"".getBytes)
+      val len = jsonReader.readStringAsCharBuf()
+      assert(intercept[JsonParseException](jsonReader.unexpectedKeyError(len))
+        .getMessage.contains("unexpected field: \"xxx\", offset: 0x00000004"))
+    }
+  }
+  "JsonReader.discriminatorValueError" should {
+    val jsonReader = reader("\"xxx\"".getBytes)
+    val value = jsonReader.readString(null)
+    "throw parsing exception with unexpected discriminator value" in {
+      assert(intercept[JsonParseException](jsonReader.discriminatorValueError(value))
+       .getMessage.contains("illegal value of discriminator field \"xxx\", offset: 0x00000004"))
+    }
+  }
+  "JsonReader.enumValueError" should {
+    val jsonReader = reader("\"xxx\"".getBytes)
+    val value = jsonReader.readString(null)
+    "throw parsing exception with unexpected enum value" in {
+      assert(intercept[JsonParseException](jsonReader.enumValueError(value))
+        .getMessage.contains("illegal enum value: \"xxx\", offset: 0x00000004"))
+    }
+  }
+  "JsonReader.arrayStartError" should {
+    val jsonReader = reader("{}".getBytes)
+    jsonReader.isNextToken('[')
+    "throw parsing exception with expected token(s)" in {
+      assert(intercept[JsonParseException](jsonReader.arrayStartError())
+        .getMessage.contains("expected '[' or null, offset: 0x00000000"))
+    }
+  }
+  "JsonReader.arrayEndError" should {
+    val jsonReader = reader("}".getBytes)
+    jsonReader.isNextToken(']')
+    "throw parsing exception with expected token(s)" in {
+      assert(intercept[JsonParseException](jsonReader.arrayEndError())
+        .getMessage.contains("expected ']' or ',', offset: 0x00000000"))
+    }
+  }
+  "JsonReader.objectStartError" should {
+    val jsonReader = reader("[]".getBytes)
+    jsonReader.isNextToken('{')
+    "throw parsing exception with expected token(s)" in {
+      assert(intercept[JsonParseException](jsonReader.objectStartError())
+        .getMessage.contains("expected '{' or null, offset: 0x00000000"))
+    }
+  }
+  "JsonReader.objectEndError" should {
+    val jsonReader = reader("]".getBytes)
+    jsonReader.isNextToken('}')
+    "throw parsing exception with expected token(s)" in {
+      assert(intercept[JsonParseException](jsonReader.objectEndError())
+        .getMessage.contains("expected '}' or ',', offset: 0x00000000"))
+    }
+  }
 
   def validateSkip(s: String): Unit = {
     val r = reader((s + ",").getBytes)

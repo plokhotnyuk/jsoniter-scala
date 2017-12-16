@@ -27,17 +27,18 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Int = 0,
     private[this] var config: ReaderConfig = null) {
-  def requiredKeyError(reqFields: Array[String], reqs: Int*): Nothing = {
-    val len = reqFields.length
+  def requiredKeyError(reqFields: Array[String], reqBits: Int*): Nothing = {
+    val len = Math.min(reqFields.length, reqBits.size << 5)
     var i = 0
     var j = 0
     while (j < len) {
-      if ((reqs(j >> 5) & (1 << j)) != 0) {
+      if ((reqBits(j >> 5) & (1 << j)) != 0) {
         i = appendString(if (i == 0) "missing required field(s) \"" else "\", \"", i)
         i = appendString(reqFields(j), i)
       }
       j += 1
     }
+    require(i > 0, s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = $reqBits")
     i = appendString("\"", i)
     decodeError(i, head - 1, null)
   }
@@ -82,10 +83,6 @@ final class JsonReader private[jsoniter_scala](
     readColonToken()
     x
   }
-
-  def readValueAsCharBuf(): Int =
-    if (isNextToken('"', head)) parseString(0, charBuf.length, head)
-    else decodeError("expected string value")
 
   def readKeyAsString(): String = {
     readParenthesesToken()
@@ -195,6 +192,10 @@ final class JsonReader private[jsoniter_scala](
     else decodeError("expected string value or null")
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
+
+  def readStringAsCharBuf(): Int =
+    if (isNextToken('"', head)) parseString(0, charBuf.length, head)
+    else decodeError("expected string value")
 
   def readStringAsByte(): Byte = {
     readParenthesesToken()
@@ -1562,7 +1563,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def loadMoreOrError(pos: Int): Int =
-    if (in eq null) endOfInput()
+    if (in eq null) endOfInputError()
     else {
       val minPos = ensureBufCapacity(pos)
       val n = externalRead(tail, buf.length - tail)
@@ -1570,7 +1571,7 @@ final class JsonReader private[jsoniter_scala](
         tail += n
         totalRead += n
         pos - minPos
-      } else endOfInput()
+      } else endOfInputError()
     }
 
   private def loadMore(pos: Int): Int =
@@ -1603,10 +1604,10 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def externalRead(from: Int, len: Int): Int = try in.read(buf, from, len) catch {
-    case NonFatal(ex) => endOfInput(ex)
+    case NonFatal(ex) => endOfInputError(ex)
   }
 
-  private def endOfInput(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
+  private def endOfInputError(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
 
   private def freeTooLongBuf(): Unit =
     if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)

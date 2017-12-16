@@ -543,7 +543,7 @@ object JsonCodecMaker {
           q"""in.setMark()
               if (in.isNextToken('{')) {
                 in.scanToKey(${codecConfig.discriminatorFieldName})
-                val l = in.readValueAsCharBuf()
+                val l = in.readStringAsCharBuf()
                 (in.charBufToHashCode(l): @switch) match {
                   case ..$readSubclasses
                   case _ => $discriminatorValueError
