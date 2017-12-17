@@ -4,7 +4,8 @@ import sun.misc.Unsafe
 
 import scala.util.Try
 
-// FIXME: remove when perf. degradation of String.charAt for strings will be fixed in JDK 9
+// FIXME: remove when perf. degradation of String.charAt when iterating through strings will be fixed in JDK 9:
+// https://bugs.openjdk.java.net/browse/JDK-8013655
 object UnsafeUtils {
   private[this] val (unsafe, stringValueOffset, stringCoderOffset) = Try {
     val u = {
