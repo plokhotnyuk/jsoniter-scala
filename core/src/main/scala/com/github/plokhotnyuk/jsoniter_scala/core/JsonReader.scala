@@ -33,8 +33,10 @@ final class JsonReader private[jsoniter_scala](
     val len = Math.min(reqFields.length, reqBits.size << 5)
     var i = 0
     var j = 0
+    var reqBitBlock = 0
     while (j < len) {
-      if ((reqBits(j >> 5) & (1 << j)) != 0) {
+      if ((j & 31) == 0) reqBitBlock = reqBits(j >> 5)
+      if ((reqBitBlock & (1 << j)) != 0) {
         i = appendString(if (i == 0) "missing required field(s) \"" else "\", \"", i)
         i = appendString(reqFields(j), i)
       }
