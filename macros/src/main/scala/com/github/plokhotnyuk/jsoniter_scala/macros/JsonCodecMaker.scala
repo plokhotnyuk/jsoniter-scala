@@ -21,6 +21,19 @@ class transient extends StaticAnnotation
 @field
 class stringified extends StaticAnnotation
 
+/**
+  * Configuration parameter for `JsonCodecMaker.make()` call.
+  *
+  * @param fieldNameMapper the function of mapping from string of case class field name to JSON key (an identity
+  *                        function by default)
+  * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
+  *                               discriminator field (a function that truncate to simple class name by default)
+  * @param discriminatorFieldName a name of discriminator field ("type" value by default)
+  * @param isStringified a flag that turn on stringification of number or boolean values of collections, options and
+  *                      value classes (turned off by default)
+  * @param skipUnexpectedFields a flag that turn on skipping of unexpected fields or in other case a parse exception
+  *                             will be thrown (turned on by default)
+  */
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
   adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,

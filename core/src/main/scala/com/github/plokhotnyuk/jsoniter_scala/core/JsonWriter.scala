@@ -7,6 +7,25 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
 import scala.annotation.{switch, tailrec}
 import scala.collection.breakOut
 
+/**
+  * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter]] that contains params for formatting of
+  * output JSON and for tuning of preferred size for internal byte buffer that created on the writer instantiation and
+  * reused in runtime for serialization of messages using [[java.io.OutputStream]].
+  * <br/>
+  * All configuration params already initialized to default values, but in some cases they should be altered:
+  * <ul>
+  * <li>turn on pretty printing by specifying of indention step that is greater than 0</li>
+  * <li>turn on escaping of Unicode characters to serialize with only ASCII characters</li>
+  * <li>increase preferred size of an internal byte buffer to reduce allocation rate of grown and then reduced buffers
+  * when writing to [[java.io.OutputStream]] lot of large (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or
+  * others non escaped ASCII strings written using `JsonWriter.writeNonEscapedAsciiKey` or
+  * `JsonWriter.writeNonEscapedAsciiVal` </li>
+  * </ul>
+  * @param indentionStep a size of indention for pretty-printed formatting or 0 for compact output
+  * @param escapeUnicode a flag to turn on hexadecimal escaping of all non-ASCII chars
+  * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when writing to
+  *                         [[java.io.OutputStream]]
+  */
 case class WriterConfig(
     indentionStep: Int = 0,
     escapeUnicode: Boolean = false,
