@@ -878,7 +878,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw illegal argument exception in case of missing required fields cannot be selected" in {
       assert(intercept[IllegalArgumentException](jsonReader.requiredKeyError(Array("name", "device"), 0))
-        .getMessage.contains("requirement failed: reqFields = Array(name, device), reqBits = WrappedArray(0)"))
+        .getMessage.contains("missing required field(s) cannot be reported for arguments: " +
+          "reqFields = Array(name, device), reqBits = WrappedArray(0)"))
     }
   }
   "JsonReader.unexpectedKeyError" should {

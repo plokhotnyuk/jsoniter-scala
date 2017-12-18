@@ -38,7 +38,8 @@ final class JsonReader private[jsoniter_scala](
       }
       j += 1
     }
-    require(i > 0, s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = $reqBits")
+    if (i == 0) throw new IllegalArgumentException("missing required field(s) cannot be reported for arguments: " +
+      s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = $reqBits")
     i = appendString("\"", i)
     decodeError(i, head - 1, null)
   }
