@@ -16,7 +16,9 @@ case class ReaderConfig(
     throwParseExceptionWithStackTrace: Boolean = true,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
-    preferredCharBufSize: Int = 2048)
+    preferredCharBufSize: Int = 2048) {
+  if (preferredBufSize < 12) throw new IllegalArgumentException("`preferredBufSize` should be not less than 12")
+}
 
 final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](1024),
@@ -1588,12 +1590,12 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private def ensureBufCapacity(pos: Int): Int = {
-    val minPos = if (mark >= 0) mark else pos
+    val minPos = if (mark >= 0) Math.min(mark, pos) else pos
     if (minPos > 0) {
       val remaining = tail - minPos
       if (remaining > 0) {
         System.arraycopy(buf, minPos, buf, 0, remaining)
-        mark -= (if (mark >= 0) minPos else 0)
+        if (mark >= 0) mark -= minPos
       }
       tail = remaining
     } else if (tail > 0) {
