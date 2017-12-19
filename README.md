@@ -10,9 +10,11 @@ to get maximum performance of JSON parsing & serialization.
 
 ## Goals
 
-Initially this library was developed for requirements of real-time bidding in ad-tech and goal was simple:
-do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & collections and back 
-and do it crazily fast w/o reflection, intermediate syntax tree or events, w/ minimum allocations & copying.
+Initially this library was developed for requirements of real-time bidding in ad-tech and goals was simple:
+- do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & Scala collections and back but 
+  do it crazily fast w/o reflection, intermediate syntax tree, strings or events, w/ minimum allocations & copying
+- do not replace illegally encoded characters of string values by placeholder characters and do not allow broken 
+  surrogate pairs of characters to be parsed or serialized
 
 It targets JDK 8 and above w/o any platform restrictions, but may works good enough on JDK 7 with Scala 2.11.
 
@@ -26,7 +28,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Support of UTF-8 encoding
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
-- Parsing of strings with escaped characters for JSON field names, keys & values 
+- Parsing of strings with escaped characters for JSON keys and values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala 
   collections, arrays, module classes, value classes and case classes with values/fields having any of types listed here 
 - Case classes should be defined as a top-level class or directly inside of another class or object and with public 
@@ -36,6 +38,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
   using discriminator field with string type of value
 - Implicitly resolvable codecs for any types
+- Cyclic graph of class instances are not allowed and will lead to raising of `StackOverflowException`
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to 
