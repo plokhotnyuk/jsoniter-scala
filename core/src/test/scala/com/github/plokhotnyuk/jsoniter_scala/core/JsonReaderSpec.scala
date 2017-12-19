@@ -394,69 +394,62 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "illegal surrogate character, offset: 0x00000004")
     }
   }
+  "JsonReader.readByte" should {
+    "parse valid byte values and stops on not numeric chars" in {
+      readByte("0$") shouldBe 0
+    }
+    "parse valid byte values with skiping of JSON space characters" in {
+      readByte(" \n\t\r123") shouldBe 123.toByte
+      readByte(" \n\t\r-123") shouldBe (-123).toByte
+    }
+  }
   "JsonReader.readByte, JsonReader.readKeyAsByte and JsonReader.readStringAsByte" should {
-    "parse valid byte values" in {
-      def check(n: Byte): Unit = {
-        val s = n.toString
-        readByte(s) shouldBe n
-        readKeyAsByte(s) shouldBe n
-        readStringAsByte(s) shouldBe n
-      }
+    def check(n: Byte): Unit = {
+      val s = n.toString
+      readByte(s) shouldBe n
+      readKeyAsByte(s) shouldBe n
+      readStringAsByte(s) shouldBe n
+    }
 
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsByte(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsByte(s)).getMessage.contains(error2))
+    }
+
+    "parse valid byte values" in {
       forAll(minSuccessful(1000)) { (n: Byte) =>
         check(n)
       }
     }
-  }
-  "JsonReader.readByte" should {
-    "parse valid byte values with skiping of JSON space characters" in {
-      readByte(" \n\t\r123") shouldBe 123.toByte
-      readByte(" \n\t\r-123") shouldBe -123.toByte
-    }
-    "parse valid byte values and stops on not numeric chars" in {
-      readByte("0$") shouldBe 0
-    }
     "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error))
-
-      check("", "unexpected end of input, offset: 0x00000000")
-      check("-", "unexpected end of input, offset: 0x00000001")
-      check("x", "illegal number, offset: 0x00000000")
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("x", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on byte overflow" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error))
-
-      check("128", "value is too large for byte, offset: 0x00000002")
-      check("-129", "value is too large for byte, offset: 0x00000003")
-      check("12345", "value is too large for byte, offset: 0x00000003")
-      check("-12345", "value is too large for byte, offset: 0x00000004")
+      checkError("128", "value is too large for byte, offset: 0x00000002",
+        "value is too large for byte, offset: 0x00000003")
+      checkError("-129", "value is too large for byte, offset: 0x00000003",
+        "value is too large for byte, offset: 0x00000004")
+      checkError("12345", "value is too large for byte, offset: 0x00000003",
+        "value is too large for byte, offset: 0x00000004")
+      checkError("-12345", "value is too large for byte, offset: 0x00000004",
+        "value is too large for byte, offset: 0x00000005")
     }
     "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("0123", "illegal number with leading zero, offset: 0x00000000")
-      check("-0123", "illegal number with leading zero, offset: 0x00000001")
-      check("0128", "illegal number with leading zero, offset: 0x00000000")
-      check("-0128", "illegal number with leading zero, offset: 0x00000001")
-    }
-  }
-  "JsonReader.readShort, JsonReader.readKeyAsShort and JsonReader.readStringAsShort" should {
-    "parse valid short values" in {
-      def check(n: Short): Unit = {
-        val s = n.toString
-        readShort(s) shouldBe n
-        readKeyAsShort(s) shouldBe n
-        readStringAsShort(s) shouldBe n
-      }
-
-      forAll(minSuccessful(10000)) { (n: Short) =>
-        check(n)
-      }
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("0123", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-0123", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("0128", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-0128", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
     }
   }
   "JsonReader.readShort" should {
@@ -467,47 +460,54 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "parse valid short values and stops on not numeric chars" in {
       readShort("0$") shouldBe 0
     }
-    "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error))
-
-      check("", "unexpected end of input, offset: 0x00000000")
-      check("-", "unexpected end of input, offset: 0x00000001")
-      check("x", "illegal number, offset: 0x00000000")
-    }
-    "throw parsing exception on short overflow" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error))
-
-      check("32768", "value is too large for short, offset: 0x00000004")
-      check("-32769", "value is too large for short, offset: 0x00000005")
-      check("12345678901", "value is too large for short, offset: 0x00000005")
-      check("-12345678901", "value is too large for short, offset: 0x00000006")
-    }
-    "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("012345", "illegal number with leading zero, offset: 0x00000000")
-      check("-012345", "illegal number with leading zero, offset: 0x00000001")
-      check("032767", "illegal number with leading zero, offset: 0x00000000")
-      check("-032768", "illegal number with leading zero, offset: 0x00000001")
-    }
   }
-  "JsonReader.readInt, JsonReader.readKeyAsInt and JsonReader.readStringAsInt" should {
-    "parse valid int values" in {
-      def check(n: Int): Unit = {
-        val s = n.toString
-        readInt(s) shouldBe n
-        readKeyAsInt(s) shouldBe n
-        readStringAsInt(s) shouldBe n
-      }
+  "JsonReader.readShort, JsonReader.readKeyAsShort and JsonReader.readStringAsShort" should {
+    def check(n: Short): Unit = {
+      val s = n.toString
+      readShort(s) shouldBe n
+      readKeyAsShort(s) shouldBe n
+      readStringAsShort(s) shouldBe n
+    }
 
-      forAll(minSuccessful(10000)) { (n: Int) =>
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsShort(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsShort(s)).getMessage.contains(error2))
+    }
+
+    "parse valid short values" in {
+      forAll(minSuccessful(10000)) { (n: Short) =>
         check(n)
       }
+    }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("x", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+    }
+    "throw parsing exception on short overflow" in {
+      checkError("32768", "value is too large for short, offset: 0x00000004",
+        "value is too large for short, offset: 0x00000005")
+      checkError("-32769", "value is too large for short, offset: 0x00000005",
+        "value is too large for short, offset: 0x00000006")
+      checkError("12345678901", "value is too large for short, offset: 0x00000005",
+        "value is too large for short, offset: 0x00000006")
+      checkError("-12345678901", "value is too large for short, offset: 0x00000006",
+        "value is too large for short, offset: 0x00000007")
+    }
+    "throw parsing exception on leading zero" in {
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("012345", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("032767", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-032768", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
     }
   }
   "JsonReader.readInt" should {
@@ -518,49 +518,58 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "parse valid int values and stops on not numeric chars" in {
       readInt("0$") shouldBe 0
     }
-    "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error))
-
-      check("", "unexpected end of input, offset: 0x00000000")
-      check("-", "unexpected end of input, offset: 0x00000001")
-      check("x", "illegal number, offset: 0x00000000")
-    }
-    "throw parsing exception on int overflow" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error))
-
-      check("2147483648", "value is too large for int, offset: 0x00000009")
-      check("-2147483649", "value is too large for int, offset: 0x0000000a")
-      check("12345678901", "value is too large for int, offset: 0x0000000a")
-      check("-12345678901", "value is too large for int, offset: 0x0000000b")
-      check("12345678901234567890", "value is too large for int, offset: 0x0000000a")
-      check("-12345678901234567890", "value is too large for int, offset: 0x0000000b")
-    }
-    "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("0123456789", "illegal number with leading zero, offset: 0x00000000")
-      check("-0123456789", "illegal number with leading zero, offset: 0x00000001")
-      check("02147483647", "illegal number with leading zero, offset: 0x00000000")
-      check("-02147483648", "illegal number with leading zero, offset: 0x00000001")
-    }
   }
-  "JsonReader.readLong, JsonReader.readKeyAsLong and JsonReader.readStringAsLong" should {
-    "parse valid long values" in {
-      def check(n: Long): Unit = {
-        val s = n.toString
-        readLong(s) shouldBe n
-        readKeyAsLong(s) shouldBe n
-        readStringAsLong(s) shouldBe n
-      }
+  "JsonReader.readInt, JsonReader.readKeyAsInt and JsonReader.readStringAsInt" should {
+    def check(n: Int): Unit = {
+      val s = n.toString
+      readInt(s) shouldBe n
+      readKeyAsInt(s) shouldBe n
+      readStringAsInt(s) shouldBe n
+    }
 
-      forAll(minSuccessful(10000)) { (n: Long) =>
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsInt(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsInt(s)).getMessage.contains(error2))
+    }
+
+    "parse valid int values" in {
+      forAll(minSuccessful(10000)) { (n: Int) =>
         check(n)
       }
+    }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("x", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+    }
+    "throw parsing exception on int overflow" in {
+      checkError("2147483648", "value is too large for int, offset: 0x00000009",
+        "value is too large for int, offset: 0x0000000a")
+      checkError("-2147483649", "value is too large for int, offset: 0x0000000a",
+        "value is too large for int, offset: 0x0000000b")
+      checkError("12345678901", "value is too large for int, offset: 0x0000000a",
+        "value is too large for int, offset: 0x0000000b")
+      checkError("-12345678901", "value is too large for int, offset: 0x0000000b",
+        "value is too large for int, offset: 0x0000000c")
+      checkError("12345678901234567890", "value is too large for int, offset: 0x0000000a",
+        "value is too large for int, offset: 0x0000000b")
+      checkError("-12345678901234567890", "value is too large for int, offset: 0x0000000b",
+        "value is too large for int, offset: 0x0000000c")
+    }
+    "throw parsing exception on leading zero" in {
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("0123456789", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-0123456789", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("02147483647", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-02147483648", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
     }
   }
   "JsonReader.readLong" should {
@@ -571,65 +580,61 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "parse valid long values and stops on not numeric chars" in {
       readLong("0$") shouldBe 0L
     }
-    "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error))
-
-      check("", "unexpected end of input, offset: 0x00000000")
-      check("-", "unexpected end of input, offset: 0x00000001")
-      check("x", "illegal number, offset: 0x00000000")
-    }
-    "throw parsing exception on long overflow" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error))
-
-      check("9223372036854775808", "value is too large for long, offset: 0x00000012")
-      check("-9223372036854775809", "value is too large for long, offset: 0x00000013")
-      check("12345678901234567890", "value is too large for long, offset: 0x00000013")
-      check("-12345678901234567890", "value is too large for long, offset: 0x00000014")
-      check("123456789012345678901234567890", "value is too large for long, offset: 0x00000013")
-      check("-123456789012345678901234567890", "value is too large for long, offset: 0x00000014")
-    }
-    "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("01234567890123456789", "illegal number with leading zero, offset: 0x00000000")
-      check("-01234567890123456789", "illegal number with leading zero, offset: 0x00000001")
-      check("09223372036854775807", "illegal number with leading zero, offset: 0x00000000")
-      check("-09223372036854775808", "illegal number with leading zero, offset: 0x00000001")
-    }
   }
-  "JsonReader.readFloat, JsonReader.readKeyAsFloat and JsonReader.readStringAsFloat" should {
-    "parse valid float values" in {
-      def check(n: BigDecimal): Unit = {
-        val s = n.toString
-        val f = java.lang.Float.parseFloat(s)
-        readFloat(s) shouldBe f
-        readKeyAsFloat(s) shouldBe f
-        readStringAsFloat(s) shouldBe f
-      }
+  "JsonReader.readLong, JsonReader.readKeyAsLong and JsonReader.readStringAsLong" should {
+    def check(n: Long): Unit = {
+      val s = n.toString
+      readLong(s) shouldBe n
+      readKeyAsLong(s) shouldBe n
+      readStringAsLong(s) shouldBe n
+    }
 
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsLong(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsLong(s)).getMessage.contains(error2))
+    }
+
+    "parse valid long values" in {
+      forAll(minSuccessful(10000)) { (n: Long) =>
         check(n)
       }
     }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("x", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+    }
+    "throw parsing exception on long overflow" in {
+      checkError("9223372036854775808", "value is too large for long, offset: 0x00000012",
+        "value is too large for long, offset: 0x00000013")
+      checkError("-9223372036854775809", "value is too large for long, offset: 0x00000013",
+        "value is too large for long, offset: 0x00000014")
+      checkError("12345678901234567890", "value is too large for long, offset: 0x00000013",
+        "value is too large for long, offset: 0x00000014")
+      checkError("-12345678901234567890", "value is too large for long, offset: 0x00000014",
+        "value is too large for long, offset: 0x00000015")
+      checkError("123456789012345678901234567890", "value is too large for long, offset: 0x00000013",
+        "value is too large for long, offset: 0x00000014")
+      checkError("-123456789012345678901234567890", "value is too large for long, offset: 0x00000014",
+        "value is too large for long, offset: 0x00000015")
+    }
+    "throw parsing exception on leading zero" in {
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("01234567890123456789", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-01234567890123456789", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("09223372036854775807", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-09223372036854775808", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+    }
   }
   "JsonReader.readFloat" should {
-    "parse infinity on float overflow" in {
-      readFloat("12345e6789") shouldBe Float.PositiveInfinity
-      readFloat("-12345e6789") shouldBe Float.NegativeInfinity
-      readFloat("12345678901234567890e12345678901234567890") shouldBe Float.PositiveInfinity
-      readFloat("-12345678901234567890e12345678901234567890") shouldBe Float.NegativeInfinity
-    }
-    "parse zero on float underflow" in {
-      readFloat("12345e-6789") shouldBe 0.0f
-      readFloat("-12345e-6789") shouldBe -0.0f
-      readFloat("12345678901234567890e-12345678901234567890") shouldBe 0.0f
-      readFloat("-12345678901234567890e-12345678901234567890") shouldBe -0.0f
-    }
     "parse valid float values with skipping of JSON space characters" in {
       readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
       readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
@@ -641,63 +646,65 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readFloat("12345.6789e10$") shouldBe 1.23456788e14f
       readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
     }
-    "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error))
+  }
+  "JsonReader.readFloat, JsonReader.readKeyAsFloat and JsonReader.readStringAsFloat" should {
+    def check(s: String, n: Float): Unit = {
+      readFloat(s) shouldBe n
+      readKeyAsFloat(s) shouldBe n
+      readStringAsFloat(s) shouldBe n
+    }
 
-      check("", "illegal number, offset: 0x00000000")
-      check(" ", "illegal number, offset: 0x00000001")
-      check("-", "illegal number, offset: 0x00000001")
-      check("$", "illegal number, offset: 0x00000000")
-      check(" $", "illegal number, offset: 0x00000001")
-      check("-$", "illegal number, offset: 0x00000001")
-      check("0e$", "illegal number, offset: 0x00000002")
-      check("0e-$", "illegal number, offset: 0x00000003")
-      check("0.E", "illegal number, offset: 0x00000002")
-      check("0.+", "illegal number, offset: 0x00000002")
-      check("0.-", "illegal number, offset: 0x00000002")
-      check("NaN", "illegal number, offset: 0x00000000")
-      check("Inf", "illegal number, offset: 0x00000000")
-      check("Infinity", "illegal number, offset: 0x00000000")
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsFloat(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsFloat(s)).getMessage.contains(error2))
+    }
+
+    "parse valid float values" in {
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+        check(n.toString, java.lang.Float.parseFloat(n.toString))
+      }
+    }
+    "parse infinity on float overflow" in {
+      check("12345e6789", Float.PositiveInfinity)
+      check("-12345e6789", Float.NegativeInfinity)
+      check("12345678901234567890e12345678901234567890", Float.PositiveInfinity)
+      check("-12345678901234567890e12345678901234567890", Float.NegativeInfinity)
+    }
+    "parse zero on float underflow" in {
+      check("12345e-6789", 0.0f)
+      check("-12345e-6789", -0.0f)
+      check("12345678901234567890e-12345678901234567890", 0.0f)
+      check("-12345678901234567890e-12345678901234567890", -0.0f)
+    }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0e-$", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
+      checkError("0.E", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.+", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.-", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("012345.6789", "illegal number with leading zero, offset: 0x00000000")
-      check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
-    }
-  }
-  "JsonReader.readDouble, JsonReader.readKeyAsDouble and JsonReader.readStringAsDouble" should {
-    "parse valid double values" in {
-      def check(n: BigDecimal): Unit = {
-        val s = n.toString
-        val d = java.lang.Double.parseDouble(s)
-        readDouble(s) shouldBe d
-        readKeyAsDouble(s) shouldBe d
-        readStringAsDouble(s) shouldBe d
-      }
-
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
-        check(n)
-      }
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
     }
   }
   "JsonReader.readDouble" should {
-    "parse infinity on double overflow" in {
-      readDouble("12345e6789") shouldBe Double.PositiveInfinity
-      readDouble("-12345e6789") shouldBe Double.NegativeInfinity
-      readDouble("12345678901234567890e12345678901234567890") shouldBe Double.PositiveInfinity
-      readDouble("-12345678901234567890e12345678901234567890") shouldBe Double.NegativeInfinity
-    }
-    "parse zero on double underflow" in {
-      readDouble("12345e-6789") shouldBe 0.0
-      readDouble("-12345e-6789") shouldBe -0.0
-      readDouble("12345678901234567890e-12345678901234567890") shouldBe 0.0
-      readDouble("-1234567890123456789e-12345678901234567890") shouldBe -0.0
-    }
     "parse valid double values with skipping of JSON space characters" in {
       readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
       readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
@@ -709,33 +716,75 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readDouble("123456789.123456789e10$") shouldBe 1.23456789123456794e18
       readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
     }
-    "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error))
+  }
+  "JsonReader.readDouble, JsonReader.readKeyAsDouble and JsonReader.readStringAsDouble" should {
+    def check(s: String, n: Double): Unit = {
+      readDouble(s) shouldBe n
+      readKeyAsDouble(s) shouldBe n
+      readStringAsDouble(s) shouldBe n
+    }
 
-      check("", "illegal number, offset: 0x00000000")
-      check(" ", "illegal number, offset: 0x00000001")
-      check("-", "illegal number, offset: 0x00000001")
-      check("$", "illegal number, offset: 0x00000000")
-      check(" $", "illegal number, offset: 0x00000001")
-      check("-$", "illegal number, offset: 0x00000001")
-      check("0e$", "illegal number, offset: 0x00000002")
-      check("0e-$", "illegal number, offset: 0x00000003")
-      check("0.E", "illegal number, offset: 0x00000002")
-      check("0.-", "illegal number, offset: 0x00000002")
-      check("0.+", "illegal number, offset: 0x00000002")
-      check("NaN", "illegal number, offset: 0x00000000")
-      check("Inf", "illegal number, offset: 0x00000000")
-      check("Infinity", "illegal number, offset: 0x00000000")
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsDouble(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsDouble(s)).getMessage.contains(error2))
+    }
+
+    "parse valid double values" in {
+      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+        check(n.toString, java.lang.Double.parseDouble(n.toString))
+      }
+    }
+    "parse infinity on double overflow" in {
+      check("12345e6789", Double.PositiveInfinity)
+      check("-12345e6789", Double.NegativeInfinity)
+      check("12345678901234567890e12345678901234567890", Double.PositiveInfinity)
+      check("-12345678901234567890e12345678901234567890", Double.NegativeInfinity)
+    }
+    "parse zero on double underflow" in {
+      check("12345e-6789", 0.0)
+      check("-12345e-6789", -0.0)
+      check("12345678901234567890e-12345678901234567890", 0.0)
+      check("-1234567890123456789e-12345678901234567890", -0.0)
+    }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0e-$", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
+      checkError("0.E", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.-", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.+", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("012345.6789", "illegal number with leading zero, offset: 0x00000000")
-      check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+    }
+  }
+  "JsonReader.readBigInt" should {
+    "parse valid number values with skipping of JSON space characters" in {
+      readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
+      readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
+    }
+    "parse valid number values and stops on not numeric or '.', 'e', 'E' chars" in {
+      readBigInt("0$", null) shouldBe BigInt("0")
+      readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
+      readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
+      readBigInt("1234567890123456789e10$", null) shouldBe BigInt("1234567890123456789")
+      readBigInt("1234567890123456789E10$", null) shouldBe BigInt("1234567890123456789")
     }
   }
   "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
@@ -749,58 +798,72 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readBigInt, JsonReader.readStringAsBigInt and JsonReader.readKeyAsBigInt" should {
-    "parse valid number values" in {
-      def check(n: BigInt): Unit = {
-        val s = n.toString
-        readBigInt(s, null) shouldBe n
-        readKeyAsBigInt(s) shouldBe n
-        readStringAsBigInt(s, null) shouldBe n
-      }
+    def check(n: BigInt): Unit = {
+      val s = n.toString
+      readBigInt(s, null) shouldBe n
+      readKeyAsBigInt(s) shouldBe n
+      readStringAsBigInt(s, null) shouldBe n
+    }
 
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readBigInt(s, null)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsBigInt(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsBigInt(s, null)).getMessage.contains(error2))
+    }
+
+    "parse valid number values" in {
       forAll(minSuccessful(10000)) { (n: BigInt) =>
         check(n)
       }
     }
-  }
-  "JsonReader.readBigInt" should {
     "parse big number values without overflow" in {
       val bigNumber = "12345" + new String(Array.fill(6789)('0'))
-      readBigInt(bigNumber, null) shouldBe BigInt(bigNumber)
-      readBigInt("-" + bigNumber, null) shouldBe BigInt("-" + bigNumber)
-    }
-    "parse valid number values with skipping of JSON space characters" in {
-      readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
-      readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
-    }
-    "parse valid number values and stops on not numeric or '.', 'e', 'E' chars" in {
-      readBigInt("0$", null) shouldBe BigInt("0")
-      readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789e10$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789E10$", null) shouldBe BigInt("1234567890123456789")
+      check(BigInt(bigNumber))
+      check(BigInt("-" + bigNumber))
     }
     "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigInt(s, null)).getMessage.contains(error))
-
-      check("", "unexpected end of input, offset: 0x00000000")
-      check(" ", "unexpected end of input, offset: 0x00000001")
-      check("-", "unexpected end of input, offset: 0x00000001")
-      check("$", "illegal number, offset: 0x00000000")
-      check(" $", "illegal number, offset: 0x00000001")
-      check("-$", "illegal number, offset: 0x00000001")
-      check("NaN", "illegal number, offset: 0x00000000")
-      check("Inf", "illegal number, offset: 0x00000000")
-      check("Infinity", "illegal number, offset: 0x00000000")
+      checkError("", "unexpected end of input, offset: 0x00000000",
+        "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001",
+        "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001",
+        "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000",
+        "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001",
+        "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001",
+        "illegal number, offset: 0x00000002")
+      checkError("NaN", "illegal number, offset: 0x00000000",
+        "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000",
+        "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000",
+        "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigInt(s, null)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("012345", "illegal number with leading zero, offset: 0x00000000")
-      check("-012345", "illegal number with leading zero, offset: 0x00000001")
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("012345", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+    }
+  }
+  "JsonReader.readBigDecimal" should {
+    "parse valid number values with skipping of JSON space characters" in {
+      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe
+        BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe
+        BigDecimal("-1234567890123456789.0123456789")
+    }
+    "parse valid number values and stops on not numeric chars" in {
+      readBigDecimal("0$", null) shouldBe BigDecimal("0")
+      readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
+      readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
     }
   }
   "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
@@ -814,74 +877,69 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readBigDecimal, JsonReader.readKeyAsBigDecimal and JsonReader.readStringAsBigDecimal" should {
-    "parse valid number values" in {
-      def check(n: BigDecimal): Unit = {
-        val s = n.toString
-        readBigDecimal(s, null) shouldBe n
-        readKeyAsBigDecimal(s) shouldBe n
-        readStringAsBigDecimal(s, null) shouldBe n
-      }
+    def check(n: BigDecimal): Unit = {
+      val s = n.toString
+      readBigDecimal(s, null) shouldBe n
+      readKeyAsBigDecimal(s) shouldBe n
+      readStringAsBigDecimal(s, null) shouldBe n
+    }
 
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsBigDecimal(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsBigDecimal(s, null)).getMessage.contains(error2))
+    }
+
+    "parse valid number values" in {
       forAll(minSuccessful(10000)) { (n: BigDecimal) =>
         check(n)
       }
     }
-  }
-  "JsonReader.readBigDecimal" should {
     "parse big number values without overflow" in {
-      readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
-      readBigDecimal("-12345e6789", null) shouldBe BigDecimal("-12345e6789")
+      check(BigDecimal("12345e6789"))
+      check(BigDecimal("-12345e6789"))
     }
     "parse small number values without underflow" in {
-      readBigDecimal("12345e-6789", null) shouldBe BigDecimal("12345e-6789")
-      readBigDecimal("-12345e-6789", null) shouldBe BigDecimal("-12345e-6789")
-    }
-    "parse valid number values with skipping of JSON space characters" in {
-      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe
-        BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe
-        BigDecimal("-1234567890123456789.0123456789")
-    }
-    "parse valid number values and stops on not numeric chars" in {
-      readBigDecimal("0$", null) shouldBe BigDecimal("0")
-      readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
-      readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
+      check(BigDecimal("12345e-6789"))
+      check(BigDecimal("-12345e-6789"))
     }
     "throw number format exception for too big exponents" in {
-      intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890", null))
-      intercept[NumberFormatException](readBigDecimal("-12345678901234567890e12345678901234567890", null))
-      intercept[NumberFormatException](readBigDecimal("12345678901234567890e-12345678901234567890", null))
-      intercept[NumberFormatException](readBigDecimal("-12345678901234567890e-12345678901234567890", null))
-      intercept[NumberFormatException](readBigDecimal("12345678901234567890e12345678901234567890$", null))
+      checkError("12345678901234567890e12345678901234567890",
+        "illegal number, offset: 0x00000028", "illegal number, offset: 0x00000029")
+      checkError("-12345678901234567890e12345678901234567890",
+        "illegal number, offset: 0x00000029", "illegal number, offset: 0x0000002a")
+      checkError("12345678901234567890e-12345678901234567890",
+        "illegal number, offset: 0x00000029", "illegal number, offset: 0x0000002a")
+      checkError("-12345678901234567890e-12345678901234567890",
+        "illegal number, offset: 0x0000002a", "illegal number, offset: 0x0000002b")
+      checkError("12345678901234567890e12345678901234567890$",
+        "illegal number, offset: 0x00000028", "illegal number, offset: 0x00000029")
     }
     "throw parsing exception on illegal or empty input" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error))
-
-      check("", "illegal number, offset: 0x00000000")
-      check(" ", "illegal number, offset: 0x00000001")
-      check("-", "illegal number, offset: 0x00000001")
-      check("$", "illegal number, offset: 0x00000000")
-      check(" $", "illegal number, offset: 0x00000001")
-      check("-$", "illegal number, offset: 0x00000001")
-      check("0e$", "illegal number, offset: 0x00000002")
-      check("0e-$", "illegal number, offset: 0x00000003")
-      check("0.E", "illegal number, offset: 0x00000002")
-      check("0.-", "illegal number, offset: 0x00000002")
-      check("0.+", "illegal number, offset: 0x00000002")
-      check("NaN", "illegal number, offset: 0x00000000")
-      check("Inf", "illegal number, offset: 0x00000000")
-      check("Infinity", "illegal number, offset: 0x00000000")
+      checkError("", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0e-$", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
+      checkError("0.E", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.-", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("0.+", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
+      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      def check(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error))
-
-      check("00", "illegal number with leading zero, offset: 0x00000000")
-      check("-00", "illegal number with leading zero, offset: 0x00000001")
-      check("012345.6789", "illegal number with leading zero, offset: 0x00000000")
-      check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
     }
   }
   "JsonReader.setMark and JsonReader.rollbackToMark" should {

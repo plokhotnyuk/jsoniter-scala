@@ -1228,7 +1228,10 @@ final class JsonReader private[jsoniter_scala](
     else numberError(pos)
   }
 
-  private def toBigDecimal(len: Int): BigDecimal = new BigDecimal(new java.math.BigDecimal(charBuf, 0, len))
+  private def toBigDecimal(len: Int): BigDecimal =
+    try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len)) catch {
+      case ex: NumberFormatException => decodeError("illegal number", head - 1, ex)
+    }
 
   private def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
 
