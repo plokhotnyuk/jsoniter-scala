@@ -864,6 +864,35 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
+  "JsonReader.setMark and JsonReader.rollbackToMark" should {
+    "store current position of parsing and return back to it" in {
+      val jsonReader = reader("{}".getBytes)
+      jsonReader.setMark()
+      jsonReader.skip()
+      jsonReader.rollbackToMark()
+      jsonReader.nextToken() shouldBe '{'
+    }
+    "throw exception in case of rollbackToMark was called before setMark" in {
+      val jsonReader = reader("{}".getBytes)
+      jsonReader.skip()
+      assert(intercept[ArrayIndexOutOfBoundsException](jsonReader.rollbackToMark())
+        .getMessage.contains("expected preceding call of 'setMark()'"))
+    }
+  }
+  "JsonReader.scanToKey" should {
+    "find key-value pair by provided key and set current position of parsing to its value" in {
+      val jsonReader = reader("""{"key1":1,"key2":2}""".getBytes)
+      jsonReader.isNextToken('{') // enter to JSON object
+      jsonReader.scanToKey("key2")
+      jsonReader.readInt() shouldBe 2
+    }
+    "throw parsing exception in case of key-value pair of provided key cannot be found" in {
+      val jsonReader = reader("""{"key1":1}""".getBytes)
+      jsonReader.isNextToken('{') // enter to JSON object
+      assert(intercept[JsonParseException](jsonReader.scanToKey("key2"))
+        .getMessage.contains("missing required field \"key2\", offset: 0x00000009"))
+    }
+  }
   "JsonReader.requiredKeyError" should {
     val jsonReader = reader("{}".getBytes)
     jsonReader.nextToken()

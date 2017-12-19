@@ -100,6 +100,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def rollbackToMark(): Unit = {
+    if (mark < 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'setMark()'")
     head = mark
     mark = -1
   }
