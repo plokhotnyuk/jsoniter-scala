@@ -38,7 +38,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
   using discriminator field with string type of value
 - Implicitly resolvable codecs for any types
-- Cyclic graph of class instances are not allowed and will lead to raising of `StackOverflowError`
+- Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to 
