@@ -216,8 +216,7 @@ final class JsonReader private[jsoniter_scala](
     if (isNextToken('"', head)) {
       val len = parseString(0, charBuf.length, head)
       new String(charBuf, 0, len)
-    } else if (isCurrentToken('n', head)) parseNull(default, head)
-    else decodeError("expected '\"' or null")
+    } else readNullOrTokenError(default, '"')
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
@@ -272,16 +271,14 @@ final class JsonReader private[jsoniter_scala](
       val x = parseBigInt(isToken = false, default)
       readParenthesesByte()
       x
-    } else if (isCurrentToken('n', head)) parseNull(default, head)
-    else decodeError("expected '\"' or null")
+    } else readNullOrTokenError(default, '"')
 
   def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
     if (isNextToken('"', head)) {
       val x = parseBigDecimal(isToken = false, default)
       readParenthesesByte()
       x
-    } else if (isCurrentToken('n', head)) parseNull(default, head)
-    else decodeError("expected '\"' or null")
+    } else readNullOrTokenError(default, '"')
 
   def readStringAsBoolean(): Boolean = {
     readParenthesesToken()
@@ -373,8 +370,8 @@ final class JsonReader private[jsoniter_scala](
 
   private def tokenOrNullError(b: Byte): Nothing = {
     var i = appendString("expected '", 0)
-    charBuf(i) = b.toChar
-    i = appendString("' or null", i + 1)
+    i = appendChar(b.toChar, i)
+    i = appendString("' or null", i)
     decodeError(i, head - 1, null)
   }
 
@@ -454,6 +451,12 @@ final class JsonReader private[jsoniter_scala](
     if (i == len) true
     else if (charBuf(i) != s.charAt(i)) false
     else isCharBufEqualsTo(len, s, i + 1)
+
+  private def appendChar(ch: Char, from: Int): Int = {
+    if (from >= charBuf.length) growCharBuf(from + 1)
+    charBuf(from) = ch
+    from + 1
+  }
 
   private def appendString(s: String, from: Int): Int = {
     val len = s.length
