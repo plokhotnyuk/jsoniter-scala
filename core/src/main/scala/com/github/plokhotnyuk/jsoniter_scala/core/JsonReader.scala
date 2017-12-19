@@ -287,12 +287,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readNull[A](default: A): A =
-    if (isNextToken('n', head)) parseNull(default, head)
-    else nullError(head)
+  def readNullOrError[A](default: A, error: String): A =
+    if (isNextToken('n', head)) parseNullOrError(default, error, head)
+    else decodeError(error)
 
   def readNullOrTokenError[A](default: A, b: Byte): A =
-    if (isCurrentToken('n', head)) parseNull(default, head)
+    if (isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
     else tokenOrNullError(b)
 
   def nextToken(): Byte = nextToken(head)
@@ -368,11 +368,11 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def tokenOrNullError(b: Byte): Nothing = {
+  private def tokenOrNullError(b: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendString("' or null", i)
-    decodeError(i, head - 1, null)
+    decodeError(i, pos, null)
   }
 
   private def reqFieldError(s: String): Nothing = {
@@ -433,18 +433,28 @@ final class JsonReader private[jsoniter_scala](
     else buf(pos - 1) == b
 
   @tailrec
-  private def parseNull[A](default: A, pos: Int): A =
+  private def parseNullOrError[A](default: A, error: String, pos: Int): A =
     if (pos + 2 < tail) {
-      if (buf(pos) != 'u') nullError(pos)
-      else if (buf(pos + 1) != 'l') nullError(pos + 1)
-      else if (buf(pos + 2) != 'l') nullError(pos + 2)
+      if (buf(pos) != 'u') decodeError(error, pos)
+      else if (buf(pos + 1) != 'l') decodeError(error, pos + 1)
+      else if (buf(pos + 2) != 'l') decodeError(error, pos + 2)
       else {
         head = pos + 3
         default
       }
-    } else parseNull(default, loadMoreOrError(pos))
+    } else parseNullOrError(default, error, loadMoreOrError(pos))
 
-  private def nullError(pos: Int) = decodeError("expected value or null", pos)
+  @tailrec
+  private def parseNullOrTokenError[A](default: A, b: Byte, pos: Int): A =
+    if (pos + 2 < tail) {
+      if (buf(pos) != 'u') tokenOrNullError(b, pos)
+      else if (buf(pos + 1) != 'l') tokenOrNullError(b, pos + 1)
+      else if (buf(pos + 2) != 'l') tokenOrNullError(b, pos + 2)
+      else {
+        head = pos + 3
+        default
+      }
+    } else parseNullOrTokenError(default, b, loadMoreOrError(pos))
 
   @tailrec
   private def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
@@ -1031,7 +1041,7 @@ final class JsonReader private[jsoniter_scala](
   private def parseBigInt(isToken: Boolean, default: BigInt = null): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     if (b == 'n') {
-      if (isToken) parseNull(default, head)
+      if (isToken) parseNullOrError(default, "expected number value or null", head)
       else numberError(head)
     } else {
       var lim = if (2 > charBuf.length) growCharBuf(2) else charBuf.length

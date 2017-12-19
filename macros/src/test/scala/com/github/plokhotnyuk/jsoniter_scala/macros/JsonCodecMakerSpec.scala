@@ -337,7 +337,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
           if (in.isNextToken('n')) {
             in.rollbackToken()
-            in.readNull(default)
+            in.readNullOrError(default, "expected number value or null")
           } else {
             in.rollbackToken()
             val v = in.readInt()
@@ -353,7 +353,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Enums](CodecMakerConfig()), Enums(null), """{"lt":null}""".getBytes)
       assert(intercept[JsonParseException] {
         verifyDeser(make[Enums](CodecMakerConfig()), Enums(null), """{"lt":none}""".getBytes)
-      }.getMessage.contains("expected value or null, offset: 0x00000007"))
+      }.getMessage.contains("expected number value or null, offset: 0x00000007"))
     }
     "serialize and deserialize case classes with value classes" in {
       verifySerDeser(make[ValueClassTypes](CodecMakerConfig()),
