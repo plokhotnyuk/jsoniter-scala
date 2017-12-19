@@ -869,7 +869,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     jsonReader.nextToken()
     "throw parsing exception with list of missing required fields that specified by bits" in {
       def check(bits: Int, error: String): Unit =
-        assert(intercept[JsonParseException](jsonReader.requiredKeyError(Array("name", "device"), bits))
+        assert(intercept[JsonParseException](jsonReader.requiredKeyError(Array("name", "device"), Array(bits)))
           .getMessage.contains(error))
 
       check(3, "missing required field(s) \"name\", \"device\", offset: 0x00000000")
@@ -877,9 +877,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check(1, "missing required field(s) \"name\", offset: 0x00000000")
     }
     "throw illegal argument exception in case of missing required fields cannot be selected" in {
-      assert(intercept[IllegalArgumentException](jsonReader.requiredKeyError(Array("name", "device"), 0))
+      assert(intercept[IllegalArgumentException](jsonReader.requiredKeyError(Array("name", "device"), Array(0)))
         .getMessage.contains("missing required field(s) cannot be reported for arguments: " +
-          "reqFields = Array(name, device), reqBits = WrappedArray(0)"))
+          "reqFields = Array(name, device), reqBits = Array(0)"))
     }
   }
   "JsonReader.unexpectedKeyError" should {

@@ -51,8 +51,8 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Int = 0,
     private[this] var config: ReaderConfig = null) {
-  def requiredKeyError(reqFields: Array[String], reqBits: Int*): Nothing = {
-    val len = Math.min(reqFields.length, reqBits.size << 5)
+  def requiredKeyError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
+    val len = Math.min(reqFields.length, reqBits.length << 5)
     var i = 0
     var j = 0
     var reqBitBlock = 0
@@ -65,7 +65,7 @@ final class JsonReader private[jsoniter_scala](
       j += 1
     }
     if (i == 0) throw new IllegalArgumentException("missing required field(s) cannot be reported for arguments: " +
-      s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = $reqBits")
+      s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = ${reqBits.mkString("Array(", ", ", ")")}")
     i = appendString("\"", i)
     decodeError(i, head - 1, null)
   }

@@ -497,7 +497,7 @@ object JsonCodecMaker {
                 required.map(r => getMappedName(annotations, r))
               }
               q"""if ($checkReqVars) $construct
-                  else in.requiredKeyError($reqFieldNames, ..$reqVarNames)"""
+                  else in.requiredKeyError($reqFieldNames, Array(..$reqVarNames))"""
             }
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
