@@ -166,7 +166,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected preceding call of 'nextToken()'"))
     }
   }
-  "JsonReader.readBoolean and JsonReader.readStringAsBoolean and JsonReader.readKeyAsBoolean" should {
+  "JsonReader.readBoolean, JsonReader.readStringAsBoolean and JsonReader.readKeyAsBoolean" should {
     "parse valid true and false values" in {
       def check(bytes: Array[Byte], value: Boolean): Unit = {
         reader(bytes).readBoolean() shouldBe value
@@ -231,9 +231,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error2))
       }
 
-      check("true".getBytes, "expected string value or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
-      check("false".getBytes, "expected string value or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
-      check("12345".getBytes, "expected string value or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
+      check("true".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
+      check("false".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
+      check("12345".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
     }
     "get the same string value for escaped strings as for non-escaped" in {
       def check(s1: String, s2: String): Unit = {
@@ -290,7 +290,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "malformed byte(s): 0xf0, 0x9d, 0x84, 0x0e, offset: 0x00000004")
     }
   }
-  "JsonReader.readChar" should {
+  "JsonReader.readChar and JsonReader.readKeyAsChar" should {
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
       def check(ch: Char): Unit = {
         readChar(ch.toString) shouldBe ch
@@ -394,7 +394,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "illegal surrogate character, offset: 0x00000004")
     }
   }
-  "JsonReader.readByte and JsonReader.readStringAsByte" should {
+  "JsonReader.readByte, JsonReader.readKeyAsByte and JsonReader.readStringAsByte" should {
     "parse valid byte values" in {
       def check(n: Byte): Unit = {
         val s = n.toString
@@ -407,6 +407,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readByte" should {
     "parse valid byte values with skiping of JSON space characters" in {
       readByte(" \n\t\r123") shouldBe 123.toByte
       readByte(" \n\t\r-123") shouldBe -123.toByte
@@ -443,7 +445,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-0128", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readShort" should {
+  "JsonReader.readShort, JsonReader.readKeyAsShort and JsonReader.readStringAsShort" should {
     "parse valid short values" in {
       def check(n: Short): Unit = {
         val s = n.toString
@@ -456,6 +458,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readShort" should {
     "parse valid short values with skipping of JSON space characters" in {
       readShort(" \n\t\r12345") shouldBe 12345.toShort
       readShort(" \n\t\r-12345") shouldBe -12345.toShort
@@ -492,7 +496,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-032768", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readInt" should {
+  "JsonReader.readInt, JsonReader.readKeyAsInt and JsonReader.readStringAsInt" should {
     "parse valid int values" in {
       def check(n: Int): Unit = {
         val s = n.toString
@@ -505,6 +509,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readInt" should {
     "parse valid int values with skipping of JSON space characters" in {
       readInt(" \n\t\r123456789") shouldBe 123456789
       readInt(" \n\t\r-123456789") shouldBe -123456789
@@ -543,7 +549,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-02147483648", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readLong" should {
+  "JsonReader.readLong, JsonReader.readKeyAsLong and JsonReader.readStringAsLong" should {
     "parse valid long values" in {
       def check(n: Long): Unit = {
         val s = n.toString
@@ -556,6 +562,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readLong" should {
     "parse valid long values with skipping of JSON space characters" in {
       readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
       readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
@@ -594,7 +602,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-09223372036854775808", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readFloat" should {
+  "JsonReader.readFloat, JsonReader.readKeyAsFloat and JsonReader.readStringAsFloat" should {
     "parse valid float values" in {
       def check(n: BigDecimal): Unit = {
         val s = n.toString
@@ -608,6 +616,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readFloat" should {
     "parse infinity on float overflow" in {
       readFloat("12345e6789") shouldBe Float.PositiveInfinity
       readFloat("-12345e6789") shouldBe Float.NegativeInfinity
@@ -660,7 +670,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readDouble" should {
+  "JsonReader.readDouble, JsonReader.readKeyAsDouble and JsonReader.readStringAsDouble" should {
     "parse valid double values" in {
       def check(n: BigDecimal): Unit = {
         val s = n.toString
@@ -674,6 +684,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readDouble" should {
     "parse infinity on double overflow" in {
       readDouble("12345e6789") shouldBe Double.PositiveInfinity
       readDouble("-12345e6789") shouldBe Double.NegativeInfinity
@@ -726,7 +738,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readBigInt" should {
+  "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
     "parse null value" in {
       readBigInt("null", null) shouldBe null
       reader("null".getBytes).readStringAsBigInt(null) shouldBe null
@@ -735,6 +747,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigInt("null", BigInt("12345")) shouldBe BigInt("12345")
       reader("null".getBytes).readStringAsBigInt(BigInt("12345")) shouldBe BigInt("12345")
     }
+  }
+  "JsonReader.readBigInt, JsonReader.readStringAsBigInt and JsonReader.readKeyAsBigInt" should {
     "parse valid number values" in {
       def check(n: BigInt): Unit = {
         val s = n.toString
@@ -747,6 +761,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readBigInt" should {
     "parse big number values without overflow" in {
       val bigNumber = "12345" + new String(Array.fill(6789)('0'))
       readBigInt(bigNumber, null) shouldBe BigInt(bigNumber)
@@ -787,7 +803,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-012345", "illegal number with leading zero, offset: 0x00000001")
     }
   }
-  "JsonReader.readBigDecimal" should {
+  "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
     "parse null value" in {
       readBigDecimal("null", null) shouldBe null
       reader("null".getBytes).readStringAsBigDecimal(null) shouldBe null
@@ -796,6 +812,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
       reader("null".getBytes).readStringAsBigDecimal(BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
+  }
+  "JsonReader.readBigDecimal, JsonReader.readKeyAsBigDecimal and JsonReader.readStringAsBigDecimal" should {
     "parse valid number values" in {
       def check(n: BigDecimal): Unit = {
         val s = n.toString
@@ -808,6 +826,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         check(n)
       }
     }
+  }
+  "JsonReader.readBigDecimal" should {
     "parse big number values without overflow" in {
       readBigDecimal("12345e6789", null) shouldBe BigDecimal("12345e6789")
       readBigDecimal("-12345e6789", null) shouldBe BigDecimal("-12345e6789")

@@ -589,7 +589,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("expected '\"', offset: 0x00000005"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":2,"o":"true","l":["1.1"]}""".getBytes)
-      }.getMessage.contains("expected string value or null, offset: 0x0000000e"))
+      }.getMessage.contains("expected '\"' or null, offset: 0x0000000e"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","o":true,"l":["1.1"]}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x00000016"))
@@ -745,7 +745,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000013"""))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":123}]""".getBytes)
-      }.getMessage.contains("""expected string value, offset: 0x0000000f"""))
+      }.getMessage.contains("""expected '"', offset: 0x0000000f"""))
     }
   }
   "JsonCodec.enforceCamelCase" should {
