@@ -116,6 +116,12 @@ creating pull requests (fixes and improvements of docs, code and tests are highl
 sbt clean +coverage +test +coverageReport
 ```
 
+### Publish locally
+
+```sh
+sbt +publishLocal
+```
+
 ### Run benchmarks
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features & options please check 

@@ -81,7 +81,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       validateSkip(" \n\t\rfalse")
     }
     "throw parsing exception when skipping truncated boolean value" in {
-      assert(intercept[JsonParseException](validateSkip("t")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonParseException](validateSkip("t"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
       assert(intercept[JsonParseException](validateSkip("f")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "skip null values" in {
@@ -94,7 +95,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       validateSkip("{\"{\"}")
     }
     "throw parsing exception when skipping not closed object" in {
-      assert(intercept[JsonParseException](validateSkip("{{}")).getMessage.contains("unexpected end of input, offset: 0x00000004"))
+      assert(intercept[JsonParseException](validateSkip("{{}"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip array values" in {
       validateSkip("[]")
@@ -102,7 +104,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       validateSkip("[\"[\"]")
     }
     "throw parsing exception when skipping not closed array" in {
-      assert(intercept[JsonParseException](validateSkip("[[]")).getMessage.contains("unexpected end of input, offset: 0x00000004"))
+      assert(intercept[JsonParseException](validateSkip("[[]"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip mixed values" in {
       validateSkip(
