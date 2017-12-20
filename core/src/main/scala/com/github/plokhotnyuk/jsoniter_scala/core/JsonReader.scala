@@ -555,6 +555,7 @@ final class JsonReader private[jsoniter_scala](
         if (v < Byte.MinValue) byteOverflowError(pos)
         pos + 1
       }
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
       if (negative) v.toByte
       else if (v == Byte.MinValue) byteOverflowError(pos - 1)
@@ -582,6 +583,7 @@ final class JsonReader private[jsoniter_scala](
         if (v < Short.MinValue) shortOverflowError(pos)
         pos + 1
       }
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
       if (negative) v.toShort
       else if (v == Short.MinValue) shortOverflowError(pos - 1)
@@ -610,6 +612,7 @@ final class JsonReader private[jsoniter_scala](
         if (v >= 0) intOverflowError(pos)
         pos + 1
       }
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
       if (negative) v
       else if (v == Int.MinValue) intOverflowError(pos - 1)
@@ -638,6 +641,7 @@ final class JsonReader private[jsoniter_scala](
         if (v >= 0) longOverflowError(pos)
         pos + 1
       }
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
       if (negative) v
       else if (v == Long.MinValue) longOverflowError(pos - 1)
@@ -1070,6 +1074,7 @@ final class JsonReader private[jsoniter_scala](
           i += 1
           pos + 1
         }
+        if (b == '.' || b == 'e' || b == 'E') numberError(pos)
         head = pos
         new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigInteger)
       } else numberError(pos - 1)

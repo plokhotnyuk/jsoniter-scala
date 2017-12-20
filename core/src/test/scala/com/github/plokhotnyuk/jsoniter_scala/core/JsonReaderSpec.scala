@@ -398,12 +398,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readByte" should {
-    "parse valid byte values and stops on not numeric chars" in {
-      readByte("0$") shouldBe 0
-    }
     "parse valid byte values with skiping of JSON space characters" in {
       readByte(" \n\t\r123") shouldBe 123.toByte
       readByte(" \n\t\r-123") shouldBe (-123).toByte
+    }
+    "parse valid byte values and stops on not numeric chars (except '.', 'e', 'E')" in {
+      readByte("0$") shouldBe 0
+      readByte("123$") shouldBe 123
     }
   }
   "JsonReader.readByte, JsonReader.readKeyAsByte and JsonReader.readStringAsByte" should {
@@ -424,6 +425,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(1000)) { (n: Byte) =>
         check(n)
       }
+    }
+    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
+      checkError("123.0", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
+      checkError("123e10", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
+      checkError("123E10", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000004")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -460,8 +466,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readShort(" \n\t\r12345") shouldBe 12345.toShort
       readShort(" \n\t\r-12345") shouldBe -12345.toShort
     }
-    "parse valid short values and stops on not numeric chars" in {
+    "parse valid short values and stops on not numeric chars (except '.', 'e', 'E')" in {
       readShort("0$") shouldBe 0
+      readShort("12345$") shouldBe 12345
     }
   }
   "JsonReader.readShort, JsonReader.readKeyAsShort and JsonReader.readStringAsShort" should {
@@ -482,6 +489,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(10000)) { (n: Short) =>
         check(n)
       }
+    }
+    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
+      checkError("12345.0", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
+      checkError("12345e10", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
+      checkError("12345E10", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -518,8 +530,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readInt(" \n\t\r123456789") shouldBe 123456789
       readInt(" \n\t\r-123456789") shouldBe -123456789
     }
-    "parse valid int values and stops on not numeric chars" in {
+    "parse valid int values and stops on not numeric chars (except '.', 'e', 'E')" in {
       readInt("0$") shouldBe 0
+      readInt("123456789$") shouldBe 123456789
     }
   }
   "JsonReader.readInt, JsonReader.readKeyAsInt and JsonReader.readStringAsInt" should {
@@ -540,6 +553,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(10000)) { (n: Int) =>
         check(n)
       }
+    }
+    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
+      checkError("123456789.0", "illegal number, offset: 0x00000009", "illegal number, offset: 0x0000000a")
+      checkError("123456789e10", "illegal number, offset: 0x00000009", "illegal number, offset: 0x0000000a")
+      checkError("123456789E10", "illegal number, offset: 0x00000009", "illegal number, offset: 0x0000000a")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -580,8 +598,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
       readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
     }
-    "parse valid long values and stops on not numeric chars" in {
+    "parse valid long values and stops on not numeric chars (except '.', 'e', 'E')" in {
       readLong("0$") shouldBe 0L
+      readLong("1234567890123456789$") shouldBe 1234567890123456789L
     }
   }
   "JsonReader.readLong, JsonReader.readKeyAsLong and JsonReader.readStringAsLong" should {
@@ -602,6 +621,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(10000)) { (n: Long) =>
         check(n)
       }
+    }
+    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
+      checkError("1234567890123456789.0", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
+      checkError("1234567890123456789e10", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
+      checkError("1234567890123456789E10", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -782,12 +806,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readBigInt(" \n\t\r12345678901234567890123456789", null) shouldBe BigInt("12345678901234567890123456789")
       readBigInt(" \n\t\r-12345678901234567890123456789", null) shouldBe BigInt("-12345678901234567890123456789")
     }
-    "parse valid number values and stops on not numeric or '.', 'e', 'E' chars" in {
+    "parse valid number values and stops on not numeric chars (except '.', 'e', 'E')" in {
       readBigInt("0$", null) shouldBe BigInt("0")
       readBigInt("1234567890123456789$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789.0123456789$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789e10$", null) shouldBe BigInt("1234567890123456789")
-      readBigInt("1234567890123456789E10$", null) shouldBe BigInt("1234567890123456789")
     }
   }
   "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
@@ -823,6 +844,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       val bigNumber = "12345" + new String(Array.fill(6789)('0'))
       check(BigInt(bigNumber))
       check(BigInt("-" + bigNumber))
+    }
+    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
+      checkError("1234567890123456789.0", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
+      checkError("1234567890123456789e10", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
+      checkError("1234567890123456789E10", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000",

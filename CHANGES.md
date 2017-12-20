@@ -2,6 +2,8 @@
 
 ## Version 0.X
 _2017-12-2X_ [GitHub Diff](https://github.com/plokhotnyuk/jsoniter-scala/compare/v0.1...master)
+ * Fix parsing of illegal decimal numbers by methods to parse integer numbers
+ * Fix of possible missing reporting of unexpected fields for case classes that used directly and as leaf in ADTs with turned off skipping of unexpected fields
  * Minor refactoring of reader API: changes in signatures of some methods that are used for generation of codecs. 
    If you used `macros` module only w/a own custom codecs then it doesn't require a migration. 
  * Add ability to read/write numbers & booleans from/to string values in case class fields, value classes, options,
