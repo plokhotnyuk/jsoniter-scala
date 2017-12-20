@@ -98,10 +98,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfNameOverridden: JsonCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
 
-  case class Stringified(@stringified i: Int, @stringified bi: BigInt,
-                         @stringified o: Option[Boolean], @stringified l: List[Double])
+  case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
 
-  val stringified = Stringified(1, 2, Some(true), List(1.1))
+  val stringified = Stringified(1, 2, List(1), List(2))
   val codecOfStringified: JsonCodec[Stringified] = make[Stringified](CodecMakerConfig())
 
   case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, l: List[Int] = List(0),
@@ -150,9 +149,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   sealed abstract class База
 
-  case class А(а: Int) extends База
+  case class А(б: Б) extends База
 
-  case class Б(б: String) extends База
+  case class Б(а: А) extends База
 
   val codecOfADTList: JsonCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
@@ -581,21 +580,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("missing required field(s) \"new_name\", offset: 0x00000010"))
     }
     "serialize and deserialize fields that stringified by annotation" in {
-      verifySerDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","o":"true","l":["1.1"]}""".getBytes)
+      verifySerDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""".getBytes)
     }
     "throw parse exception when stringified fields have non-string values" in {
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringified, stringified, """{"i":1,"bi":"2","o":"true","l":["1.1"]}""".getBytes)
+        verifyDeser(codecOfStringified, stringified, """{"i":1,"bi":"2","l1":["1"],"l2":[2]}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x00000005"))
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":2,"o":"true","l":["1.1"]}""".getBytes)
+        verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""".getBytes)
       }.getMessage.contains("expected '\"' or null, offset: 0x0000000e"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","o":true,"l":["1.1"]}""".getBytes)
-      }.getMessage.contains("expected '\"', offset: 0x00000016"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","o":"true","l":[1.1]}""".getBytes)
-      }.getMessage.contains("expected '\"', offset: 0x00000022"))
     }
     "serialize and deserialize indented JSON" in {
       verifySerDeser(codecOfIndented, indented,
@@ -731,10 +724,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         List(C(2, "WWW"), C(1, "VVV")),
         s"""[{"t":"C","a":2,"b":"WWW"},{"t":"C","a":1,"b":"VVV"}]""".getBytes)
     }
-    "serialize and deserialize ADTs using non-ASCII discriminator field & value" in {
-      verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип")),
-        List(А(1), Б("VVV")),
-        """[{"тип":"А","а":1},{"тип":"Б","б":"VVV"}]""".getBytes)
+    "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
+      verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип", skipUnexpectedFields = false)),
+        List(А(Б(null)), Б(А(null))),
+        """[{"тип":"А","б":{"а":null}},{"тип":"Б","а":{"б":null}}]""".getBytes)
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {

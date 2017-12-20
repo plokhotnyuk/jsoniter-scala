@@ -320,26 +320,28 @@ object JsonCodecMaker {
         q"$reqFieldName"
       }
 
-      val decodeMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val decodeMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
-      def withDecoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
-        val decodeMethodName = decodeMethodNames.getOrElseUpdate(tpe, TermName("d" + decodeMethodNames.size))
-        decodeMethodTrees.getOrElseUpdate(tpe, {
+      val decodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
+      val decodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
+
+      def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
+        val decodeMethodName = decodeMethodNames.getOrElseUpdate(methodKey, TermName("d" + decodeMethodNames.size))
+        decodeMethodTrees.getOrElseUpdate(methodKey, {
           val impl = f
-          q"private def $decodeMethodName(in: JsonReader, default: $tpe): $tpe = $impl"
+          q"private def $decodeMethodName(in: JsonReader, default: ${methodKey.tpe}): ${methodKey.tpe} = $impl"
         })
         q"$decodeMethodName(in, $arg)"
       }
 
-      val encodeMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val encodeMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val encodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
+      val encodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
 
-      def withEncoderFor(tpe: Type, arg: Tree)(f: => Tree): Tree = {
-        val encodeMethodName = encodeMethodNames.getOrElseUpdate(tpe, TermName("e" + encodeMethodNames.size))
-        encodeMethodTrees.getOrElseUpdate(tpe, {
+      def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
+        val encodeMethodName = encodeMethodNames.getOrElseUpdate(methodKey, TermName("e" + encodeMethodNames.size))
+        encodeMethodTrees.getOrElseUpdate(methodKey, {
           val impl = f
-          q"private def $encodeMethodName(x: $tpe, out: JsonWriter): Unit = $impl"
+          q"private def $encodeMethodName(x: ${methodKey.tpe}, out: JsonWriter): Unit = $impl"
         })
         q"$encodeMethodName($arg, out)"
       }
@@ -367,12 +369,10 @@ object JsonCodecMaker {
 
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
-        val decodeMethodName = decodeMethodNames.get(tpe)
-        if (decodeMethodName.isDefined && !discriminator.isEmpty) {
-          warn(s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to read the discriminator field.")
-        }
+        val methodKey = MethodKey(tpe, isStringified && isContainer(tpe), discriminator)
+        val decodeMethodName = decodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.decode(in, $default)"
-        else if (decodeMethodName.isDefined && discriminator.isEmpty) q"${decodeMethodName.get}(in, $default)"
+        else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           if (isStringified) q"in.readStringAsBoolean()" else q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
@@ -396,72 +396,73 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
-        } else if (tpe <:< typeOf[Option[_]]) {
+        } else if (tpe <:< typeOf[Option[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          q"Option(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
-        } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(tpe, default) {
+          q"""val x = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
+              if (x eq null) None else Some(x)"""
+        } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
             q"x = x.updated(in.readKeyAsInt(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
-        } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
             q"x.update(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
-        } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1]",
             q"x = x.updated(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
-        } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
             q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
-        } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = containerCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
-        } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
           val comp = containerCompanion(tpe)
           val readVal = if (isStringified) q"x.add(in.readStringAsInt())" else q"x.add(in.readInt())"
           genReadArray(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty", readVal)
-        } else if (tpe <:< typeOf[BitSet]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val comp = containerCompanion(tpe)
           val readVal = if (isStringified) q"x += in.readStringAsInt()" else q"x += in.readInt()"
           genReadArray(q"val x = $comp.newBuilder", readVal, q"x.result()")
         } else if (tpe <:< typeOf[mutable.Traversable[_] with Growable[_]] &&
-            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(tpe, default) { // ArrayStack uses 'push' for '+='
+            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadArray(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
-        } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
-        } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = collection.mutable.ArrayBuilder.make[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
-        } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(tpe, default) {
+        } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
               if (v eq null) default
               else try ${enumSymbol(tpe)}.withName(v) catch {
                 case _: NoSuchElementException => in.enumValueError(v)
               }"""
-        } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(tpe, default) {
+        } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('{')) {
                 in.rollbackToken()
                 in.skip()
                 ${tpe.typeSymbol.asClass.module}
               } else in.readNullOrTokenError(default, '{')"""
-        } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(tpe, default) {
+        } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(methodKey, default) {
           val annotations = getFieldAnnotations(tpe)
 
           def name(m: MethodSymbol): String = getMappedName(annotations, m.name.toString)
@@ -535,7 +536,7 @@ object JsonCodecMaker {
                 }
                 ..$checkReqVarsAndConstruct
               } else in.readNullOrTokenError(default, '{')"""
-        } else if (isSealedAdtBase(tpe)) withDecoderFor(tpe, default) {
+        } else if (isSealedAdtBase(tpe)) withDecoderFor(methodKey, default) {
           def hashCode(subTpe: Type): Int = {
             val cs = discriminatorValue(subTpe).toCharArray
             JsonReader.toHashCode(cs, cs.length)
@@ -567,12 +568,10 @@ object JsonCodecMaker {
 
       def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
-        val encodeMethodName = encodeMethodNames.get(tpe)
-        if (encodeMethodName.isDefined && !discriminator.isEmpty) {
-          warn(s"Definition of '${typeOf[JsonCodec[_]]}' for '$tpe' is ignored due need to write the discriminator field.")
-        }
+        val methodKey = MethodKey(tpe, isStringified && isContainer(tpe), discriminator)
+        val encodeMethodName = encodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.encode($m, out)"
-        else if (encodeMethodName.isDefined && discriminator.isEmpty) q"${encodeMethodName.get}($m, out)"
+        else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
           tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
@@ -585,17 +584,18 @@ object JsonCodecMaker {
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] || tpe =:= typeOf[String]) {
           q"out.writeVal($m)"
         } else if (isValueClass(tpe)) genWriteVal(q"$m.value", valueClassValueType(tpe), isStringified)
-        else if (tpe <:< typeOf[Option[_]]) withEncoderFor(tpe, m) {
+        else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
           q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
-        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] || tpe <:< typeOf[LongMap[_]]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
+            tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
-        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", if (isStringified) q"out.writeValAsString(x)" else q"out.writeVal(x)")
-        } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
-        } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
               val l = x.length
               var i = 0
@@ -605,15 +605,15 @@ object JsonCodecMaker {
                 i += 1
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(tpe, m) {
+        } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
-        } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(tpe, m) {
+        } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""if (x ne null) {
                 out.writeObjectStart()
                 ..$discriminator
                 out.writeObjectEnd()
               } else out.writeNull()"""
-        } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(tpe, m) {
+        } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(methodKey, m) {
           val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
@@ -672,7 +672,7 @@ object JsonCodecMaker {
                 ..$allWriteFields
                 out.writeObjectEnd()
               } else out.writeNull()"""
-        } else if (isSealedAdtBase(tpe)) withEncoderFor(tpe, m) {
+        } else if (isSealedAdtBase(tpe)) withEncoderFor(methodKey, m) {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
             val writeDiscriminatorField =
