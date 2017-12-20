@@ -59,7 +59,8 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Configurable size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`, no extra 
   buffering are required  
 
-For upcoming features and fixes see [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
+For upcoming features and fixes see [Change log](https://github.com/plokhotnyuk/jsoniter-scala/master/CHANGES.md) 
+and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 
 ## How to use
 
