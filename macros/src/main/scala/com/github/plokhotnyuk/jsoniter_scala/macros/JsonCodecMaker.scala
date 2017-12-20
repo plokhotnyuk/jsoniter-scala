@@ -320,12 +320,10 @@ object JsonCodecMaker {
         q"$reqFieldName"
       }
 
-      case class MethodKey private (tpe: Type, isStringified: Boolean, discriminator: Tree)
+      case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
-      object MethodKey {
-        def apply(tpe: Type, isStringified: Boolean, discriminator: Tree): MethodKey =
-          new MethodKey(tpe, isStringified && isContainer(tpe), discriminator)
-      }
+      def getMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree): MethodKey =
+        MethodKey(tpe, isStringified && isContainer(tpe), discriminator)
 
       val decodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
       val decodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
@@ -374,7 +372,7 @@ object JsonCodecMaker {
 
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
-        val methodKey = MethodKey(tpe, isStringified, discriminator)
+        val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.decode(in, $default)"
         else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
@@ -573,7 +571,7 @@ object JsonCodecMaker {
 
       def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
         val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
-        val methodKey = MethodKey(tpe, isStringified, discriminator)
+        val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.encode($m, out)"
         else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
