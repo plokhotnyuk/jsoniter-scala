@@ -102,8 +102,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeKey(s)) shouldBe '"' + s + "\":"
       }
 
-      forAll(minSuccessful(10000)) { (s: String) =>
-        whenever(!s.exists(ch => Character.isSurrogate(ch) || isEscapedAscii(ch))) {
+      forAll(minSuccessful(100000)) { (s: String) =>
+        whenever(s.forall(ch => !Character.isSurrogate(ch) && !isEscapedAscii(ch))) {
           check(s)
         }
       }
@@ -127,7 +127,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\":"
       }
 
-      forAll(minSuccessful(10000)) { (s: String) =>
+      forAll(minSuccessful(100000)) { (s: String) =>
         whenever(s.forall(ch => isEscapedAscii(ch) || ch >= 128)) {
           check(s)
         }
@@ -215,7 +215,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for int" should {
     "write any int values" in {
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
         withWriter(_.writeVal(n)) shouldBe n.toString
         withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
@@ -224,12 +224,12 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for long" should {
     "write any long values" in {
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
         withWriter(_.writeVal(n.toLong)) shouldBe n.toString
         withWriter(_.writeValAsString(n.toLong)) shouldBe '"' + n.toString + '"'
         withWriter(_.writeKey(n.toLong)) shouldBe '"' + n.toString + "\":"
       }
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(100000)) { (n: Long) =>
         withWriter(_.writeVal(n)) shouldBe n.toString
         withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
@@ -238,7 +238,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for float" should {
     "write finite float values" in {
-      forAll(minSuccessful(10000)) { (n: Float) =>
+      forAll(minSuccessful(100000)) { (n: Float) =>
         whenever(java.lang.Float.isFinite(n)) {
           withWriter(_.writeVal(n)) shouldBe n.toString
           withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
@@ -256,7 +256,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for double" should {
     "write finite double values" in {
-      forAll(minSuccessful(10000)) { (n: Double) =>
+      forAll(minSuccessful(100000)) { (n: Double) =>
         whenever(java.lang.Double.isFinite(n)) {
           withWriter(_.writeVal(n)) shouldBe n.toString
           withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
@@ -280,7 +280,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("key cannot be null"))
     }
     "write number values" in {
-      forAll(minSuccessful(10000)) { (n: BigInt) =>
+      forAll(minSuccessful(100000)) { (n: BigInt) =>
         withWriter(_.writeVal(n)) shouldBe n.toString
         withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
@@ -295,7 +295,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("key cannot be null"))
     }
     "write number values" in {
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         withWriter(_.writeVal(n)) shouldBe n.toString
         withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"

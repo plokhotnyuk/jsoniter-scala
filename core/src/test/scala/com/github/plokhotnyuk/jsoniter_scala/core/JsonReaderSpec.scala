@@ -224,8 +224,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readKeyAsString(s) shouldBe s
       }
 
-      forAll(minSuccessful(10000)) { (s: String) =>
-        whenever(!s.exists(ch => ch == '"' || ch == '\\' || Character.isSurrogate(ch))) {
+      forAll(minSuccessful(100000)) { (s: String) =>
+        whenever(s.forall(ch => ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s)
         }
       }
@@ -570,7 +570,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     "parse valid int values" in {
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
         check(n)
       }
     }
@@ -638,7 +638,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     "parse valid long values" in {
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(100000)) { (n: Long) =>
         check(n)
       }
     }
@@ -708,7 +708,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     "parse valid float values" in {
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         check(n.toString, java.lang.Float.parseFloat(n.toString))
       }
     }
@@ -778,7 +778,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     "parse valid double values" in {
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         check(n.toString, java.lang.Double.parseDouble(n.toString))
       }
     }
@@ -856,7 +856,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     "parse valid number values" in {
-      forAll(minSuccessful(10000)) { (n: BigInt) =>
+      forAll(minSuccessful(100000)) { (n: BigInt) =>
         check(n)
       }
     }
@@ -940,7 +940,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     "parse valid number values" in {
-      forAll(minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         check(n)
       }
     }
