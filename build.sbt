@@ -95,7 +95,7 @@ lazy val benchmark = project
       "io.circe" %% "circe-parser" % "0.9.0-M2",
       "com.typesafe.play" %% "play-json" % "2.6.8",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
-      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.0",
+      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.2",
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     )
   )
