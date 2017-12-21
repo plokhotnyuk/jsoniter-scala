@@ -1429,10 +1429,10 @@ final class JsonReader private[jsoniter_scala](
 
   private def fromHexDigit(pos: Int): Int = {
     val b = buf(pos)
-    if (b >= '0' && b <= '9') b - 48
+    if (b >= '0' && b <= '9') b - '0'
     else {
-      val b1 = b & -33
-      if (b1 >= 'A' && b1 <= 'F') b1 - 55
+      val b1 = b | 0x20 // 0x20 == 'A' ^ 'a' or 'B' ^ 'b', etc.
+      if (b1 >= 'a' && b1 <= 'f') b1 - 0x57 // 0x57 == 'a' - 10
       else decodeError("expected hex digit", pos)
     }
   }
