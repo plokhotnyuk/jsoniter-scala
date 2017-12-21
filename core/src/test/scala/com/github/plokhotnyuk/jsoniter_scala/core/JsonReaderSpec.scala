@@ -56,8 +56,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       validateSkip("\"-\"")
     }
     "throw parsing exception when skipping string that is not closed by parentheses" in {
-      assert(intercept[JsonParseException](validateSkip("\"")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](validateSkip("\"abc")).getMessage.contains("unexpected end of input, offset: 0x00000005"))
+      assert(intercept[JsonParseException](validateSkip("\""))
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonParseException](validateSkip("\"abc"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000005"))
     }
     "skip string values with escaped characters" in {
       validateSkip(""""\\"""")
@@ -83,7 +85,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "throw parsing exception when skipping truncated boolean value" in {
       assert(intercept[JsonParseException](validateSkip("t"))
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](validateSkip("f")).getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonParseException](validateSkip("f"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "skip null values" in {
       validateSkip("null")
@@ -170,32 +173,40 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readBoolean, JsonReader.readStringAsBoolean and JsonReader.readKeyAsBoolean" should {
-    "parse valid true and false values" in {
-      def check(bytes: Array[Byte], value: Boolean): Unit = {
-        reader(bytes).readBoolean() shouldBe value
-        reader('\"'.toByte +: bytes :+ '\"'.toByte).readStringAsBoolean() shouldBe value
-        reader('\"'.toByte +: bytes :+ '\"'.toByte :+ ':'.toByte).readKeyAsBoolean() shouldBe value
-      }
+    def check(s: String, value: Boolean): Unit = {
+      reader(s.getBytes).readBoolean() shouldBe value
+      reader(('\"' + s + '\"').getBytes).readStringAsBoolean() shouldBe value
+      reader(('\"' + s + "\":").getBytes).readKeyAsBoolean() shouldBe value
+    }
 
-      check("true".getBytes, value = true)
-      check("false".getBytes, value = false)
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](reader(s.getBytes).readBoolean())
+        .getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader(('\"' + s + '\"').getBytes).readStringAsBoolean())
+        .getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(('\"' + s + "\":").getBytes).readKeyAsBoolean())
+        .getMessage.contains(error2))
+    }
+
+    "parse valid true and false values" in {
+      check("true", value = true)
+      check("false", value = false)
     }
     "throw parsing exception for empty input and illegal or broken value" in {
-      def check(bytes: Array[Byte], error1: String, error2: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readBoolean())
-          .getMessage.contains(error1))
-        assert(intercept[JsonParseException](reader('\"'.toByte +: bytes :+ '\"'.toByte).readStringAsBoolean())
-          .getMessage.contains(error2))
-        assert(intercept[JsonParseException](reader('\"'.toByte +: bytes :+ '\"'.toByte :+ ':'.toByte).readKeyAsBoolean())
-          .getMessage.contains(error2))
-      }
-
-      check("x".getBytes, "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
-      check("trae".getBytes, "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
-      check("folse".getBytes, "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
-      check("".getBytes, "unexpected end of input, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
-      check("tru".getBytes, "unexpected end of input, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
-      check("fals".getBytes, "unexpected end of input, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
+      checkError("x", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+      checkError("trae", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
+      checkError("folse", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+      checkError("tru", "unexpected end of input, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
+      checkError("fals", "unexpected end of input, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
+    }
+  }
+  "JsonReader.readKeyAsString" should {
+    "throw parsing exception for missing ':' in the end" in {
+      assert(intercept[JsonParseException](reader("\"\"".getBytes).readKeyAsString())
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonParseException](reader("\"\"x".getBytes).readKeyAsString())
+        .getMessage.contains("expected ':', offset: 0x00000002"))
     }
   }
   "JsonReader.readString and JsonReader.readKeyAsString" should {
@@ -208,192 +219,201 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes).readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
+      def check(s: String): Unit = {
+        readString(s) shouldBe s
+        readKeyAsString(s) shouldBe s
+      }
+
       forAll(minSuccessful(10000)) { (s: String) =>
         whenever(!s.exists(ch => ch == '"' || ch == '\\' || Character.isSurrogate(ch))) {
-          readString(s) shouldBe s
-          readKeyAsString(s) shouldBe s
+          check(s)
         }
       }
     }
-    "throw parsing exception for empty input and illegal or broken string" in {
-      def check(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readString()).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
-      }
-
-      check("\"".getBytes, "unexpected end of input, offset: 0x00000001")
-      check("\"\\".getBytes, "unexpected end of input, offset: 0x00000002")
-      assert(intercept[JsonParseException](reader("\"\"".getBytes).readKeyAsString())
-        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](reader("\"\"x".getBytes).readKeyAsString())
-        .getMessage.contains("expected ':', offset: 0x00000002"))
-    }
-    "throw parsing exception for boolean values & numbers" in {
-      def check(bytes: Array[Byte], error1: String, error2: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readString()).getMessage.contains(error1))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error2))
-      }
-
-      check("true".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
-      check("false".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
-      check("12345".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
-    }
     "get the same string value for escaped strings as for non-escaped" in {
-      def check(s1: String, s2: String): Unit = {
+      def checkEncoded(s1: String, s2: String): Unit = {
         readString(s1) shouldBe readString(s2)
         readKeyAsString(s1) shouldBe readKeyAsString(s2)
       }
 
-      check("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\\\")
-      check("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1\\ud834\\udd1e", "\b\f\n\r\t/Aиბ𝄞")
+      checkEncoded("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\\\")
+      checkEncoded("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1\\ud834\\udd1e", "\b\f\n\r\t/Aиბ𝄞")
+    }
+    "throw parsing exception for empty input and illegal or broken string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readString()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\\".getBytes, "unexpected end of input, offset: 0x00000002")
+    }
+    "throw parsing exception for boolean values & numbers" in {
+      def checkError(bytes: Array[Byte], error1: String, error2: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readString()).getMessage.contains(error1))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error2))
+      }
+
+      checkError("true".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
+      checkError("false".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
+      checkError("12345".getBytes, "expected '\"' or null, offset: 0x00000000", "expected '\"', offset: 0x00000000")
     }
     "throw parsing exception in case of illegal escape sequence" in {
-      def check(s: String, error1: String, error2: String): Unit = {
+      def checkError(s: String, error1: String, error2: String): Unit = {
         assert(intercept[JsonParseException](readString(s)).getMessage.contains(error1))
         assert(intercept[JsonParseException](readKeyAsString(s)).getMessage.contains(error2))
       }
 
-      check("\\x0008", "illegal escape sequence, offset: 0x00000002", "illegal escape sequence, offset: 0x00000002")
-      check("\\u000Z", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
-      check("\\u000", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
-      check("\\u00", "unexpected end of input, offset: 0x00000006", "expected hex digit, offset: 0x00000005")
-      check("\\u0", "unexpected end of input, offset: 0x00000005", "unexpected end of input, offset: 0x00000006")
-      check("\\", "unexpected end of input, offset: 0x00000003", "unexpected end of input, offset: 0x00000004")
-      check("\\udd1e", "unexpected end of input, offset: 0x00000008", "unexpected end of input, offset: 0x00000009")
-      check("\\ud834", "unexpected end of input, offset: 0x00000008", "unexpected end of input, offset: 0x00000009")
-      check("\\ud834\\", "unexpected end of input, offset: 0x00000009", "unexpected end of input, offset: 0x0000000a")
-      check("\\ud834\\x", "unexpected end of input, offset: 0x0000000a", "unexpected end of input, offset: 0x0000000b")
-      check("\\ud834\\ud834", "illegal surrogate character pair, offset: 0x0000000c",
+      checkError("\\x0008", "illegal escape sequence, offset: 0x00000002",
+        "illegal escape sequence, offset: 0x00000002")
+      checkError("\\u000Z", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
+      checkError("\\u000", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
+      checkError("\\u00", "unexpected end of input, offset: 0x00000006", "expected hex digit, offset: 0x00000005")
+      checkError("\\u0", "unexpected end of input, offset: 0x00000005", "unexpected end of input, offset: 0x00000006")
+      checkError("\\", "unexpected end of input, offset: 0x00000003", "unexpected end of input, offset: 0x00000004")
+      checkError("\\udd1e", "unexpected end of input, offset: 0x00000008",
+        "unexpected end of input, offset: 0x00000009")
+      checkError("\\ud834", "unexpected end of input, offset: 0x00000008",
+        "unexpected end of input, offset: 0x00000009")
+      checkError("\\ud834\\", "unexpected end of input, offset: 0x00000009",
+        "unexpected end of input, offset: 0x0000000a")
+      checkError("\\ud834\\x", "unexpected end of input, offset: 0x0000000a",
+        "unexpected end of input, offset: 0x0000000b")
+      checkError("\\ud834\\ud834", "illegal surrogate character pair, offset: 0x0000000c",
         "illegal surrogate character pair, offset: 0x0000000c")
     }
     "throw parsing exception in case of illegal byte sequence" in {
-      def check(bytes: Array[Byte], error: String): Unit = {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
         assert(intercept[JsonParseException](readString(bytes)).getMessage.contains(error))
         assert(intercept[JsonParseException](readKeyAsString(bytes)).getMessage.contains(error))
       }
 
-      check(Array[Byte](0x80.toByte), "malformed byte(s): 0x80, offset: 0x00000001")
-      check(Array[Byte](0xC0.toByte, 0x80.toByte), "malformed byte(s): 0xc0, 0x80, offset: 0x00000002")
-      check(Array[Byte](0xC8.toByte, 0x08.toByte), "malformed byte(s): 0xc8, 0x08, offset: 0x00000002")
-      check(Array[Byte](0xC8.toByte, 0xFF.toByte), "malformed byte(s): 0xc8, 0xff, offset: 0x00000002")
-      check(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte), "malformed byte(s): 0xe0, 0x80, 0x80, offset: 0x00000003")
-      check(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte), "malformed byte(s): 0xe0, 0xff, 0x80, offset: 0x00000003")
-      check(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte), "malformed byte(s): 0xe8, 0x88, 0x08, offset: 0x00000003")
-      check(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte),
+      checkError(Array[Byte](0x80.toByte), "malformed byte(s): 0x80, offset: 0x00000001")
+      checkError(Array[Byte](0xC0.toByte, 0x80.toByte), "malformed byte(s): 0xc0, 0x80, offset: 0x00000002")
+      checkError(Array[Byte](0xC8.toByte, 0x08.toByte), "malformed byte(s): 0xc8, 0x08, offset: 0x00000002")
+      checkError(Array[Byte](0xC8.toByte, 0xFF.toByte), "malformed byte(s): 0xc8, 0xff, offset: 0x00000002")
+      checkError(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte),
+        "malformed byte(s): 0xe0, 0x80, 0x80, offset: 0x00000003")
+      checkError(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte),
+        "malformed byte(s): 0xe0, 0xff, 0x80, offset: 0x00000003")
+      checkError(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte),
+        "malformed byte(s): 0xe8, 0x88, 0x08, offset: 0x00000003")
+      checkError(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte),
         "malformed byte(s): 0xf0, 0x80, 0x80, 0x80, offset: 0x00000004")
-      check(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte),
+      checkError(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x04.toByte, 0x9E.toByte),
         "malformed byte(s): 0xf0, 0x9d, 0x04, 0x9e, offset: 0x00000004")
-      check(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte),
+      checkError(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0xFF.toByte),
         "malformed byte(s): 0xf0, 0x9d, 0x84, 0xff, offset: 0x00000004")
-      check(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte),
+      checkError(Array[Byte](0xF0.toByte, 0x9D.toByte, 0xFF.toByte, 0x9E.toByte),
         "malformed byte(s): 0xf0, 0x9d, 0xff, 0x9e, offset: 0x00000004")
-      check(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte),
+      checkError(Array[Byte](0xF0.toByte, 0xFF.toByte, 0x84.toByte, 0x9E.toByte),
         "malformed byte(s): 0xf0, 0xff, 0x84, 0x9e, offset: 0x00000004")
-      check(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte),
+      checkError(Array[Byte](0xF0.toByte, 0x9D.toByte, 0x84.toByte, 0x0E.toByte),
         "malformed byte(s): 0xf0, 0x9d, 0x84, 0x0e, offset: 0x00000004")
     }
   }
+  "JsonReader.readKeyAsChar" should {
+    "throw parsing exception for missing ':' in the end" in {
+      assert(intercept[JsonParseException](reader("\"x\"".getBytes).readKeyAsChar())
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonParseException](reader("\"x\"x".getBytes).readKeyAsChar())
+        .getMessage.contains("expected ':', offset: 0x00000003"))
+    }
+  }
   "JsonReader.readChar and JsonReader.readKeyAsChar" should {
-    "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
-      def check(ch: Char): Unit = {
-        readChar(ch.toString) shouldBe ch
-        readKeyAsChar(ch.toString) shouldBe ch
-      }
+    def check(ch: Char): Unit = {
+      readChar(ch.toString) shouldBe ch
+      readKeyAsChar(ch.toString) shouldBe ch
+    }
 
+    def checkEscaped(escaped: String, nonEscaped: String): Unit = {
+      readChar(escaped) shouldBe readChar(nonEscaped)
+      readKeyAsChar(escaped) shouldBe readKeyAsChar(nonEscaped)
+    }
+
+    def checkError(bytes: Array[Byte], error: String): Unit = {
+      assert(intercept[JsonParseException](reader(bytes).readChar()).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
+    }
+
+    "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           check(ch)
         }
       }
     }
+    "get the same char value for escaped strings as for non-escaped" in {
+      checkEscaped("""\b""", "\b")
+      checkEscaped("""\f""", "\f")
+      checkEscaped("""\n""", "\n")
+      checkEscaped("""\r""", "\r")
+      checkEscaped("""\t""", "\t")
+      checkEscaped("""\/""", "/")
+      checkEscaped("""\\""", "\\\\")
+      checkEscaped("\\u0008", "\b")
+      checkEscaped("\\u000C", "\f")
+      checkEscaped("\\u000a", "\n")
+      checkEscaped("\\u000D", "\r")
+      checkEscaped("\\u0009", "\t")
+      checkEscaped("\\u002F", "/")
+      checkEscaped("\\u0041", "A")
+      checkEscaped("\\u0438", "и")
+      checkEscaped("\\u10d1", "ბ")
+    }
     "throw parsing exception for string with length > 1" in {
-      def check(s: String, error: String): Unit = {
-        assert(intercept[JsonParseException](readChar(s)).getMessage.contains(error))
-        assert(intercept[JsonParseException](readKeyAsChar(s)).getMessage.contains(error))
-      }
-
       forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
-          check(ch.toString + ch.toString, "expected '\"'") // offset can differs for non-ASCII characters
+          checkError(("\"" + ch + ch + "\"").getBytes(UTF_8), "expected '\"'") // offset can differs for non-ASCII characters
         }
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
-      def check(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readChar()).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
-      }
-
-      check("".getBytes, "unexpected end of input, offset: 0x00000000")
-      check("\"".getBytes, "unexpected end of input, offset: 0x00000001")
-      check("\"\\".getBytes, "unexpected end of input, offset: 0x00000002")
+      checkError("".getBytes, "unexpected end of input, offset: 0x00000000")
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\\".getBytes, "unexpected end of input, offset: 0x00000002")
     }
     "throw parsing exception for null, boolean values & numbers" in {
-      def check(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readChar()).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
-      }
-
-      check("null".getBytes, "expected '\"', offset: 0x00000000")
-      check("true".getBytes, "expected '\"', offset: 0x00000000")
-      check("false".getBytes, "expected '\"', offset: 0x00000000")
-      check("12345".getBytes, "expected '\"', offset: 0x00000000")
-    }
-    "get the same char value for escaped strings as for non-escaped" in {
-      def check(escaped: String, nonEscaped: String): Unit = {
-        readChar(escaped) shouldBe readChar(nonEscaped)
-        readKeyAsChar(escaped) shouldBe readKeyAsChar(nonEscaped)
-      }
-
-      check("""\b""", "\b")
-      check("""\f""", "\f")
-      check("""\n""", "\n")
-      check("""\r""", "\r")
-      check("""\t""", "\t")
-      check("""\/""", "/")
-      check("""\\""", "\\\\")
-      check("\\u0008", "\b")
-      check("\\u000C", "\f")
-      check("\\u000a", "\n")
-      check("\\u000D", "\r")
-      check("\\u0009", "\t")
-      check("\\u002F", "/")
-      check("\\u0041", "A")
-      check("\\u0438", "и")
-      check("\\u10d1", "ბ")
+      checkError("null".getBytes, "expected '\"', offset: 0x00000000")
+      checkError("true".getBytes, "expected '\"', offset: 0x00000000")
+      checkError("false".getBytes, "expected '\"', offset: 0x00000000")
+      checkError("12345".getBytes, "expected '\"', offset: 0x00000000")
     }
     "throw parsing exception in case of illegal escape sequence" in {
-      def check(s: String, error1: String, error2: String): Unit = {
+      def checkError(s: String, error1: String, error2: String): Unit = {
         assert(intercept[JsonParseException](readChar(s)).getMessage.contains(error1))
         assert(intercept[JsonParseException](readKeyAsChar(s)).getMessage.contains(error2))
       }
 
-      check("\\x0008", "illegal escape sequence, offset: 0x00000002", "illegal escape sequence, offset: 0x00000002")
-      check("\\u000Z", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
-      check("\\u000", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
-      check("\\u00", "unexpected end of input, offset: 0x00000006", "expected hex digit, offset: 0x00000005")
-      check("\\u0", "unexpected end of input, offset: 0x00000005", "unexpected end of input, offset: 0x00000006")
-      check("\\", "unexpected end of input, offset: 0x00000003", "expected '\"', offset: 0x00000003")
-      check("\\udd1e", "illegal surrogate character, offset: 0x00000006", "illegal surrogate character, offset: 0x00000006")
-      check("\\ud834", "illegal surrogate character, offset: 0x00000006", "illegal surrogate character, offset: 0x00000006")
+      checkError("\\x0008", "illegal escape sequence, offset: 0x00000002",
+        "illegal escape sequence, offset: 0x00000002")
+      checkError("\\u000Z", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
+      checkError("\\u000", "expected hex digit, offset: 0x00000006", "expected hex digit, offset: 0x00000006")
+      checkError("\\u00", "unexpected end of input, offset: 0x00000006", "expected hex digit, offset: 0x00000005")
+      checkError("\\u0", "unexpected end of input, offset: 0x00000005", "unexpected end of input, offset: 0x00000006")
+      checkError("\\", "unexpected end of input, offset: 0x00000003", "expected '\"', offset: 0x00000003")
+      checkError("\\udd1e", "illegal surrogate character, offset: 0x00000006",
+        "illegal surrogate character, offset: 0x00000006")
+      checkError("\\ud834", "illegal surrogate character, offset: 0x00000006",
+        "illegal surrogate character, offset: 0x00000006")
     }
     "throw parsing exception in case of illegal byte sequence" in {
-      def check(bytes: Array[Byte], error: String): Unit = {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
         assert(intercept[JsonParseException](readChar(bytes)).getMessage.contains(error))
         assert(intercept[JsonParseException](readKeyAsChar(bytes)).getMessage.contains(error))
       }
 
-      check(Array[Byte](0x80.toByte), "malformed byte(s): 0x80, offset: 0x00000001")
-      check(Array[Byte](0xC0.toByte, 0x80.toByte), "malformed byte(s): 0xc0, 0x80, offset: 0x00000002")
-      check(Array[Byte](0xC8.toByte, 0x08.toByte), "malformed byte(s): 0xc8, 0x08, offset: 0x00000002")
-      check(Array[Byte](0xC8.toByte, 0xFF.toByte), "malformed byte(s): 0xc8, 0xff, offset: 0x00000002")
-      check(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte),
+      checkError(Array[Byte](0x80.toByte), "malformed byte(s): 0x80, offset: 0x00000001")
+      checkError(Array[Byte](0xC0.toByte, 0x80.toByte), "malformed byte(s): 0xc0, 0x80, offset: 0x00000002")
+      checkError(Array[Byte](0xC8.toByte, 0x08.toByte), "malformed byte(s): 0xc8, 0x08, offset: 0x00000002")
+      checkError(Array[Byte](0xC8.toByte, 0xFF.toByte), "malformed byte(s): 0xc8, 0xff, offset: 0x00000002")
+      checkError(Array[Byte](0xE0.toByte, 0x80.toByte, 0x80.toByte),
         "malformed byte(s): 0xe0, 0x80, 0x80, offset: 0x00000003")
-      check(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte),
+      checkError(Array[Byte](0xE0.toByte, 0xFF.toByte, 0x80.toByte),
         "malformed byte(s): 0xe0, 0xff, 0x80, offset: 0x00000003")
-      check(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte),
+      checkError(Array[Byte](0xE8.toByte, 0x88.toByte, 0x08.toByte),
         "malformed byte(s): 0xe8, 0x88, 0x08, offset: 0x00000003")
-      check(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte),
+      checkError(Array[Byte](0xF0.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte),
         "illegal surrogate character, offset: 0x00000004")
     }
   }

@@ -28,7 +28,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Support of UTF-8 encoding
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
-- Parsing of strings with escaped characters for JSON keys and values 
+- Parsing of strings with escaped characters for JSON keys and string values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala 
   collections, arrays, module classes, value classes and case classes with values/fields having any of types listed here 
 - Case classes should be defined as a top-level class or directly inside of another class or object and with public 
@@ -45,11 +45,11 @@ Support of Scala.js & Scala Native is not a goal for the moment.
   provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
-- Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and optionally
-  hex dump of affected by error part of an internal byte buffer
-- Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
+- Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and hex dump 
+  of affected by error part of an internal byte buffer
 - Configurable turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on 
   performance
+- Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Configurable mapping function for names between case classes and JSON, including predefined functions which enforce 
   snake_case or camelCase names for all fields
 - Configurable name of a discriminator field for ADTs
@@ -57,7 +57,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Configurable by field annotation or by code generation ability to read/write numbers from/to string values
 - Configurable skipping of unexpected fields or throwing of parse exceptions
 - Configurable size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`, no extra 
-  buffering are required  
+  buffering is required  
 
 For upcoming features and fixes see [Change log](https://github.com/plokhotnyuk/jsoniter-scala/master/CHANGES.md) 
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
