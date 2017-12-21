@@ -1329,7 +1329,7 @@ final class JsonReader private[jsoniter_scala](
         } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
           if (remaining > 1) {
             val b2 = buf(pos + 1)
-            if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
+            if (isMalformedBytes2(b1, b2)) malformedBytesError(b1, b2, pos)
             charBuf(i) = ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
             parseEncodedString(i + 1, lim, pos + 2)
           } else parseEncodedString(i, lim, loadMoreOrError(pos))
@@ -1338,7 +1338,7 @@ final class JsonReader private[jsoniter_scala](
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
             val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if (isMalformed3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytes(b1, b2, b3, pos)
+            if (isMalformedBytes3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
             charBuf(i) = ch
             parseEncodedString(i + 1, lim, pos + 3)
           } else parseEncodedString(i, lim, loadMoreOrError(pos))
@@ -1348,9 +1348,9 @@ final class JsonReader private[jsoniter_scala](
             val b3 = buf(pos + 2)
             val b4 = buf(pos + 3)
             val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ b4 ^ 0x381F80 // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if (isMalformed4(b2, b3, b4) || !Character.isSupplementaryCodePoint(cp)) malformedBytes(b1, b2, b3, b4, pos)
-            charBuf(i) = Character.highSurrogate(cp)
-            charBuf(i + 1) = Character.lowSurrogate(cp)
+            if (isMalformedBytes4(b2, b3, b4) || cp < 0x010000 || cp >= 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
+            charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
+            charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
             parseEncodedString(i + 2, lim, pos + 4)
           } else parseEncodedString(i, lim, loadMoreOrError(pos))
         } else malformedBytes(b1, pos)
@@ -1406,7 +1406,7 @@ final class JsonReader private[jsoniter_scala](
       } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         if (remaining > 1) {
           val b2 = buf(pos + 1)
-          if (isMalformed2(b1, b2)) malformedBytes(b1, b2, pos)
+          if (isMalformedBytes2(b1, b2)) malformedBytesError(b1, b2, pos)
           head = pos + 2
           ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else parseChar(loadMoreOrError(pos))
@@ -1415,7 +1415,7 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
           val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if (isMalformed3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytes(b1, b2, b3, pos)
+          if (isMalformedBytes3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
           head = pos + 3
           ch
         } else parseChar(loadMoreOrError(pos))
@@ -1437,13 +1437,13 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def isMalformed2(b1: Byte, b2: Byte): Boolean =
+  private def isMalformedBytes2(b1: Byte, b2: Byte): Boolean =
     (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
 
-  private def isMalformed3(b1: Byte, b2: Byte, b3: Byte): Boolean =
+  private def isMalformedBytes3(b1: Byte, b2: Byte, b3: Byte): Boolean =
     (b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80
 
-  private def isMalformed4(b2: Byte, b3: Byte, b4: Byte): Boolean =
+  private def isMalformedBytes4(b2: Byte, b3: Byte, b4: Byte): Boolean =
     (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80
 
   private def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
@@ -1454,7 +1454,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos, null)
   }
 
-  private def malformedBytes(b1: Byte, b2: Byte, pos: Int): Nothing = {
+  private def malformedBytesError(b1: Byte, b2: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
@@ -1462,7 +1462,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos + 1, null)
   }
 
-  private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
+  private def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
@@ -1472,7 +1472,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos + 2, null)
   }
 
-  private def malformedBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
+  private def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
