@@ -1,7 +1,7 @@
 # Change Log
 
-## Version 0.X
-_2017-12-2X_ [GitHub Diff](https://github.com/plokhotnyuk/jsoniter-scala/compare/v0.1...master)
+## Version 0.2
+_2017-12-22_ [GitHub Diff](https://github.com/plokhotnyuk/jsoniter-scala/compare/v0.1...v0.2)
  * Fix parsing of illegal decimal numbers by methods to parse integer numbers
  * Fix of possible missing reporting of unexpected fields for case classes that used directly and as leaf in ADTs with turned off skipping of unexpected fields
  * Minor refactoring of reader API: changes in signatures of some methods that are used for generation of codecs. 
