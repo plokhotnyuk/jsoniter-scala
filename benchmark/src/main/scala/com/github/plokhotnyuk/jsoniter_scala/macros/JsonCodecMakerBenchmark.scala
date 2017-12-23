@@ -49,7 +49,7 @@ class JsonCodecMakerBenchmark {
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
   val bitSetsJsonString: String = """{"bs":[1,2,3],"mbs":[4,5,6]}"""
   val bitSetsJsonBytes: Array[Byte] = bitSetsJsonString.getBytes
-  val intArrayObj: Array[Int] = (1 to 1000).toArray
+  val intArrayObj: Array[Int] = (1 to 1000).map(i => ((i * 1498724053) / Math.pow(10, i % 10)).toInt).toArray
   val intArrayJsonString: String = intArrayObj.mkString("[", ",", "]")
   val intArrayJsonBytes: Array[Byte] = intArrayJsonString.getBytes
   val iterablesObj: Iterables = Iterables(Vector("1", "2", "3"), Set(4, 5, 6), List(HashSet(1, 2), HashSet()))

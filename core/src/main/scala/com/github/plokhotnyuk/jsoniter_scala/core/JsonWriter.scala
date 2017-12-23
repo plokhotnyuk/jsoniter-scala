@@ -567,33 +567,34 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufferCapacity(11) // minIntBytes.length
     if (x == Integer.MIN_VALUE) writeByteArray(minIntBytes, pos)
     else {
-      val q0 =
+      val ds = digits
+      val buf = this.buf
+      var v =
         if (x >= 0) x
         else {
           buf(pos) = '-'
           pos += 1
           -x
         }
-      if (q0 < 1000) writeFirstRem(q0, pos)
-      else {
-        val q1 = q0 / 1000
-        val r1 = q0 - q1 * 1000
-        if (q1 < 1000) writeRem(r1, writeFirstRem(q1, pos))
-        else {
-          val q2 = q1 / 1000
-          val r2 = q1 - q2 * 1000
-          writeRem(r1, writeRem(r2, {
-            if (q2 < 1000) writeFirstRem(q2, pos)
-            else {
-              val q3 = q2 / 1000
-              val r3 = q2 - q3 * 1000
-              writeRem(r3, {
-                buf(pos) = (q3 + '0').toByte
-                pos + 1
-              })
-            }
-          }))
-        }
+      val off = offset(v)
+      pos += off
+      while (v >= 100) {
+        val q = v / 100
+        val r = v - 100 * q
+        val d = ds(r)
+        buf(pos) = d.toByte
+        buf(pos - 1) = (d >> 8).toByte
+        pos -= 2
+        v = q
+      }
+      if (v < 10) {
+        buf(pos) = (v + '0').toByte
+        pos + off + 1
+      } else {
+        val d = ds(v)
+        buf(pos) = d.toByte
+        buf(pos - 1) = (d >> 8).toByte
+        pos + off
       }
     }
   }
@@ -602,81 +603,60 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufferCapacity(20) // minLongBytes.length
     if (x == java.lang.Long.MIN_VALUE) writeByteArray(minLongBytes, pos)
     else {
-      val q0 =
+      val ds = digits
+      val buf = this.buf
+      var v =
         if (x >= 0) x
         else {
           buf(pos) = '-'
           pos += 1
           -x
         }
-      if (q0 < 1000) writeFirstRem(q0.toInt, pos)
-      else {
-        val q1 = q0 / 1000
-        val r1 = (q0 - q1 * 1000).toInt
-        if (q1 < 1000) writeRem(r1, writeFirstRem(q1.toInt, pos))
-        else {
-          val q2 = q1 / 1000
-          val r2 = (q1 - q2 * 1000).toInt
-          if (q2 < 1000) writeRem(r1, writeRem(r2, writeFirstRem(q2.toInt, pos)))
-          else {
-            val q3 = q2 / 1000
-            val r3 = (q2 - q3 * 1000).toInt
-            if (q3 < 1000) writeRem(r1, writeRem(r2, writeRem(r3, writeFirstRem(q3.toInt, pos))))
-            else {
-              val q4 = (q3 / 1000).toInt
-              val r4 = (q3 - q4 * 1000).toInt
-              if (q4 < 1000) writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeFirstRem(q4, pos)))))
-              else {
-                val q5 = q4 / 1000
-                val r5 = q4 - q5 * 1000
-                writeRem(r1, writeRem(r2, writeRem(r3, writeRem(r4, writeRem(r5, {
-                  if (q5 < 1000) writeFirstRem(q5, pos)
-                  else {
-                    val q6 = q5 / 1000
-                    val r6 = q5 - q6 * 1000
-                    writeRem(r6, {
-                      buf(pos) = (q6 + '0').toByte
-                      pos + 1
-                    })
-                  }
-                })))))
-              }
-            }
-          }
-        }
+      val off = offset(v)
+      pos += off
+      while (v >= 100) {
+        val q = v / 100
+        val r = v - 100 * q
+        val d = ds(r.toInt)
+        buf(pos) = d.toByte
+        buf(pos - 1) = (d >> 8).toByte
+        pos -= 2
+        v = q
+      }
+      if (v < 10) {
+        buf(pos) = (v + '0').toByte
+        pos + off + 1
+      } else {
+        val d = ds(v.toInt)
+        buf(pos) = d.toByte
+        buf(pos - 1) = (d >> 8).toByte
+        pos + off
       }
     }
   }
 
+  private def offset(v: Int): Int =
+    if (v < 100) ((v - 10) >> 31) + 1
+    else if (v < 10000) ((v - 1000) >> 31) + 3
+    else if (v < 1000000) ((v - 100000) >> 31) + 5
+    else if (v < 100000000) ((v - 10000000) >> 31) + 7
+    else ((v - 1000000000) >> 31) + 9
+
+  private def offset(v: Long): Int =
+    (if (v < 100) ((v - 10) >> 63) + 1
+    else if (v < 10000) ((v - 1000) >> 63) + 3
+    else if (v < 1000000) ((v - 100000) >> 63) + 5
+    else if (v < 100000000) ((v - 10000000) >> 63) + 7
+    else if (v < 10000000000L) ((v - 1000000000) >> 63) + 9
+    else if (v < 1000000000000L) ((v - 100000000000L) >> 63) + 11
+    else if (v < 100000000000000L) ((v - 10000000000000L) >> 63) + 13
+    else if (v < 10000000000000000L) ((v - 1000000000000000L) >> 63) + 15
+    else if (v < 1000000000000000000L) ((v - 100000000000000000L) >> 63) + 17
+    else 18).toInt
+
   private def writeByteArray(bs: Array[Byte], pos: Int): Int = {
     System.arraycopy(bs, 0, buf, pos, bs.length)
     pos + bs.length
-  }
-
-  private def writeFirstRem(r: Int, pos: Int): Int = {
-    val d = digits(r)
-    val skip = d >> 12
-    if (skip == 0) {
-      buf(pos) = ((d >> 8) & 15 | '0').toByte
-      buf(pos + 1) = ((d >> 4) & 15 | '0').toByte
-      buf(pos + 2) = (d & 15 | '0').toByte
-      pos + 3
-    } else if (skip == 1) {
-      buf(pos) = ((d >> 4) & 15 | '0').toByte
-      buf(pos + 1) = (d & 15 | '0').toByte
-      pos + 2
-    } else {
-      buf(pos) = (d & 15 | '0').toByte
-      pos + 1
-    }
-  }
-
-  private def writeRem(r: Int, pos: Int): Int = {
-    val d = digits(r)
-    buf(pos) = ((d >> 8) & 15 | '0').toByte
-    buf(pos + 1) = ((d >> 4) & 15 | '0').toByte
-    buf(pos + 2) = (d & 15 | '0').toByte
-    pos + 3
   }
 
   private def writeFloat(x: Float): Unit =
@@ -751,10 +731,7 @@ object JsonWriter {
       case _ => 0 // non-escaped chars
     }).toByte
   }(breakOut)
-  private val digits: Array[Short] = (0 to 999).map { i =>
-    (((if (i < 10) 2 else if (i < 100) 1 else 0) << 12) + // this nibble encodes number of leading zeroes
-      ((i / 100) << 8) + (((i / 10) % 10) << 4) + i % 10).toShort // decimal digit per nibble
-  }(breakOut)
+  private val digits: Array[Short] = (0 to 99).map(i => (((i / 10) << 8) | (i % 10) | 0x3030).toShort)(breakOut)
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
