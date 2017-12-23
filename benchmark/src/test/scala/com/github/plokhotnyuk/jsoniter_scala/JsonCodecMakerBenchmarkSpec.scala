@@ -46,6 +46,10 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       benchmark.readBitSetsJackson() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsJsoniter() shouldBe benchmark.bitSetsObj
       benchmark.readBitSetsPlay() shouldBe benchmark.bitSetsObj
+      benchmark.readIntArrayCirce().deep shouldBe benchmark.intArrayObj.deep
+      benchmark.readIntArrayJackson().deep shouldBe benchmark.intArrayObj.deep
+      benchmark.readIntArrayJsoniter().deep shouldBe benchmark.intArrayObj.deep
+      benchmark.readIntArrayPlay().deep shouldBe benchmark.intArrayObj.deep
       benchmark.readIterablesCirce() shouldBe benchmark.iterablesObj
       benchmark.readIterablesJackson() shouldBe benchmark.iterablesObj
       benchmark.readIterablesJsoniter() shouldBe benchmark.iterablesObj
@@ -118,6 +122,11 @@ class JsonCodecMakerBenchmarkSpec extends WordSpec with Matchers {
       toString(benchmark.writeBitSetsJackson()) shouldBe benchmark.bitSetsJsonString
       toString(benchmark.writeBitSetsJsoniter()) shouldBe benchmark.bitSetsJsonString
       toString(benchmark.writeBitSetsPlay()) shouldBe benchmark.bitSetsJsonString
+      toString(benchmark.writeIntArrayCirce()) shouldBe benchmark.intArrayJsonString
+      toString(benchmark.writeIntArrayJackson()) shouldBe benchmark.intArrayJsonString
+      toString(benchmark.writeIntArrayJsoniter()) shouldBe benchmark.intArrayJsonString
+      toString(benchmark.writeIntArrayJsoniterPrealloc()) shouldBe benchmark.intArrayJsonString
+      toString(benchmark.writeIntArrayPlay()) shouldBe benchmark.intArrayJsonString
       toString(benchmark.writeIterablesCirce()) shouldBe benchmark.iterablesJsonString
       toString(benchmark.writeIterablesJackson()) shouldBe benchmark.iterablesJsonString
       toString(benchmark.writeIterablesJsoniter()) shouldBe benchmark.iterablesJsonString

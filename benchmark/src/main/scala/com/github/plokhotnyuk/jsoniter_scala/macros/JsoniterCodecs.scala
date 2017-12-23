@@ -12,6 +12,7 @@ object JsoniterCodecs {
   val anyRefsCodec: JsonCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
   val arraysCodec: JsonCodec[Arrays] = make[Arrays](CodecMakerConfig())
   val bitSetsCodec: JsonCodec[BitSets] = make[BitSets](CodecMakerConfig())
+  val intArrayCodec: JsonCodec[Array[Int]] = make[Array[Int]](CodecMakerConfig())
   val iterablesCodec: JsonCodec[Iterables] = make[Iterables](CodecMakerConfig())
   val mapsCodec: JsonCodec[Maps] = make[Maps](CodecMakerConfig())
   val missingReqFieldCodec: JsonCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())

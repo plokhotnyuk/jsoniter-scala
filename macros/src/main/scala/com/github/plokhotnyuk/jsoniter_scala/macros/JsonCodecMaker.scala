@@ -455,8 +455,22 @@ object JsonCodecMaker {
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = collection.mutable.ArrayBuilder.make[$tpe1]",
-            q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
+          genReadArray(
+            q"""var x = new Array[$tpe1](16)
+                var i = 0""",
+            q"""if (i == x.length) {
+                  val y = new Array[$tpe1](i << 1)
+                  System.arraycopy(x, 0, y, 0, i)
+                  x = y
+                }
+                x(i) = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
+                i += 1""",
+            q"""if (i == x.length) x
+                else {
+                  val y = new Array[$tpe1](i)
+                  System.arraycopy(x, 0, y, 0, i)
+                  y
+                }""")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
               if (v eq null) default

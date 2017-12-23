@@ -49,6 +49,9 @@ class JsonCodecMakerBenchmark {
   val bitSetsObj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
   val bitSetsJsonString: String = """{"bs":[1,2,3],"mbs":[4,5,6]}"""
   val bitSetsJsonBytes: Array[Byte] = bitSetsJsonString.getBytes
+  val intArrayObj: Array[Int] = (1 to 1000).toArray
+  val intArrayJsonString: String = intArrayObj.mkString("[", ",", "]")
+  val intArrayJsonBytes: Array[Byte] = intArrayJsonString.getBytes
   val iterablesObj: Iterables = Iterables(Vector("1", "2", "3"), Set(4, 5, 6), List(HashSet(1, 2), HashSet()))
   val iterablesJsonString: String = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}"""
   val iterablesJsonBytes: Array[Byte] = iterablesJsonString.getBytes
@@ -171,6 +174,18 @@ class JsonCodecMakerBenchmark {
 
   @Benchmark
   def readBitSetsPlay(): BitSets = Json.parse(bitSetsJsonBytes).as[BitSets](bitSetsFormat)
+
+  @Benchmark
+  def readIntArrayCirce(): Array[Int] = decode[Array[Int]](new String(intArrayJsonBytes, UTF_8)).fold(throw _, x => x)
+
+  @Benchmark
+  def readIntArrayJackson(): Array[Int] = jacksonMapper.readValue[Array[Int]](intArrayJsonBytes)
+
+  @Benchmark
+  def readIntArrayJsoniter(): Array[Int] = JsonReader.read(intArrayCodec, intArrayJsonBytes)
+
+  @Benchmark
+  def readIntArrayPlay(): Array[Int] = Json.parse(intArrayJsonBytes).as[Array[Int]]
 
   @Benchmark
   def readIterablesCirce(): Iterables = decode[Iterables](new String(iterablesJsonBytes, UTF_8)).fold(throw _, x => x)
@@ -368,6 +383,21 @@ class JsonCodecMakerBenchmark {
   def writeBitSetsPlay(): Array[Byte] = Json.toBytes(Json.toJson(bitSetsObj)(bitSetsFormat))
 
   @Benchmark
+  def writeIntArrayCirce(): Array[Byte] = printer.pretty(intArrayObj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def writeIntArrayJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intArrayObj)
+
+  @Benchmark
+  def writeIntArrayJsoniter(): Array[Byte] = JsonWriter.write(intArrayCodec, intArrayObj)
+
+  @Benchmark
+  def writeIntArrayJsoniterPrealloc(): Int = JsonWriter.write(intArrayCodec, intArrayObj, preallocatedBuf.get, 0)
+
+  @Benchmark
+  def writeIntArrayPlay(): Array[Byte] = Json.toBytes(Json.toJson(intArrayObj))
+
+  @Benchmark
   def writeIterablesCirce(): Array[Byte] = printer.pretty(iterablesObj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -415,10 +445,10 @@ class JsonCodecMakerBenchmark {
   @Benchmark
   def writeMutableMapsPlay(): Array[Byte] = Json.toBytes(Json.toJson(mutableMapsObj)(mutableMapsFormat))
 
-/* FIXME: Circe doesn't support writing of int & long maps
-  @Benchmark
-  def writeIntAndLongMapsCirce(): Array[Byte] = printer.pretty(intAndLongMapsObj.asJson).getBytes(UTF_8)
-*/
+  /* FIXME: Circe doesn't support writing of int & long maps
+    @Benchmark
+    def writeIntAndLongMapsCirce(): Array[Byte] = printer.pretty(intAndLongMapsObj.asJson).getBytes(UTF_8)
+  */
 
   @Benchmark
   def writeIntAndLongMapsJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(intAndLongMapsObj)
