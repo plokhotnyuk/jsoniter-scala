@@ -185,20 +185,24 @@ object JsonCodecMaker {
         else q"out.writeVal($value)"
 
       def genWriteArray(m: Tree, writeVal: Tree): Tree =
-        q"""out.writeArrayStart()
-            $m.foreach { x =>
-              out.writeComma()
-              ..$writeVal
-            }
-            out.writeArrayEnd()"""
+        q"""if ($m ne null) {
+              out.writeArrayStart()
+              $m.foreach { x =>
+                out.writeComma()
+                ..$writeVal
+              }
+              out.writeArrayEnd()
+            } else out.writeNull()"""
 
       def genWriteMap(m: Tree, writeKV: Tree): Tree =
-        q"""out.writeObjectStart()
-            $m.foreach { kv =>
-              out.writeKey(kv._1)
-              ..$writeKV
-            }
-            out.writeObjectEnd()"""
+        q"""if ($m ne null) {
+              out.writeObjectStart()
+              $m.foreach { kv =>
+                out.writeKey(kv._1)
+                ..$writeKV
+              }
+              out.writeObjectEnd()
+            } else out.writeNull()"""
 
       def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonCodec[_]]}' defined for '$tpe'.")
 
@@ -588,7 +592,7 @@ object JsonCodecMaker {
           q"out.writeVal($m)"
         } else if (isValueClass(tpe)) genWriteVal(q"$m.value", valueClassValueType(tpe), isStringified)
         else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
-          q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
+          q"if ((x eq null) || x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
@@ -599,15 +603,17 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
-          q"""out.writeArrayStart()
-              val l = x.length
-              var i = 0
-              while (i < l) {
-                out.writeComma()
-                ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
-                i += 1
-              }
-              out.writeArrayEnd()"""
+          q"""if (x ne null) {
+                out.writeArrayStart()
+                val l = x.length
+                var i = 0
+                while (i < l) {
+                  out.writeComma()
+                  ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
+                  i += 1
+                }
+                out.writeArrayEnd()
+              } else out.writeNull()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
@@ -626,18 +632,12 @@ object JsonCodecMaker {
             val isStringified = getStringified(annotations, m.name.toString)
             defaults.get(m.name.toString) match {
               case Some(d) =>
-                if (tpe <:< typeOf[Array[_]]) {
+                if (isContainer(tpe)) {
+                  val nonEmptyAndDefaultMatchingCheck =
+                    if (tpe <:< typeOf[Array[_]]) q"v.length > 0 && (v.length != $d.length || v.deep != $d.deep)"
+                    else q"!v.isEmpty && v != $d"
                   q"""val v = x.$m
-                      if ((v ne null) && v.length > 0 && {
-                          val d = $d
-                          v.length != d.length && v.deep != d.deep
-                        }) {
-                        ..${genWriteConstantKey(name)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
-                      }"""
-                } else if (isContainer(tpe)) {
-                  q"""val v = x.$m
-                      if ((v ne null) && !v.isEmpty && v != $d) {
+                      if ((v ne null) && $nonEmptyAndDefaultMatchingCheck) {
                         ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe, isStringified)}
                       }"""
@@ -649,15 +649,10 @@ object JsonCodecMaker {
                       }"""
                 }
               case None =>
-                if (tpe <:< typeOf[Array[_]]) {
+                if (isContainer(tpe)) {
+                  val nonEmptyCheck = if (tpe <:< typeOf[Array[_]]) q"v.length > 0" else q"!v.isEmpty"
                   q"""val v = x.$m
-                      if ((v ne null) && v.length > 0) {
-                        ..${genWriteConstantKey(name)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
-                      }"""
-                } else if (isContainer(tpe)) {
-                  q"""val v = x.$m
-                      if ((v ne null) && !v.isEmpty) {
+                      if ((v ne null) && $nonEmptyCheck) {
                         ..${genWriteConstantKey(name)}
                         ..${genWriteVal(q"v", tpe, isStringified)}
                       }"""
