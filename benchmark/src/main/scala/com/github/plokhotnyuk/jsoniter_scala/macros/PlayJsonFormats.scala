@@ -97,14 +97,6 @@ object PlayJsonFormats {
     Json.format[DistanceMatrix]
   }
   val twitterAPIFormat: Format[Seq[Tweet]] = {
-    implicit def optionFormat[T: Format]: Format[Option[T]] = new Format[Option[T]]{
-      override def reads(json: JsValue): JsResult[Option[T]] = json.validateOpt[T]
-
-      override def writes(o: Option[T]): JsValue = o match {
-        case Some(t) => implicitly[Writes[T]].writes(t)
-        case None => JsNull
-      }
-    }
     implicit val v1: OFormat[Urls] = Json.format[Urls]
     implicit val v2: OFormat[Url] = Json.format[Url]
     implicit val v3: OFormat[UserEntities] = Json.format[UserEntities]
