@@ -8,6 +8,7 @@ lazy val updateVersionInReadme: ReleaseStep = { st: State =>
   val readme = "README.md"
   val oldContent = IO.read(file(readme))
   val newContent = oldContent.replaceAll('"' + oldVersion + '"', '"' + newVersion + '"')
+    .replaceAll('-' + oldVersion + '-', '-' + newVersion + '-')
   IO.write(file(readme), newContent)
   s"git add $readme" !! st.log
   st

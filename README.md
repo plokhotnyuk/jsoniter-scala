@@ -3,7 +3,7 @@
 [![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala) 
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Scaladex](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros/latest.svg?color=blue)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala)
+[![Scaladex](https://img.shields.io/badge/macros-0.2.1-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
 
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
