@@ -67,7 +67,7 @@ and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 Add the library to your dependencies list
 
 ```sbt
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.2"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.2.1"
 ```
 
 Generate codecs for your case classes, collections, etc.
