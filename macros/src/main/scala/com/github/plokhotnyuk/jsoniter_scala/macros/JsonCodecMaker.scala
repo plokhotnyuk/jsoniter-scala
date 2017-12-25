@@ -355,9 +355,9 @@ object JsonCodecMaker {
 
       def nullValue(tpe: Type): Tree =
         if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"false"
-        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"0.toByte"
-        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"0.toChar"
-        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"0.toShort"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"(0: Byte)"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"'\u0000'"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"(0: Short)"
         else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"0"
         else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
