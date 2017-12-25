@@ -579,7 +579,7 @@ final class JsonWriter private[jsoniter_scala](
       val off = offset(v)
       pos += off
       while (v >= 100) {
-        val q = v / 100
+        val q = (v * 1374389535L >> 37).toInt // divide int by 100
         val r = v - 100 * q
         val d = ds(r)
         buf(pos) = d.toByte
@@ -614,7 +614,7 @@ final class JsonWriter private[jsoniter_scala](
         }
       val off = offset(v)
       pos += off
-      while (v >= 100) {
+      while (v >= 100000000) {
         val q = v / 100
         val r = v - 100 * q
         val d = ds(r.toInt)
@@ -623,11 +623,21 @@ final class JsonWriter private[jsoniter_scala](
         pos -= 2
         v = q
       }
-      if (v < 10) {
-        buf(pos) = (v + '0').toByte
+      var vi = v.toInt
+      while (vi >= 100) {
+        val q = (vi * 1374389535L >> 37).toInt // divide int by 100
+        val r = vi - 100 * q
+        val d = ds(r)
+        buf(pos) = d.toByte
+        buf(pos - 1) = (d >> 8).toByte
+        pos -= 2
+        vi = q
+      }
+      if (vi < 10) {
+        buf(pos) = (vi + '0').toByte
         pos + off + 1
       } else {
-        val d = ds(v.toInt)
+        val d = ds(vi)
         buf(pos) = d.toByte
         buf(pos - 1) = (d >> 8).toByte
         pos + off
