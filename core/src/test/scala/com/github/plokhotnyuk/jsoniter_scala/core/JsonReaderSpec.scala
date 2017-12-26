@@ -717,6 +717,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345e6789", Float.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Float.PositiveInfinity)
       check("-12345678901234567890e12345678901234567890", Float.NegativeInfinity)
+      readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
+      readFloat("-12345678901234567890e12345678901234567890$") shouldBe Float.NegativeInfinity
     }
     "parse zero on float underflow" in {
       check("12345e-6789", 0.0f)
@@ -787,6 +789,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345e6789", Double.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Double.PositiveInfinity)
       check("-12345678901234567890e12345678901234567890", Double.NegativeInfinity)
+      readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
+      readDouble("-12345678901234567890e12345678901234567890$") shouldBe Double.NegativeInfinity
     }
     "parse zero on double underflow" in {
       check("12345e-6789", 0.0)
