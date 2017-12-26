@@ -565,99 +565,96 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeInt(x: Int): Unit = count = {
     var pos = ensureBufferCapacity(11) // minIntBytes.length
-    if (x == Integer.MIN_VALUE) writeByteArray(minIntBytes, pos)
+    if (x == -2147483648) writeByteArray(minIntBytes, pos)
     else {
       val buf = this.buf
-      val v =
+      val q0 =
         if (x >= 0) x
         else {
           buf(pos) = '-'
           pos += 1
           -x
         }
-      val off = offset(v)
-      writeIntFirst(v, pos + off, buf, digits) + off + 2
+      val off = offset(q0)
+      writeIntFirst(q0, pos + off, buf, digits) + off + 2
     }
   }
 
   private def writeLong(x: Long): Unit = count = {
     var pos = ensureBufferCapacity(20) // minLongBytes.length
-    if (x == java.lang.Long.MIN_VALUE) writeByteArray(minLongBytes, pos)
+    if (x == -9223372036854775808L) writeByteArray(minLongBytes, pos)
     else {
       val buf = this.buf
-      var v =
+      val ds = digits
+      val q0 =
         if (x >= 0) x
         else {
           buf(pos) = '-'
           pos += 1
           -x
         }
-      val off = offset(v)
-      pos += off
-      while (v >= 100000000) {
-        val q = v / 100000000
-        pos = writeIntRem100000000((v - 100000000 * q).toInt, pos, buf, digits, 4)
-        v = q
+      if (q0 >= 100000000) {
+        val q1 = q0 / 100000000
+        val r1 = (q0 - 100000000 * q1).toInt
+        if (q1 >= 100000000) {
+          val q2 = (q1 / 100000000).toInt
+          val r2 = (q1 - 100000000L * q2).toInt
+          val off = 16 + offset(q2)
+          writeIntFirst(q2, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off + 2
+        } else {
+          val off = 8 + offset(q1.toInt)
+          writeIntFirst(q1.toInt, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds) + off + 2
+        }
+      } else {
+        val off = offset(q0.toInt)
+        writeIntFirst(q0.toInt, pos + off, buf, ds) + off + 2
       }
-      writeIntFirst(v.toInt, pos, buf, digits) + off + 2
     }
   }
 
   @tailrec
-  private def writeIntFirst(v: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (v < 100) {
-      if (v < 10) {
-        buf(pos) = (v + '0').toByte
+  private def writeIntFirst(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (q0 < 100) {
+      if (q0 < 10) {
+        buf(pos) = (q0 + '0').toByte
         pos - 1
       } else {
-        val d = ds(v)
+        val d = ds(q0)
         buf(pos) = d.toByte
         buf(pos - 1) = (d >> 8).toByte
         pos - 2
       }
     } else {
-      val q = (v * 1374389535L >> 37).toInt // divide int by 100
-      val r = v - 100 * q
-      val d = ds(r)
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide int by 100
+      val r1 = q0 - 100 * q1
+      val d = ds(r1)
       buf(pos) = d.toByte
       buf(pos - 1) = (d >> 8).toByte
-      writeIntFirst(q, pos - 2, buf, ds)
+      writeIntFirst(q1, pos - 2, buf, ds)
     }
 
   @tailrec
-  private def writeIntRem100000000(v: Int, pos: Int, buf: Array[Byte], ds: Array[Short], i: Int): Int =
-    if (i == 1) {
-      val d = ds(v)
+  private def writeIntRem(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short], i: Int): Int =
+    if (i == 0) {
+      val d = ds(q0)
       buf(pos) = d.toByte
       buf(pos - 1) = (d >> 8).toByte
       pos - 2
     } else {
-      val q = (v * 1374389535L >> 37).toInt // divide int by 100
-      val r = v - 100 * q
-      val d = ds(r)
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide int by 100
+      val r1 = q0 - 100 * q1
+      val d = ds(r1)
       buf(pos) = d.toByte
       buf(pos - 1) = (d >> 8).toByte
-      writeIntRem100000000(q, pos - 2, buf, ds, i - 1)
+      writeIntRem(q1, pos - 2, buf, ds, i - 1)
     }
 
-  private def offset(v: Int): Int =
-    if (v < 100) ((v - 10) >> 31) + 1
-    else if (v < 10000) ((v - 1000) >> 31) + 3
-    else if (v < 1000000) ((v - 100000) >> 31) + 5
-    else if (v < 100000000) ((v - 10000000) >> 31) + 7
-    else ((v - 1000000000) >> 31) + 9
-
-  private def offset(v: Long): Int =
-    (if (v < 100) ((v - 10) >> 63) + 1
-    else if (v < 10000) ((v - 1000) >> 63) + 3
-    else if (v < 1000000) ((v - 100000) >> 63) + 5
-    else if (v < 100000000) ((v - 10000000) >> 63) + 7
-    else if (v < 10000000000L) ((v - 1000000000) >> 63) + 9
-    else if (v < 1000000000000L) ((v - 100000000000L) >> 63) + 11
-    else if (v < 100000000000000L) ((v - 10000000000000L) >> 63) + 13
-    else if (v < 10000000000000000L) ((v - 1000000000000000L) >> 63) + 15
-    else if (v < 1000000000000000000L) ((v - 100000000000000000L) >> 63) + 17
-    else 18).toInt
+  private def offset(q0: Int): Int =
+    if (q0 < 100) ((q0 - 10) >> 31) + 1
+    else if (q0 < 10000) ((q0 - 1000) >> 31) + 3
+    else if (q0 < 1000000) ((q0 - 100000) >> 31) + 5
+    else if (q0 < 100000000) ((q0 - 10000000) >> 31) + 7
+    else ((q0 - 1000000000) >> 31) + 9
 
   private def writeByteArray(bs: Array[Byte], pos: Int): Int = {
     System.arraycopy(bs, 0, buf, pos, bs.length)
@@ -736,7 +733,7 @@ object JsonWriter {
       case _ => 0 // non-escaped chars
     }).toByte
   }(breakOut)
-  private val digits: Array[Short] = (0 to 99).map(i => (((i / 10) << 8) | (i % 10) | 0x3030).toShort)(breakOut)
+  private val digits: Array[Short] = (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
   private val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
