@@ -47,7 +47,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (!in.isCurrentToken('}')) in.objectEndError()
         }
-        if (req0 == 0) new Device(id = _id, model = _model)
+        if (req0 == 0) Device(id = _id, model = _model)
         else in.requiredKeyError(r1, Array(req0))
       } else in.readNullOrTokenError(default, '{')
 
@@ -87,7 +87,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (in.isCurrentToken('}').`unary_!`) in.objectEndError()
         }
-        if (req0 == 0) new User(name = _name, devices = _devices)
+        if (req0 == 0) User(name = _name, devices = _devices)
         else in.requiredKeyError(r0, Array(req0))
       } else in.readNullOrTokenError(default, '{')
 
