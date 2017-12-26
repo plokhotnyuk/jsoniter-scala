@@ -177,7 +177,7 @@ To see throughput & allocation rate of generated codecs run benchmarks with GC p
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
 ```
 
-More info about extras, incuding `jmh.extras.Async` and ability to generate flame graphs see in
+More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 Current results for the following environment(s):
