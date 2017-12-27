@@ -576,7 +576,7 @@ final class JsonWriter private[jsoniter_scala](
           -x
         }
       val off = offset(q0)
-      writeIntFirst(q0, pos + off, buf, digits) + off + 2
+      writeIntFirst(q0, pos + off, buf, digits) + off
     }
   }
 
@@ -600,14 +600,14 @@ final class JsonWriter private[jsoniter_scala](
           val q2 = (q1 / 100000000).toInt
           val r2 = (q1 - 100000000L * q2).toInt
           val off = 16 + offset(q2)
-          writeIntFirst(q2, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off + 2
+          writeIntFirst(q2, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off
         } else {
           val off = 8 + offset(q1.toInt)
-          writeIntFirst(q1.toInt, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds) + off + 2
+          writeIntFirst(q1.toInt, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds) + off
         }
       } else {
         val off = offset(q0.toInt)
-        writeIntFirst(q0.toInt, pos + off, buf, ds) + off + 2
+        writeIntFirst(q0.toInt, pos + off, buf, ds) + off
       }
     }
   }
@@ -617,12 +617,12 @@ final class JsonWriter private[jsoniter_scala](
     if (q0 < 100) {
       if (q0 < 10) {
         buf(pos) = (q0 + '0').toByte
-        pos - 1
+        pos + 1
       } else {
         val d = ds(q0)
         buf(pos) = d.toByte
         buf(pos - 1) = (d >> 8).toByte
-        pos - 2
+        pos
       }
     } else {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide int by 100
@@ -650,11 +650,11 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private def offset(q0: Int): Int =
-    if (q0 < 100) ((q0 - 10) >> 31) + 1
-    else if (q0 < 10000) ((q0 - 1000) >> 31) + 3
-    else if (q0 < 1000000) ((q0 - 100000) >> 31) + 5
-    else if (q0 < 100000000) ((q0 - 10000000) >> 31) + 7
-    else ((q0 - 1000000000) >> 31) + 9
+    if (q0 < 100) (9 - q0) >>> 31
+    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
+    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
+    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
+    else ((999999999 - q0) >>> 31) + 8
 
   private def writeByteArray(bs: Array[Byte], pos: Int): Int = {
     System.arraycopy(bs, 0, buf, pos, bs.length)
