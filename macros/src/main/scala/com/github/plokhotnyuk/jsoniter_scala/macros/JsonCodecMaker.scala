@@ -483,6 +483,23 @@ object JsonCodecMaker {
                 in.skip()
                 ${tpe.typeSymbol.asClass.module}
               } else in.readNullOrTokenError(default, '{')"""
+        } else if (tpe.typeSymbol.fullName.startsWith("scala.Tuple")) withDecoderFor(methodKey, default) {
+          val indexedTypes = tpe.typeArgs.zipWithIndex
+          val readFields = indexedTypes.tail.foldLeft {
+            val t = tpe.typeArgs.head
+            q"val _1: $t = ${genReadVal(t, nullValue(t), isStringified)}": Tree
+          }{ case (acc, (t, i)) =>
+              q"""..$acc
+                  val ${TermName(s"_${i + 1}")}: $t =
+                    if (in.isNextToken(',')) ${genReadVal(t, nullValue(t), isStringified)}
+                    else in.missingCommaError()"""
+          }
+          val vals = indexedTypes.map { case (t, i) => TermName(s"_${i + 1}") }
+          q"""if (in.isNextToken('[')) {
+                ..$readFields
+                if (in.isNextToken(']')) new $tpe(..$vals)
+                else in.arrayEndError()
+              } else in.readNullOrTokenError(default, '[')"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(methodKey, default) {
           val annotations = getFieldAnnotations(tpe)
 
@@ -635,6 +652,16 @@ object JsonCodecMaker {
                 out.writeObjectStart()
                 ..$discriminator
                 out.writeObjectEnd()
+              } else out.writeNull()"""
+        } else if (tpe.typeSymbol.fullName.startsWith("scala.Tuple")) withEncoderFor(methodKey, m) {
+          val writeFields = tpe.typeArgs.zipWithIndex.map { case (t, i) =>
+            q"""out.writeComma()
+                ${genWriteVal(q"x.${TermName(s"_${i + 1}")}", t, isStringified)}"""
+          }
+          q"""if (x ne null) {
+                out.writeArrayStart()
+                ..$writeFields
+                out.writeArrayEnd()
               } else out.writeNull()"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(methodKey, m) {
           val annotations = getFieldAnnotations(tpe)

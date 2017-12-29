@@ -46,6 +46,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]])
 
+  case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
+
   case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
@@ -395,6 +397,21 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfStringifiedOption, Some(BigInt(123)), "\"123\"".getBytes)
       verifySerDeser(codecOfStringifiedOption, None, "null".getBytes)
       verifySer(codecOfStringifiedOption, null, "null".getBytes)
+    }
+    "serialize and deserialize case classes with tuples" in {
+      verifySerDeser(make[Tuples](CodecMakerConfig()),
+        Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+        """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""".getBytes)
+    }
+    "serialize and deserialize top-level tuples" in {
+      val codecOfTuple2 = make[(String, Int)](CodecMakerConfig())
+      verifySerDeser(codecOfTuple2, ("VVV", 1), "[\"VVV\",1]".getBytes)
+      verifySer(codecOfTuple2, null, "null".getBytes)
+    }
+    "serialize and deserialize stringified top-level numeric tuples" in {
+      val codecOfStringifiedTuple = make[(Long, Float, BigDecimal)](CodecMakerConfig(isStringified = true))
+      verifySerDeser(codecOfStringifiedTuple, (1L, 2.2f, BigDecimal(3.3)), "[\"1\",\"2.2\",\"3.3\"]".getBytes)
+      verifySer(codecOfStringifiedTuple, null, "null".getBytes)
     }
     "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes

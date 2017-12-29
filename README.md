@@ -29,8 +29,9 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
 - Configurable indenting of output
 - Parsing of strings with escaped characters for JSON keys and string values 
-- Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, Scala 
-  collections, arrays, module classes, value classes and case classes with values/fields having any of types listed here 
+- Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, tuples, 
+  Scala collections, arrays, module classes, value classes and case classes with values/fields having any of types 
+  listed here 
 - Case classes should be defined as a top-level class or directly inside of another class or object and with public 
   constructor that has one list of arguments for all non-transient fields
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal` and value 

@@ -90,6 +90,8 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def missingCommaError(): Nothing = decodeError("expected ','")
+
   def setMark(): Unit = mark = head
 
   @tailrec
