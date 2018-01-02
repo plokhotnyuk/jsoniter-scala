@@ -38,7 +38,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Enums(lt: LocationType.LocationType)
 
-  val codecOfEnums = make[Enums](CodecMakerConfig())
+  val codecOfEnums: JsonCodec[Enums] = make[Enums](CodecMakerConfig())
 
   case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
