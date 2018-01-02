@@ -675,8 +675,12 @@ object JsonCodecMaker {
               case Some(d) =>
                 if (isContainer(tpe)) {
                   val nonEmptyAndDefaultMatchingCheck =
-                    if (tpe <:< typeOf[Array[_]]) q"v.length > 0 && (v.length != $d.length || v.deep != $d.deep)"
-                    else q"!v.isEmpty && v != $d"
+                    if (tpe <:< typeOf[Array[_]]) {
+                      q"""v.length > 0 && {
+                            val d = $d
+                            v.length != d.length || v.deep != d.deep
+                          }"""
+                    } else q"!v.isEmpty && v != $d"
                   q"""val v = x.$m
                       if ((v ne null) && $nonEmptyAndDefaultMatchingCheck) {
                         ..${genWriteConstantKey(name)}
