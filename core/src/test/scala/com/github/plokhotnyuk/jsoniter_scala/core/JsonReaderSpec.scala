@@ -709,7 +709,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
     "parse valid float values" in {
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
-        check(n.toString, java.lang.Float.parseFloat(n.toString))
+        val s = n.toString
+        check(s, java.lang.Float.parseFloat(s))
       }
     }
     "parse infinity on float overflow" in {
@@ -781,7 +782,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
     "parse valid double values" in {
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
-        check(n.toString, java.lang.Double.parseDouble(n.toString))
+        val s = n.toString
+        check(s, java.lang.Double.parseDouble(s))
       }
     }
     "parse infinity on double overflow" in {

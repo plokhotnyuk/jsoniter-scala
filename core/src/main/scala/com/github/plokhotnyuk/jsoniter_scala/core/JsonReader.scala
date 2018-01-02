@@ -556,9 +556,9 @@ final class JsonReader private[jsoniter_scala](
         if (x < -128) byteOverflowError(pos)
         pos + 1
       }
-      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
-      if (negative) x.toByte
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
+      else if (negative) x.toByte
       else if (x == -128) byteOverflowError(pos - 1)
       else (-x).toByte
     } else numberError(pos - 1)
@@ -583,9 +583,9 @@ final class JsonReader private[jsoniter_scala](
         if (x < -32768) shortOverflowError(pos)
         pos + 1
       }
-      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
-      if (negative) x.toShort
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
+      else if (negative) x.toShort
       else if (x == -32768) shortOverflowError(pos - 1)
       else (-x).toShort
     } else numberError(pos - 1)
@@ -611,9 +611,9 @@ final class JsonReader private[jsoniter_scala](
         if (x >= 0) intOverflowError(pos)
         pos + 1
       }
-      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
-      if (negative) x
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
+      else if (negative) x
       else if (x == -2147483648) intOverflowError(pos - 1)
       else -x
     } else numberError(pos - 1)
@@ -639,9 +639,9 @@ final class JsonReader private[jsoniter_scala](
         if (x >= 0) longOverflowError(pos)
         pos + 1
       }
-      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
       head = pos
-      if (negative) x
+      if (b == '.' || b == 'e' || b == 'E') numberError(pos)
+      else if (negative) x
       else if (x == -9223372036854775808L) longOverflowError(pos - 1)
       else -x
     } else numberError(pos - 1)
@@ -817,16 +817,13 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double =
-    if (posMan <= 999999999999999L) { // max mantissa that can be converted w/o rounding error by double mult or div
+    if (posMan <= 999999999999999L) { // max long mantissa that can be converted w/o rounding error by double mul or div
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
-      else {
-        val maxExp = pow10d.length
-        if (exp > -maxExp && exp < 0) man / pow10d(-exp)
-        else if (exp > 0 && exp < maxExp) man * pow10d(exp)
-        else toDouble(i)
-      }
+      else if (exp < 0 && exp > -pow10d.length) man / pow10d(-exp)
+      else if (exp > 0 && exp < pow10d.length) man * pow10d(exp)
+      else toDouble(i)
     } else toDouble(i)
 
   private def toDouble(i: Int): Double = java.lang.Double.parseDouble(new String(charBuf, 0, i))
@@ -1010,19 +1007,13 @@ final class JsonReader private[jsoniter_scala](
   private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float = {
     val man = if (isNeg) -posMan else posMan
     val exp = toExp(manExp, isExpNeg, posExp)
-    if (posMan <= 99999999) { // max mantissa that can be converted w/o rounding error by float mult or div
+    if (posMan <= 99999999) { // max int mantissa that can be converted w/o rounding error by float or double mul or div
       if (exp == 0) man
-      else {
-        val maxFloatExp = pow10f.length
-        if (exp > -maxFloatExp && exp < 0) man / pow10f(-exp)
-        else if (exp > 0 && exp < maxFloatExp) man * pow10f(exp)
-        else { // using double mult or div instead of two float mults with greater rounding error
-          val maxDoubleExp = pow10d.length
-          if (exp > -maxDoubleExp && exp < 0) (man / pow10d(-exp)).toFloat
-          else if (exp > 0 && exp < maxDoubleExp) (man * pow10d(exp)).toFloat
-          else toFloat(i)
-        }
-      }
+      else if (exp < 0 && exp > -pow10f.length) man / pow10f(-exp)
+      else if (exp > 0 && exp < pow10f.length) man * pow10f(exp)
+      else if (exp < 0 && exp > -pow10d.length) (man / pow10d(-exp)).toFloat
+      else if (exp > 0 && exp < pow10d.length) (man * pow10d(exp)).toFloat
+      else toFloat(i)
     } else toFloat(i)
   }
 
@@ -1069,9 +1060,9 @@ final class JsonReader private[jsoniter_scala](
           i += 1
           pos + 1
         }
-        if (b == '.' || b == 'e' || b == 'E') numberError(pos)
         head = pos
-        new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigInteger)
+        if (b == '.' || b == 'e' || b == 'E') numberError(pos)
+        else new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigInteger)
       } else numberError(pos - 1)
     }
   }
