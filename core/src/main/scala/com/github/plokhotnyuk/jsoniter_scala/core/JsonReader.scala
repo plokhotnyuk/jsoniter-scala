@@ -109,14 +109,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsCharBuf(): Int = {
     readParenthesesToken()
-    val x = parseString(0, charBuf.length, head)
+    val x = parseString()
     readColonToken()
     x
   }
 
   def readKeyAsString(): String = {
     readParenthesesToken()
-    val len = parseString(0, charBuf.length, head)
+    val len = parseString()
     readColonToken()
     new String(charBuf, 0, len)
   }
@@ -216,14 +216,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readString(default: String = null): String =
     if (isNextToken('"', head)) {
-      val len = parseString(0, charBuf.length, head)
+      val len = parseString()
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
   def readStringAsCharBuf(): Int =
-    if (isNextToken('"', head)) parseString(0, charBuf.length, head)
+    if (isNextToken('"', head)) parseString()
     else decodeError("expected '\"'")
 
   def readStringAsByte(): Byte = {
@@ -1235,10 +1235,14 @@ final class JsonReader private[jsoniter_scala](
 
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
+  private def parseString(): Int = {
+    val pos = head
+    parseString(0, Math.min(charBuf.length, tail - pos), pos)
+  }
+
   @tailrec
   private def parseString(i: Int, lim: Int, pos: Int): Int =
-    if (i >= lim) parseString(i, growCharBuf(i + 1), pos)
-    else if (pos < tail) {
+    if (i < lim) {
       val b = buf(pos)
       if (b == '"') {
         head = pos + 1
@@ -1248,7 +1252,11 @@ final class JsonReader private[jsoniter_scala](
         charBuf(i) = b.toChar
         parseString(i + 1, lim, pos + 1)
       }
-    } else parseString(i, lim, loadMoreOrError(pos))
+    } else if (pos < tail) parseString(i, i + Math.min(growCharBuf(i + 1) - i, tail - pos), pos)
+    else {
+      val newPos = loadMoreOrError(pos)
+      parseString(i, i + Math.min(lim - i, tail - newPos), newPos)
+    }
 
   @tailrec
   private def parseEncodedString(i: Int, lim: Int, pos: Int): Int =
