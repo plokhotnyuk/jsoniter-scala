@@ -154,7 +154,7 @@ To get result for some benchmarks in flight recording file (which you can then o
 command like this:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readGoogleMapsAPIJsoniter.*'
+sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*readJsoniter.*'
 ```
 
 On Linux the perf profiler can be used to see CPU & system events normalized per ops (do 
@@ -169,13 +169,13 @@ additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blo
 (just do `sudo apt-get install libhsdis0-fcml` for Ubuntu):
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*readAdtJsoniter.*' >read_adt_perfasm_results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm_results.txt
 ```
 
 To see throughput & allocation rate of generated codecs run benchmarks with GC profiler using following command:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >results.txt
 ```
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
