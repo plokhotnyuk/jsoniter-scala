@@ -18,29 +18,29 @@ class TwitterAPIBenchmark extends CommonParams {
   val obj: Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
 
   @Benchmark
-  def readTwitterAPICirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readTwitterAPIJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
+  def readJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
 
   @Benchmark
-  def readTwitterAPIJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
+  def readJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
 
   @Benchmark
-  def readTwitterAPIPlay(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
+  def readPlay(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
 
   @Benchmark
-  def writeTwitterAPICirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeTwitterAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeTwitterAPIJsoniter(): Array[Byte] = JsonWriter.write(twitterAPICodec, obj)
+  def writeJsoniter(): Array[Byte] = JsonWriter.write(twitterAPICodec, obj)
 
   @Benchmark
-  def writeTwitterAPIJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf.get, 0)
 
   @Benchmark
-  def writeTwitterAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
+  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
 }

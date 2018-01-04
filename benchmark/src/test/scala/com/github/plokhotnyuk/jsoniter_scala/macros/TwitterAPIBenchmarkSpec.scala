@@ -5,19 +5,19 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
   
   "TwitterAPIBenchmark" should {
     "deserialize properly" in {
-      benchmark.readTwitterAPICirce() shouldBe benchmark.obj
-      benchmark.readTwitterAPIJackson() shouldBe benchmark.obj
-      benchmark.readTwitterAPIJsoniter() shouldBe benchmark.obj
-      benchmark.readTwitterAPIPlay() shouldBe benchmark.obj
+      benchmark.readCirce() shouldBe benchmark.obj
+      benchmark.readJackson() shouldBe benchmark.obj
+      benchmark.readJsoniter() shouldBe benchmark.obj
+      benchmark.readPlay() shouldBe benchmark.obj
     }
     "serialize properly" in {
       // FIXME: circe serializes empty collections
-      //toString(benchmark.writeTwitterAPICirce()) shouldBe TwitterAPI.compactJsonString
-      toString(benchmark.writeTwitterAPIJackson()) shouldBe TwitterAPI.compactJsonString
-      toString(benchmark.writeTwitterAPIJsoniter()) shouldBe TwitterAPI.compactJsonString
-      toString(benchmark.writeTwitterAPIJsoniterPrealloc()) shouldBe TwitterAPI.compactJsonString
+      //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeJackson()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeJsoniter()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeJsoniterPrealloc()) shouldBe TwitterAPI.compactJsonString
       // FIXME: Play-JSON serializes empty collections
-      //toString(benchmark.writeTwitterAPIPlay()) shouldBe TwitterAPI.compactJsonString
+      //toString(benchmark.writePlay()) shouldBe TwitterAPI.compactJsonString
     }
   }
 }

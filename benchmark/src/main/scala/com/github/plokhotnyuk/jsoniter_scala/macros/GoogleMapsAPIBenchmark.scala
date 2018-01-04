@@ -18,29 +18,29 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   val obj: DistanceMatrix = JsonReader.read(googleMapsAPICodec, jsonBytes)
 
   @Benchmark
-  def readGoogleMapsAPICirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readGoogleMapsAPIJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
+  def readJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
 
   @Benchmark
-  def readGoogleMapsAPIJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, jsonBytes)
+  def readJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, jsonBytes)
 
   @Benchmark
-  def readGoogleMapsAPIPlay(): DistanceMatrix = Json.parse(jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
+  def readPlay(): DistanceMatrix = Json.parse(jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
 
   @Benchmark
-  def writeGoogleMapsAPICirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeGoogleMapsAPIJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeGoogleMapsAPIJsoniter(): Array[Byte] = JsonWriter.write(googleMapsAPICodec, obj)
+  def writeJsoniter(): Array[Byte] = JsonWriter.write(googleMapsAPICodec, obj)
 
   @Benchmark
-  def writeGoogleMapsAPIJsoniterPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, obj, preallocatedBuf.get, 0)
 
   @Benchmark
-  def writeGoogleMapsAPIPlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))
+  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))
 }
