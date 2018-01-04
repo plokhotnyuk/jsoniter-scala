@@ -1241,22 +1241,20 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @tailrec
-  private def parseString(i: Int, lim: Int, pos: Int): Int =
-    if (i < lim) {
+  private def parseString(i: Int, minLim: Int, pos: Int): Int =
+    if (i < minLim) {
       val b = buf(pos)
       if (b == '"') {
         head = pos + 1
         i
-      } else if ((b ^ '\\') <= 0) parseEncodedString(i, lim, pos)
-      else {
+      } else if ((b ^ '\\') > 0) {
         charBuf(i) = b.toChar
-        parseString(i + 1, lim, pos + 1)
-      }
-    } else if (pos < tail) parseString(i, i + Math.min(growCharBuf(i + 1) - i, tail - pos), pos)
-    else {
+        parseString(i + 1, minLim, pos + 1)
+      } else parseEncodedString(i, charBuf.length, pos)
+    } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
-      parseString(i, i + Math.min(lim - i, tail - newPos), newPos)
-    }
+      parseString(i, i + Math.min(minLim - i, tail - newPos), newPos)
+    } else parseString(i, i + Math.min(growCharBuf(i + 1) - i, tail - pos), pos)
 
   @tailrec
   private def parseEncodedString(i: Int, lim: Int, pos: Int): Int =
