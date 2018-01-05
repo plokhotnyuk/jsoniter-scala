@@ -40,14 +40,14 @@ class IntAndLongMapsBenchmark extends CommonParams {
   @Benchmark
   def readPlay(): IntAndLongMaps = Json.parse(jsonBytes).as[IntAndLongMaps](intAndLongMapsFormat)
 
-  /* FIXME: Circe doesn't support writing of int & long maps
-    @Benchmark
-    def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-  */
-
+/* FIXME: Circe doesn't support writing of int & long maps
+  @Benchmark
+  def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+*/
+/* FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
   @Benchmark
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
+*/
   @Benchmark
   def writeJsoniter(): Array[Byte] = JsonWriter.write(intAndLongMapsCodec, obj)
 

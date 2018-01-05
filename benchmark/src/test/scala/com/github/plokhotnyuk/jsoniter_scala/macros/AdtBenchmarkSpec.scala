@@ -11,7 +11,7 @@ class AdtBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readPlay() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      // FIXME: circe appends discriminator as a last field
+      //FIXME: circe appends discriminator as a last field
       //toString(benchmark.writeAdtCirce()) shouldBe benchmark.adtJsonString
       toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString

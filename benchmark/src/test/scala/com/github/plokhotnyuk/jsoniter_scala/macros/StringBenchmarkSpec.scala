@@ -8,12 +8,12 @@ class StringBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readAsciiCirce() shouldBe benchmark.asciiObj
       benchmark.readAsciiJackson() shouldBe benchmark.asciiObj
       benchmark.readAsciiJsoniter() shouldBe benchmark.asciiObj
-      // FIXME: find proper way to parse string value in Play JSON
+      //FIXME: find proper way to parse string value in Play JSON
       //benchmark.readAsciiStringPlay() shouldBe benchmark.asciiStringObj
       benchmark.readNonAsciiCirce() shouldBe benchmark.nonAsciiObj
       benchmark.readNonAsciiJackson() shouldBe benchmark.nonAsciiObj
       benchmark.readNonAsciiJsoniter() shouldBe benchmark.nonAsciiObj
-      // FIXME: find proper way to parse string value in Play JSON
+      //FIXME: find proper way to parse string value in Play JSON
       //benchmark.readNonAsciiStringPlay() shouldBe benchmark.nonAsciiStringObj
     }
     "serialize properly" in {

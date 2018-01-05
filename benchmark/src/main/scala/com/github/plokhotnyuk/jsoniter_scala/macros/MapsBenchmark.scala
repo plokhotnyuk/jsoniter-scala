@@ -24,10 +24,10 @@ class MapsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Maps = decode[Maps](new String(jsonBytes, UTF_8)) .fold(throw _, x => x)
-
+/*FIXME: Jackson-module-scala parse keys as String
   @Benchmark
   def readJackson(): Maps = jacksonMapper.readValue[Maps](jsonBytes)
-
+*/
   @Benchmark
   def readJsoniter(): Maps = JsonReader.read(mapsCodec, jsonBytes)
 
@@ -36,10 +36,10 @@ class MapsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+/*FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
   @Benchmark
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
+*/
   @Benchmark
   def writeJsoniter(): Array[Byte] = JsonWriter.write(mapsCodec, obj)
 

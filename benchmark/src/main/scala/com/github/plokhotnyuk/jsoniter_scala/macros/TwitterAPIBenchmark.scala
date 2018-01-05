@@ -3,14 +3,14 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.TwitterAPI._
 import io.circe.generic.auto._
 import io.circe.parser._
-import io.circe.syntax._
+//import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
@@ -28,10 +28,10 @@ class TwitterAPIBenchmark extends CommonParams {
 
   @Benchmark
   def readPlay(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
-
+/* FIXME: circe serializes empty collections
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+*/
   @Benchmark
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
@@ -40,7 +40,8 @@ class TwitterAPIBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf.get, 0)
-
+/* FIXME: Play-JSON serializes empty collections
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
+*/
 }

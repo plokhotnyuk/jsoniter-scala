@@ -27,10 +27,10 @@ class MutableMapsBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): MutableMaps = decode[MutableMaps](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 */
-
+/*FIXME: Jackson-module-scala parse keys as String
   @Benchmark
   def readJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](jsonBytes)
-
+*/
   @Benchmark
   def readJsoniter(): MutableMaps = JsonReader.read(mutableMapsCodec, jsonBytes)
 
@@ -39,10 +39,10 @@ class MutableMapsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+/*FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
   @Benchmark
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
+*/
   @Benchmark
   def writeJsoniter(): Array[Byte] = JsonWriter.write(mutableMapsCodec, obj)
 

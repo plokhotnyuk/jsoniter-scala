@@ -43,10 +43,10 @@ class AdtBenchmark extends CommonParams {
 
   @Benchmark
   def readPlay(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
-
+/* FIXME: circe appends discriminator as a last field
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+*/
   @Benchmark
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

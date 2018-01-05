@@ -14,7 +14,7 @@ class MutableMapsBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      // FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
+      //FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
       //toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString
       toString(benchmark.writePlay()) shouldBe benchmark.jsonString
