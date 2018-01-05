@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
+import java.math.BigInteger
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 

@@ -96,7 +96,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit =
     if (x ne null) {
       writeCommaWithParentheses()
-      writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+      writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
       writeParenthesesWithColon()
     } else encodeError("key cannot be null")
 
@@ -127,7 +127,8 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
 
   def writeVal(x: BigInt): Unit =
-    if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+    if (x eq null) writeNull()
+    else writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
 
@@ -153,7 +154,8 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
   def writeValAsString(x: BigInt): Unit =
-    if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+    if (x eq null) writeNull()
+    else writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
   def writeValAsString(x: Boolean): Unit =
     if (x) writeBytes('"', 't', 'r', 'u', 'e', '"') else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')

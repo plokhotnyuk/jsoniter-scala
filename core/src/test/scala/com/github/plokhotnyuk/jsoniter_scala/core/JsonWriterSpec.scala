@@ -215,34 +215,47 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for int" should {
     "write any int values" in {
+      def check(n: Int): Unit = {
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
       forAll(minSuccessful(100000)) { (n: Int) =>
-        withWriter(_.writeVal(n)) shouldBe n.toString
-        withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+        check(n)
       }
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for long" should {
     "write any long values" in {
+      def check(n: Long): Unit = {
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
       forAll(minSuccessful(100000)) { (n: Int) =>
-        withWriter(_.writeVal(n.toLong)) shouldBe n.toString
-        withWriter(_.writeValAsString(n.toLong)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n.toLong)) shouldBe '"' + n.toString + "\":"
+        check(n.toLong)
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
-        withWriter(_.writeVal(n)) shouldBe n.toString
-        withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+        check(n)
       }
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for float" should {
     "write finite float values" in {
+      def check(n: Float): Unit = {
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
       forAll(minSuccessful(100000)) { (n: Float) =>
         whenever(java.lang.Float.isFinite(n)) {
-          withWriter(_.writeVal(n)) shouldBe n.toString
-          withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-          withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+          check(n)
         }
       }
     }
@@ -256,11 +269,16 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for double" should {
     "write finite double values" in {
+      def check(n: Double): Unit = {
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
       forAll(minSuccessful(100000)) { (n: Double) =>
         whenever(java.lang.Double.isFinite(n)) {
-          withWriter(_.writeVal(n)) shouldBe n.toString
-          withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-          withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+          check(n)
         }
       }
     }
@@ -280,10 +298,18 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("key cannot be null"))
     }
     "write number values" in {
+      def check(n: BigInt): Unit = {
+        val s = new java.math.BigDecimal(n.bigInteger).toPlainString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
+      forAll(minSuccessful(100000)) { (n: Long) =>
+        check(BigInt(n))
+      }
       forAll(minSuccessful(100000)) { (n: BigInt) =>
-        withWriter(_.writeVal(n)) shouldBe n.toString
-        withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+        check(n)
       }
     }
   }
@@ -295,10 +321,15 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("key cannot be null"))
     }
     "write number values" in {
+      def check(n: BigDecimal): Unit = {
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
-        withWriter(_.writeVal(n)) shouldBe n.toString
-        withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+        check(n)
       }
     }
   }
