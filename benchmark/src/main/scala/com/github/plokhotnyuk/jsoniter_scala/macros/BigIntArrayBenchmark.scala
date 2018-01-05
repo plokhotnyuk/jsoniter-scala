@@ -12,7 +12,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 
 class BigIntArrayBenchmark extends CommonParams {
-  val obj: Array[BigInt] = (1 to 1000).map(i => BigInt(((i * 2246173787040746813L) / Math.pow(10, i % 19)).toLong)).toArray
+  val obj: Array[BigInt] = (1 to 1000).map(i => BigInt(Array.fill((i & 31) + 1)(i.toByte))).toArray // up to 256-bit numbers
   val jsonString: String = obj.map(x => new java.math.BigDecimal(x.bigInteger).toPlainString).mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
@@ -29,12 +29,10 @@ class BigIntArrayBenchmark extends CommonParams {
   @Benchmark
   def readPlay(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]]
 */
-
 /* FIXME: Circe uses an engineering decimal notation to serialize BigInt
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
-
   @Benchmark
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
@@ -43,7 +41,6 @@ class BigIntArrayBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterPrealloc(): Int = JsonWriter.write(bigIntArrayCodec, obj, preallocatedBuf.get, 0)
-
 /* FIXME: add format for BigInt arrays
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))
