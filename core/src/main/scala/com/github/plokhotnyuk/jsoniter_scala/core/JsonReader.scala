@@ -1045,8 +1045,7 @@ final class JsonReader private[jsoniter_scala](
       }
       var pos = head
       if (b >= '0' && b <= '9') {
-        var x: Long = '0' - b
-        var noLongOverflow = true
+        val isZeroFirst = b == '0'
         charBuf(i) = b.toChar
         i += 1
         while ((pos < tail || {
@@ -1056,12 +1055,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) pos = {
-          if (noLongOverflow) {
-            if (x == 0) leadingZeroError(pos - 1)
-            if (x < -922337203685477580L) noLongOverflow = false
-            x = x * 10 + ('0' - b)
-            if (x >= 0) noLongOverflow = false
-          }
+          if (isZeroFirst) leadingZeroError(pos - 1)
           if (i >= lim) lim = growCharBuf(i + 1)
           charBuf(i) = b.toChar
           i += 1
@@ -1069,8 +1063,15 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         if (b == '.' || b == 'e' || b == 'E') numberError(pos)
-        else if (noLongOverflow && (negative || x != -9223372036854775808L)) new BigInt(BigInteger.valueOf(if (negative) x else -x))
-        else new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigInteger)
+        var j = if (negative) 1 else 0
+        if (i < 19 + j) { // 19 == Long.MaxValue.toString.length
+          var x = 0L
+          while (j < i) {
+            x = x * 10 + (charBuf(j) - '0')
+            j += 1
+          }
+          new BigInt(BigInteger.valueOf(if (negative) -x else x))
+        } else new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigIntegerExact)
       } else numberError(pos - 1)
     }
   }
