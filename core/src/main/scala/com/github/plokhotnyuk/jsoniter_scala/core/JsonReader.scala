@@ -110,9 +110,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsCharBuf(): Int = {
     readParenthesesToken()
-    val x = parseString()
+    val len = parseString()
     readColonToken()
-    x
+    len
   }
 
   def readKeyAsString(): String = {
@@ -147,7 +147,7 @@ final class JsonReader private[jsoniter_scala](
     readParenthesesToken()
     val x = parseShort(isToken = false)
     readParenthesesByteWithColonToken()
-    x.toShort
+    x
   }
 
   def readKeyAsInt(): Int = {
@@ -1280,50 +1280,38 @@ final class JsonReader private[jsoniter_scala](
             charBuf(i) = b1.toChar
             parseEncodedString(i + 1, lim, pos + 1)
           } else if (remaining > 1) {
-            (buf(pos + 1): @switch) match {
-              case '"' =>
-                charBuf(i) = '"'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 'n' =>
-                charBuf(i) = '\n'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 'r' =>
-                charBuf(i) = '\r'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 't' =>
-                charBuf(i) = '\t'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 'b' =>
-                charBuf(i) = '\b'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 'f' =>
-                charBuf(i) = '\f'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case '\\' =>
-                charBuf(i) = '\\'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case '/' =>
-                charBuf(i) = '/'
-                parseEncodedString(i + 1, lim, pos + 2)
-              case 'u' =>
-                if (remaining > 5) {
-                  val ch1 = readEscapedUnicode(pos + 2)
-                  if (ch1 < 0xD800 || ch1 > 0xDFFF) {
-                    charBuf(i) = ch1
-                    parseEncodedString(i + 1, lim, pos + 6)
-                  } else if (remaining > 11) {
-                    if (buf(pos + 6) == '\\') {
-                      if (buf(pos + 7) == 'u') {
-                        val ch2 = readEscapedUnicode(pos + 8)
-                        if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
-                        charBuf(i) = ch1
-                        charBuf(i + 1) = ch2
-                        parseEncodedString(i + 2, lim, pos + 12)
-                      } else illegalEscapeSequenceError(pos + 7)
-                    } else illegalEscapeSequenceError(pos + 6)
-                  } else parseEncodedString(i, lim, loadMoreOrError(pos))
+            val b2 = buf(pos + 1)
+            if (b2 == 'u') {
+              if (remaining > 5) {
+                val ch1 = readEscapedUnicode(pos + 2)
+                if (ch1 < 0xD800 || ch1 > 0xDFFF) {
+                  charBuf(i) = ch1
+                  parseEncodedString(i + 1, lim, pos + 6)
+                } else if (remaining > 11) {
+                  if (buf(pos + 6) == '\\') {
+                    if (buf(pos + 7) == 'u') {
+                      val ch2 = readEscapedUnicode(pos + 8)
+                      if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
+                      charBuf(i) = ch1
+                      charBuf(i + 1) = ch2
+                      parseEncodedString(i + 2, lim, pos + 12)
+                    } else illegalEscapeSequenceError(pos + 7)
+                  } else illegalEscapeSequenceError(pos + 6)
                 } else parseEncodedString(i, lim, loadMoreOrError(pos))
-              case _ => illegalEscapeSequenceError(pos + 1)
+              } else parseEncodedString(i, lim, loadMoreOrError(pos))
+            } else {
+              charBuf(i) = (b2: @switch) match {
+                case '"' => '"'
+                case 'n' => '\n'
+                case 'r' => '\r'
+                case 't' => '\t'
+                case 'b' => '\b'
+                case 'f' => '\f'
+                case '\\' => '\\'
+                case '/' => '/'
+                case _ => illegalEscapeSequenceError(pos + 1)
+              }
+              parseEncodedString(i + 1, lim, pos + 2)
             }
           } else parseEncodedString(i, lim, loadMoreOrError(pos))
         } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
@@ -1368,39 +1356,27 @@ final class JsonReader private[jsoniter_scala](
           head = pos + 1
           b1.toChar
         } else if (remaining > 1) {
-          (buf(pos + 1): @switch) match {
-            case 'b' =>
-              head = pos + 2
-              '\b'
-            case 'f' =>
-              head = pos + 2
-              '\f'
-            case 'n' =>
-              head = pos + 2
-              '\n'
-            case 'r' =>
-              head = pos + 2
-              '\r'
-            case 't' =>
-              head = pos + 2
-              '\t'
-            case '"' =>
-              head = pos + 2
-              '"'
-            case '/' =>
-              head = pos + 2
-              '/'
-            case '\\' =>
-              head = pos + 2
-              '\\'
-            case 'u' =>
-              if (remaining > 5) {
-                val ch = readEscapedUnicode(pos + 2)
-                if (ch >= 0xD800 && ch <= 0xDFFF) decodeError("illegal surrogate character", pos + 5)
-                head = pos + 6
-                ch
-              } else parseChar(loadMoreOrError(pos))
-            case _ => illegalEscapeSequenceError(pos + 1)
+          val b2 = buf(pos + 1)
+          if (b2 == 'u') {
+            if (remaining > 5) {
+              val ch = readEscapedUnicode(pos + 2)
+              if (ch >= 0xD800 && ch <= 0xDFFF) decodeError("illegal surrogate character", pos + 5)
+              head = pos + 6
+              ch
+            } else parseChar(loadMoreOrError(pos))
+          } else {
+            head = pos + 2
+            (b2: @switch) match {
+              case 'b' => '\b'
+              case 'f' => '\f'
+              case 'n' => '\n'
+              case 'r' => '\r'
+              case 't' => '\t'
+              case '"' => '"'
+              case '/' => '/'
+              case '\\' => '\\'
+              case _ => illegalEscapeSequenceError(pos + 1)
+            }
           }
         } else parseChar(loadMoreOrError(pos))
       } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
