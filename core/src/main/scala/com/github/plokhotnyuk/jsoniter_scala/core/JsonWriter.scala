@@ -599,12 +599,12 @@ final class JsonWriter private[jsoniter_scala](
         val q1 = q0 / 100000000
         val r1 = (q0 - 100000000 * q1).toInt
         if (q1 >= 100000000) {
-          val q2 = (q1 / 100000000).toInt
-          val r2 = (q1 - 100000000L * q2).toInt
-          val off = 16 + offset(q2)
-          writeIntFirst(q2, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off
+          val q2 = q1 / 100000000
+          val r2 = (q1 - 100000000 * q2).toInt
+          val off = offset(q2.toInt) + 16
+          writeIntFirst(q2.toInt, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off
         } else {
-          val off = 8 + offset(q1.toInt)
+          val off = offset(q1.toInt) + 8
           writeIntFirst(q1.toInt, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds) + off
         }
       } else {
