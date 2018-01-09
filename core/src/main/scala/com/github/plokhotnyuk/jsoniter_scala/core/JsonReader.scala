@@ -1008,7 +1008,7 @@ final class JsonReader private[jsoniter_scala](
   private def toFloat(isNeg: Boolean, posMan: Int, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Float = {
     val man = if (isNeg) -posMan else posMan
     val exp = toExp(manExp, isExpNeg, posExp)
-    if (posMan <= 99999999) { // max int mantissa that can be converted w/o rounding error by float or double mul or div
+    if (posMan <= 9999999) { // max int mantissa that can be converted w/o rounding error by float or double mul or div
       if (exp == 0) man
       else if (exp < 0 && exp > -pow10f.length) man / pow10f(-exp)
       else if (exp > 0 && exp < pow10f.length) man * pow10f(exp)

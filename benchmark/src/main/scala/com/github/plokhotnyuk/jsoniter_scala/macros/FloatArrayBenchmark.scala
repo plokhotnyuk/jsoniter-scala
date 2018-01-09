@@ -11,22 +11,23 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
-class IntArrayBenchmark extends CommonParams {
-  val obj: Array[Int] = (1 to 1024).map(i => ((i * 1498724053) / Math.pow(10, i % 10)).toInt).toArray
+class FloatArrayBenchmark extends CommonParams {
+  val obj: Array[Float] = (1 to 512)
+    .map(i => (((i * 1498724053) / Math.pow(10, i % 10)).toInt * Math.pow(10, (i % 32) - 16)).toFloat).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
   @Benchmark
-  def readCirce(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Array[Int] = jacksonMapper.readValue[Array[Int]](jsonBytes)
+  def readJackson(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Array[Int] = JsonReader.read(intArrayCodec, jsonBytes)
+  def readJsoniter(): Array[Float] = JsonReader.read(floatArrayCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Array[Int] = Json.parse(jsonBytes).as[Array[Int]]
+  def readPlay(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -35,11 +36,12 @@ class IntArrayBenchmark extends CommonParams {
   def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(intArrayCodec, obj)
+  def writeJsoniter(): Array[Byte] = JsonWriter.write(floatArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(intArrayCodec, obj, preallocatedBuf.get, 0)
-
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(floatArrayCodec, obj, preallocatedBuf.get, 0)
+/* FIXME: Play-JSON serialize double values instead of float
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+*/
 }
