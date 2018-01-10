@@ -351,8 +351,8 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos = {
       val bs = UnsafeUtils.getLatin1Array(s)
-      if (bs eq null) writeString(s, 0, s.length, pos + 1, buf.length, escapedChars)
-      else writeString(bs, 0, s.length, pos + 1, buf.length, escapedChars)
+      if (bs eq null) writeString(s, 0, s.length, pos + 1, buf.length - 1, escapedChars)
+      else writeString(bs, 0, s.length, pos + 1, buf.length - 1, escapedChars)
     }
     buf(pos) = '"'
     pos + 1
@@ -361,20 +361,20 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 2 > posLim) writeString(s, from, to, growBuffer(2, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeString(s, from, to, growBuffer(2, pos), buf.length - 1, escapedChars)
     else {
       val ch = s.charAt(from)
       if (ch < 128 && escapedChars(ch) == 0) {
         buf(pos) = ch.toByte
         writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      } else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim, escapedChars)
-      else writeEncodedString(s, from, to, pos, posLim, escapedChars)
+      } else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
+      else writeEncodedString(s, from, to, pos, posLim - 6, escapedChars)
     }
 
   @tailrec
   private def writeEncodedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 7 > posLim) writeEncodedString(s, from, to, growBuffer(7, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEncodedString(s, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
@@ -412,7 +412,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 13 > posLim) writeEscapedString(s, from, to, growBuffer(13, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, growBuffer(13, pos), buf.length - 12, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) {
@@ -438,20 +438,20 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 2 > posLim) writeString(bs, from, to, growBuffer(2, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeString(bs, from, to, growBuffer(2, pos), buf.length - 1, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0 && escapedChars(b) == 0) {
         buf(pos) = b
         writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
-      } else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim, escapedChars)
-      else writeEncodedString(bs, from, to, pos, posLim, escapedChars)
+      } else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim - 12, escapedChars)
+      else writeEncodedString(bs, from, to, pos, posLim - 6, escapedChars)
     }
 
   @tailrec
   private def writeEncodedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 7 > posLim) writeEncodedString(bs, from, to, growBuffer(7, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEncodedString(bs, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) { // 1 byte, 7 bits: 0xxxxxxx
@@ -474,7 +474,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeEscapedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 7 > posLim) writeEscapedString(bs, from, to, growBuffer(7, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEscapedString(bs, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) {

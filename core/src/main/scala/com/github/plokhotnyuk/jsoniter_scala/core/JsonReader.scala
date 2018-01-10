@@ -1055,11 +1055,12 @@ final class JsonReader private[jsoniter_scala](
 
   private def parseString(): Int = {
     val pos = head
-    parseString(0, Math.min(charBuf.length, tail - pos), pos)
+    val charBuf = this.charBuf
+    parseString(0, Math.min(charBuf.length, tail - pos), charBuf, pos)
   }
 
   @tailrec
-  private def parseString(i: Int, minLim: Int, pos: Int): Int =
+  private def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
     if (i < minLim) {
       val b = buf(pos)
       if (b == '"') {
@@ -1067,16 +1068,16 @@ final class JsonReader private[jsoniter_scala](
         i
       } else if ((b ^ '\\') > 0) {
         charBuf(i) = b.toChar
-        parseString(i + 1, minLim, pos + 1)
-      } else parseEncodedString(i, charBuf.length, pos)
+        parseString(i + 1, minLim, charBuf, pos + 1)
+      } else parseEncodedString(i, charBuf.length, charBuf, pos)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
-      parseString(i, i + Math.min(minLim - i, tail - newPos), newPos)
-    } else parseString(i, i + Math.min(growCharBuf(i + 1) - i, tail - pos), pos)
+      parseString(i, i + Math.min(minLim - i, tail - newPos), charBuf, newPos)
+    } else parseString(i, i + Math.min(growCharBuf(i + 1) - i, tail - pos), this.charBuf, pos)
 
   @tailrec
-  private def parseEncodedString(i: Int, lim: Int, pos: Int): Int =
-    if (i >= lim) parseEncodedString(i, growCharBuf(i + 2), pos) // 2 is length of surrogate pair
+  private def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int =
+    if (i >= lim) parseEncodedString(i, growCharBuf(i + 2), this.charBuf, pos) // 2 is length of surrogate pair
     else {
       val remaining = tail - pos
       if (remaining > 0) {
@@ -1087,7 +1088,7 @@ final class JsonReader private[jsoniter_scala](
             i
           } else if (b1 != '\\') {
             charBuf(i) = b1.toChar
-            parseEncodedString(i + 1, lim, pos + 1)
+            parseEncodedString(i + 1, lim, charBuf, pos + 1)
           } else if (remaining > 1) {
             val b2 = buf(pos + 1)
             if (b2 == 'u') {
@@ -1095,7 +1096,7 @@ final class JsonReader private[jsoniter_scala](
                 val ch1 = readEscapedUnicode(pos + 2)
                 if (ch1 < 0xD800 || ch1 > 0xDFFF) {
                   charBuf(i) = ch1
-                  parseEncodedString(i + 1, lim, pos + 6)
+                  parseEncodedString(i + 1, lim, charBuf, pos + 6)
                 } else if (remaining > 11) {
                   if (buf(pos + 6) == '\\') {
                     if (buf(pos + 7) == 'u') {
@@ -1103,11 +1104,11 @@ final class JsonReader private[jsoniter_scala](
                       if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
                       charBuf(i) = ch1
                       charBuf(i + 1) = ch2
-                      parseEncodedString(i + 2, lim, pos + 12)
+                      parseEncodedString(i + 2, lim, charBuf, pos + 12)
                     } else illegalEscapeSequenceError(pos + 7)
                   } else illegalEscapeSequenceError(pos + 6)
-                } else parseEncodedString(i, lim, loadMoreOrError(pos))
-              } else parseEncodedString(i, lim, loadMoreOrError(pos))
+                } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
+              } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
             } else {
               charBuf(i) = (b2: @switch) match {
                 case '"' => '"'
@@ -1120,16 +1121,16 @@ final class JsonReader private[jsoniter_scala](
                 case '/' => '/'
                 case _ => illegalEscapeSequenceError(pos + 1)
               }
-              parseEncodedString(i + 1, lim, pos + 2)
+              parseEncodedString(i + 1, lim, charBuf, pos + 2)
             }
-          } else parseEncodedString(i, lim, loadMoreOrError(pos))
+          } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
           if (remaining > 1) {
             val b2 = buf(pos + 1)
             if (isMalformedBytes2(b1, b2)) malformedBytesError(b1, b2, pos)
             charBuf(i) = ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
-            parseEncodedString(i + 1, lim, pos + 2)
-          } else parseEncodedString(i, lim, loadMoreOrError(pos))
+            parseEncodedString(i + 1, lim, charBuf, pos + 2)
+          } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
           if (remaining > 2) {
             val b2 = buf(pos + 1)
@@ -1137,8 +1138,8 @@ final class JsonReader private[jsoniter_scala](
             val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
             if (isMalformedBytes3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
             charBuf(i) = ch
-            parseEncodedString(i + 1, lim, pos + 3)
-          } else parseEncodedString(i, lim, loadMoreOrError(pos))
+            parseEncodedString(i + 1, lim, charBuf, pos + 3)
+          } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
           if (remaining > 3) {
             val b2 = buf(pos + 1)
@@ -1148,10 +1149,10 @@ final class JsonReader private[jsoniter_scala](
             if (isMalformedBytes4(b2, b3, b4) || cp < 0x010000 || cp >= 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
             charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
             charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
-            parseEncodedString(i + 2, lim, pos + 4)
-          } else parseEncodedString(i, lim, loadMoreOrError(pos))
+            parseEncodedString(i + 2, lim, charBuf, pos + 4)
+          } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else malformedBytes(b1, pos)
-      } else parseEncodedString(i, lim, loadMoreOrError(pos))
+      } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
     }
 
   @tailrec
