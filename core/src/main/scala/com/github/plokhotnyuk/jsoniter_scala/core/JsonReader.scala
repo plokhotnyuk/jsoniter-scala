@@ -1364,8 +1364,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"' && evenBackSlashes) pos + 1
-      else if (b == '\\') skipString(!evenBackSlashes, pos + 1)
-      else skipString(evenBackSlashes = true, pos + 1)
+      else skipString(b != '\\' || !evenBackSlashes, pos + 1)
     } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
   @tailrec
