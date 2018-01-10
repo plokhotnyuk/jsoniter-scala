@@ -1371,7 +1371,7 @@ final class JsonReader private[jsoniter_scala](
   private def skipNumber(pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
-      if ((b >= '0' && b <= '9') || b == '.' || b == '-' || b == '+' || b == 'e' || b == 'E') skipNumber(pos + 1)
+      if ((b >= '0' && b <= '9') || b == '-' || b == '.' || b == 'e' || b == '+' || b == 'E') skipNumber(pos + 1)
       else pos
     } else skipNumber(loadMoreOrError(pos))
 
