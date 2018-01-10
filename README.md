@@ -111,16 +111,10 @@ For more use cases & examples, please, check out
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
 creating pull requests (fixes and improvements of docs, code and tests are highly appreciated)
 
-### Run tests and check coverage
+### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt clean +coverage +test +coverageReport
-```
-
-### Publish locally
-
-```sh
-sbt +publishLocal
+sbt clean +coverage +test +coverageReport +mimaReportBinaryIssues
 ```
 
 ### Run benchmarks
@@ -191,6 +185,14 @@ Oracle JDK build 1.8.0_151-b12 64-bit
 Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04 (dev), Linux 4.13.0-17-generic, 
 Oracle JDK build 9.0.1+11 64-bit
 
+### Release
+
+For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
+that is used in the Scala ecosystem.
+
+```sh
+sbt release cross
+```
 
 ## Acknowledgements
 

@@ -2,6 +2,8 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import sbt.Keys.scalacOptions
 import sbt.url
 
+lazy val binaryCompatibleVersion = "0.3.0"
+
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
   organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
@@ -66,7 +68,8 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
-    )
+    ),
+    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "core" % binaryCompatibleVersion)
   )
 
 lazy val macros = project
@@ -78,7 +81,8 @@ lazy val macros = project
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
-    )
+    ),
+    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion)
   )
 
 lazy val benchmark = project
