@@ -14,7 +14,7 @@ class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniterPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlay()) shouldBe benchmark.jsonString
     }
   }

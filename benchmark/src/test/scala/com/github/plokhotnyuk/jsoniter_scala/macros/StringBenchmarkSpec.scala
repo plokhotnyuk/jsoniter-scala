@@ -20,12 +20,12 @@ class StringBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAsciiCirce()) shouldBe benchmark.asciiJsonString
       toString(benchmark.writeAsciiJackson()) shouldBe benchmark.asciiJsonString
       toString(benchmark.writeAsciiJsoniter()) shouldBe benchmark.asciiJsonString
-      toString(benchmark.writeAsciiJsoniterPrealloc()) shouldBe benchmark.asciiJsonString
+      toString(benchmark.preallocatedBuf, benchmark.writeAsciiJsoniterPrealloc()) shouldBe benchmark.asciiJsonString
       toString(benchmark.writeAsciiPlay()) shouldBe benchmark.asciiJsonString
       toString(benchmark.writeNonAsciiCirce()) shouldBe benchmark.nonAsciiJsonString
       toString(benchmark.writeNonAsciiJackson()) shouldBe benchmark.nonAsciiJsonString
       toString(benchmark.writeNonAsciiJsoniter()) shouldBe benchmark.nonAsciiJsonString
-      toString(benchmark.writeNonAsciiJsoniterPrealloc()) shouldBe benchmark.nonAsciiJsonString
+      toString(benchmark.preallocatedBuf, benchmark.writeNonAsciiJsoniterPrealloc()) shouldBe benchmark.nonAsciiJsonString
       toString(benchmark.writeNonAsciiPlay()) shouldBe benchmark.nonAsciiJsonString
     }
   }

@@ -7,7 +7,7 @@ import org.scalatest.{Matchers, WordSpec}
 abstract class BenchmarkSpecBase extends WordSpec with Matchers {
   def toString(json: Array[Byte]): String = new String(json, StandardCharsets.UTF_8)
 
-  def toString(len: Int): String = new String(JsoniterCodecs.preallocatedBuf.get, 0, len, StandardCharsets.UTF_8)
+  def toString(json: Array[Byte], len: Int): String = new String(json, 0, len, StandardCharsets.UTF_8)
 
   def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
     parsedObj.aa.deep shouldBe obj.aa.deep

@@ -39,7 +39,7 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def writeJsoniter(): Array[Byte] = JsonWriter.write(googleMapsAPICodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))

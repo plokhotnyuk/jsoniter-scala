@@ -14,7 +14,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeCirce()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJackson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJsoniter()) shouldBe GoogleMapsAPI.compactJsonString
-      toString(benchmark.writeJsoniterPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writePlay()) shouldBe GoogleMapsAPI.compactJsonString
     }
   }

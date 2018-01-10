@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 
-@State(Scope.Benchmark)
+@State(Scope.Thread)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5)
 @Fork(value = 1, jvmArgs = Array(
@@ -21,4 +21,6 @@ import org.openjdk.jmh.annotations._
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-abstract class CommonParams
+abstract class CommonParams {
+  val preallocatedBuf: Array[Byte] = new Array(100000)
+}

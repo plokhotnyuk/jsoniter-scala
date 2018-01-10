@@ -39,7 +39,7 @@ class FloatArrayBenchmark extends CommonParams {
   def writeJsoniter(): Array[Byte] = JsonWriter.write(floatArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(floatArrayCodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(floatArrayCodec, obj, preallocatedBuf, 0)
 /* FIXME: Play-JSON serialize double values instead of float
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))

@@ -61,7 +61,7 @@ class StringBenchmark extends CommonParams {
   def writeAsciiJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, asciiObj)
 
   @Benchmark
-  def writeAsciiJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, asciiObj, preallocatedBuf.get, 0)
+  def writeAsciiJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, asciiObj, preallocatedBuf, 0)
 
   @Benchmark
   def writeAsciiPlay(): Array[Byte] = Json.toBytes(Json.toJson(asciiObj))
@@ -76,7 +76,7 @@ class StringBenchmark extends CommonParams {
   def writeNonAsciiJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, nonAsciiObj)
 
   @Benchmark
-  def writeNonAsciiJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, nonAsciiObj, preallocatedBuf.get, 0)
+  def writeNonAsciiJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, nonAsciiObj, preallocatedBuf, 0)
 
   @Benchmark
   def writeNonAsciiPlay(): Array[Byte] = Json.toBytes(Json.toJson(nonAsciiObj))

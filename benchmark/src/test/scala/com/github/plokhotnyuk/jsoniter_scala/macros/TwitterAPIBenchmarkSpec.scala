@@ -15,7 +15,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJackson()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJsoniter()) shouldBe TwitterAPI.compactJsonString
-      toString(benchmark.writeJsoniterPrealloc()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterPrealloc()) shouldBe TwitterAPI.compactJsonString
       //FIXME: Play-JSON serializes empty collections
       //toString(benchmark.writePlay()) shouldBe TwitterAPI.compactJsonString
     }

@@ -39,7 +39,7 @@ class TwitterAPIBenchmark extends CommonParams {
   def writeJsoniter(): Array[Byte] = JsonWriter.write(twitterAPICodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf, 0)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))

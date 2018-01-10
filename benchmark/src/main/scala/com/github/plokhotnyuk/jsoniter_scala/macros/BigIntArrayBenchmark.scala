@@ -40,7 +40,7 @@ class BigIntArrayBenchmark extends CommonParams {
   def writeJsoniter(): Array[Byte] = JsonWriter.write(bigIntArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(bigIntArrayCodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(bigIntArrayCodec, obj, preallocatedBuf, 0)
 /* FIXME: add format for BigInt arrays
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))

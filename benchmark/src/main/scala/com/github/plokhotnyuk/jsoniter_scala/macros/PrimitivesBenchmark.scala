@@ -42,7 +42,7 @@ class PrimitivesBenchmark extends CommonParams {
   def writeJsoniter(): Array[Byte] = JsonWriter.write(primitivesCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(primitivesCodec, obj, preallocatedBuf.get, 0)
+  def writeJsoniterPrealloc(): Int = JsonWriter.write(primitivesCodec, obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))
