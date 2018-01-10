@@ -818,7 +818,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int, i: Int): Double =
-    if (posMan <= 999999999999999L) { // max long mantissa that can be converted w/o rounding error by double mul or div
+    if (posMan < 4503599627370496L) { // max long mantissa that can be converted w/o rounding error by double mul or div
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
