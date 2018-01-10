@@ -17,4 +17,9 @@ class ArraysBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writePlay()) shouldBe benchmark.jsonString
     }
   }
+
+  private def assertArrays(parsedObj: Arrays, obj: Arrays): Unit = {
+    parsedObj.aa.deep shouldBe obj.aa.deep
+    parsedObj.a.deep shouldBe obj.a.deep
+  }
 }

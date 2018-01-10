@@ -22,5 +22,5 @@ import org.openjdk.jmh.annotations._
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 abstract class CommonParams {
-  val preallocatedBuf: Array[Byte] = new Array(100000)
+  val preallocatedBuf: Array[Byte] = new Array(32768)
 }
