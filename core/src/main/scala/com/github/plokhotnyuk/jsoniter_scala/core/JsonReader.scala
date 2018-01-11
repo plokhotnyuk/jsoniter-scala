@@ -777,13 +777,11 @@ final class JsonReader private[jsoniter_scala](
       if (state == 3 || state == 4 || state == 6 || state == 9) toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
       else if (state == 10) toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
       else numberError(pos)
-    } finally {
-      this.mark = mark
-    }
+    } finally this.mark = mark
   }
 
   private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
-    if (posMan < 4503599627370496L) { // max long mantissa that can be converted w/o rounding error by double mul or div
+    if (posMan < 4503599627370496L) { // 4503599627370496L == 1L < 52, max mantissa that can be converted w/o rounding error by double mul or div
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
@@ -831,9 +829,7 @@ final class JsonReader private[jsoniter_scala](
           if (b == '.' || (b | 0x20) == 'e') numberError(pos)
           toBigInt(negative, pos)
         } else numberError(pos - 1)
-      } finally {
-        this.mark = mark
-      }
+      } finally this.mark = mark
     }
   }
 

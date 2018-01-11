@@ -12,7 +12,7 @@ to get maximum performance of JSON parsing & serialization.
 
 Initially this library was developed for requirements of real-time bidding in ad-tech and goals was simple:
 - do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & Scala collections and back but 
-  do it crazily fast w/o reflection, intermediate syntax tree, strings or events, w/ minimum allocations & copying
+  do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations & copying
 - do not replace illegally encoded characters of string values by placeholder characters and do not allow broken 
   surrogate pairs of characters to be parsed or serialized
 
@@ -185,10 +185,26 @@ Oracle JDK build 1.8.0_151-b12 64-bit
 Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04 (dev), Linux 4.13.0-17-generic, 
 Oracle JDK build 9.0.1+11 64-bit
 
+### Publish to local repos
+
+Publish to Ivy repo:
+
+```sh
+sbt publishLocal
+```
+
+Publish to Maven repo:
+
+```sh
+sbt publishM2
+```
+
 ### Release
 
 For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
+
+Double check binary compatibility (including behaviour) and release using following command (credentials required):
 
 ```sh
 sbt release cross
