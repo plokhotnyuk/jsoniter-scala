@@ -1232,5 +1232,5 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     reader('"'.toByte +: buf :+ '"'.toByte).readStringAsBigDecimal(default)
 
   def reader(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
-    0, 0, -1, new Array[Char](0), new ByteArrayInputStream(buf), 0, ReaderConfig())
+    0, 0, 2147483647, new Array[Char](0), new ByteArrayInputStream(buf), 0, ReaderConfig())
 }

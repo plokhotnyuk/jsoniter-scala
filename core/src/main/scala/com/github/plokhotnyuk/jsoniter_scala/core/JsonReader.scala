@@ -47,7 +47,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](1024),
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
-    private[this] var mark: Int = -1,
+    private[this] var mark: Int = 2147483647,
     private[this] var charBuf: Array[Char] = new Array[Char](128),
     private[this] var in: InputStream = null,
     private[this] var totalRead: Int = 0,
@@ -103,9 +103,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def rollbackToMark(): Unit = {
-    if (mark < 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'setMark()'")
+    if (mark == 2147483647) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'setMark()'")
     head = mark
-    mark = -1
+    mark = 2147483647
   }
 
   def readKeyAsCharBuf(): Int = {
@@ -346,7 +346,7 @@ final class JsonReader private[jsoniter_scala](
     this.buf = buf
     head = from
     tail = to
-    mark = -1
+    mark = 2147483647
     totalRead = 0
     try codec.decode(this, codec.nullValue) // also checks that `codec` is not null before any parsing
     finally {
@@ -361,7 +361,7 @@ final class JsonReader private[jsoniter_scala](
     this.in = in
     head = 0
     tail = 0
-    mark = -1
+    mark = 2147483647
     totalRead = 0
     try codec.decode(this, codec.nullValue) // also checks that `codec` is not null before any parsing
     finally {
@@ -658,7 +658,7 @@ final class JsonReader private[jsoniter_scala](
     var state = 0
     var pos = head
     val mark = this.mark
-    this.mark = if (mark >= 0) Math.min(mark, pos) else pos
+    this.mark = Math.min(mark, pos)
     try {
       while (pos < tail || {
         pos = loadMore(pos)
@@ -808,7 +808,7 @@ final class JsonReader private[jsoniter_scala](
       else numberError(head)
     } else {
       val mark = this.mark
-      this.mark = if (mark >= 0) Math.min(mark, head - 1) else head - 1
+      this.mark = Math.min(mark, head - 1)
       try {
         val negative = b == '-'
         if (negative) b = nextByte(head)
@@ -1404,12 +1404,12 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private def ensureBufCapacity(pos: Int): Int = {
-    val minPos = if (mark >= 0) Math.min(mark, pos) else pos
+    val minPos = Math.min(mark, pos)
     if (minPos > 0) {
       val remaining = tail - minPos
       if (remaining > 0) {
         System.arraycopy(buf, minPos, buf, 0, remaining)
-        if (mark >= 0) mark -= minPos
+        if (mark != 2147483647) mark -= minPos
       }
       tail = remaining
     } else if (tail > 0) {
