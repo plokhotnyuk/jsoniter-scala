@@ -69,7 +69,8 @@ lazy val core = project
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     ),
-    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "core" % binaryCompatibleVersion)
+    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "core" % binaryCompatibleVersion),
+    mimaCheckDirection := "both"
   )
 
 lazy val macros = project
@@ -82,7 +83,8 @@ lazy val macros = project
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     ),
-    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion)
+    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion),
+    mimaCheckDirection := "both"
   )
 
 lazy val benchmark = project

@@ -204,7 +204,7 @@ sbt publishM2
 For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double check binary compatibility (including behaviour) and release using following command (credentials required):
+Double check binary & source compatibility (including behaviour) and release using following command (credentials required):
 
 ```sh
 sbt release cross
