@@ -1117,11 +1117,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readString(s: String): String = readString(s.getBytes(UTF_8))
 
-  def readString(buf: Array[Byte]): String = reader('"'.toByte +: buf :+ '"'.toByte).readString()
+  def readString(buf: Array[Byte]): String = reader(stringify(buf)).readString()
 
   def readChar(s: String): Char = readChar(s.getBytes(UTF_8))
 
-  def readChar(buf: Array[Byte]): Char = reader('"'.toByte +: buf :+ '"'.toByte).readChar()
+  def readChar(buf: Array[Byte]): Char = reader(stringify(buf)).readChar()
 
   def readByte(s: String): Byte = readByte(s.getBytes(UTF_8))
 
@@ -1158,79 +1158,81 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsString(s: String): String = readKeyAsString(s.getBytes(UTF_8))
 
-  def readKeyAsString(buf: Array[Byte]): String = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsString()
+  def readKeyAsString(buf: Array[Byte]): String = reader(stringify(buf) :+ ':'.toByte).readKeyAsString()
 
   def readKeyAsChar(s: String): Char = readKeyAsChar(s.getBytes(UTF_8))
 
-  def readKeyAsChar(buf: Array[Byte]): Char = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsChar()
+  def readKeyAsChar(buf: Array[Byte]): Char = reader(stringify(buf) :+ ':'.toByte).readKeyAsChar()
 
   def readKeyAsByte(s: String): Byte = readKeyAsByte(s.getBytes(UTF_8))
 
-  def readKeyAsByte(buf: Array[Byte]): Byte = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsByte()
+  def readKeyAsByte(buf: Array[Byte]): Byte = reader(stringify(buf) :+ ':'.toByte).readKeyAsByte()
 
   def readKeyAsShort(s: String): Short = readKeyAsShort(s.getBytes(UTF_8))
 
-  def readKeyAsShort(buf: Array[Byte]): Short = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsShort()
+  def readKeyAsShort(buf: Array[Byte]): Short = reader(stringify(buf) :+ ':'.toByte).readKeyAsShort()
 
   def readKeyAsInt(s: String): Int = readKeyAsInt(s.getBytes(UTF_8))
 
-  def readKeyAsInt(buf: Array[Byte]): Int = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsInt()
+  def readKeyAsInt(buf: Array[Byte]): Int = reader(stringify(buf) :+ ':'.toByte).readKeyAsInt()
 
   def readKeyAsLong(s: String): Long = readKeyAsLong(s.getBytes(UTF_8))
 
-  def readKeyAsLong(buf: Array[Byte]): Long = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsLong()
+  def readKeyAsLong(buf: Array[Byte]): Long = reader(stringify(buf) :+ ':'.toByte).readKeyAsLong()
 
   def readKeyAsFloat(s: String): Float = readKeyAsFloat(s.getBytes(UTF_8))
 
-  def readKeyAsFloat(buf: Array[Byte]): Float = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsFloat()
+  def readKeyAsFloat(buf: Array[Byte]): Float = reader(stringify(buf) :+ ':'.toByte).readKeyAsFloat()
 
   def readKeyAsDouble(s: String): Double = readKeyAsDouble(s.getBytes(UTF_8))
 
-  def readKeyAsDouble(buf: Array[Byte]): Double = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsDouble()
+  def readKeyAsDouble(buf: Array[Byte]): Double = reader(stringify(buf) :+ ':'.toByte).readKeyAsDouble()
 
   def readKeyAsBigInt(s: String): BigInt = readKeyAsBigInt(s.getBytes(UTF_8))
 
-  def readKeyAsBigInt(buf: Array[Byte]): BigInt = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsBigInt()
+  def readKeyAsBigInt(buf: Array[Byte]): BigInt = reader(stringify(buf) :+ ':'.toByte).readKeyAsBigInt()
 
   def readKeyAsBigDecimal(s: String): BigDecimal = readKeyAsBigDecimal(s.getBytes(UTF_8))
 
-  def readKeyAsBigDecimal(buf: Array[Byte]): BigDecimal = reader('"'.toByte +: buf :+ '"'.toByte :+ ':'.toByte).readKeyAsBigDecimal()
+  def readKeyAsBigDecimal(buf: Array[Byte]): BigDecimal = reader(stringify(buf) :+ ':'.toByte).readKeyAsBigDecimal()
 
   def readStringAsByte(s: String): Byte = readStringAsByte(s.getBytes(UTF_8))
 
-  def readStringAsByte(buf: Array[Byte]): Byte = reader('"'.toByte +: buf :+ '"'.toByte).readStringAsByte()
+  def readStringAsByte(buf: Array[Byte]): Byte = reader(stringify(buf)).readStringAsByte()
 
   def readStringAsShort(s: String): Short = readStringAsShort(s.getBytes(UTF_8))
 
-  def readStringAsShort(buf: Array[Byte]): Short = reader('"'.toByte +: buf :+ '"'.toByte).readStringAsShort()
+  def readStringAsShort(buf: Array[Byte]): Short = reader(stringify(buf)).readStringAsShort()
 
   def readStringAsInt(s: String): Int = readStringAsInt(s.getBytes(UTF_8))
 
-  def readStringAsInt(buf: Array[Byte]): Int = reader('"'.toByte +: buf :+ '"'.toByte).readStringAsInt()
+  def readStringAsInt(buf: Array[Byte]): Int = reader(stringify(buf)).readStringAsInt()
 
   def readStringAsLong(s: String): Long = readStringAsLong(s.getBytes(UTF_8))
 
-  def readStringAsLong(buf: Array[Byte]): Long = reader('"'.toByte +: buf :+ '"'.toByte).readStringAsLong()
+  def readStringAsLong(buf: Array[Byte]): Long = reader(stringify(buf)).readStringAsLong()
 
   def readStringAsFloat(s: String): Float = readStringAsFloat(s.getBytes(UTF_8))
 
-  def readStringAsFloat(buf: Array[Byte]): Float = reader('"'.toByte +: buf :+ '"'.toByte).readStringAsFloat()
+  def readStringAsFloat(buf: Array[Byte]): Float = reader(stringify(buf)).readStringAsFloat()
 
   def readStringAsDouble(s: String): Double = readStringAsDouble(s.getBytes(UTF_8))
 
-  def readStringAsDouble(buf: Array[Byte]): Double = reader('"'.toByte +: buf :+ '"'.toByte).readStringAsDouble()
+  def readStringAsDouble(buf: Array[Byte]): Double = reader(stringify(buf)).readStringAsDouble()
 
   def readStringAsBigInt(s: String, default: BigInt): BigInt = readStringAsBigInt(s.getBytes(UTF_8), default)
 
   def readStringAsBigInt(buf: Array[Byte], default: BigInt): BigInt =
-    reader('"'.toByte +: buf :+ '"'.toByte).readStringAsBigInt(default)
+    reader(stringify(buf)).readStringAsBigInt(default)
 
   def readStringAsBigDecimal(s: String, default: BigDecimal): BigDecimal =
     readStringAsBigDecimal(s.getBytes(UTF_8), default)
 
   def readStringAsBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal =
-    reader('"'.toByte +: buf :+ '"'.toByte).readStringAsBigDecimal(default)
+    reader(stringify(buf)).readStringAsBigDecimal(default)
 
   def reader(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
     0, 0, 2147483647, new Array[Char](0), new ByteArrayInputStream(buf), 0, ReaderConfig())
+
+  def stringify(buf: Array[Byte]): Array[Byte] = '"'.toByte +: buf :+ '"'.toByte
 }

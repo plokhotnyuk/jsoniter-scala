@@ -63,10 +63,11 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal and JsonWriter.writeValAsString and and JsonWriter.writeKey for boolean" should {
     "write valid true and false values" in {
       def check(value: Boolean, excpectedOut: String): Unit = {
-        withWriter(_.writeVal(value)) shouldBe value.toString
-        withWriter(_.writeValAsString(value)) shouldBe '\"' + value.toString + '\"'
-        withWriter(_.writeKey(value)) shouldBe '\"' + value.toString + "\":"
-        withWriter(WriterConfig(indentionStep = 2))(_.writeKey(value)) shouldBe '\"' + value.toString + "\": "
+        val s = value.toString
+        withWriter(_.writeVal(value)) shouldBe s
+        withWriter(_.writeValAsString(value)) shouldBe '\"' + s + '\"'
+        withWriter(_.writeKey(value)) shouldBe '\"' + s + "\":"
+        withWriter(WriterConfig(indentionStep = 2))(_.writeKey(value)) shouldBe '\"' + s + "\": "
       }
 
       check(value = true, "true")
@@ -198,18 +199,20 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for byte" should {
     "write any short values" in {
       forAll(minSuccessful(1000)) { (n: Byte) =>
-        withWriter(_.writeVal(n)) shouldBe n.toString
-        withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for short" should {
     "write any short values" in {
       forAll(minSuccessful(10000)) { (n: Short) =>
-        withWriter(_.writeVal(n)) shouldBe n.toString
-        withWriter(_.writeValAsString(n)) shouldBe '"' + n.toString + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + n.toString + "\":"
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
     }
   }
