@@ -710,7 +710,7 @@ final class JsonReader private[jsoniter_scala](
             }
           case 4 => // int digit
             if (b >= '0' && b <= '9') {
-              if (posMan < 922337203685477580L) posMan = posMan * 10 + (b - '0')
+              if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
               else manExp += 1
               // state = 4
             } else if (b == '.') {
@@ -723,7 +723,7 @@ final class JsonReader private[jsoniter_scala](
             }
           case 5 => // dot
             if (b >= '0' && b <= '9') {
-              if (posMan < 922337203685477580L) {
+              if (posMan < 4503599627370496L) {
                 posMan = posMan * 10 + (b - '0')
                 manExp -= 1
               }
@@ -731,7 +731,7 @@ final class JsonReader private[jsoniter_scala](
             } else numberError(pos)
           case 6 => // frac digit
             if (b >= '0' && b <= '9') {
-              if (posMan < 922337203685477580L) {
+              if (posMan < 4503599627370496L) {
                 posMan = posMan * 10 + (b - '0')
                 manExp -= 1
               }
@@ -746,8 +746,10 @@ final class JsonReader private[jsoniter_scala](
             if (b >= '0' && b <= '9') {
               posExp = b - '0'
               state = 9
-            } else if (b == '-' || b == '+') {
-              isExpNeg = b == '-'
+            } else if (b == '-') {
+              isExpNeg = true
+              state = 8
+            } else if (b == '+') {
               state = 8
             } else numberError(pos)
           case 8 => // exp. sign
@@ -765,7 +767,7 @@ final class JsonReader private[jsoniter_scala](
             }
           case 10 => // exp. digit overflow
             if (b >= '0' && b <= '9') {
-              state = 10
+              // state = 10
             } else {
               head = pos
               return toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
@@ -785,8 +787,8 @@ final class JsonReader private[jsoniter_scala](
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
       if (exp == 0) man
-      else if (exp < 0 && exp > -pow10.length) man / pow10(-exp)
-      else if (exp > 0 && exp < pow10.length) man * pow10(exp)
+      else if (exp < 0 && exp > -22) man / pow10(-exp) // 22 == pow10.length
+      else if (exp > 0 && exp < 22) man * pow10(exp)
       else toDouble
     } else toDouble
 

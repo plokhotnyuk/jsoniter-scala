@@ -701,6 +701,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readStringAsFloat(s) shouldBe n
     }
 
+    def checkFloat(s: String): Unit = check(s, java.lang.Float.parseFloat(s))
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error1))
       assert(intercept[JsonParseException](readKeyAsFloat(s)).getMessage.contains(error2))
@@ -709,12 +711,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
     "parse valid float values" in {
       forAll(minSuccessful(100000)) { (n: Float) =>
-        val s = n.toString
-        check(s, java.lang.Float.parseFloat(s))
+        checkFloat(n.toString)
+      }
+      forAll(minSuccessful(100000)) { (n: Long) =>
+        checkFloat(n.toString)
       }
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
-        val s = n.toString
-        check(s, java.lang.Float.parseFloat(s))
+        checkFloat(n.toString)
       }
     }
     "parse infinity on float overflow" in {
@@ -778,6 +781,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readStringAsDouble(s) shouldBe n
     }
 
+    def checkDouble(s: String): Unit = check(s, java.lang.Double.parseDouble(s))
+
     def checkError(s: String, error1: String, error2: String): Unit = {
       assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error1))
       assert(intercept[JsonParseException](readKeyAsDouble(s)).getMessage.contains(error2))
@@ -786,12 +791,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
     "parse valid double values" in {
       forAll(minSuccessful(100000)) { (n: Double) =>
-        val s = n.toString
-        check(s, java.lang.Double.parseDouble(s))
+        checkDouble(n.toString)
+      }
+      forAll(minSuccessful(100000)) { (n: Long) =>
+        checkDouble(n.toString)
       }
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
-        val s = n.toString
-        check(s, java.lang.Double.parseDouble(s))
+        checkDouble(n.toString)
       }
     }
     "parse infinity on double overflow" in {
