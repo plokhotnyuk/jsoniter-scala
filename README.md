@@ -151,16 +151,14 @@ command like this:
 sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*readJsoniter.*'
 ```
 
-On Linux the perf profiler can be used to see CPU & system events normalized per ops (do 
-`sudo apt-get install linux-tools` to install perf on Ubuntu):
+On Linux the perf profiler can be used to see CPU & system events normalized per ops:
 
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm_results.txt
 ```
 
 Following command can be used to profile & print assembly code of hottest methods, but it requires [setup of an 
-additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html) 
-(just do `sudo apt-get install libhsdis0-fcml` for Ubuntu):
+additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm_results.txt
