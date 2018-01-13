@@ -177,12 +177,20 @@ More info about extras, including `jmh.extras.Async` and ability to generate fla
 
 Current results for the following environment(s):
 
-[./results_jdk8.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8.txt) 
-Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04 (dev), Linux 4.13.0-17-generic, 
+[./results_jdk8_notebook.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8_notebook.txt)
+Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
 Oracle JDK build 1.8.0_151-b12 64-bit
 
-[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9.txt) 
-Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04 (dev), Linux 4.13.0-17-generic, 
+[./results_jdk9_notebook.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9_notebook.txt)
+Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
+Oracle JDK build 9.0.1+11 64-bit
+
+[./results_jdk8_desktop.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8_desktop.txt)
+Intel(R) Core(TM) i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux desktop 4.13.0-26-generic,
+Oracle JDK build 1.8.0_151-b12 64-bit
+
+[./results_jdk9_desktop.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9_desktop.txt)
+Intel(R) Core(TM) i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux desktop 4.13.0-26-generic,
 Oracle JDK build 9.0.1+11 64-bit
 
 ### Publish to local repos
