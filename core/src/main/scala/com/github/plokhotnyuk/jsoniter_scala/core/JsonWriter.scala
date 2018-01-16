@@ -96,7 +96,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit =
     if (x ne null) {
       writeCommaWithParentheses()
-      writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+      writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
       writeParenthesesWithColon()
     } else encodeError("key cannot be null")
 
@@ -127,7 +127,8 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
 
   def writeVal(x: BigInt): Unit =
-    if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+    if (x eq null) writeNull()
+    else writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
 
@@ -153,7 +154,8 @@ final class JsonWriter private[jsoniter_scala](
     if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
   def writeValAsString(x: BigInt): Unit =
-    if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+    if (x eq null) writeNull()
+    else writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
   def writeValAsString(x: Boolean): Unit =
     if (x) writeBytes('"', 't', 'r', 'u', 'e', '"') else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')
@@ -349,8 +351,8 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos = {
       val bs = UnsafeUtils.getLatin1Array(s)
-      if (bs eq null) writeString(s, 0, s.length, pos + 1, buf.length, escapedChars)
-      else writeString(bs, 0, s.length, pos + 1, buf.length, escapedChars)
+      if (bs eq null) writeString(s, 0, s.length, pos + 1, buf.length - 1, escapedChars)
+      else writeString(bs, 0, s.length, pos + 1, buf.length - 1, escapedChars)
     }
     buf(pos) = '"'
     pos + 1
@@ -359,20 +361,20 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 2 > posLim) writeString(s, from, to, growBuffer(2, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeString(s, from, to, growBuffer(2, pos), buf.length - 1, escapedChars)
     else {
       val ch = s.charAt(from)
       if (ch < 128 && escapedChars(ch) == 0) {
         buf(pos) = ch.toByte
         writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      } else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim, escapedChars)
-      else writeEncodedString(s, from, to, pos, posLim, escapedChars)
+      } else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
+      else writeEncodedString(s, from, to, pos, posLim - 6, escapedChars)
     }
 
   @tailrec
   private def writeEncodedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 7 > posLim) writeEncodedString(s, from, to, growBuffer(7, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEncodedString(s, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
@@ -410,7 +412,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 13 > posLim) writeEscapedString(s, from, to, growBuffer(13, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, growBuffer(13, pos), buf.length - 12, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) {
@@ -436,20 +438,20 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 2 > posLim) writeString(bs, from, to, growBuffer(2, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeString(bs, from, to, growBuffer(2, pos), buf.length - 1, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0 && escapedChars(b) == 0) {
         buf(pos) = b
         writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
-      } else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim, escapedChars)
-      else writeEncodedString(bs, from, to, pos, posLim, escapedChars)
+      } else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim - 12, escapedChars)
+      else writeEncodedString(bs, from, to, pos, posLim - 6, escapedChars)
     }
 
   @tailrec
   private def writeEncodedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 7 > posLim) writeEncodedString(bs, from, to, growBuffer(7, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEncodedString(bs, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) { // 1 byte, 7 bits: 0xxxxxxx
@@ -472,7 +474,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private def writeEscapedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos + 7 > posLim) writeEscapedString(bs, from, to, growBuffer(7, pos), buf.length, escapedChars)
+    else if (pos >= posLim) writeEscapedString(bs, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) {
@@ -597,12 +599,12 @@ final class JsonWriter private[jsoniter_scala](
         val q1 = q0 / 100000000
         val r1 = (q0 - 100000000 * q1).toInt
         if (q1 >= 100000000) {
-          val q2 = (q1 / 100000000).toInt
-          val r2 = (q1 - 100000000L * q2).toInt
-          val off = 16 + offset(q2)
-          writeIntFirst(q2, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off
+          val q2 = q1 / 100000000
+          val r2 = (q1 - 100000000 * q2).toInt
+          val off = offset(q2.toInt) + 16
+          writeIntFirst(q2.toInt, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off
         } else {
-          val off = 8 + offset(q1.toInt)
+          val off = offset(q1.toInt) + 8
           writeIntFirst(q1.toInt, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds) + off
         }
       } else {

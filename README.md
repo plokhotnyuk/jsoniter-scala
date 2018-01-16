@@ -3,7 +3,7 @@
 [![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala) 
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Scaladex](https://img.shields.io/badge/macros-0.3.0-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
+[![Scaladex](https://img.shields.io/badge/macros-0.3.4-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
 
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
@@ -12,7 +12,7 @@ to get maximum performance of JSON parsing & serialization.
 
 Initially this library was developed for requirements of real-time bidding in ad-tech and goals was simple:
 - do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & Scala collections and back but 
-  do it crazily fast w/o reflection, intermediate syntax tree, strings or events, w/ minimum allocations & copying
+  do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations & copying
 - do not replace illegally encoded characters of string values by placeholder characters and do not allow broken 
   surrogate pairs of characters to be parsed or serialized
 
@@ -68,7 +68,7 @@ and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 Add the library to your dependencies list
 
 ```sbt
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.3.0"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.3.4"
 ```
 
 Generate codecs for your case classes, collections, etc.
@@ -111,16 +111,10 @@ For more use cases & examples, please, check out
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
 creating pull requests (fixes and improvements of docs, code and tests are highly appreciated)
 
-### Run tests and check coverage
+### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt clean +coverage +test +coverageReport
-```
-
-### Publish locally
-
-```sh
-sbt +publishLocal
+sbt clean +coverage +test +coverageReport +mimaReportBinaryIssues
 ```
 
 ### Run benchmarks
@@ -154,28 +148,26 @@ To get result for some benchmarks in flight recording file (which you can then o
 command like this:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*readGoogleMapsAPIJsoniter.*'
+sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*readJsoniter.*'
 ```
 
-On Linux the perf profiler can be used to see CPU & system events normalized per ops (do 
-`sudo apt-get install linux-tools` to install perf on Ubuntu):
+On Linux the perf profiler can be used to see CPU & system events normalized per ops:
 
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm_results.txt
 ```
 
 Following command can be used to profile & print assembly code of hottest methods, but it requires [setup of an 
-additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html) 
-(just do `sudo apt-get install libhsdis0-fcml` for Ubuntu):
+additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*readAdtJsoniter.*' >read_adt_perfasm_results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm_results.txt
 ```
 
 To see throughput & allocation rate of generated codecs run benchmarks with GC profiler using following command:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*JsonCodecMakerBenchmark.*' >results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >results.txt
 ```
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
@@ -183,14 +175,46 @@ More info about extras, including `jmh.extras.Async` and ability to generate fla
 
 Current results for the following environment(s):
 
-[./results_jdk8.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8.txt) 
-Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, 
+[./results_jdk8_notebook.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8_notebook.txt)
+Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
 Oracle JDK build 1.8.0_151-b12 64-bit
 
-[./results_jdk9.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9.txt) 
-Intel(R) Core(TM) i7-2760QM CPU @ 2.40GHz (max 3.50GHz), RAM 16Gb DDR3-1600, Ubuntu 16.04, Linux 4.10.0-40-generic, 
+[./results_jdk9_notebook.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9_notebook.txt)
+Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
 Oracle JDK build 9.0.1+11 64-bit
 
+[./results_jdk8_desktop.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8_desktop.txt)
+Intel(R) Core(TM) i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux desktop 4.13.0-26-generic,
+Oracle JDK build 1.8.0_151-b12 64-bit
+
+[./results_jdk9_desktop.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9_desktop.txt)
+Intel(R) Core(TM) i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux desktop 4.13.0-26-generic,
+Oracle JDK build 9.0.1+11 64-bit
+
+### Publish to local repos
+
+Publish to Ivy repo:
+
+```sh
+sbt publishLocal
+```
+
+Publish to Maven repo:
+
+```sh
+sbt publishM2
+```
+
+### Release
+
+For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
+that is used in the Scala ecosystem.
+
+Double check binary & source compatibility (including behaviour) and release using following command (credentials required):
+
+```sh
+sbt release cross
+```
 
 ## Acknowledgements
 

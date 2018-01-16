@@ -2,6 +2,8 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import sbt.Keys.scalacOptions
 import sbt.url
 
+lazy val binaryCompatibleVersion = "0.3.0"
+
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
   organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
@@ -66,7 +68,9 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
-    )
+    ),
+    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "core" % binaryCompatibleVersion),
+    mimaCheckDirection := "both"
   )
 
 lazy val macros = project
@@ -78,7 +82,9 @@ lazy val macros = project
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
-    )
+    ),
+    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion),
+    mimaCheckDirection := "both"
   )
 
 lazy val benchmark = project
@@ -89,7 +95,10 @@ lazy val benchmark = project
   .settings(
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.2",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.2",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.3",
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.3",
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.3",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.3",
       "io.circe" %% "circe-generic" % "0.9.0",
       "io.circe" %% "circe-generic-extras" % "0.9.0",
       "io.circe" %% "circe-parser" % "0.9.0",
