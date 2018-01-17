@@ -1,6 +1,10 @@
 language: scala
 
 matrix:
+  ignore:
+    - *.md
+    - *.txt
+    - docs/*
   include:
     - os: linux
       sudo: false
