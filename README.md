@@ -216,6 +216,11 @@ Double check binary & source compatibility (including behaviour) and release usi
 sbt release cross
 ```
 
+### Publish docs
+```sh
+sbt ghpagesPushSite
+```
+
 ## Acknowledgements
 
 This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
