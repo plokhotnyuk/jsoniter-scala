@@ -13,8 +13,8 @@ to get maximum performance of JSON parsing & serialization.
 Initially this library was developed for requirements of real-time bidding in ad-tech and goals was simple:
 - do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & Scala collections and back but 
   do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations & copying
-- do not replace illegally encoded characters of string values by placeholder characters and do not allow broken 
-  surrogate pairs of characters to be parsed or serialized
+- do validation of UTF-8 encoding, JSON format & mapped values efficiently with clear reporting, do not replace 
+  illegally encoded characters of string values by placeholder characters
 
 It targets JDK 8 and above w/o any platform restrictions, but may works good enough on JDK 7 with Scala 2.11.
 
