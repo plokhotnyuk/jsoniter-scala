@@ -2,7 +2,7 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import sbt.Keys.scalacOptions
 import sbt.url
 
-lazy val binaryCompatibleVersion = "0.4.0-SNAPSHOT"
+lazy val binaryCompatibleVersion = "0.3.0"
 
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
@@ -70,7 +70,22 @@ lazy val core = project
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     ),
     mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "core" % binaryCompatibleVersion),
-    mimaCheckDirection := "both"
+    mimaCheckDirection := "both",
+    mimaBinaryIssueFilters ++= { // remove after 0.4.0 release
+      import com.typesafe.tools.mima.core._
+      import com.typesafe.tools.mima.core.ProblemFilters._
+      Seq(
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.missingCommaError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.arrayStartError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.objectStartError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.objectEndError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.commaError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.arrayStartOrNullError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.objectStartOrNullError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.arrayEndOrCommaError"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.objectEndOrCommaError")
+      )
+    }
   )
 
 lazy val macros = project
