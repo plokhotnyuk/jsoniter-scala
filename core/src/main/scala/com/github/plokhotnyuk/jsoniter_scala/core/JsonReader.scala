@@ -91,8 +91,6 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  def missingCommaError(): Nothing = decodeError("expected ','")
-
   def setMark(): Unit = mark = head
 
   @tailrec
@@ -325,13 +323,17 @@ final class JsonReader private[jsoniter_scala](
     else decodeError("expected value", head - 1)
   }
 
-  def arrayStartError(): Nothing = decodeError("expected '[' or null")
+  def commaError(): Nothing = decodeError("expected ','")
 
-  def arrayEndError(): Nothing = decodeError("expected ']' or ','")
+  def arrayStartOrNullError(): Nothing = decodeError("expected '[' or null")
 
-  def objectStartError(): Nothing = decodeError("expected '{' or null")
+  def arrayEndError(): Nothing = decodeError("expected ']'")
 
-  def objectEndError(): Nothing = decodeError("expected '}' or ','")
+  def arrayEndOrCommaError(): Nothing = decodeError("expected ']' or ','")
+
+  def objectStartOrNullError(): Nothing = decodeError("expected '{' or null")
+
+  def objectEndOrCommaError(): Nothing = decodeError("expected '}' or ','")
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 

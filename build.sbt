@@ -2,7 +2,7 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import sbt.Keys.scalacOptions
 import sbt.url
 
-lazy val binaryCompatibleVersion = "0.3.0"
+lazy val binaryCompatibleVersion = "0.4.0-SNAPSHOT"
 
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",

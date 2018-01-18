@@ -1082,11 +1082,19 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("illegal enum value: \"xxx\", offset: 0x00000004"))
     }
   }
-  "JsonReader.arrayStartError" should {
+  "JsonReader.commaError" should {
+    val jsonReader = reader("{}".getBytes)
+    jsonReader.isNextToken(',')
+    "throw parsing exception with expected token(s)" in {
+      assert(intercept[JsonParseException](jsonReader.commaError())
+        .getMessage.contains("expected ',', offset: 0x00000000"))
+    }
+  }
+  "JsonReader.arrayStartOrNullError" should {
     val jsonReader = reader("{}".getBytes)
     jsonReader.isNextToken('[')
     "throw parsing exception with expected token(s)" in {
-      assert(intercept[JsonParseException](jsonReader.arrayStartError())
+      assert(intercept[JsonParseException](jsonReader.arrayStartOrNullError())
         .getMessage.contains("expected '[' or null, offset: 0x00000000"))
     }
   }
@@ -1095,22 +1103,30 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     jsonReader.isNextToken(']')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.arrayEndError())
+        .getMessage.contains("expected ']', offset: 0x00000000"))
+    }
+  }
+  "JsonReader.arrayEndOrCommaError" should {
+    val jsonReader = reader("}".getBytes)
+    jsonReader.isNextToken(']')
+    "throw parsing exception with expected token(s)" in {
+      assert(intercept[JsonParseException](jsonReader.arrayEndOrCommaError())
         .getMessage.contains("expected ']' or ',', offset: 0x00000000"))
     }
   }
-  "JsonReader.objectStartError" should {
+  "JsonReader.objectStartOrNullError" should {
     val jsonReader = reader("[]".getBytes)
     jsonReader.isNextToken('{')
     "throw parsing exception with expected token(s)" in {
-      assert(intercept[JsonParseException](jsonReader.objectStartError())
+      assert(intercept[JsonParseException](jsonReader.objectStartOrNullError())
         .getMessage.contains("expected '{' or null, offset: 0x00000000"))
     }
   }
-  "JsonReader.objectEndError" should {
+  "JsonReader.objectEndOrCommaError" should {
     val jsonReader = reader("]".getBytes)
     jsonReader.isNextToken('}')
     "throw parsing exception with expected token(s)" in {
-      assert(intercept[JsonParseException](jsonReader.objectEndError())
+      assert(intercept[JsonParseException](jsonReader.objectEndOrCommaError())
         .getMessage.contains("expected '}' or ',', offset: 0x00000000"))
     }
   }

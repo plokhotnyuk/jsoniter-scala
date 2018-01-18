@@ -156,10 +156,10 @@ object JsonCodecMaker {
         else fail(s"Unsupported type to be used as map key '$tpe'.")
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
-        genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayEndError()")
+        genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayEndOrCommaError()")
 
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
-        genReadCollection(newBuilder, readKV, result, q"'{'", q"'}'", q"in.objectEndError()")
+        genReadCollection(newBuilder, readKV, result, q"'{'", q"'}'", q"in.objectEndOrCommaError()")
 
       def genReadCollection(newBuilder: Tree, loopBody: Tree, result: Tree,
                             open: Tree, close: Tree, endError: Tree): Tree =
@@ -492,7 +492,7 @@ object JsonCodecMaker {
               q"""..$acc
                   val ${TermName(s"_${i + 1}")}: $t =
                     if (in.isNextToken(',')) ${genReadVal(t, nullValue(t), isStringified)}
-                    else in.missingCommaError()"""
+                    else in.commaError()"""
           }
           val vals = indexedTypes.map { case (t, i) => TermName(s"_${i + 1}") }
           q"""if (in.isNextToken('[')) {
@@ -570,7 +570,7 @@ object JsonCodecMaker {
                       case ..$readFieldsBlock
                     }
                   } while (in.isNextToken(','))
-                  if (!in.isCurrentToken('}')) in.objectEndError()
+                  if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
                 }
                 ..$checkReqVarsAndConstruct
               } else in.readNullOrTokenError(default, '{')"""

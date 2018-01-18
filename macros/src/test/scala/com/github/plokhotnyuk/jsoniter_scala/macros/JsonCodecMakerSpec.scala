@@ -48,6 +48,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
 
+  val codecOfTuples: JsonCodec[Tuples] = make[Tuples](CodecMakerConfig())
+
   case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
@@ -399,9 +401,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(codecOfStringifiedOption, null, "null".getBytes)
     }
     "serialize and deserialize case classes with tuples" in {
-      verifySerDeser(make[Tuples](CodecMakerConfig()),
-        Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+      verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
         """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""".getBytes)
+    }
+    "throw parse exception in case of unexpected number of JSON array values" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+          """{"t1":[1,2.2],"t2":["VVV",3,"GPS"]}""".getBytes)
+      }.getMessage.contains("expected ',', offset: 0x0000000c"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+          """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS","XXX"]}""".getBytes)
+      }.getMessage.contains("expected ']', offset: 0x00000027"))
     }
     "serialize and deserialize top-level tuples" in {
       val codecOfTuple2 = make[(String, Int)](CodecMakerConfig())
