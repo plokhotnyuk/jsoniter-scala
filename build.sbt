@@ -2,7 +2,7 @@ import com.typesafe.sbt.pgp.PgpKeys._
 import sbt.Keys.scalacOptions
 import sbt.url
 
-lazy val binaryCompatibleVersion = "0.4.0"
+lazy val binaryCompatibleVersion = "0.5.0"
 
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
@@ -84,15 +84,7 @@ lazy val macros = project
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     ),
     mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion),
-    mimaCheckDirection := "both",
-    mimaBinaryIssueFilters ++= { // remove after 0.5.0 release
-      import com.typesafe.tools.mima.core._
-      import com.typesafe.tools.mima.core.ProblemFilters._
-      Seq(
-        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genWriteVal$default$5$1"),
-        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genReadVal$default$5$1")
-      )
-    }
+    mimaCheckDirection := "both"
   )
 
 lazy val benchmark = project

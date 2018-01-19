@@ -213,7 +213,7 @@ that is used in the Scala ecosystem.
 Double check binary & source compatibility (including behaviour) and release using following command (credentials required):
 
 ```sh
-sbt release cross
+sbt "release cross"
 ```
 
 ## Acknowledgements
