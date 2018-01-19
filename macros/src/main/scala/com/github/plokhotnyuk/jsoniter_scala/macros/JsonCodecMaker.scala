@@ -374,8 +374,9 @@ object JsonCodecMaker {
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
         else q"null"
 
-      def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
-        val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
+      def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree,
+                     isRoot: Boolean = false): Tree = {
+        val implCodec = if (isRoot) EmptyTree else findImplicitCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.decode(in, $default)"
@@ -604,8 +605,9 @@ object JsonCodecMaker {
         } else cannotFindCodecError(tpe)
       }
 
-      def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
-        val implCodec = findImplicitCodec(tpe) // FIXME: add testing that implicit codecs should override any defaults
+      def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree,
+                      isRoot: Boolean = false): Tree = {
+        val implCodec = if (isRoot) EmptyTree else findImplicitCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.encode($m, out)"
@@ -736,9 +738,9 @@ object JsonCodecMaker {
             new JsonCodec[$rootTpe] {
               def nullValue: $rootTpe = ${nullValue(rootTpe)}
               def decode(in: JsonReader, default: $rootTpe): $rootTpe =
-                ${genReadVal(rootTpe, q"default", codecConfig.isStringified)}
+                ${genReadVal(rootTpe, q"default", codecConfig.isStringified, isRoot = true)}
               def encode(x: $rootTpe, out: JsonWriter): Unit =
-                ${genWriteVal(q"x", rootTpe, codecConfig.isStringified)}
+                ${genWriteVal(q"x", rootTpe, codecConfig.isStringified, isRoot = true)}
               ..${nullValueTrees.values}
               ..${reqFieldTrees.values}
               ..${decodeMethodTrees.values}

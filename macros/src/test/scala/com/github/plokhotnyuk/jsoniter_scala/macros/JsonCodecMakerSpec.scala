@@ -801,6 +801,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":123}]""".getBytes)
       }.getMessage.contains("""expected '"', offset: 0x0000000f"""))
     }
+    "serialize and deserialize when the root codec defined as an impicit val" in {
+      implicit val implicitRootCodec: JsonCodec[Int] = make[Int](CodecMakerConfig())
+      verifySerDeser(implicitRootCodec, 1, "1".getBytes)
+    }
   }
   "JsonCodec.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {
