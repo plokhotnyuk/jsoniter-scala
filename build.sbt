@@ -1,8 +1,32 @@
 import com.typesafe.sbt.pgp.PgpKeys._
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt.Keys.scalacOptions
 import sbt.url
+import scala.sys.process._
 
-lazy val binaryCompatibleVersion = "0.5.0"
+lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
+
+def mimaSettings = mimaDefaultSettings ++ Seq(
+  mimaCheckDirection := {
+    def isPatch = {
+      val Array(newMajor, newMinor, _) = version.value.split('.')
+      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
+      newMajor == oldMajor && newMinor == oldMinor
+    }
+
+    if (isPatch) "both" else "backward"
+  },
+  mimaPreviousArtifacts := {
+    def isCheckingRequired = {
+      val Array(newMajor, newMinor, _) = version.value.split('.')
+      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
+      newMajor == oldMajor && (newMajor != "0" || newMinor == oldMinor)
+    }
+
+    if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
+    else Set()
+  }
+)
 
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
@@ -63,28 +87,26 @@ lazy val `jsoniter-scala` = project.in(file("."))
 
 lazy val core = project
   .settings(commonSettings: _*)
+  .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
-    ),
-    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "core" % binaryCompatibleVersion),
-    mimaCheckDirection := "both"
+    )
   )
 
 lazy val macros = project
   .dependsOn(core)
   .settings(commonSettings: _*)
+  .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
-    ),
-    mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion),
-    mimaCheckDirection := "both"
+    )
   )
 
 lazy val benchmark = project
