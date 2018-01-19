@@ -84,7 +84,15 @@ lazy val macros = project
       "org.scalatest" %% "scalatest" % "3.0.4" % Test
     ),
     mimaPreviousArtifacts := Set("com.github.plokhotnyuk.jsoniter-scala" %% "macros" % binaryCompatibleVersion),
-    mimaCheckDirection := "both"
+    mimaCheckDirection := "both",
+    mimaBinaryIssueFilters ++= { // remove after 0.5.0 release
+      import com.typesafe.tools.mima.core._
+      import com.typesafe.tools.mima.core.ProblemFilters._
+      Seq(
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genWriteVal$default$5$1"),
+        exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genReadVal$default$5$1")
+      )
+    }
   )
 
 lazy val benchmark = project
