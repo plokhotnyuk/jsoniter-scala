@@ -20,29 +20,29 @@ class BigIntArrayBenchmark extends CommonParams {
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
+  def readJacksonScala(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Array[BigInt] = JsonReader.read(bigIntArrayCodec, jsonBytes)
+  def readJsoniterScala(): Array[BigInt] = JsonReader.read(bigIntArrayCodec, jsonBytes)
 
 /* FIXME: add format for BigInt arrays
   @Benchmark
-  def readPlay(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]]
+  def readPlayJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]]
 */
 /* FIXME: Circe uses an engineering decimal notation to serialize BigInt
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(bigIntArrayCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(bigIntArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(bigIntArrayCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(bigIntArrayCodec, obj, preallocatedBuf, 0)
 /* FIXME: add format for BigInt arrays
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
 }

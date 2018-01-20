@@ -7,15 +7,15 @@ class MutableIterablesBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: Jackson-module-scala doesn't support parsing of tree sets
-      //benchmark.readJackson() shouldBe benchmark.obj
-      benchmark.readJsoniter() shouldBe benchmark.obj
-      benchmark.readPlay() shouldBe benchmark.obj
+      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlay()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }
 }

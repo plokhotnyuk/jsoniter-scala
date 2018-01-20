@@ -6,15 +6,15 @@ class ArraysBenchmarkSpec extends BenchmarkSpecBase {
   "ArraysBenchmark" should {
     "deserialize properly" in {
       assertArrays(benchmark.readCirce(), benchmark.obj)
-      assertArrays(benchmark.readJackson(), benchmark.obj)
-      assertArrays(benchmark.readJsoniter(), benchmark.obj)
-      assertArrays(benchmark.readPlay(), benchmark.obj)
+      assertArrays(benchmark.readJacksonScala(), benchmark.obj)
+      assertArrays(benchmark.readJsoniterScala(), benchmark.obj)
+      assertArrays(benchmark.readPlayJson(), benchmark.obj)
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlay()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }
 

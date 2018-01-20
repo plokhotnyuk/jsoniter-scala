@@ -21,26 +21,26 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
+  def readJacksonScala(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, jsonBytes)
+  def readJsoniterScala(): DistanceMatrix = JsonReader.read(googleMapsAPICodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): DistanceMatrix = Json.parse(jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
+  def readPlayJson(): DistanceMatrix = Json.parse(jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(googleMapsAPICodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(googleMapsAPICodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(googleMapsAPICodec, obj, preallocatedBuf, 0)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))
 }

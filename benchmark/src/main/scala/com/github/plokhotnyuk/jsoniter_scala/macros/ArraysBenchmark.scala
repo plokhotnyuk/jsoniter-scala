@@ -24,23 +24,23 @@ class ArraysBenchmark extends CommonParams {
   def readCirce(): Arrays = decode[Arrays](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Arrays = jacksonMapper.readValue[Arrays](jsonBytes)
+  def readJacksonScala(): Arrays = jacksonMapper.readValue[Arrays](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Arrays = JsonReader.read(arraysCodec, jsonBytes)
+  def readJsoniterScala(): Arrays = JsonReader.read(arraysCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Arrays = Json.parse(jsonBytes).as[Arrays](arraysFormat)
+  def readPlayJson(): Arrays = Json.parse(jsonBytes).as[Arrays](arraysFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(arraysCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(arraysCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(arraysFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(arraysFormat))
 }

@@ -23,11 +23,11 @@ class ExtractFieldsBenchmark extends CommonParams {
   def readCirce(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
+  def readJacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): ExtractFields = JsonReader.read(extractFieldsCodec, jsonBytes)
+  def readJsoniterScala(): ExtractFields = JsonReader.read(extractFieldsCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields](extractFieldsFormat)
+  def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields](extractFieldsFormat)
 }

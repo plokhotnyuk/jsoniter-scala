@@ -7,16 +7,16 @@ class MapsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: Jackson-module-scala parse keys as String
-      //benchmark.readJackson() shouldBe benchmark.obj
-      benchmark.readJsoniter() shouldBe benchmark.obj
-      benchmark.readPlay() shouldBe benchmark.obj
+      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
-      //toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlay()) shouldBe benchmark.jsonString
+      //toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }
 }

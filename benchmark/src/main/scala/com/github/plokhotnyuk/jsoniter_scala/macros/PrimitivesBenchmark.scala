@@ -24,26 +24,26 @@ class PrimitivesBenchmark extends CommonParams {
   def readCirce(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)
+  def readJacksonScala(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Primitives = JsonReader.read(primitivesCodec, jsonBytes)
+  def readJsoniterScala(): Primitives = JsonReader.read(primitivesCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Primitives = Json.parse(jsonBytes).as[Primitives](primitivesFormat)
+  def readPlayJson(): Primitives = Json.parse(jsonBytes).as[Primitives](primitivesFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(primitivesCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(primitivesCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(primitivesCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(primitivesCodec, obj, preallocatedBuf, 0)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))
 }

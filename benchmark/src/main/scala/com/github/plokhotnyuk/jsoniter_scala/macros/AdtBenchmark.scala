@@ -36,23 +36,23 @@ class AdtBenchmark extends CommonParams {
   def readCirce(): AdtBase = decode[AdtBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): AdtBase = jacksonMapper.readValue[AdtBase](jsonBytes)
+  def readJacksonScala(): AdtBase = jacksonMapper.readValue[AdtBase](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): AdtBase = JsonReader.read(adtCodec, jsonBytes)
+  def readJsoniterScala(): AdtBase = JsonReader.read(adtCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
+  def readPlayJson(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
 /* FIXME: circe appends discriminator as a last field
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(adtCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(adtCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(adtFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(adtFormat))
 }

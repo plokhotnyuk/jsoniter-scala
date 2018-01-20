@@ -26,23 +26,23 @@ class IterablesBenchmark extends CommonParams {
   def readCirce(): Iterables = decode[Iterables](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Iterables = jacksonMapper.readValue[Iterables](jsonBytes)
+  def readJacksonScala(): Iterables = jacksonMapper.readValue[Iterables](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Iterables = JsonReader.read(iterablesCodec, jsonBytes)
+  def readJsoniterScala(): Iterables = JsonReader.read(iterablesCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Iterables = Json.parse(jsonBytes).as[Iterables](iterablesFormat)
+  def readPlayJson(): Iterables = Json.parse(jsonBytes).as[Iterables](iterablesFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(iterablesCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(iterablesCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(iterablesFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(iterablesFormat))
 }

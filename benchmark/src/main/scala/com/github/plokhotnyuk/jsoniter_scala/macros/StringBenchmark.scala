@@ -28,56 +28,56 @@ class StringBenchmark extends CommonParams {
   def readAsciiCirce(): String = decode[String](new String(asciiJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readAsciiJackson(): String = jacksonMapper.readValue[String](asciiJsonBytes)
+  def readAsciiJacksonScala(): String = jacksonMapper.readValue[String](asciiJsonBytes)
 
   @Benchmark
-  def readAsciiJsoniter(): String = JsonReader.read(stringCodec, asciiJsonBytes)
+  def readAsciiJsoniterScala(): String = JsonReader.read(stringCodec, asciiJsonBytes)
 
 /* FIXME: find proper way to parse string value in Play JSON
   @Benchmark
-  def readAsciiPlay(): String = Json.parse(asciiJsonBytes).toString()
+  def readAsciiPlayJson(): String = Json.parse(asciiJsonBytes).toString()
 */
   @Benchmark
   def readNonAsciiCirce(): String = decode[String](new String(nonAsciiJsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readNonAsciiJackson(): String = jacksonMapper.readValue[String](nonAsciiJsonBytes)
+  def readNonAsciiJacksonScala(): String = jacksonMapper.readValue[String](nonAsciiJsonBytes)
 
   @Benchmark
-  def readNonAsciiJsoniter(): String = JsonReader.read(stringCodec, nonAsciiJsonBytes)
+  def readNonAsciiJsoniterScala(): String = JsonReader.read(stringCodec, nonAsciiJsonBytes)
 
 /* FIXME: find proper way to parse string value in Play JSON
   @Benchmark
-  def readNonAsciiPlay(): String = Json.parse(nonAsciiJsonBytes).toString()
+  def readNonAsciiPlayJson(): String = Json.parse(nonAsciiJsonBytes).toString()
 */
 
   @Benchmark
   def writeAsciiCirce(): Array[Byte] = printer.pretty(asciiObj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeAsciiJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(asciiObj)
+  def writeAsciiJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(asciiObj)
 
   @Benchmark
-  def writeAsciiJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, asciiObj)
+  def writeAsciiJsoniterScala(): Array[Byte] = JsonWriter.write(stringCodec, asciiObj)
 
   @Benchmark
-  def writeAsciiJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, asciiObj, preallocatedBuf, 0)
+  def writeAsciiJsoniterScalaPrealloc(): Int = JsonWriter.write(stringCodec, asciiObj, preallocatedBuf, 0)
 
   @Benchmark
-  def writeAsciiPlay(): Array[Byte] = Json.toBytes(Json.toJson(asciiObj))
+  def writeAsciiPlayJson(): Array[Byte] = Json.toBytes(Json.toJson(asciiObj))
 
   @Benchmark
   def writeNonAsciiCirce(): Array[Byte] = printer.pretty(nonAsciiObj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeNonAsciiJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(nonAsciiObj)
+  def writeNonAsciiJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(nonAsciiObj)
 
   @Benchmark
-  def writeNonAsciiJsoniter(): Array[Byte] = JsonWriter.write(stringCodec, nonAsciiObj)
+  def writeNonAsciiJsoniterScala(): Array[Byte] = JsonWriter.write(stringCodec, nonAsciiObj)
 
   @Benchmark
-  def writeNonAsciiJsoniterPrealloc(): Int = JsonWriter.write(stringCodec, nonAsciiObj, preallocatedBuf, 0)
+  def writeNonAsciiJsoniterScalaPrealloc(): Int = JsonWriter.write(stringCodec, nonAsciiObj, preallocatedBuf, 0)
 
   @Benchmark
-  def writeNonAsciiPlay(): Array[Byte] = Json.toBytes(Json.toJson(nonAsciiObj))
+  def writeNonAsciiPlayJson(): Array[Byte] = Json.toBytes(Json.toJson(nonAsciiObj))
 }

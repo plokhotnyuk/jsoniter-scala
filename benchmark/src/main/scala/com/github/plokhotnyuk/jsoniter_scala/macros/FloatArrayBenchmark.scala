@@ -21,27 +21,27 @@ class FloatArrayBenchmark extends CommonParams {
   def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
+  def readJacksonScala(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Array[Float] = JsonReader.read(floatArrayCodec, jsonBytes)
+  def readJsoniterScala(): Array[Float] = JsonReader.read(floatArrayCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
+  def readPlayJson(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(floatArrayCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(floatArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(floatArrayCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(floatArrayCodec, obj, preallocatedBuf, 0)
 /* FIXME: Play-JSON serialize double values instead of float
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
 }

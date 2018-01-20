@@ -21,27 +21,27 @@ class TwitterAPIBenchmark extends CommonParams {
   def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
+  def readJacksonScala(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
+  def readJsoniterScala(): Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
+  def readPlayJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
 /* FIXME: circe serializes empty collections
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(twitterAPICodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(twitterAPICodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf, 0)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
 */
 }

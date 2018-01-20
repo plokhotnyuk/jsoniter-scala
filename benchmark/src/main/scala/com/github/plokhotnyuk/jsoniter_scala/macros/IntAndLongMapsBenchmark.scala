@@ -31,14 +31,14 @@ class IntAndLongMapsBenchmark extends CommonParams {
 
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
   @Benchmark
-  def readJackson(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](jsonBytes)
+  def readJacksonScala(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](jsonBytes)
 */
 
   @Benchmark
-  def readJsoniter(): IntAndLongMaps = JsonReader.read(intAndLongMapsCodec, jsonBytes)
+  def readJsoniterScala(): IntAndLongMaps = JsonReader.read(intAndLongMapsCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): IntAndLongMaps = Json.parse(jsonBytes).as[IntAndLongMaps](intAndLongMapsFormat)
+  def readPlayJson(): IntAndLongMaps = Json.parse(jsonBytes).as[IntAndLongMaps](intAndLongMapsFormat)
 
 /* FIXME: Circe doesn't support writing of int & long maps
   @Benchmark
@@ -46,11 +46,11 @@ class IntAndLongMapsBenchmark extends CommonParams {
 */
 /* FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(intAndLongMapsCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(intAndLongMapsCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(intAndLongMapsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(intAndLongMapsFormat))
 }

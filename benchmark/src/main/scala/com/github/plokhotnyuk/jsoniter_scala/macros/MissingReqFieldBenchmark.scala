@@ -25,7 +25,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     decode[MissingReqFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _ => null)
 
   @Benchmark
-  def readJackson(): String =
+  def readJacksonScala(): String =
     try {
       jacksonMapper.readValue[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
@@ -33,7 +33,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     }
 
   @Benchmark
-  def readJsoniter(): String =
+  def readJsoniterScala(): String =
     try {
       JsonReader.read(missingReqFieldCodec, jsonBytes).toString // toString() should not be called
     } catch {
@@ -57,7 +57,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     }
 
   @Benchmark
-  def readPlay(): String =
+  def readPlayJson(): String =
     try {
       Json.parse(jsonBytes).as[MissingReqFields](missingReqFieldFormat).toString // toString() should not be called
     } catch {

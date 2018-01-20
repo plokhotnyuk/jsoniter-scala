@@ -27,23 +27,23 @@ class MutableIterablesBenchmark extends CommonParams {
 
 /* FIXME: Jackson-module-scala doesn't support parsing of tree sets
   @Benchmark
-  def readJackson(): MutableIterables = jacksonMapper.readValue[MutableIterables](jsonBytes)
+  def readJacksonScala(): MutableIterables = jacksonMapper.readValue[MutableIterables](jsonBytes)
 */
 
   @Benchmark
-  def readJsoniter(): MutableIterables = JsonReader.read(mutableIterablesCodec, jsonBytes)
+  def readJsoniterScala(): MutableIterables = JsonReader.read(mutableIterablesCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): MutableIterables = Json.parse(jsonBytes).as[MutableIterables](mutableIterablesFormat)
+  def readPlayJson(): MutableIterables = Json.parse(jsonBytes).as[MutableIterables](mutableIterablesFormat)
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(mutableIterablesCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(mutableIterablesCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableIterablesFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableIterablesFormat))
 }

@@ -20,26 +20,26 @@ class IntArrayBenchmark extends CommonParams {
   def readCirce(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): Array[Int] = jacksonMapper.readValue[Array[Int]](jsonBytes)
+  def readJacksonScala(): Array[Int] = jacksonMapper.readValue[Array[Int]](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): Array[Int] = JsonReader.read(intArrayCodec, jsonBytes)
+  def readJsoniterScala(): Array[Int] = JsonReader.read(intArrayCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): Array[Int] = Json.parse(jsonBytes).as[Array[Int]]
+  def readPlayJson(): Array[Int] = Json.parse(jsonBytes).as[Array[Int]]
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(intArrayCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(intArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(intArrayCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(intArrayCodec, obj, preallocatedBuf, 0)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 }

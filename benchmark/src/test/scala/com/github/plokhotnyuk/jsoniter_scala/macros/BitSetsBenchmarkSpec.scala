@@ -7,16 +7,16 @@ class BitSetsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       //FIXME: Circe doesn't support parsing of bitsets
       //benchmark.readCirce() shouldBe benchmark.bitSetsObj
-      benchmark.readJackson() shouldBe benchmark.obj
-      benchmark.readJsoniter() shouldBe benchmark.obj
-      benchmark.readPlay() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
     }
     "serialize properly" in {
       //FIXME: Circe doesn't support writing of bitsets
       //toString(benchmark.writeCirce()) shouldBe benchmark.bitSetsJsonString
-      toString(benchmark.writeJackson()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniter()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlay()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }
 }

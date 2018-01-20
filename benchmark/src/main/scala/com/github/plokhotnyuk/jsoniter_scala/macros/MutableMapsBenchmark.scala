@@ -29,23 +29,23 @@ class MutableMapsBenchmark extends CommonParams {
 */
 /*FIXME: Jackson-module-scala parse keys as String
   @Benchmark
-  def readJackson(): MutableMaps = jacksonMapper.readValue[MutableMaps](jsonBytes)
+  def readJacksonScala(): MutableMaps = jacksonMapper.readValue[MutableMaps](jsonBytes)
 */
   @Benchmark
-  def readJsoniter(): MutableMaps = JsonReader.read(mutableMapsCodec, jsonBytes)
+  def readJsoniterScala(): MutableMaps = JsonReader.read(mutableMapsCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): MutableMaps = Json.parse(jsonBytes).as[MutableMaps](mutableMapsFormat)
+  def readPlayJson(): MutableMaps = Json.parse(jsonBytes).as[MutableMaps](mutableMapsFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /*FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(mutableMapsCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(mutableMapsCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableMapsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableMapsFormat))
 }

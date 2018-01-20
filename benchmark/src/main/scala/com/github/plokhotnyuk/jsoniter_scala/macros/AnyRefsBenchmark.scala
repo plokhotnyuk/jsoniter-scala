@@ -24,26 +24,26 @@ class AnyRefsBenchmark extends CommonParams {
   def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJackson(): AnyRefs = jacksonMapper.readValue[AnyRefs](jsonBytes)
+  def readJacksonScala(): AnyRefs = jacksonMapper.readValue[AnyRefs](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): AnyRefs = JsonReader.read(anyRefsCodec, jsonBytes)
+  def readJsoniterScala(): AnyRefs = JsonReader.read(anyRefsCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs](anyRefsFormat)
+  def readPlayJson(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs](anyRefsFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(anyRefsCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(anyRefsCodec, obj)
 
   @Benchmark
-  def writeJsoniterPrealloc(): Int = JsonWriter.write(anyRefsCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(anyRefsCodec, obj, preallocatedBuf, 0)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyRefsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyRefsFormat))
 }

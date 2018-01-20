@@ -27,13 +27,13 @@ class BitSetsBenchmark extends CommonParams {
 */
 
   @Benchmark
-  def readJackson(): BitSets = jacksonMapper.readValue[BitSets](jsonBytes)
+  def readJacksonScala(): BitSets = jacksonMapper.readValue[BitSets](jsonBytes)
 
   @Benchmark
-  def readJsoniter(): BitSets = JsonReader.read(bitSetsCodec, jsonBytes)
+  def readJsoniterScala(): BitSets = JsonReader.read(bitSetsCodec, jsonBytes)
 
   @Benchmark
-  def readPlay(): BitSets = Json.parse(jsonBytes).as[BitSets](bitSetsFormat)
+  def readPlayJson(): BitSets = Json.parse(jsonBytes).as[BitSets](bitSetsFormat)
 
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
@@ -41,11 +41,11 @@ class BitSetsBenchmark extends CommonParams {
 */
 
   @Benchmark
-  def writeJackson(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniter(): Array[Byte] = JsonWriter.write(bitSetsCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(bitSetsCodec, obj)
 
   @Benchmark
-  def writePlay(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bitSetsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bitSetsFormat))
 }
