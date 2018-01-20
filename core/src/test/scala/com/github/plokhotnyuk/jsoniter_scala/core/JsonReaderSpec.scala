@@ -991,7 +991,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError("nu", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000001")
+      checkError("nx", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("nux", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000001")
+      checkError("nulx", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
       checkError("00", "illegal number with leading zero, offset: 0x00000000",
