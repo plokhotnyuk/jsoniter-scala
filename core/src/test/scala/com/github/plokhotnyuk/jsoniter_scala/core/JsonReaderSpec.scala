@@ -891,24 +891,16 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("1234567890123456789E10", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
     }
     "throw parsing exception on illegal or empty input" in {
-      checkError("", "unexpected end of input, offset: 0x00000000",
-        "illegal number, offset: 0x00000001")
-      checkError(" ", "unexpected end of input, offset: 0x00000001",
-        "illegal number, offset: 0x00000001")
-      checkError("-", "unexpected end of input, offset: 0x00000001",
-        "illegal number, offset: 0x00000002")
-      checkError("$", "illegal number, offset: 0x00000000",
-        "illegal number, offset: 0x00000001")
-      checkError(" $", "illegal number, offset: 0x00000001",
-        "illegal number, offset: 0x00000001")
-      checkError("-$", "illegal number, offset: 0x00000001",
-        "illegal number, offset: 0x00000002")
-      checkError("NaN", "illegal number, offset: 0x00000000",
-        "illegal number, offset: 0x00000001")
-      checkError("Inf", "illegal number, offset: 0x00000000",
-        "illegal number, offset: 0x00000001")
-      checkError("Infinity", "illegal number, offset: 0x00000000",
-        "illegal number, offset: 0x00000001")
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("nu", "unexpected end of input, offset: 0x00000002", "illegal number, offset: 0x00000002")
     }
     "throw parsing exception on leading zero" in {
       checkError("00", "illegal number with leading zero, offset: 0x00000000",
@@ -999,6 +991,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("nu", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
       checkError("00", "illegal number with leading zero, offset: 0x00000000",
