@@ -167,27 +167,27 @@ sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJs
 To see throughput & allocation rate of generated codecs run benchmarks with GC profiler using following command:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof gc -rf json -rff results.json .*Benchmark.*' >results.txt
 ```
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
-Current results for the following environment(s):
+[Current results](http://plokhotnyuk.github.io/jsoniter-scala/) for the following environment(s):
 
-[./results_jdk8_notebook.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8_notebook.txt)
+- [`notebook_jdk8`](http://plokhotnyuk.github.io/jsoniter-scala/notebook_jdk8.txt) - 
 Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
 Oracle JDK build 1.8.0_151-b12 64-bit
 
-[./results_jdk9_notebook.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9_notebook.txt)
+- [`notebook_jdk9`](http://plokhotnyuk.github.io/jsoniter-scala/notebook_jdk9.txt) - 
 Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
 Oracle JDK build 9.0.1+11 64-bit
 
-[./results_jdk8_desktop.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk8_desktop.txt)
+- [`desktop_jdk8`](http://plokhotnyuk.github.io/jsoniter-scala/desktop_jdk8.txt) - 
 Intel(R) Core(TM) i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux desktop 4.13.0-26-generic,
 Oracle JDK build 1.8.0_151-b12 64-bit
 
-[./results_jdk9_desktop.txt](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/results_jdk9_desktop.txt)
+- [`desktop_jdk9`](http://plokhotnyuk.github.io/jsoniter-scala/desktop_jdk9.txt) - 
 Intel(R) Core(TM) i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux desktop 4.13.0-26-generic,
 Oracle JDK build 9.0.1+11 64-bit
 
