@@ -157,7 +157,7 @@ command like this:
 sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*readJsoniter.*'
 ```
 
-On Linux the perf profiler can be used to see CPU & system events normalized per ops:
+On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm_results.txt
@@ -170,7 +170,7 @@ additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blo
 sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm_results.txt
 ```
 
-To see throughput & allocation rate of generated codecs run benchmarks with GC profiler using following command:
+To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using following command:
 
 ```sh
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >results.txt
@@ -181,7 +181,7 @@ Results of benchmark can be stored in different formats: *.csv, *.json, etc. All
 sbt 'benchmark/jmh:run -lrf
 ``` 
 
-Results that are stored in JSON can be easy plotted by [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
+Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
 of your file to the drop zone. 
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
