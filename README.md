@@ -8,16 +8,11 @@
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
-[Visual representation of current results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) for the following 
-environment(s):
+[Visual representation of current results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) for JDK 8 & JDK 9
+on the following environment:
 
-- [`jdk8`](http://plokhotnyuk.github.io/jsoniter-scala/jdk8.txt) - 
-Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
-Oracle JDK build 1.8.0_151-b12 64-bit
-
-- [`jdk9`](http://plokhotnyuk.github.io/jsoniter-scala/jdk9.txt) - 
-Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
-Oracle JDK build 9.0.1+11 64-bit
+Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
+Oracle JDK builds 1.8.0_151-b12 & 9.0.1+11 64-bit
 
 ## Goals
 
