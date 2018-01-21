@@ -8,11 +8,9 @@
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
-[Visual representation of current results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) for JDK 8 & JDK 9
-on the following environment:
-
-Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
-Oracle JDK builds 1.8.0_151-b12 & 9.0.1+11 64-bit
+[Report with latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) for JDK 8 & JDK 9 on the 
+following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
+Linux notebook 4.13.0-26-generic, Oracle JDK builds 1.8.0_151-b12 & 9.0.1+11 64-bit
 
 ## Goals
 
@@ -178,13 +176,13 @@ To see throughput & allocation rate of generated codecs run benchmarks with GC p
 sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >results.txt
 ```
 
-Results of benchmark can be stored in different formats: csv, json, etc. All supported formats can be listed by:
+Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
 ```sh
 sbt 'benchmark/jmh:run -lrf
 ``` 
 
-Results that stored in json can be easy plotted by [JMH Visualizer](http://jmh.morethan.io/) by drugging & droping of 
-your file to the drop zone. 
+Results that are stored in JSON can be easy plotted by [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
+of your file to the drop zone. 
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
