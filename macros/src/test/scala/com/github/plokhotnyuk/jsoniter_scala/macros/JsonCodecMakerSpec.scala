@@ -11,7 +11,7 @@ import scala.annotation.switch
 import scala.collection.immutable._
 import scala.collection.mutable
 
-case class UserId(value: String) extends AnyVal
+case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
 

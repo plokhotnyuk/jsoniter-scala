@@ -107,7 +107,9 @@ object JsonCodecMaker {
 
       def isValueClass(tpe: Type): Boolean = tpe <:< typeOf[AnyVal] && tpe.typeSymbol.asClass.isDerivedValueClass
 
-      def valueClassValueType(tpe: Type): Type = methodType(tpe.decls.head.asMethod)
+      def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
+
+      def valueClassValueType(tpe: Type): Type = methodType(valueClassValueMethod(tpe))
 
       def isSealedAdtBase(tpe: Type): Boolean = {
         val classSymbol = tpe.typeSymbol.asClass
@@ -623,8 +625,9 @@ object JsonCodecMaker {
           if (isStringified) q"out.writeValAsString($m)" else q"out.writeVal($m)"
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] || tpe =:= typeOf[String]) {
           q"out.writeVal($m)"
-        } else if (isValueClass(tpe)) genWriteVal(q"$m.value", valueClassValueType(tpe), isStringified)
-        else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
+        } else if (isValueClass(tpe)) {
+          genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe), isStringified)
+        } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
           q"if ((x eq null) || x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
