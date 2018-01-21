@@ -22,7 +22,7 @@ releaseProcess := Seq[ReleaseStep](
   runClean,
   runTest,
   setReleaseVersion,
-  ReleaseStep(check = releaseStepCommand("mimaReportBinaryIssues"), action = identity, enableCrossBuild = true),
+  ReleaseStep(releaseStepCommand("mimaReportBinaryIssues"), enableCrossBuild = true),
   updateVersionInReadme,
   commitReleaseVersion,
   tagRelease,
