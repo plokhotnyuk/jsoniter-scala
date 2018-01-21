@@ -32,8 +32,6 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
 - Support writing to pre-allocated `Array[Byte]` by specifying of position of writing from
 - Support of UTF-8 encoding
-- Configurable serialization of strings with escaped Unicode characters to be ASCII compatible
-- Configurable indenting of output
 - Parsing of strings with escaped characters for JSON keys and string values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, tuples, 
   Scala collections, arrays, module classes, value classes and case classes with values/fields having any of types 
@@ -54,17 +52,23 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and hex dump 
   of affected by error part of an internal byte buffer
-- Configurable turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on 
-  performance
-- Configurable throwing of stack-less parsing exceptions to greatly reduce impact on performance  
-- Configurable mapping function for names between case classes and JSON, including predefined functions which enforce 
+- Configurable by field annotation ability to read/write numeric fields from/to string values
+- No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
+  
+There are number of configurable options that can be set in compile-time:
+- Ability to read/write number of containers from/to string values
+- Skipping of unexpected fields or throwing of parse exceptions
+- Mapping function for names between case classes and JSON, including predefined functions which enforce 
   snake_case or camelCase names for all fields
-- Configurable name of a discriminator field for ADTs
-- Configurable mapping function for values of a discriminator field that is used for distinguish classes of ADTs
-- Configurable by field annotation or by code generation ability to read/write numbers from/to string values
-- Configurable skipping of unexpected fields or throwing of parse exceptions
-- Configurable size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`, no extra 
-  buffering is required  
+- Name of a discriminator field for ADTs
+- Mapping function for values of a discriminator field that is used for distinguish classes of ADTs
+
+List of options that change parsing & serialization in runtime:
+- Serialization of strings with escaped Unicode characters to be ASCII compatible
+- Indenting of output and its step
+- Throwing of stack-less parsing exceptions to greatly reduce impact on performance  
+- Turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on performance
+- Preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master) 
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
