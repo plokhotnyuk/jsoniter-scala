@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class FloatArrayBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new FloatArrayBenchmark
+class ArrayOfIntsBenchmarkSpec extends BenchmarkSpecBase {
+  val benchmark = new ArrayOfIntsBenchmark
   
   "IntArrayBenchmark" should {
     "deserialize properly" in {
@@ -15,8 +15,7 @@ class FloatArrayBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      //FIXME: Play-JSON serialize double values instead of float
-      //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }
 }

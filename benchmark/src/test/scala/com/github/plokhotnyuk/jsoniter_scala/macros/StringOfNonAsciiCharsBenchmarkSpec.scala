@@ -1,14 +1,15 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class IntArrayBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new IntArrayBenchmark
+class StringOfNonAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
+  val benchmark = new StringOfNonAsciiCharsBenchmark
   
-  "IntArrayBenchmark" should {
+  "StringBenchmark" should {
     "deserialize properly" in {
-      benchmark.readCirce().deep shouldBe benchmark.obj.deep
-      benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
-      benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
-      benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readCirce() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      //FIXME: find proper way to parse string value in Play JSON
+      //benchmark.readNonAsciiStringPlayJson() shouldBe benchmark.nonAsciiStringObj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString

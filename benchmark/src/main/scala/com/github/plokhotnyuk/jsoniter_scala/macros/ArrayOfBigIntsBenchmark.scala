@@ -11,7 +11,7 @@ import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 
-class BigIntArrayBenchmark extends CommonParams {
+class ArrayOfBigIntsBenchmark extends CommonParams {
   val obj: Array[BigInt] = (1 to 128).map(i => BigInt(Array.fill((i & 31) + 1)(i.toByte))).toArray // up to 256-bit numbers
   val jsonString: String = obj.map(x => new java.math.BigDecimal(x.bigInteger).toPlainString).mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
