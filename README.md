@@ -8,6 +8,17 @@
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
+[Visual representation of current results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) for the following 
+environment(s):
+
+- [`jdk8`](http://plokhotnyuk.github.io/jsoniter-scala/jdk8.txt) - 
+Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
+Oracle JDK build 1.8.0_151-b12 64-bit
+
+- [`jdk9`](http://plokhotnyuk.github.io/jsoniter-scala/jdk9.txt) - 
+Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
+Oracle JDK build 9.0.1+11 64-bit
+
 ## Goals
 
 Initially this library was developed for requirements of real-time bidding in ad-tech and goals was simple:
@@ -180,17 +191,6 @@ your file to the drop zone.
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
-
-[Visual representation of current benchmark results](http://plokhotnyuk.github.io/jsoniter-scala/) for the following 
-environment(s):
-
-- [`jdk8`](http://plokhotnyuk.github.io/jsoniter-scala/jdk8.txt) - 
-Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
-Oracle JDK build 1.8.0_151-b12 64-bit
-
-- [`jdk9`](http://plokhotnyuk.github.io/jsoniter-scala/jdk9.txt) - 
-Intel(R) Core(TM) i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-26-generic,
-Oracle JDK build 9.0.1+11 64-bit
 
 ### Publish to local repos
 
