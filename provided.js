@@ -1,6 +1,6 @@
-var providedBenchmarks = ['jdk8', 'jdk9'];
+var providedBenchmarks = ['Results with JDK 8', 'Results with JDK 9'];
 var providedBenchmarkStore = {
-    jdk8: [
+    'Results with JDK 8': [
               {
                   "jmhVersion" : "1.19",
                   "benchmark" : "com.github.plokhotnyuk.jsoniter_scala.macros.AdtBenchmark.readCirce",
@@ -39127,7 +39127,7 @@ var providedBenchmarkStore = {
                   }
               }
           ],
-    jdk9: [
+    'Results with JDK 9': [
               {
                   "jmhVersion" : "1.19",
                   "benchmark" : "com.github.plokhotnyuk.jsoniter_scala.macros.AdtBenchmark.readCirce",
