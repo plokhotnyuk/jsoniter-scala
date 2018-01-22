@@ -182,7 +182,8 @@ sbt 'benchmark/jmh:run -lrf
 ``` 
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
-of your file to the drop zone. 
+of your file to the drop zone or using the `source` parameter with an HTTP link to your file in the URL like 
+[here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/jdk8.json).
 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
