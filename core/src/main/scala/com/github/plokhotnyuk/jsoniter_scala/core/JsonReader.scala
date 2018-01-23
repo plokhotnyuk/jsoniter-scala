@@ -1036,11 +1036,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
-  private def parseString(): Int = {
-    val pos = head
-    val charBuf = this.charBuf
-    parseString(0, Math.min(charBuf.length, tail - pos), charBuf, pos)
-  }
+  private def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
 
   @tailrec
   private def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
