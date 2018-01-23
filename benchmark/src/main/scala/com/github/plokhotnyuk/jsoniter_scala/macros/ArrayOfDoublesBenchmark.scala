@@ -11,23 +11,23 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
-class ArrayOfFloatsBenchmark extends CommonParams {
-  val obj: Array[Float] = (1 to 1024)
-    .map(i => (((i * 1498724053) / Math.pow(10, i % 10)).toInt * Math.pow(10, (i % 20) - 10)).toFloat).toArray
+class ArrayOfDoublesBenchmark extends CommonParams {
+  val obj: Array[Double] = (1 to 1024)
+    .map(i => ((i * 372036854775807L) / Math.pow(10, i % 19)).toLong * Math.pow(10, (i % 38) - 19)).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
   @Benchmark
-  def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJacksonScala(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
+  def readJacksonScala(): Array[Double] = jacksonMapper.readValue[Array[Double]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[Float] = JsonReader.read(floatArrayCodec, jsonBytes)
+  def readJsoniterScala(): Array[Double] = JsonReader.read(doubleArrayCodec, jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
+  def readPlayJson(): Array[Double] = Json.parse(jsonBytes).as[Array[Double]]
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -36,11 +36,11 @@ class ArrayOfFloatsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(floatArrayCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(doubleArrayCodec, obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(floatArrayCodec, obj, preallocatedBuf, 0)
-/* FIXME: Play-JSON serialize double values instead of float
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(doubleArrayCodec, obj, preallocatedBuf, 0)
+/* FIXME: Play serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */

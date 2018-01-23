@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
-@Warmup(iterations = 5)
+@Warmup(iterations = 3)
 @Measurement(iterations = 5)
 @Fork(value = 1, jvmArgs = Array(
   "-server",
