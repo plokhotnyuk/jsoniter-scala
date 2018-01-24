@@ -270,6 +270,24 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         BigDecimal("1234567890.12345678901234567890"), "\"1234567890.12345678901234567890\"".getBytes)
       verifySerDeser(codecOfBigDecimal, null, "null".getBytes)
     }
+    "deserialize case classes with duplicated fields, the last field value is accepted" in {
+      verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
+        s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""".getBytes)
+    }
+    "throw parse exception in case of invalid value is detected for first occurrence of duplicated fields" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
+          s"""{"s":false,"s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""".getBytes)
+      }.getMessage.contains("expected '\"' or null, offset: 0x00000005"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
+          s"""{"s":"XXX","s":"VVV","bi":false,"bi":1,"bd":20.0,"bd":2.0}""".getBytes)
+      }.getMessage.contains("illegal number, offset: 0x0000001a"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
+          s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":false,"bd":2.0}""".getBytes)
+      }.getMessage.contains("illegal number, offset: 0x00000029"))
+    }
     "throw parse exception in case of illegal UTF-8 encoded field names" in {
       assert(intercept[JsonParseException] {
         val buf = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes
