@@ -24,4 +24,3 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - sbt -no-colors ++$TRAVIS_SCALA_VERSION 'benchmark/jmh:run -prof gc .*Benchmark.*'
