@@ -4,10 +4,12 @@ import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
+import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
+  val controlChars: Gen[Byte] = Gen.choose(0, 31)
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
       JsonReader.read(codec, getClass.getResourceAsStream("user_api_response.json")) shouldBe user
@@ -245,10 +247,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
       }
 
-      forAll { (b: Byte) =>
-        whenever(b >= 0 && b <= 31) {
-          checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
-        }
+      forAll(controlChars) { (b: Byte) =>
+        checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
@@ -386,10 +386,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
-      forAll { (b: Byte) =>
-        whenever(b >= 0 && b <= 31) {
-          checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
-        }
+      forAll(controlChars) { (b: Byte) =>
+        checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
