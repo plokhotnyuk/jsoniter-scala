@@ -225,19 +225,31 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       forAll(minSuccessful(100000)) { (s: String) =>
-        whenever(s.forall(ch => ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
+        whenever(s.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s)
         }
       }
     }
-    "get the same string value for escaped strings as for non-escaped" in {
+    "parse escaped chars of string value" in {
       def checkEncoded(s1: String, s2: String): Unit = {
-        readString(s1) shouldBe readString(s2)
-        readKeyAsString(s1) shouldBe readKeyAsString(s2)
+        readString(s1) shouldBe s2
+        readKeyAsString(s1) shouldBe s2
       }
 
-      checkEncoded("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\\\")
+      checkEncoded("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\")
       checkEncoded("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1\\ud834\\udd1e", "\b\f\n\r\t/Aиბ𝄞")
+    }
+    "throw parsing exception for control chars that must be escaped" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readString()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
+      }
+
+      forAll { (b: Byte) =>
+        whenever(b >= 0 && b <= 31) {
+          checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
+        }
+      }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -326,9 +338,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readKeyAsChar(ch.toString) shouldBe ch
     }
 
-    def checkEscaped(escaped: String, nonEscaped: String): Unit = {
-      readChar(escaped) shouldBe readChar(nonEscaped)
-      readKeyAsChar(escaped) shouldBe readKeyAsChar(nonEscaped)
+    def checkEscaped(escaped: String, nonEscaped: Char): Unit = {
+      readChar(escaped) shouldBe nonEscaped
+      readKeyAsChar(escaped) shouldBe nonEscaped
     }
 
     def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -338,33 +350,45 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
-        whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
+        whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           check(ch)
         }
       }
     }
-    "get the same char value for escaped strings as for non-escaped" in {
-      checkEscaped("""\b""", "\b")
-      checkEscaped("""\f""", "\f")
-      checkEscaped("""\n""", "\n")
-      checkEscaped("""\r""", "\r")
-      checkEscaped("""\t""", "\t")
-      checkEscaped("""\/""", "/")
-      checkEscaped("""\\""", "\\\\")
-      checkEscaped("\\u0008", "\b")
-      checkEscaped("\\u000C", "\f")
-      checkEscaped("\\u000a", "\n")
-      checkEscaped("\\u000D", "\r")
-      checkEscaped("\\u0009", "\t")
-      checkEscaped("\\u002F", "/")
-      checkEscaped("\\u0041", "A")
-      checkEscaped("\\u0438", "и")
-      checkEscaped("\\u10d1", "ბ")
+    "parse escaped chars of string value" in {
+      checkEscaped("""\b""", '\b')
+      checkEscaped("""\f""", '\f')
+      checkEscaped("""\n""", '\n')
+      checkEscaped("""\r""", '\r')
+      checkEscaped("""\t""", '\t')
+      checkEscaped("""\/""", '/')
+      checkEscaped("""\\""", '\\')
+      checkEscaped("\\u0008", '\b')
+      checkEscaped("\\u000C", '\f')
+      checkEscaped("\\u000a", '\n')
+      checkEscaped("\\u000D", '\r')
+      checkEscaped("\\u0009", '\t')
+      checkEscaped("\\u002F", '/')
+      checkEscaped("\\u0041", 'A')
+      checkEscaped("\\u0438", 'и')
+      checkEscaped("\\u10d1", 'ბ')
     }
     "throw parsing exception for string with length > 1" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
-        whenever(ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
+        whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           checkError(("\"" + ch + ch + "\"").getBytes(UTF_8), "expected '\"'") // offset can differs for non-ASCII characters
+        }
+      }
+    }
+    "throw parsing exception for control chars that must be escaped" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readChar()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
+      }
+
+      forAll { (b: Byte) =>
+        whenever(b >= 0 && b <= 31) {
+          checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
         }
       }
     }
