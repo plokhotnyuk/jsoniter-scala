@@ -213,6 +213,10 @@ Double check binary & source compatibility (including behaviour) and release usi
 sbt "release cross"
 ```
 
+Do not push changes to github until promouted artifacts for new version are not available for download on 
+[Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/macros_2.12/)
+to avoid binary compatibility check failures in triggered Travis CI builds. 
+
 ## Acknowledgements
 
 This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
