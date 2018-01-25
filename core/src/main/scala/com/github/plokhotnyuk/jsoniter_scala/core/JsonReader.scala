@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
 import java.math.BigInteger
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
@@ -190,6 +191,13 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  def readKeyAsUUID(): UUID = {
+    readParenthesesToken()
+    val x = parseUUID(head)
+    readColonToken()
+    x
+  }
+
   def readByte(): Byte = parseByte(isToken = true)
 
   def readChar(): Char = {
@@ -218,6 +226,10 @@ final class JsonReader private[jsoniter_scala](
       val len = parseString()
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
+
+  def readUUID(default: UUID = null): UUID =
+    if (isNextToken('"', head)) parseUUID(head)
+    else readNullOrTokenError(default, '"')
 
   def readBoolean(): Boolean = parseBoolean(isToken = true)
 
@@ -1035,6 +1047,56 @@ final class JsonReader private[jsoniter_scala](
   private def intOverflowError(pos: Int): Nothing = decodeError("value is too large for int", pos)
 
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
+
+  private def dashError(pos: Int): Nothing = decodeError("expected '-'", pos)
+
+  private def parseUUID(pos: Int): UUID =
+    if (pos + 36 < tail) {
+      val mostSigBits1: Int =
+        (fromHexDigit(pos) << 28) |
+          (fromHexDigit(pos + 1) << 24) |
+          (fromHexDigit(pos + 2) << 20) |
+          (fromHexDigit(pos + 3) << 16) |
+          (fromHexDigit(pos + 4) << 12) |
+          (fromHexDigit(pos + 5) << 8) |
+          (fromHexDigit(pos + 6) << 4) |
+          fromHexDigit(pos + 7)
+      if (buf(pos + 8) != '-') dashError(pos + 8)
+      if (buf(pos + 13) != '-') dashError(pos + 13)
+      val mostSigBits2: Int =
+        (fromHexDigit(pos + 9) << 28) |
+          (fromHexDigit(pos + 10) << 24) |
+          (fromHexDigit(pos + 11) << 20) |
+          (fromHexDigit(pos + 12) << 16) |
+          (fromHexDigit(pos + 14) << 12) |
+          (fromHexDigit(pos + 15) << 8) |
+          (fromHexDigit(pos + 16) << 4) |
+          fromHexDigit(pos + 17)
+      if (buf(pos + 18) != '-') dashError(pos + 18)
+      val leastSigBits1: Long =
+        (fromHexDigit(pos + 19) << 28) |
+          (fromHexDigit(pos + 20) << 24) |
+          (fromHexDigit(pos + 21) << 20) |
+          (fromHexDigit(pos + 22) << 16) |
+          (fromHexDigit(pos + 24) << 12) |
+          (fromHexDigit(pos + 25) << 8) |
+          (fromHexDigit(pos + 26) << 4) |
+          fromHexDigit(pos + 27)
+      if (buf(pos + 23) != '-') dashError(pos + 23)
+      val leastSigBits2: Long =
+        (fromHexDigit(pos + 28) << 28) |
+          (fromHexDigit(pos + 29) << 24) |
+          (fromHexDigit(pos + 30) << 20) |
+          (fromHexDigit(pos + 31) << 16) |
+          (fromHexDigit(pos + 32) << 12) |
+          (fromHexDigit(pos + 33) << 8) |
+          (fromHexDigit(pos + 34) << 4) |
+          fromHexDigit(pos + 35)
+      if (buf(pos + 36) != '"') decodeError("expected '\"'", pos + 36)
+      head = pos + 37
+      new UUID((mostSigBits1.toLong << 32) | (mostSigBits2 & 0xffffffffL),
+        (leastSigBits1.toLong << 32) | (leastSigBits2 & 0xffffffffL))
+    } else parseUUID(loadMoreOrError(pos))
 
   private def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
 

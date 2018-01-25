@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.lang.Character._
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, JsonReader, JsonWriter}
 
@@ -151,6 +152,7 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
         else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
+        else if (tpe =:= typeOf[UUID]) q"in.readKeyAsUUID()"
         else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt()"
         else if (tpe =:= typeOf[BigDecimal]) q"in.readKeyAsBigDecimal()"
@@ -399,6 +401,7 @@ object JsonCodecMaker {
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
           if (isStringified) q"in.readStringAsDouble()" else q"in.readDouble()"
         } else if (tpe =:= typeOf[String]) q"in.readString($default)"
+        else if (tpe =:= typeOf[UUID]) q"in.readUUID($default)"
         else if (tpe =:= typeOf[BigInt]) {
           if (isStringified) q"in.readStringAsBigInt($default)" else q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
@@ -623,7 +626,8 @@ object JsonCodecMaker {
           tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
           tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           if (isStringified) q"out.writeValAsString($m)" else q"out.writeVal($m)"
-        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] || tpe =:= typeOf[String]) {
+        } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
+          tpe =:= typeOf[UUID] || tpe =:= typeOf[String]) {
           q"out.writeVal($m)"
         } else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe), isStringified)

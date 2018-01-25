@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
 
@@ -107,6 +108,13 @@ final class JsonWriter private[jsoniter_scala](
       writeParenthesesWithColon()
     } else encodeError("key cannot be null")
 
+  def writeKey(x: UUID): Unit =
+    if (x ne null) {
+      writeComma()
+      writeUUID(x)
+      writeColon()
+    } else encodeError("key cannot be null")
+
   def writeKey(x: String): Unit =
     if (x ne null) {
       writeComma()
@@ -129,6 +137,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: BigInt): Unit =
     if (x eq null) writeNull()
     else writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
+
+  def writeVal(x: UUID): Unit = if (x eq null) writeNull() else writeUUID(x)
 
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
 
@@ -344,6 +354,53 @@ final class JsonWriter private[jsoniter_scala](
     s.getBytes(0, len, buf, pos + 1)
     buf(pos + len + 1) = '"'
     pos + len + 2
+  }
+
+  private def writeUUID(x: UUID): Unit = count = {
+    val pos = ensureBufferCapacity(38)
+    val mostSigBits1 = (x.getMostSignificantBits >> 32).toInt
+    val mostSigBits2 = x.getMostSignificantBits.toInt
+    val leastSigBits1 = (x.getLeastSignificantBits >> 32).toInt
+    val leastSigBits2 = x.getLeastSignificantBits.toInt
+    buf(pos) = '"'
+    buf(pos + 1) = toHexDigit(mostSigBits1 >> 28)
+    buf(pos + 2) = toHexDigit(mostSigBits1 >> 24)
+    buf(pos + 3) = toHexDigit(mostSigBits1 >> 20)
+    buf(pos + 4) = toHexDigit(mostSigBits1 >> 16)
+    buf(pos + 5) = toHexDigit(mostSigBits1 >> 12)
+    buf(pos + 6) = toHexDigit(mostSigBits1 >> 8)
+    buf(pos + 7) = toHexDigit(mostSigBits1 >> 4)
+    buf(pos + 8) = toHexDigit(mostSigBits1)
+    buf(pos + 9) = '-'
+    buf(pos + 10) = toHexDigit(mostSigBits2 >> 28)
+    buf(pos + 11) = toHexDigit(mostSigBits2 >> 24)
+    buf(pos + 12) = toHexDigit(mostSigBits2 >> 20)
+    buf(pos + 13) = toHexDigit(mostSigBits2 >> 16)
+    buf(pos + 14) = '-'
+    buf(pos + 15) = toHexDigit(mostSigBits2 >> 12)
+    buf(pos + 16) = toHexDigit(mostSigBits2 >> 8)
+    buf(pos + 17) = toHexDigit(mostSigBits2 >> 4)
+    buf(pos + 18) = toHexDigit(mostSigBits2)
+    buf(pos + 19) = '-'
+    buf(pos + 20) = toHexDigit(leastSigBits1 >> 28)
+    buf(pos + 21) = toHexDigit(leastSigBits1 >> 24)
+    buf(pos + 22) = toHexDigit(leastSigBits1 >> 20)
+    buf(pos + 23) = toHexDigit(leastSigBits1 >> 16)
+    buf(pos + 24) = '-'
+    buf(pos + 25) = toHexDigit(leastSigBits1 >> 12)
+    buf(pos + 26) = toHexDigit(leastSigBits1 >> 8)
+    buf(pos + 27) = toHexDigit(leastSigBits1 >> 4)
+    buf(pos + 28) = toHexDigit(leastSigBits1)
+    buf(pos + 29) = toHexDigit(leastSigBits2 >> 28)
+    buf(pos + 30) = toHexDigit(leastSigBits2 >> 24)
+    buf(pos + 31) = toHexDigit(leastSigBits2 >> 20)
+    buf(pos + 32) = toHexDigit(leastSigBits2 >> 16)
+    buf(pos + 33) = toHexDigit(leastSigBits2 >> 12)
+    buf(pos + 34) = toHexDigit(leastSigBits2 >> 8)
+    buf(pos + 35) = toHexDigit(leastSigBits2 >> 4)
+    buf(pos + 36) = toHexDigit(leastSigBits2)
+    buf(pos + 37) = '"'
+    pos + 38
   }
 
   private def writeString(s: String): Unit = count = {

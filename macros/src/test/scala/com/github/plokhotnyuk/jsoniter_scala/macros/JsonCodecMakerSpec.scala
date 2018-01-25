@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
@@ -28,6 +29,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val standardTypes = StandardTypes("VVV", 1, 1.1)
   val codecOfStandardTypes: JsonCodec[StandardTypes] = make[StandardTypes](CodecMakerConfig())
+
+  case class JavaTypes(uuid: UUID)
+  val codecOfJavaTypes: JsonCodec[JavaTypes] = make[JavaTypes](CodecMakerConfig())
 
   object LocationType extends Enumeration {
     type LocationType = Value
@@ -322,6 +326,24 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x00000019"))
+    }
+    "serialize and deserialize java types" in {
+      verifySerDeser(codecOfJavaTypes, JavaTypes(new UUID(0, 0)),
+        """{"uuid":"00000000-0000-0000-0000-000000000000"}""".getBytes)
+    }
+    "throw parse exception in case of illegal value of java types" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfJavaTypes, JavaTypes(new UUID(0, 0)),
+          """{"uuid":"00000000-XXXX-0000-0000-000000000000"}""".getBytes)
+      }.getMessage.contains("expected hex digit, offset: 0x00000012"))
+    }
+    "serialize and deserialize top-level java types" in {
+      verifySerDeser(make[UUID](CodecMakerConfig()), new UUID(0, 0),
+        "\"00000000-0000-0000-0000-000000000000\"".getBytes)
+    }
+    "serialize and deserialize java types as key in maps" in {
+      verifySerDeser(make[Map[UUID, Int]](CodecMakerConfig()), Map(new UUID(0, 0) -> 0),
+        """{"00000000-0000-0000-0000-000000000000":0}""".getBytes)
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)

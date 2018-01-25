@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalacheck.Gen
@@ -201,6 +202,53 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
       checkError("tru", "unexpected end of input, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
       checkError("fals", "unexpected end of input, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
+    }
+  }
+  "JsonReader.readKeyAsUUID" should {
+    "throw parsing exception for missing ':' in the end" in {
+      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"".getBytes).readKeyAsUUID())
+        .getMessage.contains("unexpected end of input, offset: 0x00000026"))
+      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"x".getBytes).readKeyAsUUID())
+        .getMessage.contains("expected ':', offset: 0x00000026"))
+    }
+  }
+  "JsonReader.readUUID and JsonReader.readKeyAsUUID" should {
+    "parse null value" in {
+      reader("null".getBytes).readUUID() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsUUID())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = new UUID(0, 0)
+      reader("null".getBytes).readUUID(default) shouldBe default
+    }
+    "parse UUID from a string representation according to format that defined in IETF RFC4122 (section 3)" in {
+      def check(x: UUID): Unit = {
+        val s = x.toString
+        readUUID(s.toLowerCase) shouldBe x
+        readUUID(s.toUpperCase) shouldBe x
+        readKeyAsUUID(s.toLowerCase) shouldBe x
+        readKeyAsUUID(s.toUpperCase) shouldBe x
+      }
+
+      check(new UUID(0, 0))
+/*
+      forAll(minSuccessful(100000)) { (hi: Long, lo: Long) =>
+        check(new UUID(hi, lo))
+      }
+*/
+    }
+    "throw parsing exception for empty input and illegal or broken UUID string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readUUID()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsUUID()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "unexpected end of input, offset: 0x00000002")
+      checkError("\"00000000-0000-0000-0000-000000000000".getBytes, "unexpected end of input, offset: 0x00000025")
+      checkError("\"Z0000000-0000-0000-0000-000000000000\"".getBytes, "expected hex digit, offset: 0x00000001")
+      checkError("\"00000000=0000-0000-0000-000000000000\"".getBytes, "expected '-', offset: 0x00000009")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1154,6 +1202,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     r.nextToken().toChar shouldBe ','
   }
 
+  def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
+
+  def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
+
   def readString(s: String): String = readString(s.getBytes(UTF_8))
 
   def readString(buf: Array[Byte]): String = reader(stringify(buf)).readString()
@@ -1194,6 +1246,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     readBigDecimal(s.getBytes(UTF_8), default)
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = reader(buf).readBigDecimal(default)
+
+  def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
+
+  def readKeyAsUUID(buf: Array[Byte]): UUID = reader(stringify(buf) :+ ':'.toByte).readKeyAsUUID()
 
   def readKeyAsString(s: String): String = readKeyAsString(s.getBytes(UTF_8))
 

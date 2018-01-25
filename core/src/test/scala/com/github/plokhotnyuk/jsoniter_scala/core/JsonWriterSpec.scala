@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalacheck.Gen
@@ -88,6 +89,24 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       forAll(Gen.listOf(asciiChars).map(_.mkString.filter(JsonWriter.isNonEscapedAscii))) { (s: String) =>
         check(s)
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for UUID" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[UUID])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[UUID])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write UUID as a string representation according to format that defined in IETF RFC4122 (section 3)" in {
+      def check(x: UUID): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      forAll(minSuccessful(100000)) { (hi: Long, lo: Long) =>
+        check(new UUID(hi, lo))
       }
     }
   }
