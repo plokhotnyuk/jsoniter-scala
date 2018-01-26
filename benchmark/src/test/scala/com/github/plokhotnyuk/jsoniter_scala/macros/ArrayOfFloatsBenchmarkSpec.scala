@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
   val benchmark = new ArrayOfFloatsBenchmark
   
-  "IntArrayBenchmark" should {
+  "FloatArrayBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce().deep shouldBe benchmark.obj.deep
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep

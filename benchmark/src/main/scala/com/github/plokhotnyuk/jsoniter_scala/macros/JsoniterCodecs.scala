@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.util.UUID
+
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 
@@ -14,6 +16,7 @@ object JsoniterCodecs {
   val floatArrayCodec: JsonCodec[Array[Float]] = make[Array[Float]](CodecMakerConfig())
   val intArrayCodec: JsonCodec[Array[Int]] = make[Array[Int]](CodecMakerConfig())
   val longArrayCodec: JsonCodec[Array[Long]] = make[Array[Long]](CodecMakerConfig())
+  val uuidArrayCodec: JsonCodec[Array[UUID]] = make[Array[UUID]](CodecMakerConfig())
   val iterablesCodec: JsonCodec[Iterables] = make[Iterables](CodecMakerConfig())
   val mapsCodec: JsonCodec[Maps] = make[Maps](CodecMakerConfig())
   val missingReqFieldCodec: JsonCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())
