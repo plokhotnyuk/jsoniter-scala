@@ -1110,8 +1110,7 @@ final class JsonReader private[jsoniter_scala](
       } else if (((b - 32) ^ 60) > 0) { // 60 == '\\' - 32
         charBuf(i) = b.toChar
         parseString(i + 1, minLim, charBuf, pos + 1)
-      } else if ((b & -32) == 0) unescapedControlCharacterError(pos)
-      else parseEncodedString(i, charBuf.length, charBuf, pos)
+      } else parseEncodedString(i, charBuf.length, charBuf, pos)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
       parseString(i, i + Math.min(minLim - i, tail - newPos), charBuf, newPos)
