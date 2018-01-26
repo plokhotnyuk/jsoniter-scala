@@ -1107,7 +1107,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"') {
         head = pos + 1
         i
-      } else if (((b - 32) ^ 60) > 0) { // 60 == '\\' - 32
+      } else if (b >= ' ' && b != '\\') {
         charBuf(i) = b.toChar
         parseString(i + 1, minLim, charBuf, pos + 1)
       } else parseEncodedString(i, charBuf.length, charBuf, pos)
@@ -1128,7 +1128,7 @@ final class JsonReader private[jsoniter_scala](
             head = pos + 1
             i
           } else if (b1 != '\\') {
-            if (b1 < 32) unescapedControlCharacterError(pos)
+            if (b1 < ' ') unescapedControlCharacterError(pos)
             charBuf(i) = b1.toChar
             parseEncodedString(i + 1, lim, charBuf, pos + 1)
           } else if (remaining > 1) {
@@ -1205,7 +1205,7 @@ final class JsonReader private[jsoniter_scala](
       if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
         if (b1 == '"') decodeError("illegal value for char")
         else if (b1 != '\\') {
-          if (b1 < 32) unescapedControlCharacterError(pos)
+          if (b1 < ' ') unescapedControlCharacterError(pos)
           head = pos + 1
           b1.toChar
         } else if (remaining > 1) {
