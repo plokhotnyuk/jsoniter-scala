@@ -54,7 +54,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeKey(x: Byte): Unit = {
     writeCommaWithParentheses()
-    writeInt(x)
+    writeByte(x)
     writeParenthesesWithColon()
   }
 
@@ -66,7 +66,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeKey(x: Short): Unit = {
     writeCommaWithParentheses()
-    writeInt(x)
+    writeShort(x)
     writeParenthesesWithColon()
   }
 
@@ -146,9 +146,9 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
 
-  def writeVal(x: Byte): Unit = writeInt(x.toInt)
+  def writeVal(x: Byte): Unit = writeByte(x)
 
-  def writeVal(x: Short): Unit = writeInt(x.toInt)
+  def writeVal(x: Short): Unit = writeShort(x)
 
   def writeVal(x: Char): Unit = writeChar(x)
 
@@ -621,6 +621,49 @@ final class JsonWriter private[jsoniter_scala](
   private def writeColon(): Unit =
     if (config.indentionStep > 0) writeBytes(':', ' ')
     else writeBytes(':')
+
+  private def writeByte(x: Byte): Unit = count = {
+    var pos = ensureBufferCapacity(4) // Byte.MinValue.toString.length
+    val buf = this.buf
+    val q0: Int =
+      if (x >= 0) x
+      else {
+        buf(pos) = '-'
+        pos += 1
+        -x
+      }
+    if (q0 < 10) {
+      buf(pos) = (q0 + '0').toByte
+      pos + 1
+    } else if (q0 < 100) {
+      val d = digits(q0)
+      buf(pos) = (d >> 8).toByte
+      buf(pos + 1) = d.toByte
+      pos + 2
+    } else {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide int by 100
+      val r1 = q0 - 100 * q1
+      val d = digits(r1)
+      buf(pos) = (q1 + '0').toByte
+      buf(pos + 1) = (d >> 8).toByte
+      buf(pos + 2) = d.toByte
+      pos + 3
+    }
+  }
+
+  private def writeShort(x: Short): Unit = count = {
+    var pos = ensureBufferCapacity(6) // Short.MinValue.toString.length
+    val buf = this.buf
+    val q0: Int =
+      if (x >= 0) x
+      else {
+        buf(pos) = '-'
+        pos += 1
+        -x
+      }
+    val off = offset(q0)
+    writeIntFirst(q0, pos + off, buf, digits) + off
+  }
 
   private def writeInt(x: Int): Unit = count = {
     var pos = ensureBufferCapacity(11) // minIntBytes.length

@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class ArrayOfBytesBenchmark extends CommonParams {
-  val obj: Array[Byte] = (1 to 1024).map(i => (i * 1498724053).toByte).toArray
+  val obj: Array[Byte] = (1 to 1024).map(_.toByte).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
@@ -31,8 +31,10 @@ class ArrayOfBytesBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
+/* FIXME: jackson serializes an array of bytes to a string encoded in base64
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+*/
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = JsonWriter.write(byteArrayCodec, obj)

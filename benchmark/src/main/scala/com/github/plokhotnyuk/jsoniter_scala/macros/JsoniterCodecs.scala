@@ -7,7 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 
 object JsoniterCodecs {
   val stacklessExceptionConfig = ReaderConfig(throwParseExceptionWithStackTrace = false)
-  val stacklessExceptionWithoutDumpConfig = ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
+  val stacklessExceptionWithoutDumpConfig =
+    ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
   val anyRefsCodec: JsonCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
   val arraysCodec: JsonCodec[Arrays] = make[Arrays](CodecMakerConfig())
   val bigIntArrayCodec: JsonCodec[Array[BigInt]] = make[Array[BigInt]](CodecMakerConfig())
