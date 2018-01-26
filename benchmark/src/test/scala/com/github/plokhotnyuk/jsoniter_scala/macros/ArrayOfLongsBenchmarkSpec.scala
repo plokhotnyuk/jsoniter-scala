@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 class ArrayOfLongsBenchmarkSpec extends BenchmarkSpecBase {
   val benchmark = new ArrayOfLongsBenchmark
   
-  "LongArrayBenchmark" should {
+  "ArrayOfLongsBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce().deep shouldBe benchmark.obj.deep
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep

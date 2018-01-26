@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 class StringOfNonAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
   val benchmark = new StringOfNonAsciiCharsBenchmark
   
-  "StringBenchmark" should {
+  "StringOfNonAsciiCharsBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
