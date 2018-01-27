@@ -2,6 +2,8 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
 import java.math.BigInteger
+import java.time._
+import java.time.format.DateTimeParseException
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
@@ -53,6 +55,8 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Int = 0,
     private[this] var config: ReaderConfig = null) {
+  private val charBufSeq = new CharBufferSequence
+
   def requiredKeyError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
     val len = Math.min(reqFields.length, reqBits.length << 5)
     var i = 0
@@ -119,6 +123,104 @@ final class JsonReader private[jsoniter_scala](
     val len = parseString()
     readColonToken()
     new String(charBuf, 0, len)
+  }
+
+  def readKeyAsDuration(): Duration = {
+    readParenthesesToken()
+    val x = parseDuration()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsInstant(): Instant = {
+    readParenthesesToken()
+    val x = parseInstant()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsLocalDate(): LocalDate = {
+    readParenthesesToken()
+    val x = parseLocalDate()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsLocalDateTime(): LocalDateTime = {
+    readParenthesesToken()
+    val x = parseLocalDateTime()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsLocalTime(): LocalTime = {
+    readParenthesesToken()
+    val x = parseLocalTime()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsMonthDay(): MonthDay = {
+    readParenthesesToken()
+    val x = parseMonthDay()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsOffsetDateTime(): OffsetDateTime = {
+    readParenthesesToken()
+    val x = parseOffsetDateTime()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsOffsetTime(): OffsetTime = {
+    readParenthesesToken()
+    val x = parseOffsetTime()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsPeriod(): Period = {
+    readParenthesesToken()
+    val x = parsePeriod()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsYear(): Year = {
+    readParenthesesToken()
+    val x = parseYear()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsYearMonth(): YearMonth = {
+    readParenthesesToken()
+    val x = parseYearMonth()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsZonedDateTime(): ZonedDateTime = {
+    readParenthesesToken()
+    val x = parseZonedDateTime()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsZoneId(): ZoneId = {
+    readParenthesesToken()
+    val x = parseZoneId()
+    readColonToken()
+    x
+  }
+
+  def readKeyAsZoneOffset(): ZoneOffset = {
+    readParenthesesToken()
+    val x = parseZoneOffset()
+    readColonToken()
+    x
   }
 
   def readKeyAsBoolean(): Boolean = {
@@ -226,6 +328,62 @@ final class JsonReader private[jsoniter_scala](
       val len = parseString()
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
+
+  def readDuration(default: Duration = null): Duration =
+    if (isNextToken('"', head)) parseDuration()
+    else readNullOrTokenError(default, '"')
+
+  def readInstant(default: Instant = null): Instant =
+    if (isNextToken('"', head)) parseInstant()
+    else readNullOrTokenError(default, '"')
+
+  def readLocalDate(default: LocalDate = null): LocalDate =
+    if (isNextToken('"', head)) parseLocalDate()
+    else readNullOrTokenError(default, '"')
+
+  def readLocalDateTime(default: LocalDateTime = null): LocalDateTime =
+    if (isNextToken('"', head)) parseLocalDateTime()
+    else readNullOrTokenError(default, '"')
+
+  def readLocalTime(default: LocalTime = null): LocalTime =
+    if (isNextToken('"', head)) parseLocalTime()
+    else readNullOrTokenError(default, '"')
+
+  def readMonthDay(default: MonthDay = null): MonthDay =
+    if (isNextToken('"', head)) parseMonthDay()
+    else readNullOrTokenError(default, '"')
+
+  def readOffsetDateTime(default: OffsetDateTime = null): OffsetDateTime =
+    if (isNextToken('"', head)) parseOffsetDateTime()
+    else readNullOrTokenError(default, '"')
+
+  def readOffsetTime(default: OffsetTime = null): OffsetTime =
+    if (isNextToken('"', head)) parseOffsetTime()
+    else readNullOrTokenError(default, '"')
+
+  def readPeriod(default: Period = null): Period =
+    if (isNextToken('"', head)) parsePeriod()
+    else readNullOrTokenError(default, '"')
+
+  def readYear(default: Year = null): Year =
+    if (isNextToken('"', head)) parseYear()
+    else readNullOrTokenError(default, '"')
+
+  def readYearMonth(default: YearMonth = null): YearMonth =
+    if (isNextToken('"', head)) parseYearMonth()
+    else readNullOrTokenError(default, '"')
+
+  def readZonedDateTime(default: ZonedDateTime = null): ZonedDateTime =
+    if (isNextToken('"', head)) parseZonedDateTime()
+    else readNullOrTokenError(default, '"')
+
+  def readZoneId(default: ZoneId = null): ZoneId =
+    if (isNextToken('"', head)) parseZoneId()
+    else readNullOrTokenError(default, '"')
+
+  def readZoneOffset(default: ZoneOffset = null): ZoneOffset =
+    if (isNextToken('"', head)) parseZoneOffset()
+    else readNullOrTokenError(default, '"')
 
   def readUUID(default: UUID = null): UUID =
     if (isNextToken('"', head)) parseUUID(head)
@@ -1047,6 +1205,89 @@ final class JsonReader private[jsoniter_scala](
 
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
+  private def dateTimeError(ex: DateTimeParseException): Nothing = decodeError("illegal date/time", head - 1, ex)
+
+  private def parseDuration(): Duration =
+    try Duration.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseInstant(): Instant =
+    try Instant.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseLocalDate(): LocalDate =
+    try LocalDate.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseLocalDateTime(): LocalDateTime =
+    try LocalDateTime.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseLocalTime(): LocalTime =
+    try LocalTime.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseMonthDay(): MonthDay =
+    try MonthDay.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseOffsetDateTime(): OffsetDateTime =
+    try OffsetDateTime.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseOffsetTime(): OffsetTime =
+    try OffsetTime.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parsePeriod(): Period =
+    try Period.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseYear(): Year =
+    try Year.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseYearMonth(): YearMonth =
+    try YearMonth.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseZonedDateTime(): ZonedDateTime =
+    try ZonedDateTime.parse(charSequence(parseString())) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+
+  private def parseZoneId(): ZoneId = {
+    val len = parseString()
+    try ZoneId.of(new String(charBuf, 0, len)) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+  }
+
+  private def parseZoneOffset(): ZoneOffset = {
+    val len = parseString()
+    try ZoneOffset.of(new String(charBuf, 0, len)) catch {
+      case ex: DateTimeParseException => dateTimeError(ex)
+    }
+  }
+
+  private def charSequence(len: Int): CharSequence = {
+    val cbs = charBufSeq
+    cbs.charBuf = charBuf
+    cbs.len = len
+    cbs
+  }
+
   private def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
       val mostSigBits1: Int =
@@ -1613,4 +1854,19 @@ object JsonReader {
     }
     h
   }
+}
+
+private class CharBufferSequence extends CharSequence {
+  var charBuf: Array[Char] = _
+  var len: Int = _
+
+  override def length(): Int = len
+
+  override def subSequence(start: Int, end: Int): CharSequence =
+    if (end > len) throw new IndexOutOfBoundsException
+    else new String(charBuf, start, end - start)
+
+  override def charAt(index: Int): Char =
+    if (index < len) charBuf(index)
+    else throw new IndexOutOfBoundsException
 }

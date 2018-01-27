@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.lang.Character._
-import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, JsonReader, JsonWriter}
 
@@ -152,10 +151,24 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
         else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
-        else if (tpe =:= typeOf[UUID]) q"in.readKeyAsUUID()"
         else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt()"
         else if (tpe =:= typeOf[BigDecimal]) q"in.readKeyAsBigDecimal()"
+        else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
+        else if (tpe =:= typeOf[java.time.Duration]) q"in.readKeyAsDuration()"
+        else if (tpe =:= typeOf[java.time.Instant]) q"in.readKeyAsInstant()"
+        else if (tpe =:= typeOf[java.time.LocalDate]) q"in.readKeyAsLocalDate()"
+        else if (tpe =:= typeOf[java.time.LocalDateTime]) q"in.readKeyAsLocalDateTime()"
+        else if (tpe =:= typeOf[java.time.LocalTime]) q"in.readKeyAsLocalTime()"
+        else if (tpe =:= typeOf[java.time.MonthDay]) q"in.readKeyAsMonthDay()"
+        else if (tpe =:= typeOf[java.time.OffsetDateTime]) q"in.readKeyAsOffsetDateTime()"
+        else if (tpe =:= typeOf[java.time.OffsetTime]) q"in.readKeyAsOffsetTime()"
+        else if (tpe =:= typeOf[java.time.Period]) q"in.readKeyAsPeriod()"
+        else if (tpe =:= typeOf[java.time.Year]) q"in.readKeyAsYear()"
+        else if (tpe =:= typeOf[java.time.YearMonth]) q"in.readKeyAsYearMonth()"
+        else if (tpe =:= typeOf[java.time.ZonedDateTime]) q"in.readKeyAsZonedDateTime()"
+        else if (tpe =:= typeOf[java.time.ZoneId]) q"in.readKeyAsZoneId()"
+        else if (tpe =:= typeOf[java.time.ZoneOffset]) q"in.readKeyAsZoneOffset()"
         else if (tpe <:< typeOf[Enumeration#Value]) q"${enumSymbol(tpe)}.withName(in.readKeyAsString())"
         else fail(s"Unsupported type to be used as map key '$tpe'.")
 
@@ -401,7 +414,21 @@ object JsonCodecMaker {
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
           if (isStringified) q"in.readStringAsDouble()" else q"in.readDouble()"
         } else if (tpe =:= typeOf[String]) q"in.readString($default)"
-        else if (tpe =:= typeOf[UUID]) q"in.readUUID($default)"
+        else if (tpe =:= typeOf[java.util.UUID]) q"in.readUUID($default)"
+        else if (tpe =:= typeOf[java.time.Duration]) q"in.readDuration($default)"
+        else if (tpe =:= typeOf[java.time.Instant]) q"in.readInstant($default)"
+        else if (tpe =:= typeOf[java.time.LocalDate]) q"in.readLocalDate($default)"
+        else if (tpe =:= typeOf[java.time.LocalDateTime]) q"in.readLocalDateTime($default)"
+        else if (tpe =:= typeOf[java.time.LocalTime]) q"in.readLocalTime($default)"
+        else if (tpe =:= typeOf[java.time.MonthDay]) q"in.readMonthDay($default)"
+        else if (tpe =:= typeOf[java.time.OffsetDateTime]) q"in.readOffsetDateTime($default)"
+        else if (tpe =:= typeOf[java.time.OffsetTime]) q"in.readOffsetTime($default)"
+        else if (tpe =:= typeOf[java.time.Period]) q"in.readPeriod($default)"
+        else if (tpe =:= typeOf[java.time.Year]) q"in.readYear($default)"
+        else if (tpe =:= typeOf[java.time.YearMonth]) q"in.readYearMonth($default)"
+        else if (tpe =:= typeOf[java.time.ZonedDateTime]) q"in.readZonedDateTime($default)"
+        else if (tpe =:= typeOf[java.time.ZoneId]) q"in.readZoneId($default)"
+        else if (tpe =:= typeOf[java.time.ZoneOffset]) q"in.readZoneOffset($default)"
         else if (tpe =:= typeOf[BigInt]) {
           if (isStringified) q"in.readStringAsBigInt($default)" else q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
@@ -627,7 +654,14 @@ object JsonCodecMaker {
           tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           if (isStringified) q"out.writeValAsString($m)" else q"out.writeVal($m)"
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
-          tpe =:= typeOf[UUID] || tpe =:= typeOf[String]) {
+          tpe =:= typeOf[String] || tpe =:= typeOf[java.util.UUID] ||
+          tpe =:= typeOf[java.time.Duration] || tpe =:= typeOf[java.time.Instant] ||
+          tpe =:= typeOf[java.time.LocalDate] || tpe =:= typeOf[java.time.LocalDateTime] ||
+          tpe =:= typeOf[java.time.LocalTime] || tpe =:= typeOf[java.time.MonthDay] ||
+          tpe =:= typeOf[java.time.OffsetDateTime] || tpe =:= typeOf[java.time.OffsetTime] ||
+          tpe =:= typeOf[java.time.Period] || tpe =:= typeOf[java.time.Year] ||
+          tpe =:= typeOf[java.time.YearMonth] || tpe =:= typeOf[java.time.ZonedDateTime] ||
+          tpe =:= typeOf[java.time.ZoneId] || tpe =:= typeOf[java.time.ZoneOffset]) {
           q"out.writeVal($m)"
         } else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe), isStringified)

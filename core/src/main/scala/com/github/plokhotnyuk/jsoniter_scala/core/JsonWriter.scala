@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
+import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
@@ -99,35 +100,133 @@ final class JsonWriter private[jsoniter_scala](
       writeCommaWithParentheses()
       writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
       writeParenthesesWithColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeKey(x: BigDecimal): Unit =
     if (x ne null) {
       writeCommaWithParentheses()
       writeNonEscapedAsciiStringWithoutParentheses(x.toString)
       writeParenthesesWithColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeKey(x: UUID): Unit =
     if (x ne null) {
       writeComma()
       writeUUID(x)
       writeColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeKey(x: String): Unit =
     if (x ne null) {
       writeComma()
       writeString(x)
       writeColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeNonEscapedAsciiKey(x: String): Unit =
     if (x ne null) {
       writeComma()
       writeNonEscapedAsciiString(x)
       writeColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
+
+  def writeKey(x: Duration): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: Instant): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: LocalDate): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: LocalDateTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: LocalTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: MonthDay): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: OffsetDateTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: OffsetTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: Period): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: Year): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: YearMonth): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: ZonedDateTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: ZoneId): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: ZoneOffset): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
@@ -143,6 +242,34 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
 
   def writeNonEscapedAsciiVal(x: String): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x)
+
+  def writeVal(x: Duration): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: LocalDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: LocalTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: MonthDay): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: Period): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: ZoneOffset): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
   def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
 
@@ -215,6 +342,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeObjectStart(): Unit = writeNestedStart('{')
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
+
+  private def nullKeyError(): Nothing = throw new IOException("key cannot be null")
 
   private def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
     if ((out eq null) || (config eq null)) throw new NullPointerException
