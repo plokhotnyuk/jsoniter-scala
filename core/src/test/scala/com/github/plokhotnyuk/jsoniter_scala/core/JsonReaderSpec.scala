@@ -231,12 +231,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readKeyAsUUID(s.toUpperCase) shouldBe x
       }
 
-      check(new UUID(0, 0))
-/*
       forAll(minSuccessful(100000)) { (hi: Long, lo: Long) =>
         check(new UUID(hi, lo))
       }
-*/
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
