@@ -110,6 +110,24 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
   }
+  "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.Instant])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.Instant])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write Instant as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.Instant): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
+      }
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"

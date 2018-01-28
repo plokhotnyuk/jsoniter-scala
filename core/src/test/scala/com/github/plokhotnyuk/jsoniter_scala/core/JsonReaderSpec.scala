@@ -248,6 +248,76 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"00000000=0000-0000-0000-000000000000\"".getBytes, "expected '-', offset: 0x00000009")
     }
   }
+  "JsonReader.readKeyAsInstant" should {
+    "throw parsing exception for missing ':' in the end" in {
+      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"".getBytes).readKeyAsInstant())
+        .getMessage.contains("unexpected end of input, offset: 0x00000016"))
+      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"x".getBytes).readKeyAsInstant())
+        .getMessage.contains("expected ':', offset: 0x00000016"))
+    }
+  }
+  "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
+    "parse null value" in {
+      reader("null".getBytes).readInstant() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsInstant())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.Instant.parse("2008-01-20T07:24:33Z")
+      reader("null".getBytes).readInstant(default) shouldBe default
+    }
+    "parse Instant from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.Instant): Unit = {
+        val s = x.toString
+        readInstant(s) shouldBe x
+        readKeyAsInstant(s) shouldBe x
+      }
+
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken Instant string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readInstant()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsInstant()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z".getBytes, "unexpected end of input, offset: 0x00000015")
+      checkError("\"008-01-20T07:24:33Z\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20T07:24:33Z\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-20X07:24:33Z\"".getBytes, "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20T07-24:33Z\"".getBytes, "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:24-33Z\"".getBytes, "expected ':', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:33X\"".getBytes, "expected 'Z' or '.', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ".getBytes, "expected '\"', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.\"".getBytes, "expected 'Z' or digit, offset: 0x0000001")
+      checkError("\"2008-01-20T07:24:33.000\"".getBytes, "expected 'Z' or digit, offset: 0x00000018")
+      checkError("\"+1000000000-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
+      checkError("\"-1000000000-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
+      checkError("\"2008-00-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
+      checkError("\"2008-13-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
+      checkError("\"2008-01-00T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-02-30T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-03-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-04-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-05-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-06-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-07-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-08-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-09-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-10-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-11-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-12-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-20T24:24:33Z\"".getBytes, "illegal hour, offset: 0x00000015")
+      checkError("\"2008-01-20T07:60:33Z\"".getBytes, "illegal minute, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:60Z\"".getBytes, "illegal second, offset: 0x00000015")
+    }
+  }
   "JsonReader.readKeyAsString" should {
     "throw parsing exception for missing ':' in the end" in {
       assert(intercept[JsonParseException](reader("\"\"".getBytes).readKeyAsString())
@@ -1199,6 +1269,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     r.nextToken().toChar shouldBe ','
   }
 
+  def readInstant(s: String): java.time.Instant = readInstant(s.getBytes(UTF_8))
+
+  def readInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf)).readInstant()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1243,6 +1317,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     readBigDecimal(s.getBytes(UTF_8), default)
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = reader(buf).readBigDecimal(default)
+
+  def readKeyAsInstant(s: String): java.time.Instant = readKeyAsInstant(s.getBytes(UTF_8))
+
+  def readKeyAsInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 

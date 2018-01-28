@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 import java.io.InputStream
 import java.math.BigInteger
 import java.time._
+import java.time.chrono.IsoChronology
 import java.time.format.DateTimeParseException
 import java.util.UUID
 
@@ -541,6 +542,22 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
+  }
+
+  private def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
+    var i = appendString("expected '", 0)
+    i = appendChar(b.toChar, i)
+    i = appendString("' or digit", i)
+    decodeError(i, pos, null)
+  }
+
+  private def tokensError(b1: Byte, b2: Byte, pos: Int): Nothing = {
+    var i = appendString("expected '", 0)
+    i = appendChar(b1.toChar, i)
+    i = appendString("' or '", i)
+    i = appendChar(b2.toChar, i)
+    i = appendChar('\'', i)
+    decodeError(i, pos, null)
   }
 
   private def tokenOrNullError(b: Byte, pos: Int = head - 1): Nothing = {
@@ -1205,81 +1222,237 @@ final class JsonReader private[jsoniter_scala](
 
   private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
-  private def dateTimeError(ex: DateTimeParseException): Nothing = decodeError("illegal date/time", head - 1, ex)
-
   private def parseDuration(): Duration =
     try Duration.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
-  private def parseInstant(): Instant =
-    try Instant.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
-    }
+  private def parseInstant(): Instant = {
+    var posYear = 0
+    var yearNeg = false
+    var yearDigits = 0
+    var yearMinDigits = 4
+    var month = 0
+    var day = 0
+    var hour = 0
+    var minute = 0
+    var second = 0
+    var nano = 0
+    var nanoDigits = 0
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // '-' or '+' or year digits
+          if (b >= '0' && b <= '9') {
+            posYear = b - '0'
+            yearDigits = 1
+            state = 1
+          } else if (b == '-') {
+            yearNeg = true
+            state = 1
+          } else if (b == '+') {
+            yearMinDigits = 5
+            state = 1
+          } else decodeError("expected '-' or '+' or digit", pos)
+        case 1 => // year digit
+          if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == yearMinDigits) state = 2
+          } else digitError(pos)
+        case 2 => // '-' or year digit
+          if (b == '-') state = 4
+          else if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == 10) state = 3
+          } else tokenOrDigitError('-', pos)
+        case 3 => // '-'
+          if (b == '-') state = 4
+          else tokenError('-', pos)
+        case 4 => // month (1st digit)
+          if (b >= '0' && b <= '9') {
+            month = b - '0'
+            state = 5
+          } else digitError(pos)
+        case 5 => // month (2nd digit)
+          if (b >= '0' && b <= '9') {
+            month = month * 10 + (b - '0')
+            state = 6
+          } else digitError(pos)
+        case 6 => // '-'
+          if (b == '-') state = 7
+          else tokenError('-', pos)
+        case 7 => // day (1st digit)
+          if (b >= '0' && b <= '9') {
+            day = b - '0'
+            state = 8
+          } else digitError(pos)
+        case 8 => // day (2nd digit)
+          if (b >= '0' && b <= '9') {
+            day = day * 10 + (b - '0')
+            state = 9
+          } else digitError(pos)
+        case 9 => // 'T'
+          if (b == 'T') state = 10
+          else tokenError('T', pos)
+        case 10 => // hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            hour = b - '0'
+            state = 11
+          } else digitError(pos)
+        case 11 => // hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            hour = hour * 10 + (b - '0')
+            state = 12
+          } else digitError(pos)
+        case 12 => // colon
+          if (b == ':') state = 13
+          else tokenError(':', pos)
+        case 13 => // minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            minute = b - '0'
+            state = 14
+          } else digitError(pos)
+        case 14 => // minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            minute = minute * 10 + (b - '0')
+            state = 15
+          } else digitError(pos)
+        case 15 => // colon
+          if (b == ':') state = 16
+          else tokenError(':', pos)
+        case 16 => // second (1st digit)
+          if (b >= '0' && b <= '9') {
+            second = b - '0'
+            state = 17
+          } else digitError(pos)
+        case 17 => // second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            second = second * 10 + (b - '0')
+            state = 18
+          } else digitError(pos)
+        case 18 => // 'Z' or '.'
+          if (b == 'Z') state = 21
+          else if (b == '.') state = 19
+          else tokensError('Z', '.', pos)
+        case 19 => // nano
+          if (b >= '0' && b <= '9') {
+            nanoDigits += 1
+            nano += nanoMultiplier(nanoDigits) * (b - '0')
+            if (nanoDigits == 9) state = 20
+          } else if (b == 'Z') state = 21
+          else tokenOrDigitError('Z', pos)
+        case 20 => // 'Z'
+          if (b == 'Z') state = 21
+          else tokenError('Z', pos)
+        case 21 => // '"'
+          if (b == '"') state = 22
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 22)
+    head = pos
+    val year = if (yearNeg) -posYear else posYear
+    checkLocalDate(year, month, day)
+    checkLocalTime(hour, minute, second)
+    LocalDateTime.of(year, month, day, hour, minute, second, nano).toInstant(ZoneOffset.UTC)
+  }
 
   private def parseLocalDate(): LocalDate =
     try LocalDate.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseLocalDateTime(): LocalDateTime =
     try LocalDateTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseLocalTime(): LocalTime =
     try LocalTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseMonthDay(): MonthDay =
     try MonthDay.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseOffsetDateTime(): OffsetDateTime =
     try OffsetDateTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseOffsetTime(): OffsetTime =
     try OffsetTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parsePeriod(): Period =
     try Period.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseYear(): Year =
     try Year.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseYearMonth(): YearMonth =
     try YearMonth.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseZonedDateTime(): ZonedDateTime =
     try ZonedDateTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
   private def parseZoneId(): ZoneId = {
     val len = parseString()
     try ZoneId.of(new String(charBuf, 0, len)) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
   }
 
   private def parseZoneOffset(): ZoneOffset = {
     val len = parseString()
     try ZoneOffset.of(new String(charBuf, 0, len)) catch {
-      case ex: DateTimeParseException => dateTimeError(ex)
+      case ex: DateTimeParseException => dateTimeParseError(ex)
     }
   }
+
+  private def checkLocalDate(year: Int, month: Int, day: Int): Unit = {
+    if (year < Year.MIN_VALUE || year > Year.MAX_VALUE) decodeError("illegal year")
+    if (month < 1 || month > 12) decodeError("illegal month")
+    if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
+  }
+
+  private def checkLocalTime(hour: Int, minute: Int, second: Int): Unit = {
+    if (hour > 23) decodeError("illegal hour")
+    if (minute > 59) decodeError("illegal minute")
+    if (second > 59) decodeError("illegal second")
+  }
+
+  private def maxDayForYearMonth(year: Int, month: Int): Int =
+    (month: @switch) match {
+      case 1 => 31
+      case 2 => if (IsoChronology.INSTANCE.isLeapYear(year)) 29 else 28
+      case 3 => 31
+      case 4 => 30
+      case 5 => 31
+      case 6 => 30
+      case 7 => 31
+      case 8 => 31
+      case 9 => 30
+      case 10 => 31
+      case 11 => 30
+      case 12 => 31
+    }
 
   private def charSequence(len: Int): CharSequence = {
     val cbs = charBufSeq
@@ -1287,6 +1460,10 @@ final class JsonReader private[jsoniter_scala](
     cbs.len = len
     cbs
   }
+
+  private def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
+
+  private def dateTimeParseError(ex: DateTimeParseException): Nothing = decodeError("illegal date/time", head - 1, ex)
 
   private def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
@@ -1740,17 +1917,19 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
+  private final val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
     override def initialValue(): JsonReader = new JsonReader
   }
-  private val defaultConfig = new ReaderConfig
-  private val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double
+  private final val defaultConfig = new ReaderConfig
+  private final val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
-  private val dumpHeader =
+  private final val nanoMultiplier: Array[Int] =
+    Array(1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
+  private final val dumpHeader =
     "\n           +-------------------------------------------------+" +
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
-  private val dumpBorder =
+  private final val dumpBorder =
     "\n+----------+-------------------------------------------------+------------------+"
 
   /**

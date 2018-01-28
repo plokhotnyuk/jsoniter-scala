@@ -140,7 +140,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: Instant): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeInstant(x)
       writeColon()
     } else nullKeyError()
 
@@ -245,7 +245,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Duration): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
-  def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeInstant(x)
 
   def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -780,6 +780,88 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
+  private def writeInstant(x: Instant): Unit = count = {
+    var pos = ensureBufferCapacity(39)
+    val buf = this.buf
+    pos = writeByte('"', pos, buf)
+    val ds = digits
+    val dt = LocalDateTime.ofInstant(x, ZoneOffset.UTC)
+    pos = writeLocalDate(dt.toLocalDate, pos, buf, ds)
+    pos = writeByte('T', pos, buf)
+    pos = writeLocalTime(dt.toLocalTime, pos, buf, ds)
+    pos = writeByte('Z', pos, buf)
+    writeByte('"', pos, buf)
+  }
+
+  private def writeLocalDate(d: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = p
+    val year = d.getYear
+    val posYear =
+      if (year >= 0) {
+        if (year >= 10000) pos = writeByte('+', pos, buf)
+        year
+      } else {
+        pos = writeByte('-', pos, buf)
+        -year
+      }
+    if (posYear >= 10000) {
+      val off = offset(posYear)
+      pos = writeIntFirst(posYear, pos + off, buf, ds) + off
+    } else pos = write4Digits(posYear, pos, buf, ds)
+    pos = writeByte('-', pos, buf)
+    pos = write2Digits(d.getMonthValue, pos, buf, ds)
+    pos = writeByte('-', pos, buf)
+    write2Digits(d.getDayOfMonth, pos, buf, ds)
+  }
+
+  private def writeLocalTime(t: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = p
+    pos = write2Digits(t.getHour, pos, buf, ds)
+    pos = writeByte(':', pos, buf)
+    pos = write2Digits(t.getMinute, pos, buf, ds)
+    pos = writeByte(':', pos, buf)
+    pos = write2Digits(t.getSecond, pos, buf, ds)
+    val nano = t.getNano
+    if (nano > 0) {
+      pos = writeByte('.', pos, buf)
+      val q1 = nano / 1000000
+      pos = write3Digits(q1, pos, buf, ds)
+      val r1 = nano - q1 * 1000000
+      if (r1 > 0) {
+        val q2 = r1 / 1000
+        pos = write3Digits(q2, pos, buf, ds)
+        val r2 = r1 - q2 * 1000
+        if (r2 > 0) pos = write3Digits(r2, pos, buf, ds)
+      }
+    }
+    pos
+  }
+
+  private def writeByte(b: Byte, pos: Int, buf: Array[Byte]): Int = {
+    buf(pos) = b
+    pos + 1
+  }
+
+  private def write2Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val d = ds(x)
+    buf(pos) = (d >> 8).toByte
+    buf(pos + 1) = d.toByte
+    pos + 2
+  }
+
+  private def write3Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = (x * 1374389535L >> 37).toInt // divide int by 100
+    val r1 = x - 100 * q1
+    buf(pos) = (q1 + '0').toByte
+    write2Digits(r1, pos + 1, buf, ds)
+  }
+
+  private def write4Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = (x * 1374389535L >> 37).toInt // divide int by 100
+    val r1 = x - 100 * q1
+    write2Digits(r1, write2Digits(q1, pos, buf, ds), buf, ds)
+  }
+
   private def writeShort(x: Short): Unit = count = {
     var pos = ensureBufferCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
@@ -947,11 +1029,11 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
+  private final val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = new JsonWriter
   }
-  private val defaultConfig = new WriterConfig
-  private val escapedChars: Array[Byte] = (0 to 127).map { b =>
+  private final val defaultConfig = new WriterConfig
+  private final val escapedChars: Array[Byte] = (0 to 127).map { b =>
     ((b: @switch) match {
       case '\n' => 'n'
       case '\r' => 'r'
@@ -964,9 +1046,10 @@ object JsonWriter {
       case _ => 0 // non-escaped chars
     }).toByte
   }(breakOut)
-  private val digits: Array[Short] = (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
-  private val minIntBytes: Array[Byte] = "-2147483648".getBytes
-  private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
+  private final val digits: Array[Short] =
+    (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
+  private final val minIntBytes: Array[Byte] = "-2147483648".getBytes
+  private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
 
