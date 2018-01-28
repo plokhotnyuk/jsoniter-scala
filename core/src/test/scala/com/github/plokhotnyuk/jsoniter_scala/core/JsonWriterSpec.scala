@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.time.ZoneOffset
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
@@ -138,7 +139,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalDate])))
         .getMessage.contains("key cannot be null"))
     }
-    "write Instant as a string representation according to ISO-8601 format" in {
+    "write LocalDate as a string representation according to ISO-8601 format" in {
       def check(x: java.time.LocalDate): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
@@ -150,6 +151,27 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(java.time.LocalDate.now())
       forAll(minSuccessful(100000)) { (day: Int) =>
         check(java.time.LocalDate.ofEpochDay(day / 1000))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalDateTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalDateTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write LocalDateTime as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalDateTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.LocalDateTime.MAX)
+      check(java.time.LocalDateTime.MIN)
+      check(java.time.LocalDateTime.now())
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), ZoneOffset.UTC))
       }
     }
   }

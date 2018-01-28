@@ -154,7 +154,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: LocalDateTime): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeLocalDateTime(x)
       writeColon()
     } else nullKeyError()
 
@@ -249,7 +249,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeLocalDate(x)
 
-  def writeVal(x: LocalDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: LocalDateTime): Unit = if (x eq null) writeNull() else writeLocalDateTime(x)
 
   def writeVal(x: LocalTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -788,7 +788,7 @@ final class JsonWriter private[jsoniter_scala](
     val ds = digits
     pos = writeLocalDate(dt.toLocalDate, pos + 1, buf, ds)
     buf(pos) = 'T'
-    pos = writeLocalTime(dt.toLocalTime, pos + 1, buf, ds)
+    pos = writeLocalTime(dt.toLocalTime, pos + 1, buf, ds, full = true)
     buf(pos) = 'Z'
     buf(pos + 1) = '"'
     pos + 2
@@ -799,6 +799,18 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos = writeLocalDate(x, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeLocalDateTime(x: LocalDateTime): Unit = count = {
+    var pos = ensureBufferCapacity(37) // 37 == java.time.LocalDateTime.MAX.toString.length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    val ds = digits
+    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
   }
@@ -828,23 +840,26 @@ final class JsonWriter private[jsoniter_scala](
     write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
   }
 
-  private def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+  private def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short], full: Boolean = false): Int = {
     var pos = write2Digits(x.getHour, p, buf, ds)
     buf(pos) = ':'
     pos = write2Digits(x.getMinute, pos + 1, buf, ds)
-    buf(pos) = ':'
-    pos = write2Digits(x.getSecond, pos + 1, buf, ds)
+    val second = x.getSecond
     val nano = x.getNano
-    if (nano > 0) {
-      buf(pos) = '.'
-      val q1 = nano / 1000000
-      pos = write3Digits(q1, pos + 1, buf, ds)
-      val r1 = nano - q1 * 1000000
-      if (r1 > 0) {
-        val q2 = r1 / 1000
-        pos = write3Digits(q2, pos, buf, ds)
-        val r2 = r1 - q2 * 1000
-        if (r2 > 0) pos = write3Digits(r2, pos, buf, ds)
+    if (full || second != 0 || nano != 0) {
+      buf(pos) = ':'
+      pos = write2Digits(x.getSecond, pos + 1, buf, ds)
+      if (nano > 0) {
+        buf(pos) = '.'
+        val q1 = nano / 1000000
+        pos = write3Digits(q1, pos + 1, buf, ds)
+        val r1 = nano - q1 * 1000000
+        if (r1 > 0) {
+          val q2 = r1 / 1000
+          pos = write3Digits(q2, pos, buf, ds)
+          val r2 = r1 - q2 * 1000
+          if (r2 > 0) pos = write3Digits(r2, pos, buf, ds)
+        }
       }
     }
     pos
