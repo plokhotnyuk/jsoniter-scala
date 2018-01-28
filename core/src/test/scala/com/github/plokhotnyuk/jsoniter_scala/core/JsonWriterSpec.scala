@@ -175,6 +175,27 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
   }
+  "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write LocalTime as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.LocalTime.MAX)
+      check(java.time.LocalTime.MIN)
+      check(java.time.LocalTime.now())
+      forAll(minSuccessful(100000)) { (nano: Int) =>
+        check(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)))
+      }
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"

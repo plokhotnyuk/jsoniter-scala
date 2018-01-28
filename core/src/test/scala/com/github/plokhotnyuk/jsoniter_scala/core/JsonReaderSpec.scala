@@ -361,6 +361,21 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01=20\"".getBytes, "expected '-', offset: 0x00000008")
       checkError("\"+1000000000-01-20\"".getBytes, "expected '-', offset: 0x0000000b")
       checkError("\"-1000000000-01-20\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"2008-00-20\"".getBytes, "illegal month, offset: 0x0000000b")
+      checkError("\"2008-13-20\"".getBytes, "illegal month, offset: 0x0000000b")
+      checkError("\"2008-01-00\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-01-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-02-30\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-03-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-04-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-05-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-06-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-07-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-08-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-09-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-10-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-11-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-12-32\"".getBytes, "illegal day, offset: 0x0000000b")
     }
   }
   "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
@@ -423,6 +438,48 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T24:24:33\"".getBytes, "illegal hour, offset: 0x00000014")
       checkError("\"2008-01-20T07:60:33\"".getBytes, "illegal minute, offset: 0x00000014")
       checkError("\"2008-01-20T07:24:60\"".getBytes, "illegal second, offset: 0x00000014")
+    }
+  }
+  "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
+    "parse null value" in {
+      reader("null".getBytes).readLocalTime() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalTime())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.LocalTime.parse("07:24:33")
+      reader("null".getBytes).readLocalTime(default) shouldBe default
+    }
+    "parse LocalTime from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalTime): Unit = {
+        val s = x.toString
+        readLocalTime(s) shouldBe x
+        readKeyAsLocalTime(s) shouldBe x
+      }
+
+      check(java.time.LocalTime.MAX)
+      check(java.time.LocalTime.MIN)
+      check(java.time.LocalTime.now)
+      forAll(minSuccessful(100000)) { (nano: Int) =>
+        check(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readLocalTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalTime()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected digit, offset: 0x00000001")
+      checkError("\"07:24:33".getBytes, "unexpected end of input, offset: 0x00000009")
+      checkError("\"7:24:33\"".getBytes, "expected digit, offset: 0x00000002")
+      checkError("\"07-24:33\"".getBytes, "expected ':', offset: 0x00000003")
+      checkError("\"07:24-33\"".getBytes, "expected ':' or '\"', offset: 0x00000006")
+      checkError("\"07:24:33Z\"".getBytes, "expected '.' or '\"', offset: 0x00000009")
+      checkError("\"24:24:33\"".getBytes, "illegal hour, offset: 0x00000009")
+      checkError("\"07:60:33\"".getBytes, "illegal minute, offset: 0x00000009")
+      checkError("\"07:24:60\"".getBytes, "illegal second, offset: 0x00000009")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1388,6 +1445,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readLocalDateTime(buf: Array[Byte]): java.time.LocalDateTime = reader(stringify(buf)).readLocalDateTime()
 
+  def readLocalTime(s: String): java.time.LocalTime = readLocalTime(s.getBytes(UTF_8))
+
+  def readLocalTime(buf: Array[Byte]): java.time.LocalTime = reader(stringify(buf)).readLocalTime()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1446,6 +1507,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsLocalDateTime(buf: Array[Byte]): java.time.LocalDateTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDateTime()
+
+  def readKeyAsLocalTime(s: String): java.time.LocalTime = readKeyAsLocalTime(s.getBytes(UTF_8))
+
+  def readKeyAsLocalTime(buf: Array[Byte]): java.time.LocalTime =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalTime()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 

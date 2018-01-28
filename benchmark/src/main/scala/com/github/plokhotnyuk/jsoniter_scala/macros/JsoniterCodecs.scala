@@ -19,6 +19,7 @@ object JsoniterCodecs {
   val floatArrayCodec: JsonCodec[Array[Float]] = make[Array[Float]](CodecMakerConfig())
   val instantArrayCodec: JsonCodec[Array[java.time.Instant]] = make[Array[java.time.Instant]](CodecMakerConfig())
   val localDateArrayCodec: JsonCodec[Array[java.time.LocalDate]] = make[Array[java.time.LocalDate]](CodecMakerConfig())
+  val localTimeArrayCodec: JsonCodec[Array[java.time.LocalTime]] = make[Array[java.time.LocalTime]](CodecMakerConfig())
   val intArrayCodec: JsonCodec[Array[Int]] = make[Array[Int]](CodecMakerConfig())
   val shortArrayCodec: JsonCodec[Array[Short]] = make[Array[Short]](CodecMakerConfig())
   val longArrayCodec: JsonCodec[Array[Long]] = make[Array[Long]](CodecMakerConfig())

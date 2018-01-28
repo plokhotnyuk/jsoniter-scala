@@ -1577,10 +1577,78 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def parseLocalTime(): LocalTime =
-    try LocalTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+  private def parseLocalTime(): LocalTime = {
+    var hour = 0
+    var minute = 0
+    var second = 0
+    var nano = 0
+    var nanoDigits = 0
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            hour = b - '0'
+            state = 1
+          } else digitError(pos)
+        case 1 => // hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            hour = hour * 10 + (b - '0')
+            state = 2
+          } else digitError(pos)
+        case 2 => // ':'
+          if (b == ':') state = 3
+          else tokenError(':', pos)
+        case 3 => // minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            minute = b - '0'
+            state = 4
+          } else digitError(pos)
+        case 4 => // minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            minute = minute * 10 + (b - '0')
+            state = 5
+          } else digitError(pos)
+        case 5 => // ':' or '"'
+          if (b == ':') state = 6
+          else if (b == '"') state = 11
+          else tokensError(':', '"', pos)
+        case 6 => // second (1st digit)
+          if (b >= '0' && b <= '9') {
+            second = b - '0'
+            state = 7
+          } else digitError(pos)
+        case 7 => // second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            second = second * 10 + (b - '0')
+            state = 8
+          } else digitError(pos)
+        case 8 => // '"' or '.'
+          if (b == '.') state = 9
+          else if (b == '"') state = 11
+          else tokensError('.', '"', pos)
+        case 9 => // '"' or nano
+          if (b >= '0' && b <= '9') {
+            nanoDigits += 1
+            nano += nanoMultiplier(nanoDigits) * (b - '0')
+            if (nanoDigits == 9) state = 10
+          } else if (b == '"') state = 11
+          else tokenOrDigitError('"', pos)
+        case 10 => // '"'
+          if (b == '"') state = 11
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 11)
+    head = pos
+    checkLocalTime(hour, minute, second)
+    try LocalTime.of(hour, minute, second, nano) catch {
+      case ex: DateTimeException => dateTimeError(ex)
     }
+  }
 
   private def parseMonthDay(): MonthDay =
     try MonthDay.parse(charSequence(parseString())) catch {
