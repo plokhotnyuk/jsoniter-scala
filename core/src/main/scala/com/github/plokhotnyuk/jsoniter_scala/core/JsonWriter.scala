@@ -147,7 +147,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: LocalDate): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeLocalDate(x)
       writeColon()
     } else nullKeyError()
 
@@ -247,7 +247,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeInstant(x)
 
-  def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeLocalDate(x)
 
   def writeVal(x: LocalDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -781,51 +781,64 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeInstant(x: Instant): Unit = count = {
-    var pos = ensureBufferCapacity(39)
+    var pos = ensureBufferCapacity(39) // 39 == java.time.Instant.MAX.toString.length + 2
     val buf = this.buf
-    pos = writeByte('"', pos, buf)
-    val ds = digits
+    buf(pos) = '"'
     val dt = LocalDateTime.ofInstant(x, ZoneOffset.UTC)
-    pos = writeLocalDate(dt.toLocalDate, pos, buf, ds)
-    pos = writeByte('T', pos, buf)
-    pos = writeLocalTime(dt.toLocalTime, pos, buf, ds)
-    pos = writeByte('Z', pos, buf)
-    writeByte('"', pos, buf)
+    val ds = digits
+    pos = writeLocalDate(dt.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeLocalTime(dt.toLocalTime, pos + 1, buf, ds)
+    buf(pos) = 'Z'
+    buf(pos + 1) = '"'
+    pos + 2
   }
 
-  private def writeLocalDate(d: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+  private def writeLocalDate(x: LocalDate): Unit = count = {
+    var pos = ensureBufferCapacity(18) // 18 == java.time.LocalDate.MAX.toString.length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    pos = writeLocalDate(x, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var pos = p
-    val year = d.getYear
+    val year = x.getYear
     val posYear =
       if (year >= 0) {
-        if (year >= 10000) pos = writeByte('+', pos, buf)
+        if (year >= 10000) {
+          buf(pos) = '+'
+          pos += 1
+        }
         year
       } else {
-        pos = writeByte('-', pos, buf)
+        buf(pos) = '-'
+        pos += 1
         -year
       }
     if (posYear >= 10000) {
       val off = offset(posYear)
       pos = writeIntFirst(posYear, pos + off, buf, ds) + off
     } else pos = write4Digits(posYear, pos, buf, ds)
-    pos = writeByte('-', pos, buf)
-    pos = write2Digits(d.getMonthValue, pos, buf, ds)
-    pos = writeByte('-', pos, buf)
-    write2Digits(d.getDayOfMonth, pos, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
+    buf(pos) = '-'
+    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
   }
 
-  private def writeLocalTime(t: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = p
-    pos = write2Digits(t.getHour, pos, buf, ds)
-    pos = writeByte(':', pos, buf)
-    pos = write2Digits(t.getMinute, pos, buf, ds)
-    pos = writeByte(':', pos, buf)
-    pos = write2Digits(t.getSecond, pos, buf, ds)
-    val nano = t.getNano
+  private def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = write2Digits(x.getHour, p, buf, ds)
+    buf(pos) = ':'
+    pos = write2Digits(x.getMinute, pos + 1, buf, ds)
+    buf(pos) = ':'
+    pos = write2Digits(x.getSecond, pos + 1, buf, ds)
+    val nano = x.getNano
     if (nano > 0) {
-      pos = writeByte('.', pos, buf)
+      buf(pos) = '.'
       val q1 = nano / 1000000
-      pos = write3Digits(q1, pos, buf, ds)
+      pos = write3Digits(q1, pos + 1, buf, ds)
       val r1 = nano - q1 * 1000000
       if (r1 > 0) {
         val q2 = r1 / 1000
@@ -835,11 +848,6 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     pos
-  }
-
-  private def writeByte(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    buf(pos) = b
-    pos + 1
   }
 
   private def write2Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {

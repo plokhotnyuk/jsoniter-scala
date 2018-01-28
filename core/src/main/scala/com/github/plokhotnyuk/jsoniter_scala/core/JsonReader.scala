@@ -1359,13 +1359,88 @@ final class JsonReader private[jsoniter_scala](
     val year = if (yearNeg) -posYear else posYear
     checkLocalDate(year, month, day)
     checkLocalTime(hour, minute, second)
-    LocalDateTime.of(year, month, day, hour, minute, second, nano).toInstant(ZoneOffset.UTC)
+    try LocalDateTime.of(year, month, day, hour, minute, second, nano).toInstant(ZoneOffset.UTC) catch {
+      case ex: DateTimeException => dateTimeError(ex)
+    }
   }
 
-  private def parseLocalDate(): LocalDate =
-    try LocalDate.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+  private def parseLocalDate(): LocalDate = {
+    var posYear = 0
+    var yearNeg = false
+    var yearDigits = 0
+    var yearMinDigits = 4
+    var month = 0
+    var day = 0
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // '-' or '+' or year digits
+          if (b >= '0' && b <= '9') {
+            posYear = b - '0'
+            yearDigits = 1
+            state = 1
+          } else if (b == '-') {
+            yearNeg = true
+            state = 1
+          } else if (b == '+') {
+            yearMinDigits = 5
+            state = 1
+          } else decodeError("expected '-' or '+' or digit", pos)
+        case 1 => // year digit
+          if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == yearMinDigits) state = 2
+          } else digitError(pos)
+        case 2 => // '-' or year digit
+          if (b == '-') state = 4
+          else if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == 9) state = 3
+          } else tokenOrDigitError('-', pos)
+        case 3 => // '-'
+          if (b == '-') state = 4
+          else tokenError('-', pos)
+        case 4 => // month (1st digit)
+          if (b >= '0' && b <= '9') {
+            month = b - '0'
+            state = 5
+          } else digitError(pos)
+        case 5 => // month (2nd digit)
+          if (b >= '0' && b <= '9') {
+            month = month * 10 + (b - '0')
+            state = 6
+          } else digitError(pos)
+        case 6 => // '-'
+          if (b == '-') state = 7
+          else tokenError('-', pos)
+        case 7 => // day (1st digit)
+          if (b >= '0' && b <= '9') {
+            day = b - '0'
+            state = 8
+          } else digitError(pos)
+        case 8 => // day (2nd digit)
+          if (b >= '0' && b <= '9') {
+            day = day * 10 + (b - '0')
+            state = 9
+          } else digitError(pos)
+        case 9 => // '"'
+          if (b == '"') state = 10
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 10)
+    head = pos
+    val year = if (yearNeg) -posYear else posYear
+    checkLocalDate(year, month, day)
+    try LocalDate.of(year, month, day) catch {
+      case ex: DateTimeException => dateTimeError(ex)
     }
+  }
 
   private def parseLocalDateTime(): LocalDateTime =
     try LocalDateTime.parse(charSequence(parseString())) catch {
@@ -1464,6 +1539,8 @@ final class JsonReader private[jsoniter_scala](
   private def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
   private def dateTimeParseError(ex: DateTimeParseException): Nothing = decodeError("illegal date/time", head - 1, ex)
+
+  private def dateTimeError(ex: DateTimeException): Nothing = decodeError("illegal date/time", head - 1, ex)
 
   private def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {

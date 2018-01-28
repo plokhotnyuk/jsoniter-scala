@@ -1,6 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.time.Instant
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig}
@@ -18,7 +17,8 @@ object JsoniterCodecs {
   val byteArrayCodec: JsonCodec[Array[Byte]] = make[Array[Byte]](CodecMakerConfig())
   val doubleArrayCodec: JsonCodec[Array[Double]] = make[Array[Double]](CodecMakerConfig())
   val floatArrayCodec: JsonCodec[Array[Float]] = make[Array[Float]](CodecMakerConfig())
-  val instantArrayCodec: JsonCodec[Array[Instant]] = make[Array[Instant]](CodecMakerConfig())
+  val instantArrayCodec: JsonCodec[Array[java.time.Instant]] = make[Array[java.time.Instant]](CodecMakerConfig())
+  val localDateArrayCodec: JsonCodec[Array[java.time.LocalDate]] = make[Array[java.time.LocalDate]](CodecMakerConfig())
   val intArrayCodec: JsonCodec[Array[Int]] = make[Array[Int]](CodecMakerConfig())
   val shortArrayCodec: JsonCodec[Array[Short]] = make[Array[Short]](CodecMakerConfig())
   val longArrayCodec: JsonCodec[Array[Long]] = make[Array[Long]](CodecMakerConfig())

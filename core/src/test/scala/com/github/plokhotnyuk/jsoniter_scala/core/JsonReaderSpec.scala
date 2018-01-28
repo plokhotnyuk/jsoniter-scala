@@ -273,6 +273,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readKeyAsInstant(s) shouldBe x
       }
 
+      //FIXME add efficient support of min & max values
+      //check(java.time.Instant.MAX)
+      //check(java.time.Instant.MIN)
+      check(java.time.Instant.now)
       forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
         check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
       }
@@ -316,6 +320,46 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T24:24:33Z\"".getBytes, "illegal hour, offset: 0x00000015")
       checkError("\"2008-01-20T07:60:33Z\"".getBytes, "illegal minute, offset: 0x00000015")
       checkError("\"2008-01-20T07:24:60Z\"".getBytes, "illegal second, offset: 0x00000015")
+    }
+  }
+  "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
+    "parse null value" in {
+      reader("null".getBytes).readLocalDate() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDate())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.LocalDate.parse("2008-01-20")
+      reader("null".getBytes).readLocalDate(default) shouldBe default
+    }
+    "parse Instant from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalDate): Unit = {
+        val s = x.toString
+        readLocalDate(s) shouldBe x
+        readKeyAsLocalDate(s) shouldBe x
+      }
+
+      check(java.time.LocalDate.MAX)
+      check(java.time.LocalDate.MIN)
+      check(java.time.LocalDate.now)
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        check(java.time.LocalDate.ofEpochDay(day / 1000))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken Instant string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readLocalDate()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDate()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20".getBytes, "unexpected end of input, offset: 0x0000000b")
+      checkError("\"008-01-20\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"+1000000000-01-20\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20\"".getBytes, "expected '-', offset: 0x0000000b")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1273,6 +1317,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf)).readInstant()
 
+  def readLocalDate(s: String): java.time.LocalDate = readLocalDate(s.getBytes(UTF_8))
+
+  def readLocalDate(buf: Array[Byte]): java.time.LocalDate = reader(stringify(buf)).readLocalDate()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1321,6 +1369,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readKeyAsInstant(s: String): java.time.Instant = readKeyAsInstant(s.getBytes(UTF_8))
 
   def readKeyAsInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
+
+  def readKeyAsLocalDate(s: String): java.time.LocalDate = readKeyAsLocalDate(s.getBytes(UTF_8))
+
+  def readKeyAsLocalDate(buf: Array[Byte]): java.time.LocalDate =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDate()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 
