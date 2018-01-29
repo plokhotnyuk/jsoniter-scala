@@ -1356,9 +1356,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 22)
     head = pos
-    val year = if (yearNeg) -posYear else posYear
-    checkLocalDate(year, month, day)
+    checkLocalDate(yearNeg, posYear, month, day)
     checkLocalTime(hour, minute, second)
+    val year = if (yearNeg) -posYear else posYear
     try LocalDateTime.of(year, month, day, hour, minute, second, nano).toInstant(ZoneOffset.UTC) catch {
       case ex: DateTimeException => dateTimeError(ex)
     }
@@ -1435,8 +1435,8 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 10)
     head = pos
+    checkLocalDate(yearNeg, posYear, month, day)
     val year = if (yearNeg) -posYear else posYear
-    checkLocalDate(year, month, day)
     try LocalDate.of(year, month, day) catch {
       case ex: DateTimeException => dateTimeError(ex)
     }
@@ -1569,9 +1569,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 21)
     head = pos
-    val year = if (yearNeg) -posYear else posYear
-    checkLocalDate(year, month, day)
+    checkLocalDate(yearNeg, posYear, month, day)
     checkLocalTime(hour, minute, second)
+    val year = if (yearNeg) -posYear else posYear
     try LocalDateTime.of(year, month, day, hour, minute, second, nano) catch {
       case ex: DateTimeException => dateTimeError(ex)
     }
@@ -1695,16 +1695,213 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 8)
     head = pos
-    checkLocalDate(2004, month, day)
+    checkLocalDate(false, 2004, month, day)
     try MonthDay.of(month, day) catch {
       case ex: DateTimeException => dateTimeError(ex)
     }
   }
 
-  private def parseOffsetDateTime(): OffsetDateTime =
-    try OffsetDateTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+  private def parseOffsetDateTime(): OffsetDateTime = {
+    var posYear = 0
+    var yearNeg = false
+    var yearDigits = 0
+    var yearMinDigits = 4
+    var month = 0
+    var day = 0
+    var hour = 0
+    var minute = 0
+    var second = 0
+    var nano = 0
+    var nanoDigits = 0
+    var offsetNeg = false
+    var posOffsetHour = 0
+    var offsetMinute = 0
+    var offsetSecond = 0
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // '-' or '+' or year digits
+          if (b >= '0' && b <= '9') {
+            posYear = b - '0'
+            yearDigits = 1
+            state = 1
+          } else if (b == '-') {
+            yearNeg = true
+            state = 1
+          } else if (b == '+') {
+            yearMinDigits = 5
+            state = 1
+          } else decodeError("expected '-' or '+' or digit", pos)
+        case 1 => // year digit
+          if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == yearMinDigits) state = 2
+          } else digitError(pos)
+        case 2 => // '-' or year digit
+          if (b == '-') state = 4
+          else if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == 9) state = 3
+          } else tokenOrDigitError('-', pos)
+        case 3 => // '-'
+          if (b == '-') state = 4
+          else tokenError('-', pos)
+        case 4 => // month (1st digit)
+          if (b >= '0' && b <= '9') {
+            month = b - '0'
+            state = 5
+          } else digitError(pos)
+        case 5 => // month (2nd digit)
+          if (b >= '0' && b <= '9') {
+            month = month * 10 + (b - '0')
+            state = 6
+          } else digitError(pos)
+        case 6 => // '-'
+          if (b == '-') state = 7
+          else tokenError('-', pos)
+        case 7 => // day (1st digit)
+          if (b >= '0' && b <= '9') {
+            day = b - '0'
+            state = 8
+          } else digitError(pos)
+        case 8 => // day (2nd digit)
+          if (b >= '0' && b <= '9') {
+            day = day * 10 + (b - '0')
+            state = 9
+          } else digitError(pos)
+        case 9 => // 'T'
+          if (b == 'T') state = 10
+          else tokenError('T', pos)
+        case 10 => // hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            hour = b - '0'
+            state = 11
+          } else digitError(pos)
+        case 11 => // hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            hour = hour * 10 + (b - '0')
+            state = 12
+          } else digitError(pos)
+        case 12 => // ':'
+          if (b == ':') state = 13
+          else tokenError(':', pos)
+        case 13 => // minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            minute = b - '0'
+            state = 14
+          } else digitError(pos)
+        case 14 => // minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            minute = minute * 10 + (b - '0')
+            state = 15
+          } else digitError(pos)
+        case 15 => // ':' or '+' or '-' or 'z'
+          if (b == ':') state = 16
+          else if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
+        case 16 => // second (1st digit)
+          if (b >= '0' && b <= '9') {
+            second = b - '0'
+            state = 17
+          } else digitError(pos)
+        case 17 => // second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            second = second * 10 + (b - '0')
+            state = 18
+          } else digitError(pos)
+        case 18 => // 'Z' or '.' or '-' or '+'
+          if (b == '.') state = 19
+          else if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
+        case 19 => // 'Z' or '-' or '+' or nano digit
+          if (b >= '0' && b <= '9') {
+            nanoDigits += 1
+            nano += nanoMultiplier(nanoDigits) * (b - '0')
+            if (nanoDigits == 9) state = 20
+          } else if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected '+' or '-' or 'Z' or digit", pos)
+        case 20 => // 'Z' or '-' or '+' or nano digit
+          if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected '+' or '-' or 'Z'", pos)
+        case 21 => // offset hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            posOffsetHour = b - '0'
+            state = 22
+          } else digitError(pos)
+        case 22 => // offset hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            state = 23
+          } else digitError(pos)
+        case 23 => // ':'
+          if (b == ':') state = 24
+          else if (b == '"') state = 31
+          else tokensError(':', '"', pos)
+        case 24 => // offset minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            offsetMinute = b - '0'
+            state = 25
+          } else digitError(pos)
+        case 25 => // offset minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            offsetMinute = offsetMinute * 10 + (b - '0')
+            state = 26
+          } else digitError(pos)
+        case 26 => // ':' or '"'
+          if (b == ':') state = 27
+          else if (b == '"') state = 31
+          else tokensError(':', '"', pos)
+        case 27 => // offset second (1st digit)
+          if (b >= '0' && b <= '9') {
+            offsetSecond = b - '0'
+            state = 28
+          } else digitError(pos)
+        case 28 => // offset second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            offsetSecond = offsetSecond * 10 + (b - '0')
+            state = 30
+          } else digitError(pos)
+        case 29 => // 'Z'
+          if (b == 'Z') state = 30
+          else tokenError('Z', pos)
+        case 30 => // '"'
+          if (b == '"') state = 31
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 31)
+    head = pos
+    checkLocalDate(yearNeg, posYear, month, day)
+    checkLocalTime(hour, minute, second)
+    checkOffset(posOffsetHour, offsetMinute, offsetSecond)
+    val year = if (yearNeg) -posYear else posYear
+    val offsetTotal = posOffsetHour * 3600 + offsetMinute * 60 + offsetSecond
+    val offset = ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+    try OffsetDateTime.of(year, month, day, hour, minute, second, nano, offset) catch {
+      case ex: DateTimeException => dateTimeError(ex)
     }
+  }
 
   private def parseOffsetTime(): OffsetTime =
     try OffsetTime.parse(charSequence(parseString())) catch {
@@ -1745,8 +1942,8 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def checkLocalDate(year: Int, month: Int, day: Int): Unit = {
-    if (year < Year.MIN_VALUE || year > Year.MAX_VALUE) decodeError("illegal year")
+  private def checkLocalDate(yearNeg: Boolean, year: Int, month: Int, day: Int): Unit = {
+    if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
   }
@@ -1755,6 +1952,12 @@ final class JsonReader private[jsoniter_scala](
     if (hour > 23) decodeError("illegal hour")
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
+  }
+
+  private def checkOffset(offsetHour: Int, offsetMinute: Int, offsetSecond: Int): Unit = {
+    if (offsetHour > 18) decodeError("illegal offset hour")
+    if (offsetMinute > 59) decodeError("illegal offset minute")
+    if (offsetSecond > 59) decodeError("illegal offset second")
   }
 
   private def maxDayForYearMonth(year: Int, month: Int): Int =

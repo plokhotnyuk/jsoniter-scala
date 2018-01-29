@@ -175,7 +175,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: OffsetDateTime): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeOffsetDateTime(x)
       writeColon()
     } else nullKeyError()
 
@@ -255,7 +255,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: MonthDay): Unit = if (x eq null) writeNull() else writeMonthDay(x)
 
-  def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeOffsetDateTime(x)
 
   def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -836,6 +836,44 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
+  }
+
+  private def writeOffsetDateTime(x: OffsetDateTime): Unit = count = {
+    var pos = ensureBufferCapacity(43) // 43 == java.time.OffsetDateTime.MAX.toString.length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
+    val ots = x.getOffset.getTotalSeconds
+    if (ots == 0) {
+      buf(pos) = 'Z'
+      buf(pos + 1) = '"'
+      pos + 2
+    } else {
+      val pots =
+        if (ots >= 0) {
+          buf(pos) = '+'
+          ots
+        } else {
+          buf(pos) = '-'
+          -ots
+        }
+      val q1 = pots / 3600
+      val r1 = pots - q1 * 3600
+      val q2 = r1 / 60
+      val r2 = r1 - q2 * 60
+      pos = write2Digits(q1, pos + 1, buf, ds)
+      buf(pos) = ':'
+      pos = write2Digits(q2, pos + 1, buf, ds)
+      if (r2 != 0) {
+        buf(pos) = ':'
+        pos = write2Digits(r2, pos + 1, buf, ds)
+      }
+      buf(pos) = '"'
+      pos + 1
+    }
   }
 
   private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
