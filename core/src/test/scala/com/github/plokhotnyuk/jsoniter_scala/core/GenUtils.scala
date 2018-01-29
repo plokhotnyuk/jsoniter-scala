@@ -13,7 +13,7 @@ object GenUtils {
   val genAsciiChar: Gen[Char] = Gen.choose('\u0000', '\u007f')
   val genControlChar: Gen[Char] = Gen.choose('\u0000', '\u001f')
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
-  val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, genMustBeEscapedAsciiChar, Gen.const('\u007f'))
+  val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genZoneOffset: Gen[ZoneOffset] = Gen.choose(-18 * 3600, 18 * 3600).map(ZoneOffset.ofTotalSeconds)
   val genInstant: Gen[Instant] =
     for {
