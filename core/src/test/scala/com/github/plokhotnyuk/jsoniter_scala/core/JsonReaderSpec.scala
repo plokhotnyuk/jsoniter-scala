@@ -482,6 +482,60 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"07:24:60\"".getBytes, "illegal second, offset: 0x00000009")
     }
   }
+  "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
+    "parse null value" in {
+      reader("null".getBytes).readMonthDay() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsMonthDay())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.MonthDay.parse("--01-20")
+      reader("null".getBytes).readMonthDay(default) shouldBe default
+    }
+    "parse MonthDay from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.MonthDay): Unit = {
+        val s = x.toString
+        readMonthDay(s) shouldBe x
+        readKeyAsMonthDay(s) shouldBe x
+      }
+
+      check(java.time.MonthDay.of(12, 31))
+      check(java.time.MonthDay.of(1, 1))
+      check(java.time.MonthDay.now())
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        val d = java.time.LocalDate.ofEpochDay(day % 366)
+        check(java.time.MonthDay.of(d.getMonthValue, d.getDayOfMonth))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readMonthDay()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsMonthDay()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-', offset: 0x00000001")
+      checkError("\"--01-20".getBytes, "unexpected end of input, offset: 0x00000008")
+      checkError("\"-01-20\"".getBytes, "expected '-', offset: 0x00000002")
+      checkError("\"---01-20\"".getBytes, "expected digit, offset: 0x00000003")
+      checkError("\"--01=20\"".getBytes, "expected '-', offset: 0x00000005")
+      checkError("\"--00-20\"".getBytes, "illegal month, offset: 0x00000008")
+      checkError("\"--13-20\"".getBytes, "illegal month, offset: 0x00000008")
+      checkError("\"--01-00\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--01-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--02-30\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--03-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--04-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--05-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--06-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--07-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--08-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--09-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--10-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--11-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--12-32\"".getBytes, "illegal day, offset: 0x00000008")
+    }
+  }
   "JsonReader.readKeyAsString" should {
     "throw parsing exception for missing ':' in the end" in {
       assert(intercept[JsonParseException](reader("\"\"".getBytes).readKeyAsString())
@@ -1449,6 +1503,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readLocalTime(buf: Array[Byte]): java.time.LocalTime = reader(stringify(buf)).readLocalTime()
 
+  def readMonthDay(s: String): java.time.MonthDay = readMonthDay(s.getBytes(UTF_8))
+
+  def readMonthDay(buf: Array[Byte]): java.time.MonthDay = reader(stringify(buf)).readMonthDay()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1512,6 +1570,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsLocalTime(buf: Array[Byte]): java.time.LocalTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalTime()
+
+  def readKeyAsMonthDay(s: String): java.time.MonthDay = readKeyAsMonthDay(s.getBytes(UTF_8))
+
+  def readKeyAsMonthDay(buf: Array[Byte]): java.time.MonthDay =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsMonthDay()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 

@@ -1650,10 +1650,56 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def parseMonthDay(): MonthDay =
-    try MonthDay.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+  private def parseMonthDay(): MonthDay = {
+    var month = 0
+    var day = 0
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // '-'
+          if (b == '-') state = 1
+          else tokenError('-', pos)
+        case 1 => // '-'
+          if (b == '-') state = 2
+          else tokenError('-', pos)
+        case 2 => // month (1st digit)
+          if (b >= '0' && b <= '9') {
+            month = b - '0'
+            state = 3
+          } else digitError(pos)
+        case 3 => // month (2nd digit)
+          if (b >= '0' && b <= '9') {
+            month = month * 10 + (b - '0')
+            state = 4
+          } else digitError(pos)
+        case 4 => // '-'
+          if (b == '-') state = 5
+          else tokenError('-', pos)
+        case 5 => // day (1st digit)
+          if (b >= '0' && b <= '9') {
+            day = b - '0'
+            state = 6
+          } else digitError(pos)
+        case 6 => // day (2nd digit)
+          if (b >= '0' && b <= '9') {
+            day = day * 10 + (b - '0')
+            state = 7
+          } else digitError(pos)
+        case 7 => // '"'
+          if (b == '"') state = 8
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 8)
+    head = pos
+    checkLocalDate(2004, month, day)
+    try MonthDay.of(month, day) catch {
+      case ex: DateTimeException => dateTimeError(ex)
     }
+  }
 
   private def parseOffsetDateTime(): OffsetDateTime =
     try OffsetDateTime.parse(charSequence(parseString())) catch {

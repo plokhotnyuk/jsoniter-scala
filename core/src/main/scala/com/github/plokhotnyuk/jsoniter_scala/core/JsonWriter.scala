@@ -168,7 +168,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: MonthDay): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeMonthDay(x)
       writeColon()
     } else nullKeyError()
 
@@ -253,7 +253,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: LocalTime): Unit = if (x eq null) writeNull() else writeLocalTime(x)
 
-  def writeVal(x: MonthDay): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: MonthDay): Unit = if (x eq null) writeNull() else writeMonthDay(x)
 
   def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -781,11 +781,11 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeInstant(x: Instant): Unit = count = {
+    val dt = LocalDateTime.ofInstant(x, ZoneOffset.UTC)
     var pos = ensureBufferCapacity(39) // 39 == java.time.Instant.MAX.toString.length + 2
     val buf = this.buf
-    buf(pos) = '"'
-    val dt = LocalDateTime.ofInstant(x, ZoneOffset.UTC)
     val ds = digits
+    buf(pos) = '"'
     pos = writeLocalDate(dt.toLocalDate, pos + 1, buf, ds)
     buf(pos) = 'T'
     pos = writeLocalTime(dt.toLocalTime, pos + 1, buf, ds, full = true)
@@ -806,8 +806,8 @@ final class JsonWriter private[jsoniter_scala](
   private def writeLocalDateTime(x: LocalDateTime): Unit = count = {
     var pos = ensureBufferCapacity(37) // 37 == java.time.LocalDateTime.MAX.toString.length + 2
     val buf = this.buf
-    buf(pos) = '"'
     val ds = digits
+    buf(pos) = '"'
     pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
     buf(pos) = 'T'
     pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
@@ -820,6 +820,20 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos = writeLocalTime(x, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeMonthDay(x: MonthDay): Unit = count = {
+    var pos = ensureBufferCapacity(9) // 9 == "--01-01".length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    buf(pos + 1) = '-'
+    buf(pos + 2) = '-'
+    pos = write2Digits(x.getMonthValue, pos + 3, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
     buf(pos) = '"'
     pos + 1
   }

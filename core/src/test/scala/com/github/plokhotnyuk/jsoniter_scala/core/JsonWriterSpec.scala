@@ -196,6 +196,28 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
   }
+  "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.MonthDay])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.MonthDay])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write MonthDay as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.MonthDay): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.MonthDay.of(12, 31))
+      check(java.time.MonthDay.of(1, 1))
+      check(java.time.MonthDay.now())
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        val d = java.time.LocalDate.ofEpochDay(day % 366)
+        check(java.time.MonthDay.of(d.getMonthValue, d.getDayOfMonth))
+      }
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
