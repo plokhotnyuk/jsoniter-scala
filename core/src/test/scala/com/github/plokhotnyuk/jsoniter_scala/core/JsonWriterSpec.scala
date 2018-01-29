@@ -2,9 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
-import java.time.ZoneOffset
 import java.util.UUID
 
+import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
@@ -12,11 +12,6 @@ import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   val buf = new Array[Byte](150)
-  val highSurrogateChars: Gen[Char] = Gen.choose('\ud800', '\udbff')
-  val lowSurrogateChars: Gen[Char] = Gen.choose('\udc00', '\udfff')
-  val surrogateChars: Gen[Char] = Gen.oneOf(highSurrogateChars, lowSurrogateChars)
-  val asciiChars: Gen[Char] = Gen.choose('\u0000', '\u007f')
-  val escapedAsciiChars: Gen[Char] = Gen.oneOf(Gen.choose('\u0000', '\u001f'), Gen.oneOf('\\', '"', '\u007f'))
   "JsonWriter.isNonEscapedAscii" should {
     "return false for all escaped ASCII or non-ASCII chars" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
@@ -88,9 +83,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeNonEscapedAsciiKey(s)) shouldBe '"' + s + "\":"
       }
 
-      forAll(Gen.listOf(asciiChars).map(_.mkString.filter(JsonWriter.isNonEscapedAscii))) { (s: String) =>
-        check(s)
-      }
+      forAll(Gen.listOf(genAsciiChar).map(_.mkString.filter(JsonWriter.isNonEscapedAscii)))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for UUID" should {
@@ -106,9 +99,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      forAll(minSuccessful(100000)) { (hi: Long, lo: Long) =>
-        check(new UUID(hi, lo))
-      }
+      forAll(Gen.uuid, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
@@ -127,10 +118,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       //FIXME add serialization of min/max values
       //check(java.time.Instant.MAX)
       //check(java.time.Instant.MIN)
-      check(java.time.Instant.now())
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
-        check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
-      }
+      forAll(genInstant, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
@@ -148,10 +136,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.LocalDate.MAX)
       check(java.time.LocalDate.MIN)
-      check(java.time.LocalDate.now())
-      forAll(minSuccessful(100000)) { (day: Int) =>
-        check(java.time.LocalDate.ofEpochDay(day / 1000))
-      }
+      forAll(genLocalDate, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
@@ -169,10 +154,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.LocalDateTime.MAX)
       check(java.time.LocalDateTime.MIN)
-      check(java.time.LocalDateTime.now())
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
-        check(java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), ZoneOffset.UTC))
-      }
+      forAll(genLocalDateTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
@@ -190,10 +172,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.LocalTime.MAX)
       check(java.time.LocalTime.MIN)
-      check(java.time.LocalTime.now())
-      forAll(minSuccessful(100000)) { (nano: Int) =>
-        check(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)))
-      }
+      forAll(genLocalTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
@@ -211,11 +190,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.MonthDay.of(12, 31))
       check(java.time.MonthDay.of(1, 1))
-      check(java.time.MonthDay.now())
-      forAll(minSuccessful(100000)) { (day: Int) =>
-        val d = java.time.LocalDate.ofEpochDay(day % 366)
-        check(java.time.MonthDay.of(d.getMonthValue, d.getDayOfMonth))
-      }
+      forAll(genMonthDay, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetDateTime" should {
@@ -233,12 +208,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.OffsetDateTime.MAX)
       check(java.time.OffsetDateTime.MIN)
-      check(java.time.OffsetDateTime.now())
-      check(java.time.OffsetDateTime.parse("+999999999-12-31T23:59:59.999999999+00:00:01"))
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
-        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
-        check(java.time.OffsetDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
-      }
+      forAll(genOffsetDateTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
@@ -256,12 +226,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.OffsetTime.MAX)
       check(java.time.OffsetTime.MIN)
-      check(java.time.OffsetTime.now())
-      check(java.time.OffsetTime.parse("00:00:07.999999998+00:00:08"))
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
-        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
-        check(java.time.OffsetTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
-      }
+      forAll(genOffsetTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
@@ -290,7 +255,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
           "\"" + s.flatMap(toEscaped) + "\":"
       }
 
-      forAll(Gen.listOf(escapedAsciiChars).map(_.mkString), Gen.oneOf(true, false)) {
+      forAll(Gen.listOf(genEscapedAsciiChar).map(_.mkString), Gen.oneOf(true, false)) {
         (s: String, escapeUnicode: Boolean) =>
           check(s, escapeUnicode)
       }
@@ -315,7 +280,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\":"
       }
 
-      forAll(highSurrogateChars, lowSurrogateChars) { (ch1: Char, ch2: Char) =>
+      forAll(genHighSurrogateChar, genLowSurrogateChar) { (ch1: Char, ch2: Char) =>
         check(ch1.toString + ch2.toString)
       }
     }
@@ -327,11 +292,11 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
           .getMessage.contains("illegal char sequence of surrogate pair"))
       }
 
-      forAll(surrogateChars, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
+      forAll(genSurrogateChar, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
         check(ch.toString, escapeUnicode)
         check(ch.toString + ch.toString, escapeUnicode)
       }
-      forAll(lowSurrogateChars, highSurrogateChars, Gen.oneOf(true, false)) {
+      forAll(genLowSurrogateChar, genHighSurrogateChar, Gen.oneOf(true, false)) {
         (ch1: Char, ch2: Char, escapeUnicode: Boolean) =>
           check(ch1.toString + ch2.toString, escapeUnicode)
       }
@@ -347,7 +312,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "write string with chars that should be escaped" in {
-      forAll(escapedAsciiChars) { (ch: Char) =>
+      forAll(genEscapedAsciiChar) { (ch: Char) =>
         withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
         withWriter(_.writeKey(ch)) shouldBe "\"" + toEscaped(ch) + "\":"
       }
@@ -361,7 +326,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "throw i/o exception in case of surrogate pair character" in {
-      forAll(surrogateChars, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
+      forAll(genSurrogateChar, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
         assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(ch)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
         assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(ch)))

@@ -2,16 +2,15 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets.UTF_8
-import java.time.ZoneOffset
 import java.util.UUID
 
+import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
-  val controlChars: Gen[Byte] = Gen.choose(0, 31)
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
       JsonReader.read(codec, getClass.getResourceAsStream("user_api_response.json")) shouldBe user
@@ -232,9 +231,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readKeyAsUUID(s.toUpperCase) shouldBe x
       }
 
-      forAll(minSuccessful(100000)) { (hi: Long, lo: Long) =>
-        check(new UUID(hi, lo))
-      }
+      forAll(Gen.uuid, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -277,10 +274,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       //FIXME add efficient support of min & max values
       //check(java.time.Instant.MAX)
       //check(java.time.Instant.MIN)
-      check(java.time.Instant.now)
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
-        check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
-      }
+      forAll(genInstant, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -342,10 +336,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.LocalDate.MAX)
       check(java.time.LocalDate.MIN)
-      check(java.time.LocalDate.now)
-      forAll(minSuccessful(100000)) { (day: Int) =>
-        check(java.time.LocalDate.ofEpochDay(day / 1000))
-      }
+      forAll(genLocalDate, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -397,10 +388,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.LocalDateTime.MAX)
       check(java.time.LocalDateTime.MIN)
-      check(java.time.LocalDateTime.now)
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
-        check(java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), ZoneOffset.UTC))
-      }
+      forAll(genLocalDateTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -459,10 +447,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.LocalTime.MAX)
       check(java.time.LocalTime.MIN)
-      check(java.time.LocalTime.now)
-      forAll(minSuccessful(100000)) { (nano: Int) =>
-        check(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)))
-      }
+      forAll(genLocalTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -501,11 +486,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.MonthDay.of(12, 31))
       check(java.time.MonthDay.of(1, 1))
-      check(java.time.MonthDay.now())
-      forAll(minSuccessful(100000)) { (day: Int) =>
-        val d = java.time.LocalDate.ofEpochDay(day % 366)
-        check(java.time.MonthDay.of(d.getMonthValue, d.getDayOfMonth))
-      }
+      forAll(genMonthDay, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -555,11 +536,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.OffsetDateTime.MAX)
       check(java.time.OffsetDateTime.MIN)
-      check(java.time.OffsetDateTime.now)
-      forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
-        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
-        check(java.time.OffsetDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
-      }
+      forAll(genOffsetDateTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -627,11 +604,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(java.time.OffsetTime.MAX)
       check(java.time.OffsetTime.MIN)
-      check(java.time.OffsetTime.now)
-      forAll(minSuccessful(100000)) { (nano: Int, offset: Int) =>
-        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
-        check(java.time.OffsetTime.of(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)), zoneOffset))
-      }
+      forAll(genOffsetTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -701,8 +674,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
       }
 
-      forAll(controlChars) { (b: Byte) =>
-        checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
+      forAll(genControlChar) { (ch: Char) =>
+        checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
@@ -840,8 +813,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
-      forAll(controlChars) { (b: Byte) =>
-        checkError(Array('"', b, '"'), "unescaped control character, offset: 0x00000001")
+      forAll(genControlChar) { (ch: Char) =>
+        checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
