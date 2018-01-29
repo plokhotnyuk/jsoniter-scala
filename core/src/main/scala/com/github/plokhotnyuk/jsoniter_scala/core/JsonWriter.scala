@@ -781,7 +781,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeInstant(x: Instant): Unit = count = {
-    val dt = LocalDateTime.ofInstant(x, ZoneOffset.UTC)
+    val dt = LocalDateTime.ofEpochSecond(x.getEpochSecond, x.getNano, ZoneOffset.UTC)
     var pos = ensureBufferCapacity(39) // 39 == java.time.Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
