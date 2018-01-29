@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 import java.io.InputStream
 import java.math.BigInteger
 import java.time._
-import java.time.chrono.IsoChronology
 import java.time.format.DateTimeParseException
 import java.util.UUID
 
@@ -1896,8 +1895,7 @@ final class JsonReader private[jsoniter_scala](
     checkLocalTime(hour, minute, second)
     checkOffset(posOffsetHour, offsetMinute, offsetSecond)
     val year = if (yearNeg) -posYear else posYear
-    val offsetTotal = posOffsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    val offset = ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+    val offset = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
     try OffsetDateTime.of(year, month, day, hour, minute, second, nano, offset) catch {
       case ex: DateTimeException => dateTimeError(ex)
     }
@@ -2036,8 +2034,7 @@ final class JsonReader private[jsoniter_scala](
     head = pos
     checkLocalTime(hour, minute, second)
     checkOffset(posOffsetHour, offsetMinute, offsetSecond)
-    val offsetTotal = posOffsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    val offset = ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+    val offset = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
     try OffsetTime.of(hour, minute, second, nano, offset) catch {
       case ex: DateTimeException => dateTimeError(ex)
     }
@@ -2095,10 +2092,15 @@ final class JsonReader private[jsoniter_scala](
     if (offsetSecond > 59) decodeError("illegal offset second")
   }
 
+  private def zoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
+    val offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
+    ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+  }
+
   private def maxDayForYearMonth(year: Int, month: Int): Int =
     (month: @switch) match {
       case 1 => 31
-      case 2 => if (IsoChronology.INSTANCE.isLeapYear(year)) 29 else 28
+      case 2 => if (isLeap(year)) 29 else 28
       case 3 => 31
       case 4 => 30
       case 5 => 31
@@ -2110,6 +2112,9 @@ final class JsonReader private[jsoniter_scala](
       case 11 => 30
       case 12 => 31
     }
+
+  private def isLeap(year: Int): Boolean =
+    (year & 3) == 0 && (year % 100 != 0 || year % 400 == 0) // TODO use 64-bit mul with shift instead of %
 
   private def charSequence(len: Int): CharSequence = {
     val cbs = charBufSeq

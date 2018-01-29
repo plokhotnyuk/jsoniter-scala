@@ -896,11 +896,11 @@ final class JsonWriter private[jsoniter_scala](
       pos = write2Digits(x.getSecond, pos + 1, buf, ds)
       if (nano > 0) {
         buf(pos) = '.'
-        val q1 = nano / 1000000
+        val q1 = nano / 1000000 // TODO use 64-bit mul with shift instead of /
         pos = write3Digits(q1, pos + 1, buf, ds)
         val r1 = nano - q1 * 1000000
         if (r1 > 0) {
-          val q2 = r1 / 1000
+          val q2 = r1 / 1000 // TODO use 64-bit mul with shift instead of /
           pos = write3Digits(q2, pos, buf, ds)
           val r2 = r1 - q2 * 1000
           if (r2 > 0) pos = write3Digits(r2, pos, buf, ds)
@@ -924,9 +924,9 @@ final class JsonWriter private[jsoniter_scala](
           buf(p) = '-'
           -ots
         }
-      val q1 = pots / 3600
+      val q1 = pots / 3600 // TODO use 64-bit mul with shift instead of /
       val r1 = pots - q1 * 3600
-      val q2 = r1 / 60
+      val q2 = r1 / 60 // TODO use 64-bit mul with shift instead of /
       val r2 = r1 - q2 * 60
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'
