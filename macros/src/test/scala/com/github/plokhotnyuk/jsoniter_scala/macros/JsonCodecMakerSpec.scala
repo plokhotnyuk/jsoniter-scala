@@ -165,6 +165,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfADTList: JsonCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
+  case class JavaTimeTypes(d: java.time.Duration, i: java.time.Instant, ld: java.time.LocalDate,
+                           ldt: java.time.LocalDateTime, lt: java.time.LocalTime, md: java.time.MonthDay,
+                           odt: java.time.OffsetDateTime, ot: java.time.OffsetTime, p: java.time.Period,
+                           y: java.time.Year, ym: java.time.YearMonth, zdt: java.time.ZonedDateTime,
+                           zi: java.time.ZoneId, zo: java.time.ZoneOffset)
+
   "JsonCodec" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
@@ -844,6 +850,60 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize when the root codec defined as an impicit val" in {
       implicit val implicitRootCodec: JsonCodec[Int] = make[Int](CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1".getBytes)
+    }
+    "serialize and deserialize case classes with Java time types" in {
+      verifySerDeser(make[JavaTimeTypes](CodecMakerConfig()),
+        obj = JavaTimeTypes(
+          d = java.time.Duration.parse("PT10H30M"),
+          i = java.time.Instant.parse("2007-12-03T10:15:30.001Z"),
+          ld = java.time.LocalDate.parse("2007-12-03"),
+          ldt = java.time.LocalDateTime.parse("2007-12-03T10:15:30"),
+          lt = java.time.LocalTime.parse("10:15:30"),
+          md = java.time.MonthDay.parse("--12-03"),
+          odt = java.time.OffsetDateTime.parse("2007-12-03T10:15:30+01:00"),
+          ot = java.time.OffsetTime.parse("10:15:30+01:00"),
+          p = java.time.Period.parse("P1Y2M25D"),
+          y = java.time.Year.parse("2007"),
+          ym = java.time.YearMonth.parse("2007-12"),
+          zdt = java.time.ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"),
+          zi = java.time.ZoneId.of("Europe/Paris"),
+          zo = java.time.ZoneOffset.of("+01:00")
+        ),
+        json =
+          ("""{"d":"PT10H30M","i":"2007-12-03T10:15:30.001Z","ld":"2007-12-03","ldt":"2007-12-03T10:15:30",""" +
+          """"lt":"10:15:30","md":"--12-03","odt":"2007-12-03T10:15:30+01:00","ot":"10:15:30+01:00",""" +
+          """"p":"P1Y2M25D","y":"2007","ym":"2007-12","zdt":"2007-12-03T10:15:30+01:00[Europe/Paris]",""" +
+          """"zi":"Europe/Paris","zo":"+01:00"}""").getBytes)
+    }
+    "serialize and deserialize top-level Java time types" in {
+      verifySerDeser(make[java.time.Duration](CodecMakerConfig()),
+        java.time.Duration.parse("PT10H30M"), "\"PT10H30M\"".getBytes)
+      verifySerDeser(make[java.time.Instant](CodecMakerConfig()),
+        java.time.Instant.parse("2007-12-03T10:15:30.001Z"), "\"2007-12-03T10:15:30.001Z\"".getBytes)
+      verifySerDeser(make[java.time.LocalDate](CodecMakerConfig()),
+        java.time.LocalDate.parse("2007-12-03"), "\"2007-12-03\"".getBytes)
+      verifySerDeser(make[java.time.LocalDateTime](CodecMakerConfig()),
+        java.time.LocalDateTime.parse("2007-12-03T10:15:30"), "\"2007-12-03T10:15:30\"".getBytes)
+      verifySerDeser(make[java.time.LocalTime](CodecMakerConfig()),
+        java.time.LocalTime.parse("10:15:30"), "\"10:15:30\"".getBytes)
+      verifySerDeser(make[java.time.MonthDay](CodecMakerConfig()),
+        java.time.MonthDay.parse("--12-03"), "\"--12-03\"".getBytes)
+      verifySerDeser(make[java.time.OffsetDateTime](CodecMakerConfig()),
+        java.time.OffsetDateTime.parse("2007-12-03T10:15:30+01:00"), "\"2007-12-03T10:15:30+01:00\"".getBytes)
+      verifySerDeser(make[java.time.OffsetTime](CodecMakerConfig()),
+        java.time.OffsetTime.parse("10:15:30+01:00"), "\"10:15:30+01:00\"".getBytes)
+      verifySerDeser(make[java.time.Period](CodecMakerConfig()),
+        java.time.Period.parse("P1Y2M25D"), "\"P1Y2M25D\"".getBytes)
+      verifySerDeser(make[java.time.Year](CodecMakerConfig()), java.time.Year.parse("2007"), "\"2007\"".getBytes)
+      verifySerDeser(make[java.time.YearMonth](CodecMakerConfig()),
+        java.time.YearMonth.parse("2007-12"), "\"2007-12\"".getBytes)
+      verifySerDeser(make[java.time.ZonedDateTime](CodecMakerConfig()),
+        java.time.ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"),
+        "\"2007-12-03T10:15:30+01:00[Europe/Paris]\"".getBytes)
+      verifySerDeser(make[java.time.ZoneId](CodecMakerConfig()),
+        java.time.ZoneId.of("Europe/Paris"), "\"Europe/Paris\"".getBytes)
+      verifySerDeser(make[java.time.ZoneOffset](CodecMakerConfig()),
+        java.time.ZoneOffset.of("+01:00"), "\"+01:00\"".getBytes)
     }
   }
   "JsonCodec.enforceCamelCase" should {

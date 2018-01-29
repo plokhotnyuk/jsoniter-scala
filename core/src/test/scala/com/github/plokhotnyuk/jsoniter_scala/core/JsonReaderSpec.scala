@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.time.ZoneOffset
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
@@ -246,6 +247,365 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"00000000-0000-0000-0000-000000000000".getBytes, "unexpected end of input, offset: 0x00000025")
       checkError("\"Z0000000-0000-0000-0000-000000000000\"".getBytes, "expected hex digit, offset: 0x00000001")
       checkError("\"00000000=0000-0000-0000-000000000000\"".getBytes, "expected '-', offset: 0x00000009")
+    }
+  }
+  "JsonReader.readKeyAsInstant" should {
+    "throw parsing exception for missing ':' in the end" in {
+      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"".getBytes).readKeyAsInstant())
+        .getMessage.contains("unexpected end of input, offset: 0x00000016"))
+      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"x".getBytes).readKeyAsInstant())
+        .getMessage.contains("expected ':', offset: 0x00000016"))
+    }
+  }
+  "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
+    "parse null value" in {
+      reader("null".getBytes).readInstant() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsInstant())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.Instant.parse("2008-01-20T07:24:33Z")
+      reader("null".getBytes).readInstant(default) shouldBe default
+    }
+    "parse Instant from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.Instant): Unit = {
+        val s = x.toString
+        readInstant(s) shouldBe x
+        readKeyAsInstant(s) shouldBe x
+      }
+
+      //FIXME add efficient support of min & max values
+      //check(java.time.Instant.MAX)
+      //check(java.time.Instant.MIN)
+      check(java.time.Instant.now)
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken Instant string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readInstant()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsInstant()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z".getBytes, "unexpected end of input, offset: 0x00000015")
+      checkError("\"008-01-20T07:24:33Z\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20T07:24:33Z\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-20X07:24:33Z\"".getBytes, "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20T07-24:33Z\"".getBytes, "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:24-33Z\"".getBytes, "expected ':', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:33X\"".getBytes, "expected 'Z' or '.', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ".getBytes, "expected '\"', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.\"".getBytes, "expected 'Z' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.000\"".getBytes, "expected 'Z' or digit, offset: 0x00000018")
+      checkError("\"+1000000000-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
+      checkError("\"-1000000000-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
+      checkError("\"2008-00-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
+      checkError("\"2008-13-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
+      checkError("\"2008-01-00T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-02-30T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-03-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-04-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-05-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-06-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-07-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-08-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-09-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-10-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-11-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-12-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-20T24:24:33Z\"".getBytes, "illegal hour, offset: 0x00000015")
+      checkError("\"2008-01-20T07:60:33Z\"".getBytes, "illegal minute, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:60Z\"".getBytes, "illegal second, offset: 0x00000015")
+    }
+  }
+  "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
+    "parse null value" in {
+      reader("null".getBytes).readLocalDate() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDate())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.LocalDate.parse("2008-01-20")
+      reader("null".getBytes).readLocalDate(default) shouldBe default
+    }
+    "parse Instant from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalDate): Unit = {
+        val s = x.toString
+        readLocalDate(s) shouldBe x
+        readKeyAsLocalDate(s) shouldBe x
+      }
+
+      check(java.time.LocalDate.MAX)
+      check(java.time.LocalDate.MIN)
+      check(java.time.LocalDate.now)
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        check(java.time.LocalDate.ofEpochDay(day / 1000))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDate string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readLocalDate()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDate()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20".getBytes, "unexpected end of input, offset: 0x0000000b")
+      checkError("\"008-01-20\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"+1000000000-01-20\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"2008-00-20\"".getBytes, "illegal month, offset: 0x0000000b")
+      checkError("\"2008-13-20\"".getBytes, "illegal month, offset: 0x0000000b")
+      checkError("\"2008-01-00\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-01-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-02-30\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-03-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-04-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-05-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-06-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-07-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-08-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-09-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-10-32\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-11-31\"".getBytes, "illegal day, offset: 0x0000000b")
+      checkError("\"2008-12-32\"".getBytes, "illegal day, offset: 0x0000000b")
+    }
+  }
+  "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
+    "parse null value" in {
+      reader("null".getBytes).readLocalDateTime() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDateTime())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.LocalDateTime.parse("2008-01-20T07:24:33")
+      reader("null".getBytes).readLocalDateTime(default) shouldBe default
+    }
+    "parse LocalDateTime from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalDateTime): Unit = {
+        val s = x.toString
+        readLocalDateTime(s) shouldBe x
+        readKeyAsLocalDateTime(s) shouldBe x
+      }
+
+      check(java.time.LocalDateTime.MAX)
+      check(java.time.LocalDateTime.MIN)
+      check(java.time.LocalDateTime.now)
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), ZoneOffset.UTC))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readLocalDateTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDateTime()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33".getBytes, "unexpected end of input, offset: 0x00000014")
+      checkError("\"008-01-20T07:24:33\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20T07:24:33\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-20X07:24:33\"".getBytes, "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20T07-24:33\"".getBytes, "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:24-33\"".getBytes, "expected ':' or '\"', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:33Z\"".getBytes, "expected '.' or '\"', offset: 0x00000014")
+      checkError("\"+1000000000-01-20T07:24:33\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20T07:24:33\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"2008-00-20T07:24:33\"".getBytes, "illegal month, offset: 0x00000014")
+      checkError("\"2008-13-20T07:24:33\"".getBytes, "illegal month, offset: 0x00000014")
+      checkError("\"2008-01-00T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-01-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-02-30T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-03-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-04-31T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-05-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-06-31T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-07-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-08-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-09-31T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-10-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-11-31T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-12-32T07:24:33\"".getBytes, "illegal day, offset: 0x00000014")
+      checkError("\"2008-01-20T24:24:33\"".getBytes, "illegal hour, offset: 0x00000014")
+      checkError("\"2008-01-20T07:60:33\"".getBytes, "illegal minute, offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:60\"".getBytes, "illegal second, offset: 0x00000014")
+    }
+  }
+  "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
+    "parse null value" in {
+      reader("null".getBytes).readLocalTime() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalTime())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.LocalTime.parse("07:24:33")
+      reader("null".getBytes).readLocalTime(default) shouldBe default
+    }
+    "parse LocalTime from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalTime): Unit = {
+        val s = x.toString
+        readLocalTime(s) shouldBe x
+        readKeyAsLocalTime(s) shouldBe x
+      }
+
+      check(java.time.LocalTime.MAX)
+      check(java.time.LocalTime.MIN)
+      check(java.time.LocalTime.now)
+      forAll(minSuccessful(100000)) { (nano: Int) =>
+        check(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readLocalTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalTime()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected digit, offset: 0x00000001")
+      checkError("\"07:24:33".getBytes, "unexpected end of input, offset: 0x00000009")
+      checkError("\"7:24:33\"".getBytes, "expected digit, offset: 0x00000002")
+      checkError("\"07-24:33\"".getBytes, "expected ':', offset: 0x00000003")
+      checkError("\"07:24-33\"".getBytes, "expected ':' or '\"', offset: 0x00000006")
+      checkError("\"07:24:33Z\"".getBytes, "expected '.' or '\"', offset: 0x00000009")
+      checkError("\"24:24:33\"".getBytes, "illegal hour, offset: 0x00000009")
+      checkError("\"07:60:33\"".getBytes, "illegal minute, offset: 0x00000009")
+      checkError("\"07:24:60\"".getBytes, "illegal second, offset: 0x00000009")
+    }
+  }
+  "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
+    "parse null value" in {
+      reader("null".getBytes).readMonthDay() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsMonthDay())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.MonthDay.parse("--01-20")
+      reader("null".getBytes).readMonthDay(default) shouldBe default
+    }
+    "parse MonthDay from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.MonthDay): Unit = {
+        val s = x.toString
+        readMonthDay(s) shouldBe x
+        readKeyAsMonthDay(s) shouldBe x
+      }
+
+      check(java.time.MonthDay.of(12, 31))
+      check(java.time.MonthDay.of(1, 1))
+      check(java.time.MonthDay.now())
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        val d = java.time.LocalDate.ofEpochDay(day % 366)
+        check(java.time.MonthDay.of(d.getMonthValue, d.getDayOfMonth))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readMonthDay()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsMonthDay()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-', offset: 0x00000001")
+      checkError("\"--01-20".getBytes, "unexpected end of input, offset: 0x00000008")
+      checkError("\"-01-20\"".getBytes, "expected '-', offset: 0x00000002")
+      checkError("\"---01-20\"".getBytes, "expected digit, offset: 0x00000003")
+      checkError("\"--01=20\"".getBytes, "expected '-', offset: 0x00000005")
+      checkError("\"--00-20\"".getBytes, "illegal month, offset: 0x00000008")
+      checkError("\"--13-20\"".getBytes, "illegal month, offset: 0x00000008")
+      checkError("\"--01-00\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--01-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--02-30\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--03-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--04-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--05-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--06-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--07-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--08-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--09-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--10-32\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--11-31\"".getBytes, "illegal day, offset: 0x00000008")
+      checkError("\"--12-32\"".getBytes, "illegal day, offset: 0x00000008")
+    }
+  }
+  "JsonReader.readOffsetDateTime and JsonReader.readKeyAsOffsetDateTime" should {
+    "parse null value" in {
+      reader("null".getBytes).readOffsetDateTime() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsOffsetDateTime())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.OffsetDateTime.parse("2008-01-20T07:24Z")
+      reader("null".getBytes).readOffsetDateTime(default) shouldBe default
+    }
+    "parse OffsetDateTime from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.OffsetDateTime): Unit = {
+        val s = x.toString
+        readOffsetDateTime(s) shouldBe x
+        readKeyAsOffsetDateTime(s) shouldBe x
+      }
+
+      check(java.time.OffsetDateTime.MAX)
+      check(java.time.OffsetDateTime.MIN)
+      check(java.time.OffsetDateTime.now)
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
+        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
+        check(java.time.OffsetDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken Instant string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readOffsetDateTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetDateTime()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z".getBytes, "unexpected end of input, offset: 0x00000015")
+      checkError("\"008-01-20T07:24:33Z\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20T07:24:33Z\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-20X07:24:33Z\"".getBytes, "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20T07-24:33Z\"".getBytes, "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:24-33Z\"".getBytes, "expected ':' or '\"', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33X\"".getBytes, "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ".getBytes, "expected '\"', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.\"".getBytes, "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.000\"".getBytes, "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
+      checkError("\"+1000000000-01-20T07:24:33Z\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20T07:24:33Z\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"2008-00-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
+      checkError("\"2008-13-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
+      checkError("\"2008-01-00T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-02-30T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-03-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-04-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-05-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-06-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-07-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-08-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-09-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-10-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-11-31T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-12-32T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-20T24:24:33Z\"".getBytes, "illegal hour, offset: 0x00000015")
+      checkError("\"2008-01-20T07:60:33Z\"".getBytes, "illegal minute, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:60Z\"".getBytes, "illegal second, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33+\"".getBytes, "expected digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.+\"".getBytes, "expected digit, offset: 0x00000016")
+      checkError("\"2008-01-20T07:24:33.+1\"".getBytes, "expected digit, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+10=\"".getBytes, "expected ':' or '\"', offset: 0x00000018")
+      checkError("\"2008-01-20T07:24:33.+10:\"".getBytes, "expected digit, offset: 0x00000019")
+      checkError("\"2008-01-20T07:24:33.+10:1\"".getBytes, "expected digit, offset: 0x0000001a")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1199,6 +1559,30 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     r.nextToken().toChar shouldBe ','
   }
 
+  def readInstant(s: String): java.time.Instant = readInstant(s.getBytes(UTF_8))
+
+  def readInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf)).readInstant()
+
+  def readLocalDate(s: String): java.time.LocalDate = readLocalDate(s.getBytes(UTF_8))
+
+  def readLocalDate(buf: Array[Byte]): java.time.LocalDate = reader(stringify(buf)).readLocalDate()
+
+  def readLocalDateTime(s: String): java.time.LocalDateTime = readLocalDateTime(s.getBytes(UTF_8))
+
+  def readLocalDateTime(buf: Array[Byte]): java.time.LocalDateTime = reader(stringify(buf)).readLocalDateTime()
+
+  def readLocalTime(s: String): java.time.LocalTime = readLocalTime(s.getBytes(UTF_8))
+
+  def readLocalTime(buf: Array[Byte]): java.time.LocalTime = reader(stringify(buf)).readLocalTime()
+
+  def readMonthDay(s: String): java.time.MonthDay = readMonthDay(s.getBytes(UTF_8))
+
+  def readMonthDay(buf: Array[Byte]): java.time.MonthDay = reader(stringify(buf)).readMonthDay()
+
+  def readOffsetDateTime(s: String): java.time.OffsetDateTime = readOffsetDateTime(s.getBytes(UTF_8))
+
+  def readOffsetDateTime(buf: Array[Byte]): java.time.OffsetDateTime = reader(stringify(buf)).readOffsetDateTime()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1243,6 +1627,35 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     readBigDecimal(s.getBytes(UTF_8), default)
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = reader(buf).readBigDecimal(default)
+
+  def readKeyAsInstant(s: String): java.time.Instant = readKeyAsInstant(s.getBytes(UTF_8))
+
+  def readKeyAsInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
+
+  def readKeyAsLocalDate(s: String): java.time.LocalDate = readKeyAsLocalDate(s.getBytes(UTF_8))
+
+  def readKeyAsLocalDate(buf: Array[Byte]): java.time.LocalDate =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDate()
+
+  def readKeyAsLocalDateTime(s: String): java.time.LocalDateTime = readKeyAsLocalDateTime(s.getBytes(UTF_8))
+
+  def readKeyAsLocalDateTime(buf: Array[Byte]): java.time.LocalDateTime =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDateTime()
+
+  def readKeyAsLocalTime(s: String): java.time.LocalTime = readKeyAsLocalTime(s.getBytes(UTF_8))
+
+  def readKeyAsLocalTime(buf: Array[Byte]): java.time.LocalTime =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalTime()
+
+  def readKeyAsMonthDay(s: String): java.time.MonthDay = readKeyAsMonthDay(s.getBytes(UTF_8))
+
+  def readKeyAsMonthDay(buf: Array[Byte]): java.time.MonthDay =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsMonthDay()
+
+  def readKeyAsOffsetDateTime(s: String): java.time.OffsetDateTime = readKeyAsOffsetDateTime(s.getBytes(UTF_8))
+
+  def readKeyAsOffsetDateTime(buf: Array[Byte]): java.time.OffsetDateTime =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetDateTime()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 

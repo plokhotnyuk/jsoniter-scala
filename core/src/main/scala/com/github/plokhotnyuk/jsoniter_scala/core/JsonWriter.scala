@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
+import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
@@ -99,35 +100,133 @@ final class JsonWriter private[jsoniter_scala](
       writeCommaWithParentheses()
       writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
       writeParenthesesWithColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeKey(x: BigDecimal): Unit =
     if (x ne null) {
       writeCommaWithParentheses()
       writeNonEscapedAsciiStringWithoutParentheses(x.toString)
       writeParenthesesWithColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeKey(x: UUID): Unit =
     if (x ne null) {
       writeComma()
       writeUUID(x)
       writeColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeKey(x: String): Unit =
     if (x ne null) {
       writeComma()
       writeString(x)
       writeColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
 
   def writeNonEscapedAsciiKey(x: String): Unit =
     if (x ne null) {
       writeComma()
       writeNonEscapedAsciiString(x)
       writeColon()
-    } else encodeError("key cannot be null")
+    } else nullKeyError()
+
+  def writeKey(x: Duration): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: Instant): Unit =
+    if (x ne null) {
+      writeComma()
+      writeInstant(x)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: LocalDate): Unit =
+    if (x ne null) {
+      writeComma()
+      writeLocalDate(x)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: LocalDateTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeLocalDateTime(x)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: LocalTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeLocalTime(x)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: MonthDay): Unit =
+    if (x ne null) {
+      writeComma()
+      writeMonthDay(x)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: OffsetDateTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeOffsetDateTime(x)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: OffsetTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: Period): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: Year): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: YearMonth): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: ZonedDateTime): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: ZoneId): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
+
+  def writeKey(x: ZoneOffset): Unit =
+    if (x ne null) {
+      writeComma()
+      writeNonEscapedAsciiString(x.toString)
+      writeColon()
+    } else nullKeyError()
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
@@ -143,6 +242,34 @@ final class JsonWriter private[jsoniter_scala](
   def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
 
   def writeNonEscapedAsciiVal(x: String): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x)
+
+  def writeVal(x: Duration): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeInstant(x)
+
+  def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeLocalDate(x)
+
+  def writeVal(x: LocalDateTime): Unit = if (x eq null) writeNull() else writeLocalDateTime(x)
+
+  def writeVal(x: LocalTime): Unit = if (x eq null) writeNull() else writeLocalTime(x)
+
+  def writeVal(x: MonthDay): Unit = if (x eq null) writeNull() else writeMonthDay(x)
+
+  def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeOffsetDateTime(x)
+
+  def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: Period): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+
+  def writeVal(x: ZoneOffset): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
   def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
 
@@ -215,6 +342,8 @@ final class JsonWriter private[jsoniter_scala](
   def writeObjectStart(): Unit = writeNestedStart('{')
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
+
+  private def nullKeyError(): Nothing = throw new IOException("key cannot be null")
 
   private def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
     if ((out eq null) || (config eq null)) throw new NullPointerException
@@ -651,6 +780,172 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
+  private def writeInstant(x: Instant): Unit = count = {
+    val dt = LocalDateTime.ofInstant(x, ZoneOffset.UTC)
+    var pos = ensureBufferCapacity(39) // 39 == java.time.Instant.MAX.toString.length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    pos = writeLocalDate(dt.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeLocalTime(dt.toLocalTime, pos + 1, buf, ds, full = true)
+    buf(pos) = 'Z'
+    buf(pos + 1) = '"'
+    pos + 2
+  }
+
+  private def writeLocalDate(x: LocalDate): Unit = count = {
+    var pos = ensureBufferCapacity(18) // 18 == java.time.LocalDate.MAX.toString.length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    pos = writeLocalDate(x, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeLocalDateTime(x: LocalDateTime): Unit = count = {
+    var pos = ensureBufferCapacity(37) // 37 == java.time.LocalDateTime.MAX.toString.length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeLocalTime(x: LocalTime): Unit = count = {
+    var pos = ensureBufferCapacity(20) // 20 == java.time.LocalTime.MAX.toString.length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    pos = writeLocalTime(x, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeMonthDay(x: MonthDay): Unit = count = {
+    var pos = ensureBufferCapacity(9) // 9 == "--01-01".length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    buf(pos + 1) = '-'
+    buf(pos + 2) = '-'
+    pos = write2Digits(x.getMonthValue, pos + 3, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeOffsetDateTime(x: OffsetDateTime): Unit = count = {
+    var pos = ensureBufferCapacity(43) // 43 == java.time.OffsetDateTime.MAX.toString.length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
+    val ots = x.getOffset.getTotalSeconds
+    if (ots == 0) {
+      buf(pos) = 'Z'
+      buf(pos + 1) = '"'
+      pos + 2
+    } else {
+      val pots =
+        if (ots >= 0) {
+          buf(pos) = '+'
+          ots
+        } else {
+          buf(pos) = '-'
+          -ots
+        }
+      val q1 = pots / 3600
+      val r1 = pots - q1 * 3600
+      val q2 = r1 / 60
+      val r2 = r1 - q2 * 60
+      pos = write2Digits(q1, pos + 1, buf, ds)
+      buf(pos) = ':'
+      pos = write2Digits(q2, pos + 1, buf, ds)
+      if (r2 != 0) {
+        buf(pos) = ':'
+        pos = write2Digits(r2, pos + 1, buf, ds)
+      }
+      buf(pos) = '"'
+      pos + 1
+    }
+  }
+
+  private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = p
+    val year = x.getYear
+    val posYear =
+      if (year >= 0) {
+        if (year >= 10000) {
+          buf(pos) = '+'
+          pos += 1
+        }
+        year
+      } else {
+        buf(pos) = '-'
+        pos += 1
+        -year
+      }
+    if (posYear >= 10000) {
+      val off = offset(posYear)
+      pos = writeIntFirst(posYear, pos + off, buf, ds) + off
+    } else pos = write4Digits(posYear, pos, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
+    buf(pos) = '-'
+    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
+  }
+
+  private def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short], full: Boolean = false): Int = {
+    var pos = write2Digits(x.getHour, p, buf, ds)
+    buf(pos) = ':'
+    pos = write2Digits(x.getMinute, pos + 1, buf, ds)
+    val second = x.getSecond
+    val nano = x.getNano
+    if (full || second != 0 || nano != 0) {
+      buf(pos) = ':'
+      pos = write2Digits(x.getSecond, pos + 1, buf, ds)
+      if (nano > 0) {
+        buf(pos) = '.'
+        val q1 = nano / 1000000
+        pos = write3Digits(q1, pos + 1, buf, ds)
+        val r1 = nano - q1 * 1000000
+        if (r1 > 0) {
+          val q2 = r1 / 1000
+          pos = write3Digits(q2, pos, buf, ds)
+          val r2 = r1 - q2 * 1000
+          if (r2 > 0) pos = write3Digits(r2, pos, buf, ds)
+        }
+      }
+    }
+    pos
+  }
+
+  private def write2Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val d = ds(x)
+    buf(pos) = (d >> 8).toByte
+    buf(pos + 1) = d.toByte
+    pos + 2
+  }
+
+  private def write3Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = (x * 1374389535L >> 37).toInt // divide int by 100
+    val r1 = x - 100 * q1
+    buf(pos) = (q1 + '0').toByte
+    write2Digits(r1, pos + 1, buf, ds)
+  }
+
+  private def write4Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = (x * 1374389535L >> 37).toInt // divide int by 100
+    val r1 = x - 100 * q1
+    write2Digits(r1, write2Digits(q1, pos, buf, ds), buf, ds)
+  }
+
   private def writeShort(x: Short): Unit = count = {
     var pos = ensureBufferCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
@@ -818,11 +1113,11 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
+  private final val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = new JsonWriter
   }
-  private val defaultConfig = new WriterConfig
-  private val escapedChars: Array[Byte] = (0 to 127).map { b =>
+  private final val defaultConfig = new WriterConfig
+  private final val escapedChars: Array[Byte] = (0 to 127).map { b =>
     ((b: @switch) match {
       case '\n' => 'n'
       case '\r' => 'r'
@@ -835,9 +1130,10 @@ object JsonWriter {
       case _ => 0 // non-escaped chars
     }).toByte
   }(breakOut)
-  private val digits: Array[Short] = (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
-  private val minIntBytes: Array[Byte] = "-2147483648".getBytes
-  private val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
+  private final val digits: Array[Short] =
+    (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
+  private final val minIntBytes: Array[Byte] = "-2147483648".getBytes
+  private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
 

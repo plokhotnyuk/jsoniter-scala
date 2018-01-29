@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.time.ZoneOffset
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
@@ -107,6 +108,135 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       forAll(minSuccessful(100000)) { (hi: Long, lo: Long) =>
         check(new UUID(hi, lo))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.Instant])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.Instant])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write Instant as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.Instant): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      //FIXME add serialization of min/max values
+      //check(java.time.Instant.MAX)
+      //check(java.time.Instant.MIN)
+      check(java.time.Instant.now())
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.Instant.ofEpochSecond(second * 1000L, nano))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalDate])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalDate])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write LocalDate as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalDate): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.LocalDate.MAX)
+      check(java.time.LocalDate.MIN)
+      check(java.time.LocalDate.now())
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        check(java.time.LocalDate.ofEpochDay(day / 1000))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalDateTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalDateTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write LocalDateTime as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalDateTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.LocalDateTime.MAX)
+      check(java.time.LocalDateTime.MIN)
+      check(java.time.LocalDateTime.now())
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int) =>
+        check(java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), ZoneOffset.UTC))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write LocalTime as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.LocalTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.LocalTime.MAX)
+      check(java.time.LocalTime.MIN)
+      check(java.time.LocalTime.now())
+      forAll(minSuccessful(100000)) { (nano: Int) =>
+        check(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.MonthDay])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.MonthDay])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write MonthDay as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.MonthDay): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.MonthDay.of(12, 31))
+      check(java.time.MonthDay.of(1, 1))
+      check(java.time.MonthDay.now())
+      forAll(minSuccessful(100000)) { (day: Int) =>
+        val d = java.time.LocalDate.ofEpochDay(day % 366)
+        check(java.time.MonthDay.of(d.getMonthValue, d.getDayOfMonth))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for OffsetDateTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.OffsetDateTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.OffsetDateTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write OffsetDateTime as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.OffsetDateTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.OffsetDateTime.MAX)
+      check(java.time.OffsetDateTime.MIN)
+      check(java.time.OffsetDateTime.now())
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
+        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
+        check(java.time.OffsetDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
       }
     }
   }
