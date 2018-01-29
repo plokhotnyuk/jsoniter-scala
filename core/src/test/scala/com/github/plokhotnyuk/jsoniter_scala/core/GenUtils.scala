@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.time.{ZoneId, _}
+import java.time._
 
 import org.scalacheck.Gen
 

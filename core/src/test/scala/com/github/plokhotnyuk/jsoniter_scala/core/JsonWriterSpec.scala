@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayOutputStream, IOException, OutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
@@ -104,129 +105,147 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.Instant])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.Instant])))
+      withWriter(_.writeVal(null.asInstanceOf[Instant])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Instant])))
         .getMessage.contains("key cannot be null"))
     }
     "write Instant as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.Instant): Unit = {
+      def check(x: Instant): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
       //FIXME add serialization of min/max values
-      //check(java.time.Instant.MAX)
-      //check(java.time.Instant.MIN)
+      //check(Instant.MAX)
+      //check(Instant.MIN)
       forAll(genInstant, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalDate])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalDate])))
+      withWriter(_.writeVal(null.asInstanceOf[LocalDate])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[LocalDate])))
         .getMessage.contains("key cannot be null"))
     }
     "write LocalDate as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.LocalDate): Unit = {
+      def check(x: LocalDate): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(java.time.LocalDate.MAX)
-      check(java.time.LocalDate.MIN)
+      check(LocalDate.MAX)
+      check(LocalDate.MIN)
       forAll(genLocalDate, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalDateTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalDateTime])))
+      withWriter(_.writeVal(null.asInstanceOf[LocalDateTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[LocalDateTime])))
         .getMessage.contains("key cannot be null"))
     }
     "write LocalDateTime as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.LocalDateTime): Unit = {
+      def check(x: LocalDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(java.time.LocalDateTime.MAX)
-      check(java.time.LocalDateTime.MIN)
+      check(LocalDateTime.MAX)
+      check(LocalDateTime.MIN)
       forAll(genLocalDateTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.LocalTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.LocalTime])))
+      withWriter(_.writeVal(null.asInstanceOf[LocalTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[LocalTime])))
         .getMessage.contains("key cannot be null"))
     }
     "write LocalTime as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.LocalTime): Unit = {
+      def check(x: LocalTime): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(java.time.LocalTime.MAX)
-      check(java.time.LocalTime.MIN)
+      check(LocalTime.MAX)
+      check(LocalTime.MIN)
       forAll(genLocalTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.MonthDay])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.MonthDay])))
+      withWriter(_.writeVal(null.asInstanceOf[MonthDay])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[MonthDay])))
         .getMessage.contains("key cannot be null"))
     }
     "write MonthDay as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.MonthDay): Unit = {
+      def check(x: MonthDay): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(java.time.MonthDay.of(12, 31))
-      check(java.time.MonthDay.of(1, 1))
+      check(MonthDay.of(12, 31))
+      check(MonthDay.of(1, 1))
       forAll(genMonthDay, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetDateTime" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.OffsetDateTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.OffsetDateTime])))
+      withWriter(_.writeVal(null.asInstanceOf[OffsetDateTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[OffsetDateTime])))
         .getMessage.contains("key cannot be null"))
     }
     "write OffsetDateTime as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.OffsetDateTime): Unit = {
+      def check(x: OffsetDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(java.time.OffsetDateTime.MAX)
-      check(java.time.OffsetDateTime.MIN)
+      check(OffsetDateTime.MAX)
+      check(OffsetDateTime.MIN)
       forAll(genOffsetDateTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[java.time.OffsetTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.OffsetTime])))
+      withWriter(_.writeVal(null.asInstanceOf[OffsetTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[OffsetTime])))
         .getMessage.contains("key cannot be null"))
     }
     "write OffsetTime as a string representation according to ISO-8601 format" in {
-      def check(x: java.time.OffsetTime): Unit = {
+      def check(x: OffsetTime): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(java.time.OffsetTime.MAX)
-      check(java.time.OffsetTime.MIN)
+      check(OffsetTime.MAX)
+      check(OffsetTime.MIN)
       forAll(genOffsetTime, minSuccessful(100000))(check)
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for Year" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[Year])) shouldBe "null"
+      withWriter(_.writeValAsString(null.asInstanceOf[Year])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Year])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write number values" in {
+      def check(x: Year): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe s
+        withWriter(_.writeValAsString(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      forAll(genYear, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {

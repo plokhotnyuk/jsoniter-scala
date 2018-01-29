@@ -191,7 +191,7 @@ final class JsonReader private[jsoniter_scala](
   def readKeyAsYear(): Year = {
     readParenthesesToken()
     val x = parseYear()
-    readColonToken()
+    readParenthesesByteWithColonToken()
     x
   }
 
@@ -366,8 +366,11 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readYear(default: Year = null): Year =
-    if (isNextToken('"', head)) parseYear()
-    else readNullOrTokenError(default, '"')
+    if (isNextToken('n', head)) parseNullOrError(default, "expected number or null", head)
+    else {
+      rollbackToken()
+      parseYear()
+    }
 
   def readYearMonth(default: YearMonth = null): YearMonth =
     if (isNextToken('"', head)) parseYearMonth()
@@ -447,6 +450,13 @@ final class JsonReader private[jsoniter_scala](
   def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
     if (isNextToken('"', head)) {
       val x = parseBigDecimal(isToken = false, default)
+      readParenthesesByte()
+      x
+    } else readNullOrTokenError(default, '"')
+
+  def readStringAsYear(default: Year): Year =
+    if (isNextToken('"', head)) {
+      val x = parseYear()
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
@@ -2045,10 +2055,13 @@ final class JsonReader private[jsoniter_scala](
       case ex: DateTimeParseException => dateTimeParseError(ex)
     }
 
-  private def parseYear(): Year =
-    try Year.parse(charSequence(parseString())) catch {
+  private def parseYear(): Year = {
+    val year = parseInt(isToken = false)
+    if (year < -999999999 || year > 999999999) decodeError("illegal year")
+    try Year.of(year) catch {
       case ex: DateTimeParseException => dateTimeParseError(ex)
     }
+  }
 
   private def parseYearMonth(): YearMonth =
     try YearMonth.parse(charSequence(parseString())) catch {

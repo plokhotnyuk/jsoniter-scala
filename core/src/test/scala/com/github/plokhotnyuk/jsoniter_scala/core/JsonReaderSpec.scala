@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets.UTF_8
+import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
@@ -261,19 +262,19 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.Instant.parse("2008-01-20T07:24:33Z")
+      val default = Instant.parse("2008-01-20T07:24:33Z")
       reader("null".getBytes).readInstant(default) shouldBe default
     }
     "parse Instant from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.Instant): Unit = {
+      def check(x: Instant): Unit = {
         val s = x.toString
         readInstant(s) shouldBe x
         readKeyAsInstant(s) shouldBe x
       }
 
       //FIXME add efficient support of min & max values
-      //check(java.time.Instant.MAX)
-      //check(java.time.Instant.MIN)
+      //check(Instant.MAX)
+      //check(Instant.MIN)
       forAll(genInstant, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
@@ -324,18 +325,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.LocalDate.parse("2008-01-20")
+      val default = LocalDate.parse("2008-01-20")
       reader("null".getBytes).readLocalDate(default) shouldBe default
     }
     "parse Instant from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.LocalDate): Unit = {
+      def check(x: LocalDate): Unit = {
         val s = x.toString
         readLocalDate(s) shouldBe x
         readKeyAsLocalDate(s) shouldBe x
       }
 
-      check(java.time.LocalDate.MAX)
-      check(java.time.LocalDate.MIN)
+      check(LocalDate.MAX)
+      check(LocalDate.MIN)
       forAll(genLocalDate, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
@@ -376,18 +377,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.LocalDateTime.parse("2008-01-20T07:24:33")
+      val default = LocalDateTime.parse("2008-01-20T07:24:33")
       reader("null".getBytes).readLocalDateTime(default) shouldBe default
     }
     "parse LocalDateTime from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.LocalDateTime): Unit = {
+      def check(x: LocalDateTime): Unit = {
         val s = x.toString
         readLocalDateTime(s) shouldBe x
         readKeyAsLocalDateTime(s) shouldBe x
       }
 
-      check(java.time.LocalDateTime.MAX)
-      check(java.time.LocalDateTime.MIN)
+      check(LocalDateTime.MAX)
+      check(LocalDateTime.MIN)
       forAll(genLocalDateTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
@@ -435,18 +436,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.LocalTime.parse("07:24:33")
+      val default = LocalTime.parse("07:24:33")
       reader("null".getBytes).readLocalTime(default) shouldBe default
     }
     "parse LocalTime from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.LocalTime): Unit = {
+      def check(x: LocalTime): Unit = {
         val s = x.toString
         readLocalTime(s) shouldBe x
         readKeyAsLocalTime(s) shouldBe x
       }
 
-      check(java.time.LocalTime.MAX)
-      check(java.time.LocalTime.MIN)
+      check(LocalTime.MAX)
+      check(LocalTime.MIN)
       forAll(genLocalTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
@@ -474,18 +475,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.MonthDay.parse("--01-20")
+      val default = MonthDay.parse("--01-20")
       reader("null".getBytes).readMonthDay(default) shouldBe default
     }
     "parse MonthDay from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.MonthDay): Unit = {
+      def check(x: MonthDay): Unit = {
         val s = x.toString
         readMonthDay(s) shouldBe x
         readKeyAsMonthDay(s) shouldBe x
       }
 
-      check(java.time.MonthDay.of(12, 31))
-      check(java.time.MonthDay.of(1, 1))
+      check(MonthDay.of(12, 31))
+      check(MonthDay.of(1, 1))
       forAll(genMonthDay, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
@@ -524,18 +525,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.OffsetDateTime.parse("2008-01-20T07:24Z")
+      val default = OffsetDateTime.parse("2008-01-20T07:24Z")
       reader("null".getBytes).readOffsetDateTime(default) shouldBe default
     }
     "parse OffsetDateTime from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.OffsetDateTime): Unit = {
+      def check(x: OffsetDateTime): Unit = {
         val s = x.toString
         readOffsetDateTime(s) shouldBe x
         readKeyAsOffsetDateTime(s) shouldBe x
       }
 
-      check(java.time.OffsetDateTime.MAX)
-      check(java.time.OffsetDateTime.MIN)
+      check(OffsetDateTime.MAX)
+      check(OffsetDateTime.MIN)
       forAll(genOffsetDateTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
@@ -592,18 +593,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      val default = java.time.OffsetTime.parse("07:24:33+01:00")
+      val default = OffsetTime.parse("07:24:33+01:00")
       reader("null".getBytes).readOffsetTime(default) shouldBe default
     }
     "parse OffsetTime from a string representation according to ISO-8601 format" in {
-      def check(x: java.time.OffsetTime): Unit = {
+      def check(x: OffsetTime): Unit = {
         val s = x.toString
         readOffsetTime(s) shouldBe x
         readKeyAsOffsetTime(s) shouldBe x
       }
 
-      check(java.time.OffsetTime.MAX)
-      check(java.time.OffsetTime.MIN)
+      check(OffsetTime.MAX)
+      check(OffsetTime.MIN)
       forAll(genOffsetTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
@@ -628,6 +629,71 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"07:24:33.+10=\"".getBytes, "expected ':' or '\"', offset: 0x0000000d")
       checkError("\"07:24:33.+10:\"".getBytes, "expected digit, offset: 0x0000000e")
       checkError("\"07:24:33.+10:1\"".getBytes, "expected digit, offset: 0x0000000f")
+    }
+  }
+  "JsonReader.readYear" should {
+    "parse valid number values with skipping of JSON space characters" in {
+      readYear(" \n\t\r123456789", null) shouldBe Year.of(123456789)
+      readYear(" \n\t\r-123456789", null) shouldBe Year.of(-123456789)
+    }
+    "parse valid number values and stops on not numeric chars (except '.', 'e', 'E')" in {
+      readYear("0$", null) shouldBe Year.of(0)
+      readYear("123456789$", null) shouldBe Year.of(123456789)
+    }
+  }
+  "JsonReader.readYear and JsonReader.readStringAsYear" should {
+    "parse null value" in {
+      readYear("null", null) shouldBe null
+      reader("null".getBytes).readStringAsYear(null) shouldBe null
+    }
+    "return supplied default value instead of null value" in {
+      readYear("null", Year.of(2008)) shouldBe Year.of(2008)
+      reader("null".getBytes).readStringAsYear(Year.of(2008)) shouldBe Year.of(2008)
+    }
+  }
+  "JsonReader.readYear, JsonReader.readStringAsYear and JsonReader.readKeyAsYear" should {
+    def check(n: Year): Unit = {
+      val s = n.toString
+      readYear(s, null) shouldBe n
+      readKeyAsYear(s) shouldBe n
+      readStringAsYear(s, null) shouldBe n
+    }
+
+    def checkError(s: String, error1: String, error2: String): Unit = {
+      assert(intercept[JsonParseException](readYear(s, null)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsYear(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsYear(s, null)).getMessage.contains(error2))
+    }
+
+    "parse valid number values" in {
+      forAll(genYear, minSuccessful(100000))(check)
+    }
+    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
+      checkError("12345.0", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
+      checkError("12345e5", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
+      checkError("12345E5", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
+    }
+    "throw parsing exception on illegal or empty input" in {
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError("nu", "unexpected end of input, offset: 0x00000002", "illegal number, offset: 0x00000001")
+    }
+    "throw parsing exception on leading zero" in {
+      checkError("00", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
+      checkError("012345", "illegal number with leading zero, offset: 0x00000000",
+        "illegal number with leading zero, offset: 0x00000001")
+      checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
+        "illegal number with leading zero, offset: 0x00000002")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1581,33 +1647,37 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     r.nextToken().toChar shouldBe ','
   }
 
-  def readInstant(s: String): java.time.Instant = readInstant(s.getBytes(UTF_8))
+  def readInstant(s: String): Instant = readInstant(s.getBytes(UTF_8))
 
-  def readInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf)).readInstant()
+  def readInstant(buf: Array[Byte]): Instant = reader(stringify(buf)).readInstant()
 
-  def readLocalDate(s: String): java.time.LocalDate = readLocalDate(s.getBytes(UTF_8))
+  def readLocalDate(s: String): LocalDate = readLocalDate(s.getBytes(UTF_8))
 
-  def readLocalDate(buf: Array[Byte]): java.time.LocalDate = reader(stringify(buf)).readLocalDate()
+  def readLocalDate(buf: Array[Byte]): LocalDate = reader(stringify(buf)).readLocalDate()
 
-  def readLocalDateTime(s: String): java.time.LocalDateTime = readLocalDateTime(s.getBytes(UTF_8))
+  def readLocalDateTime(s: String): LocalDateTime = readLocalDateTime(s.getBytes(UTF_8))
 
-  def readLocalDateTime(buf: Array[Byte]): java.time.LocalDateTime = reader(stringify(buf)).readLocalDateTime()
+  def readLocalDateTime(buf: Array[Byte]): LocalDateTime = reader(stringify(buf)).readLocalDateTime()
 
-  def readLocalTime(s: String): java.time.LocalTime = readLocalTime(s.getBytes(UTF_8))
+  def readLocalTime(s: String): LocalTime = readLocalTime(s.getBytes(UTF_8))
 
-  def readLocalTime(buf: Array[Byte]): java.time.LocalTime = reader(stringify(buf)).readLocalTime()
+  def readLocalTime(buf: Array[Byte]): LocalTime = reader(stringify(buf)).readLocalTime()
 
-  def readMonthDay(s: String): java.time.MonthDay = readMonthDay(s.getBytes(UTF_8))
+  def readMonthDay(s: String): MonthDay = readMonthDay(s.getBytes(UTF_8))
 
-  def readMonthDay(buf: Array[Byte]): java.time.MonthDay = reader(stringify(buf)).readMonthDay()
+  def readMonthDay(buf: Array[Byte]): MonthDay = reader(stringify(buf)).readMonthDay()
 
-  def readOffsetDateTime(s: String): java.time.OffsetDateTime = readOffsetDateTime(s.getBytes(UTF_8))
+  def readOffsetDateTime(s: String): OffsetDateTime = readOffsetDateTime(s.getBytes(UTF_8))
 
-  def readOffsetDateTime(buf: Array[Byte]): java.time.OffsetDateTime = reader(stringify(buf)).readOffsetDateTime()
+  def readOffsetDateTime(buf: Array[Byte]): OffsetDateTime = reader(stringify(buf)).readOffsetDateTime()
 
-  def readOffsetTime(s: String): java.time.OffsetTime = readOffsetTime(s.getBytes(UTF_8))
+  def readOffsetTime(s: String): OffsetTime = readOffsetTime(s.getBytes(UTF_8))
 
-  def readOffsetTime(buf: Array[Byte]): java.time.OffsetTime = reader(stringify(buf)).readOffsetTime()
+  def readOffsetTime(buf: Array[Byte]): OffsetTime = reader(stringify(buf)).readOffsetTime()
+
+  def readYear(s: String, default: Year): Year = readYear(s.getBytes(UTF_8), default)
+
+  def readYear(buf: Array[Byte], default: Year): Year = reader(buf).readYear(default)
 
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
@@ -1654,39 +1724,43 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal = reader(buf).readBigDecimal(default)
 
-  def readKeyAsInstant(s: String): java.time.Instant = readKeyAsInstant(s.getBytes(UTF_8))
+  def readKeyAsInstant(s: String): Instant = readKeyAsInstant(s.getBytes(UTF_8))
 
-  def readKeyAsInstant(buf: Array[Byte]): java.time.Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
+  def readKeyAsInstant(buf: Array[Byte]): Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
 
-  def readKeyAsLocalDate(s: String): java.time.LocalDate = readKeyAsLocalDate(s.getBytes(UTF_8))
+  def readKeyAsLocalDate(s: String): LocalDate = readKeyAsLocalDate(s.getBytes(UTF_8))
 
-  def readKeyAsLocalDate(buf: Array[Byte]): java.time.LocalDate =
+  def readKeyAsLocalDate(buf: Array[Byte]): LocalDate =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDate()
 
-  def readKeyAsLocalDateTime(s: String): java.time.LocalDateTime = readKeyAsLocalDateTime(s.getBytes(UTF_8))
+  def readKeyAsLocalDateTime(s: String): LocalDateTime = readKeyAsLocalDateTime(s.getBytes(UTF_8))
 
-  def readKeyAsLocalDateTime(buf: Array[Byte]): java.time.LocalDateTime =
+  def readKeyAsLocalDateTime(buf: Array[Byte]): LocalDateTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDateTime()
 
-  def readKeyAsLocalTime(s: String): java.time.LocalTime = readKeyAsLocalTime(s.getBytes(UTF_8))
+  def readKeyAsLocalTime(s: String): LocalTime = readKeyAsLocalTime(s.getBytes(UTF_8))
 
-  def readKeyAsLocalTime(buf: Array[Byte]): java.time.LocalTime =
+  def readKeyAsLocalTime(buf: Array[Byte]): LocalTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalTime()
 
-  def readKeyAsMonthDay(s: String): java.time.MonthDay = readKeyAsMonthDay(s.getBytes(UTF_8))
+  def readKeyAsMonthDay(s: String): MonthDay = readKeyAsMonthDay(s.getBytes(UTF_8))
 
-  def readKeyAsMonthDay(buf: Array[Byte]): java.time.MonthDay =
+  def readKeyAsMonthDay(buf: Array[Byte]): MonthDay =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsMonthDay()
 
-  def readKeyAsOffsetDateTime(s: String): java.time.OffsetDateTime = readKeyAsOffsetDateTime(s.getBytes(UTF_8))
+  def readKeyAsOffsetDateTime(s: String): OffsetDateTime = readKeyAsOffsetDateTime(s.getBytes(UTF_8))
 
-  def readKeyAsOffsetDateTime(buf: Array[Byte]): java.time.OffsetDateTime =
+  def readKeyAsOffsetDateTime(buf: Array[Byte]): OffsetDateTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetDateTime()
 
-  def readKeyAsOffsetTime(s: String): java.time.OffsetTime = readKeyAsOffsetTime(s.getBytes(UTF_8))
+  def readKeyAsOffsetTime(s: String): OffsetTime = readKeyAsOffsetTime(s.getBytes(UTF_8))
 
-  def readKeyAsOffsetTime(buf: Array[Byte]): java.time.OffsetTime =
+  def readKeyAsOffsetTime(buf: Array[Byte]): OffsetTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetTime()
+
+  def readKeyAsYear(s: String): Year = readKeyAsYear(s.getBytes(UTF_8))
+
+  def readKeyAsYear(buf: Array[Byte]): Year = reader(stringify(buf) :+ ':'.toByte).readKeyAsYear()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 
@@ -1731,6 +1805,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readKeyAsBigDecimal(s: String): BigDecimal = readKeyAsBigDecimal(s.getBytes(UTF_8))
 
   def readKeyAsBigDecimal(buf: Array[Byte]): BigDecimal = reader(stringify(buf) :+ ':'.toByte).readKeyAsBigDecimal()
+
+  def readStringAsYear(s: String, default: Year): Year =
+    readStringAsYear(s.getBytes(UTF_8), default)
+
+  def readStringAsYear(buf: Array[Byte], default: Year): Year =
+    reader(stringify(buf)).readStringAsYear(default)
 
   def readStringAsByte(s: String): Byte = readStringAsByte(s.getBytes(UTF_8))
 

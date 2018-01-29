@@ -195,9 +195,9 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeKey(x: Year): Unit =
     if (x ne null) {
-      writeComma()
-      writeNonEscapedAsciiString(x.toString)
-      writeColon()
+      writeCommaWithParentheses()
+      writeInt(x.getValue)
+      writeParenthesesWithColon()
     } else nullKeyError()
 
   def writeKey(x: YearMonth): Unit =
@@ -261,7 +261,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Period): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
-  def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeInt(x.getValue)
 
   def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -332,6 +332,10 @@ final class JsonWriter private[jsoniter_scala](
     writeDouble(x)
     writeBytes('"')
   }
+
+  def writeValAsString(x: Year): Unit =
+    if (x eq null) writeNull()
+    else writeValAsString(x.getValue)
 
   def writeNull(): Unit = writeBytes('n', 'u', 'l', 'l')
 
@@ -782,7 +786,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeInstant(x: Instant): Unit = count = {
     val dt = LocalDateTime.ofEpochSecond(x.getEpochSecond, x.getNano, ZoneOffset.UTC)
-    var pos = ensureBufferCapacity(39) // 39 == java.time.Instant.MAX.toString.length + 2
+    var pos = ensureBufferCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -795,7 +799,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeLocalDate(x: LocalDate): Unit = count = {
-    var pos = ensureBufferCapacity(18) // 18 == java.time.LocalDate.MAX.toString.length + 2
+    var pos = ensureBufferCapacity(18) // 18 == LocalDate.MAX.toString.length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeLocalDate(x, pos + 1, buf, digits)
@@ -804,7 +808,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeLocalDateTime(x: LocalDateTime): Unit = count = {
-    var pos = ensureBufferCapacity(37) // 37 == java.time.LocalDateTime.MAX.toString.length + 2
+    var pos = ensureBufferCapacity(37) // 37 == LocalDateTime.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -816,7 +820,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeLocalTime(x: LocalTime): Unit = count = {
-    var pos = ensureBufferCapacity(20) // 20 == java.time.LocalTime.MAX.toString.length + 2
+    var pos = ensureBufferCapacity(20) // 20 == LocalTime.MAX.toString.length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeLocalTime(x, pos + 1, buf, digits)
