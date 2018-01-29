@@ -20,7 +20,7 @@ Initially this library was developed for requirements of real-time bidding in ad
 - do validation of UTF-8 encoding, JSON format & mapped values efficiently with clear reporting, do not replace 
   illegally encoded characters of string values by placeholder characters
 
-It targets JDK 8 and above w/o any platform restrictions, but may works good enough on JDK 7 with Scala 2.11.
+It targets JDK 8+ w/o any platform restrictions.
 
 Support of Scala.js & Scala Native is not a goal for the moment. 
 
