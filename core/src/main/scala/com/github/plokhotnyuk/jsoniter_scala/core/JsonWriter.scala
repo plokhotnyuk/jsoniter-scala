@@ -182,7 +182,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: OffsetTime): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeOffsetTime(x)
       writeColon()
     } else nullKeyError()
 
@@ -257,7 +257,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeOffsetDateTime(x)
 
-  def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeOffsetTime(x)
 
   def writeVal(x: Period): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -839,41 +839,25 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeOffsetDateTime(x: OffsetDateTime): Unit = count = {
-    var pos = ensureBufferCapacity(43) // 43 == java.time.OffsetDateTime.MAX.toString.length + 2
+    var pos = ensureBufferCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
     pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
     buf(pos) = 'T'
-    pos = writeLocalTime(x.toLocalTime, pos + 1, buf, ds)
-    val ots = x.getOffset.getTotalSeconds
-    if (ots == 0) {
-      buf(pos) = 'Z'
-      buf(pos + 1) = '"'
-      pos + 2
-    } else {
-      val pots =
-        if (ots >= 0) {
-          buf(pos) = '+'
-          ots
-        } else {
-          buf(pos) = '-'
-          -ots
-        }
-      val q1 = pots / 3600
-      val r1 = pots - q1 * 3600
-      val q2 = r1 / 60
-      val r2 = r1 - q2 * 60
-      pos = write2Digits(q1, pos + 1, buf, ds)
-      buf(pos) = ':'
-      pos = write2Digits(q2, pos + 1, buf, ds)
-      if (r2 != 0) {
-        buf(pos) = ':'
-        pos = write2Digits(r2, pos + 1, buf, ds)
-      }
-      buf(pos) = '"'
-      pos + 1
-    }
+    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeOffsetTime(x: OffsetTime): Unit = count = {
+    var pos = ensureBufferCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+    buf(pos) = '"'
+    pos + 1
   }
 
   private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -924,6 +908,35 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     pos
+  }
+
+  private def writeOffset(x: ZoneOffset, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val ots = x.getTotalSeconds
+    if (ots == 0) {
+      buf(p) = 'Z'
+      p + 1
+    } else {
+      val pots =
+        if (ots >= 0) {
+          buf(p) = '+'
+          ots
+        } else {
+          buf(p) = '-'
+          -ots
+        }
+      val q1 = pots / 3600
+      val r1 = pots - q1 * 3600
+      val q2 = r1 / 60
+      val r2 = r1 - q2 * 60
+      var pos = write2Digits(q1, p + 1, buf, ds)
+      buf(pos) = ':'
+      pos = write2Digits(q2, pos + 1, buf, ds)
+      if (r2 != 0) {
+        buf(pos) = ':'
+        pos = write2Digits(r2, pos + 1, buf, ds)
+      }
+      pos
+    }
   }
 
   private def write2Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {

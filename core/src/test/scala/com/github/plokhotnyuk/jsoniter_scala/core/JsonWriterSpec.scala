@@ -234,9 +234,33 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(java.time.OffsetDateTime.MAX)
       check(java.time.OffsetDateTime.MIN)
       check(java.time.OffsetDateTime.now())
+      check(java.time.OffsetDateTime.parse("+999999999-12-31T23:59:59.999999999+00:00:01"))
       forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
         val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
         check(java.time.OffsetDateTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
+      }
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[java.time.OffsetTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[java.time.OffsetTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write OffsetTime as a string representation according to ISO-8601 format" in {
+      def check(x: java.time.OffsetTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(java.time.OffsetTime.MAX)
+      check(java.time.OffsetTime.MIN)
+      check(java.time.OffsetTime.now())
+      check(java.time.OffsetTime.parse("00:00:07.999999998+00:00:08"))
+      forAll(minSuccessful(100000)) { (second: Int, nano: Int, offset: Int) =>
+        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
+        check(java.time.OffsetTime.ofInstant(java.time.Instant.ofEpochSecond(second * 1000L, nano), zoneOffset))
       }
     }
   }

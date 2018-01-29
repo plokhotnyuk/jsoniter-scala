@@ -608,6 +608,55 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10:1\"".getBytes, "expected digit, offset: 0x0000001a")
     }
   }
+  "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
+    "parse null value" in {
+      reader("null".getBytes).readOffsetTime() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsOffsetTime())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = java.time.OffsetTime.parse("07:24:33+01:00")
+      reader("null".getBytes).readOffsetTime(default) shouldBe default
+    }
+    "parse OffsetTime from a string representation according to ISO-8601 format" in {
+      def check(x: java.time.OffsetTime): Unit = {
+        val s = x.toString
+        readOffsetTime(s) shouldBe x
+        readKeyAsOffsetTime(s) shouldBe x
+      }
+
+      check(java.time.OffsetTime.MAX)
+      check(java.time.OffsetTime.MIN)
+      check(java.time.OffsetTime.now)
+      forAll(minSuccessful(100000)) { (nano: Int, offset: Int) =>
+        val zoneOffset = ZoneOffset.ofTotalSeconds(offset % 64000)
+        check(java.time.OffsetTime.of(java.time.LocalTime.ofNanoOfDay(Math.abs(nano * 10000L)), zoneOffset))
+      }
+    }
+    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readOffsetTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetTime()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected digit, offset: 0x00000001")
+      checkError("\"07:24:33Z".getBytes, "unexpected end of input, offset: 0x0000000a")
+      checkError("\"7:24:33Z\"".getBytes, "expected digit, offset: 0x00000002")
+      checkError("\"07-24:33Z\"".getBytes, "expected ':', offset: 0x00000003")
+      checkError("\"07:24-33Z\"".getBytes, "expected ':' or '\"', offset: 0x00000009")
+      checkError("\"07:24:33.\"".getBytes, "expected '+' or '-' or 'Z' or digit, offset: 0x0000000a")
+      checkError("\"24:24:33Z\"".getBytes, "illegal hour, offset: 0x0000000a")
+      checkError("\"07:60:33Z\"".getBytes, "illegal minute, offset: 0x0000000a")
+      checkError("\"07:24:60Z\"".getBytes, "illegal second, offset: 0x0000000a")
+      checkError("\"07:24:33+\"".getBytes, "expected digit, offset: 0x0000000a")
+      checkError("\"07:24:33.+\"".getBytes, "expected digit, offset: 0x0000000b")
+      checkError("\"07:24:33.+1\"".getBytes, "expected digit, offset: 0x0000000c")
+      checkError("\"07:24:33.+10=\"".getBytes, "expected ':' or '\"', offset: 0x0000000d")
+      checkError("\"07:24:33.+10:\"".getBytes, "expected digit, offset: 0x0000000e")
+      checkError("\"07:24:33.+10:1\"".getBytes, "expected digit, offset: 0x0000000f")
+    }
+  }
   "JsonReader.readKeyAsString" should {
     "throw parsing exception for missing ':' in the end" in {
       assert(intercept[JsonParseException](reader("\"\"".getBytes).readKeyAsString())
@@ -1583,6 +1632,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readOffsetDateTime(buf: Array[Byte]): java.time.OffsetDateTime = reader(stringify(buf)).readOffsetDateTime()
 
+  def readOffsetTime(s: String): java.time.OffsetTime = readOffsetTime(s.getBytes(UTF_8))
+
+  def readOffsetTime(buf: Array[Byte]): java.time.OffsetTime = reader(stringify(buf)).readOffsetTime()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1656,6 +1709,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsOffsetDateTime(buf: Array[Byte]): java.time.OffsetDateTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetDateTime()
+
+  def readKeyAsOffsetTime(s: String): java.time.OffsetTime = readKeyAsOffsetTime(s.getBytes(UTF_8))
+
+  def readKeyAsOffsetTime(buf: Array[Byte]): java.time.OffsetTime =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetTime()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 
