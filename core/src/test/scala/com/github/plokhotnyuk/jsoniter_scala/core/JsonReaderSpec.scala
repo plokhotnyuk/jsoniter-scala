@@ -296,8 +296,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33ZZ".getBytes, "expected '\"', offset: 0x00000015")
       checkError("\"2008-01-20T07:24:33.\"".getBytes, "expected 'Z' or digit, offset: 0x00000015")
       checkError("\"2008-01-20T07:24:33.000\"".getBytes, "expected 'Z' or digit, offset: 0x00000018")
-      checkError("\"+1000000000-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
-      checkError("\"-1000000000-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
+      checkError("\"+1000000001-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
+      checkError("\"-1000000001-01-20T07:24:33Z\"".getBytes, "illegal year, offset: 0x0000001c")
       checkError("\"2008-00-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
       checkError("\"2008-13-20T07:24:33Z\"".getBytes, "illegal month, offset: 0x00000015")
       checkError("\"2008-01-00T07:24:33Z\"".getBytes, "illegal day, offset: 0x00000015")
@@ -584,6 +584,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10=\"".getBytes, "expected ':' or '\"', offset: 0x00000018")
       checkError("\"2008-01-20T07:24:33.+10:\"".getBytes, "expected digit, offset: 0x00000019")
       checkError("\"2008-01-20T07:24:33.+10:1\"".getBytes, "expected digit, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33.+18:10\"".getBytes, "illegal zone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.-18:10\"".getBytes, "illegal zone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+20:10\"".getBytes, "illegal zone offset hour, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:90\"".getBytes, "illegal zone offset minute, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:10:60\"".getBytes, "illegal zone offset second, offset: 0x0000001e")
     }
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
@@ -607,7 +612,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check(OffsetTime.MIN)
       forAll(genOffsetTime, minSuccessful(100000))(check)
     }
-    "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
+    "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
         assert(intercept[JsonParseException](reader(bytes).readOffsetTime()).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetTime()).getMessage.contains(error))
@@ -629,6 +634,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"07:24:33.+10=\"".getBytes, "expected ':' or '\"', offset: 0x0000000d")
       checkError("\"07:24:33.+10:\"".getBytes, "expected digit, offset: 0x0000000e")
       checkError("\"07:24:33.+10:1\"".getBytes, "expected digit, offset: 0x0000000f")
+      checkError("\"07:24:33.+18:10\"".getBytes, "illegal zone offset, offset: 0x00000010")
+      checkError("\"07:24:33.-18:10\"".getBytes, "illegal zone offset, offset: 0x00000010")
+      checkError("\"07:24:33.+20:10\"".getBytes, "illegal zone offset hour, offset: 0x00000010")
+      checkError("\"07:24:33.+10:90\"".getBytes, "illegal zone offset minute, offset: 0x00000010")
+      checkError("\"07:24:33.+10:10:60\"".getBytes, "illegal zone offset second, offset: 0x00000013")
     }
   }
   "JsonReader.readYear" should {
@@ -801,6 +811,52 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10:[UTC]\"".getBytes, "expected digit, offset: 0x00000019")
       checkError("\"2008-01-20T07:24:33.+10:1[UTC]\"".getBytes, "expected digit, offset: 0x0000001a")
       checkError("\"2008-01-20T07:24:33.+10:10[]\"".getBytes, "illegal zone id, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"".getBytes, "illegal zone offset, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"".getBytes, "illegal zone offset, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"".getBytes, "illegal zone offset hour, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+10:90[UTC]\"".getBytes, "illegal zone offset minute, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"".getBytes, "illegal zone offset second, offset: 0x00000023")
+    }
+  }
+  "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
+    "parse null value" in {
+      reader("null".getBytes).readZoneOffset() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZoneOffset())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = ZoneOffset.of("+01:00")
+      reader("null".getBytes).readZoneOffset(default) shouldBe default
+    }
+    "parse ZoneOffset from a string representation according to ISO-8601 format" in {
+      def check(x: ZoneOffset): Unit = {
+        val s = x.toString
+        readZoneOffset(s) shouldBe x
+        readKeyAsZoneOffset(s) shouldBe x
+      }
+
+      check(ZoneOffset.MAX)
+      check(ZoneOffset.MIN)
+      forAll(genZoneOffset, minSuccessful(100000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readZoneOffset()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsZoneOffset()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '+' or '-' or 'Z', offset: 0x00000001")
+      checkError("\"+\"".getBytes, "expected digit, offset: 0x00000002")
+      checkError("\"+1\"".getBytes, "expected digit, offset: 0x00000003")
+      checkError("\"+10=\"".getBytes, "expected ':' or '\"', offset: 0x00000004")
+      checkError("\"+10:\"".getBytes, "expected digit, offset: 0x00000005")
+      checkError("\"+10:1\"".getBytes, "expected digit, offset: 0x00000006")
+      checkError("\"+18:10\"".getBytes, "illegal zone offset, offset: 0x00000007")
+      checkError("\"-18:10\"".getBytes, "illegal zone offset, offset: 0x00000007")
+      checkError("\"+20:10\"".getBytes, "illegal zone offset hour, offset: 0x00000007")
+      checkError("\"+10:90\"".getBytes, "illegal zone offset minute, offset: 0x00000007")
+      checkError("\"+10:10:60\"".getBytes, "illegal zone offset second, offset: 0x0000000a")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1794,6 +1850,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readZonedDateTime(buf: Array[Byte]): ZonedDateTime = reader(stringify(buf)).readZonedDateTime()
 
+  def readZoneOffset(s: String): ZoneOffset = readZoneOffset(s.getBytes(UTF_8))
+
+  def readZoneOffset(buf: Array[Byte]): ZoneOffset = reader(stringify(buf)).readZoneOffset()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1885,6 +1945,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsZonedDateTime(buf: Array[Byte]): ZonedDateTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsZonedDateTime()
+
+  def readKeyAsZoneOffset(s: String): ZoneOffset = readKeyAsZoneOffset(s.getBytes(UTF_8))
+
+  def readKeyAsZoneOffset(buf: Array[Byte]): ZoneOffset =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsZoneOffset()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 

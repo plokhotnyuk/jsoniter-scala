@@ -225,7 +225,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: ZoneOffset): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeZoneOffset(x)
       writeColon()
     } else nullKeyError()
 
@@ -270,7 +270,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
-  def writeVal(x: ZoneOffset): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: ZoneOffset): Unit = if (x eq null) writeNull() else writeZoneOffset(x)
 
   def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
 
@@ -893,6 +893,15 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = ']'
       pos += 1
     }
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private def writeZoneOffset(x: ZoneOffset): Unit = count = {
+    var pos = ensureBufferCapacity(12) // 12 == "+10:10:10".length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    pos = writeOffset(x, pos + 1, buf, digits)
     buf(pos) = '"'
     pos + 1
   }

@@ -4,6 +4,7 @@ import java.io.InputStream
 import java.math.BigInteger
 import java.time._
 import java.time.format.DateTimeParseException
+import java.time.zone.ZoneRulesException
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
@@ -1237,7 +1238,7 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private def parseInstant(): Instant = {
-    var posYear = 0
+    var year = 0
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
@@ -1256,7 +1257,7 @@ final class JsonReader private[jsoniter_scala](
       (state: @switch) match {
         case 0 => // '-' or '+' or year digits
           if (b >= '0' && b <= '9') {
-            posYear = b - '0'
+            year = b - '0'
             yearDigits = 1
             state = 1
           } else if (b == '-') {
@@ -1268,14 +1269,14 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected '-' or '+' or digit", pos)
         case 1 => // year digit
           if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == yearMinDigits) state = 2
           } else digitError(pos)
         case 2 => // '-' or year digit
           if (b == '-') state = 4
           else if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == 10) state = 3
           } else tokenOrDigitError('-', pos)
@@ -1365,16 +1366,12 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 22)
     head = pos
-    checkLocalDate(yearNeg, posYear, month, day)
-    checkLocalTime(hour, minute, second)
-    val year = if (yearNeg) -posYear else posYear
-    try LocalDateTime.of(year, month, day, hour, minute, second, nano).toInstant(ZoneOffset.UTC) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    LocalDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano))
+      .toInstant(ZoneOffset.UTC)
   }
 
   private def parseLocalDate(): LocalDate = {
-    var posYear = 0
+    var year = 0
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
@@ -1388,7 +1385,7 @@ final class JsonReader private[jsoniter_scala](
       (state: @switch) match {
         case 0 => // '-' or '+' or year digits
           if (b >= '0' && b <= '9') {
-            posYear = b - '0'
+            year = b - '0'
             yearDigits = 1
             state = 1
           } else if (b == '-') {
@@ -1400,14 +1397,14 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected '-' or '+' or digit", pos)
         case 1 => // year digit
           if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == yearMinDigits) state = 2
           } else digitError(pos)
         case 2 => // '-' or year digit
           if (b == '-') state = 4
           else if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == 9) state = 3
           } else tokenOrDigitError('-', pos)
@@ -1444,11 +1441,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 10)
     head = pos
-    checkLocalDate(yearNeg, posYear, month, day)
-    val year = if (yearNeg) -posYear else posYear
-    try LocalDate.of(year, month, day) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    localDate(yearNeg, year, month, day)
   }
 
   private def parseLocalDateTime(): LocalDateTime = {
@@ -1578,12 +1571,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 21)
     head = pos
-    checkLocalDate(yearNeg, posYear, month, day)
-    checkLocalTime(hour, minute, second)
-    val year = if (yearNeg) -posYear else posYear
-    try LocalDateTime.of(year, month, day, hour, minute, second, nano) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    LocalDateTime.of(localDate(yearNeg, posYear, month, day), localTime(hour, minute, second, nano))
   }
 
   private def parseLocalTime(): LocalTime = {
@@ -1653,10 +1641,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 11)
     head = pos
-    checkLocalTime(hour, minute, second)
-    try LocalTime.of(hour, minute, second, nano) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    localTime(hour, minute, second, nano)
   }
 
   private def parseMonthDay(): MonthDay = {
@@ -1704,14 +1689,11 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 8)
     head = pos
-    checkLocalDate(false, 2004, month, day)
-    try MonthDay.of(month, day) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    monthDay(month, day)
   }
 
   private def parseOffsetDateTime(): OffsetDateTime = {
-    var posYear = 0
+    var year = 0
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
@@ -1723,7 +1705,7 @@ final class JsonReader private[jsoniter_scala](
     var nano = 0
     var nanoDigits = 0
     var offsetNeg = false
-    var posOffsetHour = 0
+    var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
     var state = 0
@@ -1734,7 +1716,7 @@ final class JsonReader private[jsoniter_scala](
       (state: @switch) match {
         case 0 => // '-' or '+' or year digits
           if (b >= '0' && b <= '9') {
-            posYear = b - '0'
+            year = b - '0'
             yearDigits = 1
             state = 1
           } else if (b == '-') {
@@ -1746,14 +1728,14 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected '-' or '+' or digit", pos)
         case 1 => // year digit
           if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == yearMinDigits) state = 2
           } else digitError(pos)
         case 2 => // '-' or year digit
           if (b == '-') state = 4
           else if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == 9) state = 3
           } else tokenOrDigitError('-', pos)
@@ -1846,7 +1828,7 @@ final class JsonReader private[jsoniter_scala](
             state = 21
           } else if (b == 'Z') state = 30
           else decodeError("expected '+' or '-' or 'Z' or digit", pos)
-        case 20 => // 'Z' or '-' or '+' or nano digit
+        case 20 => // 'Z' or '-' or '+'
           if (b == '+') state = 21
           else if (b == '-') {
             offsetNeg = true
@@ -1855,12 +1837,12 @@ final class JsonReader private[jsoniter_scala](
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 21 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = b - '0'
+            offsetHour = b - '0'
             state = 22
           } else digitError(pos)
         case 22 => // offset hour (2nd digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            offsetHour = offsetHour * 10 + (b - '0')
             state = 23
           } else digitError(pos)
         case 23 => // ':'
@@ -1901,14 +1883,8 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 31)
     head = pos
-    checkLocalDate(yearNeg, posYear, month, day)
-    checkLocalTime(hour, minute, second)
-    checkOffset(posOffsetHour, offsetMinute, offsetSecond)
-    val year = if (yearNeg) -posYear else posYear
-    val offset = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
-    try OffsetDateTime.of(year, month, day, hour, minute, second, nano, offset) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    OffsetDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano),
+      zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
   private def parseOffsetTime(): OffsetTime = {
@@ -1987,7 +1963,7 @@ final class JsonReader private[jsoniter_scala](
             state = 11
           } else if (b == 'Z') state = 20
           else decodeError("expected '+' or '-' or 'Z' or digit", pos)
-        case 10 => // 'Z' or '-' or '+' or nano digit
+        case 10 => // 'Z' or '-' or '+'
           if (b == '+') state = 11
           else if (b == '-') {
             offsetNeg = true
@@ -2042,12 +2018,8 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 21)
     head = pos
-    checkLocalTime(hour, minute, second)
-    checkOffset(posOffsetHour, offsetMinute, offsetSecond)
-    val offset = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
-    try OffsetTime.of(hour, minute, second, nano, offset) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    OffsetTime.of(localTime(hour, minute, second, nano),
+      zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond))
   }
 
   private def parsePeriod(): Period =
@@ -2059,7 +2031,7 @@ final class JsonReader private[jsoniter_scala](
     val year = parseInt(isToken = false)
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     try Year.of(year) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+      case ex: DateTimeException => dateTimeError(ex)
     }
   }
 
@@ -2120,11 +2092,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 7)
     head = pos
-    checkLocalDate(yearNeg, posYear, month, 1)
-    val year = if (yearNeg) -posYear else posYear
-    try YearMonth.of(year, month) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
-    }
+    yearMonth(yearNeg, posYear, month)
   }
 
   private def parseZonedDateTime(): ZonedDateTime = {
@@ -2143,7 +2111,7 @@ final class JsonReader private[jsoniter_scala](
     var posOffsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
-    var zoneId: String = null
+    var zone: String = null
     var state = 0
     var pos = head
     var i = 0
@@ -2265,7 +2233,7 @@ final class JsonReader private[jsoniter_scala](
             state = 21
           } else if (b == 'Z') state = 30
           else decodeError("expected '+' or '-' or 'Z' or digit", pos)
-        case 20 => // 'Z' or '-' or '+' or nano digit
+        case 20 => // 'Z' or '-' or '+'
           if (b == '+') state = 21
           else if (b == '-') {
             offsetNeg = true
@@ -2321,7 +2289,7 @@ final class JsonReader private[jsoniter_scala](
           else tokenError('[', pos)
         case 31 => // zone id
           if (b == ']') {
-            zoneId = new String(charBuf, 0, i)
+            zone = new String(charBuf, 0, i)
             state = 32
           } else if (b >= 0) i = appendChar(b.toChar, i)
           else decodeError("illegal zone id", pos)
@@ -2332,21 +2300,11 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 33)
     head = pos
-    checkLocalDate(yearNeg, posYear, month, day)
-    checkLocalTime(hour, minute, second)
-    checkOffset(posOffsetHour, offsetMinute, offsetSecond)
-    val year = if (yearNeg) -posYear else posYear
-    val offset = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
-    try {
-      if (zoneId == null) {
-        ZonedDateTime.of(year, month, day, hour, minute, second, nano, offset)
-      } else {
-        checkZoneId(zoneId)
-        ZonedDateTime.ofLocal(LocalDateTime.of(year, month, day, hour, minute, second, nano), ZoneId.of(zoneId), offset)
-      }
-    } catch {
-      case ex: DateTimeException => dateTimeError(ex)
-    }
+    val ld = localDate(yearNeg, posYear, month, day)
+    val lt = localTime(hour, minute, second, nano)
+    val zo = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
+    if (zone == null) ZonedDateTime.of(ld, lt, zo)
+    else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), zoneId(zone), zo)
   }
 
   private def parseZoneId(): ZoneId = {
@@ -2357,37 +2315,126 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def parseZoneOffset(): ZoneOffset = {
-    val len = parseString()
-    try ZoneOffset.of(new String(charBuf, 0, len)) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
-    }
+    var offsetNeg = false
+    var posOffsetHour = 0
+    var offsetMinute = 0
+    var offsetSecond = 0
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // 'Z' or '-' or '+'
+          if (b == '+') state = 1
+          else if (b == '-') {
+            offsetNeg = true
+            state = 1
+          } else if (b == 'Z') state = 10
+          else decodeError("expected '+' or '-' or 'Z'", pos)
+        case 1 => // offset hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            posOffsetHour = b - '0'
+            state = 2
+          } else digitError(pos)
+        case 2 => // offset hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            state = 3
+          } else digitError(pos)
+        case 3 => // ':'
+          if (b == ':') state = 4
+          else if (b == '"') state = 11
+          else tokensError(':', '"', pos)
+        case 4 => // offset minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            offsetMinute = b - '0'
+            state = 5
+          } else digitError(pos)
+        case 5 => // offset minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            offsetMinute = offsetMinute * 10 + (b - '0')
+            state = 6
+          } else digitError(pos)
+        case 6 => // ':' or '"'
+          if (b == ':') state = 7
+          else if (b == '"') state = 11
+          else tokensError(':', '"', pos)
+        case 7 => // offset second (1st digit)
+          if (b >= '0' && b <= '9') {
+            offsetSecond = b - '0'
+            state = 8
+          } else digitError(pos)
+        case 8 => // offset second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            offsetSecond = offsetSecond * 10 + (b - '0')
+            state = 10
+          } else digitError(pos)
+        case 9 => // 'Z'
+          if (b == 'Z') state = 10
+          else tokenError('Z', pos)
+        case 10 => // '"'
+          if (b == '"') state = 11
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 11)
+    head = pos
+    zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
   }
 
-  private def checkLocalDate(yearNeg: Boolean, year: Int, month: Int, day: Int): Unit = {
+  private def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
+    try LocalDate.of(if (yearNeg) -year else year, month, day) catch {
+      case ex: DateTimeException => dateTimeError(ex)
+    }
   }
 
-  private def checkLocalTime(hour: Int, minute: Int, second: Int): Unit = {
+  private def yearMonth(yearNeg: Boolean, year: Int, month: Int): YearMonth = {
+    if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
+    if (month < 1 || month > 12) decodeError("illegal month")
+    try YearMonth.of(if (yearNeg) -year else year, month) catch {
+      case ex: DateTimeException => dateTimeError(ex)
+    }
+  }
+
+  private def monthDay(month: Int, day: Int): MonthDay = {
+    if (month < 1 || month > 12) decodeError("illegal month")
+    if (day < 1 || (day > 28 && day > maxDayForYearMonth(2004, month))) decodeError("illegal day")
+    try MonthDay.of(month, day) catch {
+      case ex: DateTimeException => dateTimeError(ex)
+    }
+  }
+
+  private def localTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
     if (hour > 23) decodeError("illegal hour")
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
+    try LocalTime.of(hour, minute, second, nano) catch {
+      case ex: DateTimeException => dateTimeError(ex)
+    }
   }
-
-  private def checkOffset(offsetHour: Int, offsetMinute: Int, offsetSecond: Int): Unit = {
-    if (offsetHour > 18) decodeError("illegal offset hour")
-    if (offsetMinute > 59) decodeError("illegal offset minute")
-    if (offsetSecond > 59) decodeError("illegal offset second")
-  }
-
-  private def checkZoneId(zone: String): Unit =
-    if (!zoneIds.contains(zone)) decodeError("illegal zone id")
 
   private def zoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
+    if (offsetHour > 18) decodeError("illegal zone offset hour")
+    if (offsetMinute > 59) decodeError("illegal zone offset minute")
+    if (offsetSecond > 59) decodeError("illegal zone offset second")
     val offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)
+    if (offsetTotal > 64800) decodeError("illegal zone offset") // 64800 == 18 * 60 * 60
+    try ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)  catch {
+      case ex: DateTimeException => dateTimeError(ex)
+    }
   }
+
+  private def zoneId(zone: String): ZoneId =
+    if (zoneIds.contains(zone)) {
+      try ZoneId.of(zone) catch {
+        case ex: DateTimeException => dateTimeError(ex)
+        case ex: ZoneRulesException => dateTimeError(ex)
+      }
+    } else decodeError("illegal zone id")
 
   private def maxDayForYearMonth(year: Int, month: Int): Int =
     (month: @switch) match {
