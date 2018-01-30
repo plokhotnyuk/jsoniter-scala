@@ -898,6 +898,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10:10=10[UTC]\"".getBytes, "expected ':' or '[' or '\"', offset: 0x0000001b")
       checkError("\"2008-01-20T07:24:33.+10:10:X0[UTC]\"".getBytes, "expected digit, offset: 0x0000001c")
       checkError("\"2008-01-20T07:24:33.+10:10:1X[UTC]\"".getBytes, "expected digit, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+10:10:10[UTC]X\"".getBytes, "expected '\"', offset: 0x00000023")
       checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"".getBytes, "illegal zone offset, offset: 0x00000020")
       checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"".getBytes, "illegal zone offset, offset: 0x00000020")
       checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"".getBytes, "illegal zone offset hour, offset: 0x00000020")

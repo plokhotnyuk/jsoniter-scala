@@ -2282,8 +2282,7 @@ final class JsonReader private[jsoniter_scala](
           if (b == ']') {
             zone = new String(charBuf, 0, i)
             state = 31
-          } else if (b >= 0) i = appendChar(b.toChar, i)
-          else decodeError("illegal zone id", pos)
+          } else i = appendChar(b.toChar, i)
         case 31 => // '"'
           if (b == '"') state = 32
           else tokenError('"', pos)
