@@ -103,6 +103,23 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(Gen.uuid, minSuccessful(100000))(check)
     }
   }
+  "JsonWriter.writeVal and JsonWriter.writeKey for Duration" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[Duration])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Duration])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write Duration as a string representation according to ISO-8601 format" in {
+      def check(x: Duration): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(Duration.ZERO)
+      forAll(genDuration, minSuccessful(100000))(check)
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[Instant])) shouldBe "null"
@@ -230,6 +247,23 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genOffsetTime, minSuccessful(100000))(check)
     }
   }
+  "JsonWriter.writeVal and JsonWriter.writeKey for Period" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[Period])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Period])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write Period as a string representation according to ISO-8601 format" in {
+      def check(x: Period): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(Period.ZERO)
+      forAll(genPeriod, minSuccessful(100000))(check)
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for Year" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[Year])) shouldBe "null"
@@ -306,7 +340,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneId" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[ZoneId])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZoneOffset])))
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZoneId])))
         .getMessage.contains("key cannot be null"))
     }
     "write ZoneId as a string representation according to ISO-8601 format for zone offset or JDK 8+ format for IANA time zone identifier" in {
