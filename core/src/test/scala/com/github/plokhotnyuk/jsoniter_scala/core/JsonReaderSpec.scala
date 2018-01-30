@@ -1028,6 +1028,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readString and JsonReader.readKeyAsString" should {
+    def check(s: String): Unit = {
+      readString(s) shouldBe s
+      readKeyAsString(s) shouldBe s
+    }
+
     "parse null value" in {
       reader("null".getBytes).readString() shouldBe null
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsString())
@@ -1037,16 +1042,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes).readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
-      def check(s: String): Unit = {
-        readString(s) shouldBe s
-        readKeyAsString(s) shouldBe s
-      }
-
       forAll(minSuccessful(100000)) { (s: String) =>
         whenever(s.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s)
         }
       }
+    }
+    "parse string with valid surrogate pairs" in {
+      check("𝄞")
     }
     "parse escaped chars of string value" in {
       def checkEncoded(s1: String, s2: String): Unit = {
