@@ -273,7 +273,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZonedDateTime])))
         .getMessage.contains("key cannot be null"))
     }
-    "write ZonedDateTime as a string representation according to ISO-8601 format" in {
+    "write ZonedDateTime as a string representation according to ISO-8601 format with optional IANA time zone identifier in JDK 8+ format" in {
       def check(x: ZonedDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
@@ -301,6 +301,24 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(ZoneOffset.MAX)
       check(ZoneOffset.MIN)
       forAll(genZoneOffset, minSuccessful(100000))(check)
+    }
+  }
+  "JsonWriter.writeVal and JsonWriter.writeKey for ZoneId" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[ZoneId])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZoneOffset])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write ZoneId as a string representation according to ISO-8601 format for zone offset or JDK 8+ format for IANA time zone identifier" in {
+      def check(x: ZoneId): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(ZoneOffset.MAX)
+      check(ZoneOffset.MIN)
+      forAll(genZoneId, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {

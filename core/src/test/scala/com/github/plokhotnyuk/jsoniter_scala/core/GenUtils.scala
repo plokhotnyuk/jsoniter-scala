@@ -85,7 +85,12 @@ object GenUtils {
       year <- Gen.choose(-999999999, 999999999)
       month <- Gen.choose(1, 12)
     } yield YearMonth.of(year, month)
-  val genZoneId: Gen[ZoneId] = Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of)
+  val genZoneId: Gen[ZoneId] =
+    Gen.oneOf(genZoneOffset,
+      genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
+      genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
+      genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
+      Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of))
   val genZonedDateTime: Gen[ZonedDateTime] =
     for {
       year <- Gen.choose(-999999999, 999999999)

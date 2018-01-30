@@ -2309,9 +2309,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def parseZoneId(): ZoneId = {
     val len = parseString()
-    try ZoneId.of(new String(charBuf, 0, len)) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
-    }
+    zoneId(new String(charBuf, 0, len))
   }
 
   private def parseZoneOffset(): ZoneOffset = {
@@ -2429,12 +2427,10 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def zoneId(zone: String): ZoneId =
-    if (zoneIds.contains(zone)) {
-      try ZoneId.of(zone) catch {
-        case ex: DateTimeException => dateTimeError(ex)
-        case ex: ZoneRulesException => dateTimeError(ex)
-      }
-    } else decodeError("illegal zone id")
+    try ZoneId.of(zone) catch {
+      case ex: DateTimeException => dateTimeError(ex)
+      case ex: ZoneRulesException => dateTimeError(ex)
+    }
 
   private def maxDayForYearMonth(year: Int, month: Int): Int =
     (month: @switch) match {
@@ -2464,9 +2460,10 @@ final class JsonReader private[jsoniter_scala](
 
   private def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
-  private def dateTimeParseError(ex: DateTimeParseException): Nothing = decodeError("illegal date/time", head - 1, ex)
+  private def dateTimeParseError(ex: DateTimeParseException): Nothing =
+    decodeError("illegal date/time/zone", head - 1, ex)
 
-  private def dateTimeError(ex: DateTimeException): Nothing = decodeError("illegal date/time", head - 1, ex)
+  private def dateTimeError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
 
   private def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
@@ -2934,7 +2931,6 @@ object JsonReader {
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
   private final val dumpBorder =
     "\n+----------+-------------------------------------------------+------------------+"
-  private final val zoneIds: java.util.Set[String] = ZoneId.getAvailableZoneIds
 
   /**
     * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type 
@@ -3050,6 +3046,6 @@ private class CharBufferSequence extends CharSequence {
     else new String(charBuf, start, end - start)
 
   override def charAt(index: Int): Char =
-    if (index < len) charBuf(index)
-    else throw new IndexOutOfBoundsException
+    if (index >= len) throw new IndexOutOfBoundsException
+    else charBuf(index)
 }

@@ -754,7 +754,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       val default = ZonedDateTime.parse("2008-01-20T07:24Z[UTC]")
       reader("null".getBytes).readZonedDateTime(default) shouldBe default
     }
-    "parse ZonedDateTime from a string representation according to ISO-8601 format" in {
+    "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA time zone identifier in JDK 8+ format" in {
       def check(x: ZonedDateTime): Unit = {
         val s = x.toString
         readZonedDateTime(s) shouldBe x
@@ -810,12 +810,83 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10=[UTC]\"".getBytes, "expected ':' or '[' or '\"', offset: 0x00000018")
       checkError("\"2008-01-20T07:24:33.+10:[UTC]\"".getBytes, "expected digit, offset: 0x00000019")
       checkError("\"2008-01-20T07:24:33.+10:1[UTC]\"".getBytes, "expected digit, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:24:33.+10:10[]\"".getBytes, "illegal zone id, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+10:10[]\"".getBytes, "illegal date/time/zone, offset: 0x0000001d")
       checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"".getBytes, "illegal zone offset, offset: 0x00000020")
       checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"".getBytes, "illegal zone offset, offset: 0x00000020")
       checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"".getBytes, "illegal zone offset hour, offset: 0x00000020")
       checkError("\"2008-01-20T07:24:33.+10:90[UTC]\"".getBytes, "illegal zone offset minute, offset: 0x00000020")
       checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"".getBytes, "illegal zone offset second, offset: 0x00000023")
+    }
+  }
+  "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
+    "parse null value" in {
+      reader("null".getBytes).readZoneId() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZoneId())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = ZoneId.of("Europe/Warsaw")
+      reader("null".getBytes).readZoneId(default) shouldBe default
+    }
+    "parse ZoneId from a string representation according to ISO-8601 format for zone offset or JDK 8+ format for IANA time zone identifier" in {
+      def check(x: ZoneId): Unit = {
+        val s = x.toString
+        readZoneId(s) shouldBe x
+        readKeyAsZoneId(s) shouldBe x
+      }
+
+      check(ZoneOffset.MAX)
+      check(ZoneOffset.MIN)
+      forAll(genZoneId, minSuccessful(100000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken ZoneId string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readZoneId()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsZoneId()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "illegal date/time/zone, offset: 0x00000001")
+      checkError("\"+\"".getBytes, "illegal date/time/zone, offset: 0x00000002")
+      //checkError("\"+1\"".getBytes, "expected digit, offset: 0x00000003") FIXME looks like bug in ZoneId.of() parser
+      checkError("\"+10=\"".getBytes, "illegal date/time/zone, offset: 0x00000005")
+      checkError("\"+10:\"".getBytes, "illegal date/time/zone, offset: 0x00000005")
+      checkError("\"+10:1\"".getBytes, "illegal date/time/zone, offset: 0x00000006")
+      checkError("\"+18:10\"".getBytes, "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"-18:10\"".getBytes, "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"+20:10\"".getBytes, "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"+10:90\"".getBytes, "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"+10:10:60\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UT+\"".getBytes, "illegal date/time/zone, offset: 0x00000004")
+      //checkError("\"UT+1\"".getBytes, "expected digit, offset: 0x00000003") FIXME looks like bug in ZoneId.of() parser
+      checkError("\"UT+10=\"".getBytes, "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"UT+10:\"".getBytes, "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"UT+10:1\"".getBytes, "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"UT+18:10\"".getBytes, "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT-18:10\"".getBytes, "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT+20:10\"".getBytes, "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT+10:90\"".getBytes, "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT+10:10:60\"".getBytes, "illegal date/time/zone, offset: 0x0000000c")
+      checkError("\"UTC+\"".getBytes, "illegal date/time/zone, offset: 0x00000005")
+      //checkError("\"UTC+1\"".getBytes, "expected digit, offset: 0x00000003") FIXME looks like bug in ZoneId.of() parser
+      checkError("\"UTC+10=\"".getBytes, "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"UTC+10:\"".getBytes, "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"UTC+10:1\"".getBytes, "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UTC+18:10\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC-18:10\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC+20:10\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC+10:90\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC+10:10:60\"".getBytes, "illegal date/time/zone, offset: 0x0000000d")
+      checkError("\"GMT+\"".getBytes, "illegal date/time/zone, offset: 0x00000005")
+      //checkError("\"GMT+1\"".getBytes, "expected digit, offset: 0x00000003") FIXME looks like bug in ZoneId.of() parser
+      checkError("\"GMT+10=\"".getBytes, "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"GMT+10:\"".getBytes, "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"GMT+10:1\"".getBytes, "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"GMT+18:10\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT-18:10\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT+20:10\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT+10:90\"".getBytes, "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT+10:10:60\"".getBytes, "illegal date/time/zone, offset: 0x0000000d")
     }
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
@@ -1854,6 +1925,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readZoneOffset(buf: Array[Byte]): ZoneOffset = reader(stringify(buf)).readZoneOffset()
 
+  def readZoneId(s: String): ZoneId = readZoneId(s.getBytes(UTF_8))
+
+  def readZoneId(buf: Array[Byte]): ZoneId = reader(stringify(buf)).readZoneId()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1950,6 +2025,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsZoneOffset(buf: Array[Byte]): ZoneOffset =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsZoneOffset()
+
+  def readKeyAsZoneId(s: String): ZoneId = readKeyAsZoneId(s.getBytes(UTF_8))
+
+  def readKeyAsZoneId(buf: Array[Byte]): ZoneId =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsZoneId()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 
