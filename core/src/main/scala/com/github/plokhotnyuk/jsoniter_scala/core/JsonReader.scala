@@ -2127,10 +2127,227 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def parseZonedDateTime(): ZonedDateTime =
-    try ZonedDateTime.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+  private def parseZonedDateTime(): ZonedDateTime = {
+    var posYear = 0
+    var yearNeg = false
+    var yearDigits = 0
+    var yearMinDigits = 4
+    var month = 0
+    var day = 0
+    var hour = 0
+    var minute = 0
+    var second = 0
+    var nano = 0
+    var nanoDigits = 0
+    var offsetNeg = false
+    var posOffsetHour = 0
+    var offsetMinute = 0
+    var offsetSecond = 0
+    var zoneId: String = null
+    var state = 0
+    var pos = head
+    var i = 0
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // '-' or '+' or year digits
+          if (b >= '0' && b <= '9') {
+            posYear = b - '0'
+            yearDigits = 1
+            state = 1
+          } else if (b == '-') {
+            yearNeg = true
+            state = 1
+          } else if (b == '+') {
+            yearMinDigits = 5
+            state = 1
+          } else decodeError("expected '-' or '+' or digit", pos)
+        case 1 => // year digit
+          if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == yearMinDigits) state = 2
+          } else digitError(pos)
+        case 2 => // '-' or year digit
+          if (b == '-') state = 4
+          else if (b >= '0' && b <= '9') {
+            posYear = posYear * 10 + (b - '0')
+            yearDigits += 1
+            if (yearDigits == 9) state = 3
+          } else tokenOrDigitError('-', pos)
+        case 3 => // '-'
+          if (b == '-') state = 4
+          else tokenError('-', pos)
+        case 4 => // month (1st digit)
+          if (b >= '0' && b <= '9') {
+            month = b - '0'
+            state = 5
+          } else digitError(pos)
+        case 5 => // month (2nd digit)
+          if (b >= '0' && b <= '9') {
+            month = month * 10 + (b - '0')
+            state = 6
+          } else digitError(pos)
+        case 6 => // '-'
+          if (b == '-') state = 7
+          else tokenError('-', pos)
+        case 7 => // day (1st digit)
+          if (b >= '0' && b <= '9') {
+            day = b - '0'
+            state = 8
+          } else digitError(pos)
+        case 8 => // day (2nd digit)
+          if (b >= '0' && b <= '9') {
+            day = day * 10 + (b - '0')
+            state = 9
+          } else digitError(pos)
+        case 9 => // 'T'
+          if (b == 'T') state = 10
+          else tokenError('T', pos)
+        case 10 => // hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            hour = b - '0'
+            state = 11
+          } else digitError(pos)
+        case 11 => // hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            hour = hour * 10 + (b - '0')
+            state = 12
+          } else digitError(pos)
+        case 12 => // ':'
+          if (b == ':') state = 13
+          else tokenError(':', pos)
+        case 13 => // minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            minute = b - '0'
+            state = 14
+          } else digitError(pos)
+        case 14 => // minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            minute = minute * 10 + (b - '0')
+            state = 15
+          } else digitError(pos)
+        case 15 => // ':' or '+' or '-' or 'z'
+          if (b == ':') state = 16
+          else if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
+        case 16 => // second (1st digit)
+          if (b >= '0' && b <= '9') {
+            second = b - '0'
+            state = 17
+          } else digitError(pos)
+        case 17 => // second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            second = second * 10 + (b - '0')
+            state = 18
+          } else digitError(pos)
+        case 18 => // 'Z' or '.' or '-' or '+'
+          if (b == '.') state = 19
+          else if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
+        case 19 => // 'Z' or '-' or '+' or nano digit
+          if (b >= '0' && b <= '9') {
+            nanoDigits += 1
+            nano += nanoMultiplier(nanoDigits) * (b - '0')
+            if (nanoDigits == 9) state = 20
+          } else if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected '+' or '-' or 'Z' or digit", pos)
+        case 20 => // 'Z' or '-' or '+' or nano digit
+          if (b == '+') state = 21
+          else if (b == '-') {
+            offsetNeg = true
+            state = 21
+          } else if (b == 'Z') state = 30
+          else decodeError("expected '+' or '-' or 'Z'", pos)
+        case 21 => // offset hour (1st digit)
+          if (b >= '0' && b <= '9') {
+            posOffsetHour = b - '0'
+            state = 22
+          } else digitError(pos)
+        case 22 => // offset hour (2nd digit)
+          if (b >= '0' && b <= '9') {
+            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            state = 23
+          } else digitError(pos)
+        case 23 => // ':' or '[' or '"'
+          if (b == ':') state = 24
+          else if (b == '[') state = 31
+          else if (b == '"') state = 33
+          else decodeError("expected ':' or '[' or '\"'", pos)
+        case 24 => // offset minute (1st digit)
+          if (b >= '0' && b <= '9') {
+            offsetMinute = b - '0'
+            state = 25
+          } else digitError(pos)
+        case 25 => // offset minute (2nd digit)
+          if (b >= '0' && b <= '9') {
+            offsetMinute = offsetMinute * 10 + (b - '0')
+            state = 26
+          } else digitError(pos)
+        case 26 => // ':' or '['
+          if (b == ':') state = 27
+          else if (b == '[') state = 31
+          else if (b == '"') state = 33
+          else decodeError("expected ':' or '[' or '\"'", pos)
+        case 27 => // offset second (1st digit)
+          if (b >= '0' && b <= '9') {
+            offsetSecond = b - '0'
+            state = 28
+          } else digitError(pos)
+        case 28 => // offset second (2nd digit)
+          if (b >= '0' && b <= '9') {
+            offsetSecond = offsetSecond * 10 + (b - '0')
+            state = 30
+          } else digitError(pos)
+        case 29 => // 'Z'
+          if (b == 'Z') state = 30
+          else tokenError('Z', pos)
+        case 30 => // '[' or '"'
+          if (b == '[') state = 31
+          else if (b == '"') state = 33
+          else tokenError('[', pos)
+        case 31 => // zone id
+          if (b == ']') {
+            zoneId = new String(charBuf, 0, i)
+            state = 32
+          } else if (b >= 0) i = appendChar(b.toChar, i)
+          else decodeError("illegal zone id", pos)
+        case 32 => // '"'
+          if (b == '"') state = 33
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 33)
+    head = pos
+    checkLocalDate(yearNeg, posYear, month, day)
+    checkLocalTime(hour, minute, second)
+    checkOffset(posOffsetHour, offsetMinute, offsetSecond)
+    val year = if (yearNeg) -posYear else posYear
+    val offset = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
+    try {
+      if (zoneId == null) {
+        ZonedDateTime.of(year, month, day, hour, minute, second, nano, offset)
+      } else {
+        checkZoneId(zoneId)
+        ZonedDateTime.ofLocal(LocalDateTime.of(year, month, day, hour, minute, second, nano), ZoneId.of(zoneId), offset)
+      }
+    } catch {
+      case ex: DateTimeException => dateTimeError(ex)
     }
+  }
 
   private def parseZoneId(): ZoneId = {
     val len = parseString()
@@ -2163,6 +2380,9 @@ final class JsonReader private[jsoniter_scala](
     if (offsetMinute > 59) decodeError("illegal offset minute")
     if (offsetSecond > 59) decodeError("illegal offset second")
   }
+
+  private def checkZoneId(zone: String): Unit =
+    if (!zoneIds.contains(zone)) decodeError("illegal zone id")
 
   private def zoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     val offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
@@ -2667,6 +2887,7 @@ object JsonReader {
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
   private final val dumpBorder =
     "\n+----------+-------------------------------------------------+------------------+"
+  private final val zoneIds: java.util.Set[String] = ZoneId.getAvailableZoneIds
 
   /**
     * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type 

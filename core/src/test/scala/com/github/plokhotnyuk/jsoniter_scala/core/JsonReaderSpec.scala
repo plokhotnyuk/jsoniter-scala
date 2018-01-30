@@ -539,7 +539,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check(OffsetDateTime.MIN)
       forAll(genOffsetDateTime, minSuccessful(100000))(check)
     }
-    "throw parsing exception for empty input and illegal or broken Instant string" in {
+    "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
         assert(intercept[JsonParseException](reader(bytes).readOffsetDateTime()).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetDateTime()).getMessage.contains(error))
@@ -732,6 +732,75 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"-1000000000-01\"".getBytes, "expected '-', offset: 0x0000000b")
       checkError("\"2008-00\"".getBytes, "illegal month, offset: 0x00000008")
       checkError("\"2008-13\"".getBytes, "illegal month, offset: 0x00000008")
+    }
+  }
+  "JsonReader.readZonedDateTime and JsonReader.readKeyAsZonedDateTime" should {
+    "parse null value" in {
+      reader("null".getBytes).readZonedDateTime() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZonedDateTime())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = ZonedDateTime.parse("2008-01-20T07:24Z[UTC]")
+      reader("null".getBytes).readZonedDateTime(default) shouldBe default
+    }
+    "parse ZonedDateTime from a string representation according to ISO-8601 format" in {
+      def check(x: ZonedDateTime): Unit = {
+        val s = x.toString
+        readZonedDateTime(s) shouldBe x
+        readKeyAsZonedDateTime(s) shouldBe x
+      }
+
+      check(ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
+      check(ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN))
+      forAll(genZonedDateTime, minSuccessful(100000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readZonedDateTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsZonedDateTime()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z[UTC]".getBytes, "unexpected end of input, offset: 0x0000001a")
+      checkError("\"008-01-20T07:24:33Z[UTC]\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z[UTC]\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"2008-01=20T07:24:33Z[UTC]\"".getBytes, "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-20X07:24:33Z[UTC]\"".getBytes, "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20T07-24:33Z[UTC]\"".getBytes, "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:24-33Z[UTC]\"".getBytes, "expected ':' or '[' or '\"', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33X[UTC]\"".getBytes, "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ".getBytes, "expected '[', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.[UTC]\"".getBytes, "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.000[UTC]\"".getBytes, "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
+      checkError("\"+1000000000-01-20T07:24:33Z[UTC]\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20T07:24:33Z[UTC]\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"2008-00-20T07:24:33Z[UTC]\"".getBytes, "illegal month, offset: 0x0000001a")
+      checkError("\"2008-13-20T07:24:33Z[UTC]\"".getBytes, "illegal month, offset: 0x0000001a")
+      checkError("\"2008-01-00T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-01-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-02-30T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-03-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-04-31T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-05-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-06-31T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-07-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-08-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-09-31T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-10-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-11-31T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-12-32T07:24:33Z[UTC]\"".getBytes, "illegal day, offset: 0x0000001a")
+      checkError("\"2008-01-20T24:24:33Z[UTC]\"".getBytes, "illegal hour, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:60:33Z[UTC]\"".getBytes, "illegal minute, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:60Z[UTC]\"".getBytes, "illegal second, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33+[UTC]\"".getBytes, "expected digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.+[UTC]\"".getBytes, "expected digit, offset: 0x00000016")
+      checkError("\"2008-01-20T07:24:33.+1[UTC]\"".getBytes, "expected digit, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+10=[UTC]\"".getBytes, "expected ':' or '[' or '\"', offset: 0x00000018")
+      checkError("\"2008-01-20T07:24:33.+10:[UTC]\"".getBytes, "expected digit, offset: 0x00000019")
+      checkError("\"2008-01-20T07:24:33.+10:1[UTC]\"".getBytes, "expected digit, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33.+10:10[]\"".getBytes, "illegal zone id, offset: 0x0000001d")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1721,6 +1790,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf)).readYearMonth()
 
+  def readZonedDateTime(s: String): ZonedDateTime = readZonedDateTime(s.getBytes(UTF_8))
+
+  def readZonedDateTime(buf: Array[Byte]): ZonedDateTime = reader(stringify(buf)).readZonedDateTime()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1807,6 +1880,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readKeyAsYearMonth(s: String): YearMonth = readKeyAsYearMonth(s.getBytes(UTF_8))
 
   def readKeyAsYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf) :+ ':'.toByte).readKeyAsYearMonth()
+
+  def readKeyAsZonedDateTime(s: String): ZonedDateTime = readKeyAsZonedDateTime(s.getBytes(UTF_8))
+
+  def readKeyAsZonedDateTime(buf: Array[Byte]): ZonedDateTime =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsZonedDateTime()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 

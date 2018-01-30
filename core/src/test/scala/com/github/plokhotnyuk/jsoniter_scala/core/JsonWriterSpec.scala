@@ -267,6 +267,24 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genYearMonth, minSuccessful(100000))(check)
     }
   }
+  "JsonWriter.writeVal and JsonWriter.writeKey for ZonedDateTime" should {
+    "write null value" in {
+      withWriter(_.writeVal(null.asInstanceOf[ZonedDateTime])) shouldBe "null"
+      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZonedDateTime])))
+        .getMessage.contains("key cannot be null"))
+    }
+    "write ZonedDateTime as a string representation according to ISO-8601 format" in {
+      def check(x: ZonedDateTime): Unit = {
+        val s = x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+      }
+
+      check(ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
+      check(ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN))
+      forAll(genZonedDateTime, minSuccessful(100000))(check)
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
     "write null value" in {
       withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"

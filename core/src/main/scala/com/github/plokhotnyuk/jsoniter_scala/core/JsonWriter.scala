@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
 
 import scala.annotation.{switch, tailrec}
 import scala.collection.breakOut
+import scala.collection.JavaConverters._
 
 /**
   * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter]] that contains params for formatting of
@@ -210,7 +211,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: ZonedDateTime): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeZonedDateTime(x)
       writeColon()
     } else nullKeyError()
 
@@ -265,7 +266,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeYearMonth(x)
 
-  def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeZonedDateTime(x)
 
   def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -873,6 +874,29 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
+  private def writeZonedDateTime(x: ZonedDateTime): Unit = count = {
+    var pos = ensureBufferCapacity(maxZonedDateTimeLength) // ~80 for current time zones
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
+    buf(pos) = 'T'
+    pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
+    val zone = x.getZone
+    if (!zone.isInstanceOf[ZoneOffset]) {
+      buf(pos) = '['
+      pos += 1
+      val zoneId = zone.getId
+      val len = zoneId.length
+      zoneId.getBytes(0, len, buf, pos)
+      pos += len
+      buf(pos) = ']'
+      pos += 1
+    }
+    buf(pos) = '"'
+    pos + 1
+  }
+
   private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val pos = writeYearMonth(x.getYear, x.getMonthValue, p, buf, ds)
     buf(pos) = '-'
@@ -1163,6 +1187,10 @@ object JsonWriter {
     (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
   private final val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
+  private final val maxZonedDateTimeLength: Int = {
+    val mostLongZoneId = ZoneId.of(ZoneId.getAvailableZoneIds.asScala.maxBy(_.length))
+    ZonedDateTime.ofLocal(LocalDateTime.MAX, mostLongZoneId, ZoneOffset.UTC).toString.length + 5
+  }
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
 
