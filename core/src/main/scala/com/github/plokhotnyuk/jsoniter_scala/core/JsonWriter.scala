@@ -203,7 +203,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: YearMonth): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeYearMonth(x)
       writeColon()
     } else nullKeyError()
 
@@ -263,7 +263,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeInt(x.getValue)
 
-  def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeYearMonth(x)
 
   def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
 
@@ -864,9 +864,23 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
+  private def writeYearMonth(x: YearMonth): Unit = count = {
+    var pos = ensureBufferCapacity(15) // 15 == "+999999999-12".length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    pos = writeYearMonth(x.getYear, x.getMonthValue, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
   private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val pos = writeYearMonth(x.getYear, x.getMonthValue, p, buf, ds)
+    buf(pos) = '-'
+    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
+  }
+
+  private def writeYearMonth(year: Int, month: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var pos = p
-    val year = x.getYear
     val posYear =
       if (year >= 0) {
         if (year >= 10000) {
@@ -884,9 +898,7 @@ final class JsonWriter private[jsoniter_scala](
       pos = writeIntFirst(posYear, pos + off, buf, ds) + off
     } else pos = write4Digits(posYear, pos, buf, ds)
     buf(pos) = '-'
-    pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
-    buf(pos) = '-'
-    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
+    write2Digits(month, pos + 1, buf, ds)
   }
 
   private def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short], full: Boolean = false): Int = {

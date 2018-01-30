@@ -328,7 +328,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       val default = LocalDate.parse("2008-01-20")
       reader("null".getBytes).readLocalDate(default) shouldBe default
     }
-    "parse Instant from a string representation according to ISO-8601 format" in {
+    "parse LocalDate from a string representation according to ISO-8601 format" in {
       def check(x: LocalDate): Unit = {
         val s = x.toString
         readLocalDate(s) shouldBe x
@@ -694,6 +694,44 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "illegal number with leading zero, offset: 0x00000001")
       checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
         "illegal number with leading zero, offset: 0x00000002")
+    }
+  }
+  "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
+    "parse null value" in {
+      reader("null".getBytes).readYearMonth() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsYearMonth())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = YearMonth.parse("2008-01")
+      reader("null".getBytes).readYearMonth(default) shouldBe default
+    }
+    "parse YearMonth from a string representation according to ISO-8601 format" in {
+      def check(x: YearMonth): Unit = {
+        val s = x.toString
+        readYearMonth(s) shouldBe x
+        readKeyAsYearMonth(s) shouldBe x
+      }
+
+      check(YearMonth.of(Year.MIN_VALUE, 12))
+      check(YearMonth.of(Year.MIN_VALUE, 1))
+      forAll(genYearMonth, minSuccessful(100000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken YearMonth string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readYearMonth()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsYearMonth()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01".getBytes, "unexpected end of input, offset: 0x00000008")
+      checkError("\"008-01\"".getBytes, "expected digit, offset: 0x00000004")
+      checkError("\"2008=01\"".getBytes, "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+1000000000-01\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01\"".getBytes, "expected '-', offset: 0x0000000b")
+      checkError("\"2008-00\"".getBytes, "illegal month, offset: 0x00000008")
+      checkError("\"2008-13\"".getBytes, "illegal month, offset: 0x00000008")
     }
   }
   "JsonReader.readKeyAsString" should {
@@ -1679,6 +1717,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readYear(buf: Array[Byte], default: Year): Year = reader(buf).readYear(default)
 
+  def readYearMonth(s: String): YearMonth = readYearMonth(s.getBytes(UTF_8))
+
+  def readYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf)).readYearMonth()
+
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
   def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
@@ -1761,6 +1803,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readKeyAsYear(s: String): Year = readKeyAsYear(s.getBytes(UTF_8))
 
   def readKeyAsYear(buf: Array[Byte]): Year = reader(stringify(buf) :+ ':'.toByte).readKeyAsYear()
+
+  def readKeyAsYearMonth(s: String): YearMonth = readKeyAsYearMonth(s.getBytes(UTF_8))
+
+  def readKeyAsYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf) :+ ':'.toByte).readKeyAsYearMonth()
 
   def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes(UTF_8))
 
