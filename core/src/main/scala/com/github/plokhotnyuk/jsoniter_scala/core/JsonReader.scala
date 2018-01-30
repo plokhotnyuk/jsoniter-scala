@@ -2196,7 +2196,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
         case 16 => // second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2214,7 +2214,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
         case 19 => // 'Z' or '-' or '+' or nano digit
           if (b >= '0' && b <= '9') {
@@ -2225,14 +2225,14 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected '+' or '-' or 'Z' or digit", pos)
         case 20 => // 'Z' or '-' or '+'
           if (b == '+') state = 21
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 21 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2246,8 +2246,8 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 23 => // ':' or '[' or '"'
           if (b == ':') state = 24
-          else if (b == '[') state = 31
-          else if (b == '"') state = 33
+          else if (b == '[') state = 30
+          else if (b == '"') state = 32
           else decodeError("expected ':' or '[' or '\"'", pos)
         case 24 => // offset minute (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2261,8 +2261,8 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 26 => // ':' or '['
           if (b == ':') state = 27
-          else if (b == '[') state = 31
-          else if (b == '"') state = 33
+          else if (b == '[') state = 30
+          else if (b == '"') state = 32
           else decodeError("expected ':' or '[' or '\"'", pos)
         case 27 => // offset second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2272,27 +2272,24 @@ final class JsonReader private[jsoniter_scala](
         case 28 => // offset second (2nd digit)
           if (b >= '0' && b <= '9') {
             offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 30
+            state = 29
           } else digitError(pos)
-        case 29 => // 'Z'
-          if (b == 'Z') state = 30
-          else tokenError('Z', pos)
-        case 30 => // '[' or '"'
-          if (b == '[') state = 31
-          else if (b == '"') state = 33
+        case 29 => // '[' or '"'
+          if (b == '[') state = 30
+          else if (b == '"') state = 32
           else tokenError('[', pos)
-        case 31 => // zone id
+        case 30 => // zone id
           if (b == ']') {
             zone = new String(charBuf, 0, i)
-            state = 32
+            state = 31
           } else if (b >= 0) i = appendChar(b.toChar, i)
           else decodeError("illegal zone id", pos)
-        case 32 => // '"'
-          if (b == '"') state = 33
+        case 31 => // '"'
+          if (b == '"') state = 32
           else tokenError('"', pos)
       }
       pos += 1
-    } while (state != 33)
+    } while (state != 32)
     head = pos
     val ld = localDate(yearNeg, posYear, month, day)
     val lt = localTime(hour, minute, second, nano)
@@ -2322,7 +2319,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 1
-          } else if (b == 'Z') state = 10
+          } else if (b == 'Z') state = 9
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 1 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2336,7 +2333,7 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 3 => // ':'
           if (b == ':') state = 4
-          else if (b == '"') state = 11
+          else if (b == '"') state = 10
           else tokensError(':', '"', pos)
         case 4 => // offset minute (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2350,7 +2347,7 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 6 => // ':' or '"'
           if (b == ':') state = 7
-          else if (b == '"') state = 11
+          else if (b == '"') state = 10
           else tokensError(':', '"', pos)
         case 7 => // offset second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2360,17 +2357,14 @@ final class JsonReader private[jsoniter_scala](
         case 8 => // offset second (2nd digit)
           if (b >= '0' && b <= '9') {
             offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 10
+            state = 9
           } else digitError(pos)
-        case 9 => // 'Z'
-          if (b == 'Z') state = 10
-          else tokenError('Z', pos)
-        case 10 => // '"'
-          if (b == '"') state = 11
+        case 9 => // '"'
+          if (b == '"') state = 10
           else tokenError('"', pos)
       }
       pos += 1
-    } while (state != 11)
+    } while (state != 10)
     head = pos
     zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
   }
