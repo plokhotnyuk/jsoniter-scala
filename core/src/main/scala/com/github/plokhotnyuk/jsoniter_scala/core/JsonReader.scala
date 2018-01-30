@@ -1797,7 +1797,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
         case 16 => // second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1815,7 +1815,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
         case 19 => // 'Z' or '-' or '+' or nano digit
           if (b >= '0' && b <= '9') {
@@ -1826,14 +1826,14 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected '+' or '-' or 'Z' or digit", pos)
         case 20 => // 'Z' or '-' or '+'
           if (b == '+') state = 21
           else if (b == '-') {
             offsetNeg = true
             state = 21
-          } else if (b == 'Z') state = 30
+          } else if (b == 'Z') state = 29
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 21 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1847,7 +1847,7 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 23 => // ':'
           if (b == ':') state = 24
-          else if (b == '"') state = 31
+          else if (b == '"') state = 30
           else tokensError(':', '"', pos)
         case 24 => // offset minute (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1861,7 +1861,7 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 26 => // ':' or '"'
           if (b == ':') state = 27
-          else if (b == '"') state = 31
+          else if (b == '"') state = 30
           else tokensError(':', '"', pos)
         case 27 => // offset second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1871,17 +1871,14 @@ final class JsonReader private[jsoniter_scala](
         case 28 => // offset second (2nd digit)
           if (b >= '0' && b <= '9') {
             offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 30
+            state = 29
           } else digitError(pos)
-        case 29 => // 'Z'
-          if (b == 'Z') state = 30
-          else tokenError('Z', pos)
-        case 30 => // '"'
-          if (b == '"') state = 31
+        case 29 => // '"'
+          if (b == '"') state = 30
           else tokenError('"', pos)
       }
       pos += 1
-    } while (state != 31)
+    } while (state != 30)
     head = pos
     OffsetDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano),
       zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
@@ -1932,7 +1929,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 11
-          } else if (b == 'Z') state = 20
+          } else if (b == 'Z') state = 19
           else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
         case 6 => // second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1950,7 +1947,7 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 11
-          } else if (b == 'Z') state = 20
+          } else if (b == 'Z') state = 19
           else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
         case 9 => // 'Z' or '-' or '+' or nano digit
           if (b >= '0' && b <= '9') {
@@ -1961,14 +1958,14 @@ final class JsonReader private[jsoniter_scala](
           else if (b == '-') {
             offsetNeg = true
             state = 11
-          } else if (b == 'Z') state = 20
+          } else if (b == 'Z') state = 19
           else decodeError("expected '+' or '-' or 'Z' or digit", pos)
         case 10 => // 'Z' or '-' or '+'
           if (b == '+') state = 11
           else if (b == '-') {
             offsetNeg = true
             state = 11
-          } else if (b == 'Z') state = 20
+          } else if (b == 'Z') state = 19
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 11 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1982,7 +1979,7 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 13 => // ':'
           if (b == ':') state = 14
-          else if (b == '"') state = 21
+          else if (b == '"') state = 20
           else tokensError(':', '"', pos)
         case 14 => // offset minute (1st digit)
           if (b >= '0' && b <= '9') {
@@ -1996,7 +1993,7 @@ final class JsonReader private[jsoniter_scala](
           } else digitError(pos)
         case 16 => // ':' or '"'
           if (b == ':') state = 17
-          else if (b == '"') state = 21
+          else if (b == '"') state = 20
           else tokensError(':', '"', pos)
         case 17 => // offset second (1st digit)
           if (b >= '0' && b <= '9') {
@@ -2006,17 +2003,14 @@ final class JsonReader private[jsoniter_scala](
         case 18 => // offset second (2nd digit)
           if (b >= '0' && b <= '9') {
             offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 20
+            state = 19
           } else digitError(pos)
-        case 19 => // 'Z'
-          if (b == 'Z') state = 20
-          else tokenError('Z', pos)
-        case 20 => // '"'
-          if (b == '"') state = 21
+        case 19 => // '"'
+          if (b == '"') state = 20
           else tokenError('"', pos)
       }
       pos += 1
-    } while (state != 21)
+    } while (state != 20)
     head = pos
     OffsetTime.of(localTime(hour, minute, second, nano),
       zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond))
