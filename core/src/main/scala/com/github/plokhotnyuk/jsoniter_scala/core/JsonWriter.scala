@@ -218,7 +218,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: ZoneId): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeNonEscapedAsciiString(x.getId)
       writeColon()
     } else nullKeyError()
 
@@ -268,7 +268,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeZonedDateTime(x)
 
-  def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.getId)
 
   def writeVal(x: ZoneOffset): Unit = if (x eq null) writeNull() else writeZoneOffset(x)
 
