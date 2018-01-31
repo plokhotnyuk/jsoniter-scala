@@ -255,6 +255,37 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected ':', offset: 0x00000016"))
     }
   }
+  "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
+    "parse null value" in {
+      reader("null".getBytes).readDuration() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsDuration())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = Duration.parse("P2DT3H4M")
+      reader("null".getBytes).readDuration(default) shouldBe default
+    }
+    "parse Duration from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
+      def check(x: Duration): Unit = {
+        val s = x.toString
+        readDuration(s) shouldBe x
+        readKeyAsDuration(s) shouldBe x
+      }
+
+      check(Duration.ZERO)
+      forAll(genDuration, minSuccessful(100000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken Duration string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readDuration()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsDuration()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "illegal duration/period, offset: 0x00000001")
+      checkError("\"PTXS\"".getBytes, "illegal duration/period, offset: 0x00000005")
+    }
+  }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
     "parse null value" in {
       reader("null".getBytes).readInstant() shouldBe null
@@ -710,6 +741,37 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"07:24:33.+10:10:60\"".getBytes, "illegal zone offset second, offset: 0x00000013")
     }
   }
+  "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
+    "parse null value" in {
+      reader("null".getBytes).readPeriod() shouldBe null
+      assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsPeriod())
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = Period.parse("P1Y2M3D")
+      reader("null".getBytes).readPeriod(default) shouldBe default
+    }
+    "parse Period from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
+      def check(x: Period): Unit = {
+        val s = x.toString
+        readPeriod(s) shouldBe x
+        readKeyAsPeriod(s) shouldBe x
+      }
+
+      check(Period.ZERO)
+      forAll(genPeriod, minSuccessful(100000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken Period string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readPeriod()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsPeriod()).getMessage.contains(error))
+      }
+
+      checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes, "llegal duration/period, offset: 0x00000001")
+      checkError("\"PXD\"".getBytes, "llegal duration/period, offset: 0x00000004")
+    }
+  }
   "JsonReader.readYear" should {
     "parse valid number values with skipping of JSON space characters" in {
       readYear(" \n\t\r123456789", null) shouldBe Year.of(123456789)
@@ -1049,7 +1111,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "parse string with valid surrogate pairs" in {
-      forAll(genSurrogatePairString, minSuccessful(100000))(check)
+      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(100000)) { (hi: Char, lo: Char) =>
+        check(new String(Array(hi, lo)))
+      }
     }
     "parse escaped chars of string value" in {
       def checkEncoded(s1: String, s2: String): Unit = {
@@ -1977,6 +2041,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readInstant(buf: Array[Byte]): Instant = reader(stringify(buf)).readInstant()
 
+  def readDuration(s: String): Duration = readDuration(s.getBytes(UTF_8))
+
+  def readDuration(buf: Array[Byte]): Duration = reader(stringify(buf)).readDuration()
+
   def readLocalDate(s: String): LocalDate = readLocalDate(s.getBytes(UTF_8))
 
   def readLocalDate(buf: Array[Byte]): LocalDate = reader(stringify(buf)).readLocalDate()
@@ -2000,6 +2068,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readOffsetTime(s: String): OffsetTime = readOffsetTime(s.getBytes(UTF_8))
 
   def readOffsetTime(buf: Array[Byte]): OffsetTime = reader(stringify(buf)).readOffsetTime()
+
+  def readPeriod(s: String): Period = readPeriod(s.getBytes(UTF_8))
+
+  def readPeriod(buf: Array[Byte]): Period = reader(stringify(buf)).readPeriod()
 
   def readYear(s: String, default: Year): Year = readYear(s.getBytes(UTF_8), default)
 
@@ -2070,6 +2142,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsInstant(buf: Array[Byte]): Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
 
+  def readKeyAsDuration(s: String): Duration = readKeyAsDuration(s.getBytes(UTF_8))
+
+  def readKeyAsDuration(buf: Array[Byte]): Duration =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsDuration()
+
   def readKeyAsLocalDate(s: String): LocalDate = readKeyAsLocalDate(s.getBytes(UTF_8))
 
   def readKeyAsLocalDate(buf: Array[Byte]): LocalDate =
@@ -2099,6 +2176,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readKeyAsOffsetTime(buf: Array[Byte]): OffsetTime =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetTime()
+
+  def readKeyAsPeriod(s: String): Period = readKeyAsPeriod(s.getBytes(UTF_8))
+
+  def readKeyAsPeriod(buf: Array[Byte]): Period =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsPeriod()
 
   def readKeyAsYear(s: String): Year = readKeyAsYear(s.getBytes(UTF_8))
 

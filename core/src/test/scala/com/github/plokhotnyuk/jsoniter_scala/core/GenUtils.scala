@@ -10,24 +10,18 @@ object GenUtils {
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)
-  val genSurrogatePairString: Gen[String] =
-    for {
-      hi <- genHighSurrogateChar
-      lo <- genLowSurrogateChar
-      l <- Gen.choose(1, 100)
-    } yield new String(Array(hi, lo)) * l
   val genAsciiChar: Gen[Char] = Gen.choose('\u0000', '\u007f')
   val genControlChar: Gen[Char] = Gen.choose('\u0000', '\u001f')
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genZoneOffset: Gen[ZoneOffset] = Gen.choose(-18 * 60 * 60, 18 * 60 * 60).map(ZoneOffset.ofTotalSeconds)
   val genDuration: Gen[Duration] = Gen.oneOf(
-    Gen.choose(-1000L, 1000L).map(Duration.ofDays),
-    Gen.choose(-1000L, 1000L).map(Duration.ofHours),
-    Gen.choose(-1000L, 1000L).map(Duration.ofMinutes),
-    Gen.choose(-1000L, 1000L).map(Duration.ofSeconds),
-    Gen.choose(-1000L, 1000L).map(Duration.ofMillis),
-    Gen.choose(-1000L, 1000L).map(Duration.ofNanos))
+    Gen.choose(0L, 1000L).map(Duration.ofDays),
+    Gen.choose(0L, 1000L).map(Duration.ofHours),
+    Gen.choose(0L, 1000L).map(Duration.ofMinutes),
+    Gen.choose(0L, 1000L).map(Duration.ofSeconds),
+    Gen.choose(0L, 1000L).map(Duration.ofMillis),
+    Gen.choose(0L, 1000L).map(Duration.ofNanos))
   val genInstant: Gen[Instant] =
     for {
       year <- Gen.choose(-1000000000, 1000000000)

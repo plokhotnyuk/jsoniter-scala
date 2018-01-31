@@ -1234,7 +1234,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def parseDuration(): Duration =
     try Duration.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+      case ex: DateTimeParseException => durationPeriodError(ex)
     }
 
   private def parseInstant(): Instant = {
@@ -2018,14 +2018,14 @@ final class JsonReader private[jsoniter_scala](
 
   private def parsePeriod(): Period =
     try Period.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => dateTimeParseError(ex)
+      case ex: DateTimeParseException => durationPeriodError(ex)
     }
 
   private def parseYear(): Year = {
     val year = parseInt(isToken = false)
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     try Year.of(year) catch {
-      case ex: DateTimeException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
@@ -2373,7 +2373,7 @@ final class JsonReader private[jsoniter_scala](
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
     try LocalDate.of(if (yearNeg) -year else year, month, day) catch {
-      case ex: DateTimeException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
@@ -2381,7 +2381,7 @@ final class JsonReader private[jsoniter_scala](
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     try YearMonth.of(if (yearNeg) -year else year, month) catch {
-      case ex: DateTimeException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
@@ -2389,7 +2389,7 @@ final class JsonReader private[jsoniter_scala](
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(2004, month))) decodeError("illegal day")
     try MonthDay.of(month, day) catch {
-      case ex: DateTimeException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
@@ -2398,7 +2398,7 @@ final class JsonReader private[jsoniter_scala](
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
     try LocalTime.of(hour, minute, second, nano) catch {
-      case ex: DateTimeException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
@@ -2409,14 +2409,14 @@ final class JsonReader private[jsoniter_scala](
     val offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
     if (offsetTotal > 64800) decodeError("illegal zone offset") // 64800 == 18 * 60 * 60
     try ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)  catch {
-      case ex: DateTimeException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
   private def zoneId(zone: String): ZoneId =
     try ZoneId.of(zone) catch {
-      case ex: DateTimeException => dateTimeError(ex)
-      case ex: ZoneRulesException => dateTimeError(ex)
+      case ex: DateTimeException => dateTimeZoneError(ex)
+      case ex: ZoneRulesException => dateTimeZoneError(ex)
     }
 
   private def maxDayForYearMonth(year: Int, month: Int): Int =
@@ -2447,10 +2447,10 @@ final class JsonReader private[jsoniter_scala](
 
   private def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
-  private def dateTimeParseError(ex: DateTimeParseException): Nothing =
-    decodeError("illegal date/time/zone", head - 1, ex)
+  private def durationPeriodError(ex: DateTimeParseException): Nothing =
+    decodeError("illegal duration/period", head - 1, ex)
 
-  private def dateTimeError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
+  private def dateTimeZoneError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
 
   private def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
