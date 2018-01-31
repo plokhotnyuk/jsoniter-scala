@@ -1049,7 +1049,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "parse string with valid surrogate pairs" in {
-      check("𝄞")
+      forAll(genSurrogatePairString, minSuccessful(100000))(check)
     }
     "parse escaped chars of string value" in {
       def checkEncoded(s1: String, s2: String): Unit = {

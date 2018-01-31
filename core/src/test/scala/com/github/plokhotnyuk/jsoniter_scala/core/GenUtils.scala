@@ -10,6 +10,12 @@ object GenUtils {
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)
+  val genSurrogatePairString: Gen[String] =
+    for {
+      hi <- genHighSurrogateChar
+      lo <- genLowSurrogateChar
+      l <- Gen.choose(1, 100)
+    } yield new String(Array(hi, lo)) * l
   val genAsciiChar: Gen[Char] = Gen.choose('\u0000', '\u007f')
   val genControlChar: Gen[Char] = Gen.choose('\u0000', '\u001f')
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
