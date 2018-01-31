@@ -827,14 +827,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("nu", "unexpected end of input, offset: 0x00000002", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("012345", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readYear(s, null)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
@@ -1372,18 +1371,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "value is too large for byte, offset: 0x00000005")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("0123", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-0123", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("0128", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-0128", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("0123", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-0123", "illegal number with leading zero, offset: 0x00000001")
+      checkError("0128", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-0128", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readShort" should {
@@ -1436,18 +1432,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "value is too large for short, offset: 0x00000007")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("012345", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("032767", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-032768", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345", "illegal number with leading zero, offset: 0x00000001")
+      checkError("032767", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-032768", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readInt" should {
@@ -1504,18 +1497,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "value is too large for int, offset: 0x0000000c")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("0123456789", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-0123456789", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("02147483647", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-02147483648", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("0123456789", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-0123456789", "illegal number with leading zero, offset: 0x00000001")
+      checkError("02147483647", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-02147483648", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readLong" should {
@@ -1572,18 +1562,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "value is too large for long, offset: 0x00000015")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("01234567890123456789", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-01234567890123456789", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("09223372036854775807", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-09223372036854775808", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("01234567890123456789", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-01234567890123456789", "illegal number with leading zero, offset: 0x00000001")
+      checkError("09223372036854775807", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-09223372036854775808", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readFloat" should {
@@ -1656,14 +1643,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readDouble" should {
@@ -1736,14 +1722,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readBigInt" should {
@@ -1808,14 +1793,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("nu", "unexpected end of input, offset: 0x00000002", "illegal number, offset: 0x00000002")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("012345", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-012345", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readBigInt(s, null)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.readBigDecimal" should {
@@ -1901,14 +1885,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("nulx", "illegal number, offset: 0x00000003", "illegal number, offset: 0x00000001")
     }
     "throw parsing exception on leading zero" in {
-      checkError("00", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
-      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000",
-        "illegal number with leading zero, offset: 0x00000001")
-      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001",
-        "illegal number with leading zero, offset: 0x00000002")
+      def checkError(s: String, error: String): Unit =
+        assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error))
+
+      checkError("00", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
+      checkError("012345.6789", "illegal number with leading zero, offset: 0x00000000")
+      checkError("-012345.6789", "illegal number with leading zero, offset: 0x00000001")
     }
   }
   "JsonReader.setMark and JsonReader.rollbackToMark" should {

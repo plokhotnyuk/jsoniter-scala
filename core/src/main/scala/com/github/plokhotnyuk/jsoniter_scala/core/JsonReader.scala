@@ -191,7 +191,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsYear(): Year = {
     readParenthesesToken()
-    val x = parseYear()
+    val x = parseYear(false)
     readParenthesesByteWithColonToken()
     x
   }
@@ -370,7 +370,7 @@ final class JsonReader private[jsoniter_scala](
     if (isNextToken('n', head)) parseNullOrError(default, "expected number or null", head)
     else {
       rollbackToken()
-      parseYear()
+      parseYear(true)
     }
 
   def readYearMonth(default: YearMonth = null): YearMonth =
@@ -457,7 +457,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readStringAsYear(default: Year): Year =
     if (isNextToken('"', head)) {
-      val x = parseYear()
+      val x = parseYear(false)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
@@ -750,7 +750,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) pos = {
-        if (x == 0) leadingZeroError(pos - 1)
+        if (isToken && x == 0) leadingZeroError(pos - 1)
         x = x * 10 + ('0' - b)
         if (x < -128) byteOverflowError(pos)
         pos + 1
@@ -777,7 +777,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) pos = {
-        if (x == 0) leadingZeroError(pos - 1)
+        if (isToken && x == 0) leadingZeroError(pos - 1)
         x = x * 10 + ('0' - b)
         if (x < -32768) shortOverflowError(pos)
         pos + 1
@@ -804,10 +804,10 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) pos = {
-        if (x == 0) leadingZeroError(pos - 1)
+        if (isToken && x == 0) leadingZeroError(pos - 1)
         if (x < -214748364) intOverflowError(pos)
         x = x * 10 + ('0' - b)
-        if (x >= 0) intOverflowError(pos)
+        if (x > 0) intOverflowError(pos)
         pos + 1
       }
       head = pos
@@ -832,10 +832,10 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) pos = {
-        if (x == 0) leadingZeroError(pos - 1)
+        if (isToken && x == 0) leadingZeroError(pos - 1)
         if (x < -922337203685477580L) longOverflowError(pos)
         x = x * 10 + ('0' - b)
-        if (x >= 0) longOverflowError(pos)
+        if (x > 0) longOverflowError(pos)
         pos + 1
       }
       head = pos
@@ -896,7 +896,7 @@ final class JsonReader private[jsoniter_scala](
           case 3 => // first int digit
             if (b >= '0' && b <= '9') {
               posMan = posMan * 10 + (b - '0')
-              if (isZeroFirst) leadingZeroError(pos - 1)
+              if (isToken && isZeroFirst) leadingZeroError(pos - 1)
               state = 4
             } else if (b == '.') {
               state = 5
@@ -1022,7 +1022,7 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) pos = {
-            if (isZeroFirst) leadingZeroError(pos - 1)
+            if (isToken && isZeroFirst) leadingZeroError(pos - 1)
             pos + 1
           }
           head = pos
@@ -1117,7 +1117,7 @@ final class JsonReader private[jsoniter_scala](
           } else numberError(pos)
         case 3 => // first int digit
           if (b >= '0' && b <= '9') {
-            if (isZeroFirst) leadingZeroError(pos - 1)
+            if (isToken && isZeroFirst) leadingZeroError(pos - 1)
             charBuf(i) = b.toChar
             i += 1
             state = 4
@@ -2021,8 +2021,8 @@ final class JsonReader private[jsoniter_scala](
       case ex: DateTimeParseException => durationPeriodError(ex)
     }
 
-  private def parseYear(): Year = {
-    val year = parseInt(isToken = false)
+  private def parseYear(isToken: Boolean): Year = {
+    val year = parseInt(isToken)
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     try Year.of(year) catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
