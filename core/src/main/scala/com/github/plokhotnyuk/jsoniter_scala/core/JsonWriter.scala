@@ -736,7 +736,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private def toHexDigit(n: Int): Byte = {
     val nibble = n & 15
-    (((9 - nibble) >> 31) & 39) + nibble + 48 // branchless conversion of nibble to hex digit
+    (((9 - nibble) >> 31) & 39) + (nibble + 48) // branchless conversion of nibble to hex digit
   }.toByte
 
   private def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")

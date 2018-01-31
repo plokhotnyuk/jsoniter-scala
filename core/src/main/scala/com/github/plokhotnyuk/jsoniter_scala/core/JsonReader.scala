@@ -1445,7 +1445,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def parseLocalDateTime(): LocalDateTime = {
-    var posYear = 0
+    var year = 0
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
@@ -1464,7 +1464,7 @@ final class JsonReader private[jsoniter_scala](
       (state: @switch) match {
         case 0 => // '-' or '+' or year digits
           if (b >= '0' && b <= '9') {
-            posYear = b - '0'
+            year = b - '0'
             yearDigits = 1
             state = 1
           } else if (b == '-') {
@@ -1476,14 +1476,14 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected '-' or '+' or digit", pos)
         case 1 => // year digit
           if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == yearMinDigits) state = 2
           } else digitError(pos)
         case 2 => // '-' or year digit
           if (b == '-') state = 4
           else if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == 9) state = 3
           } else tokenOrDigitError('-', pos)
@@ -1571,7 +1571,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 21)
     head = pos
-    LocalDateTime.of(localDate(yearNeg, posYear, month, day), localTime(hour, minute, second, nano))
+    LocalDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano))
   }
 
   private def parseLocalTime(): LocalTime = {
@@ -1891,7 +1891,7 @@ final class JsonReader private[jsoniter_scala](
     var nano = 0
     var nanoDigits = 0
     var offsetNeg = false
-    var posOffsetHour = 0
+    var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
     var state = 0
@@ -1969,12 +1969,12 @@ final class JsonReader private[jsoniter_scala](
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 11 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = b - '0'
+            offsetHour = b - '0'
             state = 12
           } else digitError(pos)
         case 12 => // offset hour (2nd digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            offsetHour = offsetHour * 10 + (b - '0')
             state = 13
           } else digitError(pos)
         case 13 => // ':'
@@ -2013,7 +2013,7 @@ final class JsonReader private[jsoniter_scala](
     } while (state != 20)
     head = pos
     OffsetTime.of(localTime(hour, minute, second, nano),
-      zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond))
+      zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
   private def parsePeriod(): Period =
@@ -2030,7 +2030,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def parseYearMonth(): YearMonth = {
-    var posYear = 0
+    var year = 0
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
@@ -2043,7 +2043,7 @@ final class JsonReader private[jsoniter_scala](
       (state: @switch) match {
         case 0 => // '-' or '+' or year digits
           if (b >= '0' && b <= '9') {
-            posYear = b - '0'
+            year = b - '0'
             yearDigits = 1
             state = 1
           } else if (b == '-') {
@@ -2055,14 +2055,14 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected '-' or '+' or digit", pos)
         case 1 => // year digit
           if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == yearMinDigits) state = 2
           } else digitError(pos)
         case 2 => // '-' or year digit
           if (b == '-') state = 4
           else if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == 9) state = 3
           } else tokenOrDigitError('-', pos)
@@ -2086,11 +2086,11 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 7)
     head = pos
-    yearMonth(yearNeg, posYear, month)
+    yearMonth(yearNeg, year, month)
   }
 
   private def parseZonedDateTime(): ZonedDateTime = {
-    var posYear = 0
+    var year = 0
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
@@ -2102,7 +2102,7 @@ final class JsonReader private[jsoniter_scala](
     var nano = 0
     var nanoDigits = 0
     var offsetNeg = false
-    var posOffsetHour = 0
+    var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
     var zone: String = null
@@ -2115,7 +2115,7 @@ final class JsonReader private[jsoniter_scala](
       (state: @switch) match {
         case 0 => // '-' or '+' or year digits
           if (b >= '0' && b <= '9') {
-            posYear = b - '0'
+            year = b - '0'
             yearDigits = 1
             state = 1
           } else if (b == '-') {
@@ -2127,14 +2127,14 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected '-' or '+' or digit", pos)
         case 1 => // year digit
           if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == yearMinDigits) state = 2
           } else digitError(pos)
         case 2 => // '-' or year digit
           if (b == '-') state = 4
           else if (b >= '0' && b <= '9') {
-            posYear = posYear * 10 + (b - '0')
+            year = year * 10 + (b - '0')
             yearDigits += 1
             if (yearDigits == 9) state = 3
           } else tokenOrDigitError('-', pos)
@@ -2236,12 +2236,12 @@ final class JsonReader private[jsoniter_scala](
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 21 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = b - '0'
+            offsetHour = b - '0'
             state = 22
           } else digitError(pos)
         case 22 => // offset hour (2nd digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            offsetHour = offsetHour * 10 + (b - '0')
             state = 23
           } else digitError(pos)
         case 23 => // ':' or '[' or '"'
@@ -2290,9 +2290,9 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 32)
     head = pos
-    val ld = localDate(yearNeg, posYear, month, day)
+    val ld = localDate(yearNeg, year, month, day)
     val lt = localTime(hour, minute, second, nano)
-    val zo = zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
+    val zo = zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
     if (zone == null) ZonedDateTime.of(ld, lt, zo)
     else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), zoneId(zone), zo)
   }
@@ -2304,7 +2304,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def parseZoneOffset(): ZoneOffset = {
     var offsetNeg = false
-    var posOffsetHour = 0
+    var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
     var state = 0
@@ -2322,12 +2322,12 @@ final class JsonReader private[jsoniter_scala](
           else decodeError("expected '+' or '-' or 'Z'", pos)
         case 1 => // offset hour (1st digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = b - '0'
+            offsetHour = b - '0'
             state = 2
           } else digitError(pos)
         case 2 => // offset hour (2nd digit)
           if (b >= '0' && b <= '9') {
-            posOffsetHour = posOffsetHour * 10 + (b - '0')
+            offsetHour = offsetHour * 10 + (b - '0')
             state = 3
           } else digitError(pos)
         case 3 => // ':'
@@ -2365,7 +2365,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 10)
     head = pos
-    zoneOffset(offsetNeg, posOffsetHour, offsetMinute, offsetSecond)
+    zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
   }
 
   private def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
@@ -2436,7 +2436,10 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private def isLeap(year: Int): Boolean =
-    (year & 3) == 0 && (year % 100 != 0 || year % 400 == 0) // TODO use 64-bit mul with shift instead of %
+    (year & 3) == 0 && {
+      val century = (year * 1374389535L >> 37).toInt // divide int by 100
+      century * 100 != year || (century & 3) == 0
+    }
 
   private def charSequence(len: Int): CharSequence = {
     val cbs = charBufSeq
@@ -2573,16 +2576,17 @@ final class JsonReader private[jsoniter_scala](
         } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
           if (remaining > 1) {
             val b2 = buf(pos + 1)
-            if (isMalformedBytes2(b1, b2)) malformedBytesError(b1, b2, pos)
-            charBuf(i) = ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+            if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
+            charBuf(i) = ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
             parseEncodedString(i + 1, lim, charBuf, pos + 2)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
           if (remaining > 2) {
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
-            val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if (isMalformedBytes3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
+            val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+            if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
+              (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
             charBuf(i) = ch
             parseEncodedString(i + 1, lim, charBuf, pos + 3)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
@@ -2591,8 +2595,8 @@ final class JsonReader private[jsoniter_scala](
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
             val b4 = buf(pos + 3)
-            val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ b4 ^ 0x381F80 // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if (isMalformedBytes4(b2, b3, b4) || cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
+            val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 || cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
             charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
             charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
@@ -2639,7 +2643,7 @@ final class JsonReader private[jsoniter_scala](
       } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
         if (remaining > 1) {
           val b2 = buf(pos + 1)
-          if (isMalformedBytes2(b1, b2)) malformedBytesError(b1, b2, pos)
+          if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
           head = pos + 2
           ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else parseChar(loadMoreOrError(pos))
@@ -2648,7 +2652,8 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
           val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-          if (isMalformedBytes3(b1, b2, b3) || (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
+          if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
+            (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
           head = pos + 3
           ch
         } else parseChar(loadMoreOrError(pos))
@@ -2669,15 +2674,6 @@ final class JsonReader private[jsoniter_scala](
       else decodeError("expected hex digit", pos)
     }
   }
-
-  private def isMalformedBytes2(b1: Byte, b2: Byte): Boolean =
-    (b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80
-
-  private def isMalformedBytes3(b1: Byte, b2: Byte, b3: Byte): Boolean =
-    (b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80
-
-  private def isMalformedBytes4(b2: Byte, b3: Byte, b4: Byte): Boolean =
-    (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80
 
   private def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
 
@@ -3015,7 +3011,7 @@ object JsonReader {
     var h = 0
     var i = 0
     while (i < len) i = {
-      h = (h << 5) - h + cs(i)
+      h = (h << 5) + (cs(i) - h)
       i + 1
     }
     h
