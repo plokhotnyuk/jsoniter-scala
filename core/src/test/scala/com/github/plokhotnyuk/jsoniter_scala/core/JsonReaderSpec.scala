@@ -1111,7 +1111,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "parse string with valid surrogate pairs" in {
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(100000)) { (hi: Char, lo: Char) =>
-        check(new String(Array(hi, lo)))
+        whenever(Character.isSurrogatePair(hi, lo)) {
+          check(new String(Array(hi, lo)))
+        }
       }
     }
     "parse escaped chars of string value" in {

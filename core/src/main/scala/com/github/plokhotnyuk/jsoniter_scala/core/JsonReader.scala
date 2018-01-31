@@ -2592,7 +2592,7 @@ final class JsonReader private[jsoniter_scala](
             val b3 = buf(pos + 2)
             val b4 = buf(pos + 3)
             val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ b4 ^ 0x381F80 // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if (isMalformedBytes4(b2, b3, b4) || cp < 0x010000 || cp >= 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
+            if (isMalformedBytes4(b2, b3, b4) || cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
             charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
             charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
