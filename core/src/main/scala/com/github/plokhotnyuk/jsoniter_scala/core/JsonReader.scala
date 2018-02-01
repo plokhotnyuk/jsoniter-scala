@@ -877,9 +877,8 @@ final class JsonReader private[jsoniter_scala](
               state = 1
             } else numberError(pos)
           case 1 => // whitespaces
-            if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
-              // state = 1
-            } else if (b >= '0' && b <= '9') {
+            if (b == ' ' || b == '\n' || b == '\t' || b == '\r') () // for fast skipping of whitespaces
+            else if (b >= '0' && b <= '9') {
               posMan = b - '0'
               isZeroFirst = posMan == 0
               state = 3
@@ -898,11 +897,9 @@ final class JsonReader private[jsoniter_scala](
               posMan = posMan * 10 + (b - '0')
               if (isToken && isZeroFirst) leadingZeroError(pos - 1)
               state = 4
-            } else if (b == '.') {
-              state = 5
-            } else if ((b | 0x20) == 'e') {
-              state = 7
-            } else {
+            } else if (b == '.') state = 5
+            else if ((b | 0x20) == 'e') state = 7
+            else {
               head = pos
               return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
             }
@@ -910,12 +907,9 @@ final class JsonReader private[jsoniter_scala](
             if (b >= '0' && b <= '9') {
               if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
               else manExp += 1
-              // state = 4
-            } else if (b == '.') {
-              state = 5
-            } else if ((b | 0x20) == 'e') {
-              state = 7
-            } else {
+            } else if (b == '.') state = 5
+            else if ((b | 0x20) == 'e') state = 7
+            else {
               head = pos
               return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
             }
@@ -933,10 +927,8 @@ final class JsonReader private[jsoniter_scala](
                 posMan = posMan * 10 + (b - '0')
                 manExp -= 1
               }
-              // state = 6
-            } else if ((b | 0x20) == 'e') {
-              state = 7
-            } else {
+            } else if ((b | 0x20) == 'e') state = 7
+            else {
               head = pos
               return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
             }
@@ -947,9 +939,8 @@ final class JsonReader private[jsoniter_scala](
             } else if (b == '-') {
               isExpNeg = true
               state = 8
-            } else if (b == '+') {
-              state = 8
-            } else numberError(pos)
+            } else if (b == '+') state = 8
+            else numberError(pos)
           case 8 => // exp. sign
             if (b >= '0' && b <= '9') {
               posExp = b - '0'
@@ -958,15 +949,14 @@ final class JsonReader private[jsoniter_scala](
           case 9 => // exp. digit
             if (b >= '0' && b <= '9') {
               posExp = posExp * 10 + (b - '0')
-              if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 350) state = 10 // else state = 9
+              if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 350) state = 10
             } else {
               head = pos
               return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
             }
           case 10 => // exp. digit overflow
-            if (b >= '0' && b <= '9') {
-              // state = 10
-            } else {
+            if (b >= '0' && b <= '9') ()
+            else {
               head = pos
               return toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
             }
@@ -1087,16 +1077,14 @@ final class JsonReader private[jsoniter_scala](
             charBuf(i) = b.toChar
             i += 1
             state = 2
-          } else if (b == 'n' && isToken) {
-            state = 10
-          } else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
+          } else if (b == 'n' && isToken) state = 10
+          else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
             if (!isToken) numberError(pos)
             state = 1
           } else numberError(pos)
         case 1 => // whitespaces
-          if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
-            // state = 1
-          } else if (b >= '0' && b <= '9') {
+          if (b == ' ' || b == '\n' || b == '\t' || b == '\r') () // for fast skipping of whitespaces
+          else if (b >= '0' && b <= '9') {
             charBuf(i) = b.toChar
             i += 1
             isZeroFirst = b == '0'
@@ -1105,9 +1093,8 @@ final class JsonReader private[jsoniter_scala](
             charBuf(i) = b.toChar
             i += 1
             state = 2
-          } else if (b == 'n' && isToken) {
-            state = 10
-          } else numberError(pos)
+          } else if (b == 'n' && isToken) state = 10
+          else numberError(pos)
         case 2 => // signum
           if (b >= '0' && b <= '9') {
             charBuf(i) = b.toChar
@@ -1137,7 +1124,6 @@ final class JsonReader private[jsoniter_scala](
           if (b >= '0' && b <= '9') {
             charBuf(i) = b.toChar
             i += 1
-            // state = 4
           } else if (b == '.') {
             charBuf(i) = b.toChar
             i += 1
@@ -1160,7 +1146,6 @@ final class JsonReader private[jsoniter_scala](
           if (b >= '0' && b <= '9') {
             charBuf(i) = b.toChar
             i += 1
-            // state = 6
           } else if ((b | 0x20) == 'e') {
             charBuf(i) = b.toChar
             i += 1
@@ -1189,7 +1174,6 @@ final class JsonReader private[jsoniter_scala](
           if (b >= '0' && b <= '9') {
             charBuf(i) = b.toChar
             i += 1
-            // state = 9
           } else {
             head = pos
             return toBigDecimal(i)
@@ -1255,7 +1239,7 @@ final class JsonReader private[jsoniter_scala](
       if (pos >= tail) pos = loadMoreOrError(pos)
       val b = buf(pos)
       (state: @switch) match {
-        case 0 => // '-' or '+' or year digits
+        case 0 => // '-' or '+' or year digit
           if (b >= '0' && b <= '9') {
             year = b - '0'
             yearDigits = 1
@@ -1332,7 +1316,7 @@ final class JsonReader private[jsoniter_scala](
             minute = minute * 10 + (b - '0')
             state = 15
           } else digitError(pos)
-        case 15 => // colon
+        case 15 => // ':'
           if (b == ':') state = 16
           else tokenError(':', pos)
         case 16 => // second (1st digit)
@@ -1383,7 +1367,7 @@ final class JsonReader private[jsoniter_scala](
       if (pos >= tail) pos = loadMoreOrError(pos)
       val b = buf(pos)
       (state: @switch) match {
-        case 0 => // '-' or '+' or year digits
+        case 0 => // '-' or '+' or year digit
           if (b >= '0' && b <= '9') {
             year = b - '0'
             yearDigits = 1
@@ -1557,7 +1541,7 @@ final class JsonReader private[jsoniter_scala](
           if (b == '.') state = 19
           else if (b == '"') state = 21
           else tokensError('.', '"', pos)
-        case 19 => // '"' or nano
+        case 19 => // '"' or nano digit
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
@@ -1627,7 +1611,7 @@ final class JsonReader private[jsoniter_scala](
           if (b == '.') state = 9
           else if (b == '"') state = 11
           else tokensError('.', '"', pos)
-        case 9 => // '"' or nano
+        case 9 => // '"' or nano digit
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
@@ -1714,7 +1698,7 @@ final class JsonReader private[jsoniter_scala](
       if (pos >= tail) pos = loadMoreOrError(pos)
       val b = buf(pos)
       (state: @switch) match {
-        case 0 => // '-' or '+' or year digits
+        case 0 => // '-' or '+' or year digit
           if (b >= '0' && b <= '9') {
             year = b - '0'
             yearDigits = 1
@@ -1791,7 +1775,7 @@ final class JsonReader private[jsoniter_scala](
             minute = minute * 10 + (b - '0')
             state = 15
           } else digitError(pos)
-        case 15 => // ':' or '+' or '-' or 'z'
+        case 15 => // ':' or '+' or '-' or 'Z'
           if (b == ':') state = 16
           else if (b == '+') state = 21
           else if (b == '-') {
@@ -1923,7 +1907,7 @@ final class JsonReader private[jsoniter_scala](
             minute = minute * 10 + (b - '0')
             state = 5
           } else digitError(pos)
-        case 5 => // ':' or '+' or '-' or 'z'
+        case 5 => // ':' or '+' or '-' or 'Z'
           if (b == ':') state = 6
           else if (b == '+') state = 11
           else if (b == '-') {
@@ -2041,7 +2025,7 @@ final class JsonReader private[jsoniter_scala](
       if (pos >= tail) pos = loadMoreOrError(pos)
       val b = buf(pos)
       (state: @switch) match {
-        case 0 => // '-' or '+' or year digits
+        case 0 => // '-' or '+' or year digit
           if (b >= '0' && b <= '9') {
             year = b - '0'
             yearDigits = 1
@@ -2113,7 +2097,7 @@ final class JsonReader private[jsoniter_scala](
       if (pos >= tail) pos = loadMoreOrError(pos)
       val b = buf(pos)
       (state: @switch) match {
-        case 0 => // '-' or '+' or year digits
+        case 0 => // '-' or '+' or year digit
           if (b >= '0' && b <= '9') {
             year = b - '0'
             yearDigits = 1
@@ -2190,7 +2174,7 @@ final class JsonReader private[jsoniter_scala](
             minute = minute * 10 + (b - '0')
             state = 15
           } else digitError(pos)
-        case 15 => // ':' or '+' or '-' or 'z'
+        case 15 => // ':' or '+' or '-' or 'Z'
           if (b == ':') state = 16
           else if (b == '+') state = 21
           else if (b == '-') {
@@ -2596,7 +2580,8 @@ final class JsonReader private[jsoniter_scala](
             val b3 = buf(pos + 2)
             val b4 = buf(pos + 3)
             val cp = (b1 << 18) ^ (b2 << 12) ^ (b3 << 6) ^ (b4 ^ 0x381F80) // 0x381F80 == ((0xF0.toByte << 18) ^ (0x80.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
-            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 || cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
+            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 || (b4 & 0xC0) != 0x80 ||
+              cp < 0x010000 || cp > 0x10FFFF) malformedBytesError(b1, b2, b3, b4, pos)
             charBuf(i) = ((cp >>> 10) + 0xD7C0).toChar // 0xD7C0 == 0xD800 - (0x010000 >>> 10)
             charBuf(i + 1) = ((cp & 0x3FF) + 0xDC00).toChar
             parseEncodedString(i + 2, lim, charBuf, pos + 4)
