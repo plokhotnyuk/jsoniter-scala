@@ -303,9 +303,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readKeyAsInstant(s) shouldBe x
       }
 
-      //FIXME add efficient support of min & max values
-      //check(Instant.MAX)
-      //check(Instant.MIN)
+      check(Instant.MAX)
+      check(Instant.MIN)
       forAll(genInstant, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {

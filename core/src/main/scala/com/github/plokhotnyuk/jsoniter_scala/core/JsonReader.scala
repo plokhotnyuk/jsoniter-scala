@@ -1350,8 +1350,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 22)
     head = pos
-    LocalDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano))
-      .toInstant(ZoneOffset.UTC)
+    Instant.ofEpochSecond(epochSecond(yearNeg, year, month, day, hour, minute, second), nano)
   }
 
   private def parseLocalDate(): LocalDate = {
@@ -2352,6 +2351,24 @@ final class JsonReader private[jsoniter_scala](
     zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
   }
 
+  private def epochSecond(yearNeg: Boolean, year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long = {
+    if (yearNeg && year == 0 || year > 1000000000) decodeError("illegal year")
+    if (month < 1 || month > 12) decodeError("illegal month")
+    if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
+    if (hour > 23) decodeError("illegal hour")
+    if (minute > 59) decodeError("illegal minute")
+    if (second > 59) decodeError("illegal second")
+    val y = if (yearNeg) -year else year
+    (365L * y + ({
+      if (y > 0) (y + 3) / 4 - (y + 99) / 100 + (y + 399) / 400
+      else y / 4 - y / 100 + y / 400
+    } + ((367 * month - 362) / 12) - {
+      if (month > 2) {
+        if (isLeap(y)) 1 else 2
+      } else 0
+    } + day - 719529)) * 86400 + (hour * 3600 + minute * 60 + second) // 719528 == Days 0000 to 1970
+  }
+
   private def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
@@ -2421,7 +2438,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def isLeap(year: Int): Boolean =
     (year & 3) == 0 && {
-      val century = (year * 1374389535L >> 37).toInt // divide int by 100
+      val century = year / 100
       century * 100 != year || (century & 3) == 0
     }
 
