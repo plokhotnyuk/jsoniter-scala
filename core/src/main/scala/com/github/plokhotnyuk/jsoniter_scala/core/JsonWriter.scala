@@ -786,14 +786,38 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeInstant(x: Instant): Unit = count = {
-    val dt = LocalDateTime.ofEpochSecond(x.getEpochSecond, x.getNano, ZoneOffset.UTC)
+    var zeroDay = Math.floorDiv(x.getEpochSecond, 86400) + 719528 // 719528 == days 0000 to 1970
+    zeroDay -= 60 // to find the march-based year adjust to 0000-03-01 so leap day is at end of four year cycle
+    var adjust = 0L
+    if (zeroDay < 0) { // adjust negative years to positive for calculation
+      val adjustCycles = (zeroDay + 1) / 146097 - 1 // 146097 == number of days in a 400 year cycle
+      adjust = adjustCycles * 400
+      zeroDay -= adjustCycles * 146097
+    }
+    var yearEst = (400 * zeroDay + 591) / 146097
+    var dayOfYearEst = zeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
+    if (dayOfYearEst < 0) { // fix estimate
+      yearEst -= 1
+      dayOfYearEst = zeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
+    }
+    yearEst += adjust // reset any negative year
+    val marchDayOfYear = dayOfYearEst.toInt
+    val marchMonth = (marchDayOfYear * 5 + 2) / 153
+    val year = yearEst.toInt + marchMonth / 10 // convert march-based values back to january-based
+    val month = (marchMonth + 2) % 12 + 1
+    val day = marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val secsOfDay = Math.floorMod(x.getEpochSecond, 86400).toInt
+    val hour = secsOfDay / 3600
+    val secsOfHour = secsOfDay - hour * 3600
+    val minute = secsOfHour / 60
+    val second = secsOfHour - minute * 60
     var pos = ensureBufferCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
-    pos = writeLocalDate(dt.toLocalDate, pos + 1, buf, ds)
+    pos = writeLocalDate(year, month, day, pos + 1, buf, ds)
     buf(pos) = 'T'
-    pos = writeLocalTime(dt.toLocalTime, pos + 1, buf, ds, full = true)
+    pos = writeLocalTime(hour, minute, second, x.getNano, pos + 1, buf, ds, full = true)
     buf(pos) = 'Z'
     buf(pos + 1) = '"'
     pos + 2
@@ -906,10 +930,13 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val pos = writeYearMonth(x.getYear, x.getMonthValue, p, buf, ds)
+  private def writeLocalDate(x: LocalDate, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    writeLocalDate(x.getYear, x.getMonthValue, x.getDayOfMonth, pos, buf, ds)
+
+  private def writeLocalDate(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val pos = writeYearMonth(year, month, p, buf, ds)
     buf(pos) = '-'
-    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
+    write2Digits(day, pos + 1, buf, ds)
   }
 
   private def writeYearMonth(year: Int, month: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
@@ -934,15 +961,17 @@ final class JsonWriter private[jsoniter_scala](
     write2Digits(month, pos + 1, buf, ds)
   }
 
-  private def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short], full: Boolean = false): Int = {
-    var pos = write2Digits(x.getHour, p, buf, ds)
+  private def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    writeLocalTime(x.getHour, x.getMinute, x.getSecond, x.getNano, pos, buf, ds, full = false)
+
+  private def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, p: Int, buf: Array[Byte],
+                             ds: Array[Short], full: Boolean): Int = {
+    var pos = write2Digits(hour, p, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits(x.getMinute, pos + 1, buf, ds)
-    val second = x.getSecond
-    val nano = x.getNano
+    pos = write2Digits(minute, pos + 1, buf, ds)
     if (full || second != 0 || nano != 0) {
       buf(pos) = ':'
-      pos = write2Digits(x.getSecond, pos + 1, buf, ds)
+      pos = write2Digits(second, pos + 1, buf, ds)
       if (nano > 0) {
         buf(pos) = '.'
         val q1 = nano / 1000000 // TODO use 64-bit mul with shift instead of /

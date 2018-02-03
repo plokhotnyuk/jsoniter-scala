@@ -2366,7 +2366,7 @@ final class JsonReader private[jsoniter_scala](
       if (month > 2) {
         if (isLeap(y)) 1 else 2
       } else 0
-    } + day - 719529)) * 86400 + (hour * 3600 + minute * 60 + second) // 719528 == Days 0000 to 1970
+    } + day - 719529)) * 86400 + (hour * 3600 + minute * 60 + second) // 719528 == days 0000 to 1970
   }
 
   private def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {

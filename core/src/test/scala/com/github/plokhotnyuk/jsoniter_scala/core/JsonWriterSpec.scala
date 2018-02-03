@@ -133,9 +133,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      //FIXME add serialization of min/max values
-      //check(Instant.MAX)
-      //check(Instant.MIN)
+      check(Instant.MAX)
+      check(Instant.MIN)
       forAll(genInstant, minSuccessful(100000))(check)
     }
   }
