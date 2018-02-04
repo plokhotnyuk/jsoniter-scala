@@ -190,7 +190,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: Period): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writePeriod(x)
       writeColon()
     } else nullKeyError()
 
@@ -260,7 +260,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeOffsetTime(x)
 
-  def writeVal(x: Period): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: Period): Unit = if (x eq null) writeNull() else writePeriod(x)
 
   def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeInt(x.getValue)
 
@@ -888,6 +888,28 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos + 1
   }
+
+  private def writePeriod(x: Period): Unit =
+    if (x.isZero) writeBytes('"', 'P', '0', 'D', '"')
+    else {
+      writeBytes('"', 'P')
+      val years = x.getYears
+      if (years != 0) {
+        writeInt(years)
+        writeBytes('Y')
+      }
+      val months = x.getMonths
+      if (months != 0) {
+        writeInt(months)
+        writeBytes('M')
+      }
+      val days = x.getDays
+      if (days != 0) {
+        writeInt(days)
+        writeBytes('D')
+      }
+      writeBytes('"')
+    }
 
   private def writeYearMonth(x: YearMonth): Unit = count = {
     var pos = ensureBufferCapacity(15) // 15 == "+999999999-12".length + 2
