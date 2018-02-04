@@ -16,10 +16,11 @@ object GenUtils {
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genZoneOffset: Gen[ZoneOffset] = Gen.choose(-18 * 60 * 60, 18 * 60 * 60).map(ZoneOffset.ofTotalSeconds)
   val genDuration: Gen[Duration] = Gen.oneOf(
-    Gen.choose(0L, 1000L).map(Duration.ofDays),
-    Gen.choose(0L, 1000L).map(Duration.ofHours),
-    Gen.choose(0L, 1000L).map(Duration.ofMinutes),
-    Gen.choose(0L, 1000L).map(Duration.ofSeconds),
+    Gen.choose(-1000L, 1000L).map(Duration.ofDays),
+    Gen.choose(-1000L, 1000L).map(Duration.ofHours),
+    Gen.choose(-1000L, 1000L).map(Duration.ofMinutes),
+    Gen.choose(-1000L, 1000L).map(Duration.ofSeconds),
+    // FIXME it looks like bug in JDK: Duration.parse("PT-0.1S").toString == "PT0.1S"
     Gen.choose(0L, 1000L).map(Duration.ofMillis),
     Gen.choose(0L, 1000L).map(Duration.ofNanos))
   val genInstant: Gen[Instant] =
