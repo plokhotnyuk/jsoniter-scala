@@ -2521,8 +2521,8 @@ final class JsonReader private[jsoniter_scala](
       } else parseEncodedString(i, charBuf.length - 1, charBuf, pos)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
-      parseString(i, i + Math.min(minLim - i, tail - newPos), charBuf, newPos)
-    } else parseString(i, i + Math.min(growCharBuf(i + 1) - i, tail - pos), this.charBuf, pos)
+      parseString(i, Math.min(minLim, i + tail - newPos), charBuf, newPos)
+    } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
   private def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int =
@@ -2647,13 +2647,13 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
           head = pos + 2
-          ((b1 << 6) ^ b2 ^ 0xF80).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
+          ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else parseChar(loadMoreOrError(pos))
       } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
         if (remaining > 2) {
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
-          val ch = ((b1 << 12) ^ (b2 << 6) ^ b3 ^ 0xFFFE1F80).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
+          val ch = ((b1 << 12) ^ (b2 << 6) ^ (b3 ^ 0xFFFE1F80)).toChar // 0xFFFE1F80 == ((0xE0.toByte << 12) ^ (0x80.toByte << 6) ^ 0x80.toByte)
           if ((b1 == 0xE0.toByte && (b2 & 0xE0) == 0x80) || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80 ||
             (ch >= 0xD800 && ch <= 0xDFFF)) malformedBytesError(b1, b2, b3, pos)
           head = pos + 3
