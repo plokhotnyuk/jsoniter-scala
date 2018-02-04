@@ -16,13 +16,13 @@ object GenUtils {
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genZoneOffset: Gen[ZoneOffset] = Gen.choose(-18 * 60 * 60, 18 * 60 * 60).map(ZoneOffset.ofTotalSeconds)
   val genDuration: Gen[Duration] = Gen.oneOf(
-    Gen.choose(-1000L, 1000L).map(Duration.ofDays),
-    Gen.choose(-1000L, 1000L).map(Duration.ofHours),
-    Gen.choose(-1000L, 1000L).map(Duration.ofMinutes),
-    Gen.choose(-1000L, 1000L).map(Duration.ofSeconds),
+    Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
+    Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
+    Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
+    Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
     // FIXME it looks like bug in JDK: Duration.parse("PT-0.1S").toString == "PT0.1S"
-    Gen.choose(0L, 1000L).map(Duration.ofMillis),
-    Gen.choose(0L, 1000L).map(Duration.ofNanos))
+    Gen.choose(0L, Int.MaxValue.toLong).map(Duration.ofMillis),
+    Gen.choose(0L, Int.MaxValue.toLong).map(Duration.ofNanos))
   val genInstant: Gen[Instant] =
     for {
       year <- Gen.choose(-1000000000, 1000000000)
@@ -83,9 +83,9 @@ object GenUtils {
     } yield OffsetTime.of(hour, minute, second, nano, zoneOffset)
   val genPeriod: Gen[Period] =
     for {
-      year <- Gen.choose(-999999999, 999999999)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, maxDaysInMonth(year, month))
+      year <- Gen.choose(Int.MinValue, Int.MaxValue)
+      month <- Gen.choose(Int.MinValue, Int.MaxValue)
+      day <- Gen.choose(Int.MinValue, Int.MaxValue)
     } yield Period.of(year, month, day)
   val genYear: Gen[Year] = Gen.choose(-999999999, 999999999).map(Year.of)
   val genYearMonth: Gen[YearMonth] =
