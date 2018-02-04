@@ -84,7 +84,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeNonEscapedAsciiKey(s)) shouldBe '"' + s + "\":"
       }
 
-      forAll(Gen.listOf(genAsciiChar).map(_.mkString.filter(JsonWriter.isNonEscapedAscii)))(check)
+      forAll(Gen.listOf(genAsciiChar).map(_.mkString.filter(JsonWriter.isNonEscapedAscii)), minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for UUID" should {
@@ -380,7 +380,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
           "\"" + s.flatMap(toEscaped) + "\":"
       }
 
-      forAll(Gen.listOf(genEscapedAsciiChar).map(_.mkString), Gen.oneOf(true, false)) {
+      forAll(Gen.listOf(genEscapedAsciiChar).map(_.mkString), Gen.oneOf(true, false), minSuccessful(10000)) {
         (s: String, escapeUnicode: Boolean) =>
           check(s, escapeUnicode)
       }
@@ -405,7 +405,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\":"
       }
 
-      forAll(genHighSurrogateChar, genLowSurrogateChar) { (ch1: Char, ch2: Char) =>
+      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (ch1: Char, ch2: Char) =>
         check(ch1.toString + ch2.toString)
       }
     }
@@ -417,11 +417,11 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
           .getMessage.contains("illegal char sequence of surrogate pair"))
       }
 
-      forAll(genSurrogateChar, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
+      forAll(genSurrogateChar, Gen.oneOf(true, false), minSuccessful(10000)) { (ch: Char, escapeUnicode: Boolean) =>
         check(ch.toString, escapeUnicode)
         check(ch.toString + ch.toString, escapeUnicode)
       }
-      forAll(genLowSurrogateChar, genHighSurrogateChar, Gen.oneOf(true, false)) {
+      forAll(genLowSurrogateChar, genHighSurrogateChar, Gen.oneOf(true, false), minSuccessful(10000)) {
         (ch1: Char, ch2: Char, escapeUnicode: Boolean) =>
           check(ch1.toString + ch2.toString, escapeUnicode)
       }
@@ -437,7 +437,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "write string with chars that should be escaped" in {
-      forAll(genEscapedAsciiChar) { (ch: Char) =>
+      forAll(genEscapedAsciiChar, minSuccessful(10000)) { (ch: Char) =>
         withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
         withWriter(_.writeKey(ch)) shouldBe "\"" + toEscaped(ch) + "\":"
       }

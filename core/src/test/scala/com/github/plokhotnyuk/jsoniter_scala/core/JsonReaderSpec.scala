@@ -1130,7 +1130,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
       }
 
-      forAll(genControlChar) { (ch: Char) =>
+      forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
         checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
@@ -1269,7 +1269,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
-      forAll(genControlChar) { (ch: Char) =>
+      forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
         checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
