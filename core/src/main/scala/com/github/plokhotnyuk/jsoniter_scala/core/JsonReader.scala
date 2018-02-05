@@ -2034,28 +2034,34 @@ final class JsonReader private[jsoniter_scala](
             x = '0' - b
             state = 4
           } else digitError(pos)
-        case 4 => // 'Y' or 'M' or 'D' or digit
+        case 4 => // 'Y' or 'M' or 'W' or 'D' or digit
           if (b >= '0' && b <= '9') {
-            if (x < -214748364) intOverflowError(pos)
+            if (x < -214748364) periodError(pos)
             x = x * 10 + ('0' - b)
-            if (x > 0) intOverflowError(pos)
-            state = 4
+            if (x > 0) periodError(pos)
           } else if (b == 'Y') {
-            years = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            years = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
             x = 0
             xNeg = false
             state = 5
           } else if (b == 'M') {
-            months = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            months = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
             x = 0
             xNeg = false
             state = 8
-          } else if (b == 'D') {
-            days = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+          } else if (b == 'W') {
+            val r = 7L * (if (neg ^ xNeg) x else -x)
+            days = r.toInt
+            if (r != days) periodError(pos)
             x = 0
             xNeg = false
             state = 11
-          } else decodeError("expected 'Y' or 'M' or 'D' or digit", pos)
+          } else if (b == 'D') {
+            days = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 14
+          } else decodeError("expected 'Y' or 'M' or 'W' or 'D' or digit", pos)
         case 5 => // '-' or '"' or digit
           if (b >= '0' && b <= '9') {
             x = '0' - b
@@ -2070,23 +2076,29 @@ final class JsonReader private[jsoniter_scala](
             x = '0' - b
             state = 7
           } else digitError(pos)
-        case 7 => // 'M' or 'D' or digit
+        case 7 => // 'M' or 'W' or 'D' or digit
           if (b >= '0' && b <= '9') {
-            if (x < -214748364) intOverflowError(pos)
+            if (x < -214748364) periodError(pos)
             x = x * 10 + ('0' - b)
-            if (x > 0) intOverflowError(pos)
-            state = 7
+            if (x > 0) periodError(pos)
           } else if (b == 'M') {
-            months = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            months = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
             x = 0
             xNeg = false
             state = 8
-          } else if (b == 'D') {
-            days = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+          } else if (b == 'W') {
+            val r = 7L * (if (neg ^ xNeg) x else -x)
+            days = r.toInt
+            if (r != days) periodError(pos)
             x = 0
             xNeg = false
             state = 11
-          } else decodeError("expected 'M' or 'D' or digit", pos)
+          } else if (b == 'D') {
+            days = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 14
+          } else decodeError("expected 'M' or 'W' or 'D' or digit", pos)
         case 8 => // '-' or '"' or digit
           if (b >= '0' && b <= '9') {
             x = '0' - b
@@ -2101,27 +2113,63 @@ final class JsonReader private[jsoniter_scala](
             x = '0' - b
             state = 10
           } else digitError(pos)
-        case 10 => // 'D' or digit
+        case 10 => // 'W' or 'D' or digit
           if (b >= '0' && b <= '9') {
-            if (x < -214748364) intOverflowError(pos)
+            if (x < -214748364) periodError(pos)
             x = x * 10 + ('0' - b)
-            if (x > 0) intOverflowError(pos)
-            state = 7
-          } else if (b == 'D') {
-            days = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            if (x > 0) periodError(pos)
+          } else if (b == 'W') {
+            val r = 7L * (if (neg ^ xNeg) x else -x)
+            days = r.toInt
+            if (r != days) periodError(pos)
+            x = 0
+            xNeg = false
             state = 11
+          } else if (b == 'D') {
+            x = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
+            val r = days + x
+            if (((x ^ r) & (days ^ r)) < 0) periodError(pos)
+            days = r
+            state = 14
+          } else decodeError("expected 'W' or 'D' or digit", pos)
+        case 11 => // '-' or '"' or digit
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 13
+          } else if (b == '-') {
+            xNeg = true
+            state = 12
+          } else if (b == '"') state = 15
+          else decodeError("expected '\"' or '-' or digit", pos)
+        case 12 => // digit (after '-')
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 13
+          } else digitError(pos)
+        case 13 => // 'D' or digit
+          if (b >= '0' && b <= '9') {
+            if (x < -214748364) periodError(pos)
+            x = x * 10 + ('0' - b)
+            if (x > 0) periodError(pos)
+            state = 13
+          } else if (b == 'D') {
+            x = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
+            val r = days + x
+            if (((x ^ r) & (days ^ r)) < 0) periodError(pos)
+            days = r
+            state = 14
           } else tokenOrDigitError('D', pos)
-        case 11 => // '"'
-          if (b == '"') state = 12
+        case 14 => // '"'
+          if (b == '"') state = 15
           else tokenError('"', pos)
       }
       pos += 1
-    } while (state != 12)
+    } while (state != 15)
     head = pos
     Period.of(years, months, days)
   }
 
-  private def parseYear(isToken: Boolean): Year = {
+  private def parseYear(isToken: Boolean) = {
     val year = parseInt(isToken)
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     try Year.of(year) catch {
@@ -2570,6 +2618,8 @@ final class JsonReader private[jsoniter_scala](
 
   private def durationPeriodError(ex: DateTimeParseException): Nothing =
     decodeError("illegal duration/period", head - 1, ex)
+
+  private def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
   private def dateTimeZoneError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
 

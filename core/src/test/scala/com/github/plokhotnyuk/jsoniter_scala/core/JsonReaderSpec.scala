@@ -751,14 +751,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes).readPeriod(default) shouldBe default
     }
     "parse Period from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
-      def check(x: Period): Unit = {
-        val s = x.toString
+      def check(x: Period, s: String): Unit = {
         readPeriod(s) shouldBe x
         readKeyAsPeriod(s) shouldBe x
       }
 
-      check(Period.ZERO)
-      forAll(genPeriod, minSuccessful(100000))(check)
+      check(Period.ZERO, "P0D")
+      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(100000)) {
+        (weeks: Int, days: Int) =>
+          val x = Period.of(0, 0, weeks * 7 + days)
+          check(x, s"P${weeks}W${days}D")
+      }
+      forAll(genPeriod, minSuccessful(100000))(x => check(x, x.toString))
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -770,14 +774,27 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"\"".getBytes, "expected 'P' or '-', offset: 0x00000001")
       checkError("\"PXY\"".getBytes, "expected '-' or digit, offset: 0x00000002")
       checkError("\"P-XY\"".getBytes, "expected digit, offset: 0x00000003")
-      checkError("\"P1XY\"".getBytes, "expected 'Y' or 'M' or 'D' or digit, offset: 0x00000003")
+      checkError("\"P1XY\"".getBytes, "expected 'Y' or 'M' or 'W' or 'D' or digit, offset: 0x00000003")
+      checkError("\"P2147483648Y\"".getBytes, "illegal period, offset: 0x0000000c")
+      checkError("\"P-2147483649Y\"".getBytes, "illegal period, offset: 0x0000000c")
       checkError("\"P1YXM\"".getBytes, "expected '\"' or '-' or digit, offset: 0x00000004")
       checkError("\"P1Y-XM\"".getBytes, "expected digit, offset: 0x00000005")
-      checkError("\"P1Y1XM\"".getBytes, "expected 'M' or 'D' or digit, offset: 0x00000005")
-      checkError("\"P1Y1MXD\"".getBytes, "expected '\"' or '-' or digit, offset: 0x00000006")
-      checkError("\"P1Y1M-XD\"".getBytes, "expected digit, offset: 0x00000007")
-      checkError("\"P1Y1M1XD\"".getBytes, "expected 'D' or digit, offset: 0x00000007")
-      checkError("\"P1Y1M1DX".getBytes, "expected '\"', offset: 0x00000008")
+      checkError("\"P1Y1XM\"".getBytes, "expected 'M' or 'W' or 'D' or digit, offset: 0x00000005")
+      checkError("\"P1Y2147483648M\"".getBytes, "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y-2147483649M\"".getBytes, "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y1MXW\"".getBytes, "expected '\"' or '-' or digit, offset: 0x00000006")
+      checkError("\"P1Y1M-XW\"".getBytes, "expected digit, offset: 0x00000007")
+      checkError("\"P1Y1M1XW\"".getBytes, "expected 'W' or 'D' or digit, offset: 0x00000007")
+      checkError("\"P1Y1M306783379W\"".getBytes, "illegal period, offset: 0x0000000f")
+      checkError("\"P1Y1M-306783379W\"".getBytes, "illegal period, offset: 0x00000010")
+      checkError("\"P1Y1M1WXD\"".getBytes, "expected '\"' or '-' or digit, offset: 0x00000008")
+      checkError("\"P1Y1M1W-XD\"".getBytes, "expected digit, offset: 0x00000009")
+      checkError("\"P1Y1M1W1XD\"".getBytes, "expected 'D' or digit, offset: 0x00000009")
+      checkError("\"P1Y1M306783378W8D\"".getBytes, "illegal period, offset: 0x00000011")
+      checkError("\"P1Y1M-306783378W-8D\"".getBytes, "illegal period, offset: 0x00000013")
+      checkError("\"P1Y1M0W2147483648D\"".getBytes, "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M0W-2147483649D\"".getBytes, "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M1W1DX".getBytes, "expected '\"', offset: 0x0000000a")
     }
   }
   "JsonReader.readYear" should {
