@@ -785,6 +785,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
       checkError("\"\"".getBytes, "expected 'P' or '-', offset: 0x00000001")
+      checkError("\"-\"".getBytes, "expected 'P', offset: 0x00000002")
       checkError("\"PXY\"".getBytes, "expected '-' or digit, offset: 0x00000002")
       checkError("\"P-XY\"".getBytes, "expected digit, offset: 0x00000003")
       checkError("\"P1XY\"".getBytes, "expected 'Y' or 'M' or 'W' or 'D' or digit, offset: 0x00000003")
