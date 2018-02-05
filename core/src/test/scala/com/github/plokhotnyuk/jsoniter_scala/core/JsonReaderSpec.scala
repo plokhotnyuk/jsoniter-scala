@@ -767,8 +767,17 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"".getBytes, "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes, "llegal duration/period, offset: 0x00000001")
-      checkError("\"PXD\"".getBytes, "llegal duration/period, offset: 0x00000004")
+      checkError("\"\"".getBytes, "expected 'P' or '-', offset: 0x00000001")
+      checkError("\"PXY\"".getBytes, "expected '-' or digit, offset: 0x00000002")
+      checkError("\"P-XY\"".getBytes, "expected digit, offset: 0x00000003")
+      checkError("\"P1XY\"".getBytes, "expected 'Y' or 'M' or 'D' or digit, offset: 0x00000003")
+      checkError("\"P1YXM\"".getBytes, "expected '\"' or '-' or digit, offset: 0x00000004")
+      checkError("\"P1Y-XM\"".getBytes, "expected digit, offset: 0x00000005")
+      checkError("\"P1Y1XM\"".getBytes, "expected 'M' or 'D' or digit, offset: 0x00000005")
+      checkError("\"P1Y1MXD\"".getBytes, "expected '\"' or '-' or digit, offset: 0x00000006")
+      checkError("\"P1Y1M-XD\"".getBytes, "expected digit, offset: 0x00000007")
+      checkError("\"P1Y1M1XD\"".getBytes, "expected 'D' or digit, offset: 0x00000007")
+      checkError("\"P1Y1M1DX".getBytes, "expected '\"', offset: 0x00000008")
     }
   }
   "JsonReader.readYear" should {

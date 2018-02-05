@@ -1999,10 +1999,127 @@ final class JsonReader private[jsoniter_scala](
       zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
-  private def parsePeriod(): Period =
-    try Period.parse(charSequence(parseString())) catch {
-      case ex: DateTimeParseException => durationPeriodError(ex)
-    }
+  private def parsePeriod(): Period = {
+    var neg = false
+    var years = 0
+    var months = 0
+    var days = 0
+    var x = 0
+    var xNeg = false
+    var state = 0
+    var pos = head
+    do {
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      val b = buf(pos)
+      (state: @switch) match {
+        case 0 => // '-' or 'P'
+          if (b == 'P') state = 2
+          else if (b == '-') {
+            neg = true
+            state = 1
+          } else tokensError('P', '-', pos)
+        case 1 => // 'P'
+          if (b == 'P') state = 2
+          else tokenError('P', pos)
+        case 2 => // '-' or digit
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 4
+          } else if (b == '-') {
+            xNeg = true
+            state = 3
+          } else tokenOrDigitError('-', pos)
+        case 3 => // digit (after '-')
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 4
+          } else digitError(pos)
+        case 4 => // 'Y' or 'M' or 'D' or digit
+          if (b >= '0' && b <= '9') {
+            if (x < -214748364) intOverflowError(pos)
+            x = x * 10 + ('0' - b)
+            if (x > 0) intOverflowError(pos)
+            state = 4
+          } else if (b == 'Y') {
+            years = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 5
+          } else if (b == 'M') {
+            months = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 8
+          } else if (b == 'D') {
+            days = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 11
+          } else decodeError("expected 'Y' or 'M' or 'D' or digit", pos)
+        case 5 => // '-' or '"' or digit
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 7
+          } else if (b == '-') {
+            xNeg = true
+            state = 6
+          } else if (b == '"') state = 12
+          else decodeError("expected '\"' or '-' or digit", pos)
+        case 6 => // digit (after '-')
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 7
+          } else digitError(pos)
+        case 7 => // 'M' or 'D' or digit
+          if (b >= '0' && b <= '9') {
+            if (x < -214748364) intOverflowError(pos)
+            x = x * 10 + ('0' - b)
+            if (x > 0) intOverflowError(pos)
+            state = 7
+          } else if (b == 'M') {
+            months = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 8
+          } else if (b == 'D') {
+            days = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            x = 0
+            xNeg = false
+            state = 11
+          } else decodeError("expected 'M' or 'D' or digit", pos)
+        case 8 => // '-' or '"' or digit
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 10
+          } else if (b == '-') {
+            xNeg = true
+            state = 9
+          } else if (b == '"') state = 12
+          else decodeError("expected '\"' or '-' or digit", pos)
+        case 9 => // digit (after '-')
+          if (b >= '0' && b <= '9') {
+            x = '0' - b
+            state = 10
+          } else digitError(pos)
+        case 10 => // 'D' or digit
+          if (b >= '0' && b <= '9') {
+            if (x < -214748364) intOverflowError(pos)
+            x = x * 10 + ('0' - b)
+            if (x > 0) intOverflowError(pos)
+            state = 7
+          } else if (b == 'D') {
+            days = if (neg ^ xNeg) x else if (x == -2147483648) intOverflowError(pos) else -x
+            state = 11
+          } else tokenOrDigitError('D', pos)
+        case 11 => // '"'
+          if (b == '"') state = 12
+          else tokenError('"', pos)
+      }
+      pos += 1
+    } while (state != 12)
+    head = pos
+    Period.of(years, months, days)
+  }
 
   private def parseYear(isToken: Boolean): Year = {
     val year = parseInt(isToken)
