@@ -134,7 +134,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: Duration): Unit =
     if (x ne null) {
       writeComma()
-      writeNonEscapedAsciiString(x.toString)
+      writeDuration(x)
       writeColon()
     } else nullKeyError()
 
@@ -244,7 +244,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeNonEscapedAsciiVal(x: String): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x)
 
-  def writeVal(x: Duration): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeVal(x: Duration): Unit = if (x eq null) writeNull() else writeDuration(x)
 
   def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeInstant(x)
 
@@ -784,6 +784,55 @@ final class JsonWriter private[jsoniter_scala](
       pos + 3
     }
   }
+
+  private def writeDuration(x: Duration): Unit =
+    if (x.isZero) writeBytes('"', 'P', 'T', '0', 'S', '"')
+    else {
+      x.toString
+      writeBytes('"', 'P', 'T')
+      val totalSeconds = x.getSeconds
+      val hours = totalSeconds / 3600
+      if (hours != 0) {
+        writeLong(hours)
+        writeBytes('H')
+      }
+      val secsOfHour = (totalSeconds - hours * 3600).toInt
+      val minutes = secsOfHour / 60
+      if (minutes != 0) {
+        writeInt(minutes)
+        writeBytes('M')
+      }
+      val seconds = secsOfHour - minutes * 60
+      var nanos = x.getNano
+      if (seconds != 0 || nanos != 0) {
+        if (seconds < 0 && nanos > 0) {
+          nanos = 1000000000 - nanos
+          if (seconds == -1) writeBytes('-', '0')
+          else writeInt(seconds + 1)
+        } else writeInt(seconds)
+        if (nanos > 0) {
+          writeBytes('.')
+          val posLim = ensureBufferCapacity(9)
+          var pos = posLim + 8
+          var hasNonZero = false
+          while (pos >= posLim) {
+            val newNanos = nanos / 10
+            val digit = nanos - newNanos * 10
+            if (hasNonZero || digit != 0) {
+              buf(pos) = (digit + '0').toByte
+              if (!hasNonZero) {
+                count = pos + 1
+                hasNonZero = true
+              }
+            }
+            nanos = newNanos
+            pos -= 1
+          }
+        }
+        writeBytes('S')
+      }
+      writeBytes('"')
+    }
 
   private def writeInstant(x: Instant): Unit = count = {
     var zeroDay = Math.floorDiv(x.getEpochSecond, 86400) + 719528 // 719528 == days 0000 to 1970
