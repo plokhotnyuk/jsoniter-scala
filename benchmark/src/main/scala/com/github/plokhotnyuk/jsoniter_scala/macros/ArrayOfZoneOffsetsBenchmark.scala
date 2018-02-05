@@ -14,7 +14,7 @@ import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
 
 class ArrayOfZoneOffsetsBenchmark extends CommonParams {
-  val obj: Array[ZoneOffset] = (1 to 128).map(i => ZoneOffset.ofHoursMinutesSeconds(i % 17, i % 60, 0)).toArray
+  val obj: Array[ZoneOffset] = (1 to 128).map(i => ZoneOffset.ofHoursMinutesSeconds(i % 17, (i % 4) * 15, 0)).toArray
   val jsonString: String = obj.mkString("[\"", "\",\"", "\"]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 /* FIXME Circe require custom decoder

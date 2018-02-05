@@ -16,10 +16,10 @@ import scala.collection.JavaConverters._
 
 class ArrayOfZoneIdsBenchmark extends CommonParams {
   val obj: Array[ZoneId] = (ZoneId.getAvailableZoneIds.asScala.take(100).map(ZoneId.of) ++
-    (1 to 7).map(i => ZoneId.of(s"+0$i:0$i:0$i")) ++
-    (1 to 7).map(i => ZoneId.of(s"UT+0$i:0$i:0$i")) ++
-    (1 to 7).map(i => ZoneId.of(s"UTC+0$i:0$i:0$i")) ++
-    (1 to 7).map(i => ZoneId.of(s"GMT+0$i:0$i:0$i"))).toArray // 128 ZoneIds
+    (1 to 7).map(i => ZoneId.of(s"+0$i:00")) ++
+    (1 to 7).map(i => ZoneId.of(s"UT+0$i:00")) ++
+    (1 to 7).map(i => ZoneId.of(s"UTC+0$i:00")) ++
+    (1 to 7).map(i => ZoneId.of(s"GMT+0$i:00"))).toArray // 128 ZoneIds
   val jsonString: String = obj.mkString("[\"", "\",\"", "\"]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
