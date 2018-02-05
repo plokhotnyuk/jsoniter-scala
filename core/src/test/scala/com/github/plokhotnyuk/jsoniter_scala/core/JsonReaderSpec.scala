@@ -752,17 +752,30 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "parse Period from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
       def check(x: Period, s: String): Unit = {
+        val xx = Period.of(-x.getYears, -x.getMonths, -x.getDays)
         readPeriod(s) shouldBe x
         readKeyAsPeriod(s) shouldBe x
+        readPeriod('-' + s) shouldBe xx
+        readKeyAsPeriod('-' + s) shouldBe xx
       }
 
       check(Period.ZERO, "P0D")
+      forAll(genPeriod, minSuccessful(100000))(x => check(x, x.toString))
+      forAll(Gen.choose(Int.MinValue, Int.MaxValue), Gen.choose(Int.MinValue, Int.MaxValue), minSuccessful(100000)) {
+        (x: Int, y: Int) =>
+          check(Period.of(x, 0, 0), s"P${x}Y")
+          check(Period.of(0, x, 0), s"P${x}M")
+          check(Period.of(0, 0, x), s"P${x}D")
+          check(Period.of(x, y, 0), s"P${x}Y${y}M")
+          check(Period.of(0, x, y), s"P${x}M${y}D")
+          check(Period.of(x, 0, y), s"P${x}Y${y}D")
+      }
       forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(100000)) {
         (weeks: Int, days: Int) =>
-          val x = Period.of(0, 0, weeks * 7 + days)
-          check(x, s"P${weeks}W${days}D")
+          check(Period.of(0, 0, weeks * 7 + days), s"P${weeks}W${days}D")
+          check(Period.of(1, 0, weeks * 7 + days), s"P1Y${weeks}W${days}D")
+          check(Period.of(1, 1, weeks * 7 + days), s"P1Y1M${weeks}W${days}D")
       }
-      forAll(genPeriod, minSuccessful(100000))(x => check(x, x.toString))
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {

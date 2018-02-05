@@ -2069,7 +2069,7 @@ final class JsonReader private[jsoniter_scala](
           } else if (b == '-') {
             xNeg = true
             state = 6
-          } else if (b == '"') state = 12
+          } else if (b == '"') state = 15
           else decodeError("expected '\"' or '-' or digit", pos)
         case 6 => // digit (after '-')
           if (b >= '0' && b <= '9') {
@@ -2106,7 +2106,7 @@ final class JsonReader private[jsoniter_scala](
           } else if (b == '-') {
             xNeg = true
             state = 9
-          } else if (b == '"') state = 12
+          } else if (b == '"') state = 15
           else decodeError("expected '\"' or '-' or digit", pos)
         case 9 => // digit (after '-')
           if (b >= '0' && b <= '9') {
