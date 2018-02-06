@@ -7,6 +7,7 @@ import org.scalacheck.Gen
 import scala.collection.JavaConverters._
 
 object GenUtils {
+  val isJDK8: Boolean = System.getProperty("java.version").startsWith("1.8")
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)
@@ -19,9 +20,11 @@ object GenUtils {
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
+    // FIXME JDK 8/9 have bug in parsing of Duration with zero seconds and negative nanos
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    Gen.choose(Long.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
-    Gen.choose(Long.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
+    // FIXME JDK 8 has bug in serialization of Duration with negative nanos
+    Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
+    Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
   val genInstant: Gen[Instant] =
     for {
       year <- Gen.choose(-1000000000, 1000000000)

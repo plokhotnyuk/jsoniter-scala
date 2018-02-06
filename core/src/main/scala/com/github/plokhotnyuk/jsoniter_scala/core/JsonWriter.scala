@@ -789,27 +789,27 @@ final class JsonWriter private[jsoniter_scala](
     if (x.isZero) writeBytes('"', 'P', 'T', '0', 'S', '"')
     else {
       writeBytes('"', 'P', 'T')
-      val totalSeconds = x.getSeconds
-      val hours = totalSeconds / 3600
+      val totalSecs = x.getSeconds
+      var effectiveTotalSecs = totalSecs
+      var nanos = x.getNano
+      if (effectiveTotalSecs < 0 && nanos > 0) effectiveTotalSecs += 1
+      val hours = effectiveTotalSecs / 3600
       if (hours != 0) {
         writeLong(hours)
         writeBytes('H')
       }
-      val secsOfHour = (totalSeconds - hours * 3600).toInt
+      val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
       val minutes = secsOfHour / 60
       if (minutes != 0) {
         writeInt(minutes)
         writeBytes('M')
       }
       val seconds = secsOfHour - minutes * 60
-      var nanos = x.getNano
       if (seconds != 0 || nanos != 0) {
-        if (seconds < 0 && nanos > 0) {
-          nanos = 1000000000 - nanos
-          if (seconds == -1) writeBytes('-', '0')
-          else writeInt(seconds + 1)
-        } else writeInt(seconds)
+        if (totalSecs < 0 && seconds == 0 && nanos > 0) writeBytes('-', '0')
+        else writeInt(seconds)
         if (nanos > 0) {
+          if (totalSecs < 0) nanos = 1000000000 - nanos
           writeBytes('.')
           val posLim = ensureBufferCapacity(9)
           var pos = posLim + 8
