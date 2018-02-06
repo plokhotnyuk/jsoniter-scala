@@ -6,10 +6,6 @@ matrix:
       sudo: false
       jdk: oraclejdk9
       scala: 2.12.4
-      addons:
-        apt:
-          packages:
-            - oracle-java9-installer # Forces use of newer JDK 9 build
     - os: linux
       sudo: false
       jdk: openjdk8
