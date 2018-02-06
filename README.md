@@ -9,9 +9,9 @@ Scala macros that generates codecs for case classes, standard types and collecti
 to get maximum performance of JSON parsing & serialization.
 
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare Jsoniter Scala vs. Jackson, 
-Circe and Play-JSON libraries on JDK 8 & JDK 9 for the following environment: 
+Circe and Play-JSON libraries on JDK 8 & JDK 9 at the following environment: 
 Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-32-generic, 
-Oracle JDK 64-bit builds 1.8.0_161-b12 and 9.0.4+11 accordingly 
+Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
 
 ## Goals
 
@@ -49,8 +49,8 @@ Support of Scala.js & Scala Native is not a goal for the moment.
   provide sparse output 
 - Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
-- Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and hex dump 
-  of affected by error part of an internal byte buffer
+- Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
+  optional hex dump of affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
   
@@ -161,20 +161,20 @@ sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm_results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm.txt
 ```
 
 Following command can be used to profile & print assembly code of hottest methods, but it requires [setup of an 
 additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm_results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm.txt
 ```
 
 To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using following command:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >results.txt
+sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >gc.txt
 ```
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
@@ -208,7 +208,7 @@ sbt publishM2
 For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double check binary & source compatibility (including behaviour) and release using following command (credentials required):
+Double check binary & source compatibility (including behaviour) and release using the following command (credentials required):
 
 ```sh
 sbt "release cross"
