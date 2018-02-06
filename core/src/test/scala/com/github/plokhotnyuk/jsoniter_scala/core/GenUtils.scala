@@ -20,9 +20,8 @@ object GenUtils {
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    // FIXME it looks like bug in JDK: Duration.parse("PT-0.1S").toString == "PT0.1S"
-    Gen.choose(0L, Int.MaxValue.toLong).map(Duration.ofMillis),
-    Gen.choose(0L, Int.MaxValue.toLong).map(Duration.ofNanos))
+    Gen.choose(Long.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
+    Gen.choose(Long.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
   val genInstant: Gen[Instant] =
     for {
       year <- Gen.choose(-1000000000, 1000000000)

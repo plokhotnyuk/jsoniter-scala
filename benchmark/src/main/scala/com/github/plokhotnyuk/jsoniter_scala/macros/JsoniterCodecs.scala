@@ -17,6 +17,7 @@ object JsoniterCodecs {
   val booleanArrayCodec: JsonCodec[Array[Boolean]] = make[Array[Boolean]](CodecMakerConfig())
   val byteArrayCodec: JsonCodec[Array[Byte]] = make[Array[Byte]](CodecMakerConfig())
   val doubleArrayCodec: JsonCodec[Array[Double]] = make[Array[Double]](CodecMakerConfig())
+  val durationArrayCodec: JsonCodec[Array[Duration]] = make[Array[Duration]](CodecMakerConfig())
   val floatArrayCodec: JsonCodec[Array[Float]] = make[Array[Float]](CodecMakerConfig())
   val instantArrayCodec: JsonCodec[Array[Instant]] = make[Array[Instant]](CodecMakerConfig())
   val localDateArrayCodec: JsonCodec[Array[LocalDate]] = make[Array[LocalDate]](CodecMakerConfig())
