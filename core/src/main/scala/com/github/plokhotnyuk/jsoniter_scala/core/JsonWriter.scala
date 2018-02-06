@@ -788,7 +788,6 @@ final class JsonWriter private[jsoniter_scala](
   private def writeDuration(x: Duration): Unit =
     if (x.isZero) writeBytes('"', 'P', 'T', '0', 'S', '"')
     else {
-      x.toString
       writeBytes('"', 'P', 'T')
       val totalSeconds = x.getSeconds
       val hours = totalSeconds / 3600
