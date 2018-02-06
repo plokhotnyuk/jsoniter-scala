@@ -19,12 +19,9 @@ object GenUtils {
   val genDuration: Gen[Duration] = Gen.oneOf(
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
-    Gen.choose(-23L, 23L).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
-    Gen.choose(-59L, 59L).map(Duration.ofMinutes),
     // FIXME JDK 8/9 have bug in parsing of Duration with zero seconds and negative nanos
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    Gen.choose(-59L, 59L).map(Duration.ofSeconds),
     // FIXME JDK 8 has bug in serialization of Duration with negative nanos
     Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
     Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
