@@ -809,24 +809,13 @@ final class JsonWriter private[jsoniter_scala](
         if (totalSecs < 0 && seconds == 0 && nanos > 0) writeBytes('-', '0')
         else writeInt(seconds)
         if (nanos > 0) {
-          if (totalSecs < 0) nanos = 1000000000 - nanos
-          writeBytes('.')
-          val posLim = ensureBufferCapacity(9)
-          var pos = posLim + 8
-          var hasNonZero = false
-          while (pos >= posLim) {
-            val newNanos = nanos / 10
-            val digit = nanos - newNanos * 10
-            if (hasNonZero || digit != 0) {
-              buf(pos) = (digit + '0').toByte
-              if (!hasNonZero) {
-                count = pos + 1
-                hasNonZero = true
-              }
-            }
-            nanos = newNanos
-            pos -= 1
-          }
+          nanos = if (totalSecs < 0) 2000000000 - nanos else 1000000000 + nanos
+          val posLim = ensureBufferCapacity(10)
+          var pos = posLim + 9
+          writeIntRem(nanos, pos, buf, digits, 4)
+          buf(posLim) = '.'
+          while (pos > posLim && buf(pos) == '0') pos -= 1
+          count = pos + 1
         }
         writeBytes('S')
       }
