@@ -1360,10 +1360,7 @@ final class JsonReader private[jsoniter_scala](
             nanoDigits += 1
             if (nanoDigits > 9) durationError(pos)
           } else if (b == 'S') {
-            while (nanoDigits < 9) {
-              nanos *= 10
-              nanoDigits += 1
-            }
+            if (nanoDigits < 9) nanos *= nanoMultiplier(nanoDigits)
             if (xNeg) nanos = -nanos
             state = 16
           } else if (nanoDigits < 9) decodeError( "expected '\"' or digit", pos)
