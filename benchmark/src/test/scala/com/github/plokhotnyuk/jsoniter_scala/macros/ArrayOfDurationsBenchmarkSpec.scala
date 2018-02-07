@@ -5,13 +5,10 @@ class ArrayOfDurationsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfDurationsBenchmark" should {
     "deserialize properly" in {
-      //FIXME Circe doesn't parse properly "PT-4H-33M-0.00001638S"
-      //benchmark.readCirce().deep shouldBe benchmark.obj.deep
-      //FIXME Jackson doesn't parse properly "PT-4H-33M-0.00001638S"
-      //benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
+      benchmark.readCirce().deep shouldBe benchmark.obj.deep
+      benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
-      //FIXME Play-json doesn't parse properly "PT-4H-33M-0.00001638S"
-      //benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
