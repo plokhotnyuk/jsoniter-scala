@@ -1252,9 +1252,9 @@ final class JsonReader private[jsoniter_scala](
             x = '0' - b
             state = 4
           } else digitError(pos)
-        case 4 => // 'D' or 'H' or 'M' or '.' or 'S' or digit
+        case 4 => // 'D' or digit
           if (b >= '0' && b <= '9') {
-            if (x < -922337203685477580L) durationError(pos)
+            if (x < -10675199116730L) durationError(pos)
             x = x * 10 + ('0' - b)
             if (x > 0) durationError(pos)
           } else if (b == 'D') {
@@ -1263,22 +1263,7 @@ final class JsonReader private[jsoniter_scala](
             x = 0
             xNeg = false
             state = 5
-          } else if (b == 'H') {
-            if (x < -2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
-            hoursAsSecs = (if (neg ^ xNeg) x else -x) * 3600
-            x = 0
-            xNeg = false
-            state = 9
-          } else if (b == 'M') {
-            if (x < -153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
-            minutesAsSecs = (if (neg ^ xNeg) x else -x) * 60
-            x = 0
-            xNeg = false
-            state = 12
-          } else if (b == 'S' || b == '.') {
-            seconds = if (neg ^ xNeg) x else if (x == -9223372036854775808L) durationError(pos) else -x
-            state = if (b == '.') 15 else 16
-          } else decodeError("expected 'D' or 'H' or 'M' or 'S or '.' or digit", pos)
+          } else decodeError("expected 'D' or digit", pos)
         case 5 => // 'T' or '"'
           if (b == 'T') state = 6
           else if (b == '"') state = 17

@@ -273,15 +273,6 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(Duration.ZERO, "PT0S")
       forAll(genDuration, minSuccessful(100000))(x => check(x, x.toString))
-      forAll(Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600), minSuccessful(100000)) { x =>
-        check(Duration.ofHours(x), s"PT${x}H")
-      }
-      forAll(Gen.choose(Long.MinValue / 60, Long.MaxValue / 60), minSuccessful(100000)) { x =>
-        check(Duration.ofMinutes(x), s"PT${x}M")
-      }
-      forAll(Gen.choose(Long.MinValue, Long.MaxValue), minSuccessful(100000)) { x =>
-        check(Duration.ofSeconds(x), s"PT${x}S")
-      }
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -294,15 +285,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"-\"".getBytes, "expected 'P', offset: 0x00000002")
       checkError("\"PXD\"".getBytes, "expected '-' or digit, offset: 0x00000002")
       checkError("\"P-XD\"".getBytes, "expected digit, offset: 0x00000003")
-      checkError("\"P1XD\"".getBytes, "expected 'D' or 'H' or 'M' or 'S or '.' or digit, offset: 0x00000003")
+      checkError("\"P1XD\"".getBytes, "expected 'D' or digit, offset: 0x00000003")
       checkError("\"P106751991167301D\"".getBytes, "llegal duration, offset: 0x00000011")
       checkError("\"P-106751991167301D\"".getBytes, "llegal duration, offset: 0x00000012")
-      checkError("\"P2562047788015216H\"".getBytes, "llegal duration, offset: 0x00000012")
-      checkError("\"P-2562047788015216H\"".getBytes, "llegal duration, offset: 0x00000013")
-      checkError("\"P153722867280912931M\"".getBytes, "llegal duration, offset: 0x00000014")
-      checkError("\"P-153722867280912931M\"".getBytes, "llegal duration, offset: 0x00000015")
-      checkError("\"P9223372036854775808S\"".getBytes, "llegal duration, offset: 0x00000015")
-      checkError("\"P-9223372036854775809S\"".getBytes, "llegal duration, offset: 0x00000015")
       checkError("\"P1DX1H\"".getBytes, "expected 'T' or '\"', offset: 0x00000004")
       checkError("\"P1DTXH\"".getBytes, "expected '-' or digit, offset: 0x00000005")
       checkError("\"P1DT-XH\"".getBytes, "expected digit, offset: 0x00000006")
