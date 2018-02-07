@@ -309,8 +309,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P1DT1H1M-XS\"".getBytes, "expected digit, offset: 0x0000000a")
       checkError("\"P1DT1H1M0XS\"".getBytes, "expected 'S or '.' or digit, offset: 0x0000000a")
       checkError("\"P1DT1H1M0.XS\"".getBytes, "expected '\"' or digit, offset: 0x0000000b")
-      checkError("\"P1DT1H1M0.012345678XS\"".getBytes, "expected '\"', offset: 0x00000014")
-      checkError("\"P1DT1H1M0.0123456789S\"".getBytes, "illegal duration, offset: 0x00000014")
+      checkError("\"P1DT1H1M0.012345678XS\"".getBytes, "expected 'S', offset: 0x00000014")
+      checkError("\"P1DT1H1M0.0123456789S\"".getBytes, "expected 'S', offset: 0x00000014")
       checkError("\"P1DT1H1M9223372036854775808S\"".getBytes, "illegal duration, offset: 0x0000001c")
       checkError("\"P1DT1H1M-9223372036854775809S\"".getBytes, "illegal duration, offset: 0x0000001c")
     }

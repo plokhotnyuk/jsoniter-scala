@@ -1266,7 +1266,7 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected 'D' or digit", pos)
         case 5 => // 'T' or '"'
           if (b == 'T') state = 6
-          else if (b == '"') state = 17
+          else if (b == '"') state = 18
           else tokensError('T', '"', pos)
         case 6 => // '-' or '"' or digit
           if (b >= '0' && b <= '9') {
@@ -1300,7 +1300,7 @@ final class JsonReader private[jsoniter_scala](
             state = 12
           } else if (b == 'S' || b == '.') {
             seconds = if (neg ^ xNeg) x else if (x == -9223372036854775808L) durationError(pos) else -x
-            state = if (b == '.') 15 else 16
+            state = if (b == '.') 15 else 17
           } else decodeError("expected 'H' or 'M' or 'S or '.' or digit", pos)
         case 9 => // '-' or '"' or digit
           if (b >= '0' && b <= '9') {
@@ -1309,7 +1309,7 @@ final class JsonReader private[jsoniter_scala](
           } else if (b == '-') {
             xNeg = true
             state = 10
-          } else if (b == '"') state = 17
+          } else if (b == '"') state = 18
           else decodeError("expected '\"' or '-' or digit", pos)
         case 10 => // digit (after '-')
           if (b >= '0' && b <= '9') {
@@ -1329,7 +1329,7 @@ final class JsonReader private[jsoniter_scala](
             state = 12
           } else if (b == 'S' || b == '.') {
             seconds = if (neg ^ xNeg) x else if (x == -9223372036854775808L) durationError(pos) else -x
-            state = if (b == '.') 15 else 16
+            state = if (b == '.') 15 else 17
           } else decodeError("expected 'M' or 'S or '.' or digit", pos)
         case 12 => // '-' or '"' or digit
           if (b >= '0' && b <= '9') {
@@ -1338,7 +1338,7 @@ final class JsonReader private[jsoniter_scala](
           } else if (b == '-') {
             xNeg = true
             state = 13
-          } else if (b == '"') state = 17
+          } else if (b == '"') state = 18
           else decodeError("expected '\"' or '-' or digit", pos)
         case 13 => // digit (after '-')
           if (b >= '0' && b <= '9') {
@@ -1352,25 +1352,30 @@ final class JsonReader private[jsoniter_scala](
             if (x > 0) durationError(pos)
           } else if (b == 'S' || b == '.') {
             seconds = if (neg ^ xNeg) x else if (x == -9223372036854775808L) durationError(pos) else -x
-            state = if (b == '.') 15 else 16
+            state = if (b == '.') 15 else 17
           } else decodeError("expected 'S or '.' or digit", pos)
         case 15 => // 'S' or nano digit
           if (b >= '0' && b <= '9') {
-            nanos = nanos * 10 + (b - '0')
             nanoDigits += 1
-            if (nanoDigits > 9) durationError(pos)
+            nanos += nanoMultiplier(nanoDigits) * (b - '0')
+            if (nanoDigits == 9) {
+              if (xNeg) nanos = -nanos
+              state = 16
+            }
           } else if (b == 'S') {
-            if (nanoDigits < 9) nanos *= nanoMultiplier(nanoDigits)
             if (xNeg) nanos = -nanos
-            state = 16
+            state = 17
           } else if (nanoDigits < 9) decodeError( "expected '\"' or digit", pos)
           else tokenError('\"', pos)
-        case 16 => // '"'
-          if (b == '"') state = 17
+        case 16 => // 'S'
+          if (b == 'S') state = 17
+          else tokenError('S', pos)
+        case 17 => // '"'
+          if (b == '"') state = 18
           else tokenError('"', pos)
       }
       pos += 1
-    } while (state != 17)
+    } while (state != 18)
     head = pos
     val minutesWithSecs = minutesAsSecs + seconds
     if (((minutesAsSecs ^ minutesWithSecs) & (seconds ^ minutesWithSecs)) < 0) durationError(pos)
