@@ -116,7 +116,7 @@ lazy val benchmark = project
   .settings(noPublishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.2",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.4",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.4",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.4",
       "com.fasterxml.jackson.core" % "jackson-core" % "2.9.4",
