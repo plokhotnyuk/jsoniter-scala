@@ -1365,8 +1365,7 @@ final class JsonReader private[jsoniter_scala](
           } else if (b == 'S') {
             if (xNeg) nanos = -nanos
             state = 17
-          } else if (nanoDigits < 9) decodeError( "expected '\"' or digit", pos)
-          else tokenError('\"', pos)
+          } else tokenOrDigitError('S', pos)
         case 16 => // 'S'
           if (b == 'S') state = 17
           else tokenError('S', pos)
