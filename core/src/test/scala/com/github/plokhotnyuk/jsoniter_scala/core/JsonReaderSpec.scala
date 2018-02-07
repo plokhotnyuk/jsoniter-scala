@@ -266,14 +266,22 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes).readDuration(default) shouldBe default
     }
     "parse Duration from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
-      def check(x: Duration): Unit = {
-        val s = x.toString
+      def check(x: Duration, s: String): Unit = {
         readDuration(s) shouldBe x
         readKeyAsDuration(s) shouldBe x
       }
 
-      check(Duration.ZERO)
-      forAll(genDuration, minSuccessful(100000))(check)
+      check(Duration.ZERO, "PT0S")
+      forAll(genDuration, minSuccessful(100000))(x => check(x, x.toString))
+      forAll(Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600), minSuccessful(100000)) { x =>
+        check(Duration.ofHours(x), s"PT${x}H")
+      }
+      forAll(Gen.choose(Long.MinValue / 60, Long.MaxValue / 60), minSuccessful(100000)) { x =>
+        check(Duration.ofMinutes(x), s"PT${x}M")
+      }
+      forAll(Gen.choose(Long.MinValue, Long.MaxValue), minSuccessful(100000)) { x =>
+        check(Duration.ofSeconds(x), s"PT${x}S")
+      }
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
