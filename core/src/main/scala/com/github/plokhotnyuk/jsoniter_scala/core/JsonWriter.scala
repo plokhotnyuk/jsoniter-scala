@@ -803,21 +803,24 @@ final class JsonWriter private[jsoniter_scala](
         writeBytes('M')
       }
       val seconds = secsOfHour - minutes * 60
-      if (seconds != 0 || nanos != 0) {
-        if (totalSecs < 0 && seconds == 0 && nanos > 0) writeBytes('-', '0')
+      if (seconds == 0 && nanos == 0) writeBytes('"')
+      else {
+        if (totalSecs < 0 && seconds == 0 && nanos != 0) writeBytes('-', '0')
         else writeInt(seconds)
-        if (nanos > 0) {
+        if (nanos == 0) writeBytes('S', '"')
+        else {
           nanos = if (totalSecs < 0) 2000000000 - nanos else 1000000000 + nanos
           val posLim = ensureBufferCapacity(10)
+          val buf = this.buf
           var pos = posLim + 9
           writeIntRem(nanos, pos, buf, digits, 4)
           buf(posLim) = '.'
           while (pos > posLim && buf(pos) == '0') pos -= 1
-          count = pos + 1
+          buf(pos + 1) = 'S'
+          buf(pos + 2) = '"'
+          count = pos + 3
         }
-        writeBytes('S')
       }
-      writeBytes('"')
     }
 
   private def writeInstant(x: Instant): Unit = count = {
