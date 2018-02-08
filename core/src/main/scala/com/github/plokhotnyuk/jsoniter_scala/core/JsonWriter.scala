@@ -945,9 +945,8 @@ final class JsonWriter private[jsoniter_scala](
       val days = x.getDays
       if (days != 0) {
         writeInt(days)
-        writeBytes('D')
-      }
-      writeBytes('"')
+        writeBytes('D', '"')
+      } else writeBytes('"')
     }
 
   private def writeYearMonth(x: YearMonth): Unit = count = {
