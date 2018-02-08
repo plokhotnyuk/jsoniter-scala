@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class ArrayOfBytesBenchmark extends CommonParams {
-  val obj: Array[Byte] = (1 to 1024).map(_.toByte).toArray
+  val obj: Array[Byte] = (1 to 128).map(_.toByte).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 

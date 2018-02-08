@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class ArrayOfDoublesBenchmark extends CommonParams {
-  val obj: Array[Double] = (1 to 1024)
+  val obj: Array[Double] = (1 to 128)
     .map(i => ((i * 372036854775807L) / Math.pow(10, i % 19)).toLong * Math.pow(10, (i % 38) - 19)).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes

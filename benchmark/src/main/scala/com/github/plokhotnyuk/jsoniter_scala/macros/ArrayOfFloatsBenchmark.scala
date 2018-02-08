@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class ArrayOfFloatsBenchmark extends CommonParams {
-  val obj: Array[Float] = (1 to 1024)
+  val obj: Array[Float] = (1 to 128)
     .map(i => (((i * 1498724053) / Math.pow(10, i % 10)).toInt * Math.pow(10, (i % 20) - 10)).toFloat).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes

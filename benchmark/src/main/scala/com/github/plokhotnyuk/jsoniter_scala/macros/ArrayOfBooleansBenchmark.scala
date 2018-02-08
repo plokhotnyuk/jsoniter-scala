@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class ArrayOfBooleansBenchmark extends CommonParams {
-  val obj: Array[Boolean] = (1 to 1024).map(i => ((i * 1498724053) & 1) == 0).toArray
+  val obj: Array[Boolean] = (1 to 128).map(i => ((i * 1498724053) & 1) == 0).toArray
   val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
