@@ -821,19 +821,20 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private def writeInstant(x: Instant): Unit = count = {
-    var zeroDay = Math.floorDiv(x.getEpochSecond, 86400) + 719528 // 719528 == days 0000 to 1970
-    zeroDay -= 60 // to find the march-based year adjust to 0000-03-01 so leap day is at end of four year cycle
+    val epochSecond = x.getEpochSecond
+    val epochDay = (if (epochSecond < 0) epochSecond - 86399 else epochSecond) / 86400
+    var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjust = 0L
-    if (zeroDay < 0) { // adjust negative years to positive for calculation
-      val adjustCycles = (zeroDay + 1) / 146097 - 1 // 146097 == number of days in a 400 year cycle
+    if (marchZeroDay < 0) { // adjust negative years to positive for calculation
+      val adjustCycles = (marchZeroDay + 1) / 146097 - 1 // 146097 == number of days in a 400 year cycle
       adjust = adjustCycles * 400
-      zeroDay -= adjustCycles * 146097
+      marchZeroDay -= adjustCycles * 146097
     }
-    var yearEst = (400 * zeroDay + 591) / 146097
-    var dayOfYearEst = zeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
+    var yearEst = (400 * marchZeroDay + 591) / 146097
+    var dayOfYearEst = marchZeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
     if (dayOfYearEst < 0) { // fix estimate
       yearEst -= 1
-      dayOfYearEst = zeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
+      dayOfYearEst = marchZeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
     }
     yearEst += adjust // reset any negative year
     val marchDayOfYear = dayOfYearEst.toInt
@@ -841,7 +842,7 @@ final class JsonWriter private[jsoniter_scala](
     val year = yearEst.toInt + marchMonth / 10 // convert march-based values back to january-based
     val month = (marchMonth + 2) % 12 + 1
     val day = marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
-    val secsOfDay = Math.floorMod(x.getEpochSecond, 86400).toInt
+    val secsOfDay = (epochSecond - epochDay * 86400).toInt
     val hour = secsOfDay / 3600
     val secsOfHour = secsOfDay - hour * 3600
     val minute = secsOfHour / 60
