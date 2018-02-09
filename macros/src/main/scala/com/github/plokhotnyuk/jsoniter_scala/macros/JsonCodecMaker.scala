@@ -14,13 +14,13 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 @field
-class named(name: String) extends StaticAnnotation
+final class named(val name: String) extends StaticAnnotation
 
 @field
-class transient extends StaticAnnotation
+final class transient extends StaticAnnotation
 
 @field
-class stringified extends StaticAnnotation
+final class stringified extends StaticAnnotation
 
 /**
   * Configuration parameter for `JsonCodecMaker.make()` call.
@@ -229,22 +229,21 @@ object JsonCodecMaker {
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
       def getFieldAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
-        case m: TermSymbol if m.annotations.exists(a => a.tree.tpe <:< c.weakTypeOf[named]
-            || a.tree.tpe <:< c.weakTypeOf[transient] || a.tree.tpe <:< c.weakTypeOf[stringified]) =>
+        case m: TermSymbol if m.annotations.exists(a => a.tree.tpe =:= c.weakTypeOf[named]
+            || a.tree.tpe =:= c.weakTypeOf[transient] || a.tree.tpe =:= c.weakTypeOf[stringified]) =>
           val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
-          val named = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[named])
+          val named = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[named])
           if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
-          val trans = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[transient])
+          val trans = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[transient])
           if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
-          val strings = m.annotations.filter(_.tree.tpe <:< c.weakTypeOf[stringified])
+          val strings = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[stringified])
           if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
           if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
             warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
               s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
           }
-          val name = named.headOption.flatMap(_.tree.children.tail.collectFirst {
-            case Literal(Constant(name: String)) => Option(name).getOrElse(fieldName)
-          }).getOrElse(fieldName)
+          val name = named.headOption.flatMap(x => Option(c.eval[named](c.Expr[named](c.untypecheck(x.tree))).name))
+            .getOrElse(fieldName)
           (fieldName, FieldAnnotations(name, trans.nonEmpty, strings.nonEmpty))
       }(breakOut)
 

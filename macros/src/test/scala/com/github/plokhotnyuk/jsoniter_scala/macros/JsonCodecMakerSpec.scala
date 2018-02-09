@@ -104,8 +104,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfUTF8KeysAndValues: JsonCodec[UTF8KeysAndValues] = make[UTF8KeysAndValues](CodecMakerConfig())
 
-  //FIXME: classes with field annotation(s) should be defined in source file before `make` call
-  case class NameOverridden(@named("new_name") oldName: String)
+  //FIXME: case classes with field annotation(s) should be defined in source file before `make` call for them
+  case class NameOverridden(@named("new_" + "name") oldName: String)
 
   val codecOfNameOverridden: JsonCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
 
