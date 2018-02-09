@@ -1,9 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class ArrayOfLocalTimesBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfLocalTimesBenchmark
+class ArrayOfLocalDateTimesBenchmarkSpec extends BenchmarkSpecBase {
+  val benchmark = new ArrayOfLocalDateTimesBenchmark
   
-  "ArrayOfLocalTimesBenchmark" should {
+  "ArrayOfLocalDateTimesBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce().deep shouldBe benchmark.obj.deep
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
@@ -12,7 +12,7 @@ class ArrayOfLocalTimesBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      //FIXME jackson serializes LocalTime as array of numbers
+      //FIXME Jackson serializes LocalData in format [<year>,<month>,<day>,<hour>,<minute>,<second>]
       //toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
