@@ -12,6 +12,7 @@ object JsoniterCodecs {
     ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
   val anyRefsCodec: JsonCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
   val arraysCodec: JsonCodec[Arrays] = make[Arrays](CodecMakerConfig())
+  val bigDecimalArrayCodec: JsonCodec[Array[BigDecimal]] = make[Array[BigDecimal]](CodecMakerConfig())
   val bigIntArrayCodec: JsonCodec[Array[BigInt]] = make[Array[BigInt]](CodecMakerConfig())
   val bitSetsCodec: JsonCodec[BitSets] = make[BitSets](CodecMakerConfig())
   val booleanArrayCodec: JsonCodec[Array[Boolean]] = make[Array[Boolean]](CodecMakerConfig())
