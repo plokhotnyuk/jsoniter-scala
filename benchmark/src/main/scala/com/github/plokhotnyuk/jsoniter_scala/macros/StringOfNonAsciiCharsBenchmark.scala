@@ -14,9 +14,9 @@ import play.api.libs.json.Json
 
 class StringOfNonAsciiCharsBenchmark extends CommonParams {
   val obj: String =
-    "倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
+    "倒排索引  维基百科，自由的百科全书    倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
   val jsonString: String =
-    """"倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。""""
+    """"倒排索引  维基百科，自由的百科全书    倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。""""
   val jsonBytes: Array[Byte] = jsonString.getBytes("UTF-8")
 
   @Benchmark
