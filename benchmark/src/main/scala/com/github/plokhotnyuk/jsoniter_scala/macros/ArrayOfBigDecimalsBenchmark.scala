@@ -12,11 +12,16 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class ArrayOfBigDecimalsBenchmark extends CommonParams {
-  val obj: Array[BigDecimal] = (1 to 128).map { i =>
-    BigDecimal(BigInt(Array.fill((i & 31) + 1)((i | 1).toByte)), i % 32) // FIXME | 1 is used to hide JDK bug of serialization redundant 0 after .
+  val sourceObj: Array[BigDecimal] = (1 to 128).map { i =>
+    //FIXME | 1 is used to hide JDK bug of serialization redundant 0 after .
+    BigDecimal(BigInt(Array.fill((i & 31) + 1)((i | 1).toByte)), i % 32)
   }.toArray // up to 256-bit numbers
-  val jsonString: String = obj.mkString("[", ",", "]")
+  val jsonString: String = sourceObj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
+
+  //FIXME it affects results but required to avoid misleading results due internal caching of the string representation
+  private def obj: Array[BigDecimal] =
+    sourceObj.map(x => BigDecimal(x.bigDecimal.unscaledValue(), x.bigDecimal.scale()))
 
   @Benchmark
   def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

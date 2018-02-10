@@ -5,10 +5,10 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBigDecimalsBenchmark" should {
     "deserialize properly" in {
-      benchmark.readCirce().deep shouldBe benchmark.obj.deep
-      benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
-      benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
-      benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readCirce().deep shouldBe benchmark.sourceObj.deep
+      benchmark.readJacksonScala().deep shouldBe benchmark.sourceObj.deep
+      benchmark.readJsoniterScala().deep shouldBe benchmark.sourceObj.deep
+      benchmark.readPlayJson().deep shouldBe benchmark.sourceObj.deep
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
