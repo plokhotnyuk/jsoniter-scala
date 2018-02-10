@@ -3240,7 +3240,7 @@ object JsonReader {
     * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type 
     * with default parsing options that maximize description of error. 
     * 
-    * Use custom configuration to turn on racing of stack less exceptions and/or turn off a hex dump printing 
+    * Use custom configuration to turn on raising of stackless exceptions and/or turn off a hex dump printing
     * to the error message. 
     *
     * @param codec a codec for the given `A` type
@@ -3275,7 +3275,7 @@ object JsonReader {
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
     * with default parsing options that maximize description of error. 
     *
-    * Use custom configuration to turn on racing of stack less exceptions and/or turn off a hex dump printing 
+    * Use custom configuration to turn on raising of stackless exceptions and/or turn off a hex dump printing
     * to the error message. 
     *
     * @param codec a codec for the given `A` type
