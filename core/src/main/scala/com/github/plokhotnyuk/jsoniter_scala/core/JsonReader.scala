@@ -516,11 +516,6 @@ final class JsonReader private[jsoniter_scala](
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
   private def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
-    if (config eq null) throw new NullPointerException
-    if (to > buf.length || to < 0) // also checks that `buf` is not null before any parsing
-      throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
-    if (from > to || from < 0)
-      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
     val currBuf = this.buf
     this.config = config
     this.buf = buf
@@ -536,14 +531,13 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
-    if ((in eq null) || (config eq null)) throw new NullPointerException
     this.config = config
     this.in = in
     head = 0
     tail = 0
     mark = 2147483647
     totalRead = 0
-    try codec.decode(this, codec.nullValue) // also checks that `codec` is not null before any parsing
+    try codec.decode(this, codec.nullValue)
     finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       freeTooLongBuf()
@@ -3251,9 +3245,12 @@ object JsonReader {
     *                            the input JSON structure does not match structure that expected for result type,
     *                            also if a low-level I/O problem (unexpected end of input, network error) occurs
     *                            while some input bytes are expected
-    * @throws NullPointerException If the `codec` or `in` is null.
+    * @throws NullPointerException if the `codec` or `in` is null
     */
-  final def read[A](codec: JsonCodec[A], in: InputStream): A = pool.get.read(codec, in, defaultConfig)
+  final def read[A](codec: JsonCodec[A], in: InputStream): A = {
+    if (in eq null) throw new NullPointerException
+    pool.get.read(codec, in, defaultConfig)
+  }
 
   /**
     * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
@@ -3269,7 +3266,10 @@ object JsonReader {
     *                            while some input bytes are expected
     * @throws NullPointerException if the `codec`, `in` or `config` is null
     */
-  final def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = pool.get.read(codec, in, config)
+  final def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
+    if (in eq null) throw new NullPointerException
+    pool.get.read(codec, in, config)
+  }
 
   /**
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
@@ -3325,8 +3325,13 @@ object JsonReader {
     * @throws ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
     *                                        or `from` is greater than `to` or negative
     */
-  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = defaultConfig): A =
+  final def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = defaultConfig): A = {
+    if (to > buf.length || to < 0)
+      throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
+    if (from > to || from < 0)
+      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
     pool.get.read(codec, buf, from, to, config)
+  }
 
   final def toHashCode(cs: Array[Char], len: Int): Int = {
     var h = 0

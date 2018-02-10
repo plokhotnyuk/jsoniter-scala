@@ -351,13 +351,12 @@ final class JsonWriter private[jsoniter_scala](
   private def nullKeyError(): Nothing = throw new IOException("key cannot be null")
 
   private def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
-    if ((out eq null) || (config eq null)) throw new NullPointerException
     this.config = config
     this.out = out
     count = 0
     indention = 0
     try {
-      codec.encode(x, this) // also checks that `codec` is not null before any serialization
+      codec.encode(x, this)
       flushBuffer() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
     } finally {
       this.out = null // do not close output stream, just help GC instead
@@ -366,12 +365,11 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
-    if (config eq null) throw new NullPointerException
     this.config = config
     this.count = 0
     this.indention = 0
     try {
-      codec.encode(x, this) // also checks that `codec` is not null before any serialization
+      codec.encode(x, this)
       val arr = new Array[Byte](count)
       System.arraycopy(buf, 0, arr, 0, arr.length)
       arr
@@ -379,9 +377,6 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
-    if (config eq null) throw new NullPointerException
-    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
-      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
     val currBuf = this.buf
     this.config = config
     this.buf = buf
@@ -389,7 +384,7 @@ final class JsonWriter private[jsoniter_scala](
     indention = 0
     isBufGrowingAllowed = false
     try {
-      codec.encode(x, this) // also checks that `codec` is not null before any serialization
+      codec.encode(x, this)
       count
     } finally {
       this.buf = currBuf
@@ -1302,7 +1297,10 @@ object JsonWriter {
     * @tparam A type of value to serialize
     * @throws NullPointerException if the `codec` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream): Unit = pool.get.write(codec, x, out, defaultConfig)
+  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream): Unit = {
+    if (out eq null) throw new NullPointerException
+    pool.get.write(codec, x, out, defaultConfig)
+  }
 
   /**
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
@@ -1315,8 +1313,10 @@ object JsonWriter {
     * @tparam A type of value to serialize
     * @throws NullPointerException if the `codec`, `out` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit =
+  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
+    if (out eq null) throw new NullPointerException
     pool.get.write(codec, x, out, config)
+  }
 
   /**
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format
@@ -1358,6 +1358,9 @@ object JsonWriter {
     * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `buf` length or negative,
     *                                        or `buf` length was exceeded during serialization
     */
-  final def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int =
+  final def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
+    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
+      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
     pool.get.write(codec, x, buf, from, config)
+  }
 }
