@@ -838,8 +838,8 @@ final class JsonWriter private[jsoniter_scala](
     val marchDayOfYear = dayOfYearEst.toInt
     val marchMonth = ((marchDayOfYear * 17965876275L + 7186350510L) >> 39).toInt // == (marchDayOfYear * 5 + 2) / 153
     val year = yearEst.toInt + (marchMonth * 3435973837L >> 35).toInt // == yearEst.toInt + marchMonth / 10 (convert march-based values back to january-based)
-    val month = (marchMonth + 2) % 12 + 1
-    val day = marchDayOfYear - ((marchMonth * 1051407994122L + 17179869185L) >> 35).toInt + 1 // == marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val month = marchMonth + (if (marchMonth < 10) 3 else -9)
+    val day = marchDayOfYear - ((marchMonth * 1051407994122L - 17179869183L) >> 35).toInt // == marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
     val hour = (secsOfDay * 2443359173L >> 43).toInt // divide positive int by 3600
     val secsOfHour = secsOfDay - hour * 3600
@@ -1064,10 +1064,10 @@ final class JsonWriter private[jsoniter_scala](
         }
       val q1 = (pots * 2443359173L >> 43).toInt // divide positive int by 3600
       val r1 = pots - q1 * 3600
-      val q2 = (r1 * 2290649225L >> 37).toInt // divide positive int by 60
-      val r2 = r1 - q2 * 60
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'
+      val q2 = (r1 * 2290649225L >> 37).toInt // divide positive int by 60
+      val r2 = r1 - q2 * 60
       pos = write2Digits(q2, pos + 1, buf, ds)
       if (r2 != 0) {
         buf(pos) = ':'
