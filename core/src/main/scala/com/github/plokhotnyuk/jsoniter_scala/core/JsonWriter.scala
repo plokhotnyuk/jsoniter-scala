@@ -829,10 +829,10 @@ final class JsonWriter private[jsoniter_scala](
       marchZeroDay -= adjustCycles * 146097
     }
     var yearEst = (400 * marchZeroDay + 591) / 146097
-    var dayOfYearEst = marchZeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
+    var dayOfYearEst = marchZeroDay - toDaysEst(yearEst)
     if (dayOfYearEst < 0) { // fix estimate
       yearEst -= 1
-      dayOfYearEst = marchZeroDay - (365 * yearEst + yearEst / 4 - yearEst / 100 + yearEst / 400)
+      dayOfYearEst = marchZeroDay - toDaysEst(yearEst)
     }
     yearEst += adjust // reset any negative year
     val marchDayOfYear = dayOfYearEst.toInt
@@ -855,6 +855,11 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = 'Z'
     buf(pos + 1) = '"'
     pos + 2
+  }
+
+  private def toDaysEst(yearEst: Long): Long = {
+    val centuryEst = yearEst / 100
+    365 * yearEst + (yearEst >> 2) - centuryEst + (centuryEst >> 2)
   }
 
   private def writeLocalDate(x: LocalDate): Unit = count = {
