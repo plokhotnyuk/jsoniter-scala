@@ -836,10 +836,10 @@ final class JsonWriter private[jsoniter_scala](
     }
     yearEst += adjust // reset any negative year
     val marchDayOfYear = dayOfYearEst.toInt
-    val marchMonth = (marchDayOfYear * 5 + 2) / 153
-    val year = yearEst.toInt + (marchMonth * 3435973837L >> 35).toInt // convert march-based values back to january-based
+    val marchMonth = ((marchDayOfYear * 17965876275L + 7186350510L) >> 39).toInt // == (marchDayOfYear * 5 + 2) / 153
+    val year = yearEst.toInt + (marchMonth * 3435973837L >> 35).toInt // == yearEst.toInt + marchMonth / 10 (convert march-based values back to january-based)
     val month = (marchMonth + 2) % 12 + 1
-    val day = marchDayOfYear - ((marchMonth * 306 + 5) * 3435973837L >> 35).toInt + 1 // (x * 3435973837L >> 35).toInt == x / 10 for positive x
+    val day = marchDayOfYear - ((marchMonth * 1051407994122L + 17179869185L) >> 35).toInt + 1 // == marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
     val hour = (secsOfDay * 2443359173L >> 43).toInt // divide positive int by 3600
     val secsOfHour = secsOfDay - hour * 3600
