@@ -53,6 +53,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
   optional hex dump of affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
+- No dependencies to extra libraries excluding Scala's: `scala-library` and `scala-reflect` 
   
 There are number of configurable options that can be set in compile-time:
 - Ability to read/write number of containers from/to string values
