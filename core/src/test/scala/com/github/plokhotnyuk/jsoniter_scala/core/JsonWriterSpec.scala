@@ -135,7 +135,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(Instant.MAX)
       check(Instant.MIN)
-      forAll(genInstant, minSuccessful(10000000))(check)
+      forAll(genInstant, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
@@ -225,7 +225,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(OffsetDateTime.MAX)
       check(OffsetDateTime.MIN)
-      forAll(genOffsetDateTime, minSuccessful(10000000))(check)
+      forAll(genOffsetDateTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
@@ -243,7 +243,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(OffsetTime.MAX)
       check(OffsetTime.MIN)
-      forAll(genOffsetTime, minSuccessful(10000000))(check)
+      forAll(genOffsetTime, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Period" should {
@@ -336,7 +336,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(ZoneOffset.MAX)
       check(ZoneOffset.MIN)
-      forAll(genZoneOffset, minSuccessful(10000000))(check)
+      forAll(genZoneOffset, minSuccessful(100000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneId" should {
