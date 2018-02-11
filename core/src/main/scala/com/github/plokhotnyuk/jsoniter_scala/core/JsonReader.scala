@@ -70,27 +70,27 @@ final class JsonReader private[jsoniter_scala](
     }
     if (i == 0) throw new IllegalArgumentException("missing required field(s) cannot be reported for arguments: " +
       s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = ${reqBits.mkString("Array(", ", ", ")")}")
-    i = appendString("\"", i)
+    i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
   def unexpectedKeyError(len: Int): Nothing = {
     var i = prependString("unexpected field: \"", len)
-    i = appendString("\"", i)
+    i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
   def discriminatorValueError(discriminatorFieldName: String): Nothing = {
     var i = appendString("illegal value of discriminator field \"", 0)
     i = appendString(discriminatorFieldName, i)
-    i = appendString("\"", i)
+    i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
   def enumValueError(value: String): Nothing = {
     var i = appendString("illegal enum value: \"", 0)
     i = appendString(value, i)
-    i = appendString("\"", i)
+    i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
@@ -578,7 +578,7 @@ final class JsonReader private[jsoniter_scala](
   private def reqFieldError(s: String): Nothing = {
     var i = appendString("missing required field \"", 0)
     i = appendString(s, i)
-    i = appendString("\"", i)
+    i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
@@ -658,30 +658,38 @@ final class JsonReader private[jsoniter_scala](
     else if (charBuf(i) != s.charAt(i)) false
     else isCharBufEqualsTo(len, s, i + 1)
 
-  private def appendChar(ch: Char, from: Int): Int = {
-    if (from >= charBuf.length) growCharBuf(from + 1)
-    charBuf(from) = ch
-    from + 1
+  private def appendChar(ch: Char, i: Int): Int = {
+    if (i >= charBuf.length) growCharBuf(i + 1)
+    charBuf(i) = ch
+    i + 1
   }
 
-  private def appendString(s: String, from: Int): Int = {
-    val len = s.length
-    val required = from + len
+  private def appendChars(cs: Array[Char], i: Int): Int = {
+    val len = cs.length
+    val required = i + len
     if (required > charBuf.length) growCharBuf(required)
-    s.getChars(0, len, charBuf, from)
+    System.arraycopy(cs, 0, charBuf, i, len)
     required
   }
 
-  private def prependString(s: String, from: Int): Int = {
+  private def appendString(s: String, i: Int): Int = {
     val len = s.length
-    val required = from + len
+    val required = i + len
     if (required > charBuf.length) growCharBuf(required)
-    var i = required - 1
-    while (i >= len) {
-      charBuf(i) = charBuf(i - len)
-      i -= 1
+    s.getChars(0, len, charBuf, i)
+    required
+  }
+
+  private def prependString(s: String, i: Int): Int = {
+    val len = s.length
+    val required = i + len
+    if (required > charBuf.length) growCharBuf(required)
+    var j = required - 1
+    while (j >= len) {
+      charBuf(j) = charBuf(j - len)
+      j -= 1
     }
-    i = 0
+    j = 0
     s.getChars(0, len, charBuf, 0)
     required
   }
@@ -3035,8 +3043,8 @@ final class JsonReader private[jsoniter_scala](
     val alignedAbsTo = (end + offset + 15) & -16
     val len = alignedAbsTo - alignedAbsFrom
     val bufOffset = alignedAbsFrom - offset
-    var i = appendString(dumpHeader, from)
-    i = appendString(dumpBorder, i)
+    var i = appendChars(dumpHeader, from)
+    i = appendChars(dumpBorder, i)
     var charBuf = this.charBuf
     var lim = charBuf.length
     var j = 0
@@ -3079,7 +3087,7 @@ final class JsonReader private[jsoniter_scala](
       }
       j += 1
     }
-    appendString(dumpBorder, i)
+    appendChars(dumpBorder, i)
   }
 
   private def appendHex(d: Int, i: Int): Int = {
@@ -3224,11 +3232,12 @@ object JsonReader {
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
   private final val nanoMultiplier: Array[Int] =
     Array(1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
-  private final val dumpHeader =
+  private final val dumpHeader: Array[Char] = {
     "\n           +-------------------------------------------------+" +
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
-  private final val dumpBorder =
-    "\n+----------+-------------------------------------------------+------------------+"
+  }.toCharArray
+  private final val dumpBorder: Array[Char] =
+    "\n+----------+-------------------------------------------------+------------------+".toCharArray
 
   /**
     * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type 
