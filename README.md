@@ -8,10 +8,10 @@
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
 
-[Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare Jsoniter Scala vs. Jackson, 
-Circe and Play-JSON libraries on JDK 8 & JDK 9 at the following environment: 
-Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-32-generic, 
-Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
+[Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing & serialization 
+performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using JDK 8 & JDK 9 on the following 
+environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
+Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
 
 ## Goals
 
@@ -53,7 +53,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
   optional hex dump of affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
-- No dependencies to extra libraries excluding Scala's: `scala-library` and `scala-reflect` 
+- No dependencies on extra libraries excluding Scala's `scala-library` and `scala-reflect` 
   
 There are number of configurable options that can be set in compile-time:
 - Ability to read/write number of containers from/to string values
@@ -66,7 +66,7 @@ There are number of configurable options that can be set in compile-time:
 List of options that change parsing & serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
-- Throwing of stack-less parsing exceptions to greatly reduce impact on performance  
+- Throwing of stackless parsing exceptions to greatly reduce impact on performance  
 - Turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on performance
 - Preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
@@ -190,15 +190,15 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
-### Publish to local repos
+### Publish locally
 
-Publish to Ivy repo:
+Publish to local Ivy repo:
 
 ```sh
 sbt publishLocal
 ```
 
-Publish to Maven repo:
+Publish to local Maven repo:
 
 ```sh
 sbt publishM2
