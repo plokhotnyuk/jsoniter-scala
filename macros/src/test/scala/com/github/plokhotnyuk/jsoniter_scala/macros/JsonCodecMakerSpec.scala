@@ -53,7 +53,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class ValueClassTypes(uid: UserId, oid: OrderId)
 
-  case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]])
+  case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long],
+                     ojl: Option[java.lang.Long])
+
+  val codecOfOptions: JsonCodec[Options] = make[Options](CodecMakerConfig())
 
   case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
 
@@ -443,9 +446,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[OrderId](CodecMakerConfig(isStringified = true)), OrderId(123123), "\"123123\"".getBytes)
     }
     "serialize and deserialize case classes with options" in {
-      verifySerDeser(make[Options](CodecMakerConfig()),
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set())),
-        """{"os":"VVV","obi":4,"osi":[]}""".getBytes)
+      verifySerDeser(codecOfOptions,
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(2L)),
+        """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""".getBytes)
+      verifySerDeser(codecOfOptions, Options(None, None, None, None, None), """{}""".getBytes)
+      verifySer(codecOfOptions, Options(null, null, null, null, null), """{}""".getBytes)
     }
     "serialize and deserialize top-level options" in {
       val codecOfStringOption = make[Option[String]](CodecMakerConfig())

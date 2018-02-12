@@ -444,10 +444,9 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
-        } else if (tpe <:< typeOf[Option[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Option[_]]) {
           val tpe1 = typeArg1(tpe)
-          q"""val x = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
-              if (x eq null) None else Some(x)"""
+          q"Option(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
@@ -755,10 +754,13 @@ object JsonCodecMaker {
               case None =>
                 if (isContainer(tpe)) {
                   val nonEmptyCheck = if (tpe <:< typeOf[Array[_]]) q"v.length > 0" else q"!v.isEmpty"
+                  val writeVal =
+                    if (tpe <:< typeOf[Option[_]]) genWriteVal(q"v.get", typeArg1(tpe), isStringified)
+                    else genWriteVal(q"v", tpe, isStringified)
                   q"""val v = x.$m
                       if ((v ne null) && $nonEmptyCheck) {
                         ..${genWriteConstantKey(name)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..$writeVal
                       }"""
                 } else {
                   q"""..${genWriteConstantKey(name)}
