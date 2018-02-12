@@ -15,7 +15,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class GoogleMapsAPIBenchmark extends CommonParams {
-  val obj: DistanceMatrix = JsonReader.read[DistanceMatrix](jsonBytes)
+  val obj: DistanceMatrix = read[DistanceMatrix](jsonBytes)
 
   @Benchmark
   def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -24,7 +24,7 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def readJacksonScala(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): DistanceMatrix = JsonReader.read[DistanceMatrix](jsonBytes)
+  def readJsoniterScala(): DistanceMatrix = read[DistanceMatrix](jsonBytes)
 
   @Benchmark
   def readPlayJson(): DistanceMatrix = Json.parse(jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
@@ -36,10 +36,10 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
+  def writeJsoniterScala(): Array[Byte] = write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))

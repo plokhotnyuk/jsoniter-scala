@@ -348,9 +348,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
-  private def nullKeyError(): Nothing = throw new IOException("key cannot be null")
-
-  private def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
+  private[jsoniter_scala] def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
     this.config = config
     this.out = out
     count = 0
@@ -364,7 +362,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
+  private[jsoniter_scala] def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
     this.config = config
     this.count = 0
     this.indention = 0
@@ -376,7 +374,7 @@ final class JsonWriter private[jsoniter_scala](
     } finally freeTooLongBuf()
   }
 
-  private def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+  private[jsoniter_scala] def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
     this.config = config
     this.buf = buf
@@ -391,6 +389,8 @@ final class JsonWriter private[jsoniter_scala](
       isBufGrowingAllowed = true
     }
   }
+
+  private def nullKeyError(): Nothing = throw new IOException("key cannot be null")
 
   private def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
@@ -1264,10 +1264,6 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private final val pool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
-    override def initialValue(): JsonWriter = new JsonWriter
-  }
-  private final val defaultConfig = new WriterConfig
   private final val escapedChars: Array[Byte] = (0 to 127).map { b =>
     ((b: @switch) match {
       case '\n' => 'n'
@@ -1291,83 +1287,4 @@ object JsonWriter {
   }
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
-
-  /**
-    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
-    * with default configuration options that minimizes output size & time to serialize.
-    *
-    * @tparam A type of value to serialize
-    * @param x the value to serialize
-    * @param out an output stream to serialize into
-    * @param codec a codec for the given value
-    * @throws NullPointerException if the `codec` or `config` is null
-    */
-  final def write[A](x: A, out: OutputStream)(implicit codec: JsonCodec[A]): Unit = {
-    if (out eq null) throw new NullPointerException
-    pool.get.write(codec, x, out, defaultConfig)
-  }
-
-  /**
-    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
-    * that specified by provided configuration options.
-    *
-    * @tparam A type of value to serialize
-    * @param x the value to serialize
-    * @param out an output stream to serialize into
-    * @param config a serialization configuration
-    * @param codec a codec for the given value
-    * @throws NullPointerException if the `codec`, `out` or `config` is null
-    */
-  final def write[A](x: A, out: OutputStream, config: WriterConfig)(implicit codec: JsonCodec[A]): Unit = {
-    if (out eq null) throw new NullPointerException
-    pool.get.write(codec, x, out, config)
-  }
-
-  /**
-    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format
-    * with default configuration options that minimizes output size & time to serialize.
-    *
-    * @tparam A type of value to serialize
-    * @param x the value to serialize
-    * @param codec a codec for the given value
-    * @return a byte array with `x` serialized to JSON
-    * @throws NullPointerException if the `codec` is null
-    */
-  final def write[A](x: A)(implicit codec: JsonCodec[A]): Array[Byte] = pool.get.write(codec, x, defaultConfig)
-
-  /**
-    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format,
-    * that specified by provided configuration options.
-    *
-    * @tparam A type of value to serialize
-    * @param x the value to serialize
-    * @param config a serialization configuration
-    * @param codec a codec for the given value
-    * @return a byte array with `x` serialized to JSON
-    * @throws NullPointerException if the `codec` or `config` is null
-    */
-  final def write[A](x: A, config: WriterConfig)(implicit codec: JsonCodec[A]): Array[Byte] =
-    pool.get.write(codec, x, config)
-
-  /**
-    * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format
-    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
-    *
-    * @tparam A type of value to serialize
-    * @param x the value to serialize
-    * @param buf a byte array where the value should be serialized
-    * @param from a position in the byte array from which serialization of the value should start
-    * @param config a serialization configuration
-    * @param codec a codec for the given value
-    * @return number of next position after last byte serialized to `buf`
-    * @throws NullPointerException if the `codec`, `buf` or `config` is null
-    * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `buf` length or negative,
-    *                                        or `buf` length was exceeded during serialization
-    */
-  final def write[A](x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig)
-                    (implicit codec: JsonCodec[A]): Int = {
-    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
-      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
-    pool.get.write(codec, x, buf, from, config)
-  }
 }

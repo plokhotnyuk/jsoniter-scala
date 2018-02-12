@@ -30,7 +30,7 @@ class BitSetsBenchmark extends CommonParams {
   def readJacksonScala(): BitSets = jacksonMapper.readValue[BitSets](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): BitSets = JsonReader.read[BitSets](jsonBytes)
+  def readJsoniterScala(): BitSets = read[BitSets](jsonBytes)
 
   @Benchmark
   def readPlayJson(): BitSets = Json.parse(jsonBytes).as[BitSets](bitSetsFormat)
@@ -44,7 +44,7 @@ class BitSetsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
+  def writeJsoniterScala(): Array[Byte] = write(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bitSetsFormat))

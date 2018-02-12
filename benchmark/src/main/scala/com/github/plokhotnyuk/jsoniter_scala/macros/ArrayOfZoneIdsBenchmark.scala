@@ -30,7 +30,7 @@ class ArrayOfZoneIdsBenchmark extends CommonParams {
   def readJacksonScala(): Array[ZoneId] = jacksonMapper.readValue[Array[ZoneId]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[ZoneId] = JsonReader.read[Array[ZoneId]](jsonBytes)
+  def readJsoniterScala(): Array[ZoneId] = read[Array[ZoneId]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[ZoneId] = Json.parse(jsonBytes).as[Array[ZoneId]]
@@ -42,10 +42,10 @@ class ArrayOfZoneIdsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
+  def writeJsoniterScala(): Array[Byte] = write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

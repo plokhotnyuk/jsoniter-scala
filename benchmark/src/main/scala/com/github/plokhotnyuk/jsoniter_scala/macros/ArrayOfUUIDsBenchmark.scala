@@ -24,7 +24,7 @@ class ArrayOfUUIDsBenchmark extends CommonParams {
   def readJacksonScala(): Array[UUID] = jacksonMapper.readValue[Array[UUID]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[UUID] = JsonReader.read[Array[UUID]](jsonBytes)
+  def readJsoniterScala(): Array[UUID] = read[Array[UUID]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[UUID] = Json.parse(jsonBytes).as[Array[UUID]]
@@ -36,10 +36,10 @@ class ArrayOfUUIDsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
+  def writeJsoniterScala(): Array[Byte] = write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

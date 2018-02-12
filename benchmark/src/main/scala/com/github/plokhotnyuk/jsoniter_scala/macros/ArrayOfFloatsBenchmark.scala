@@ -24,7 +24,7 @@ class ArrayOfFloatsBenchmark extends CommonParams {
   def readJacksonScala(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[Float] = JsonReader.read[Array[Float]](jsonBytes)
+  def readJsoniterScala(): Array[Float] = read[Array[Float]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
@@ -36,10 +36,10 @@ class ArrayOfFloatsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
+  def writeJsoniterScala(): Array[Byte] = write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
 /* FIXME: Play-JSON serialize double values instead of float
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
