@@ -85,12 +85,13 @@ Generate codecs for your case classes, collections, etc.
     
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.macros._
+import com.github.plokhotnyuk.jsoniter_scala.core._
 
 case class Device(id: Int, model: String)
 
 case class User(name: String, devices: Seq[Device])
 
-val codec = JsonCodecMaker.make[User](CodecMakerConfig())
+implicit val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
 ```
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec`.
@@ -98,10 +99,8 @@ That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_sc
 Now you can use it with reader & writer APIs for parsing & serialization accordingly:
 
 ```scala
-import com.github.plokhotnyuk.jsoniter_scala.core._
-
-val user = JsonReader.read(codec, """{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
-val json = JsonWriter.write(codec, User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+val user = JsonReader.read("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
+val json = JsonWriter.write(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
 To see generated code add the following line to your sbt build file
