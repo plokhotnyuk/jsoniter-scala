@@ -45,6 +45,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfEnums: JsonCodec[Enums] = make[Enums](CodecMakerConfig())
 
+  case class JavaEnums(lvl: Level)
+
+  val codecOfJavaEnums: JsonCodec[JavaEnums] = make[JavaEnums](CodecMakerConfig())
+
   case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
   case class ValueClassTypes(uid: UserId, oid: OrderId)
@@ -359,6 +363,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
       }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
+    }
+    "serialize and deserialize Java enumerations" in {
+      verifySerDeser(codecOfJavaEnums, JavaEnums(Level.HIGH), """{"lvl":"HIGH"}""".getBytes)
+    }
+    "throw parse exception in case of illegal value of Java enumeration" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfJavaEnums, JavaEnums(Level.LOW), """{"lvl":"LO"}""".getBytes)
+      }.getMessage.contains("illegal enum value: \"LO\", offset: 0x0000000a"))
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
       implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {

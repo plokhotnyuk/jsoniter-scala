@@ -170,8 +170,15 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZonedDateTime]) q"in.readKeyAsZonedDateTime()"
         else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
-        else if (tpe <:< typeOf[Enumeration#Value]) q"${enumSymbol(tpe)}.withName(in.readKeyAsString())"
-        else fail(s"Unsupported type to be used as map key '$tpe'.")
+        else if (tpe <:< typeOf[Enumeration#Value]) {
+          q"""try ${enumSymbol(tpe)}.withName(in.readKeyAsString()) catch {
+                case _: NoSuchElementException => in.enumValueError(v)
+              }"""
+        } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+          q"""try ${tpe.typeSymbol.companion.name.toTermName}.valueOf(in.readKeyAsString()) catch {
+                case _: IllegalArgumentException => in.enumValueError(v)
+              }"""
+        } else fail(s"Unsupported type to be used as map key '$tpe'.")
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
         genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayEndOrCommaError()")
@@ -511,6 +518,12 @@ object JsonCodecMaker {
               else try ${enumSymbol(tpe)}.withName(v) catch {
                 case _: NoSuchElementException => in.enumValueError(v)
               }"""
+        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
+          q"""val v = in.readString()
+              if (v eq null) default
+              else try ${tpe.typeSymbol.companion.name.toTermName}.valueOf(v) catch {
+                case _: IllegalArgumentException => in.enumValueError(v)
+              }"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('{')) {
                 in.rollbackToken()
@@ -691,6 +704,8 @@ object JsonCodecMaker {
               } else out.writeNull()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
+        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
+          q"if (x ne null) out.writeVal(x.name) else out.writeNull()"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""if (x ne null) {
                 out.writeObjectStart()
