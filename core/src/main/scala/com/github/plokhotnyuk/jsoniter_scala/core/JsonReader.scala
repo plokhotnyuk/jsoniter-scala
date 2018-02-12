@@ -515,7 +515,7 @@ final class JsonReader private[jsoniter_scala](
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
-  private def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
+  private[jsoniter_scala] def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
     val currBuf = this.buf
     this.config = config
     this.buf = buf
@@ -530,7 +530,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
+  private[jsoniter_scala] def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
     this.config = config
     this.in = in
     head = 0
@@ -3223,10 +3223,6 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val pool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
-    override def initialValue(): JsonReader = new JsonReader
-  }
-  private final val defaultConfig = new ReaderConfig
   private final val pow10: Array[Double] = // all powers of 10 that can be represented exactly in double
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
@@ -3238,110 +3234,6 @@ object JsonReader {
   }.toCharArray
   private final val dumpBorder: Array[Char] =
     "\n+----------+-------------------------------------------------+------------------+".toCharArray
-
-  /**
-    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type 
-    * with default parsing options that maximize description of error. 
-    * 
-    * Use custom configuration to turn on raising of stackless exceptions and/or turn off a hex dump printing
-    * to the error message. 
-    *
-    * @tparam A type of the value to parse
-    * @param in the input stream to parse from
-    * @param codec a codec for the given `A` type
-    * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also if a low-level I/O problem (unexpected end of input, network error) occurs
-    *                            while some input bytes are expected
-    * @throws NullPointerException if the `codec` or `in` is null
-    */
-  final def read[A](in: InputStream)(implicit codec: JsonCodec[A]): A = {
-    if (in eq null) throw new NullPointerException
-    pool.get.read(codec, in, defaultConfig)
-  }
-
-  /**
-    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
-    *
-    * @tparam A type of the value to parse
-    * @param in the input stream to parse from
-    * @param config a parsing configuration
-    * @param codec a codec for the given `A` type
-    * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
-    *                            while some input bytes are expected
-    * @throws NullPointerException if the `codec`, `in` or `config` is null
-    */
-  final def read[A](in: InputStream, config: ReaderConfig)(implicit codec: JsonCodec[A]): A = {
-    if (in eq null) throw new NullPointerException
-    pool.get.read(codec, in, config)
-  }
-
-  /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
-    * with default parsing options that maximize description of error. 
-    *
-    * Use custom configuration to turn on raising of stackless exceptions and/or turn off a hex dump printing
-    * to the error message. 
-    *
-    * @tparam A type of the value to parse
-    * @param buf the byte array to parse from
-    * @param codec a codec for the given `A` type
-    * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also in case if end of input is detected while some input bytes are expected
-    * @throws NullPointerException If the `codec` or `buf` is null.
-    */
-  final def read[A](buf: Array[Byte])(implicit codec: JsonCodec[A]): A =
-    pool.get.read(codec, buf, 0, buf.length, defaultConfig)
-
-  /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
-    * with specified parsing options.
-    *
-    * @tparam A type of the value to parse
-    * @param buf the byte array to parse from
-    * @param config a parsing configuration
-    * @param codec a codec for the given `A` type
-    * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also in case if end of input is detected while some input bytes are expected
-    * @throws NullPointerException if the `codec`, `buf` or `config` is null
-    */
-  final def read[A](buf: Array[Byte], config: ReaderConfig)(implicit codec: JsonCodec[A]): A =
-    pool.get.read(codec, buf, 0, buf.length, config)
-
-  /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error. 
-    *
-    * @tparam A type of the value to parse
-    * @param buf the byte array to parse from
-    * @param from the start position of the provided byte array
-    * @param to the position of end of input in the provided byte array
-    * @param config a parsing configuration
-    * @param codec a codec for the given `A` type
-    * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also in case if end of input is detected while some input bytes are expected
-    * @throws NullPointerException if the `codec`, `buf` or `config` is null
-    * @throws ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
-    *                                        or `from` is greater than `to` or negative
-    */
-  final def read[A](buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = defaultConfig)
-                   (implicit codec: JsonCodec[A]): A = {
-    if (to > buf.length || to < 0)
-      throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
-    if (from > to || from < 0)
-      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
-    pool.get.read(codec, buf, from, to, config)
-  }
 
   final def toHashCode(cs: Array[Char], len: Int): Int = {
     var h = 0

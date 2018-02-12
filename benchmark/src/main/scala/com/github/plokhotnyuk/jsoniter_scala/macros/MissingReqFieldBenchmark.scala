@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonParseException, JsonReader}
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
@@ -35,7 +35,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterScala(): String =
     try {
-      JsonReader.read[MissingReqFields](jsonBytes).toString // toString() should not be called
+      read[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -43,7 +43,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterStackless(): String =
     try {
-      JsonReader.read[MissingReqFields](jsonBytes, stacklessExceptionConfig).toString // toString() should not be called
+      read[MissingReqFields](jsonBytes, stacklessExceptionConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -51,7 +51,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterStacklessNoDump(): String =
     try {
-      JsonReader.read[MissingReqFields](jsonBytes, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
+      read[MissingReqFields](jsonBytes, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }

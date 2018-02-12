@@ -25,7 +25,7 @@ class ArrayOfZoneOffsetsBenchmark extends CommonParams {
   def readJacksonScala(): Array[ZoneOffset] = jacksonMapper.readValue[Array[ZoneOffset]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[ZoneOffset] = JsonReader.read[Array[ZoneOffset]](jsonBytes)
+  def readJsoniterScala(): Array[ZoneOffset] = read[Array[ZoneOffset]](jsonBytes)
 /* FIXME Play json require custom format
   @Benchmark
   def readPlayJson(): Array[ZoneOffset] = Json.parse(jsonBytes).as[Array[ZoneOffset]]
@@ -38,10 +38,10 @@ class ArrayOfZoneOffsetsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
+  def writeJsoniterScala(): Array[Byte] = write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
 /* FIXME Play json require custom format
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
