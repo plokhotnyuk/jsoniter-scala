@@ -7,7 +7,7 @@ import scala.util.Try
 // FIXME: remove when perf. degradation of String.charAt when iterating through strings will be fixed in JDK 9:
 // https://bugs.openjdk.java.net/browse/JDK-8013655
 object UnsafeUtils {
-  private[this] val (unsafe, stringValueOffset, stringCoderOffset) = Try {
+  private[this] final val (unsafe, stringValueOffset, stringCoderOffset) = Try {
     val u = {
       val unsafeField = classOf[Unsafe].getDeclaredField("theUnsafe")
       unsafeField.setAccessible(true)
@@ -18,7 +18,7 @@ object UnsafeUtils {
       u.objectFieldOffset(classOf[String].getDeclaredField("coder")))
   }.getOrElse((null, 0L, 0L))
 
-  private[jsoniter_scala] def getLatin1Array(s: String): Array[Byte] =
+  private[jsoniter_scala] final def getLatin1Array(s: String): Array[Byte] =
     if (stringCoderOffset == 0 || unsafe.getByte(s, stringCoderOffset) != 0) null
     else unsafe.getObject(s, stringValueOffset).asInstanceOf[Array[Byte]]
 }

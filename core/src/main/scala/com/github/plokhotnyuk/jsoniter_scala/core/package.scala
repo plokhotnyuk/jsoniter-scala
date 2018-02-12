@@ -3,12 +3,12 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.io.{InputStream, OutputStream}
 
 package object core {
-  private final val readerConfig = new ReaderConfig
-  private final val readerPool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
+  private[this] final val readerConfig = new ReaderConfig
+  private[this] final val readerPool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
     override def initialValue(): JsonReader = new JsonReader
   }
-  private final val writerConfig = new WriterConfig
-  private final val writerPool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
+  private[this] final val writerConfig = new WriterConfig
+  private[this] final val writerPool: ThreadLocal[JsonWriter] = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = new JsonWriter
   }
 
