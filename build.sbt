@@ -54,7 +54,8 @@ lazy val commonSettings = Seq(
     "-Xfuture",
     "-Xlint",
     "-Xmacro-settings:print-codecs"
-  )
+  ),
+  testOptions in Test += Tests.Argument("-oDF")
 )
 
 lazy val noPublishSettings = Seq(
