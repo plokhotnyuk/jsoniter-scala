@@ -474,7 +474,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
       verifySer(codecOfArrays, arrays, json)
-      val parsedObj = JsonReader.read(codecOfArrays, json)
+      val parsedObj = JsonReader.read(json)(codecOfArrays)
       parsedObj.aa.deep shouldBe arrays.aa.deep
       parsedObj.a.deep shouldBe arrays.a.deep
     }
@@ -484,7 +484,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig())
       verifySer(codecOfArrayOfArray, arrayOfArray, json)
       verifySer(codecOfArrayOfArray, null, "null".getBytes)
-      val parsedObj = JsonReader.read(codecOfArrayOfArray, json)
+      val parsedObj = JsonReader.read(json)(codecOfArrayOfArray)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
     "serialize and deserialize stringified top-level arrays" in {
@@ -493,14 +493,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfStringifiedArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig(isStringified = true))
       verifySer(codecOfStringifiedArrayOfArray, arrayOfArray, json)
       verifySer(codecOfStringifiedArrayOfArray, null, "null".getBytes)
-      val parsedObj = JsonReader.read(codecOfStringifiedArrayOfArray, json)
+      val parsedObj = JsonReader.read(json)(codecOfStringifiedArrayOfArray)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
     "do not serialize fields of case classes with empty arrays" in {
       val json = """{"aa":[[],[]]}""".getBytes
       val arrays = Arrays(Array(Array(), Array()), Array())
       verifySer(codecOfArrays, arrays, json)
-      val parsedObj = JsonReader.read(codecOfArrays, json)
+      val parsedObj = JsonReader.read(json)(codecOfArrays)
       parsedObj.aa.deep shouldBe arrays.aa.deep
       parsedObj.a.deep shouldBe arrays.a.deep
     }
@@ -733,7 +733,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(codecOfDefaults, defaults, "{}".getBytes)
       verifySer(codecOfDefaults, defaults.copy(s = null, bi = null, oc = None, l = Nil, a = null),
         """{"s":null,"bi":null}""".getBytes)
-      val parsedObj = JsonReader.read(codecOfDefaults, "{}".getBytes)
+      val parsedObj = JsonReader.read("{}".getBytes)(codecOfDefaults)
       parsedObj.s shouldBe defaults.s
       parsedObj.i shouldBe defaults.i
       parsedObj.bi shouldBe defaults.bi
@@ -747,7 +747,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "deserialize values of mutable collections in case of null defaults are defined" in {
       val json = """{"ml":{"1":1},"mm":{"2":2},"ms":[3],"mb":[4]}""".getBytes
-      val parsedObj = JsonReader.read(codecOfDefaults, json)
+      val parsedObj = JsonReader.read(json)(codecOfDefaults)
       parsedObj.ml shouldBe mutable.LongMap[Int](1L -> 1)
       parsedObj.mm shouldBe mutable.Map[Int, Int](2 -> 2)
       parsedObj.ms shouldBe mutable.BitSet(3)
@@ -952,14 +952,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   def verifySer[T](codec: JsonCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     val baos = new ByteArrayOutputStream
-    JsonWriter.write(codec, obj, baos, cfg)
+    JsonWriter.write(obj, baos, cfg)(codec)
     toString(baos.toByteArray) shouldBe toString(json)
-    toString(JsonWriter.write(codec, obj, cfg)) shouldBe toString(json)
+    toString(JsonWriter.write(obj, cfg)(codec)) shouldBe toString(json)
   }
 
   def verifyDeser[T](codec: JsonCodec[T], obj: T, json: Array[Byte]): Unit = {
-    JsonReader.read(codec, new ByteArrayInputStream(json)) shouldBe obj
-    JsonReader.read(codec, json) shouldBe obj
+    JsonReader.read(new ByteArrayInputStream(json))(codec) shouldBe obj
+    JsonReader.read(json)(codec) shouldBe obj
   }
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)

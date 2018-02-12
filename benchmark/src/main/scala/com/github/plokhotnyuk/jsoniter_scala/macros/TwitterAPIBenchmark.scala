@@ -15,7 +15,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class TwitterAPIBenchmark extends CommonParams {
-  val obj: Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
+  val obj: Seq[Tweet] = JsonReader.read[Seq[Tweet]](jsonBytes)
 
   @Benchmark
   def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -24,7 +24,7 @@ class TwitterAPIBenchmark extends CommonParams {
   def readJacksonScala(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Seq[Tweet] = JsonReader.read(twitterAPICodec, jsonBytes)
+  def readJsoniterScala(): Seq[Tweet] = JsonReader.read[Seq[Tweet]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
@@ -36,10 +36,10 @@ class TwitterAPIBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(twitterAPICodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(twitterAPICodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))

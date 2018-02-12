@@ -1296,13 +1296,13 @@ object JsonWriter {
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
     * with default configuration options that minimizes output size & time to serialize.
     *
-    * @param codec a codec for the given value
+    * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param out an output stream to serialize into
-    * @tparam A type of value to serialize
+    * @param codec a codec for the given value
     * @throws NullPointerException if the `codec` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream): Unit = {
+  final def write[A](x: A, out: OutputStream)(implicit codec: JsonCodec[A]): Unit = {
     if (out eq null) throw new NullPointerException
     pool.get.write(codec, x, out, defaultConfig)
   }
@@ -1311,14 +1311,14 @@ object JsonWriter {
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
     * that specified by provided configuration options.
     *
-    * @param codec a codec for the given value
+    * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param out an output stream to serialize into
     * @param config a serialization configuration
-    * @tparam A type of value to serialize
+    * @param codec a codec for the given value
     * @throws NullPointerException if the `codec`, `out` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
+  final def write[A](x: A, out: OutputStream, config: WriterConfig)(implicit codec: JsonCodec[A]): Unit = {
     if (out eq null) throw new NullPointerException
     pool.get.write(codec, x, out, config)
   }
@@ -1327,43 +1327,45 @@ object JsonWriter {
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format
     * with default configuration options that minimizes output size & time to serialize.
     *
-    * @param codec a codec for the given value
-    * @param x the value to serialize
     * @tparam A type of value to serialize
+    * @param x the value to serialize
+    * @param codec a codec for the given value
     * @return a byte array with `x` serialized to JSON
     * @throws NullPointerException if the `codec` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A): Array[Byte] = pool.get.write(codec, x, defaultConfig)
+  final def write[A](x: A)(implicit codec: JsonCodec[A]): Array[Byte] = pool.get.write(codec, x, defaultConfig)
 
   /**
     * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format,
     * that specified by provided configuration options.
     *
-    * @param codec a codec for the given value
+    * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param config a serialization configuration
-    * @tparam A type of value to serialize
+    * @param codec a codec for the given value
     * @return a byte array with `x` serialized to JSON
     * @throws NullPointerException if the `codec` or `config` is null
     */
-  final def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = pool.get.write(codec, x, config)
+  final def write[A](x: A, config: WriterConfig)(implicit codec: JsonCodec[A]): Array[Byte] =
+    pool.get.write(codec, x, config)
 
   /**
     * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format
     * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
     *
-    * @param codec a codec for the given value
+    * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param buf a byte array where the value should be serialized
     * @param from a position in the byte array from which serialization of the value should start
     * @param config a serialization configuration
-    * @tparam A type of value to serialize
+    * @param codec a codec for the given value
     * @return number of next position after last byte serialized to `buf`
     * @throws NullPointerException if the `codec`, `buf` or `config` is null
     * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `buf` length or negative,
     *                                        or `buf` length was exceeded during serialization
     */
-  final def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig): Int = {
+  final def write[A](x: A, buf: Array[Byte], from: Int, config: WriterConfig = defaultConfig)
+                    (implicit codec: JsonCodec[A]): Int = {
     if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
       throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
     pool.get.write(codec, x, buf, from, config)

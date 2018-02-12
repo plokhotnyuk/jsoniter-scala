@@ -14,16 +14,16 @@ import org.scalatest.{Matchers, WordSpec}
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonReader.read" should {
     "parse json from the provided input stream" in {
-      JsonReader.read(codec, getClass.getResourceAsStream("user_api_response.json")) shouldBe user
+      JsonReader.read(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
     }
     "parse json from the byte array" in {
-      JsonReader.read(codec, compactJson) shouldBe user
+      JsonReader.read(compactJson)(codec) shouldBe user
     }
     "parse json from the byte array within specified positions" in {
-      JsonReader.read(codec, httpMessage, 66, httpMessage.length) shouldBe user
+      JsonReader.read(httpMessage, 66, httpMessage.length)(codec) shouldBe user
     }
     "throw json exception if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](JsonReader.read(codec, httpMessage)).getMessage ==
+      assert(intercept[JsonParseException](JsonReader.read(httpMessage)(codec)).getMessage ==
         """expected '{' or null, offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -34,17 +34,17 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
     "throw json exception in case of the provided params are invalid" in {
-      intercept[NullPointerException](JsonReader.read(null, compactJson))
-      intercept[NullPointerException](JsonReader.read(null, new ByteArrayInputStream(compactJson)))
-      intercept[NullPointerException](JsonReader.read(null, httpMessage, 66, httpMessage.length))
-      intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[Array[Byte]]))
-      intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[Array[Byte]], 0, 50))
-      intercept[NullPointerException](JsonReader.read(codec, null.asInstanceOf[InputStream]))
-      intercept[NullPointerException](JsonReader.read(codec, new ByteArrayInputStream(compactJson), null))
-      intercept[NullPointerException](JsonReader.read(codec, httpMessage, 66, httpMessage.length, null))
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(codec, httpMessage, 50, 200))
+      intercept[NullPointerException](JsonReader.read(compactJson)(null))
+      intercept[NullPointerException](JsonReader.read(new ByteArrayInputStream(compactJson))(null))
+      intercept[NullPointerException](JsonReader.read(httpMessage, 66, httpMessage.length)(null))
+      intercept[NullPointerException](JsonReader.read(null.asInstanceOf[Array[Byte]])(codec))
+      intercept[NullPointerException](JsonReader.read(null.asInstanceOf[Array[Byte]], 0, 50)(codec))
+      intercept[NullPointerException](JsonReader.read(null.asInstanceOf[InputStream])(codec))
+      intercept[NullPointerException](JsonReader.read(new ByteArrayInputStream(compactJson), null)(codec))
+      intercept[NullPointerException](JsonReader.read(httpMessage, 66, httpMessage.length, null)(codec))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(httpMessage, 50, 200)(codec))
         .getMessage.contains("`to` should be positive and not greater than `buf` length"))
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(codec, httpMessage, 50, 10))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonReader.read(httpMessage, 50, 10)(codec))
         .getMessage.contains("`from` should be positive and not greater than `to`"))
     }
   }

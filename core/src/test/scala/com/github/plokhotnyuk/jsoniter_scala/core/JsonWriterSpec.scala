@@ -23,38 +23,38 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.write" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
-      JsonWriter.write(codec, user, out1)
+      JsonWriter.write(user, out1)(codec)
       out1.toString("UTF-8") shouldBe toString(compactJson)
       val out2 = new ByteArrayOutputStream()
-      JsonWriter.write(codec, user, out2, WriterConfig(indentionStep = 2))
+      JsonWriter.write(user, out2, WriterConfig(indentionStep = 2))(codec)
       out2.toString("UTF-8") shouldBe toString(prettyJson)
     }
     "serialize an object to a new instance of byte array" in {
-      toString(JsonWriter.write(codec, user)) shouldBe toString(compactJson)
-      toString(JsonWriter.write(codec, user, WriterConfig(indentionStep = 2))) shouldBe toString(prettyJson)
+      toString(JsonWriter.write(user)(codec)) shouldBe toString(compactJson)
+      toString(JsonWriter.write(user, WriterConfig(indentionStep = 2))(codec)) shouldBe toString(prettyJson)
     }
     "serialize an object to the provided byte array from specified position" in {
       val from1 = 10
-      val to1 = JsonWriter.write(codec, user, buf, from1)
+      val to1 = JsonWriter.write(user, buf, from1)(codec)
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
       val from2 = 0
-      val to2 = JsonWriter.write(codec, user, buf, from2, WriterConfig(indentionStep = 2))
+      val to2 = JsonWriter.write(user, buf, from2, WriterConfig(indentionStep = 2))(codec)
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
     }
     "throw array index out of bounds exception in case of the provided byte array is overflown during serialization" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(codec, user, buf, 100))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(user, buf, 100)(codec))
         .getMessage.contains("`buf` length exceeded"))
     }
     "throw i/o exception in case of the provided params are invalid" in {
-      intercept[NullPointerException](JsonWriter.write(null, user))
-      intercept[NullPointerException](JsonWriter.write(null, user, new ByteArrayOutputStream()))
-      intercept[NullPointerException](JsonWriter.write(null, user, buf, 0))
-      intercept[NullPointerException](JsonWriter.write(codec, user, null.asInstanceOf[OutputStream]))
-      intercept[NullPointerException](JsonWriter.write(codec, user, null, 50))
-      intercept[NullPointerException](JsonWriter.write(codec, user, null.asInstanceOf[WriterConfig]))
-      intercept[NullPointerException](JsonWriter.write(codec, user, new ByteArrayOutputStream(), null))
-      intercept[NullPointerException](JsonWriter.write(codec, user, buf, 0, null))
-      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(codec, user, new Array[Byte](10), 50))
+      intercept[NullPointerException](JsonWriter.write(user)(null))
+      intercept[NullPointerException](JsonWriter.write(user, new ByteArrayOutputStream())(null))
+      intercept[NullPointerException](JsonWriter.write(user, buf, 0)(null))
+      intercept[NullPointerException](JsonWriter.write(user, null.asInstanceOf[OutputStream])(codec))
+      intercept[NullPointerException](JsonWriter.write(user, null, 50)(codec))
+      intercept[NullPointerException](JsonWriter.write(user, null.asInstanceOf[WriterConfig])(codec))
+      intercept[NullPointerException](JsonWriter.write(user, new ByteArrayOutputStream(), null)(codec))
+      intercept[NullPointerException](JsonWriter.write(user, buf, 0, null)(codec))
+      assert(intercept[ArrayIndexOutOfBoundsException](JsonWriter.write(user, new Array[Byte](10), 50)(codec))
         .getMessage.contains("`from` should be positive and not greater than `buf` length"))
     }
   }
