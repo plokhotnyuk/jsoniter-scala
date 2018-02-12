@@ -35,7 +35,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterScala(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, jsonBytes).toString // toString() should not be called
+      JsonReader.read[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -43,7 +43,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterStackless(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, jsonBytes, stacklessExceptionConfig).toString // toString() should not be called
+      JsonReader.read[MissingReqFields](jsonBytes, stacklessExceptionConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
@@ -51,7 +51,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterStacklessNoDump(): String =
     try {
-      JsonReader.read(missingReqFieldCodec, jsonBytes, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
+      JsonReader.read[MissingReqFields](jsonBytes, stacklessExceptionWithoutDumpConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }

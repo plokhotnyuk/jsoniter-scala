@@ -28,7 +28,7 @@ class PrimitivesBenchmark extends CommonParams {
   def readJacksonScala(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Primitives = JsonReader.read(primitivesCodec, jsonBytes)
+  def readJsoniterScala(): Primitives = JsonReader.read[Primitives](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Primitives = Json.parse(jsonBytes).as[Primitives](primitivesFormat)
@@ -40,10 +40,10 @@ class PrimitivesBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(primitivesCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(primitivesCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))

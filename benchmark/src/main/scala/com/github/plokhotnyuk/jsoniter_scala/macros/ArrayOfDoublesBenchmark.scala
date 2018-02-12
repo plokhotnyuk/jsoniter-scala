@@ -24,7 +24,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def readJacksonScala(): Array[Double] = jacksonMapper.readValue[Array[Double]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[Double] = JsonReader.read(doubleArrayCodec, jsonBytes)
+  def readJsoniterScala(): Array[Double] = JsonReader.read[Array[Double]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[Double] = Json.parse(jsonBytes).as[Array[Double]]
@@ -36,10 +36,10 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(doubleArrayCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(doubleArrayCodec, obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = JsonWriter.write(obj, preallocatedBuf, 0)
 /* FIXME: Play serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

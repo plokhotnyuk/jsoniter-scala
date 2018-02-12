@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-abstract class JsonCodec[A] {
+trait JsonCodec[A] {
   def nullValue: A
 
   def decode(in: JsonReader, default: A): A

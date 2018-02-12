@@ -28,14 +28,12 @@ class IntAndLongMapsBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): IntAndLongMaps = decode[IntAndLongMaps](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 */
-
 /* FIXME: Jackson-module-scala doesn't support parsing of int & long maps
   @Benchmark
   def readJacksonScala(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](jsonBytes)
 */
-
   @Benchmark
-  def readJsoniterScala(): IntAndLongMaps = JsonReader.read(intAndLongMapsCodec, jsonBytes)
+  def readJsoniterScala(): IntAndLongMaps = JsonReader.read[IntAndLongMaps](jsonBytes)
 
   @Benchmark
   def readPlayJson(): IntAndLongMaps = Json.parse(jsonBytes).as[IntAndLongMaps](intAndLongMapsFormat)
@@ -49,7 +47,7 @@ class IntAndLongMapsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(intAndLongMapsCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(intAndLongMapsFormat))

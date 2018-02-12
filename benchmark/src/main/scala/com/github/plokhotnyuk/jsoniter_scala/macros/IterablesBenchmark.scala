@@ -29,7 +29,7 @@ class IterablesBenchmark extends CommonParams {
   def readJacksonScala(): Iterables = jacksonMapper.readValue[Iterables](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Iterables = JsonReader.read(iterablesCodec, jsonBytes)
+  def readJsoniterScala(): Iterables = JsonReader.read[Iterables](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Iterables = Json.parse(jsonBytes).as[Iterables](iterablesFormat)
@@ -41,7 +41,7 @@ class IterablesBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(iterablesCodec, obj)
+  def writeJsoniterScala(): Array[Byte] = JsonWriter.write(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(iterablesFormat))
