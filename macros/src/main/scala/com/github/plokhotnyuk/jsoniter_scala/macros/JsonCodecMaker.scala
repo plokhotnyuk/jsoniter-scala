@@ -739,10 +739,13 @@ object JsonCodecMaker {
                             v.length != d.length || v.deep != d.deep
                           }"""
                     } else q"!v.isEmpty && v != $d"
+                  val writeVal =
+                    if (tpe <:< typeOf[Option[_]]) genWriteVal(q"v.get", typeArg1(tpe), isStringified)
+                    else genWriteVal(q"v", tpe, isStringified)
                   q"""val v = x.$m
                       if ((v ne null) && $nonEmptyAndDefaultMatchingCheck) {
                         ..${genWriteConstantKey(name)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..$writeVal
                       }"""
                 } else {
                   q"""val v = x.$m
