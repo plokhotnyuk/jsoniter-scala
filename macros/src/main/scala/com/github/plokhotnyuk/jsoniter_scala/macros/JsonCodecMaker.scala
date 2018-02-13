@@ -128,6 +128,8 @@ object JsonCodecMaker {
           s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
       }
 
+      def companion(tpe: Type): Tree = Ident(tpe.typeSymbol.companion)
+
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
 
@@ -175,7 +177,7 @@ object JsonCodecMaker {
                 case _: NoSuchElementException => in.enumValueError(v)
               }"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          q"""try ${tpe.typeSymbol.companion.name.toTermName}.valueOf(in.readKeyAsString()) catch {
+          q"""try ${companion(tpe)}.valueOf(in.readKeyAsString()) catch {
                 case _: IllegalArgumentException => in.enumValueError(v)
               }"""
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
@@ -520,7 +522,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
               if (v eq null) default
-              else try ${tpe.typeSymbol.companion.name.toTermName}.valueOf(v) catch {
+              else try ${companion(tpe)}.valueOf(v) catch {
                 case _: IllegalArgumentException => in.enumValueError(v)
               }"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {

@@ -45,7 +45,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfEnums: JsonCodec[Enums] = make[Enums](CodecMakerConfig())
 
-  case class JavaEnums(lvl: Level)
+  case class JavaEnums(l: Level, il: Levels.InnerLevel)
 
   val codecOfJavaEnums: JsonCodec[JavaEnums] = make[JavaEnums](CodecMakerConfig())
 
@@ -369,13 +369,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
     }
     "serialize and deserialize Java enumerations" in {
-      verifySerDeser(codecOfJavaEnums, JavaEnums(Level.HIGH), """{"lvl":"HIGH"}""".getBytes)
-      verifySerDeser(codecOfJavaEnums, JavaEnums(null), """{"lvl":null}""".getBytes)
+      verifySerDeser(codecOfJavaEnums, JavaEnums(Level.LOW, Levels.InnerLevel.HIGH),
+        """{"l":"LOW","il":"HIGH"}""".getBytes)
+      verifySerDeser(codecOfJavaEnums, JavaEnums(null, null), """{"l":null,"il":null}""".getBytes)
     }
     "throw parse exception in case of illegal value of Java enumeration" in {
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfJavaEnums, JavaEnums(Level.LOW), """{"lvl":"LO"}""".getBytes)
-      }.getMessage.contains("illegal enum value: \"LO\", offset: 0x0000000a"))
+        verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
+          """{"l":"LO","il":"HIGH"}""".getBytes)
+      }.getMessage.contains("illegal enum value: \"LO\", offset: 0x00000008"))
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
       implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {
