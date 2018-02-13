@@ -96,7 +96,7 @@ implicit val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec`.
 
-Now you can use it with reader & writer APIs for parsing & serialization accordingly:
+Now you can use it for parsing & serialization:
 
 ```scala
 val user = read("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
