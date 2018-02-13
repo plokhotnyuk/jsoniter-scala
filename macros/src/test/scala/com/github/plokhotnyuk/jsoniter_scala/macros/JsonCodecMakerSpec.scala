@@ -361,6 +361,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
+      verifySerDeser(codecOfEnums, Enums(null), """{"lt":null}""".getBytes)
     }
     "throw parse exception in case of illegal value of enumeration" in {
       assert(intercept[JsonParseException] {
@@ -369,6 +370,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize Java enumerations" in {
       verifySerDeser(codecOfJavaEnums, JavaEnums(Level.HIGH), """{"lvl":"HIGH"}""".getBytes)
+      verifySerDeser(codecOfJavaEnums, JavaEnums(null), """{"lvl":null}""".getBytes)
     }
     "throw parse exception in case of illegal value of Java enumeration" in {
       assert(intercept[JsonParseException] {
