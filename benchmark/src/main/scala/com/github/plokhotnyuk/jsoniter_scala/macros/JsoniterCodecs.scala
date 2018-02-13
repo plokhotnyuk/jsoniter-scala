@@ -5,6 +5,7 @@ import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, ReaderConfig}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
+import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
 object JsoniterCodecs {
   val stacklessExceptionConfig = ReaderConfig(throwParseExceptionWithStackTrace = false)
@@ -29,6 +30,7 @@ object JsoniterCodecs {
   implicit val zonedDateTimeArrayCodec: JsonCodec[Array[ZonedDateTime]] = make[Array[ZonedDateTime]](CodecMakerConfig())
   implicit val zoneOffsetArrayCodec: JsonCodec[Array[ZoneOffset]] = make[Array[ZoneOffset]](CodecMakerConfig())
   implicit val zoneIdArrayCodec: JsonCodec[Array[ZoneId]] = make[Array[ZoneId]](CodecMakerConfig())
+  implicit val enumArrayCodec: JsonCodec[Array[SuitEnum]] = make[Array[SuitEnum]](CodecMakerConfig())
   implicit val intArrayCodec: JsonCodec[Array[Int]] = make[Array[Int]](CodecMakerConfig())
   implicit val shortArrayCodec: JsonCodec[Array[Short]] = make[Array[Short]](CodecMakerConfig())
   implicit val longArrayCodec: JsonCodec[Array[Long]] = make[Array[Long]](CodecMakerConfig())

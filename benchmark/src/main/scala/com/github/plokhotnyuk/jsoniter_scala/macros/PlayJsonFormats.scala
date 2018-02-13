@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import julienrf.json.derived.flat
 import play.api.libs.json._
 import ai.x.play.json.Jsonx
+import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
 import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap}
 import scala.collection.{breakOut, mutable}
@@ -109,4 +110,7 @@ object PlayJsonFormats {
       Reads[Seq[Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[Tweet](v8)))),
       Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)(v8)))))
   }
+  val enumArrayFormat: Format[Array[SuitEnum]] = Format(
+    Reads[Array[SuitEnum]](js => JsSuccess(js.as[Array[JsString]].map(js => SuitEnum.withName(js.value)))),
+    Writes[Array[SuitEnum]](a => JsArray(a.map(v => JsString(v.toString)))))
 }
