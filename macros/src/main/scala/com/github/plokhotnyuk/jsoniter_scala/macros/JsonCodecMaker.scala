@@ -701,11 +701,9 @@ object JsonCodecMaker {
                 }
                 out.writeArrayEnd()
               } else out.writeNull()"""
-        } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
-          q"if (x ne null) out.writeVal(x.toString) else out.writeNull()"
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
-          q"if (x ne null) out.writeVal(x.name) else out.writeNull()"
-        } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeVal(if ($m ne null) $m.toString else null)"
+        else if (tpe <:< typeOf[java.lang.Enum[_]]) q"out.writeVal(if ($m ne null) $m.name else null)"
+        else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""if (x ne null) {
                 out.writeObjectStart()
                 ..$discriminator
