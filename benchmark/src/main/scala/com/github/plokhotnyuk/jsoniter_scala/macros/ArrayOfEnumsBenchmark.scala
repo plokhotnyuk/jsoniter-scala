@@ -15,7 +15,11 @@ import play.api.libs.json.Json
 
 object SuitEnum extends Enumeration {
   type SuitEnum = Value
-  val Hearts, Spades, Diamonds, Clubs = Value
+  //FIXME setting of ids & names save from locking at synchronized block during withName() or toString() calls
+  val Hearts = Value(0, "Hearts")
+  val Spades = Value(1, "Spades")
+  val Diamonds = Value(2, "Diamonds")
+  val Clubs = Value(3, "Clubs")
 }
 
 class ArrayOfEnumsBenchmark extends CommonParams {
