@@ -113,4 +113,7 @@ object PlayJsonFormats {
   val enumArrayFormat: Format[Array[SuitEnum]] = Format(
     Reads[Array[SuitEnum]](js => JsSuccess(js.as[Array[JsString]].map(js => SuitEnum.withName(js.value)))),
     Writes[Array[SuitEnum]](a => JsArray(a.map(v => JsString(v.toString)))))
+  val javaEnumArrayFormat: Format[Array[Suit]] = Format(
+    Reads[Array[Suit]](js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
+    Writes[Array[Suit]](a => JsArray(a.map(v => JsString(v.name)))))
 }

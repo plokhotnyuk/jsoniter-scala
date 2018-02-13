@@ -30,6 +30,7 @@ object JsoniterCodecs {
   implicit val zonedDateTimeArrayCodec: JsonCodec[Array[ZonedDateTime]] = make[Array[ZonedDateTime]](CodecMakerConfig())
   implicit val zoneOffsetArrayCodec: JsonCodec[Array[ZoneOffset]] = make[Array[ZoneOffset]](CodecMakerConfig())
   implicit val zoneIdArrayCodec: JsonCodec[Array[ZoneId]] = make[Array[ZoneId]](CodecMakerConfig())
+  implicit val javaEnumArrayCodec: JsonCodec[Array[Suit]] = make[Array[Suit]](CodecMakerConfig())
   implicit val enumArrayCodec: JsonCodec[Array[SuitEnum]] = make[Array[SuitEnum]](CodecMakerConfig())
   implicit val intArrayCodec: JsonCodec[Array[Int]] = make[Array[Int]](CodecMakerConfig())
   implicit val shortArrayCodec: JsonCodec[Array[Short]] = make[Array[Short]](CodecMakerConfig())
