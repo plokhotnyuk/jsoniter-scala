@@ -342,7 +342,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x00000019"))
     }
-    "serialize and deserialize java types" in {
+    "serialize and deserialize Java types" in {
       verifySerDeser(codecOfJavaTypes, JavaTypes(new UUID(0, 0)),
         """{"uuid":"00000000-0000-0000-0000-000000000000"}""".getBytes)
     }
@@ -356,7 +356,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[UUID](CodecMakerConfig()), new UUID(0, 0),
         "\"00000000-0000-0000-0000-000000000000\"".getBytes)
     }
-    "serialize and deserialize java types as key in maps" in {
+    "serialize and deserialize Java types as key in maps" in {
       verifySerDeser(make[Map[UUID, Int]](CodecMakerConfig()), Map(new UUID(0, 0) -> 0),
         """{"00000000-0000-0000-0000-000000000000":0}""".getBytes)
     }
@@ -999,6 +999,37 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         ZoneId.of("Europe/Paris"), "\"Europe/Paris\"".getBytes)
       verifySerDeser(make[ZoneOffset](CodecMakerConfig()),
         ZoneOffset.of("+01:00"), "\"+01:00\"".getBytes)
+    }
+    "serialize and deserialize Java time types as key in maps" in {
+      verifySerDeser(make[Map[Duration, Int]](CodecMakerConfig()),
+        Map(Duration.parse("PT10H30M") -> 0), "{\"PT10H30M\":0}".getBytes)
+      verifySerDeser(make[Map[Instant, Int]](CodecMakerConfig()),
+        Map(Instant.parse("2007-12-03T10:15:30.001Z") -> 0), "{\"2007-12-03T10:15:30.001Z\":0}".getBytes)
+      verifySerDeser(make[Map[LocalDate, Int]](CodecMakerConfig()),
+        Map(LocalDate.parse("2007-12-03") -> 0), "{\"2007-12-03\":0}".getBytes)
+      verifySerDeser(make[Map[LocalDateTime, Int]](CodecMakerConfig()),
+        Map(LocalDateTime.parse("2007-12-03T10:15:30") -> 0), "{\"2007-12-03T10:15:30\":0}".getBytes)
+      verifySerDeser(make[Map[LocalTime, Int]](CodecMakerConfig()),
+        Map(LocalTime.parse("10:15:30") -> 0), "{\"10:15:30\":0}".getBytes)
+      verifySerDeser(make[Map[MonthDay, Int]](CodecMakerConfig()),
+        Map(MonthDay.parse("--12-03") -> 0), "{\"--12-03\":0}".getBytes)
+      verifySerDeser(make[Map[OffsetDateTime, Int]](CodecMakerConfig()),
+        Map(OffsetDateTime.parse("2007-12-03T10:15:30+01:00") -> 0), "{\"2007-12-03T10:15:30+01:00\":0}".getBytes)
+      verifySerDeser(make[Map[OffsetTime, Int]](CodecMakerConfig()),
+        Map(OffsetTime.parse("10:15:30+01:00") -> 0), "{\"10:15:30+01:00\":0}".getBytes)
+      verifySerDeser(make[Map[Period, Int]](CodecMakerConfig()),
+        Map(Period.parse("P1Y2M25D") -> 0), "{\"P1Y2M25D\":0}".getBytes)
+      verifySerDeser(make[Map[Year, Int]](CodecMakerConfig()),
+        Map(Year.parse("2007") -> 0), "{\"2007\":0}".getBytes)
+      verifySerDeser(make[Map[YearMonth, Int]](CodecMakerConfig()),
+        Map(YearMonth.parse("2007-12") -> 0), "{\"2007-12\":0}".getBytes)
+      verifySerDeser(make[Map[ZonedDateTime, Int]](CodecMakerConfig()),
+        Map(ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]") -> 0),
+        "{\"2007-12-03T10:15:30+01:00[Europe/Paris]\":0}".getBytes)
+      verifySerDeser(make[Map[ZoneId, Int]](CodecMakerConfig()),
+        Map(ZoneId.of("Europe/Paris") -> 0), "{\"Europe/Paris\":0}".getBytes)
+      verifySerDeser(make[Map[ZoneOffset, Int]](CodecMakerConfig()),
+        Map(ZoneOffset.of("+01:00") -> 0), "{\"+01:00\":0}".getBytes)
     }
     "serialize and deserialize stringified top-level Java time types" in {
       val codecOfYear = make[Year](CodecMakerConfig(isStringified = true))
