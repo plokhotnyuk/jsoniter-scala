@@ -7,6 +7,7 @@ import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.annotation.switch
@@ -36,9 +37,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   object LocationType extends Enumeration {
     type LocationType = Value
-    val GPS: LocationType = Value(1)
-    val IP: LocationType = Value(2)
-    val UserProvided: LocationType = Value(3)
+    val GPS: LocationType = Value(1, "GPS") // always set name explicitly in your Enumeration definition, if you still not sure,
+    val IP: LocationType = Value(2, "IP") // then please look and check that following synchronized block will not affect your code in runtime:
+    val UserProvided: LocationType = Value(3, "UserProvided") // https://github.com/scala/scala/blob/1692ae306dc9a5ff3feebba6041348dfdee7cfb5/src/library/scala/Enumeration.scala#L203
   }
 
   case class Enums(lt: LocationType.LocationType)
@@ -672,6 +673,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"1":{"2":["4","5","6"],"3":[]}}""".getBytes)
       verifySer(codecOfIntLongMapsAndBitSets, null, "null".getBytes)
     }
+    "don't generate codec for maps with not supported types of keys" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """JsonCodecMaker.make[Map[java.util.Date,String]](CodecMakerConfig())"""
+      }).getMessage.contains {
+        """Unsupported type to be used as map key 'java.util.Date'."""
+      })
+    }
     "serialize and deserialize with keys defined as is by fields" in {
       verifySerDeser(make[CamelAndSnakeCases](CodecMakerConfig()),
         CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
@@ -704,6 +712,29 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""".getBytes)
       }.getMessage.contains("missing required field(s) \"new_name\", offset: 0x00000010"))
+    }
+    "don't generate codec for case classes with field that have duplicated @named annotation" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class DuplicatedNamed(@named("x") @named("y") z: Int)
+          |JsonCodecMaker.make[DuplicatedNamed](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'z' of 'DuplicatedNamed'."""
+      })
+    }
+    "don't generate codec for case classes with fields that have duplicated JSON names" in {
+      val expectedError =
+        """Duplicated JSON name(s) defined for 'DuplicatedJsonName': 'x'. Names(s) defined by
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s), name of discriminator field specified by
+          |'config.discriminatorFieldName' and name(s) returned by 'config.fieldNameMapper' for non-annotated fields should
+          |not match.""".stripMargin.replace('\n', ' ')
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class DuplicatedJsonName(x: Int, @named("x") z: Int)
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains(expectedError))
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class DuplicatedJsonName(y: Int, z: Int)
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(fieldNameMapper = _ => "x"))""".stripMargin
+      }).getMessage.contains(expectedError))
     }
     "serialize and deserialize fields that stringified by annotation" in {
       verifySerDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""".getBytes)
@@ -869,6 +900,48 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":123}]""".getBytes)
       }.getMessage.contains("""expected '"', offset: 0x0000000f"""))
     }
+    "don't generate codec for non sealed traits or abstract classes as an ADT base" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """trait X
+          |case class A(i: Int) extends X
+          |case object B extends X
+          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
+          |definition for 'X' or using a custom implicitly accessible codec for the ADT base."""
+          .stripMargin.replace('\n', ' ')
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """abstract class X
+          |case class A(i: Int) extends X
+          |case object B extends X
+          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
+          |definition for 'X' or using a custom implicitly accessible codec for the ADT base."""
+          .stripMargin.replace('\n', ' ')
+      })
+    }
+    "don't generate codec for non case classes as ADT leaf classes" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X
+          |class A(i: Int) extends X
+          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Only case classes & case objects are supported for ADT leaf classes. Please consider using
+          |of them for ADT with base 'X' or using a custom implicitly accessible codec for the ADT base."""
+          .stripMargin.replace('\n', ' ')
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X
+          |object A extends X
+          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Only case classes & case objects are supported for ADT leaf classes. Please consider using
+          |of them for ADT with base 'X' or using a custom implicitly accessible codec for the ADT base."""
+          .stripMargin.replace('\n', ' ')
+      })
+    }
     "serialize and deserialize when the root codec defined as an impicit val" in {
       implicit val implicitRootCodec: JsonCodec[Int] = make[Int](CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1".getBytes)
@@ -931,6 +1004,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfYear = make[Year](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfYear, Year.of(2008), "\"2008\"".getBytes)
       verifySer(codecOfYear, null, "null".getBytes)
+    }
+    "don't generate codec for unsupported classes" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
+      }).getMessage.contains {
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec[_]' defined for 'java.util.Date'."""
+      })
     }
   }
   "JsonCodec.enforceCamelCase" should {

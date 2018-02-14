@@ -312,7 +312,7 @@ object JsonCodecMaker {
           fail(s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
               s"Names(s) defined by '${typeOf[named]}' annotation(s), " +
               "name of discriminator field specified by 'config.discriminatorFieldName' " +
-              "and name(s) returned by 'config.nameMapper' for non-annotated fields should not match.")
+              "and name(s) returned by 'config.fieldNameMapper' for non-annotated fields should not match.")
         }
       }
 
@@ -320,8 +320,8 @@ object JsonCodecMaker {
         val collisions = getCollisions(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          fail(s"Duplicated value(s) defined for '$discriminatorFieldName': $formattedCollisions. " +
-            s"Values(s) returned by 'config.classNameMapper' should not match.")
+          fail(s"Duplicated values defined for '$discriminatorFieldName': $formattedCollisions. " +
+            s"Values returned by 'config.adtLeafClassNameMapper' should not match.")
         }
       }
 
