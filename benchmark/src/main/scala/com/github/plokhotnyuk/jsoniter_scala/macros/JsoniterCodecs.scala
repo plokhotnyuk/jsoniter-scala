@@ -25,6 +25,7 @@ object JsoniterCodecs {
   implicit val localDateArrayCodec: JsonCodec[Array[LocalDate]] = make[Array[LocalDate]](CodecMakerConfig())
   implicit val localDateTimeArrayCodec: JsonCodec[Array[LocalDateTime]] = make[Array[LocalDateTime]](CodecMakerConfig())
   implicit val offsetDateTimeArrayCodec: JsonCodec[Array[OffsetDateTime]] = make[Array[OffsetDateTime]](CodecMakerConfig())
+  implicit val offsetTimeArrayCodec: JsonCodec[Array[OffsetTime]] = make[Array[OffsetTime]](CodecMakerConfig())
   implicit val localTimeArrayCodec: JsonCodec[Array[LocalTime]] = make[Array[LocalTime]](CodecMakerConfig())
   implicit val periodArrayCodec: JsonCodec[Array[Period]] = make[Array[Period]](CodecMakerConfig())
   implicit val zonedDateTimeArrayCodec: JsonCodec[Array[ZonedDateTime]] = make[Array[ZonedDateTime]](CodecMakerConfig())
