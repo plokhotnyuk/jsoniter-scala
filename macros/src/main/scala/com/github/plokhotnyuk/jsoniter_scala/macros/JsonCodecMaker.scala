@@ -211,20 +211,20 @@ object JsonCodecMaker {
         if (value.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiVal($value)"
         else q"out.writeVal($value)"
 
-      def genWriteArray(m: Tree, writeVal: Tree): Tree =
-        q"""if ($m ne null) {
+      def genWriteArray(x: Tree, writeVal: Tree): Tree =
+        q"""if ($x ne null) {
               out.writeArrayStart()
-              $m.foreach { x =>
+              $x.foreach { x =>
                 out.writeComma()
                 ..$writeVal
               }
               out.writeArrayEnd()
             } else out.writeNull()"""
 
-      def genWriteMap(m: Tree, writeKV: Tree): Tree =
-        q"""if ($m ne null) {
+      def genWriteMap(x: Tree, writeKV: Tree): Tree =
+        q"""if ($x ne null) {
               out.writeObjectStart()
-              $m.foreach { kv =>
+              $x.foreach { kv =>
                 out.writeKey(kv._1)
                 ..$writeKV
               }
@@ -703,9 +703,11 @@ object JsonCodecMaker {
                 }
                 out.writeArrayEnd()
               } else out.writeNull()"""
-        } else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeVal(if ($m ne null) $m.toString else null)"
-        else if (tpe <:< typeOf[java.lang.Enum[_]]) q"out.writeVal(if ($m ne null) $m.name else null)"
-        else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
+          q"out.writeVal(if (x ne null) x.toString else null)"
+        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
+          q"out.writeVal(if (x ne null) x.name else null)"
+        } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""if (x ne null) {
                 out.writeObjectStart()
                 ..$discriminator
