@@ -1107,8 +1107,20 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
         -x
       }
-    val off = offset(q0)
-    writeIntFirst(q0, pos + off, buf, digits) + off
+    if (q0 < 100) {
+      if (q0 < 10) {
+        buf(pos) = (q0 + '0').toByte
+        pos + 1
+      } else write2Digits(q0, pos, buf, digits)
+    } else if (q0 < 10000) {
+      if (q0 < 1000) write3Digits(q0, pos, buf, digits)
+      else write4Digits(q0, pos, buf, digits)
+    } else {
+      val q1 = (q0 * 3518437209L >> 45).toInt // divide positive int by 10000
+      val r1 = q0 - 10000 * q1
+      buf(pos) = (q1 + '0').toByte
+      write4Digits(r1, pos + 1, buf, digits)
+    }
   }
 
   private def writeInt(x: Int): Unit = count = {
