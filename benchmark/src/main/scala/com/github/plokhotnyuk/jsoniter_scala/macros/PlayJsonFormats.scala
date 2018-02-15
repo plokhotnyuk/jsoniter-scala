@@ -107,8 +107,8 @@ object PlayJsonFormats {
     implicit val v7: Format[RetweetedStatus] = Jsonx.formatCaseClass[RetweetedStatus]
     implicit val v8: Format[Tweet] = Jsonx.formatCaseClass[Tweet]
     Format[Seq[Tweet]](
-      Reads[Seq[Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[Tweet](v8)))),
-      Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)(v8)))))
+      Reads[Seq[Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[Tweet]))),
+      Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)))))
   }
   val enumArrayFormat: Format[Array[SuitEnum]] = {
     implicit val v1: Reads[SuitEnum] = Reads.enumNameReads(SuitEnum)
