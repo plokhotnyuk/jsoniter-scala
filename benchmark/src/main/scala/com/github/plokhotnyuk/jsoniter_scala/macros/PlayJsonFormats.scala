@@ -110,10 +110,14 @@ object PlayJsonFormats {
       Reads[Seq[Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[Tweet](v8)))),
       Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)(v8)))))
   }
-  val enumArrayFormat: Format[Array[SuitEnum]] = Format(
-    Reads[Array[SuitEnum]](js => JsSuccess(js.as[Array[JsString]].map(js => SuitEnum.withName(js.value)))),
-    Writes[Array[SuitEnum]](a => JsArray(a.map(v => JsString(v.toString)))))
+  val enumArrayFormat: Format[Array[SuitEnum]] = {
+    implicit val v1: Reads[SuitEnum] = Reads.enumNameReads(SuitEnum)
+    implicit val v2: Writes[SuitEnum] = Writes.enumNameWrites
+    Format(
+      Reads[Array[SuitEnum]](js => JsSuccess(js.as[Array[JsString]].map(_.as[SuitEnum]))),
+      Writes[Array[SuitEnum]](es => JsArray(es.map(t => Json.toJson(t)))))
+  }
   val javaEnumArrayFormat: Format[Array[Suit]] = Format(
     Reads[Array[Suit]](js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
-    Writes[Array[Suit]](a => JsArray(a.map(v => JsString(v.name)))))
+    Writes[Array[Suit]](es => JsArray(es.map(v => JsString(v.name)))))
 }
