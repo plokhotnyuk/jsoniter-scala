@@ -94,6 +94,12 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def enumValueError(len: Int): Nothing = {
+    var i = prependString("illegal enum value: \"", len)
+    i = appendChar('"', i)
+    decodeError(i, head - 1, null)
+  }
+
   def setMark(): Unit = mark = head
 
   @tailrec

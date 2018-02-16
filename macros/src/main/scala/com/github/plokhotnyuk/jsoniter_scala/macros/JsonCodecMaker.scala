@@ -173,8 +173,9 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
         else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"""val v = in.readKeyAsString()
-              ${enumSymbol(tpe)}.values.iterator.find(_.toString == v).getOrElse(in.enumValueError(v))"""
+          q"""val len = in.readKeyAsCharBuf()
+              ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
+                .getOrElse(in.enumValueError(len))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
           q"""try ${companion(tpe)}.valueOf(in.readKeyAsString()) catch {
                 case _: IllegalArgumentException => in.enumValueError(v)
@@ -513,9 +514,12 @@ object JsonCodecMaker {
                   y
                 }""")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
-          q"""val v = in.readString()
-              if (v eq null) default
-              else ${enumSymbol(tpe)}.values.iterator.find(_.toString == v).getOrElse(in.enumValueError(v))"""
+          q"""if (in.isNextToken('"')) {
+                in.rollbackToken()
+                val len = in.readStringAsCharBuf()
+                ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
+                  .getOrElse(in.enumValueError(len))
+              } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
               if (v eq null) default
