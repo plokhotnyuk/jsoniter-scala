@@ -173,9 +173,8 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
         else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"""try ${enumSymbol(tpe)}.withName(in.readKeyAsString()) catch {
-                case _: NoSuchElementException => in.enumValueError(v)
-              }"""
+          q"""val v = in.readKeyAsString()
+              ${enumSymbol(tpe)}.values.iterator.find(_.toString == v).getOrElse(in.enumValueError(v))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
           q"""try ${companion(tpe)}.valueOf(in.readKeyAsString()) catch {
                 case _: IllegalArgumentException => in.enumValueError(v)
@@ -516,9 +515,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
               if (v eq null) default
-              else try ${enumSymbol(tpe)}.withName(v) catch {
-                case _: NoSuchElementException => in.enumValueError(v)
-              }"""
+              else ${enumSymbol(tpe)}.values.iterator.find(_.toString == v).getOrElse(in.enumValueError(v))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
               if (v eq null) default
