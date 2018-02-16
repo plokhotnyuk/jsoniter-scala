@@ -629,7 +629,7 @@ object JsonCodecMaker {
             JsonReader.toHashCode(cs, cs.length)
           }
 
-          val leafClasses = adtLeafClasses(tpe)
+          val leafClasses = adtLeafClasses(tpe).toSeq
           checkDiscriminatorValueCollisions(codecConfig.discriminatorFieldName, leafClasses.map(discriminatorValue))
           val discriminatorValueError = q"in.discriminatorValueError(${codecConfig.discriminatorFieldName})"
           val readSubclasses = groupByOrdered(leafClasses)(hashCode).map { case (hashCode, subTpes) =>

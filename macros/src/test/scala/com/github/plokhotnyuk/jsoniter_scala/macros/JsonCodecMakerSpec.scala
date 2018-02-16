@@ -942,6 +942,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           .stripMargin.replace('\n', ' ')
       })
     }
+    "don't generate codec for non case classes which are mapped to the same discriminator value" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X
+          |case object A extends X
+          |case object B extends X
+          |JsonCodecMaker.make[X](CodecMakerConfig(adtLeafClassNameMapper = _ => "Z"))""".stripMargin
+      }).getMessage.contains {
+        """Duplicated values defined for 'type': 'Z'. Values returned by 'config.adtLeafClassNameMapper'
+          |should not match.""".stripMargin.replace('\n', ' ')
+      })
+    }
     "serialize and deserialize when the root codec defined as an impicit val" in {
       implicit val implicitRootCodec: JsonCodec[Int] = make[Int](CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1".getBytes)
@@ -1041,6 +1052,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
       }).getMessage.contains {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec[_]' defined for 'java.util.Date'."""
+      })
+    }
+    "don't generate codec for too deeply defined case classes" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """val codecOfFoo = () => {
+          |  case class Foo(i: Int)
+          |  JsonCodecMaker.make[Foo](CodecMakerConfig())
+          |}
+          |codecOfFoo()""".stripMargin
+      }).getMessage.contains {
+        """Can't find companion object for 'Foo'. This can happen when it's nested too deeply. Please consider defining
+          |it as a top-level object or directly inside of another class or object.""".stripMargin.replace('\n', ' ')
       })
     }
   }
