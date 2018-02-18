@@ -28,6 +28,8 @@ Support of Scala.js & Scala Native is not a goal for the moment.
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
+- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` w/o need of holding all parsed values 
+  in the memory
 - Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
 - Support writing to pre-allocated `Array[Byte]` by specifying of position of writing from
 - Support of UTF-8 encoding

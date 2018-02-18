@@ -54,6 +54,54 @@ package object core {
   }
 
   /**
+    * Deserialize JSON of streaming values encoded in UTF-8 from an input stream into values of given `A` type.
+    *
+    * All parsed values will be passed to consuming function `f`.
+    *
+    * @tparam A type of the value to parse
+    * @param in the input stream to parse from
+    * @param config a parsing configuration
+    * @param f a consumer of values, that returns `true` to continue scanning or `false` to complete it
+    * @param codec a codec for the given `A` type
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
+    *                            while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `in` or `config` is null
+    * @throws Throwable if some error was thrown by f() call
+    */
+  final def scanValueStream[A](in: InputStream, config: ReaderConfig = readerConfig)(f: A => Boolean)
+                              (implicit codec: JsonCodec[A]): Unit = {
+    if ((in eq null) || (f eq null)) throw new NullPointerException
+    readerPool.get.scanValueStream(codec, in, config)(f)
+  }
+
+  /**
+    * Deserialize JSON array encoded in UTF-8 from an input stream into its values of given `A` type.
+    *
+    * All parsed values will be passed to consuming function `f`.
+    *
+    * @tparam A type of the value to parse
+    * @param in the input stream to parse from
+    * @param config a parsing configuration
+    * @param f a consumer of values, that returns `true` to continue scanning or `false` to complete it
+    * @param codec a codec for the given `A` type
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
+    *                            while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `in` or `config` is null
+    * @throws Throwable if some error was thrown by f() call
+    */
+  final def scanArray[A](in: InputStream, config: ReaderConfig = readerConfig)(f: A => Boolean)
+                        (implicit codec: JsonCodec[A]): Unit = {
+    if ((in eq null) || (f eq null)) throw new NullPointerException
+    readerPool.get.scanArray(codec, in, config)(f)
+  }
+
+  /**
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
     * with default parsing options that maximize description of error.
     *

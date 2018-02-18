@@ -1,0 +1,33 @@
+[
+  {
+    "name": "John",
+    "devices": [
+      {
+        "id": 1,
+        "model": "HTC One X"
+      },
+      {
+        "id": 2,
+        "model": "iPhone X"
+      }
+    ]
+  },
+  {
+    "name": "Jon",
+    "devices": [
+      {
+        "id": 1,
+        "model": "HTC One X"
+      }
+    ]
+  },
+  {
+    "name": "Joe",
+    "devices": [
+      {
+        "id": 2,
+        "model": "iPhone X"
+      }
+    ]
+  }
+]

@@ -1,53 +1,16 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
-import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
-  "JsonReader.read" should {
-    "parse json from the provided input stream" in {
-      read(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
-    }
-    "parse json from the byte array" in {
-      read(compactJson)(codec) shouldBe user
-    }
-    "parse json from the byte array within specified positions" in {
-      read(httpMessage, 66, httpMessage.length)(codec) shouldBe user
-    }
-    "throw json exception if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](read(httpMessage)(codec)).getMessage ==
-        """expected '{' or null, offset: 0x00000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
-          |+----------+-------------------------------------------------+------------------+
-          || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
-          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
-          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
-          |+----------+-------------------------------------------------+------------------+""".stripMargin)
-    }
-    "throw json exception in case of the provided params are invalid" in {
-      intercept[NullPointerException](read(compactJson)(null))
-      intercept[NullPointerException](read(new ByteArrayInputStream(compactJson))(null))
-      intercept[NullPointerException](read(httpMessage, 66, httpMessage.length)(null))
-      intercept[NullPointerException](read(null.asInstanceOf[Array[Byte]])(codec))
-      intercept[NullPointerException](read(null.asInstanceOf[Array[Byte]], 0, 50)(codec))
-      intercept[NullPointerException](read(null.asInstanceOf[InputStream])(codec))
-      intercept[NullPointerException](read(new ByteArrayInputStream(compactJson), null)(codec))
-      intercept[NullPointerException](read(httpMessage, 66, httpMessage.length, null)(codec))
-      assert(intercept[ArrayIndexOutOfBoundsException](read(httpMessage, 50, 200)(codec))
-        .getMessage.contains("`to` should be positive and not greater than `buf` length"))
-      assert(intercept[ArrayIndexOutOfBoundsException](read(httpMessage, 50, 10)(codec))
-        .getMessage.contains("`from` should be positive and not greater than `to`"))
-    }
-  }
   "JsonReader.skip" should {
     "skip string values" in {
       validateSkip("\"\"")

@@ -1,61 +1,20 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.{ByteArrayOutputStream, IOException, OutputStream}
-import java.nio.charset.StandardCharsets.UTF_8
+import java.io.{ByteArrayOutputStream, IOException}
 import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
-import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
-  val buf = new Array[Byte](150)
   "JsonWriter.isNonEscapedAscii" should {
     "return false for all escaped ASCII or non-ASCII chars" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
         JsonWriter.isNonEscapedAscii(ch) shouldBe !isEscapedAscii(ch) && ch < 128
       }
-    }
-  }
-  "JsonWriter.write" should {
-    "serialize an object to the provided output stream" in {
-      val out1 = new ByteArrayOutputStream()
-      write(user, out1)(codec)
-      out1.toString("UTF-8") shouldBe toString(compactJson)
-      val out2 = new ByteArrayOutputStream()
-      write(user, out2, WriterConfig(indentionStep = 2))(codec)
-      out2.toString("UTF-8") shouldBe toString(prettyJson)
-    }
-    "serialize an object to a new instance of byte array" in {
-      toString(write(user)(codec)) shouldBe toString(compactJson)
-      toString(write(user, WriterConfig(indentionStep = 2))(codec)) shouldBe toString(prettyJson)
-    }
-    "serialize an object to the provided byte array from specified position" in {
-      val from1 = 10
-      val to1 = write(user, buf, from1)(codec)
-      new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
-      val from2 = 0
-      val to2 = write(user, buf, from2, WriterConfig(indentionStep = 2))(codec)
-      new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
-    }
-    "throw array index out of bounds exception in case of the provided byte array is overflown during serialization" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](write(user, buf, 100)(codec))
-        .getMessage.contains("`buf` length exceeded"))
-    }
-    "throw i/o exception in case of the provided params are invalid" in {
-      intercept[NullPointerException](write(user)(null))
-      intercept[NullPointerException](write(user, new ByteArrayOutputStream())(null))
-      intercept[NullPointerException](write(user, buf, 0)(null))
-      intercept[NullPointerException](write(user, null.asInstanceOf[OutputStream])(codec))
-      intercept[NullPointerException](write(user, null, 50)(codec))
-      intercept[NullPointerException](write(user, null.asInstanceOf[WriterConfig])(codec))
-      intercept[NullPointerException](write(user, new ByteArrayOutputStream(), null)(codec))
-      intercept[NullPointerException](write(user, buf, 0, null)(codec))
-      assert(intercept[ArrayIndexOutOfBoundsException](write(user, new Array[Byte](10), 50)(codec))
-        .getMessage.contains("`from` should be positive and not greater than `buf` length"))
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and and JsonWriter.writeKey for boolean" should {
@@ -627,6 +586,4 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
 
   def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
-
-  def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)
 }

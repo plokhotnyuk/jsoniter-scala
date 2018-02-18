@@ -545,10 +545,66 @@ final class JsonReader private[jsoniter_scala](
     totalRead = 0
     try codec.decode(this, codec.nullValue)
     finally {
+      this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+      freeTooLongBuf()
+      freeTooLongCharBuf()
+    }
+  }
+
+  private[jsoniter_scala] def scanValueStream[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig)
+                                                (f: A => Boolean): Unit = {
+    this.config = config
+    this.in = in
+    head = 0
+    tail = 0
+    mark = 2147483647
+    totalRead = 0
+    try {
+      while (f(codec.decode(this, codec.nullValue)) && skipWhitespaces()) ()
+    } finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
+  }
+
+  private[jsoniter_scala] def scanArray[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig)
+                                          (f: A => Boolean): Unit = {
+    this.config = config
+    this.in = in
+    head = 0
+    tail = 0
+    mark = 2147483647
+    totalRead = 0
+    try {
+      if (isNextToken('[')) {
+        if (!isNextToken(']')) {
+          rollbackToken()
+          var continue = true
+          do {
+            continue = f(codec.decode(this, codec.nullValue))
+          } while (continue && isNextToken(','))
+          if (continue && !isCurrentToken(']')) arrayEndOrCommaError()
+        }
+      } else readNullOrTokenError((), '[')
+    } finally {
+      this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+      freeTooLongBuf()
+      freeTooLongCharBuf()
+    }
+  }
+
+  private def skipWhitespaces(): Boolean = {
+    var pos = head
+    while ((pos < tail || {
+      pos = loadMore(pos)
+      pos < tail
+    }) && {
+      val b = buf(pos)
+      b == ' ' || b == '\n' || b == '\t' || b == '\r'
+    }) pos += 1
+    head = pos
+    pos != tail
   }
 
   private def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
