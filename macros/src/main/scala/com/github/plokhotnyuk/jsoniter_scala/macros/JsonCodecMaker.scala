@@ -233,7 +233,10 @@ object JsonCodecMaker {
 
       def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonCodec[_]]}' defined for '$tpe'.")
 
-      def findImplicitCodec(tpe: Type): Tree = c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", c.TYPEmode).tpe)
+      val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
+
+      def findImplicitCodec(tpe: Type): Tree =
+        inferredCodecs.getOrElseUpdate(tpe, c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", c.TYPEmode).tpe))
 
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
