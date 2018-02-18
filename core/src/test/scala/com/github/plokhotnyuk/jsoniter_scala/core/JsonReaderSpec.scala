@@ -2049,6 +2049,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '}' or ',', offset: 0x00000000"))
     }
   }
+  "JsonReader" should {
+    "support hex dumps with offsets that greater than 4Gb" in {
+      assert(intercept[JsonParseException](reader("null".getBytes, 1L << 33).readInt())
+        .getMessage.contains(
+          """illegal number, offset: 0x200000000, buf:
+            |           +-------------------------------------------------+
+            |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+            |+----------+-------------------------------------------------+------------------+
+            || 00000000 | 6e 75 6c 6c                                     | null             |
+            |+----------+-------------------------------------------------+------------------+""".stripMargin))
+    }
+  }
 
   def validateSkip(s: String): Unit = {
     val r = reader((s + ",").getBytes)
@@ -2309,8 +2321,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readStringAsBigDecimal(buf: Array[Byte], default: BigDecimal): BigDecimal =
     reader(stringify(buf)).readStringAsBigDecimal(default)
 
-  def reader(buf: Array[Byte]): JsonReader = new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
-    0, 0, 2147483647, new Array[Char](0), new ByteArrayInputStream(buf), 0, ReaderConfig())
+  def reader(buf: Array[Byte], totalRead: Long = 0): JsonReader =
+    new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
+      0, 0, 2147483647, new Array[Char](0), new ByteArrayInputStream(buf), totalRead, ReaderConfig())
 
   def stringify(buf: Array[Byte]): Array[Byte] = '"'.toByte +: buf :+ '"'.toByte
 }

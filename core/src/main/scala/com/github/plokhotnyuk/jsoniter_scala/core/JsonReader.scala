@@ -53,7 +53,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var mark: Int = 2147483647,
     private[this] var charBuf: Array[Char] = new Array[Char](128),
     private[this] var in: InputStream = null,
-    private[this] var totalRead: Int = 0,
+    private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
   def requiredKeyError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
     val len = Math.min(reqFields.length, reqBits.length << 5)
@@ -649,11 +649,11 @@ final class JsonReader private[jsoniter_scala](
 
   private def decodeError(from: Int, pos: Int, cause: Throwable) = {
     var i = appendString(", offset: 0x", from)
-    val offset = if (in eq null) 0 else totalRead - tail
-    i = appendHex(offset + pos, i) // TODO: consider support of offset values beyond 2Gb
+    val offset = totalRead - (if (in eq null) 0 else tail)
+    i = appendHex(offset + pos, i)
     if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
-      i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset, i)
+      i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset.toInt, i)
     }
     throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwParseExceptionWithStackTrace)
   }
@@ -3152,10 +3152,21 @@ final class JsonReader private[jsoniter_scala](
     appendChars(dumpBorder, i)
   }
 
-  private def appendHex(d: Int, i: Int): Int = {
-    if (i + 8 >= charBuf.length) growCharBuf(i + 8)
-    putHex(d, i, charBuf)
-    i + 8
+  private def appendHex(d: Long, i: Int): Int = {
+    if (i + 16 >= charBuf.length) growCharBuf(i + 16)
+    var j = i
+    val hd = (d >>> 32).toInt
+    if (hd != 0) {
+      var shift = 4
+      while (shift < 32 && (hd >>> shift) != 0) shift += 4
+      while (shift > 0) {
+        shift -= 4
+        charBuf(j) = toHexDigit(hd >>> shift)
+        j += 1
+      }
+    }
+    putHex(d.toInt, j, charBuf)
+    j + 8
   }
 
   private def putHex(d: Int, i: Int, charBuf: Array[Char]): Unit = {
