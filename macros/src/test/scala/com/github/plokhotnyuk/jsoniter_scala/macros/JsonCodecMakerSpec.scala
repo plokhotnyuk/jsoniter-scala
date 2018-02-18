@@ -942,7 +942,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           .stripMargin.replace('\n', ' ')
       })
     }
-    "don't generate codec for non case classes which are mapped to the same discriminator value" in {
+    "don't generate codec for case objects which are mapped to the same discriminator value" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X
           |case object A extends X
@@ -951,6 +951,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }).getMessage.contains {
         """Duplicated values defined for 'type': 'Z'. Values returned by 'config.adtLeafClassNameMapper'
           |should not match.""".stripMargin.replace('\n', ' ')
+      })
+    }
+    "don't generate codec for case classes with fields that the same name as discriminator name" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait DuplicatedJsonName
+          |case class A(x: Int) extends DuplicatedJsonName
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(discriminatorFieldName = "x"))""".stripMargin
+      }).getMessage.contains {
+        """Duplicated JSON name(s) defined for 'A': 'x'. Names(s) defined by
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s), name of discriminator field specified by
+          |'config.discriminatorFieldName' and name(s) returned by 'config.fieldNameMapper' for non-annotated fields should
+          |not match.""".stripMargin.replace('\n', ' ')
       })
     }
     "serialize and deserialize when the root codec defined as an impicit val" in {
