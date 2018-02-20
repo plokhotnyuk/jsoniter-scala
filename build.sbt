@@ -43,7 +43,6 @@ lazy val commonSettings = Seq(
     )
   ),
   scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.12.4", "2.11.12"),
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -83,7 +82,6 @@ lazy val publishSettings = Seq(
 
 lazy val `jsoniter-scala` = project.in(file("."))
   .aggregate(core, macros, benchmark)
-  .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
 
 lazy val core = project
@@ -91,9 +89,10 @@ lazy val core = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
+    crossScalaVersions := Seq("2.13.0-M3", "2.12.4", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
-      "org.scalatest" %% "scalatest" % "3.0.4" % Test
+      "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
     )
   )
 
@@ -103,10 +102,11 @@ lazy val macros = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
+    crossScalaVersions := Seq("2.13.0-M3", "2.12.4", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
-      "org.scalatest" %% "scalatest" % "3.0.4" % Test
+      "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
     )
   )
 
@@ -116,6 +116,7 @@ lazy val benchmark = project
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
+    crossScalaVersions := Seq("2.12.4", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.4",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.4",
@@ -131,6 +132,6 @@ lazy val benchmark = project
       "com.typesafe.play" %% "play-json" % "2.6.8",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.3",
-      "org.scalatest" %% "scalatest" % "3.0.4" % Test
+      "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
     )
   )
