@@ -215,7 +215,7 @@ that is used in the Scala ecosystem.
 Double check binary & source compatibility (including behaviour) and release using the following command (credentials required):
 
 ```sh
-sbt "release cross"
+sbt release
 ```
 
 Do not push changes to github until promoted artifacts for new version are not available for download on 

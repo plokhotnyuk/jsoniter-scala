@@ -14,19 +14,19 @@ lazy val updateVersionInReadme: ReleaseStep = { st: State =>
   st
 }
 
-releaseCrossBuild := true
+releaseCrossBuild := false
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
   runClean,
-  runTest,
+  releaseStepCommandAndRemaining("+test"),
   setReleaseVersion,
-  ReleaseStep(releaseStepCommand("mimaReportBinaryIssues"), enableCrossBuild = true),
+  releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
   updateVersionInReadme,
   commitReleaseVersion,
   tagRelease,
-  ReleaseStep(releaseStepCommand("publishSigned"), enableCrossBuild = true),
+  releaseStepCommandAndRemaining("+publishSigned"),
   setNextVersion,
   commitNextVersion,
   releaseStepCommand("sonatypeReleaseAll"),
