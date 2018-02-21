@@ -231,6 +231,8 @@ final class JsonWriter private[jsoniter_scala](
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
+  def nullKeyError(): Nothing = encodeError("key cannot be null")
+
   def writeVal(x: BigDecimal): Unit =
     if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
 
@@ -389,8 +391,6 @@ final class JsonWriter private[jsoniter_scala](
       isBufGrowingAllowed = true
     }
   }
-
-  private def nullKeyError(): Nothing = throw new IOException("key cannot be null")
 
   private def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep

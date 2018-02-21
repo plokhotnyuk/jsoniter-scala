@@ -43,7 +43,7 @@ Support of Scala.js & Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
   using discriminator field with string type of value
-- Implicitly resolvable codecs for any types
+- Implicitly resolvable codecs for values and key codecs for map keys
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)

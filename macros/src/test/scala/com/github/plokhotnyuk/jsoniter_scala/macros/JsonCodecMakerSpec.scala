@@ -369,6 +369,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
       }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
     }
+    "serialize and deserialize top-level enumerations" in {
+      verifySerDeser(make[LocationType.LocationType](CodecMakerConfig()), LocationType.GPS,
+        "\"GPS\"".getBytes)
+    }
+    "serialize and deserialize enumerations as key in maps" in {
+      verifySerDeser(make[Map[LocationType.LocationType, Int]](CodecMakerConfig()), Map(LocationType.GPS -> 0),
+        """{"GPS":0}""".getBytes)
+    }
     "serialize and deserialize Java enumerations" in {
       verifySerDeser(codecOfJavaEnums, JavaEnums(Level.LOW, Levels.InnerLevel.HIGH),
         """{"l":"LOW","il":"HIGH"}""".getBytes)
@@ -379,6 +387,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
           """{"l":"LO","il":"HIGH"}""".getBytes)
       }.getMessage.contains("illegal enum value: \"LO\", offset: 0x00000008"))
+    }
+    "serialize and deserialize top-level Java enumerations" in {
+      verifySerDeser(make[Level](CodecMakerConfig()), Level.HIGH, "\"HIGH\"".getBytes)
+    }
+    "serialize and deserialize Java enumerations as key in maps" in {
+      verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"HIGH":0}""".getBytes)
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
       implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {
@@ -435,6 +449,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfEnums, Enums(null), """{"lt":none}""".getBytes)
       }.getMessage.contains("expected number value or null, offset: 0x00000007"))
+    }
+    "serialize and deserialize outer types using custom key codecs for map keys" in {
+      implicit val codecForLevel = new JsonKeyCodec[Level] {
+        override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
+          case 0 => Level.LOW
+          case 1 => Level.HIGH
+          case x => in.enumValueError(x.toString)
+        }
+
+        override def encodeKey(x: Level, out: JsonWriter): Unit = x match {
+          case Level.LOW => out.writeKey(0)
+          case Level.HIGH => out.writeKey(1)
+          case _ => out.nullKeyError()
+        }
+      }
+      verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"1":0}""".getBytes)
     }
     "serialize and deserialize case classes with value classes" in {
       verifySerDeser(make[ValueClassTypes](CodecMakerConfig()),

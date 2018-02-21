@@ -144,8 +144,15 @@ object JsonCodecMaker {
         enumSymbol
       }
 
-      def genReadKey(tpe: Type): Tree =
-        if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
+      val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
+
+      def findImplicitKeyCodec(tpe: Type): Tree = inferredKeyCodecs.getOrElseUpdate(tpe,
+        c.inferImplicitValue(c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]", c.TYPEmode).tpe))
+
+      def genReadKey(tpe: Type): Tree = {
+        val implKeyCodec = findImplicitKeyCodec(tpe)
+        if (!implKeyCodec.isEmpty) q"$implKeyCodec.decodeKey(in)"
+        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
         else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readKeyAsByte()"
         else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readKeyAsChar()"
         else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readKeyAsShort()"
@@ -177,10 +184,12 @@ object JsonCodecMaker {
               ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
                 .getOrElse(in.enumValueError(len))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          q"""try ${companion(tpe)}.valueOf(in.readKeyAsString()) catch {
+          q"""val v = in.readKeyAsString()
+              try ${companion(tpe)}.valueOf(v) catch {
                 case _: IllegalArgumentException => in.enumValueError(v)
               }"""
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
+      }
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
         genReadCollection(newBuilder, readVal, result, q"'['", q"']'", q"in.arrayEndOrCommaError()")
@@ -203,6 +212,31 @@ object JsonCodecMaker {
               }
             } else in.readNullOrTokenError(default, $open)"""
 
+      def genWriteKey(x: Tree, tpe: Type): Tree = {
+        val implKeyCodec = findImplicitKeyCodec(tpe)
+        if (!implKeyCodec.isEmpty) q"$implKeyCodec.encodeKey($x, out)"
+        else if (isValueClass(tpe)) genWriteKey(q"$x.${valueClassValueMethod(tpe)}", valueClassValueType(tpe))
+        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
+          tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
+          tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
+          tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short] ||
+          tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer] ||
+          tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long] ||
+          tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
+          tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
+          tpe =:= typeOf[String] || tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal] ||
+          tpe =:= typeOf[java.util.UUID] || tpe =:= typeOf[Duration] || tpe =:= typeOf[Instant] ||
+          tpe =:= typeOf[LocalDate] || tpe =:= typeOf[LocalDateTime] || tpe =:= typeOf[LocalTime] ||
+          tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
+          tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
+          tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
+        else if (tpe <:< typeOf[Enumeration#Value]) {
+          q"out.writeKey(if ($x ne null) $x.toString else null)"
+        } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+          q"out.writeKey(if ($x ne null) $x.name else null)"
+        } else fail(s"Unsupported type to be used as map key '$tpe'.")
+      }
+
       def genWriteConstantKey(name: String): Tree =
         if (name.forall(JsonWriter.isNonEscapedAscii)) q"out.writeNonEscapedAsciiKey($name)"
         else q"out.writeKey($name)"
@@ -221,12 +255,12 @@ object JsonCodecMaker {
               out.writeArrayEnd()
             } else out.writeNull()"""
 
-      def genWriteMap(x: Tree, writeKV: Tree): Tree =
+      def genWriteMap(x: Tree, writeKey: Tree, writeVal: Tree): Tree =
         q"""if ($x ne null) {
               out.writeObjectStart()
               $x.foreach { kv =>
-                out.writeKey(kv._1)
-                ..$writeKV
+                ..$writeKey
+                ..$writeVal
               }
               out.writeObjectEnd()
             } else out.writeNull()"""
@@ -688,9 +722,9 @@ object JsonCodecMaker {
           q"if ((x eq null) || x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
-          genWriteMap(q"x", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
+          genWriteMap(q"x", q"out.writeKey(kv._1)", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(methodKey, m) {
-          genWriteMap(q"x", genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
+          genWriteMap(q"x", genWriteKey(q"kv._1", typeArg1(tpe)), genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", if (isStringified) q"out.writeValAsString(x)" else q"out.writeVal(x)")
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
