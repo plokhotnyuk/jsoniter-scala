@@ -350,7 +350,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
-  private[jsoniter_scala] def write[A](codec: JsonCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
+  private[jsoniter_scala] def write[A](codec: JsonValueCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
     this.config = config
     this.out = out
     count = 0
@@ -364,7 +364,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[jsoniter_scala] def write[A](codec: JsonCodec[A], x: A, config: WriterConfig): Array[Byte] = {
+  private[jsoniter_scala] def write[A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] = {
     this.config = config
     this.count = 0
     this.indention = 0
@@ -376,7 +376,7 @@ final class JsonWriter private[jsoniter_scala](
     } finally freeTooLongBuf()
   }
 
-  private[jsoniter_scala] def write[A](codec: JsonCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+  private[jsoniter_scala] def write[A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
     this.config = config
     this.buf = buf

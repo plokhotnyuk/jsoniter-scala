@@ -14,7 +14,7 @@ object UserAPI {
   val prettyJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_response.json"))
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_compact_response.json"))
   val httpMessage: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_http_response.txt"))
-  val codec: JsonCodec[User] = new JsonCodec[User] {
+  val codec: JsonValueCodec[User] = new JsonValueCodec[User] {
     private val r0: Array[String] = Array("name")
     private val r1: Array[String] = Array("id", "model")
 

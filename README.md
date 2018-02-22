@@ -93,10 +93,10 @@ case class Device(id: Int, model: String)
 
 case class User(name: String, devices: Seq[Device])
 
-implicit val codec: JsonCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
+implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
 ```
 
-That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec`.
+That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec`.
 
 Now you can use it for parsing & serialization:
 

@@ -22,7 +22,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
   val primitives = Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f)
-  val codecOfPrimitives: JsonCodec[Primitives] = make[Primitives](CodecMakerConfig())
+  val codecOfPrimitives: JsonValueCodec[Primitives] = make[Primitives](CodecMakerConfig())
 
   case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.Integer, l: java.lang.Long,
                              bl: java.lang.Boolean, ch: java.lang.Character, dbl: java.lang.Double, f: java.lang.Float)
@@ -30,10 +30,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
 
   val standardTypes = StandardTypes("VVV", 1, 1.1)
-  val codecOfStandardTypes: JsonCodec[StandardTypes] = make[StandardTypes](CodecMakerConfig())
+  val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make[StandardTypes](CodecMakerConfig())
 
   case class JavaTypes(uuid: UUID)
-  val codecOfJavaTypes: JsonCodec[JavaTypes] = make[JavaTypes](CodecMakerConfig())
+  val codecOfJavaTypes: JsonValueCodec[JavaTypes] = make[JavaTypes](CodecMakerConfig())
 
   object LocationType extends Enumeration {
     type LocationType = Value
@@ -44,11 +44,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Enums(lt: LocationType.LocationType)
 
-  val codecOfEnums: JsonCodec[Enums] = make[Enums](CodecMakerConfig())
+  val codecOfEnums: JsonValueCodec[Enums] = make[Enums](CodecMakerConfig())
 
   case class JavaEnums(l: Level, il: Levels.InnerLevel)
 
-  val codecOfJavaEnums: JsonCodec[JavaEnums] = make[JavaEnums](CodecMakerConfig())
+  val codecOfJavaEnums: JsonValueCodec[JavaEnums] = make[JavaEnums](CodecMakerConfig())
 
   case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
@@ -57,16 +57,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long],
                      ojl: Option[java.lang.Long])
 
-  val codecOfOptions: JsonCodec[Options] = make[Options](CodecMakerConfig())
+  val codecOfOptions: JsonValueCodec[Options] = make[Options](CodecMakerConfig())
 
   case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
 
-  val codecOfTuples: JsonCodec[Tuples] = make[Tuples](CodecMakerConfig())
+  val codecOfTuples: JsonValueCodec[Tuples] = make[Tuples](CodecMakerConfig())
 
   case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
-  val codecOfArrays: JsonCodec[Arrays] = make[Arrays](CodecMakerConfig())
+  val codecOfArrays: JsonValueCodec[Arrays] = make[Arrays](CodecMakerConfig())
 
   case class MutableTraversables(ml: mutable.MutableList[mutable.SortedSet[String]],
                                  ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
@@ -82,18 +82,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                                    is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]],
                                    v: Vector[Traversable[Long]])
 
-  val codecOfImmutableTraversables: JsonCodec[ImmutableTraversables] = make[ImmutableTraversables](CodecMakerConfig())
+  val codecOfImmutableTraversables: JsonValueCodec[ImmutableTraversables] = make[ImmutableTraversables](CodecMakerConfig())
 
   case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
                          m: mutable.Map[Float, mutable.ListMap[BigInt, String]],
                          ohm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
 
-  val codecOfMutableMaps: JsonCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
+  val codecOfMutableMaps: JsonValueCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
 
   case class ImmutableMaps(m: Map[Int, Double], hm: HashMap[String, ListMap[Char, BigInt]],
                            sm: SortedMap[Long, TreeMap[Byte, Float]])
 
-  val codecOfImmutableMaps: JsonCodec[ImmutableMaps] = make[ImmutableMaps](CodecMakerConfig())
+  val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make[ImmutableMaps](CodecMakerConfig())
 
   case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])
 
@@ -106,21 +106,21 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Double])
 
   val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> -90.0, 'N' -> 90.0, 'W' -> -180.0, 'E' -> 180.0))
-  val codecOfIndented: JsonCodec[Indented] = make[Indented](CodecMakerConfig())
+  val codecOfIndented: JsonValueCodec[Indented] = make[Indented](CodecMakerConfig())
 
   case class UTF8KeysAndValues(გასაღები: String)
 
-  val codecOfUTF8KeysAndValues: JsonCodec[UTF8KeysAndValues] = make[UTF8KeysAndValues](CodecMakerConfig())
+  val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make[UTF8KeysAndValues](CodecMakerConfig())
 
   //FIXME: case classes with field annotation(s) should be defined in source file before `make` call for them
   case class NameOverridden(@named("new_" + "name") oldName: String)
 
-  val codecOfNameOverridden: JsonCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
+  val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
 
   case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
 
   val stringified = Stringified(1, 2, List(1), List(2))
-  val codecOfStringified: JsonCodec[Stringified] = make[Stringified](CodecMakerConfig())
+  val codecOfStringified: JsonValueCodec[Stringified] = make[Stringified](CodecMakerConfig())
 
   case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
                       l: List[Int] = List(0), a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)),
@@ -128,7 +128,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                       ms: mutable.BitSet = null, mb: mutable.Buffer[Int] = null)
 
   val defaults = Defaults()
-  val codecOfDefaults: JsonCodec[Defaults] = make[Defaults](CodecMakerConfig())
+  val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
 
   case class Transient(@transient transient: String = "default", required: String) {
     val ignored: String = s"$required-$transient"
@@ -172,7 +172,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Б(а: А) extends База
 
-  val codecOfADTList: JsonCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
+  val codecOfADTList: JsonValueCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
   case class JavaTimeTypes(d: Duration, i: Instant, ld: LocalDate,
                            ldt: LocalDateTime, lt: LocalTime, md: MonthDay,
@@ -180,7 +180,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                            y: Year, ym: YearMonth, zdt: ZonedDateTime,
                            zi: ZoneId, zo: ZoneOffset)
 
-  "JsonCodec" should {
+  "JsonValueCodec" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes)
@@ -395,7 +395,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"HIGH":0}""".getBytes)
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
-      implicit val codecForEither = new JsonCodec[Either[String, StandardTypes]] {
+      implicit val codecForEither = new JsonValueCodec[Either[String, StandardTypes]] {
         val nullValue: Either[String, StandardTypes] = null
 
         def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
@@ -425,7 +425,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"s":"X"}""".getBytes)
       verifySerDeser(codecOfOuterTypes, OuterTypes("X"),
         """{"s":"X"}""".getBytes)
-      implicit object codecOfLocationType extends JsonCodec[LocationType.LocationType] {
+      implicit object codecOfLocationType extends JsonValueCodec[LocationType.LocationType] {
         val nullValue: LocationType.LocationType = null
 
         def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
@@ -996,7 +996,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       })
     }
     "serialize and deserialize when the root codec defined as an impicit val" in {
-      implicit val implicitRootCodec: JsonCodec[Int] = make[Int](CodecMakerConfig())
+      implicit val implicitRootCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1".getBytes)
     }
     "serialize and deserialize case classes with Java time types" in {
@@ -1093,7 +1093,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
       }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonCodec[_]' defined for 'java.util.Date'."""
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
       })
     }
     "don't generate codec for too deeply defined case classes" in {
@@ -1109,7 +1109,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       })
     }
   }
-  "JsonCodec.enforceCamelCase" should {
+  "JsonCodecMaker.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {
       JsonCodecMaker.enforceCamelCase("o_o") shouldBe "oO"
       JsonCodecMaker.enforceCamelCase("o_ooo_") shouldBe "oOoo"
@@ -1121,7 +1121,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforceCamelCase("OOoo111") shouldBe "OOoo111"
     }
   }
-  "JsonCodec.enforce_snake_case" should {
+  "JsonCodecMaker.enforce_snake_case" should {
     "transform camelCase names to snake_case" in {
       JsonCodecMaker.enforce_snake_case("oO") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("oOoo") shouldBe "o_ooo"
@@ -1133,7 +1133,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforce_snake_case("O_OOO_111") shouldBe "o_ooo_111"
     }
   }
-  "JsonCodec.simpleClassName" should {
+  "JsonCodecMaker.simpleClassName" should {
     "shorten full class name to simple class name" in {
       JsonCodecMaker.simpleClassName("com.github.plohkotnyuk.jsoniter_scala.Test") shouldBe "Test"
       JsonCodecMaker.simpleClassName("JsonCodecMakerSpec.this.Test") shouldBe "Test"
@@ -1142,19 +1142,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
   }
 
-  def verifySerDeser[T](codec: JsonCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
+  def verifySerDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)
   }
 
-  def verifySer[T](codec: JsonCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
+  def verifySer[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     val baos = new ByteArrayOutputStream
     write(obj, baos, cfg)(codec)
     toString(baos.toByteArray) shouldBe toString(json)
     toString(write(obj, cfg)(codec)) shouldBe toString(json)
   }
 
-  def verifyDeser[T](codec: JsonCodec[T], obj: T, json: Array[Byte]): Unit = {
+  def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
     read(new ByteArrayInputStream(json))(codec) shouldBe obj
     read(json)(codec) shouldBe obj
   }

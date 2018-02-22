@@ -521,7 +521,7 @@ final class JsonReader private[jsoniter_scala](
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
-  private[jsoniter_scala] def read[A](codec: JsonCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
+  private[jsoniter_scala] def read[A](codec: JsonValueCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
     val currBuf = this.buf
     this.config = config
     this.buf = buf
@@ -536,7 +536,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[jsoniter_scala] def read[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig): A = {
+  private[jsoniter_scala] def read[A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig): A = {
     this.config = config
     this.in = in
     head = 0
@@ -551,7 +551,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[jsoniter_scala] def scanValueStream[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig)
+  private[jsoniter_scala] def scanValueStream[A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
                                                 (f: A => Boolean): Unit = {
     this.config = config
     this.in = in
@@ -568,7 +568,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[jsoniter_scala] def scanArray[A](codec: JsonCodec[A], in: InputStream, config: ReaderConfig)
+  private[jsoniter_scala] def scanArray[A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
                                           (f: A => Boolean): Unit = {
     this.config = config
     this.in = in

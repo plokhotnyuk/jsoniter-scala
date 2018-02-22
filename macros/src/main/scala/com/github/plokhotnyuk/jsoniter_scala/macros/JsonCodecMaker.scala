@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.lang.Character._
 import java.time._
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonCodec, JsonReader, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, JsonReader, JsonWriter}
 
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
@@ -88,10 +88,10 @@ object JsonCodecMaker {
   def simpleClassName(fullClassName: String): String =
     fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
 
-  def make[A](config: CodecMakerConfig): JsonCodec[A] = macro Impl.make[A]
+  def make[A](config: CodecMakerConfig): JsonValueCodec[A] = macro Impl.make[A]
 
   private object Impl {
-    def make[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonCodec[A]] = {
+    def make[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] = {
       import c.universe._
 
       def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
@@ -265,12 +265,12 @@ object JsonCodecMaker {
               out.writeObjectEnd()
             } else out.writeNull()"""
 
-      def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonCodec[_]]}' defined for '$tpe'.")
+      def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
       val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
       def findImplicitCodec(tpe: Type): Tree =
-        inferredCodecs.getOrElseUpdate(tpe, c.inferImplicitValue(c.typecheck(tq"JsonCodec[$tpe]", c.TYPEmode).tpe))
+        inferredCodecs.getOrElseUpdate(tpe, c.inferImplicitValue(c.typecheck(tq"JsonValueCodec[$tpe]", c.TYPEmode).tpe))
 
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
@@ -837,7 +837,7 @@ object JsonCodecMaker {
       val codec =
         q"""import com.github.plokhotnyuk.jsoniter_scala.core._
             import scala.annotation.switch
-            new JsonCodec[$rootTpe] {
+            new JsonValueCodec[$rootTpe] {
               def nullValue: $rootTpe = ${nullValue(rootTpe)}
               def decode(in: JsonReader, default: $rootTpe): $rootTpe =
                 ${genReadVal(rootTpe, q"default", codecConfig.isStringified, isRoot = true)}
@@ -849,7 +849,7 @@ object JsonCodecMaker {
               ..${encodeMethodTrees.values}
             }"""
       if (c.settings.contains("print-codecs")) info(s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}")
-      c.Expr[JsonCodec[A]](codec)
+      c.Expr[JsonValueCodec[A]](codec)
     }
   }
 
