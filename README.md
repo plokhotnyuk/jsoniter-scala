@@ -15,11 +15,13 @@ Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.
 
 ## Goals
 
-Initially this library was developed for requirements of real-time bidding in ad-tech and goals was simple:
+Initially this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
 - do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & Scala collections and back but 
   do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations & copying
 - do validation of UTF-8 encoding, JSON format & mapped values efficiently with clear reporting, do not replace 
   illegally encoded characters of string values by placeholder characters
+- define in _compile-time_ classes that will be instantiated during parsing to minimize probability of runtime issues, 
+  generated sources can be inspected to prove that there are no security vulnerabilities during parsing
 
 It targets JDK 8+ w/o any platform restrictions.
 
