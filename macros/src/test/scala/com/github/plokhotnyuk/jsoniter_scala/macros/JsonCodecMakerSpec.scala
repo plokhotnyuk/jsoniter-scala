@@ -491,6 +491,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfStringifiedOption, Some(BigInt(123)), "\"123\"".getBytes)
       verifySerDeser(codecOfStringifiedOption, None, "null".getBytes)
     }
+    "throw parse exception in case of unexpected value for option" in {
+      val codecOfStringOption = make[Option[String]](CodecMakerConfig())
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStringOption, Option("VVV"), """no!!!""".getBytes)
+      }.getMessage.contains("expected value or null, offset: 0x00000001"))
+    }
     "serialize and deserialize case classes with tuples" in {
       verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
         """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""".getBytes)
@@ -782,9 +788,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       parsedObj.oc shouldBe defaults.oc
       parsedObj.a.deep shouldBe defaults.a.deep
     }
-    "deserialize values of mutable collections in case of null defaults are defined" in {
-      val json = """{"ml":{"1":1},"mm":{"2":2},"ms":[3],"mb":[4]}""".getBytes
-      val parsedObj = read(json)(codecOfDefaults)
+    "deserialize default values in case of missing field or null/empty values" in {
+      read("""{}""".getBytes)(codecOfDefaults)
+      read("""{"s":null,"bi":null,"l":[],"oc":null,"a":null}""".getBytes)(codecOfDefaults)
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       verifySerDeser(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"required":"VVV"}""".getBytes)

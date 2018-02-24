@@ -472,11 +472,10 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readNullOrError[A](default: A): A = parseNullOrError(default, "expected null", head)
-
-  def readNullOrNumberError[A](default: A, pos: Int): A =
-    if (default == null) numberError(pos - 1)
-    else parseNullOrError(default, "expected number or null", pos)
+  def readNullOrError[A](default: A, msg: String): A =
+    if (default == null) throw new IllegalArgumentException("'default' should not be null")
+    else if (isCurrentToken('n', head)) parseNullOrError(default, msg, head)
+    else decodeError(msg)
 
   def readNullOrTokenError[A](default: A, b: Byte): A =
     if (default == null) tokenError(b)
@@ -1261,6 +1260,10 @@ final class JsonReader private[jsoniter_scala](
     try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len)) catch {
       case ex: NumberFormatException => decodeError("illegal number", head - 1, ex)
     }
+
+  private def readNullOrNumberError[A](default: A, pos: Int): A =
+    if (default == null) numberError(pos - 1)
+    else parseNullOrError(default, "expected number or null", pos)
 
   private def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
 

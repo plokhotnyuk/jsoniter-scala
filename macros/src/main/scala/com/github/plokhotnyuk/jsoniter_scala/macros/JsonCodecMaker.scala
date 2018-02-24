@@ -481,7 +481,7 @@ object JsonCodecMaker {
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
         } else if (tpe <:< typeOf[Option[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          q"""if (in.isNextToken('n')) in.readNullOrError(None)
+          q"""if (in.isNextToken('n')) in.readNullOrError(default, "expected value or null")
               else {
                 in.rollbackToken()
                 Some(${genReadVal(tpe1, nullValue(tpe1), isStringified)})
