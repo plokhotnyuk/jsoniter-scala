@@ -20,7 +20,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw an exception if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonParseException](read(httpMessage)(codec)).getMessage ==
-        """expected '{' or null, offset: 0x00000000, buf:
+        """expected '{', offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
           |+----------+-------------------------------------------------+------------------+

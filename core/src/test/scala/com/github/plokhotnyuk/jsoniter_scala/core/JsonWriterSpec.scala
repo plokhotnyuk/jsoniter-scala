@@ -32,10 +32,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeNonEscapedAsciiVal and JsonWriter.writeNonEscapedAsciiKey" should {
-    "write null value" in {
-      withWriter(_.writeNonEscapedAsciiVal(null.asInstanceOf[String])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeNonEscapedAsciiKey(null.asInstanceOf[String])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeNonEscapedAsciiVal(null.asInstanceOf[String])))
+      intercept[NullPointerException](withWriter(_.writeNonEscapedAsciiKey(null.asInstanceOf[String])))
     }
     "write string of Ascii chars which should not be escaped" in {
       def check(s: String): Unit = {
@@ -47,10 +46,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for UUID" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[UUID])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[UUID])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[UUID])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[UUID])))
     }
     "write UUID as a string representation according to format that defined in IETF RFC4122 (section 3)" in {
       def check(x: UUID): Unit = {
@@ -64,9 +62,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Duration" should {
     "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[Duration])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Duration])))
-        .getMessage.contains("key cannot be null"))
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Duration])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Duration])))
     }
     "write Duration as a string representation according to ISO-8601 format" in {
       def check(x: Duration): Unit = {
@@ -80,10 +77,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[Instant])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Instant])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Instant])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Instant])))
     }
     "write Instant as a string representation according to ISO-8601 format" in {
       def check(x: Instant): Unit = {
@@ -98,10 +94,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[LocalDate])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[LocalDate])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[LocalDate])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[LocalDate])))
     }
     "write LocalDate as a string representation according to ISO-8601 format" in {
       def check(x: LocalDate): Unit = {
@@ -116,10 +111,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[LocalDateTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[LocalDateTime])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[LocalDateTime])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[LocalDateTime])))
     }
     "write LocalDateTime as a string representation according to ISO-8601 format" in {
       def check(x: LocalDateTime): Unit = {
@@ -134,10 +128,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[LocalTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[LocalTime])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[LocalTime])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[LocalTime])))
     }
     "write LocalTime as a string representation according to ISO-8601 format" in {
       def check(x: LocalTime): Unit = {
@@ -152,10 +145,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[MonthDay])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[MonthDay])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[MonthDay])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[MonthDay])))
     }
     "write MonthDay as a string representation according to ISO-8601 format" in {
       def check(x: MonthDay): Unit = {
@@ -170,10 +162,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetDateTime" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[OffsetDateTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[OffsetDateTime])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[OffsetDateTime])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[OffsetDateTime])))
     }
     "write OffsetDateTime as a string representation according to ISO-8601 format" in {
       def check(x: OffsetDateTime): Unit = {
@@ -188,10 +179,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[OffsetTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[OffsetTime])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[OffsetTime])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[OffsetTime])))
     }
     "write OffsetTime as a string representation according to ISO-8601 format" in {
       def check(x: OffsetTime): Unit = {
@@ -206,10 +196,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Period" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[Period])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Period])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Period])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Period])))
     }
     "write Period as a string representation according to ISO-8601 format" in {
       def check(x: Period): Unit = {
@@ -226,11 +215,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for Year" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[Year])) shouldBe "null"
-      withWriter(_.writeValAsString(null.asInstanceOf[Year])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[Year])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Year])))
+      intercept[NullPointerException](withWriter(_.writeValAsString(null.asInstanceOf[Year])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Year])))
     }
     "write number values" in {
       def check(x: Year): Unit = {
@@ -244,10 +232,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for YearMonth" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[YearMonth])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[YearMonth])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[YearMonth])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[YearMonth])))
     }
     "write YearMonth as a string representation according to ISO-8601 format" in {
       def check(x: YearMonth): Unit = {
@@ -263,10 +250,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZonedDateTime" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[ZonedDateTime])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZonedDateTime])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZonedDateTime])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZonedDateTime])))
     }
     "write ZonedDateTime as a string representation according to ISO-8601 format with optional IANA time zone identifier in JDK 8+ format" in {
       def check(x: ZonedDateTime): Unit = {
@@ -281,10 +267,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneOffset" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[ZoneOffset])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZoneOffset])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZoneOffset])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZoneOffset])))
     }
     "write ZoneOffset as a string representation according to ISO-8601 format" in {
       def check(x: ZoneOffset): Unit = {
@@ -299,10 +284,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneId" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[ZoneId])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[ZoneId])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZoneId])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZoneId])))
     }
     "write ZoneId as a string representation according to ISO-8601 format for zone offset or JDK 8+ format for IANA time zone identifier" in {
       def check(x: ZoneId): Unit = {
@@ -317,10 +301,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[String])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[String])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[String])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[String])))
     }
     "write string of Unicode chars which are non-surrogate and should not be escaped" in {
       def check(s: String): Unit = {
@@ -519,11 +502,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for BigInt" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[BigInt])) shouldBe "null"
-      withWriter(_.writeValAsString(null.asInstanceOf[BigInt])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[BigInt])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[BigInt])))
+      intercept[NullPointerException](withWriter(_.writeValAsString(null.asInstanceOf[BigInt])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[BigInt])))
     }
     "write number values" in {
       def check(n: BigInt): Unit = {
@@ -542,11 +524,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for BigDecimal" should {
-    "write null value" in {
-      withWriter(_.writeVal(null.asInstanceOf[BigDecimal])) shouldBe "null"
-      withWriter(_.writeValAsString(null.asInstanceOf[BigDecimal])) shouldBe "null"
-      assert(intercept[IOException](withWriter(_.writeKey(null.asInstanceOf[BigDecimal])))
-        .getMessage.contains("key cannot be null"))
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[BigDecimal])))
+      intercept[NullPointerException](withWriter(_.writeValAsString(null.asInstanceOf[BigDecimal])))
+      intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[BigDecimal])))
     }
     "write number values" in {
       def check(n: BigDecimal): Unit = {

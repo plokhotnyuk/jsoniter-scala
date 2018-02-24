@@ -96,183 +96,160 @@ final class JsonWriter private[jsoniter_scala](
     writeParenthesesWithColon()
   }
 
-  def writeKey(x: BigInt): Unit =
-    if (x ne null) {
-      writeCommaWithParentheses()
-      writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
-      writeParenthesesWithColon()
-    } else nullKeyError()
+  def writeKey(x: BigInt): Unit = {
+    writeCommaWithParentheses()
+    writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeParenthesesWithColon()
+  }
 
-  def writeKey(x: BigDecimal): Unit =
-    if (x ne null) {
-      writeCommaWithParentheses()
-      writeNonEscapedAsciiStringWithoutParentheses(x.toString)
-      writeParenthesesWithColon()
-    } else nullKeyError()
+  def writeKey(x: BigDecimal): Unit = {
+    writeCommaWithParentheses()
+    writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+    writeParenthesesWithColon()
+  }
 
-  def writeKey(x: UUID): Unit =
-    if (x ne null) {
-      writeComma()
-      writeUUID(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: UUID): Unit = {
+    writeComma()
+    writeUUID(x)
+    writeColon()
+  }
 
-  def writeKey(x: String): Unit =
-    if (x ne null) {
-      writeComma()
-      writeString(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: String): Unit = {
+    writeComma()
+    writeString(x)
+    writeColon()
+  }
 
-  def writeNonEscapedAsciiKey(x: String): Unit =
-    if (x ne null) {
-      writeComma()
-      writeNonEscapedAsciiString(x)
-      writeColon()
-    } else nullKeyError()
+  def writeNonEscapedAsciiKey(x: String): Unit = {
+    writeComma()
+    writeNonEscapedAsciiString(x)
+    writeColon()
+  }
 
-  def writeKey(x: Duration): Unit =
-    if (x ne null) {
-      writeComma()
-      writeDuration(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: Duration): Unit = {
+    writeComma()
+    writeDuration(x)
+    writeColon()
+  }
 
-  def writeKey(x: Instant): Unit =
-    if (x ne null) {
-      writeComma()
-      writeInstant(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: Instant): Unit = {
+    writeComma()
+    writeInstant(x)
+    writeColon()
+  }
 
-  def writeKey(x: LocalDate): Unit =
-    if (x ne null) {
-      writeComma()
-      writeLocalDate(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: LocalDate): Unit = {
+    writeComma()
+    writeLocalDate(x)
+    writeColon()
+  }
 
-  def writeKey(x: LocalDateTime): Unit =
-    if (x ne null) {
-      writeComma()
-      writeLocalDateTime(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: LocalDateTime): Unit = {
+    writeComma()
+    writeLocalDateTime(x)
+    writeColon()
+  }
 
-  def writeKey(x: LocalTime): Unit =
-    if (x ne null) {
-      writeComma()
-      writeLocalTime(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: LocalTime): Unit = {
+    writeComma()
+    writeLocalTime(x)
+    writeColon()
+  }
 
-  def writeKey(x: MonthDay): Unit =
-    if (x ne null) {
-      writeComma()
-      writeMonthDay(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: MonthDay): Unit = {
+    writeComma()
+    writeMonthDay(x)
+    writeColon()
+  }
 
-  def writeKey(x: OffsetDateTime): Unit =
-    if (x ne null) {
-      writeComma()
-      writeOffsetDateTime(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: OffsetDateTime): Unit = {
+    writeComma()
+    writeOffsetDateTime(x)
+    writeColon()
+  }
 
-  def writeKey(x: OffsetTime): Unit =
-    if (x ne null) {
-      writeComma()
-      writeOffsetTime(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: OffsetTime): Unit = {
+    writeComma()
+    writeOffsetTime(x)
+    writeColon()
+  }
 
-  def writeKey(x: Period): Unit =
-    if (x ne null) {
-      writeComma()
-      writePeriod(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: Period): Unit = {
+    writeComma()
+    writePeriod(x)
+    writeColon()
+  }
 
-  def writeKey(x: Year): Unit =
-    if (x ne null) {
-      writeCommaWithParentheses()
-      writeInt(x.getValue)
-      writeParenthesesWithColon()
-    } else nullKeyError()
+  def writeKey(x: Year): Unit = {
+    writeCommaWithParentheses()
+    writeInt(x.getValue)
+    writeParenthesesWithColon()
+  }
 
-  def writeKey(x: YearMonth): Unit =
-    if (x ne null) {
-      writeComma()
-      writeYearMonth(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: YearMonth): Unit = {
+    writeComma()
+    writeYearMonth(x)
+    writeColon()
+  }
 
-  def writeKey(x: ZonedDateTime): Unit =
-    if (x ne null) {
-      writeComma()
-      writeZonedDateTime(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: ZonedDateTime): Unit = {
+    writeComma()
+    writeZonedDateTime(x)
+    writeColon()
+  }
 
-  def writeKey(x: ZoneId): Unit =
-    if (x ne null) {
-      writeComma()
-      writeNonEscapedAsciiString(x.getId)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: ZoneId): Unit = {
+    writeComma()
+    writeNonEscapedAsciiString(x.getId)
+    writeColon()
+  }
 
-  def writeKey(x: ZoneOffset): Unit =
-    if (x ne null) {
-      writeComma()
-      writeZoneOffset(x)
-      writeColon()
-    } else nullKeyError()
+  def writeKey(x: ZoneOffset): Unit = {
+    writeComma()
+    writeZoneOffset(x)
+    writeColon()
+  }
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
-  def nullKeyError(): Nothing = encodeError("key cannot be null")
-
-  def writeVal(x: BigDecimal): Unit =
-    if (x eq null) writeNull() else writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+  def writeVal(x: BigDecimal): Unit = writeNonEscapedAsciiStringWithoutParentheses(x.toString)
 
   def writeVal(x: BigInt): Unit =
-    if (x eq null) writeNull()
-    else writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
-  def writeVal(x: UUID): Unit = if (x eq null) writeNull() else writeUUID(x)
+  def writeVal(x: UUID): Unit = writeUUID(x)
 
-  def writeVal(x: String): Unit = if (x eq null) writeNull() else writeString(x)
+  def writeVal(x: String): Unit = writeString(x)
 
-  def writeNonEscapedAsciiVal(x: String): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x)
+  def writeNonEscapedAsciiVal(x: String): Unit = writeNonEscapedAsciiString(x)
 
-  def writeVal(x: Duration): Unit = if (x eq null) writeNull() else writeDuration(x)
+  def writeVal(x: Duration): Unit = writeDuration(x)
 
-  def writeVal(x: Instant): Unit = if (x eq null) writeNull() else writeInstant(x)
+  def writeVal(x: Instant): Unit = writeInstant(x)
 
-  def writeVal(x: LocalDate): Unit = if (x eq null) writeNull() else writeLocalDate(x)
+  def writeVal(x: LocalDate): Unit = writeLocalDate(x)
 
-  def writeVal(x: LocalDateTime): Unit = if (x eq null) writeNull() else writeLocalDateTime(x)
+  def writeVal(x: LocalDateTime): Unit = writeLocalDateTime(x)
 
-  def writeVal(x: LocalTime): Unit = if (x eq null) writeNull() else writeLocalTime(x)
+  def writeVal(x: LocalTime): Unit = writeLocalTime(x)
 
-  def writeVal(x: MonthDay): Unit = if (x eq null) writeNull() else writeMonthDay(x)
+  def writeVal(x: MonthDay): Unit = writeMonthDay(x)
 
-  def writeVal(x: OffsetDateTime): Unit = if (x eq null) writeNull() else writeOffsetDateTime(x)
+  def writeVal(x: OffsetDateTime): Unit = writeOffsetDateTime(x)
 
-  def writeVal(x: OffsetTime): Unit = if (x eq null) writeNull() else writeOffsetTime(x)
+  def writeVal(x: OffsetTime): Unit = writeOffsetTime(x)
 
-  def writeVal(x: Period): Unit = if (x eq null) writeNull() else writePeriod(x)
+  def writeVal(x: Period): Unit = writePeriod(x)
 
-  def writeVal(x: Year): Unit = if (x eq null) writeNull() else writeInt(x.getValue)
+  def writeVal(x: Year): Unit = writeInt(x.getValue)
 
-  def writeVal(x: YearMonth): Unit = if (x eq null) writeNull() else writeYearMonth(x)
+  def writeVal(x: YearMonth): Unit = writeYearMonth(x)
 
-  def writeVal(x: ZonedDateTime): Unit = if (x eq null) writeNull() else writeZonedDateTime(x)
+  def writeVal(x: ZonedDateTime): Unit = writeZonedDateTime(x)
 
-  def writeVal(x: ZoneId): Unit = if (x eq null) writeNull() else writeNonEscapedAsciiString(x.getId)
+  def writeVal(x: ZoneId): Unit = writeNonEscapedAsciiString(x.getId)
 
-  def writeVal(x: ZoneOffset): Unit = if (x eq null) writeNull() else writeZoneOffset(x)
+  def writeVal(x: ZoneOffset): Unit = writeZoneOffset(x)
 
   def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
 
@@ -290,12 +267,10 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Double): Unit = writeDouble(x)
 
-  def writeValAsString(x: BigDecimal): Unit =
-    if (x eq null) writeNull() else writeNonEscapedAsciiString(x.toString)
+  def writeValAsString(x: BigDecimal): Unit = writeNonEscapedAsciiString(x.toString)
 
   def writeValAsString(x: BigInt): Unit =
-    if (x eq null) writeNull()
-    else writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
   def writeValAsString(x: Boolean): Unit =
     if (x) writeBytes('"', 't', 'r', 'u', 'e', '"') else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')
@@ -336,9 +311,7 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
-  def writeValAsString(x: Year): Unit =
-    if (x eq null) writeNull()
-    else writeValAsString(x.getValue)
+  def writeValAsString(x: Year): Unit = writeValAsString(x.getValue)
 
   def writeNull(): Unit = writeBytes('n', 'u', 'l', 'l')
 

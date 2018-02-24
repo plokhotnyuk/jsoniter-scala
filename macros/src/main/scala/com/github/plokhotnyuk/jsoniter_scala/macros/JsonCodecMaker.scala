@@ -231,9 +231,9 @@ object JsonCodecMaker {
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
         else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"out.writeKey(if ($x ne null) $x.toString else null)"
+          q"out.writeKey($x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          q"out.writeKey(if ($x ne null) $x.name else null)"
+          q"out.writeKey($x.name)"
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
 
@@ -246,24 +246,20 @@ object JsonCodecMaker {
         else q"out.writeVal($value)"
 
       def genWriteArray(x: Tree, writeVal: Tree): Tree =
-        q"""if ($x ne null) {
-              out.writeArrayStart()
-              $x.foreach { x =>
-                out.writeComma()
-                ..$writeVal
-              }
-              out.writeArrayEnd()
-            } else out.writeNull()"""
+        q"""out.writeArrayStart()
+            $x.foreach { x =>
+              out.writeComma()
+              ..$writeVal
+            }
+            out.writeArrayEnd()"""
 
       def genWriteMap(x: Tree, writeKey: Tree, writeVal: Tree): Tree =
-        q"""if ($x ne null) {
-              out.writeObjectStart()
-              $x.foreach { kv =>
-                ..$writeKey
-                ..$writeVal
-              }
-              out.writeObjectEnd()
-            } else out.writeNull()"""
+        q"""out.writeObjectStart()
+            $x.foreach { kv =>
+              ..$writeKey
+              ..$writeVal
+            }
+            out.writeObjectEnd()"""
 
       def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
@@ -483,9 +479,13 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
-        } else if (tpe <:< typeOf[Option[_]]) {
+        } else if (tpe <:< typeOf[Option[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          q"Option(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
+          q"""if (in.isNextToken('n')) in.readNullOrError(None)
+              else {
+                in.rollbackToken()
+                Some(${genReadVal(tpe1, nullValue(tpe1), isStringified)})
+              }"""
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
@@ -494,7 +494,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
-          genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
+          genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
             q"x.update(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -505,7 +505,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = containerCompanion(tpe)
-          genReadMap(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
+          genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
             q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -516,7 +516,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
           val comp = containerCompanion(tpe)
           val readVal = if (isStringified) q"x.add(in.readStringAsInt())" else q"x.add(in.readInt())"
-          genReadArray(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty", readVal)
+          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty", readVal)
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val comp = containerCompanion(tpe)
           val readVal = if (isStringified) q"x += in.readStringAsInt()" else q"x += in.readInt()"
@@ -525,7 +525,7 @@ object JsonCodecMaker {
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
           val comp = containerCompanion(tpe)
-          genReadArray(q"val x = if ((default ne null) && default.isEmpty) default else $comp.empty[$tpe1]",
+          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
         } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -559,8 +559,7 @@ object JsonCodecMaker {
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
           q"""val v = in.readString()
-              if (v eq null) default
-              else try ${companion(tpe)}.valueOf(v) catch {
+              try ${companion(tpe)}.valueOf(v) catch {
                 case _: IllegalArgumentException => in.enumValueError(v)
               }"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
@@ -719,7 +718,7 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe), isStringified)
         } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
-          q"if ((x eq null) || x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
+          q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", q"out.writeKey(kv._1)", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
@@ -730,37 +729,31 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
-          q"""if (x ne null) {
-                out.writeArrayStart()
-                val l = x.length
-                var i = 0
-                while (i < l) {
-                  out.writeComma()
-                  ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
-                  i += 1
-                }
-                out.writeArrayEnd()
-              } else out.writeNull()"""
+          q"""out.writeArrayStart()
+              val l = x.length
+              var i = 0
+              while (i < l) {
+                out.writeComma()
+                ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
+                i += 1
+              }
+              out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
-          q"out.writeVal(if (x ne null) x.toString else null)"
+          q"out.writeVal(x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
-          q"out.writeVal(if (x ne null) x.name else null)"
+          q"out.writeVal(x.name)"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
-          q"""if (x ne null) {
-                out.writeObjectStart()
-                ..$discriminator
-                out.writeObjectEnd()
-              } else out.writeNull()"""
+          q"""out.writeObjectStart()
+              ..$discriminator
+              out.writeObjectEnd()"""
         } else if (tpe.typeSymbol.fullName.startsWith("scala.Tuple")) withEncoderFor(methodKey, m) {
           val writeFields = tpe.typeArgs.zipWithIndex.map { case (t, i) =>
             q"""out.writeComma()
                 ${genWriteVal(q"x.${TermName(s"_${i + 1}")}", t, isStringified)}"""
           }
-          q"""if (x ne null) {
-                out.writeArrayStart()
-                ..$writeFields
-                out.writeArrayEnd()
-              } else out.writeNull()"""
+          q"""out.writeArrayStart()
+              ..$writeFields
+              out.writeArrayEnd()"""
         } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(methodKey, m) {
           val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
@@ -783,7 +776,7 @@ object JsonCodecMaker {
                     if (tpe <:< typeOf[Option[_]]) genWriteVal(q"v.get", typeArg1(tpe), isStringified)
                     else genWriteVal(q"v", tpe, isStringified)
                   q"""val v = x.$m
-                      if ((v ne null) && $nonEmptyAndDefaultMatchingCheck) {
+                      if ($nonEmptyAndDefaultMatchingCheck) {
                         ..${genWriteConstantKey(name)}
                         ..$writeVal
                       }"""
@@ -801,7 +794,7 @@ object JsonCodecMaker {
                     if (tpe <:< typeOf[Option[_]]) genWriteVal(q"v.get", typeArg1(tpe), isStringified)
                     else genWriteVal(q"v", tpe, isStringified)
                   q"""val v = x.$m
-                      if ((v ne null) && $nonEmptyCheck) {
+                      if ($nonEmptyCheck) {
                         ..${genWriteConstantKey(name)}
                         ..$writeVal
                       }"""
@@ -814,11 +807,9 @@ object JsonCodecMaker {
           val allWriteFields =
             if (discriminator.isEmpty) writeFields
             else discriminator +: writeFields
-          q"""if (x ne null) {
-                out.writeObjectStart()
-                ..$allWriteFields
-                out.writeObjectEnd()
-              } else out.writeNull()"""
+          q"""out.writeObjectStart()
+              ..$allWriteFields
+              out.writeObjectEnd()"""
         } else if (isSealedAdtBase(tpe)) withEncoderFor(methodKey, m) {
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = leafClasses.map { subTpe =>
@@ -829,7 +820,6 @@ object JsonCodecMaker {
           }
           q"""x match {
                 case ..$writeSubclasses
-                case null => out.writeNull()
               }"""
         } else cannotFindCodecError(tpe)
       }

@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.UUID
@@ -123,9 +123,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val codecOfStringified: JsonValueCodec[Stringified] = make[Stringified](CodecMakerConfig())
 
   case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                      l: List[Int] = List(0), a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)),
-                      ml: mutable.LongMap[Int] = null, mm: mutable.Map[Int, Int] = null,
-                      ms: mutable.BitSet = null, mb: mutable.Buffer[Int] = null)
+                      l: List[Int] = List(0), a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
 
   val defaults = Defaults()
   val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
@@ -134,8 +132,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     val ignored: String = s"$required-$transient"
   }
 
-  case class NullAndNoneValues(str: String, bi: BigInt, bd: BigDecimal, lt: LocationType.LocationType,
-                               nv: NullAndNoneValues, opt: Option[String])
+  case class NullAndNoneValues(opt: Option[String])
 
   case class EmptyTraversables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 
@@ -170,7 +167,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class А(б: Б) extends База
 
-  case class Б(а: А) extends База
+  case class Б(с: String) extends База
 
   val codecOfADTList: JsonValueCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
@@ -257,37 +254,31 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfStandardTypes,
         StandardTypes(text, BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
         s"""{"s":"$text","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""".getBytes)
-      verifySerDeser(codecOfStandardTypes, null, "null".getBytes)
     }
     "throw parse exception in case of illegal value for case classes" in {
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, null, "nux".getBytes)
-      }.getMessage.contains("unexpected end of input, offset: 0x00000003"))
+        verifyDeser(codecOfStandardTypes, null, "null".getBytes)
+      }.getMessage.contains("expected '{', offset: 0x00000000"))
     }
     "serialize and deserialize top-level standard types" in {
       val text =
         "JavaScript Object Notation (JSON) is a lightweight, text-based, language-independent data interchange format."
       val codecOfString = make[String](CodecMakerConfig())
       verifySerDeser(codecOfString, text, s""""$text"""".getBytes)
-      verifySerDeser(codecOfString, null, "null".getBytes)
       val codecOfBigInt = make[BigInt](CodecMakerConfig())
       verifySerDeser(codecOfBigInt, BigInt("123456789012345678901234567890"),
         "123456789012345678901234567890".getBytes)
-      verifySerDeser(codecOfBigInt, null, "null".getBytes)
       val codecOfBigDecimal = make[BigDecimal](CodecMakerConfig())
       verifySerDeser(codecOfBigDecimal, BigDecimal("1234567890.12345678901234567890"),
         "1234567890.12345678901234567890".getBytes)
-      verifySerDeser(codecOfBigDecimal, null, "null".getBytes)
     }
     "serialize and deserialize stringified top-level standard types" in {
       val codecOfBigInt = make[BigInt](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfBigInt,
         BigInt("123456789012345678901234567890"), "\"123456789012345678901234567890\"".getBytes)
-      verifySerDeser(codecOfBigInt, null, "null".getBytes)
       val codecOfBigDecimal = make[BigDecimal](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfBigDecimal,
         BigDecimal("1234567890.12345678901234567890"), "\"1234567890.12345678901234567890\"".getBytes)
-      verifySerDeser(codecOfBigDecimal, null, "null".getBytes)
     }
     "deserialize case classes with duplicated fields, the last field value is accepted" in {
       verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
@@ -297,7 +288,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
           s"""{"s":false,"s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""".getBytes)
-      }.getMessage.contains("expected '\"' or null, offset: 0x00000005"))
+      }.getMessage.contains("expected '\"', offset: 0x00000005"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
           s"""{"s":"XXX","s":"VVV","bi":false,"bi":1,"bd":20.0,"bd":2.0}""".getBytes)
@@ -322,7 +313,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "throw parse exception in case of missing or illegal tokens" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """"s":"VVV","bi":1,"bd":1.1}""".getBytes)
-      }.getMessage.contains("expected '{' or null, offset: 0x00000000"))
+      }.getMessage.contains("expected '{', offset: 0x00000000"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s""VVV","bi":1,"bd":1.1}""".getBytes)
       }.getMessage.contains("expected ':', offset: 0x00000004"))
@@ -331,7 +322,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("expected '}' or ',', offset: 0x0000000a"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """["s":"VVV","bi":1,"bd":2}""".getBytes)
-      }.getMessage.contains("expected '{' or null, offset: 0x00000000"))
+      }.getMessage.contains("expected '{', offset: 0x00000000"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{,"s":"VVV","bi":1,"bd":2}""".getBytes)
       }.getMessage.contains("expected '\"', offset: 0x00000001"))
@@ -362,9 +353,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
-      verifySerDeser(codecOfEnums, Enums(null), """{"lt":null}""".getBytes)
     }
     "throw parse exception in case of illegal value of enumeration" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":null}""".getBytes)
+      }.getMessage.contains("expected '\"', offset: 0x00000006"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
       }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
@@ -380,9 +373,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize Java enumerations" in {
       verifySerDeser(codecOfJavaEnums, JavaEnums(Level.LOW, Levels.InnerLevel.HIGH),
         """{"l":"LOW","il":"HIGH"}""".getBytes)
-      verifySerDeser(codecOfJavaEnums, JavaEnums(null, null), """{"l":null,"il":null}""".getBytes)
     }
     "throw parse exception in case of illegal value of Java enumeration" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
+          """{"l":null,"il":"HIGH"}""".getBytes)
+      }.getMessage.contains("expected '\"', offset: 0x00000005"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
           """{"l":"LO","il":"HIGH"}""".getBytes)
@@ -428,27 +424,20 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       implicit object codecOfLocationType extends JsonValueCodec[LocationType.LocationType] {
         val nullValue: LocationType.LocationType = null
 
-        def decodeValue(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
-          if (in.isNextToken('n')) {
-            in.rollbackToken()
-            in.readNullOrError(default, "expected number value or null")
-          } else {
-            in.rollbackToken()
-            val v = in.readInt()
-            try LocationType.apply(v) catch {
-              case _: NoSuchElementException => in.decodeError("invalid enum value: " + v)
-            }
+        def decodeValue(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType = {
+          val v = in.readInt()
+          try LocationType.apply(v) catch {
+            case _: NoSuchElementException => in.decodeError("invalid enum value: " + v)
           }
+        }
 
-        def encodeValue(x: LocationType.LocationType, out: JsonWriter): Unit =
-          if (x ne null) out.writeVal(x.id) else out.writeNull()
+        def encodeValue(x: LocationType.LocationType, out: JsonWriter): Unit = out.writeVal(x.id)
       }
       val codecOfEnums = make[Enums](CodecMakerConfig())
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":1}""".getBytes)
-      verifySerDeser(codecOfEnums, Enums(null), """{"lt":null}""".getBytes)
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfEnums, Enums(null), """{"lt":none}""".getBytes)
-      }.getMessage.contains("expected number value or null, offset: 0x00000007"))
+        verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""".getBytes)
+      }.getMessage.contains("illegal number, offset: 0x00000006"))
     }
     "serialize and deserialize outer types using custom key codecs for map keys" in {
       implicit val codecForLevel = new JsonKeyCodec[Level] {
@@ -461,7 +450,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         override def encodeKey(x: Level, out: JsonWriter): Unit = x match {
           case Level.LOW => out.writeKey(0)
           case Level.HIGH => out.writeKey(1)
-          case _ => out.nullKeyError()
+          case _ => out.encodeError("illegal enum value")
         }
       }
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"1":0}""".getBytes)
@@ -474,7 +463,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize top-level value classes" in {
       val codecOfUserId = make[UserId](CodecMakerConfig())
       verifySerDeser(codecOfUserId, UserId("123abc"), "\"123abc\"".getBytes)
-      verifySerDeser(codecOfUserId, UserId(null), "null".getBytes)
       verifySerDeser(make[OrderId](CodecMakerConfig()), OrderId(123123), "123123".getBytes)
     }
     "serialize and deserialize strinfigied top-level value classes" in {
@@ -485,19 +473,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(2L)),
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""".getBytes)
       verifySerDeser(codecOfOptions, Options(None, None, None, None, None), """{}""".getBytes)
-      verifySer(codecOfOptions, Options(null, null, null, null, null), """{}""".getBytes)
     }
     "serialize and deserialize top-level options" in {
       val codecOfStringOption = make[Option[String]](CodecMakerConfig())
       verifySerDeser(codecOfStringOption, Some("VVV"), "\"VVV\"".getBytes)
       verifySerDeser(codecOfStringOption, None, "null".getBytes)
-      verifySer(codecOfStringOption, null, "null".getBytes)
     }
     "serialize and deserialize stringified top-level numeric options" in {
       val codecOfStringifiedOption = make[Option[BigInt]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfStringifiedOption, Some(BigInt(123)), "\"123\"".getBytes)
       verifySerDeser(codecOfStringifiedOption, None, "null".getBytes)
-      verifySer(codecOfStringifiedOption, null, "null".getBytes)
     }
     "serialize and deserialize case classes with tuples" in {
       verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
@@ -516,12 +501,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize top-level tuples" in {
       val codecOfTuple2 = make[(String, Int)](CodecMakerConfig())
       verifySerDeser(codecOfTuple2, ("VVV", 1), "[\"VVV\",1]".getBytes)
-      verifySer(codecOfTuple2, null, "null".getBytes)
     }
     "serialize and deserialize stringified top-level numeric tuples" in {
       val codecOfStringifiedTuple = make[(Long, Float, BigDecimal)](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfStringifiedTuple, (1L, 2.2f, BigDecimal(3.3)), "[\"1\",\"2.2\",\"3.3\"]".getBytes)
-      verifySer(codecOfStringifiedTuple, null, "null".getBytes)
     }
     "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
@@ -535,7 +518,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val arrayOfArray = Array(Array(1, 2, 3), Array(4, 5, 6))
       val codecOfArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig())
       verifySer(codecOfArrayOfArray, arrayOfArray, json)
-      verifySer(codecOfArrayOfArray, null, "null".getBytes)
       val parsedObj = read(json)(codecOfArrayOfArray)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
@@ -544,7 +526,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val arrayOfArray = Array(Array(1, 2, 3), Array(4, 5, 6))
       val codecOfStringifiedArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig(isStringified = true))
       verifySer(codecOfStringifiedArrayOfArray, arrayOfArray, json)
-      verifySer(codecOfStringifiedArrayOfArray, null, "null".getBytes)
       val parsedObj = read(json)(codecOfStringifiedArrayOfArray)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
@@ -594,14 +575,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfImmutableTraversables,
         mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[[3.3],[1.1,2.2]]""".getBytes)
-      verifySer(codecOfImmutableTraversables, null, "null".getBytes)
     }
     "serialize and deserialize stringified top-level traversables" in {
       val codecOfImmutableTraversables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfImmutableTraversables,
         mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[["3.3"],["1.1","2.2"]]""".getBytes)
-      verifySer(codecOfImmutableTraversables, null, "null".getBytes)
     }
     "serialize and deserialize case classes with mutable maps" in {
       verifySerDeser(codecOfMutableMaps,
@@ -621,14 +600,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfMaps,
         mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":true,"X":false},"2":{}}""".getBytes)
-      verifySer(codecOfMaps, null, "null".getBytes)
     }
     "serialize and deserialize stringified top-level maps" in {
       val codecOfMaps = make[mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfMaps,
         mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":"true","X":"false"},"2":{}}""".getBytes)
-      verifySer(codecOfMaps, null, "null".getBytes)
     }
     "throw parse exception in case of JSON object is not properly started/closed or with leading/trailing comma" in {
       val immutableMaps = ImmutableMaps(Map(1 -> 1.1), HashMap.empty, SortedMap.empty)
@@ -652,28 +629,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           """{"m":{"1.1":{"null":"2"}}""".getBytes)
       }.getMessage.contains("illegal number, offset: 0x0000000f"))
     }
-    "don't serialize null keys for maps" in {
-      assert(intercept[IOException] {
-        verifySer(codecOfMutableMaps,
-          MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(null.asInstanceOf[BigDecimal] -> 1)),
-            mutable.Map(1.1f -> mutable.ListMap(BigInt(2) -> "2")),
-            mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
-          """{"hm":{"true":{null:1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
-      }.getMessage.contains("key cannot be null"))
-      assert(intercept[IOException] {
-        verifySer(codecOfMutableMaps,
-          MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
-            mutable.Map(1.1f -> mutable.ListMap(null.asInstanceOf[BigInt] -> "2")),
-            mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
-          """{"hm":{"true":{"1.1":1}},"m":{"1.1":{null:"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes)
-      }.getMessage.contains("key cannot be null"))
-      assert(intercept[IOException] {
-        verifySerDeser(codecOfImmutableMaps,
-          ImmutableMaps(Map(1 -> 1.1), HashMap(null.asInstanceOf[String] -> ListMap(2.toChar -> 2), "3" -> ListMap(3.toChar -> 3)),
-            SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
-          """{"m":{"1":1.1},"hm":{null:{"2":2},"3":{"3":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes)
-      }.getMessage.contains("key cannot be null"))
-    }
     "serialize and deserialize case classes with mutable long maps" in {
       verifySerDeser(make[MutableLongMaps](CodecMakerConfig()),
         MutableLongMaps(mutable.LongMap(1L -> 1.1), mutable.LongMap(3L -> "33")),
@@ -693,7 +648,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfIntLongMapsAndBitSets,
         mutable.LongMap(1L -> IntMap(2 -> mutable.BitSet(4, 5, 6), 3 -> mutable.BitSet.empty)),
         """{"1":{"2":[4,5,6],"3":[]}}""".getBytes)
-      verifySer(codecOfIntLongMapsAndBitSets, null, "null".getBytes)
     }
     "serialize and deserialize stringified top-level int/long maps & bitsets" in {
       val codecOfIntLongMapsAndBitSets =
@@ -701,7 +655,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfIntLongMapsAndBitSets,
         mutable.LongMap(1L -> IntMap(2 -> mutable.BitSet(4, 5, 6), 3 -> mutable.BitSet.empty)),
         """{"1":{"2":["4","5","6"],"3":[]}}""".getBytes)
-      verifySer(codecOfIntLongMapsAndBitSets, null, "null".getBytes)
     }
     "don't generate codec for maps with not supported types of keys" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -775,7 +728,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("expected '\"', offset: 0x00000005"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""".getBytes)
-      }.getMessage.contains("expected '\"' or null, offset: 0x0000000e"))
+      }.getMessage.contains("expected '\"', offset: 0x0000000e"))
     }
     "serialize and deserialize indented JSON" in {
       verifySerDeser(codecOfIndented, indented,
@@ -813,8 +766,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "deserialize but don't serialize default values of case classes that defined for fields" in {
       verifySer(codecOfDefaults, defaults, "{}".getBytes)
-      verifySer(codecOfDefaults, defaults.copy(s = null, bi = null, oc = None, l = Nil, a = null),
-        """{"s":null,"bi":null}""".getBytes)
+      verifySer(codecOfDefaults, defaults.copy(oc = None, l = Nil), """{}""".getBytes)
       val parsedObj = read("{}".getBytes)(codecOfDefaults)
       parsedObj.s shouldBe defaults.s
       parsedObj.i shouldBe defaults.i
@@ -822,29 +774,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       parsedObj.l shouldBe defaults.l
       parsedObj.oc shouldBe defaults.oc
       parsedObj.a.deep shouldBe defaults.a.deep
-      parsedObj.ml shouldBe defaults.ml
-      parsedObj.mm shouldBe defaults.mm
-      parsedObj.ms shouldBe defaults.ms
-      parsedObj.mb shouldBe defaults.mb
     }
     "deserialize values of mutable collections in case of null defaults are defined" in {
       val json = """{"ml":{"1":1},"mm":{"2":2},"ms":[3],"mb":[4]}""".getBytes
       val parsedObj = read(json)(codecOfDefaults)
-      parsedObj.ml shouldBe mutable.LongMap[Int](1L -> 1)
-      parsedObj.mm shouldBe mutable.Map[Int, Int](2 -> 2)
-      parsedObj.ms shouldBe mutable.BitSet(3)
-      parsedObj.mb shouldBe mutable.Buffer[Int](4)
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       verifySerDeser(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"required":"VVV"}""".getBytes)
     }
     "don't serialize case class fields with 'None' values" in {
-      verifySer(make[NullAndNoneValues](CodecMakerConfig()),
-        NullAndNoneValues("VVV", null, null, null, NullAndNoneValues(null, null, null, null, null, None), None),
-        """{"str":"VVV","bi":null,"bd":null,"lt":null,"nv":{"str":null,"bi":null,"bd":null,"lt":null,"nv":null}}""".getBytes)
-      verifySer(make[List[NullAndNoneValues]](CodecMakerConfig()),
-        List(NullAndNoneValues("VVV", null, null, null, null, None)),
-        """[{"str":"VVV","bi":null,"bd":null,"lt":null,"nv":null}]""".getBytes)
+      verifySer(make[NullAndNoneValues](CodecMakerConfig()), NullAndNoneValues(None), """{}""".getBytes)
+      verifySer(make[List[NullAndNoneValues]](CodecMakerConfig()), List(NullAndNoneValues(None)), """[{}]""".getBytes)
     }
     "don't serialize case class fields with empty collections" in {
       verifySer(make[EmptyTraversables](CodecMakerConfig()), EmptyTraversables(List(), Set(), List()), """{}""".getBytes)
@@ -856,23 +796,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(make[Unknown](CodecMakerConfig(skipUnexpectedFields = false)), Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes)
       }.getMessage.contains("unexpected field: \"x\", offset: 0x00000004"))
-    }
-    "deserialize null values of case class fields for standard types" in {
-      verifyDeser(codecOfStandardTypes, StandardTypes(null, null, null),
-        """{"s":null,"bi":null,"bd":null}""".getBytes)
-    }
-    "deserialize null values for standard types of traversable values" in {
-      verifyDeser(codecOfImmutableTraversables,
-        ImmutableTraversables(List(ListSet(null)), Queue(Set[BigInt](4, null, 6)),
-          IndexedSeq(), Stream(TreeSet()), Vector(Traversable())),
-        """{"l":[[null]],"q":[[4,null,6]],"is":null,"s":[null],"v":[null]}""".getBytes)
-    }
-    "deserialize null values for standard types of map values" in {
-      verifyDeser(codecOfMutableMaps,
-        MutableMaps(mutable.HashMap(),
-          mutable.Map(1.1f -> mutable.ListMap(BigInt(2) -> null.asInstanceOf[String])),
-          mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(), 2.2 -> mutable.LinkedHashMap())),
-        """{"hm":null,"m":{"1.1":{"2":null}},"ohm":{"1.1":null,"2.2":null}}""".getBytes)
     }
     "throw parse exception in case of missing required case class fields detected during deserialization" in {
       assert(intercept[JsonParseException] {
@@ -904,8 +827,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList,
-        List(A(1), B("VVV"), null, C(1, "VVV"), D),
-        """[{"type":"A","a":1},{"type":"B","a":"VVV"},null,{"type":"C","a":1,"b":"VVV"},{"type":"D"}]""".getBytes)
+        List(A(1), B("VVV"), C(1, "VVV"), D),
+        """[{"type":"A","a":1},{"type":"B","a":"VVV"},{"type":"C","a":1,"b":"VVV"},{"type":"D"}]""".getBytes)
       val longStr = new String(Array.fill(100000)('W'))
       verifyDeser(codecOfADTList,
         List(C(2, longStr), C(1, "VVV")),
@@ -916,8 +839,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
       verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип", skipUnexpectedFields = false)),
-        List(А(Б(null)), Б(А(null))),
-        """[{"тип":"А","б":{"а":null}},{"тип":"Б","а":{"б":null}}]""".getBytes)
+        List(А(Б("x")), Б("x")),
+        """[{"тип":"А","б":{"с":"x"}},{"тип":"Б","с":"x"}]""".getBytes)
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {
@@ -1087,7 +1010,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize stringified top-level Java time types" in {
       val codecOfYear = make[Year](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfYear, Year.of(2008), "\"2008\"".getBytes)
-      verifySer(codecOfYear, null, "null".getBytes)
     }
     "don't generate codec for unsupported classes" in {
       assert(intercept[TestFailedException](assertCompiles {

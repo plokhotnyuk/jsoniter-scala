@@ -285,7 +285,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsBigInt(): BigInt = {
     readParenthesesToken()
-    val x = parseBigInt(isToken = false)
+    val x = parseBigInt(isToken = false, null)
     readParenthesesByteWithColonToken()
     x
   }
@@ -323,9 +323,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readFloat(): Float = parseDouble(isToken = true).toFloat
 
-  def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default)
+  def readBigInt(default: BigInt = null): BigInt = parseBigInt(isToken = true, default)
 
-  def readBigDecimal(default: BigDecimal): BigDecimal = parseBigDecimal(isToken = true, default)
+  def readBigDecimal(default: BigDecimal = null): BigDecimal = parseBigDecimal(isToken = true, default)
 
   def readString(default: String = null): String =
     if (isNextToken('"', head)) {
@@ -370,7 +370,7 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readYear(default: Year = null): Year =
-    if (isNextToken('n', head)) parseNullOrError(default, "expected number or null", head)
+    if (isNextToken('n', head)) readNullOrNumberError(default, head)
     else {
       rollbackToken()
       parseYear(true)
@@ -444,21 +444,21 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readStringAsBigInt(default: BigInt): BigInt =
+  def readStringAsBigInt(default: BigInt = null): BigInt =
     if (isNextToken('"', head)) {
       val x = parseBigInt(isToken = false, default)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
 
-  def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
+  def readStringAsBigDecimal(default: BigDecimal = null): BigDecimal =
     if (isNextToken('"', head)) {
       val x = parseBigDecimal(isToken = false, default)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
 
-  def readStringAsYear(default: Year): Year =
+  def readStringAsYear(default: Year = null): Year =
     if (isNextToken('"', head)) {
       val x = parseYear(false)
       readParenthesesByte()
@@ -472,12 +472,15 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readNullOrError[A](default: A, error: String): A =
-    if (isNextToken('n', head)) parseNullOrError(default, error, head)
-    else decodeError(error)
+  def readNullOrError[A](default: A): A = parseNullOrError(default, "expected null", head)
+
+  def readNullOrNumberError[A](default: A, pos: Int): A =
+    if (default == null) numberError(pos - 1)
+    else parseNullOrError(default, "expected number or null", pos)
 
   def readNullOrTokenError[A](default: A, b: Byte): A =
-    if (isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
+    if (default == null) tokenError(b)
+    else if (isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
     else tokenOrNullError(b)
 
   def nextToken(): Byte = nextToken(head)
@@ -1052,10 +1055,10 @@ final class JsonReader private[jsoniter_scala](
 
   private def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
 
-  private def parseBigInt(isToken: Boolean, default: BigInt = null): BigInt = {
+  private def parseBigInt(isToken: Boolean, default: BigInt): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     if (b == 'n') {
-      if (isToken) parseNullOrError(default, "expected number value or null", head)
+      if (isToken) readNullOrNumberError(default, head)
       else numberError(head)
     } else {
       val mark = this.mark
@@ -1113,6 +1116,7 @@ final class JsonReader private[jsoniter_scala](
 
   private def parseBigDecimal(isToken: Boolean, default: BigDecimal): BigDecimal = {
     var isZeroFirst = false
+    var posExp = 0L
     var charBuf = this.charBuf
     var lim = charBuf.length
     var i = 0
@@ -1138,11 +1142,11 @@ final class JsonReader private[jsoniter_scala](
             charBuf(i) = b.toChar
             i += 1
             state = 2
-          } else if (b == 'n' && isToken) state = 10
-          else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
+          } else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
             if (!isToken) numberError(pos)
             state = 1
-          } else numberError(pos)
+          } else if (b == 'n' && isToken) return readNullOrNumberError(default, pos + 1)
+          else numberError(pos)
         case 1 => // whitespaces
           if (b == ' ' || b == '\n' || b == '\t' || b == '\r') () // for fast skipping of whitespaces
           else if (b >= '0' && b <= '9') {
@@ -1217,6 +1221,8 @@ final class JsonReader private[jsoniter_scala](
           }
         case 7 => // e char
           if (b >= '0' && b <= '9') {
+            posExp = 10 * posExp + (b - '0')
+            if (posExp != posExp.toInt) numberError(pos)
             charBuf(i) = b.toChar
             i += 1
             state = 9
@@ -1227,36 +1233,27 @@ final class JsonReader private[jsoniter_scala](
           } else numberError(pos)
         case 8 => // exp. sign
           if (b >= '0' && b <= '9') {
+            posExp = 10 * posExp + (b - '0')
+            if (posExp != posExp.toInt) numberError(pos)
             charBuf(i) = b.toChar
             i += 1
             state = 9
           } else numberError(pos)
         case 9 => // exp. digit
           if (b >= '0' && b <= '9') {
+            posExp = 10 * posExp + (b - '0')
+            if (posExp != posExp.toInt) numberError(pos)
             charBuf(i) = b.toChar
             i += 1
           } else {
             head = pos
             return toBigDecimal(i)
           }
-        case 10 => // n'u'll
-          if (b == 'u') state = 11
-          else numberError(pos)
-        case 11 => // nu'l'l
-          if (b == 'l') state = 12
-          else numberError(pos)
-        case 12 => // nul'l'
-          if (b == 'l') state = 13
-          else numberError(pos)
-        case 13 => // null
-          head = pos
-          return default
       }
       pos += 1
     }
     head = pos
     if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(i)
-    else if (state == 13) default
     else numberError(pos)
   }
 
