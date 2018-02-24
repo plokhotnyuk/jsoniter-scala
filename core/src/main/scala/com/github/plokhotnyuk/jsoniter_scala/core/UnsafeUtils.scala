@@ -19,6 +19,6 @@ object UnsafeUtils {
   }.getOrElse((null, 0L, 0L))
 
   private[jsoniter_scala] final def getLatin1Array(s: String): Array[Byte] =
-    if (stringCoderOffset == 0 || unsafe.getByte(s, stringCoderOffset) != 0) null
+    if (stringCoderOffset == 0 || (s eq null) || unsafe.getByte(s, stringCoderOffset) != 0) null
     else unsafe.getObject(s, stringValueOffset).asInstanceOf[Array[Byte]]
 }
