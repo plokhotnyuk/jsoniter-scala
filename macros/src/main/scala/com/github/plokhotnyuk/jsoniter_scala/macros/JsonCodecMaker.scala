@@ -317,7 +317,7 @@ object JsonCodecMaker {
         }(breakOut).reverse
       }
 
-      val rootTpe = weakTypeOf[A]
+      val rootTpe = weakTypeOf[A].dealias
       val codecConfig = c.eval[CodecMakerConfig](c.Expr[CodecMakerConfig](c.untypecheck(config.tree)))
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"

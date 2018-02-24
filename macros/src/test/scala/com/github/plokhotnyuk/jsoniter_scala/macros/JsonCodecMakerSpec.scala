@@ -177,6 +177,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                            y: Year, ym: YearMonth, zdt: ZonedDateTime,
                            zi: ZoneId, zo: ZoneOffset)
 
+  type I = Int
+  type S = String
+  type L = List[I]
+  type M = Map[I, S]
+
+  case class TypeAliases(i: I, s: S, l: L, m: M)
+
   "JsonValueCodec" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
@@ -1010,6 +1017,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize stringified top-level Java time types" in {
       val codecOfYear = make[Year](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfYear, Year.of(2008), "\"2008\"".getBytes)
+    }
+    "serialize and deserialize case class with aliased typed methods" in {
+      verifySerDeser(make[TypeAliases](CodecMakerConfig()), TypeAliases(1, "VVV", List(1, 2, 3), Map(1 -> "VVV")),
+        """{"i":1,"s":"VVV","l":[1,2,3],"m":{"1":"VVV"}}""".getBytes)
+    }
+    "serialize and deserialize collection with aliased type arguments" in {
+      verifySerDeser(make[Map[I, S]](CodecMakerConfig()), Map(1 -> "VVV"), "{\"1\":\"VVV\"}".getBytes)
+    }
+    "serialize and deserialize top-level aliased types" in {
+      verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes)
     }
     "don't generate codec for unsupported classes" in {
       assert(intercept[TestFailedException](assertCompiles {
