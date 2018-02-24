@@ -442,7 +442,7 @@ object JsonCodecMaker {
         val implCodec = if (isRoot) EmptyTree else findImplicitCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
-        if (!implCodec.isEmpty) q"$implCodec.decode(in, $default)"
+        if (!implCodec.isEmpty) q"$implCodec.decodeValue(in, $default)"
         else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
           if (isStringified) q"in.readStringAsBoolean()" else q"in.readBoolean()"
@@ -695,7 +695,7 @@ object JsonCodecMaker {
         val implCodec = if (isRoot) EmptyTree else findImplicitCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
-        if (!implCodec.isEmpty) q"$implCodec.encode($m, out)"
+        if (!implCodec.isEmpty) q"$implCodec.encodeValue($m, out)"
         else if (encodeMethodName.isDefined) q"${encodeMethodName.get}($m, out)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean] ||
           tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte] ||
@@ -839,9 +839,9 @@ object JsonCodecMaker {
             import scala.annotation.switch
             new JsonValueCodec[$rootTpe] {
               def nullValue: $rootTpe = ${nullValue(rootTpe)}
-              def decode(in: JsonReader, default: $rootTpe): $rootTpe =
+              def decodeValue(in: JsonReader, default: $rootTpe): $rootTpe =
                 ${genReadVal(rootTpe, q"default", codecConfig.isStringified, isRoot = true)}
-              def encode(x: $rootTpe, out: JsonWriter): Unit =
+              def encodeValue(x: $rootTpe, out: JsonWriter): Unit =
                 ${genWriteVal(q"x", rootTpe, codecConfig.isStringified, isRoot = true)}
               ..${nullValueTrees.values}
               ..${reqFieldTrees.values}

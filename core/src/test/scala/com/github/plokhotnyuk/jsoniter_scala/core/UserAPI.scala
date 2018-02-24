@@ -20,9 +20,9 @@ object UserAPI {
 
     def nullValue: User = null
 
-    def decode(in: JsonReader, default: User): User = d0(in, default)
+    def decodeValue(in: JsonReader, default: User): User = d0(in, default)
 
-    def encode(x: User, out: JsonWriter): Unit = e0(x, out)
+    def encodeValue(x: User, out: JsonWriter): Unit = e0(x, out)
 
     private def d2(in: JsonReader, default: Device): Device = 
       if (in.isNextToken('{')) {

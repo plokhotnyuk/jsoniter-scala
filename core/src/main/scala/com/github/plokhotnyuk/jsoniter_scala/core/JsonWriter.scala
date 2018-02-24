@@ -356,7 +356,7 @@ final class JsonWriter private[jsoniter_scala](
     count = 0
     indention = 0
     try {
-      codec.encode(x, this)
+      codec.encodeValue(x, this)
       flushBuffer() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
     } finally {
       this.out = null // do not close output stream, just help GC instead
@@ -369,7 +369,7 @@ final class JsonWriter private[jsoniter_scala](
     this.count = 0
     this.indention = 0
     try {
-      codec.encode(x, this)
+      codec.encodeValue(x, this)
       val arr = new Array[Byte](count)
       System.arraycopy(buf, 0, arr, 0, arr.length)
       arr
@@ -384,7 +384,7 @@ final class JsonWriter private[jsoniter_scala](
     indention = 0
     isBufGrowingAllowed = false
     try {
-      codec.encode(x, this)
+      codec.encodeValue(x, this)
       count
     } finally {
       this.buf = currBuf

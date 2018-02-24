@@ -529,7 +529,7 @@ final class JsonReader private[jsoniter_scala](
     tail = to
     mark = 2147483647
     totalRead = 0
-    try codec.decode(this, codec.nullValue) // also checks that `codec` is not null before any parsing
+    try codec.decodeValue(this, codec.nullValue)
     finally {
       this.buf = currBuf
       freeTooLongCharBuf()
@@ -543,7 +543,7 @@ final class JsonReader private[jsoniter_scala](
     tail = 0
     mark = 2147483647
     totalRead = 0
-    try codec.decode(this, codec.nullValue)
+    try codec.decodeValue(this, codec.nullValue)
     finally {
       this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       freeTooLongBuf()
@@ -560,7 +560,7 @@ final class JsonReader private[jsoniter_scala](
     mark = 2147483647
     totalRead = 0
     try {
-      while (f(codec.decode(this, codec.nullValue)) && skipWhitespaces()) ()
+      while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       freeTooLongBuf()
@@ -582,7 +582,7 @@ final class JsonReader private[jsoniter_scala](
           rollbackToken()
           var continue = true
           do {
-            continue = f(codec.decode(this, codec.nullValue))
+            continue = f(codec.decodeValue(this, codec.nullValue))
           } while (continue && isNextToken(','))
           if (continue && !isCurrentToken(']')) arrayEndOrCommaError()
         }

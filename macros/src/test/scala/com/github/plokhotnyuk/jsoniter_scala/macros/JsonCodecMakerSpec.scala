@@ -398,11 +398,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       implicit val codecForEither = new JsonValueCodec[Either[String, StandardTypes]] {
         val nullValue: Either[String, StandardTypes] = null
 
-        def decode(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
+        def decodeValue(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
           (in.nextToken(): @switch) match {
             case '{' =>
               in.rollbackToken()
-              Right(codecOfStandardTypes.decode(in, codecOfStandardTypes.nullValue))
+              Right(codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue))
             case '"' =>
               in.rollbackToken()
               Left(in.readString())
@@ -410,10 +410,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
               in.decodeError("expected '{' or '\"'")
           }
 
-        def encode(x: Either[String, StandardTypes], out: JsonWriter): Unit =
+        def encodeValue(x: Either[String, StandardTypes], out: JsonWriter): Unit =
           x match {
             case Left(s) => out.writeVal(s)
-            case Right(st) => codecOfStandardTypes.encode(st, out)
+            case Right(st) => codecOfStandardTypes.encodeValue(st, out)
           }
       }
       val codecOfOuterTypes = make[OuterTypes](CodecMakerConfig())
@@ -428,7 +428,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       implicit object codecOfLocationType extends JsonValueCodec[LocationType.LocationType] {
         val nullValue: LocationType.LocationType = null
 
-        def decode(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
+        def decodeValue(in: JsonReader, default: LocationType.LocationType): LocationType.LocationType =
           if (in.isNextToken('n')) {
             in.rollbackToken()
             in.readNullOrError(default, "expected number value or null")
@@ -440,7 +440,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
             }
           }
 
-        def encode(x: LocationType.LocationType, out: JsonWriter): Unit =
+        def encodeValue(x: LocationType.LocationType, out: JsonWriter): Unit =
           if (x ne null) out.writeVal(x.id) else out.writeNull()
       }
       val codecOfEnums = make[Enums](CodecMakerConfig())
