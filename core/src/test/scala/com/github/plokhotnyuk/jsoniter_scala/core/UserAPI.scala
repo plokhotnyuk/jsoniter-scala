@@ -18,7 +18,7 @@ object UserAPI {
     private val r0: Array[String] = Array("name")
     private val r1: Array[String] = Array("id", "model")
 
-    def nullValue: User = null
+    val nullValue: User = null
 
     def decodeValue(in: JsonReader, default: User): User = d0(in, default)
 
@@ -93,15 +93,14 @@ object UserAPI {
         else in.requiredKeyError(r0, Array(req0))
       } else in.readNullOrTokenError(default, '{')
 
-    private def e2(x: Device, out: JsonWriter): Unit = 
-      if (x ne null) {
-        out.writeObjectStart()
-        out.writeNonEscapedAsciiKey("id")
-        out.writeVal(x.id)
-        out.writeNonEscapedAsciiKey("model")
-        out.writeVal(x.model)
-        out.writeObjectEnd()
-      } else out.writeNull()
+    private def e2(x: Device, out: JsonWriter): Unit = {
+      out.writeObjectStart()
+      out.writeNonEscapedAsciiKey("id")
+      out.writeVal(x.id)
+      out.writeNonEscapedAsciiKey("model")
+      out.writeVal(x.model)
+      out.writeObjectEnd()
+    }
 
     private def e1(x: Seq[Device], out: JsonWriter): Unit = {
       out.writeArrayStart()
@@ -112,17 +111,16 @@ object UserAPI {
       out.writeArrayEnd()
     }
 
-    private def e0(x: User, out: JsonWriter): Unit = 
-      if (x ne null) {
-        out.writeObjectStart()
-        out.writeNonEscapedAsciiKey("name")
-        out.writeVal(x.name)
-        val v = x.devices
-        if ((v ne null) && !v.isEmpty) {
-          out.writeNonEscapedAsciiKey("devices")
-          e1(v, out)
-        }
-        out.writeObjectEnd()
-      } else out.writeNull()
+    private def e0(x: User, out: JsonWriter): Unit = {
+      out.writeObjectStart()
+      out.writeNonEscapedAsciiKey("name")
+      out.writeVal(x.name)
+      val v = x.devices
+      if (!v.isEmpty) {
+        out.writeNonEscapedAsciiKey("devices")
+        e1(v, out)
+      }
+      out.writeObjectEnd()
+    }
   }
 }
