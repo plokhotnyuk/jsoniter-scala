@@ -14,8 +14,8 @@ import play.api.libs.json.Json
 class ArrayOfBigDecimalsBenchmark extends CommonParams {
   val sourceObj: Array[BigDecimal] = (1 to 128).map { i =>
     //FIXME | 1 is used to hide JDK bug of serialization redundant 0 after .
-    BigDecimal(BigInt(Array.fill((i & 31) + 1)((i | 1).toByte)), i % 32)
-  }.toArray // up to 256-bit numbers
+    BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), i % 37)
+  }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
   val jsonString: String = sourceObj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
