@@ -44,7 +44,7 @@ case class CodecMakerConfig(
 
 object JsonCodecMaker {
   def enforceCamelCase(s: String): String =
-    if (s.indexOf('_') == -1) s
+    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) s
     else {
       val len = s.length
       val sb = new StringBuilder(len)
@@ -53,7 +53,7 @@ object JsonCodecMaker {
       while (i < len) isPrecedingDash = {
         val ch = s.charAt(i)
         i += 1
-        if (ch == '_') true
+        if (ch == '_' || ch == '-') true
         else {
           sb.append(if (isPrecedingDash) toUpperCase(ch) else toLowerCase(ch))
           false
@@ -70,14 +70,37 @@ object JsonCodecMaker {
     while (i < len) isPrecedingLowerCased = {
       val ch = s.charAt(i)
       i += 1
-      if (ch == '_') {
-        sb.append(ch)
+      if (ch == '_' || ch == '-') {
+        sb.append('_')
         false
       } else if (isLowerCase(ch)) {
         sb.append(ch)
         true
       } else {
         if (isPrecedingLowerCased) sb.append('_')
+        sb.append(toLowerCase(ch))
+        false
+      }
+    }
+    sb.toString
+  }
+
+  def `enforce-kebab-case`(s: String): String = {
+    val len = s.length
+    val sb = new StringBuilder(len << 1)
+    var i = 0
+    var isPrecedingLowerCased = false
+    while (i < len) isPrecedingLowerCased = {
+      val ch = s.charAt(i)
+      i += 1
+      if (ch == '_' || ch == '-') {
+        sb.append('-')
+        false
+      } else if (isLowerCase(ch)) {
+        sb.append(ch)
+        true
+      } else {
+        if (isPrecedingLowerCased) sb.append('-')
         sb.append(toLowerCase(ch))
         false
       }
@@ -332,8 +355,11 @@ object JsonCodecMaker {
       def getStringified(annotations: Map[String, FieldAnnotations], name: String): Boolean =
         annotations.get(name).fold(false)(_.stringified)
 
+      def fixMinuses(name: String): String =
+        if (name.indexOf("$minus") == -1) name else name.replace("$minus", "-")
+
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
-        annotations.get(defaultName).fold(codecConfig.fieldNameMapper(defaultName))(_.name)
+        annotations.get(defaultName).fold(codecConfig.fieldNameMapper(fixMinuses(defaultName)))(_.name)
 
       def getCollisions(names: Traversable[String]): Traversable[String] =
         names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }

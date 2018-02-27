@@ -101,7 +101,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class BitSets(bs: BitSet, mbs: mutable.BitSet)
 
-  case class CamelAndSnakeCases(camelCase: String, snake_case: String, `camel1`: String, `snake_1`: String)
+  case class CamelSnakeKebabCases(camelCase: Int, snake_case: Int, `kebab-case`: Int,
+                                  `camel1`: Int, `snake_1`: Int, `kebab-1`: Int)
 
   case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Double])
 
@@ -677,31 +678,57 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       })
     }
     "serialize and deserialize with keys defined as is by fields" in {
-      verifySerDeser(make[CamelAndSnakeCases](CodecMakerConfig()),
-        CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
-        """{"camelCase":"VVV","snake_case":"WWW","camel1":"YYY","snake_1":"ZZZ"}""".getBytes)
+      verifySerDeser(make[CamelSnakeKebabCases](CodecMakerConfig()),
+        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camelCase":1,"snake_case":2,"kebab-case":3,"camel1":4,"snake_1":5,"kebab-1":6}""".getBytes)
     }
     "serialize and deserialize with keys enforced to camelCase and throw parse exception when they are missing" in {
-      val codecOfCamelAndSnakeCases = make[CamelAndSnakeCases](CodecMakerConfig(JsonCodecMaker.enforceCamelCase))
+      val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.enforceCamelCase))
       verifySerDeser(codecOfCamelAndSnakeCases,
-        CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
-        """{"camelCase":"VVV","snakeCase":"WWW","camel1":"YYY","snake1":"ZZZ"}""".getBytes)
+        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""".getBytes)
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfCamelAndSnakeCases,
-          CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
-          """{"camel_case":"VVV","snake_case":"WWW","camel_1":"YYY","snake_1":"ZZZ"}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", \"camel1\", \"snake1\", offset: 0x00000046"))
+          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+          """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", \"kebabCase\", \"camel1\", \"snake1\", \"kebab1\", offset: 0x00000051"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfCamelAndSnakeCases,
+          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+          """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", \"kebabCase\", \"camel1\", \"snake1\", \"kebab1\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys enforced to snake_case and throw parse exception when they are missing" in {
-      val codecOfCamelAndSnakeCases = make[CamelAndSnakeCases](CodecMakerConfig(JsonCodecMaker.enforce_snake_case))
+      val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.enforce_snake_case))
       verifySerDeser(codecOfCamelAndSnakeCases,
-        CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
-        """{"camel_case":"VVV","snake_case":"WWW","camel_1":"YYY","snake_1":"ZZZ"}""".getBytes)
+        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""".getBytes)
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfCamelAndSnakeCases,
-          CamelAndSnakeCases("VVV", "WWW", "YYY", "ZZZ"),
-          """{"camelCase":"VVV","snakeCase":"WWW","camel1":"YYY","snake1":"ZZZ"}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", \"camel_1\", \"snake_1\", offset: 0x00000042"))
+          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+          """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", \"kebab_case\", \"camel_1\", \"snake_1\", \"kebab_1\", offset: 0x0000004b"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfCamelAndSnakeCases,
+          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+          """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", \"kebab_case\", \"camel_1\", \"snake_1\", \"kebab_1\", offset: 0x00000051"))
+    }
+    "serialize and deserialize with keys enforced to kebab-case and throw parse exception when they are missing" in {
+      val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.`enforce-kebab-case`))
+      verifySerDeser(codecOfCamelAndSnakeCases,
+        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""".getBytes)
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfCamelAndSnakeCases,
+          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+          """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camel-case\", \"snake-case\", \"kebab-case\", \"camel-1\", \"snake-1\", \"kebab-1\", offset: 0x0000004b"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfCamelAndSnakeCases,
+          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+          """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""".getBytes)
+      }.getMessage.contains("missing required field(s) \"camel-case\", \"snake-case\", \"kebab-case\", \"camel-1\", \"snake-1\", \"kebab-1\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys overridden by annotation and throw parse exception when they are missing" in {
       verifySerDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""".getBytes)
@@ -1060,6 +1087,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforceCamelCase("o_ooo_") shouldBe "oOoo"
       JsonCodecMaker.enforceCamelCase("O_OOO_111") shouldBe "oOoo111"
     }
+    "transform kebab-case names to camelCase" in {
+      JsonCodecMaker.enforceCamelCase("o-o") shouldBe "oO"
+      JsonCodecMaker.enforceCamelCase("o-ooo-") shouldBe "oOoo"
+      JsonCodecMaker.enforceCamelCase("O-OOO-111") shouldBe "oOoo111"
+    }
     "leave camelCase names as is" in {
       JsonCodecMaker.enforceCamelCase("oO") shouldBe "oO"
       JsonCodecMaker.enforceCamelCase("oOoo") shouldBe "oOoo"
@@ -1072,10 +1104,32 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforce_snake_case("oOoo") shouldBe "o_ooo"
       JsonCodecMaker.enforce_snake_case("oOoo111") shouldBe "o_ooo_111"
     }
-    "enforce lower case for snake_case names as is" in {
+    "transform kebab-case names to snake_case" in {
+      JsonCodecMaker.enforce_snake_case("o-O") shouldBe "o_o"
+      JsonCodecMaker.enforce_snake_case("o-ooo-") shouldBe "o_ooo_"
+      JsonCodecMaker.enforce_snake_case("O-OOO-111") shouldBe "o_ooo_111"
+    }
+    "enforce lower case for snake_case names" in {
       JsonCodecMaker.enforce_snake_case("o_O") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
       JsonCodecMaker.enforce_snake_case("O_OOO_111") shouldBe "o_ooo_111"
+    }
+  }
+  "JsonCodecMaker.enforce-kebab-case" should {
+    "transform camelCase names to kebab-case" in {
+      JsonCodecMaker.`enforce-kebab-case`("oO") shouldBe "o-o"
+      JsonCodecMaker.`enforce-kebab-case`("oOoo") shouldBe "o-ooo"
+      JsonCodecMaker.`enforce-kebab-case`("oOoo111") shouldBe "o-ooo-111"
+    }
+    "transform snake_case names to kebab-case" in {
+      JsonCodecMaker.`enforce-kebab-case`("o_O") shouldBe "o-o"
+      JsonCodecMaker.`enforce-kebab-case`("o_ooo_") shouldBe "o-ooo-"
+      JsonCodecMaker.`enforce-kebab-case`("O_OOO_111") shouldBe "o-ooo-111"
+    }
+    "enforce lower case for kebab-case names" in {
+      JsonCodecMaker.`enforce-kebab-case`("o-O") shouldBe "o-o"
+      JsonCodecMaker.`enforce-kebab-case`("o-ooo-") shouldBe "o-ooo-"
+      JsonCodecMaker.`enforce-kebab-case`("O-OOO-111") shouldBe "o-ooo-111"
     }
   }
   "JsonCodecMaker.simpleClassName" should {
