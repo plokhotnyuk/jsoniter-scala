@@ -647,7 +647,7 @@ object JsonCodecMaker {
                 required.map(r => getMappedName(annotations, r))
               }
               q"""if ($checkReqVars) $construct
-                  else in.requiredKeyError($reqFieldNames, Array(..$reqVarNames))"""
+                  else in.requiredFieldError($reqFieldNames, Array(..$reqVarNames))"""
             }
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
@@ -692,8 +692,9 @@ object JsonCodecMaker {
           }
 
           val leafClasses = adtLeafClasses(tpe).toSeq
-          checkDiscriminatorValueCollisions(codecConfig.discriminatorFieldName, leafClasses.map(discriminatorValue))
-          val discriminatorValueError = q"in.discriminatorValueError(${codecConfig.discriminatorFieldName})"
+          val discrName = codecConfig.discriminatorFieldName
+          checkDiscriminatorValueCollisions(discrName, leafClasses.map(discriminatorValue))
+          val discriminatorValueError = q"in.discriminatorValueError($discrName)"
           val readSubclasses = groupByOrdered(leafClasses)(hashCode).map { case (hashCode, subTpes) =>
             val checkNameAndReadValue = subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
               q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
@@ -705,12 +706,13 @@ object JsonCodecMaker {
           }(breakOut)
           q"""in.setMark()
               if (in.isNextToken('{')) {
-                in.scanToKey(${codecConfig.discriminatorFieldName})
-                val l = in.readStringAsCharBuf()
-                (in.charBufToHashCode(l): @switch) match {
-                  case ..$readSubclasses
-                  case _ => $discriminatorValueError
-                }
+                if (in.skipToKey($discrName)) {
+                  val l = in.readStringAsCharBuf()
+                  (in.charBufToHashCode(l): @switch) match {
+                    case ..$readSubclasses
+                    case _ => $discriminatorValueError
+                  }
+                } else in.requiredFieldError($discrName)
               } else in.readNullOrTokenError(default, '{')"""
         } else cannotFindCodecError(tpe)
       }

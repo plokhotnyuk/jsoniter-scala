@@ -55,7 +55,14 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
-  def requiredKeyError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
+  def requiredFieldError(reqField: String): Nothing = {
+    var i = appendString("missing required field \"", 0)
+    i = appendString(reqField, i)
+    i = appendChar('"', i)
+    decodeError(i, head - 1, null)
+  }
+
+  def requiredFieldError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
     val len = Math.min(reqFields.length, reqBits.length << 5)
     var i = 0
     var j = 0
@@ -103,10 +110,9 @@ final class JsonReader private[jsoniter_scala](
   def setMark(): Unit = mark = head
 
   @tailrec
-  def scanToKey(s: String): Unit = if (!isCharBufEqualsTo(readKeyAsCharBuf(), s)) {
+  def skipToKey(key: String): Boolean = isCharBufEqualsTo(readKeyAsCharBuf(), key) || {
     skip()
-    if (isNextToken(',', head)) scanToKey(s)
-    else reqFieldError(s)
+    isNextToken(',', head) && skipToKey(key)
   }
 
   def rollbackToMark(): Unit = {
@@ -637,13 +643,6 @@ final class JsonReader private[jsoniter_scala](
     i = appendChar(b.toChar, i)
     i = appendChar('\'', i)
     decodeError(i, pos, null)
-  }
-
-  private def reqFieldError(s: String): Nothing = {
-    var i = appendString("missing required field \"", 0)
-    i = appendString(s, i)
-    i = appendChar('"', i)
-    decodeError(i, head - 1, null)
   }
 
   private def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =

@@ -50,7 +50,7 @@ object UserAPI {
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
         if (req0 == 0) new Device(id = _id, model = _model)
-        else in.requiredKeyError(r1, Array(req0))
+        else in.requiredFieldError(r1, Array(req0))
       } else in.readNullOrTokenError(default, '{')
 
     private def d1(in: JsonReader, default: Seq[Device]): Seq[Device] = 
@@ -90,7 +90,7 @@ object UserAPI {
           if (in.isCurrentToken('}').`unary_!`) in.objectEndOrCommaError()
         }
         if (req0 == 0) new User(name = _name, devices = _devices)
-        else in.requiredKeyError(r0, Array(req0))
+        else in.requiredFieldError(r0, Array(req0))
       } else in.readNullOrTokenError(default, '{')
 
     private def e2(x: Device, out: JsonWriter): Unit = {
