@@ -43,6 +43,7 @@ object JsoniterCodecs {
   implicit val mutableIterablesCodec: JsonValueCodec[MutableIterables] = make[MutableIterables](CodecMakerConfig())
   implicit val mutableMapsCodec: JsonValueCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
   implicit val intAndLongMapsCodec: JsonValueCodec[IntAndLongMaps] = make[IntAndLongMaps](CodecMakerConfig())
+  implicit val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig())
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make[Primitives](CodecMakerConfig())
   implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   implicit val adtCodec: JsonValueCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
