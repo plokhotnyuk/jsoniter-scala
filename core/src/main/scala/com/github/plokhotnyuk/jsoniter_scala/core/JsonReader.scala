@@ -602,7 +602,7 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongCharBuf()
     }
 
-  private def skipWhitespaces(): Boolean = {
+  private[this] def skipWhitespaces(): Boolean = {
     var pos = head
     while ((pos < tail || {
       pos = loadMore(pos)
@@ -615,14 +615,14 @@ final class JsonReader private[jsoniter_scala](
     pos != tail
   }
 
-  private def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
+  private[this] def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendString("' or digit", i)
     decodeError(i, pos, null)
   }
 
-  private def tokensError(b1: Byte, b2: Byte, pos: Int): Nothing = {
+  private[this] def tokensError(b1: Byte, b2: Byte, pos: Int): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b1.toChar, i)
     i = appendString("' or '", i)
@@ -631,24 +631,24 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos, null)
   }
 
-  private def tokenOrNullError(b: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokenOrNullError(b: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendString("' or null", i)
     decodeError(i, pos, null)
   }
 
-  private def tokenError(b: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokenError(b: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendChar('\'', i)
     decodeError(i, pos, null)
   }
 
-  private def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
+  private[this] def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
     decodeError(appendString(msg, 0), pos, cause)
 
-  private def decodeError(from: Int, pos: Int, cause: Throwable) = {
+  private[this] def decodeError(from: Int, pos: Int, cause: Throwable) = {
     var i = appendString(", offset: 0x", from)
     val offset = totalRead - (if (in eq null) 0 else tail)
     i = appendHex(offset + pos, i)
@@ -660,14 +660,14 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @tailrec
-  private def nextByte(pos: Int): Byte =
+  private[this] def nextByte(pos: Int): Byte =
     if (pos < tail) {
       head = pos + 1
       buf(pos)
     } else nextByte(loadMoreOrError(pos))
 
   @tailrec
-  private def nextToken(pos: Int): Byte =
+  private[this] def nextToken(pos: Int): Byte =
     if (pos < tail) {
       val b = buf(pos)
       if (b == ' ' || b == '\n' || b == '\t' || b == '\r') nextToken(pos + 1)
@@ -678,7 +678,7 @@ final class JsonReader private[jsoniter_scala](
     } else nextToken(loadMoreOrError(pos))
 
   @tailrec
-  private def isNextToken(t: Byte, pos: Int): Boolean =
+  private[this] def isNextToken(t: Byte, pos: Int): Boolean =
     if (pos < tail) {
       val b = buf(pos)
       if (b == t) {
@@ -691,12 +691,12 @@ final class JsonReader private[jsoniter_scala](
       }
     } else isNextToken(t, loadMoreOrError(pos))
 
-  private def isCurrentToken(b: Byte, pos: Int): Boolean =
+  private[this] def isCurrentToken(b: Byte, pos: Int): Boolean =
     if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
     else buf(pos - 1) == b
 
   @tailrec
-  private def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
+  private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
     if (pos + 2 < tail) {
       if (buf(pos) != 'u') decodeError(error, pos)
       if (buf(pos + 1) != 'l') decodeError(error, pos + 1)
@@ -706,7 +706,7 @@ final class JsonReader private[jsoniter_scala](
     } else parseNullOrError(default, error, loadMoreOrError(pos))
 
   @tailrec
-  private def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
+  private[this] def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
     if (pos + 2 < tail) {
       if (buf(pos) != 'u') tokenOrNullError(b, pos)
       if (buf(pos + 1) != 'l') tokenOrNullError(b, pos + 1)
@@ -716,18 +716,18 @@ final class JsonReader private[jsoniter_scala](
     } else parseNullOrTokenError(default, b, loadMoreOrError(pos))
 
   @tailrec
-  private def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
+  private[this] def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
     if (i == len) true
     else if (charBuf(i) != s.charAt(i)) false
     else isCharBufEqualsTo(len, s, i + 1)
 
-  private def appendChar(ch: Char, i: Int): Int = {
+  private[this] def appendChar(ch: Char, i: Int): Int = {
     if (i >= charBuf.length) growCharBuf(i + 1)
     charBuf(i) = ch
     i + 1
   }
 
-  private def appendChars(cs: Array[Char], i: Int): Int = {
+  private[this] def appendChars(cs: Array[Char], i: Int): Int = {
     val len = cs.length
     val required = i + len
     if (required > charBuf.length) growCharBuf(required)
@@ -735,7 +735,7 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
-  private def appendString(s: String, i: Int): Int = {
+  private[this] def appendString(s: String, i: Int): Int = {
     val len = s.length
     val required = i + len
     if (required > charBuf.length) growCharBuf(required)
@@ -743,7 +743,7 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
-  private def prependString(s: String, i: Int): Int = {
+  private[this] def prependString(s: String, i: Int): Int = {
     val len = s.length
     val required = i + len
     if (required > charBuf.length) growCharBuf(required)
@@ -757,18 +757,18 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
-  private def readParenthesesToken(): Unit = if (!isNextToken('"', head)) tokenError('"')
+  private[this] def readParenthesesToken(): Unit = if (!isNextToken('"', head)) tokenError('"')
 
-  private def readParenthesesByteWithColonToken(): Unit = {
+  private[this] def readParenthesesByteWithColonToken(): Unit = {
     readParenthesesByte()
     readColonToken()
   }
 
-  private def readParenthesesByte(): Unit = if (nextByte(head) != '"') tokenError('"')
+  private[this] def readParenthesesByte(): Unit = if (nextByte(head) != '"') tokenError('"')
 
-  private def readColonToken(): Unit = if (!isNextToken(':', head)) tokenError(':')
+  private[this] def readColonToken(): Unit = if (!isNextToken(':', head)) tokenError(':')
 
-  private def parseBoolean(isToken: Boolean): Boolean =
+  private[this] def parseBoolean(isToken: Boolean): Boolean =
     (if (isToken) nextToken(head) else nextByte(head): @switch) match {
       case 't' => parseTrue(head)
       case 'f' => parseFalse(head)
@@ -776,7 +776,7 @@ final class JsonReader private[jsoniter_scala](
     }
 
   @tailrec
-  private def parseTrue(pos: Int): Boolean =
+  private[this] def parseTrue(pos: Int): Boolean =
     if (pos + 2 < tail) {
       if (buf(pos) != 'r') booleanError(pos)
       if (buf(pos + 1) != 'u') booleanError(pos + 1)
@@ -786,7 +786,7 @@ final class JsonReader private[jsoniter_scala](
     } else parseTrue(loadMoreOrError(pos))
 
   @tailrec
-  private def parseFalse(pos: Int): Boolean =
+  private[this] def parseFalse(pos: Int): Boolean =
     if (pos + 3 < tail) {
       if (buf(pos) != 'a') booleanError(pos)
       if (buf(pos + 1) != 'l') booleanError(pos + 1)
@@ -796,9 +796,9 @@ final class JsonReader private[jsoniter_scala](
       false
     } else parseFalse(loadMoreOrError(pos))
 
-  private def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
+  private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 
-  private def parseByte(isToken: Boolean): Byte = {
+  private[this] def parseByte(isToken: Boolean): Byte = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     val negative = b == '-'
     if (negative) b = nextByte(head)
@@ -825,7 +825,7 @@ final class JsonReader private[jsoniter_scala](
     } else numberError(pos - 1)
   }
 
-  private def parseShort(isToken: Boolean): Short = {
+  private[this] def parseShort(isToken: Boolean): Short = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     val negative = b == '-'
     if (negative) b = nextByte(head)
@@ -852,7 +852,7 @@ final class JsonReader private[jsoniter_scala](
     } else numberError(pos - 1)
   }
 
-  private def parseInt(isToken: Boolean): Int = {
+  private[this] def parseInt(isToken: Boolean): Int = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     val negative = b == '-'
     if (negative) b = nextByte(head)
@@ -880,7 +880,7 @@ final class JsonReader private[jsoniter_scala](
     } else numberError(pos - 1)
   }
 
-  private def parseLong(isToken: Boolean): Long = {
+  private[this] def parseLong(isToken: Boolean): Long = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     val negative = b == '-'
     if (negative) b = nextByte(head)
@@ -908,7 +908,7 @@ final class JsonReader private[jsoniter_scala](
     } else numberError(pos - 1)
   }
 
-  private def parseDouble(isToken: Boolean): Double = {
+  private[this] def parseDouble(isToken: Boolean): Double = {
     var posMan = 0L
     var manExp = 0
     var posExp = 0
@@ -1032,7 +1032,7 @@ final class JsonReader private[jsoniter_scala](
     } finally this.mark = mark
   }
 
-  private def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
+  private[this] def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
     if (posMan < 4503599627370496L) { // 4503599627370496L == 1L < 52, max mantissa that can be converted w/o rounding error by double mul or div
       val man = if (isNeg) -posMan else posMan
       val exp = toExp(manExp, isExpNeg, posExp)
@@ -1042,18 +1042,18 @@ final class JsonReader private[jsoniter_scala](
       else toDouble
     } else toDouble
 
-  private def toDouble: Double = java.lang.Double.parseDouble(new String(buf, 0, mark, head - mark))
+  private[this] def toDouble: Double = java.lang.Double.parseDouble(new String(buf, 0, mark, head - mark))
 
-  private def toExpOverflowDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
+  private[this] def toExpOverflowDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
     if (toExp(manExp, isExpNeg, posExp) > 0 && posMan != 0) {
       if (isNeg) Double.NegativeInfinity else Double.PositiveInfinity
     } else {
       if (isNeg) -0.0 else 0.0
     }
 
-  private def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
+  private[this] def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
 
-  private def parseBigInt(isToken: Boolean, default: BigInt): BigInt = {
+  private[this] def parseBigInt(isToken: Boolean, default: BigInt): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     if (b == 'n') {
       if (isToken) readNullOrNumberError(default, head)
@@ -1085,7 +1085,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def toBigInt(negative: Boolean, pos: Int): BigInt = {
+  private[this] def toBigInt(negative: Boolean, pos: Int): BigInt = {
     var signPos = this.mark
     var numPos = signPos + (if (negative) 1 else 0)
     if (pos < 19 + numPos) { // 19 == Long.MaxValue.toString.length
@@ -1112,7 +1112,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def parseBigDecimal(isToken: Boolean, default: BigDecimal): BigDecimal = {
+  private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal): BigDecimal = {
     var isZeroFirst = false
     var posExp = 0L
     var charBuf = this.charBuf
@@ -1255,28 +1255,28 @@ final class JsonReader private[jsoniter_scala](
     else numberError(pos)
   }
 
-  private def toBigDecimal(len: Int): BigDecimal =
+  private[this] def toBigDecimal(len: Int): BigDecimal =
     try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len)) catch {
       case ex: NumberFormatException => decodeError("illegal number", head - 1, ex)
     }
 
-  private def readNullOrNumberError[@sp A](default: A, pos: Int): A =
+  private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
     if (default == null) numberError(pos - 1)
     else parseNullOrError(default, "expected number or null", pos)
 
-  private def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
+  private[this] def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
 
-  private def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
+  private[this] def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
 
-  private def byteOverflowError(pos: Int): Nothing = decodeError("value is too large for byte", pos)
+  private[this] def byteOverflowError(pos: Int): Nothing = decodeError("value is too large for byte", pos)
 
-  private def shortOverflowError(pos: Int): Nothing = decodeError("value is too large for short", pos)
+  private[this] def shortOverflowError(pos: Int): Nothing = decodeError("value is too large for short", pos)
 
-  private def intOverflowError(pos: Int): Nothing = decodeError("value is too large for int", pos)
+  private[this] def intOverflowError(pos: Int): Nothing = decodeError("value is too large for int", pos)
 
-  private def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
+  private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
-  private def parseDuration(): Duration = {
+  private[this] def parseDuration(): Duration = {
     var neg = false
     var daysAsSecs = 0L
     var hoursAsSecs = 0L
@@ -1448,7 +1448,7 @@ final class JsonReader private[jsoniter_scala](
     Duration.ofSeconds(totalSeconds, nanos)
   }
 
-  private def parseInstant(): Instant = {
+  private[this] def parseInstant(): Instant = {
     var year = 0
     var yearNeg = false
     var yearDigits = 0
@@ -1580,7 +1580,7 @@ final class JsonReader private[jsoniter_scala](
     Instant.ofEpochSecond(epochSecond(yearNeg, year, month, day, hour, minute, second), nano)
   }
 
-  private def parseLocalDate(): LocalDate = {
+  private[this] def parseLocalDate(): LocalDate = {
     var year = 0
     var yearNeg = false
     var yearDigits = 0
@@ -1654,7 +1654,7 @@ final class JsonReader private[jsoniter_scala](
     localDate(yearNeg, year, month, day)
   }
 
-  private def parseLocalDateTime(): LocalDateTime = {
+  private[this] def parseLocalDateTime(): LocalDateTime = {
     var year = 0
     var yearNeg = false
     var yearDigits = 0
@@ -1784,7 +1784,7 @@ final class JsonReader private[jsoniter_scala](
     LocalDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano))
   }
 
-  private def parseLocalTime(): LocalTime = {
+  private[this] def parseLocalTime(): LocalTime = {
     var hour = 0
     var minute = 0
     var second = 0
@@ -1854,7 +1854,7 @@ final class JsonReader private[jsoniter_scala](
     localTime(hour, minute, second, nano)
   }
 
-  private def parseMonthDay(): MonthDay = {
+  private[this] def parseMonthDay(): MonthDay = {
     var month = 0
     var day = 0
     var state = 0
@@ -1902,7 +1902,7 @@ final class JsonReader private[jsoniter_scala](
     monthDay(month, day)
   }
 
-  private def parseOffsetDateTime(): OffsetDateTime = {
+  private[this] def parseOffsetDateTime(): OffsetDateTime = {
     var year = 0
     var yearNeg = false
     var yearDigits = 0
@@ -2094,7 +2094,7 @@ final class JsonReader private[jsoniter_scala](
       zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
-  private def parseOffsetTime(): OffsetTime = {
+  private[this] def parseOffsetTime(): OffsetTime = {
     var hour = 0
     var minute = 0
     var second = 0
@@ -2226,7 +2226,7 @@ final class JsonReader private[jsoniter_scala](
       zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
-  private def parsePeriod(): Period = {
+  private[this] def parsePeriod(): Period = {
     var neg = false
     var years = 0
     var months = 0
@@ -2392,7 +2392,7 @@ final class JsonReader private[jsoniter_scala](
     Period.of(years, months, days)
   }
 
-  private def parseYear(isToken: Boolean) = {
+  private[this] def parseYear(isToken: Boolean) = {
     val year = parseInt(isToken)
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     try Year.of(year) catch {
@@ -2400,7 +2400,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def parseYearMonth(): YearMonth = {
+  private[this] def parseYearMonth(): YearMonth = {
     var year = 0
     var yearNeg = false
     var yearDigits = 0
@@ -2460,7 +2460,7 @@ final class JsonReader private[jsoniter_scala](
     yearMonth(yearNeg, year, month)
   }
 
-  private def parseZonedDateTime(): ZonedDateTime = {
+  private[this] def parseZonedDateTime(): ZonedDateTime = {
     var year = 0
     var yearNeg = false
     var yearDigits = 0
@@ -2668,12 +2668,12 @@ final class JsonReader private[jsoniter_scala](
     else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), zoneId(zone), zo)
   }
 
-  private def parseZoneId(): ZoneId = {
+  private[this] def parseZoneId(): ZoneId = {
     val len = parseString()
     zoneId(new String(charBuf, 0, len))
   }
 
-  private def parseZoneOffset(): ZoneOffset = {
+  private[this] def parseZoneOffset(): ZoneOffset = {
     var offsetNeg = false
     var offsetHour = 0
     var offsetMinute = 0
@@ -2739,7 +2739,7 @@ final class JsonReader private[jsoniter_scala](
     zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
   }
 
-  private def epochSecond(yearNeg: Boolean, year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long = {
+  private[this] def epochSecond(yearNeg: Boolean, year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long = {
     if (yearNeg && year == 0 || year > 1000000000) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
@@ -2757,7 +2757,7 @@ final class JsonReader private[jsoniter_scala](
     } + day - 719529)) * 86400 + (hour * 3600 + minute * 60 + second) // 719528 == days 0000 to 1970
   }
 
-  private def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
+  private[this] def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
@@ -2766,7 +2766,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def yearMonth(yearNeg: Boolean, year: Int, month: Int): YearMonth = {
+  private[this] def yearMonth(yearNeg: Boolean, year: Int, month: Int): YearMonth = {
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     try YearMonth.of(if (yearNeg) -year else year, month) catch {
@@ -2774,7 +2774,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def monthDay(month: Int, day: Int): MonthDay = {
+  private[this] def monthDay(month: Int, day: Int): MonthDay = {
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(2004, month))) decodeError("illegal day")
     try MonthDay.of(month, day) catch {
@@ -2782,7 +2782,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def localTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
+  private[this] def localTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
     if (hour > 23) decodeError("illegal hour")
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
@@ -2791,7 +2791,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def zoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
+  private[this] def zoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     if (offsetHour > 18) decodeError("illegal zone offset hour")
     if (offsetMinute > 59) decodeError("illegal zone offset minute")
     if (offsetSecond > 59) decodeError("illegal zone offset second")
@@ -2802,13 +2802,13 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def zoneId(zone: String): ZoneId =
+  private[this] def zoneId(zone: String): ZoneId =
     try ZoneId.of(zone) catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
       case ex: ZoneRulesException => dateTimeZoneError(ex)
     }
 
-  private def maxDayForYearMonth(year: Int, month: Int): Int =
+  private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
     (month: @switch) match {
       case 1 => 31
       case 2 => if (isLeap(year)) 29 else 28
@@ -2824,21 +2824,21 @@ final class JsonReader private[jsoniter_scala](
       case 12 => 31
     }
 
-  private def isLeap(year: Int): Boolean =
+  private[this] def isLeap(year: Int): Boolean =
     (year & 3) == 0 && {
       val century = year / 100
       century * 100 != year || (century & 3) == 0
     }
 
-  private def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
+  private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
-  private def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
+  private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
-  private def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
+  private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
 
-  private def dateTimeZoneError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
+  private[this] def dateTimeZoneError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
 
-  private def parseUUID(pos: Int): UUID =
+  private[this] def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
       val mostSigBits1: Int =
         (fromHexDigit(pos) << 28) |
@@ -2886,12 +2886,12 @@ final class JsonReader private[jsoniter_scala](
         (leastSigBits1.toLong << 32) | (leastSigBits2 & 0xffffffffL))
     } else parseUUID(loadMoreOrError(pos))
 
-  private def checkByte(b: Byte, pos: Int): Unit = if (buf(pos) != b) tokenError(b, pos)
+  private[this] def checkByte(b: Byte, pos: Int): Unit = if (buf(pos) != b) tokenError(b, pos)
 
-  private def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
+  private[this] def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
 
   @tailrec
-  private def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
+  private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
     if (i < minLim) {
       val b = buf(pos)
       if (b == '"') {
@@ -2907,7 +2907,7 @@ final class JsonReader private[jsoniter_scala](
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
-  private def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int =
+  private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int =
     if (i >= lim) parseEncodedString(i, growCharBuf(i + 2) - 1, this.charBuf, pos) // 2 is length of surrogate pair
     else {
       val remaining = tail - pos
@@ -2990,7 +2990,7 @@ final class JsonReader private[jsoniter_scala](
     }
 
   @tailrec
-  private def parseChar(pos: Int): Char = {
+  private[this] def parseChar(pos: Int): Char = {
     val remaining = tail - pos
     if (remaining > 0) {
       val b1 = buf(pos)
@@ -3046,10 +3046,10 @@ final class JsonReader private[jsoniter_scala](
     } else parseChar(loadMoreOrError(pos))
   }
 
-  private def readEscapedUnicode(pos: Int): Char =
+  private[this] def readEscapedUnicode(pos: Int): Char =
     ((fromHexDigit(pos) << 12) + (fromHexDigit(pos + 1) << 8) + (fromHexDigit(pos + 2) << 4) + fromHexDigit(pos + 3)).toChar
 
-  private def fromHexDigit(pos: Int): Int = {
+  private[this] def fromHexDigit(pos: Int): Int = {
     val b = buf(pos)
     if (b >= '0' && b <= '9') b - '0'
     else {
@@ -3059,17 +3059,17 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
+  private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
 
-  private def unescapedControlCharacterError(pos: Int): Nothing = decodeError("unescaped control character", pos)
+  private[this] def unescapedControlCharacterError(pos: Int): Nothing = decodeError("unescaped control character", pos)
 
-  private def malformedBytesError(b1: Byte, pos: Int): Nothing = {
+  private[this] def malformedBytesError(b1: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     decodeError(i, pos, null)
   }
 
-  private def malformedBytesError(b1: Byte, b2: Byte, pos: Int): Nothing = {
+  private[this] def malformedBytesError(b1: Byte, b2: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
@@ -3077,7 +3077,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos + 1, null)
   }
 
-  private def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
+  private[this] def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
@@ -3087,7 +3087,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos + 2, null)
   }
 
-  private def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
+  private[this] def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
     i = appendHex(b1, i)
     i = appendString(", 0x", i)
@@ -3099,7 +3099,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos + 3, null)
   }
 
-  private def appendHexDump(start: Int, end: Int, offset: Int, from: Int): Int = {
+  private[this] def appendHexDump(start: Int, end: Int, offset: Int, from: Int): Int = {
     val alignedAbsFrom = (start + offset) & -16
     val alignedAbsTo = (end + offset + 15) & -16
     val len = alignedAbsTo - alignedAbsFrom
@@ -3151,7 +3151,7 @@ final class JsonReader private[jsoniter_scala](
     appendChars(dumpBorder, i)
   }
 
-  private def appendHex(d: Long, i: Int): Int = {
+  private[this] def appendHex(d: Long, i: Int): Int = {
     if (i + 16 >= charBuf.length) growCharBuf(i + 16)
     var j = i
     val hd = (d >>> 32).toInt
@@ -3168,7 +3168,7 @@ final class JsonReader private[jsoniter_scala](
     j + 8
   }
 
-  private def putHex(d: Int, i: Int, charBuf: Array[Char]): Unit = {
+  private[this] def putHex(d: Int, i: Int, charBuf: Array[Char]): Unit = {
     charBuf(i) = toHexDigit(d >>> 28)
     charBuf(i + 1) = toHexDigit(d >>> 24)
     charBuf(i + 2) = toHexDigit(d >>> 20)
@@ -3179,23 +3179,23 @@ final class JsonReader private[jsoniter_scala](
     charBuf(i + 7) = toHexDigit(d)
   }
 
-  private def appendHex(b: Byte, i: Int): Int = {
+  private[this] def appendHex(b: Byte, i: Int): Int = {
     if (i + 2 >= charBuf.length) growCharBuf(i + 2)
     putHex(b, i, charBuf)
     i + 2
   }
 
-  private def putHex(b: Byte, i: Int, charBuf: Array[Char]): Unit = {
+  private[this] def putHex(b: Byte, i: Int, charBuf: Array[Char]): Unit = {
     charBuf(i) = toHexDigit(b >>> 4)
     charBuf(i + 1) = toHexDigit(b)
   }
 
-  private def toHexDigit(n: Int): Char = {
+  private[this] def toHexDigit(n: Int): Char = {
     val nibble = n & 15
     (((9 - nibble) >> 31) & 39) + (nibble + 48) // branchless conversion of nibble to hex digit
   }.toChar
 
-  private def growCharBuf(required: Int): Int = {
+  private[this] def growCharBuf(required: Int): Int = {
     val lim = charBuf.length
     val newLim = Math.max(lim << 1, required)
     val cs = new Array[Char](newLim)
@@ -3205,7 +3205,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @tailrec
-  private def skipString(evenBackSlashes: Boolean, pos: Int): Int =
+  private[this] def skipString(evenBackSlashes: Boolean, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"' && evenBackSlashes) pos + 1
@@ -3213,7 +3213,7 @@ final class JsonReader private[jsoniter_scala](
     } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
   @tailrec
-  private def skipNumber(pos: Int): Int =
+  private[this] def skipNumber(pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
       if ((b >= '0' && b <= '9') || b == '.' || (b | 0x20) == 'e' || b == '-' || b == '+') skipNumber(pos + 1)
@@ -3221,7 +3221,7 @@ final class JsonReader private[jsoniter_scala](
     } else skipNumber(loadMoreOrError(pos))
 
   @tailrec
-  private def skipNested(opening: Byte, closing: Byte, level: Int, pos: Int): Int =
+  private[this] def skipNested(opening: Byte, closing: Byte, level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
       if (b == '"') skipNested(opening, closing, level, skipString(evenBackSlashes = true, pos + 1))
@@ -3233,14 +3233,14 @@ final class JsonReader private[jsoniter_scala](
     } else skipNested(opening, closing, level, loadMoreOrError(pos))
 
   @tailrec
-  private def skipFixedBytes(n: Int, pos: Int): Int = {
+  private[this] def skipFixedBytes(n: Int, pos: Int): Int = {
     val newPos = pos + n
     val diff = newPos - tail
     if (diff <= 0) newPos
     else skipFixedBytes(diff, loadMoreOrError(pos))
   }
 
-  private def loadMoreOrError(pos: Int): Int =
+  private[this] def loadMoreOrError(pos: Int): Int =
     if (in eq null) endOfInputError()
     else {
       val minPos = ensureBufCapacity(pos)
@@ -3252,7 +3252,7 @@ final class JsonReader private[jsoniter_scala](
       } else endOfInputError()
     }
 
-  private def loadMore(pos: Int): Int =
+  private[this] def loadMore(pos: Int): Int =
     if (in eq null) pos
     else {
       val minPos = ensureBufCapacity(pos)
@@ -3264,7 +3264,7 @@ final class JsonReader private[jsoniter_scala](
       pos - minPos
     }
 
-  private def ensureBufCapacity(pos: Int): Int = {
+  private[this] def ensureBufCapacity(pos: Int): Int = {
     val minPos = Math.min(mark, pos)
     if (minPos > 0) {
       val remaining = tail - minPos
@@ -3281,16 +3281,17 @@ final class JsonReader private[jsoniter_scala](
     minPos
   }
 
-  private def externalRead(from: Int, len: Int): Int = try in.read(buf, from, len) catch {
+  private[this] def externalRead(from: Int, len: Int): Int = try in.read(buf, from, len) catch {
     case NonFatal(ex) => endOfInputError(ex)
   }
 
-  private def endOfInputError(cause: Throwable = null): Nothing = decodeError("unexpected end of input", tail, cause)
+  private[this] def endOfInputError(cause: Throwable = null): Nothing =
+    decodeError("unexpected end of input", tail, cause)
 
-  private def freeTooLongBuf(): Unit =
+  private[this] def freeTooLongBuf(): Unit =
     if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)
 
-  private def freeTooLongCharBuf(): Unit =
+  private[this] def freeTooLongCharBuf(): Unit =
     if (charBuf.length > config.preferredCharBufSize) charBuf = new Array[Char](config.preferredCharBufSize)
 }
 
