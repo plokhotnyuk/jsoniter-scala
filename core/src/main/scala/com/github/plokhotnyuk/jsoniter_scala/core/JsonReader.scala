@@ -9,6 +9,7 @@ import java.util.UUID
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
+import scala.{specialized => sp}
 import scala.util.control.NonFatal
 
 class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
@@ -478,12 +479,12 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readNullOrError[A](default: A, msg: String): A =
-    if (default == null) throw new IllegalArgumentException("'default' should not be null")
+  def readNullOrError[@sp A](default: A, msg: String): A =
+    if (default == null) decodeError(msg)
     else if (isCurrentToken('n', head)) parseNullOrError(default, msg, head)
     else decodeError(msg)
 
-  def readNullOrTokenError[A](default: A, b: Byte): A =
+  def readNullOrTokenError[@sp A](default: A, b: Byte): A =
     if (default == null) tokenError(b)
     else if (isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
     else tokenOrNullError(b)
@@ -529,62 +530,62 @@ final class JsonReader private[jsoniter_scala](
 
   def decodeError(msg: String): Nothing = decodeError(msg, head - 1)
 
-  private[jsoniter_scala] def read[A](codec: JsonValueCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
+  private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], buf: Array[Byte], from: Int, to: Int, config: ReaderConfig): A = {
     val currBuf = this.buf
-    this.config = config
-    this.buf = buf
-    head = from
-    tail = to
-    mark = 2147483647
-    totalRead = 0
-    try codec.decodeValue(this, codec.nullValue)
-    finally {
+    try {
+      this.buf = buf
+      this.config = config
+      head = from
+      tail = to
+      totalRead = 0
+      mark = 2147483647
+      codec.decodeValue(this, codec.nullValue)
+    } finally {
       this.buf = currBuf
       freeTooLongCharBuf()
     }
   }
 
-  private[jsoniter_scala] def read[A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig): A = {
-    this.config = config
-    this.in = in
-    head = 0
-    tail = 0
-    mark = 2147483647
-    totalRead = 0
-    try codec.decodeValue(this, codec.nullValue)
-    finally {
+  private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig): A =
+    try {
+      this.config = config
+      this.in = in
+      head = 0
+      tail = 0
+      totalRead = 0
+      mark = 2147483647
+      codec.decodeValue(this, codec.nullValue)
+    } finally {
       this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
-  }
 
-  private[jsoniter_scala] def scanValueStream[A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
-                                                (f: A => Boolean): Unit = {
-    this.config = config
-    this.in = in
-    head = 0
-    tail = 0
-    mark = 2147483647
-    totalRead = 0
+  private[jsoniter_scala] def scanValueStream[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
+                                                    (f: A => Boolean): Unit =
     try {
+      this.config = config
+      this.in = in
+      head = 0
+      tail = 0
+      totalRead = 0
+      mark = 2147483647
       while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
-  }
 
-  private[jsoniter_scala] def scanArray[A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
-                                          (f: A => Boolean): Unit = {
-    this.config = config
-    this.in = in
-    head = 0
-    tail = 0
-    mark = 2147483647
-    totalRead = 0
+  private[jsoniter_scala] def scanArray[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
+                                              (f: A => Boolean): Unit =
     try {
+      this.config = config
+      this.in = in
+      head = 0
+      tail = 0
+      totalRead = 0
+      mark = 2147483647
       if (isNextToken('[')) {
         if (!isNextToken(']')) {
           rollbackToken()
@@ -600,7 +601,6 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
-  }
 
   private def skipWhitespaces(): Boolean = {
     var pos = head
@@ -696,7 +696,7 @@ final class JsonReader private[jsoniter_scala](
     else buf(pos - 1) == b
 
   @tailrec
-  private def parseNullOrError[A](default: A, error: String, pos: Int): A =
+  private def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
     if (pos + 2 < tail) {
       if (buf(pos) != 'u') decodeError(error, pos)
       if (buf(pos + 1) != 'l') decodeError(error, pos + 1)
@@ -706,7 +706,7 @@ final class JsonReader private[jsoniter_scala](
     } else parseNullOrError(default, error, loadMoreOrError(pos))
 
   @tailrec
-  private def parseNullOrTokenError[A](default: A, b: Byte, pos: Int): A =
+  private def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
     if (pos + 2 < tail) {
       if (buf(pos) != 'u') tokenOrNullError(b, pos)
       if (buf(pos + 1) != 'l') tokenOrNullError(b, pos + 1)
@@ -1260,7 +1260,7 @@ final class JsonReader private[jsoniter_scala](
       case ex: NumberFormatException => decodeError("illegal number", head - 1, ex)
     }
 
-  private def readNullOrNumberError[A](default: A, pos: Int): A =
+  private def readNullOrNumberError[@sp A](default: A, pos: Int): A =
     if (default == null) numberError(pos - 1)
     else parseNullOrError(default, "expected number or null", pos)
 

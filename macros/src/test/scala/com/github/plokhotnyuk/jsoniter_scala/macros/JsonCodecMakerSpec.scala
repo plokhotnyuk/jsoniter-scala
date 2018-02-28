@@ -125,8 +125,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val stringified = Stringified(1, 2, List(1), List(2))
   val codecOfStringified: JsonValueCodec[Stringified] = make[Stringified](CodecMakerConfig())
 
-  case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                      l: List[Int] = List(0), a: Array[Array[Double]] = Array(Array(-1.0, 0.0), Array(1.0)))
+  case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'), l: List[Int] = List(0))
 
   val defaults = Defaults()
   val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
@@ -809,20 +808,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize case classes with Scala operators in field names" in {
       verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""".getBytes(UTF_8))
     }
-    "deserialize but don't serialize default values of case classes that defined for fields" in {
+    "don't serialize default values of case classes that defined for fields" in {
       verifySer(codecOfDefaults, defaults, "{}".getBytes)
       verifySer(codecOfDefaults, defaults.copy(oc = None, l = Nil), """{}""".getBytes)
-      val parsedObj = read("{}".getBytes)(codecOfDefaults)
-      parsedObj.s shouldBe defaults.s
-      parsedObj.i shouldBe defaults.i
-      parsedObj.bi shouldBe defaults.bi
-      parsedObj.l shouldBe defaults.l
-      parsedObj.oc shouldBe defaults.oc
-      parsedObj.a.deep shouldBe defaults.a.deep
     }
     "deserialize default values in case of missing field or null/empty values" in {
-      read("""{}""".getBytes)(codecOfDefaults)
-      read("""{"s":null,"bi":null,"l":[],"oc":null,"a":null}""".getBytes)(codecOfDefaults)
+      verifyDeser(codecOfDefaults, defaults, """{}""".getBytes)
+      verifyDeser(codecOfDefaults, defaults, """{"s":null,"bi":null,"l":null,"oc":null}""".getBytes)
+      verifyDeser(codecOfDefaults, defaults, """{"l":[]}""".getBytes)
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       verifySerDeser(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"required":"VVV"}""".getBytes)

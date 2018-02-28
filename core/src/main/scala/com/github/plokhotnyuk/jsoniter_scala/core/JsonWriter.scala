@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
 import scala.annotation.{switch, tailrec}
 import scala.collection.breakOut
 import scala.collection.JavaConverters._
+import scala.{specialized => sp}
 
 /**
   * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter]] that contains params for formatting of
@@ -323,46 +324,43 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
 
-  private[jsoniter_scala] def write[A](codec: JsonValueCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit = {
-    this.config = config
-    this.out = out
-    count = 0
-    indention = 0
+  private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, out: OutputStream, config: WriterConfig): Unit =
     try {
+      this.out = out
+      this.config = config
+      count = 0
+      indention = 0
+      isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       flushBuffer() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
     } finally {
       this.out = null // do not close output stream, just help GC instead
       freeTooLongBuf()
     }
-  }
 
-  private[jsoniter_scala] def write[A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] = {
-    this.config = config
-    this.count = 0
-    this.indention = 0
+  private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] =
     try {
+      this.config = config
+      this.count = 0
+      this.indention = 0
+      isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       val arr = new Array[Byte](count)
       System.arraycopy(buf, 0, arr, 0, arr.length)
       arr
     } finally freeTooLongBuf()
-  }
 
-  private[jsoniter_scala] def write[A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+  private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
-    this.config = config
-    this.buf = buf
-    count = from
-    indention = 0
-    isBufGrowingAllowed = false
     try {
+      this.buf = buf
+      this.config = config
+      count = from
+      indention = 0
+      isBufGrowingAllowed = false
       codec.encodeValue(x, this)
       count
-    } finally {
-      this.buf = currBuf
-      isBufGrowingAllowed = true
-    }
+    } finally this.buf = currBuf
   }
 
   private def writeNestedStart(b: Byte): Unit = {

@@ -220,7 +220,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readDuration())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsDuration())
@@ -284,7 +284,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readInstant())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsInstant())
@@ -359,7 +359,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readLocalDate())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDate())
@@ -417,7 +417,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readLocalDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDateTime())
@@ -489,7 +489,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readLocalTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalTime())
@@ -535,7 +535,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readMonthDay())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsMonthDay())
@@ -590,7 +590,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readOffsetDateTime and JsonReader.readKeyAsOffsetDateTime" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readOffsetDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsOffsetDateTime())
@@ -681,7 +681,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readOffsetTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsOffsetTime())
@@ -745,7 +745,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readPeriod())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsPeriod())
@@ -924,7 +924,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readZonedDateTime and JsonReader.readKeyAsZonedDateTime" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readZonedDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZonedDateTime())
@@ -1015,7 +1015,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readZoneId())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZoneId())
@@ -1084,7 +1084,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readZoneOffset())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZoneOffset())
@@ -1148,7 +1148,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
     }
 
-    "parse null value" in {
+    "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes).readString())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsString())

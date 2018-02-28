@@ -1,8 +1,10 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-trait JsonCodec[A] extends JsonValueCodec[A] with JsonKeyCodec[A]
+import scala.{specialized => sp}
 
-trait JsonValueCodec[A] {
+trait JsonCodec[@sp A] extends JsonValueCodec[A] with JsonKeyCodec[A]
+
+trait JsonValueCodec[@sp A] {
   def decodeValue(in: JsonReader, default: A): A
 
   def encodeValue(x: A, out: JsonWriter): Unit
@@ -10,7 +12,7 @@ trait JsonValueCodec[A] {
   def nullValue: A
 }
 
-trait JsonKeyCodec[A] {
+trait JsonKeyCodec[@sp A] {
   def decodeKey(in: JsonReader): A
 
   def encodeKey(x: A, out: JsonWriter): Unit
