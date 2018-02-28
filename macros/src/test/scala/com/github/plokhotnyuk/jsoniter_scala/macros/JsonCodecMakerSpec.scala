@@ -113,6 +113,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make[UTF8KeysAndValues](CodecMakerConfig())
 
+  case class Operators(`=<>!#%^&|*/\\~+-:$`: Int)
+
   //FIXME: case classes with field annotation(s) should be defined in source file before `make` call for them
   case class NameOverridden(@named("new_" + "name") oldName: String)
 
@@ -803,6 +805,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ\b\f\n\r\t/"),
         "{\"\\u10d2\\u10d0\\u10e1\\u10d0\\u10e6\\u10d4\\u10d1\\u10d8\":\"\\u10d5\\u10d5\\u10d5\\b\\f\\n\\r\\t/\"}".getBytes(UTF_8),
         WriterConfig(escapeUnicode = true))
+    }
+    "serialize and deserialize case classes with Scala operators in field names" in {
+      verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""".getBytes(UTF_8))
     }
     "deserialize but don't serialize default values of case classes that defined for fields" in {
       verifySer(codecOfDefaults, defaults, "{}".getBytes)

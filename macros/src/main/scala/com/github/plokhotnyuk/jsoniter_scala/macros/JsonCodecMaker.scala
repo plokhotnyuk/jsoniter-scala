@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.lang.Character._
 import java.time._
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, JsonReader, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
@@ -296,7 +296,7 @@ object JsonCodecMaker {
       def getFieldAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
         case m: TermSymbol if m.annotations.exists(a => a.tree.tpe =:= c.weakTypeOf[named]
             || a.tree.tpe =:= c.weakTypeOf[transient] || a.tree.tpe =:= c.weakTypeOf[stringified]) =>
-          val fieldName = m.name.toString.trim // FIXME: Why is there a space at the end of field name?!
+          val fieldName = m.name.decodedName.toString.trim // FIXME: Why is there a space at the end of field name?!
           val named = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[named])
           if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
           val trans = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[transient])
@@ -328,12 +328,12 @@ object JsonCodecMaker {
       def getDefaults(tpe: Type): Map[String, Tree] = {
         val module = getModule(tpe)
         getParams(tpe).zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
-          (p.name.toString, q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
+          (p.name.decodedName.toString, q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }(breakOut)
       }
 
       def getMembers(annotations: Map[String, FieldAnnotations], tpe: c.universe.Type): Seq[MethodSymbol] = {
-        def nonTransient(m: MethodSymbol): Boolean = annotations.get(m.name.toString).fold(true)(!_.transient)
+        def nonTransient(m: MethodSymbol): Boolean = annotations.get(m.name.decodedName.toString).fold(true)(!_.transient)
 
         tpe.members.collect {
           case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
@@ -355,11 +355,8 @@ object JsonCodecMaker {
       def getStringified(annotations: Map[String, FieldAnnotations], name: String): Boolean =
         annotations.get(name).fold(false)(_.stringified)
 
-      def fixMinuses(name: String): String =
-        if (name.indexOf("$minus") == -1) name else name.replace("$minus", "-")
-
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
-        annotations.get(defaultName).fold(codecConfig.fieldNameMapper(fixMinuses(defaultName)))(_.name)
+        annotations.get(defaultName).fold(codecConfig.fieldNameMapper(defaultName))(_.name)
 
       def getCollisions(names: Traversable[String]): Traversable[String] =
         names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
@@ -614,7 +611,7 @@ object JsonCodecMaker {
         } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(methodKey, default) {
           val annotations = getFieldAnnotations(tpe)
 
-          def name(m: MethodSymbol): String = getMappedName(annotations, m.name.toString)
+          def name(m: MethodSymbol): String = getMappedName(annotations, m.name.decodedName.toString)
 
           def hashCode(m: MethodSymbol): Int = {
             val cs = name(m).toCharArray
@@ -626,7 +623,7 @@ object JsonCodecMaker {
             (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
           val params = getParams(tpe)
           val required = params.collect {
-            case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.toString
+            case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.decodedName.toString
           }
           val reqVarNum = required.size
           val lastReqVarIndex = reqVarNum >> 5
@@ -652,14 +649,15 @@ object JsonCodecMaker {
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
             val tpe = methodType(m)
-            q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.toString, nullValue(tpe))}"
+            q"var ${TermName(s"_${m.name}")}: $tpe = ${defaults.getOrElse(m.name.decodedName.toString, nullValue(tpe))}"
           }
           val readFields = groupByOrdered(members)(hashCode).map { case (hashCode, ms) =>
             val checkNameAndReadValue = ms.foldRight(unexpectedFieldHandler) { case (m, acc) =>
+              val decodedName = m.name.decodedName.toString
               val varName = TermName(s"_${m.name}")
-              val isStringified = getStringified(annotations, m.name.toString)
+              val isStringified = getStringified(annotations, decodedName)
               val readValue = q"$varName = ${genReadVal(methodType(m), q"$varName", isStringified)}"
-              val resetReqFieldFlag = bitmasks.getOrElse(m.name.toString, EmptyTree)
+              val resetReqFieldFlag = bitmasks.getOrElse(decodedName, EmptyTree)
               q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
                     ..$readValue
                     ..$resetReqFieldFlag
@@ -788,9 +786,10 @@ object JsonCodecMaker {
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
             val tpe = methodType(m)
-            val name = getMappedName(annotations, m.name.toString)
-            val isStringified = getStringified(annotations, m.name.toString)
-            defaults.get(m.name.toString) match {
+            val decodedName = m.name.decodedName.toString
+            val mappedName = getMappedName(annotations, decodedName)
+            val isStringified = getStringified(annotations, decodedName)
+            defaults.get(decodedName) match {
               case Some(d) =>
                 if (isContainer(tpe)) {
                   val nonEmptyAndDefaultMatchingCheck =
@@ -805,13 +804,13 @@ object JsonCodecMaker {
                     else genWriteVal(q"v", tpe, isStringified)
                   q"""val v = x.$m
                       if ($nonEmptyAndDefaultMatchingCheck) {
-                        ..${genWriteConstantKey(name)}
+                        ..${genWriteConstantKey(mappedName)}
                         ..$writeVal
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
-                        ..${genWriteConstantKey(name)}
+                        ..${genWriteConstantKey(mappedName)}
                         ..${genWriteVal(q"v", tpe, isStringified)}
                       }"""
                 }
@@ -823,11 +822,11 @@ object JsonCodecMaker {
                     else genWriteVal(q"v", tpe, isStringified)
                   q"""val v = x.$m
                       if ($nonEmptyCheck) {
-                        ..${genWriteConstantKey(name)}
+                        ..${genWriteConstantKey(mappedName)}
                         ..$writeVal
                       }"""
                 } else {
-                  q"""..${genWriteConstantKey(name)}
+                  q"""..${genWriteConstantKey(mappedName)}
                       ..${genWriteVal(q"x.$m", tpe, isStringified)}"""
                 }
             }
