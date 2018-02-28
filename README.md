@@ -3,7 +3,7 @@
 [![build status](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala) 
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Scaladex](https://img.shields.io/badge/macros-0.17.0-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
+[![Scaladex](https://img.shields.io/badge/macros-0.18.0-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
 
 Scala macros that generates codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing & serialization.
@@ -82,7 +82,7 @@ and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 Add the library to your dependencies list
 
 ```sbt
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.17.0"
+libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.18.0"
 ```
 
 Generate codecs for your case classes, collections, etc.
