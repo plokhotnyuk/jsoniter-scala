@@ -389,7 +389,7 @@ object JsonCodecMaker {
         val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("v" + nullValueNames.size))
         nullValueTrees.getOrElseUpdate(tpe, {
           val impl = f
-          q"private val $nullValueName: $tpe = $impl"
+          q"private[this] val $nullValueName: $tpe = $impl"
         })
         q"$nullValueName"
       }
@@ -401,7 +401,7 @@ object JsonCodecMaker {
         val reqFieldName = reqFieldNames.getOrElseUpdate(tpe, TermName("r" + reqFieldNames.size))
         reqFieldTrees.getOrElseUpdate(tpe, {
           val impl = f
-          q"private val $reqFieldName: Array[String] = Array(..$impl)"
+          q"private[this] val $reqFieldName: Array[String] = Array(..$impl)"
         })
         q"$reqFieldName"
       }
@@ -418,7 +418,7 @@ object JsonCodecMaker {
         val decodeMethodName = decodeMethodNames.getOrElseUpdate(methodKey, TermName("d" + decodeMethodNames.size))
         decodeMethodTrees.getOrElseUpdate(methodKey, {
           val impl = f
-          q"private def $decodeMethodName(in: JsonReader, default: ${methodKey.tpe}): ${methodKey.tpe} = $impl"
+          q"private[this] def $decodeMethodName(in: JsonReader, default: ${methodKey.tpe}): ${methodKey.tpe} = $impl"
         })
         q"$decodeMethodName(in, $arg)"
       }
@@ -430,7 +430,7 @@ object JsonCodecMaker {
         val encodeMethodName = encodeMethodNames.getOrElseUpdate(methodKey, TermName("e" + encodeMethodNames.size))
         encodeMethodTrees.getOrElseUpdate(methodKey, {
           val impl = f
-          q"private def $encodeMethodName(x: ${methodKey.tpe}, out: JsonWriter): Unit = $impl"
+          q"private[this] def $encodeMethodName(x: ${methodKey.tpe}, out: JsonWriter): Unit = $impl"
         })
         q"$encodeMethodName($arg, out)"
       }
