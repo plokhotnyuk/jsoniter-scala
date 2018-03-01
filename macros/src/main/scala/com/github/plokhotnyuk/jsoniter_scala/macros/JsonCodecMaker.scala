@@ -77,7 +77,7 @@ object JsonCodecMaker {
         sb.append(ch)
         true
       } else {
-        if (isPrecedingLowerCased) sb.append('_')
+        if (isPrecedingLowerCased || i < len && isLowerCase(s.charAt(i))) sb.append('_')
         sb.append(toLowerCase(ch))
         false
       }
@@ -100,7 +100,7 @@ object JsonCodecMaker {
         sb.append(ch)
         true
       } else {
-        if (isPrecedingLowerCased) sb.append('-')
+        if (isPrecedingLowerCased || i < len && isLowerCase(s.charAt(i))) sb.append('-')
         sb.append(toLowerCase(ch))
         false
       }
