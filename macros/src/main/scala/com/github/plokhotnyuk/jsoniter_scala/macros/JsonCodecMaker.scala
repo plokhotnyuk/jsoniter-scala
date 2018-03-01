@@ -40,7 +40,7 @@ case class CodecMakerConfig(
   adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
   discriminatorFieldName: String = "type",
   isStringified: Boolean = false,
-  skipUnexpectedFields: Boolean = true) extends StaticAnnotation
+  skipUnexpectedFields: Boolean = true)
 
 object JsonCodecMaker {
   def enforceCamelCase(s: String): String =
