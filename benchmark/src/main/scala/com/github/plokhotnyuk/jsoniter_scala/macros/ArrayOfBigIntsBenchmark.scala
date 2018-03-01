@@ -23,7 +23,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def readJacksonScala(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[BigInt] = read[Array[BigInt]](jsonBytes)
+  def readJsoniterScala(): Array[BigInt] = readFromArray[Array[BigInt]](jsonBytes)
 
 /* FIXME: add format for BigInt arrays
   @Benchmark
@@ -37,10 +37,10 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 /* FIXME: add format for BigInt arrays
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

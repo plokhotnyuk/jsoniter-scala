@@ -26,7 +26,7 @@ class IntBenchmark extends CommonParams {
   def readJacksonScala(): Int = jacksonMapper.readValue[Int](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Int = read[Int](jsonBytes)
+  def readJsoniterScala(): Int = readFromArray[Int](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Int = Json.parse(jsonBytes).as[Int]
@@ -41,10 +41,10 @@ class IntBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

@@ -26,7 +26,7 @@ class ExtractFieldsBenchmark extends CommonParams {
   def readJacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): ExtractFields = read[ExtractFields](jsonBytes)
+  def readJsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
 
   @Benchmark
   def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields](extractFieldsFormat)

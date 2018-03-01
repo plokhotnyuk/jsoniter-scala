@@ -25,7 +25,7 @@ class ArrayOfLocalTimesBenchmark extends CommonParams {
   def readJacksonScala(): Array[LocalTime] = jacksonMapper.readValue[Array[LocalTime]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[LocalTime] = read[Array[LocalTime]](jsonBytes)
+  def readJsoniterScala(): Array[LocalTime] = readFromArray[Array[LocalTime]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[LocalTime] = Json.parse(jsonBytes).as[Array[LocalTime]]
@@ -38,10 +38,10 @@ class ArrayOfLocalTimesBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

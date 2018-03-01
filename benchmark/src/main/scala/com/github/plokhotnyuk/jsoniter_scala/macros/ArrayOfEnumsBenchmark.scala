@@ -34,7 +34,7 @@ class ArrayOfEnumsBenchmark extends CommonParams {
   def readJacksonScala(): Array[SuitEnum] = jacksonMapper.readValue[Array[SuitEnum]](jsonBytes)
 */
   @Benchmark
-  def readJsoniterScala(): Array[SuitEnum] = read[Array[SuitEnum]](jsonBytes)
+  def readJsoniterScala(): Array[SuitEnum] = readFromArray[Array[SuitEnum]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[SuitEnum] = Json.parse(jsonBytes).as[Array[SuitEnum]](enumArrayFormat)
@@ -46,10 +46,10 @@ class ArrayOfEnumsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(enumArrayFormat))

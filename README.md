@@ -103,8 +103,8 @@ That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_sc
 Now you can use it for parsing & serialization:
 
 ```scala
-val user = read("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
-val json = write(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+val user = readFromArray("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
+val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
 To see generated code add the following line to your sbt build file

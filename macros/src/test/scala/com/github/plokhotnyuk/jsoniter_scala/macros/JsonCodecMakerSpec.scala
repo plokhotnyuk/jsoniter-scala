@@ -524,7 +524,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes
       verifySer(codecOfArrays, arrays, json)
-      val parsedObj = read(json)(codecOfArrays)
+      val parsedObj = readFromArray(json)(codecOfArrays)
       parsedObj.aa.deep shouldBe arrays.aa.deep
       parsedObj.a.deep shouldBe arrays.a.deep
     }
@@ -533,7 +533,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val arrayOfArray = Array(Array(1, 2, 3), Array(4, 5, 6))
       val codecOfArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig())
       verifySer(codecOfArrayOfArray, arrayOfArray, json)
-      val parsedObj = read(json)(codecOfArrayOfArray)
+      val parsedObj = readFromArray(json)(codecOfArrayOfArray)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
     "serialize and deserialize stringified top-level arrays" in {
@@ -541,14 +541,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val arrayOfArray = Array(Array(1, 2, 3), Array(4, 5, 6))
       val codecOfStringifiedArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig(isStringified = true))
       verifySer(codecOfStringifiedArrayOfArray, arrayOfArray, json)
-      val parsedObj = read(json)(codecOfStringifiedArrayOfArray)
+      val parsedObj = readFromArray(json)(codecOfStringifiedArrayOfArray)
       parsedObj.deep shouldBe arrayOfArray.deep
     }
     "do not serialize fields of case classes with empty arrays" in {
       val json = """{"aa":[[],[]]}""".getBytes
       val arrays = Arrays(Array(Array(), Array()), Array())
       verifySer(codecOfArrays, arrays, json)
-      val parsedObj = read(json)(codecOfArrays)
+      val parsedObj = readFromArray(json)(codecOfArrays)
       parsedObj.aa.deep shouldBe arrays.aa.deep
       parsedObj.a.deep shouldBe arrays.a.deep
     }
@@ -1146,14 +1146,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   def verifySer[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     val baos = new ByteArrayOutputStream
-    write(obj, baos, cfg)(codec)
+    writeToStream(obj, baos, cfg)(codec)
     toString(baos.toByteArray) shouldBe toString(json)
-    toString(write(obj, cfg)(codec)) shouldBe toString(json)
+    toString(writeToArray(obj, cfg)(codec)) shouldBe toString(json)
   }
 
   def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
-    read(new ByteArrayInputStream(json))(codec) shouldBe obj
-    read(json)(codec) shouldBe obj
+    readFromStream(new ByteArrayInputStream(json))(codec) shouldBe obj
+    readFromArray(json)(codec) shouldBe obj
   }
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)

@@ -29,7 +29,7 @@ class ArrayOfDurationsBenchmark extends CommonParams {
   def readJacksonScala(): Array[Duration] = jacksonMapper.readValue[Array[Duration]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[Duration] = read[Array[Duration]](jsonBytes)
+  def readJsoniterScala(): Array[Duration] = readFromArray[Array[Duration]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[Duration] = Json.parse(jsonBytes).as[Array[Duration]]
@@ -41,10 +41,10 @@ class ArrayOfDurationsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

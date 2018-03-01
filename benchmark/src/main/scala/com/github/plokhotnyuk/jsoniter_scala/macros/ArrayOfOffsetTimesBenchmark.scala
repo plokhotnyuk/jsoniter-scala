@@ -27,7 +27,7 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
   def readJacksonScala(): Array[OffsetTime] = jacksonMapper.readValue[Array[OffsetTime]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[OffsetTime] = read[Array[OffsetTime]](jsonBytes)
+  def readJsoniterScala(): Array[OffsetTime] = readFromArray[Array[OffsetTime]](jsonBytes)
 /* FIXME Play-JSON doesn't support OffsetTime
   @Benchmark
   def readPlayJson(): Array[OffsetTime] = Json.parse(jsonBytes).as[Array[OffsetTime]]
@@ -39,10 +39,10 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
 /* FIXME Play-JSON doesn't support OffsetTime
   @Benchmark

@@ -23,7 +23,7 @@ class ArrayOfBooleansBenchmark extends CommonParams {
   def readJacksonScala(): Array[Boolean] = jacksonMapper.readValue[Array[Boolean]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[Boolean] = read[Array[Boolean]](jsonBytes)
+  def readJsoniterScala(): Array[Boolean] = readFromArray[Array[Boolean]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[Boolean] = Json.parse(jsonBytes).as[Array[Boolean]]
@@ -35,10 +35,10 @@ class ArrayOfBooleansBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

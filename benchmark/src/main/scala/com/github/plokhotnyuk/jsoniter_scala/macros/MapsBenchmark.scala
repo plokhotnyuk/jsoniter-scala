@@ -29,7 +29,7 @@ class MapsBenchmark extends CommonParams {
   def readJacksonScala(): Maps = jacksonMapper.readValue[Maps](jsonBytes)
 */
   @Benchmark
-  def readJsoniterScala(): Maps = read[Maps](jsonBytes)
+  def readJsoniterScala(): Maps = readFromArray[Maps](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Maps = Json.parse(jsonBytes).as[Maps](mapsFormat)
@@ -41,7 +41,7 @@ class MapsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mapsFormat))

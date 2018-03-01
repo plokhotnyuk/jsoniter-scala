@@ -27,7 +27,7 @@ class ArraysBenchmark extends CommonParams {
   def readJacksonScala(): Arrays = jacksonMapper.readValue[Arrays](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Arrays = read[Arrays](jsonBytes)
+  def readJsoniterScala(): Arrays = readFromArray[Arrays](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Arrays = Json.parse(jsonBytes).as[Arrays](arraysFormat)
@@ -39,7 +39,7 @@ class ArraysBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(arraysFormat))

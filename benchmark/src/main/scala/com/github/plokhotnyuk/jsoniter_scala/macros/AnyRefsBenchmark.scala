@@ -27,7 +27,7 @@ class AnyRefsBenchmark extends CommonParams {
   def readJacksonScala(): AnyRefs = jacksonMapper.readValue[AnyRefs](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): AnyRefs = read[AnyRefs](jsonBytes)
+  def readJsoniterScala(): AnyRefs = readFromArray[AnyRefs](jsonBytes)
 
   @Benchmark
   def readPlayJson(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs](anyRefsFormat)
@@ -39,10 +39,10 @@ class AnyRefsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyRefsFormat))

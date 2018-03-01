@@ -33,7 +33,7 @@ class IntAndLongMapsBenchmark extends CommonParams {
   def readJacksonScala(): IntAndLongMaps = jacksonMapper.readValue[IntAndLongMaps](jsonBytes)
 */
   @Benchmark
-  def readJsoniterScala(): IntAndLongMaps = read[IntAndLongMaps](jsonBytes)
+  def readJsoniterScala(): IntAndLongMaps = readFromArray[IntAndLongMaps](jsonBytes)
 
   @Benchmark
   def readPlayJson(): IntAndLongMaps = Json.parse(jsonBytes).as[IntAndLongMaps](intAndLongMapsFormat)
@@ -47,7 +47,7 @@ class IntAndLongMapsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(intAndLongMapsFormat))

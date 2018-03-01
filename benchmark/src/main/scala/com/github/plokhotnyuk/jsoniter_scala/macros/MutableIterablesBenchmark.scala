@@ -31,7 +31,7 @@ class MutableIterablesBenchmark extends CommonParams {
 */
 
   @Benchmark
-  def readJsoniterScala(): MutableIterables = read[MutableIterables](jsonBytes)
+  def readJsoniterScala(): MutableIterables = readFromArray[MutableIterables](jsonBytes)
 
   @Benchmark
   def readPlayJson(): MutableIterables = Json.parse(jsonBytes).as[MutableIterables](mutableIterablesFormat)
@@ -42,7 +42,7 @@ class MutableIterablesBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableIterablesFormat))

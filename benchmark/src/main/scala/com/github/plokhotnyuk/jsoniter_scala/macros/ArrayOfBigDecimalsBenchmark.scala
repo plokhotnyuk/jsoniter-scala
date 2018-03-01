@@ -30,7 +30,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def readJacksonScala(): Array[BigDecimal] = jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[BigDecimal] = read[Array[BigDecimal]](jsonBytes)
+  def readJsoniterScala(): Array[BigDecimal] = readFromArray[Array[BigDecimal]](jsonBytes)
 
   @Benchmark
   def readPlayJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
@@ -42,10 +42,10 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = write(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = write(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
