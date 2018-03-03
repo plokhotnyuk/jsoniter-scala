@@ -586,10 +586,13 @@ object JsonCodecMaker {
                   .getOrElse(in.enumValueError(len))
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
-          q"""val v = in.readString()
-              try ${companion(tpe)}.valueOf(v) catch {
-                case _: IllegalArgumentException => in.enumValueError(v)
-              }"""
+          q"""if (in.isNextToken('"')) {
+                in.rollbackToken()
+                val v = in.readString(null)
+                try ${companion(tpe)}.valueOf(v) catch {
+                  case _: IllegalArgumentException => in.enumValueError(v)
+                }
+              } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('{')) {
                 in.rollbackToken()

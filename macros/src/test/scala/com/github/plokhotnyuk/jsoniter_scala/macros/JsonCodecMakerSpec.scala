@@ -125,7 +125,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val stringified = Stringified(1, 2, List(1), List(2))
   val codecOfStringified: JsonValueCodec[Stringified] = make[Stringified](CodecMakerConfig())
 
-  case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'), l: List[Int] = List(0))
+  case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
+                      l: List[Int] = List(0), e: Level = Level.HIGH)
 
   val defaults = Defaults()
   val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
@@ -410,7 +411,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
               Right(codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue))
             case '"' =>
               in.rollbackToken()
-              Left(in.readString())
+              Left(in.readString(null))
             case _ =>
               in.decodeError("expected '{' or '\"'")
           }
@@ -814,7 +815,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "deserialize default values in case of missing field or null/empty values" in {
       verifyDeser(codecOfDefaults, defaults, """{}""".getBytes)
-      verifyDeser(codecOfDefaults, defaults, """{"s":null,"bi":null,"l":null,"oc":null}""".getBytes)
+      verifyDeser(codecOfDefaults, defaults, """{"s":null,"bi":null,"l":null,"oc":null,"e":null}""".getBytes)
       verifyDeser(codecOfDefaults, defaults, """{"l":[]}""".getBytes)
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
