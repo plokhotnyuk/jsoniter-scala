@@ -178,7 +178,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readUUID and JsonReader.readKeyAsUUID" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readUUID())
+      assert(intercept[JsonParseException](reader("null".getBytes).readUUID(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsUUID())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -200,7 +200,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readUUID()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readUUID(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsUUID()).getMessage.contains(error))
       }
 
@@ -221,7 +221,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readDuration())
+      assert(intercept[JsonParseException](reader("null".getBytes).readDuration(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsDuration())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -241,7 +241,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readDuration()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readDuration(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsDuration()).getMessage.contains(error))
       }
 
@@ -285,7 +285,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readInstant())
+      assert(intercept[JsonParseException](reader("null".getBytes).readInstant(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsInstant())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -307,7 +307,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readInstant()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readInstant(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsInstant()).getMessage.contains(error))
       }
 
@@ -360,7 +360,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readLocalDate())
+      assert(intercept[JsonParseException](reader("null".getBytes).readLocalDate(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDate())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -382,7 +382,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readLocalDate()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readLocalDate(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDate()).getMessage.contains(error))
       }
 
@@ -418,7 +418,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readLocalDateTime())
+      assert(intercept[JsonParseException](reader("null".getBytes).readLocalDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -440,7 +440,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readLocalDateTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readLocalDateTime(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDateTime()).getMessage.contains(error))
       }
 
@@ -490,7 +490,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readLocalTime())
+      assert(intercept[JsonParseException](reader("null".getBytes).readLocalTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsLocalTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -512,7 +512,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readLocalTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readLocalTime(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalTime()).getMessage.contains(error))
       }
 
@@ -536,7 +536,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readMonthDay())
+      assert(intercept[JsonParseException](reader("null".getBytes).readMonthDay(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsMonthDay())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -558,7 +558,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readMonthDay()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readMonthDay(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsMonthDay()).getMessage.contains(error))
       }
 
@@ -591,7 +591,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readOffsetDateTime and JsonReader.readKeyAsOffsetDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readOffsetDateTime())
+      assert(intercept[JsonParseException](reader("null".getBytes).readOffsetDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsOffsetDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -613,7 +613,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readOffsetDateTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readOffsetDateTime(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetDateTime()).getMessage.contains(error))
       }
 
@@ -682,7 +682,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readOffsetTime())
+      assert(intercept[JsonParseException](reader("null".getBytes).readOffsetTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsOffsetTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -704,7 +704,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readOffsetTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readOffsetTime(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetTime()).getMessage.contains(error))
       }
 
@@ -746,7 +746,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readPeriod())
+      assert(intercept[JsonParseException](reader("null".getBytes).readPeriod(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsPeriod())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -784,7 +784,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readPeriod()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readPeriod(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsPeriod()).getMessage.contains(error))
       }
 
@@ -828,9 +828,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readYear and JsonReader.readStringAsYear" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readYear())
+      assert(intercept[JsonParseException](reader("null".getBytes).readYear(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes).readStringAsYear())
+      assert(intercept[JsonParseException](reader("null".getBytes).readStringAsYear(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -883,7 +883,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readYearMonth())
+      assert(intercept[JsonParseException](reader("null".getBytes).readYearMonth(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsYearMonth())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -905,7 +905,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readYearMonth()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readYearMonth(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsYearMonth()).getMessage.contains(error))
       }
 
@@ -925,7 +925,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readZonedDateTime and JsonReader.readKeyAsZonedDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readZonedDateTime())
+      assert(intercept[JsonParseException](reader("null".getBytes).readZonedDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZonedDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -947,7 +947,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readZonedDateTime()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readZonedDateTime(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsZonedDateTime()).getMessage.contains(error))
       }
 
@@ -1016,7 +1016,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readZoneId())
+      assert(intercept[JsonParseException](reader("null".getBytes).readZoneId(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZoneId())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -1038,7 +1038,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readZoneId()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readZoneId(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsZoneId()).getMessage.contains(error))
       }
 
@@ -1085,7 +1085,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readZoneOffset())
+      assert(intercept[JsonParseException](reader("null".getBytes).readZoneOffset(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsZoneOffset())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -1107,7 +1107,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readZoneOffset()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readZoneOffset(null)).getMessage.contains(error))
         assert(intercept[JsonParseException](reader(bytes).readKeyAsZoneOffset()).getMessage.contains(error))
       }
 
@@ -1144,12 +1144,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     def checkError(bytes: Array[Byte], error: String): Unit = {
-      assert(intercept[JsonParseException](reader(bytes).readString()).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader(bytes).readString(null)).getMessage.contains(error))
       assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
     }
 
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readString())
+      assert(intercept[JsonParseException](reader("null".getBytes).readString(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null".getBytes).readKeyAsString())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -1785,9 +1785,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readBigInt())
+      assert(intercept[JsonParseException](reader("null".getBytes).readBigInt(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes).readStringAsBigInt())
+      assert(intercept[JsonParseException](reader("null".getBytes).readStringAsBigInt(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1861,9 +1861,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes).readBigDecimal())
+      assert(intercept[JsonParseException](reader("null".getBytes).readBigDecimal(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes).readStringAsBigDecimal())
+      assert(intercept[JsonParseException](reader("null".getBytes).readStringAsBigDecimal(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -2076,39 +2076,39 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readInstant(s: String): Instant = readInstant(s.getBytes(UTF_8))
 
-  def readInstant(buf: Array[Byte]): Instant = reader(stringify(buf)).readInstant()
+  def readInstant(buf: Array[Byte]): Instant = reader(stringify(buf)).readInstant(null)
 
   def readDuration(s: String): Duration = readDuration(s.getBytes(UTF_8))
 
-  def readDuration(buf: Array[Byte]): Duration = reader(stringify(buf)).readDuration()
+  def readDuration(buf: Array[Byte]): Duration = reader(stringify(buf)).readDuration(null)
 
   def readLocalDate(s: String): LocalDate = readLocalDate(s.getBytes(UTF_8))
 
-  def readLocalDate(buf: Array[Byte]): LocalDate = reader(stringify(buf)).readLocalDate()
+  def readLocalDate(buf: Array[Byte]): LocalDate = reader(stringify(buf)).readLocalDate(null)
 
   def readLocalDateTime(s: String): LocalDateTime = readLocalDateTime(s.getBytes(UTF_8))
 
-  def readLocalDateTime(buf: Array[Byte]): LocalDateTime = reader(stringify(buf)).readLocalDateTime()
+  def readLocalDateTime(buf: Array[Byte]): LocalDateTime = reader(stringify(buf)).readLocalDateTime(null)
 
   def readLocalTime(s: String): LocalTime = readLocalTime(s.getBytes(UTF_8))
 
-  def readLocalTime(buf: Array[Byte]): LocalTime = reader(stringify(buf)).readLocalTime()
+  def readLocalTime(buf: Array[Byte]): LocalTime = reader(stringify(buf)).readLocalTime(null)
 
   def readMonthDay(s: String): MonthDay = readMonthDay(s.getBytes(UTF_8))
 
-  def readMonthDay(buf: Array[Byte]): MonthDay = reader(stringify(buf)).readMonthDay()
+  def readMonthDay(buf: Array[Byte]): MonthDay = reader(stringify(buf)).readMonthDay(null)
 
   def readOffsetDateTime(s: String): OffsetDateTime = readOffsetDateTime(s.getBytes(UTF_8))
 
-  def readOffsetDateTime(buf: Array[Byte]): OffsetDateTime = reader(stringify(buf)).readOffsetDateTime()
+  def readOffsetDateTime(buf: Array[Byte]): OffsetDateTime = reader(stringify(buf)).readOffsetDateTime(null)
 
   def readOffsetTime(s: String): OffsetTime = readOffsetTime(s.getBytes(UTF_8))
 
-  def readOffsetTime(buf: Array[Byte]): OffsetTime = reader(stringify(buf)).readOffsetTime()
+  def readOffsetTime(buf: Array[Byte]): OffsetTime = reader(stringify(buf)).readOffsetTime(null)
 
   def readPeriod(s: String): Period = readPeriod(s.getBytes(UTF_8))
 
-  def readPeriod(buf: Array[Byte]): Period = reader(stringify(buf)).readPeriod()
+  def readPeriod(buf: Array[Byte]): Period = reader(stringify(buf)).readPeriod(null)
 
   def readYear(s: String, default: Year): Year = readYear(s.getBytes(UTF_8), default)
 
@@ -2116,27 +2116,27 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readYearMonth(s: String): YearMonth = readYearMonth(s.getBytes(UTF_8))
 
-  def readYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf)).readYearMonth()
+  def readYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf)).readYearMonth(null)
 
   def readZonedDateTime(s: String): ZonedDateTime = readZonedDateTime(s.getBytes(UTF_8))
 
-  def readZonedDateTime(buf: Array[Byte]): ZonedDateTime = reader(stringify(buf)).readZonedDateTime()
+  def readZonedDateTime(buf: Array[Byte]): ZonedDateTime = reader(stringify(buf)).readZonedDateTime(null)
 
   def readZoneOffset(s: String): ZoneOffset = readZoneOffset(s.getBytes(UTF_8))
 
-  def readZoneOffset(buf: Array[Byte]): ZoneOffset = reader(stringify(buf)).readZoneOffset()
+  def readZoneOffset(buf: Array[Byte]): ZoneOffset = reader(stringify(buf)).readZoneOffset(null)
 
   def readZoneId(s: String): ZoneId = readZoneId(s.getBytes(UTF_8))
 
-  def readZoneId(buf: Array[Byte]): ZoneId = reader(stringify(buf)).readZoneId()
+  def readZoneId(buf: Array[Byte]): ZoneId = reader(stringify(buf)).readZoneId(null)
 
   def readUUID(s: String): UUID = readUUID(s.getBytes(UTF_8))
 
-  def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID()
+  def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID(null)
 
   def readString(s: String): String = readString(s.getBytes(UTF_8))
 
-  def readString(buf: Array[Byte]): String = reader(stringify(buf)).readString()
+  def readString(buf: Array[Byte]): String = reader(stringify(buf)).readString(null)
 
   def readChar(s: String): Char = readChar(s.getBytes(UTF_8))
 

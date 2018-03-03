@@ -330,76 +330,76 @@ final class JsonReader private[jsoniter_scala](
 
   def readFloat(): Float = parseDouble(isToken = true).toFloat
 
-  def readBigInt(default: BigInt = null): BigInt = parseBigInt(isToken = true, default)
+  def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default)
 
-  def readBigDecimal(default: BigDecimal = null): BigDecimal = parseBigDecimal(isToken = true, default)
+  def readBigDecimal(default: BigDecimal): BigDecimal = parseBigDecimal(isToken = true, default)
 
-  def readString(default: String = null): String =
+  def readString(default: String): String =
     if (isNextToken('"', head)) {
       val len = parseString()
       new String(charBuf, 0, len)
     } else readNullOrTokenError(default, '"')
 
-  def readDuration(default: Duration = null): Duration =
+  def readDuration(default: Duration): Duration =
     if (isNextToken('"', head)) parseDuration()
     else readNullOrTokenError(default, '"')
 
-  def readInstant(default: Instant = null): Instant =
+  def readInstant(default: Instant): Instant =
     if (isNextToken('"', head)) parseInstant()
     else readNullOrTokenError(default, '"')
 
-  def readLocalDate(default: LocalDate = null): LocalDate =
+  def readLocalDate(default: LocalDate): LocalDate =
     if (isNextToken('"', head)) parseLocalDate()
     else readNullOrTokenError(default, '"')
 
-  def readLocalDateTime(default: LocalDateTime = null): LocalDateTime =
+  def readLocalDateTime(default: LocalDateTime): LocalDateTime =
     if (isNextToken('"', head)) parseLocalDateTime()
     else readNullOrTokenError(default, '"')
 
-  def readLocalTime(default: LocalTime = null): LocalTime =
+  def readLocalTime(default: LocalTime): LocalTime =
     if (isNextToken('"', head)) parseLocalTime()
     else readNullOrTokenError(default, '"')
 
-  def readMonthDay(default: MonthDay = null): MonthDay =
+  def readMonthDay(default: MonthDay): MonthDay =
     if (isNextToken('"', head)) parseMonthDay()
     else readNullOrTokenError(default, '"')
 
-  def readOffsetDateTime(default: OffsetDateTime = null): OffsetDateTime =
+  def readOffsetDateTime(default: OffsetDateTime): OffsetDateTime =
     if (isNextToken('"', head)) parseOffsetDateTime()
     else readNullOrTokenError(default, '"')
 
-  def readOffsetTime(default: OffsetTime = null): OffsetTime =
+  def readOffsetTime(default: OffsetTime): OffsetTime =
     if (isNextToken('"', head)) parseOffsetTime()
     else readNullOrTokenError(default, '"')
 
-  def readPeriod(default: Period = null): Period =
+  def readPeriod(default: Period): Period =
     if (isNextToken('"', head)) parsePeriod()
     else readNullOrTokenError(default, '"')
 
-  def readYear(default: Year = null): Year =
+  def readYear(default: Year): Year =
     if (isNextToken('n', head)) readNullOrNumberError(default, head)
     else {
       rollbackToken()
       parseYear(true)
     }
 
-  def readYearMonth(default: YearMonth = null): YearMonth =
+  def readYearMonth(default: YearMonth): YearMonth =
     if (isNextToken('"', head)) parseYearMonth()
     else readNullOrTokenError(default, '"')
 
-  def readZonedDateTime(default: ZonedDateTime = null): ZonedDateTime =
+  def readZonedDateTime(default: ZonedDateTime): ZonedDateTime =
     if (isNextToken('"', head)) parseZonedDateTime()
     else readNullOrTokenError(default, '"')
 
-  def readZoneId(default: ZoneId = null): ZoneId =
+  def readZoneId(default: ZoneId): ZoneId =
     if (isNextToken('"', head)) parseZoneId()
     else readNullOrTokenError(default, '"')
 
-  def readZoneOffset(default: ZoneOffset = null): ZoneOffset =
+  def readZoneOffset(default: ZoneOffset): ZoneOffset =
     if (isNextToken('"', head)) parseZoneOffset()
     else readNullOrTokenError(default, '"')
 
-  def readUUID(default: UUID = null): UUID =
+  def readUUID(default: UUID): UUID =
     if (isNextToken('"', head)) parseUUID(head)
     else readNullOrTokenError(default, '"')
 
@@ -451,21 +451,21 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readStringAsBigInt(default: BigInt = null): BigInt =
+  def readStringAsBigInt(default: BigInt): BigInt =
     if (isNextToken('"', head)) {
       val x = parseBigInt(isToken = false, default)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
 
-  def readStringAsBigDecimal(default: BigDecimal = null): BigDecimal =
+  def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
     if (isNextToken('"', head)) {
       val x = parseBigDecimal(isToken = false, default)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
 
-  def readStringAsYear(default: Year = null): Year =
+  def readStringAsYear(default: Year): Year =
     if (isNextToken('"', head)) {
       val x = parseYear(false)
       readParenthesesByte()
