@@ -299,14 +299,14 @@ object JsonCodecMaker {
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
       def getFieldAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
-        case m: TermSymbol if m.annotations.exists(a => a.tree.tpe =:= c.weakTypeOf[named]
-            || a.tree.tpe =:= c.weakTypeOf[transient] || a.tree.tpe =:= c.weakTypeOf[stringified]) =>
+        case m: TermSymbol if m.annotations.exists(a => a.tree.tpe =:= typeOf[named]
+            || a.tree.tpe =:= typeOf[transient] || a.tree.tpe =:= typeOf[stringified]) =>
           val fieldName = m.name.decodedName.toString.trim // FIXME: Why is there a space at the end of field name?!
-          val named = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[named])
+          val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
           if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
-          val trans = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[transient])
+          val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
           if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
-          val strings = m.annotations.filter(_.tree.tpe =:= c.weakTypeOf[stringified])
+          val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
           if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
           if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
             warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +

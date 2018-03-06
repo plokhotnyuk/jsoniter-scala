@@ -5,10 +5,10 @@
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scaladex](https://img.shields.io/badge/macros-0.20.0-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
 
-Scala macros that generates codecs for case classes, standard types and collections
-to get maximum performance of JSON parsing & serialization.
+Scala macros that generate codecs for case classes, standard types and collections
+to get maximum performance of JSON parsing and serialization.
 
-[Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing & serialization 
+[Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
 performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using JDK 8 & JDK 9 on the following 
 environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
 Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
@@ -16,16 +16,16 @@ Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.
 ## Goals
 
 Initially this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
-- do parsing & serialization of JSON directly from UTF-8 bytes to your case classes & Scala collections and back but 
-  do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations & copying
-- do validation of UTF-8 encoding, JSON format & mapped values efficiently with clear reporting, do not replace 
+- do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but 
+  do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations and copying
+- do validation of UTF-8 encoding, JSON format and mapped values efficiently with clear reporting, do not replace 
   illegally encoded characters of string values by placeholder characters
 - define in _compile-time_ classes that will be instantiated during parsing to minimize probability of runtime issues, 
   generated sources can be inspected to prove that there are no security vulnerabilities during parsing
 
 It targets JDK 8+ w/o any platform restrictions.
 
-Support of Scala.js & Scala Native is not a goal for the moment. 
+Support of Scala.js and Scala Native is not a goal for the moment. 
 
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
@@ -67,7 +67,7 @@ There are number of configurable options that can be set in compile-time:
 - Name of a discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguish classes of ADTs
 
-List of options that change parsing & serialization in runtime:
+List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
 - Throwing of stackless parsing exceptions to greatly reduce impact on performance  
@@ -100,7 +100,7 @@ implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make[User](CodecMakerC
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec`.
 
-Now you can use it for parsing & serialization:
+Now you can use it for parsing and serialization:
 
 ```scala
 val user = readFromArray("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
@@ -113,7 +113,7 @@ To see generated code add the following line to your sbt build file
 scalaOptions += "-Xmacro-settings:print-codecs"
 ```
 
-For more use cases & examples, please, check out tests: 
+For more use cases and examples, please, check out tests: 
 - [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
 - [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
 - [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
@@ -132,7 +132,7 @@ sbt -J-XX:MaxMetaspaceSize=512m clean +coverage +test +coverageReport +mimaRepor
 
 ### Run benchmarks
 
-Sbt plugin for JMH tool is used for benchmarking, to see all their features & options please check 
+Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check 
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](http://openjdk.java.net/projects/code-tools/jmh/). 
 
 Learn how to write benchmarks in [JMH samples](http://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/)
@@ -170,7 +170,7 @@ On Linux the perf profiler can be used to see CPU event statistics normalized pe
 sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm.txt
 ```
 
-Following command can be used to profile & print assembly code of hottest methods, but it requires [setup of an 
+Following command can be used to profile and print assembly code of hottest methods, but it requires [setup of an 
 additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
@@ -214,7 +214,7 @@ sbt publishM2
 For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double check binary & source compatibility (including behaviour) and release using the following command (credentials required):
+Double check binary and source compatibility (including behaviour) and release using the following command (credentials required):
 
 ```sh
 sbt release
@@ -227,9 +227,9 @@ to avoid binary compatibility check failures in triggered Travis CI builds.
 ## Acknowledgements
 
 This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
-generated codecs for them but than evolved to have own core of mechanics for parsing & serialization. 
+generated codecs for them but than evolved to have own core of mechanics for parsing and serialization. 
 
-Idea to generate codecs by Scala macros & main details was borrowed from 
+Idea to generate codecs by Scala macros and main details was borrowed from 
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of JSON domain. 
   
 Other Scala macros features was peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
