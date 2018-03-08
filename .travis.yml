@@ -5,7 +5,7 @@ matrix:
     - os: linux
       sudo: false
       jdk: oraclejdk9
-      scala: 2.13.0-M3
+      scala: 2.12.4
       addons:
         apt:
           packages:
