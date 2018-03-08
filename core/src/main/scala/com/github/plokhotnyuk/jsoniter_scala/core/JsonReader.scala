@@ -64,15 +64,18 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def requiredFieldError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
-    val len = Math.min(reqFields.length, reqBits.length << 5)
+    val len = reqBits.length
     var i = 0
     var j = 0
-    var reqBitBlock = 0
     while (j < len) {
-      if ((j & 31) == 0) reqBitBlock = reqBits(j >> 5)
-      if ((reqBitBlock & (1 << j)) != 0) {
-        i = appendString(if (i == 0) "missing required field(s) \"" else "\", \"", i)
-        i = appendString(reqFields(j), i)
+      var bitset = reqBits(j)
+      while (bitset != 0) {
+        val lowestOneBit = bitset & -bitset
+        if (lowestOneBit != 0) {
+          i = appendString(if (i == 0) "missing required field(s) \"" else "\", \"", i)
+          i = appendString(reqFields((j << 5) + java.lang.Integer.numberOfTrailingZeros(bitset)), i)
+        }
+        bitset ^= lowestOneBit
       }
       j += 1
     }
