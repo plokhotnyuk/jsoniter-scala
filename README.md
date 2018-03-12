@@ -9,28 +9,29 @@ Scala macros that generate codecs for case classes, standard types and collectio
 to get maximum performance of JSON parsing and serialization.
 
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
-performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using JDK 8 & JDK 9 on the following 
-environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
-Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
+performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using JDK 8 & 9 on the following environment: 
+Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-32-generic, 
+Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
 
 ## Goals
 
 Initially this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
 - do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but 
-  do it crazily fast w/o reflection, intermediate trees, strings or events, w/ minimum allocations and copying
+  do it crazily fast without runtime-reflection, intermediate AST-trees, strings or events, with minimum allocations and
+  copying
 - do validation of UTF-8 encoding, JSON format and mapped values efficiently with clear reporting, do not replace 
   illegally encoded characters of string values by placeholder characters
 - define in _compile-time_ classes that will be instantiated during parsing to minimize probability of runtime issues, 
   generated sources can be inspected to prove that there are no security vulnerabilities during parsing
 
-It targets JDK 8+ w/o any platform restrictions.
+It targets JDK 8+ without any platform restrictions.
 
 Support of Scala.js and Scala Native is not a goal for the moment. 
 
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
-- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` w/o need of holding all parsed values 
+- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without need of holding all parsed values 
   in the memory
 - Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
 - Support writing to pre-allocated `Array[Byte]` by specifying of position of writing from
@@ -45,7 +46,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
   using discriminator field with string type of value
-- Implicitly resolvable codecs for values and key codecs for map keys
+- Implicitly resolvable values codecs for JSON values and key codecs for JSON object keys that are mapped to maps
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
@@ -60,7 +61,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - No dependencies on extra libraries excluding Scala's `scala-library` and `scala-reflect` 
   
 There are number of configurable options that can be set in compile-time:
-- Ability to read/write number of containers from/to string values
+- Ability to read/write numbers of containers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
 - Mapping function for names between case classes and JSON, including predefined functions which enforce 
   snake_case, kebab-case or camelCase names for all fields
@@ -70,7 +71,7 @@ There are number of configurable options that can be set in compile-time:
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
-- Throwing of stackless parsing exceptions to greatly reduce impact on performance  
+- Throwing of stack-less parsing exceptions to greatly reduce impact on performance  
 - Turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on performance
 - Preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
@@ -167,20 +168,20 @@ sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*' >twitter_api_perfnorm.txt
+sbt clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
 ```
 
 Following command can be used to profile and print assembly code of hottest methods, but it requires [setup of an 
 additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*' >read_adt_perfasm.txt
+sbt clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
 ```
 
-To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using following command:
+To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
 
 ```sh
-sbt -no-colors clean 'benchmark/jmh:run -prof gc .*Benchmark.*' >gc.txt
+sbt clean 'benchmark/jmh:run -prof gc .*Benchmark.*'
 ```
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
