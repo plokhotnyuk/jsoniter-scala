@@ -299,8 +299,11 @@ object JsonCodecMaker {
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
       def getFieldAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
-        case m: TermSymbol if m.annotations.exists(a => a.tree.tpe =:= typeOf[named]
-            || a.tree.tpe =:= typeOf[transient] || a.tree.tpe =:= typeOf[stringified]) =>
+        case m: TermSymbol if {
+          m.info // to enforce the type information completeness and availability of annotations
+          m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
+            a.tree.tpe =:= typeOf[stringified])
+        } =>
           val fieldName = m.name.decodedName.toString.trim // FIXME: Why is there a space at the end of field name?!
           val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
           if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")

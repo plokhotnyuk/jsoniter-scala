@@ -115,9 +115,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Operators(`=<>!#%^&|*/\\~+-:$`: Int)
 
-  //FIXME: case classes with field annotation(s) should be defined in source file before `make` call for them
-  case class NameOverridden(@named("new_" + "name") oldName: String)
-
   val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
 
   case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
@@ -1159,3 +1156,5 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)
 }
+
+case class NameOverridden(@named("new_" + "name") oldName: String) // intentionally declared after the `make` call
