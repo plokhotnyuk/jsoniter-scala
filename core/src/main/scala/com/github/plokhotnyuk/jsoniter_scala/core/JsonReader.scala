@@ -63,30 +63,8 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  def requiredFieldError(reqFields: Array[String], reqBits: Array[Int]): Nothing = {
-    val len = reqBits.length
-    var i = 0
-    var j = 0
-    while (j < len) {
-      var bitset = reqBits(j)
-      while (bitset != 0) {
-        val lowestOneBit = bitset & -bitset
-        if (lowestOneBit != 0) {
-          i = appendString(if (i == 0) "missing required field(s) \"" else "\", \"", i)
-          i = appendString(reqFields((j << 5) + java.lang.Integer.numberOfTrailingZeros(bitset)), i)
-        }
-        bitset ^= lowestOneBit
-      }
-      j += 1
-    }
-    if (i == 0) throw new IllegalArgumentException("missing required field(s) cannot be reported for arguments: " +
-      s"reqFields = ${reqFields.mkString("Array(", ", ", ")")}, reqBits = ${reqBits.mkString("Array(", ", ", ")")}")
-    i = appendChar('"', i)
-    decodeError(i, head - 1, null)
-  }
-
   def unexpectedKeyError(len: Int): Nothing = {
-    var i = prependString("unexpected field: \"", len)
+    var i = prependString("unexpected field \"", len)
     i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
@@ -99,14 +77,14 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def enumValueError(value: String): Nothing = {
-    var i = appendString("illegal enum value: \"", 0)
+    var i = appendString("illegal enum value \"", 0)
     i = appendString(value, i)
     i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }
 
   def enumValueError(len: Int): Nothing = {
-    var i = prependString("illegal enum value: \"", len)
+    var i = prependString("illegal enum value \"", len)
     i = appendChar('"', i)
     decodeError(i, head - 1, null)
   }

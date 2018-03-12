@@ -1966,21 +1966,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.requiredFieldError" should {
-    val jsonReader = reader("{}".getBytes)
-    jsonReader.nextToken()
-    "throw parsing exception with list of missing required fields that specified by bits" in {
-      def check(bits: Int, error: String): Unit =
-        assert(intercept[JsonParseException](jsonReader.requiredFieldError(Array("name", "device"), Array(bits)))
-          .getMessage.contains(error))
-
-      check(3, "missing required field(s) \"name\", \"device\", offset: 0x00000000")
-      check(2, "missing required field(s) \"device\", offset: 0x00000000")
-      check(1, "missing required field(s) \"name\", offset: 0x00000000")
-    }
-    "throw illegal argument exception in case of missing required fields cannot be selected" in {
-      assert(intercept[IllegalArgumentException](jsonReader.requiredFieldError(Array("name", "device"), Array(0)))
-        .getMessage.contains("missing required field(s) cannot be reported for arguments: " +
-          "reqFields = Array(name, device), reqBits = Array(0)"))
+    "throw parsing exception with missing required field" in {
+      val jsonReader = reader("{}".getBytes)
+      jsonReader.nextToken()
+      assert(intercept[JsonParseException](jsonReader.requiredFieldError("name"))
+        .getMessage.contains("missing required field \"name\", offset: 0x00000000"))
     }
   }
   "JsonReader.unexpectedKeyError" should {
@@ -1988,7 +1978,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       val jsonReader = reader("\"xxx\"".getBytes)
       val len = jsonReader.readStringAsCharBuf()
       assert(intercept[JsonParseException](jsonReader.unexpectedKeyError(len))
-        .getMessage.contains("unexpected field: \"xxx\", offset: 0x00000004"))
+        .getMessage.contains("unexpected field \"xxx\", offset: 0x00000004"))
     }
   }
   "JsonReader.discriminatorValueError" should {
@@ -2004,7 +1994,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     val value = jsonReader.readString(null)
     "throw parsing exception with unexpected enum value" in {
       assert(intercept[JsonParseException](jsonReader.enumValueError(value))
-        .getMessage.contains("illegal enum value: \"xxx\", offset: 0x00000004"))
+        .getMessage.contains("illegal enum value \"xxx\", offset: 0x00000004"))
     }
   }
   "JsonReader.commaError" should {

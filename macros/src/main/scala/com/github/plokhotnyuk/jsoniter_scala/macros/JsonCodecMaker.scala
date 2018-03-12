@@ -643,17 +643,18 @@ object JsonCodecMaker {
           val reqVars =
             if (lastReqVarBits == 0) Nil
             else reqVarNames.init.map(n => q"var $n = -1") :+ q"var ${reqVarNames.last} = $lastReqVarBits"
-          val checkReqVars = reqVarNames.map(n => q"$n == 0").reduce((e1, e2) => q"$e1 && $e2")
-          val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
-          val checkReqVarsAndConstruct =
-            if (lastReqVarBits == 0) construct
+          val checkReqVars: Seq[Tree] =
+            if (lastReqVarBits == 0) Nil
             else {
-              val reqFieldNames = withReqFieldsFor(tpe) {
+              val reqFields = withReqFieldsFor(tpe) {
                 required.map(r => getMappedName(annotations, r))
               }
-              q"""if ($checkReqVars) $construct
-                  else in.requiredFieldError($reqFieldNames, Array(..$reqVarNames))"""
+              reqVarNames.zipWithIndex.map { case (n, i) =>
+                if (i == 0) q"if ($n != 0) in.requiredFieldError($reqFields(Integer.numberOfTrailingZeros($n)))"
+                else q"if ($n != 0) in.requiredFieldError($reqFields(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
+              }
             }
+          val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
             val tpe = methodType(m)
@@ -689,7 +690,8 @@ object JsonCodecMaker {
                   } while (in.isNextToken(','))
                   if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
                 }
-                ..$checkReqVarsAndConstruct
+                ..$checkReqVars
+                $construct
               } else in.readNullOrTokenError(default, '{')"""
         } else if (isSealedAdtBase(tpe)) withDecoderFor(methodKey, default) {
           def hashCode(subTpe: Type): Int = {

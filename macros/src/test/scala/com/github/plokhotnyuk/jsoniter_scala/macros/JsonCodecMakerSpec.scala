@@ -370,7 +370,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("expected '\"', offset: 0x00000006"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"Galileo"}""".getBytes)
-      }.getMessage.contains("illegal enum value: \"Galileo\", offset: 0x0000000e"))
+      }.getMessage.contains("illegal enum value \"Galileo\", offset: 0x0000000e"))
     }
     "serialize and deserialize top-level enumerations" in {
       verifySerDeser(make[LocationType.LocationType](CodecMakerConfig()), LocationType.GPS,
@@ -392,7 +392,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
           """{"l":"LO","il":"HIGH"}""".getBytes)
-      }.getMessage.contains("illegal enum value: \"LO\", offset: 0x00000008"))
+      }.getMessage.contains("illegal enum value \"LO\", offset: 0x00000008"))
     }
     "serialize and deserialize top-level Java enumerations" in {
       verifySerDeser(make[Level](CodecMakerConfig()), Level.HIGH, "\"HIGH\"".getBytes)
@@ -693,12 +693,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfCamelAndSnakeCases,
           CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
           """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", \"kebabCase\", \"camel1\", \"snake1\", \"kebab1\", offset: 0x00000051"))
+      }.getMessage.contains("missing required field \"camelCase\", offset: 0x00000051"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfCamelAndSnakeCases,
           CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
           """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camelCase\", \"snakeCase\", \"kebabCase\", \"camel1\", \"snake1\", \"kebab1\", offset: 0x00000051"))
+      }.getMessage.contains("missing required field \"camelCase\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys enforced to snake_case and throw parse exception when they are missing" in {
       val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.enforce_snake_case))
@@ -709,12 +709,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfCamelAndSnakeCases,
           CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
           """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", \"kebab_case\", \"camel_1\", \"snake_1\", \"kebab_1\", offset: 0x0000004b"))
+      }.getMessage.contains("missing required field \"camel_case\", offset: 0x0000004b"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfCamelAndSnakeCases,
           CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
           """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camel_case\", \"snake_case\", \"kebab_case\", \"camel_1\", \"snake_1\", \"kebab_1\", offset: 0x00000051"))
+      }.getMessage.contains("missing required field \"camel_case\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys enforced to kebab-case and throw parse exception when they are missing" in {
       val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.`enforce-kebab-case`))
@@ -725,18 +725,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfCamelAndSnakeCases,
           CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
           """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camel-case\", \"snake-case\", \"kebab-case\", \"camel-1\", \"snake-1\", \"kebab-1\", offset: 0x0000004b"))
+      }.getMessage.contains("missing required field \"camel-case\", offset: 0x0000004b"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfCamelAndSnakeCases,
           CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
           """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"camel-case\", \"snake-case\", \"kebab-case\", \"camel-1\", \"snake-1\", \"kebab-1\", offset: 0x00000051"))
+      }.getMessage.contains("missing required field \"camel-case\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys overridden by annotation and throw parse exception when they are missing" in {
       verifySerDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""".getBytes)
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""".getBytes)
-      }.getMessage.contains("missing required field(s) \"new_name\", offset: 0x00000010"))
+      }.getMessage.contains("missing required field \"new_name\", offset: 0x00000010"))
     }
     "don't generate codec for case classes with field that have duplicated @named annotation" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -834,7 +834,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "throw parse exception for unknown case class fields if skipping of them wasn't allowed in materialize call" in {
       assert(intercept[JsonParseException] {
         verifyDeser(make[Unknown](CodecMakerConfig(skipUnexpectedFields = false)), Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes)
-      }.getMessage.contains("unexpected field: \"x\", offset: 0x00000004"))
+      }.getMessage.contains("unexpected field \"x\", offset: 0x00000004"))
     }
     "throw parse exception in case of missing required case class fields detected during deserialization" in {
       assert(intercept[JsonParseException] {
@@ -851,18 +851,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           90, 91, 92, 93, 94, 95, 96, 97, 98, 99)
         verifyDeser(make[Required](CodecMakerConfig()), obj,
           """{
-            |"r00":0,"r01":1,"r02":2,"r03":3,"r04":4,"r05":5,"r06":6,"r07":7,"r08":8,
-            |"r10":10,"r11":11,"r12":12,"r13":13,"r14":14,"r15":15,"r16":16,"r17":17,"r18":18,
-            |"r20":20,"r21":21,"r22":22,"r23":23,"r24":24,"r25":25,"r26":26,"r27":27,"r28":28,
-            |"r30":30,"r31":31,"r32":32,"r33":33,"r34":34,"r35":35,"r36":36,"r37":37,"r38":38,
-            |"r40":40,"r41":41,"r42":42,"r43":43,"r44":44,"r45":45,"r46":46,"r47":47,"r48":48,
-            |"r50":50,"r51":51,"r52":52,"r53":53,"r54":54,"r55":55,"r56":56,"r57":57,"r58":58,
-            |"r60":60,"r61":61,"r62":62,"r63":63,"r64":64,"r65":65,"r66":66,"r67":67,"r68":68,
-            |"r70":70,"r71":71,"r72":72,"r73":73,"r74":74,"r75":75,"r76":76,"r77":77,"r78":78,
-            |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,
+            |"r00":0,"r01":1,"r02":2,"r03":3,"r04":4,"r05":5,"r06":6,"r07":7,"r08":8,"r09":9,
+            |"r10":10,"r11":11,"r12":12,"r13":13,"r14":14,"r15":15,"r16":16,"r17":17,"r18":18,"r19":19,
+            |"r20":20,"r21":21,"r22":22,"r23":23,"r24":24,"r25":25,"r26":26,"r27":27,"r28":28,"r29":29,
+            |"r30":30,"r31":31,"r32":32,"r33":33,"r34":34,"r35":35,"r36":36,"r37":37,"r38":38,"r39":39,
+            |"r40":40,"r41":41,"r42":42,"r43":43,"r44":44,"r45":45,"r46":46,"r47":47,"r48":48,"r49":49,
+            |"r50":50,"r51":51,"r52":52,"r53":53,"r54":54,"r55":55,"r56":56,"r57":57,"r58":58,"r59":59,
+            |"r60":60,"r61":61,"r62":62,"r63":63,"r64":64,"r65":65,"r66":66,"r67":67,"r68":68,"r69":69,
+            |"r70":70,"r71":71,"r72":72,"r73":73,"r74":74,"r75":75,"r76":76,"r77":77,"r78":78,"r79":79,
+            |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,"r89":89,
             |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
             |}""".stripMargin.getBytes)
-      }.getMessage.contains("""missing required field(s) "r09", "r19", "r29", "r39", "r49", "r59", "r69", "r79", "r89", "r99", offset: 0x0000032c"""))
+      }.getMessage.contains("""missing required field "r99", offset: 0x0000037c"""))
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList,
