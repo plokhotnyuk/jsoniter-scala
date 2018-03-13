@@ -15,13 +15,13 @@ Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly)
 
 ## Goals
 
-Initially this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
+Initially, this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
 - do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but 
   do it crazily fast without runtime-reflection, intermediate AST-trees, strings or events, with minimum allocations and
   copying
 - do validation of UTF-8 encoding, JSON format and mapped values efficiently with clear reporting, do not replace 
   illegally encoded characters of string values by placeholder characters
-- define in _compile-time_ classes that will be instantiated during parsing to minimize probability of runtime issues, 
+- define in _compile-time_ classes that will be instantiated during parsing to minimize a probability of runtime issues, 
   generated sources can be inspected to prove that there are no security vulnerabilities during parsing
 
 It targets JDK 8+ without any platform restrictions.
@@ -31,16 +31,16 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 ## Features and limitations
 - JSON parsing from `Array[Byte]` or `java.io.InputStream`
 - JSON serialization to `Array[Byte]` or `java.io.OutputStream`
-- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without need of holding all parsed values 
-  in the memory
+- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all parsed 
+  values in the memory
 - Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
-- Support writing to pre-allocated `Array[Byte]` by specifying of position of writing from
+- Support writing to pre-allocated `Array[Byte]` by specifying of a position of writing from
 - Support of UTF-8 encoding
 - Parsing of strings with escaped characters for JSON keys and string values 
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, tuples,
   `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes with 
   values/fields having any of types listed here 
-- Case classes should be defined as a top-level class or directly inside of another class or object and with public 
+- Case classes should be defined as a top-level class or directly inside of another class or object and with a public 
   constructor that has one list of arguments for all non-transient fields
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
@@ -51,29 +51,29 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to 
-  provide sparse output 
-- Fields can be annotated as transient or just not defined in constructor to avoid parsing and serializing at all 
+  provide a sparse output 
+- Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
-  optional hex dump of affected by error part of an internal byte buffer
+  an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
 - No dependencies on extra libraries excluding Scala's `scala-library` and `scala-reflect` 
   
-There are number of configurable options that can be set in compile-time:
+There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
 - Mapping function for names between case classes and JSON, including predefined functions which enforce 
   snake_case, kebab-case or camelCase names for all fields
 - Name of a discriminator field for ADTs
-- Mapping function for values of a discriminator field that is used for distinguish classes of ADTs
+- Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
 - Throwing of stack-less parsing exceptions to greatly reduce impact on performance  
-- Turning off hex dumping of affected by error part of an internal byte buffer to reduce impact on performance
-- Preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
+- Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
+- A preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master) 
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
@@ -123,7 +123,7 @@ For more use cases and examples, please, check out tests:
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
-creating pull requests (fixes and improvements of docs, code and tests are highly appreciated)
+creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated)
 
 ### Run tests, check coverage and binary compatibility
 
@@ -146,7 +146,7 @@ List of available option can be printed by:
 sbt 'benchmark/jmh:run -h'
 ```
 
-JMH allows to run benchmarks with different profilers, to get list of supported use:
+JMH allows to run benchmarks with different profilers, to get a list of supported use:
 
 ```sh
 sbt 'benchmark/jmh:run -lprof'
@@ -158,7 +158,7 @@ Help for profiler options can be printed by following command:
 sbt 'benchmark/jmh:run -prof <profiler_name>:help'
 ```
 
-To get result for some benchmarks in flight recording file (which you can then open and analyse offline using JMC) use 
+To get a result for some benchmarks in-flight recording file (which you can then open and analyze offline using JMC) use 
 command like this:
 
 ```sh
@@ -171,7 +171,7 @@ On Linux the perf profiler can be used to see CPU event statistics normalized pe
 sbt clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
 ```
 
-Following command can be used to profile and print assembly code of hottest methods, but it requires [setup of an 
+Following command can be used to profile and print assembly code of hottest methods, but it requires [a setup of an 
 additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
@@ -215,22 +215,23 @@ sbt publishM2
 For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double check binary and source compatibility (including behaviour) and release using the following command (credentials required):
+Double check binary and source compatibility (including behavior) and release using the following command (credentials 
+required):
 
 ```sh
 sbt release
 ```
 
-Do not push changes to github until promoted artifacts for new version are not available for download on 
+Do not push changes to github until promoted artifacts for the new version are not available for download on 
 [Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/macros_2.12/)
 to avoid binary compatibility check failures in triggered Travis CI builds. 
 
-## Acknowledgements
+## Acknowledgments
 
 This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
-generated codecs for them but than evolved to have own core of mechanics for parsing and serialization. 
+generated codecs for them but then evolved to have own core of mechanics for parsing and serialization. 
 
 Idea to generate codecs by Scala macros and main details was borrowed from 
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of JSON domain. 
   
-Other Scala macros features was peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
+Other Scala macros features were peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
