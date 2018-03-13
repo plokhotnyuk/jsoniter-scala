@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import sun.misc.Unsafe
-
 import scala.util.Try
 
 // FIXME: remove when perf. degradation of String.charAt when iterating through strings will be fixed in JDK 9:
@@ -9,9 +7,10 @@ import scala.util.Try
 object UnsafeUtils {
   private[this] final val (unsafe, stringValueOffset, stringCoderOffset) = Try {
     val u = {
-      val unsafeField = classOf[Unsafe].getDeclaredField("theUnsafe")
+      val unsafeClass = classOf[sun.misc.Unsafe]
+      val unsafeField = unsafeClass.getDeclaredField("theUnsafe")
       unsafeField.setAccessible(true)
-      unsafeField.get(null).asInstanceOf[Unsafe]
+      unsafeClass.cast(unsafeField.get(null))
     }
     (u,
       u.objectFieldOffset(classOf[String].getDeclaredField("value")),

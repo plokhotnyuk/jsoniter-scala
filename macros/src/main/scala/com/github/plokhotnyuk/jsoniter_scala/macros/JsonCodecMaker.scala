@@ -385,7 +385,7 @@ object JsonCodecMaker {
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated values defined for '$discriminatorFieldName': $formattedCollisions. " +
-            s"Values returned by 'config.adtLeafClassNameMapper' should not match.")
+            "Values returned by 'config.adtLeafClassNameMapper' should not match.")
         }
       }
 

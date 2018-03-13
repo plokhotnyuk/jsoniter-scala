@@ -24,7 +24,7 @@ object UserAPI {
 
     def encodeValue(x: User, out: JsonWriter): Unit = e0(x, out)
 
-    private def d2(in: JsonReader, default: Device): Device = 
+    private def d2(in: JsonReader, default: Device): Device =
       if (in.isNextToken('{')) {
         var _id: Int = 0
         var _model: String = null
@@ -34,7 +34,7 @@ object UserAPI {
           do {
             val l = in.readKeyAsCharBuf()
             (in.charBufToHashCode(l): @switch) match {
-              case 3355 => 
+              case 3355 =>
                 if (in.isCharBufEqualsTo(l, "id")) {
                   _id = in.readInt()
                   req0 &= -2
@@ -53,7 +53,7 @@ object UserAPI {
         new Device(id = _id, model = _model)
       } else in.readNullOrTokenError(default, '{')
 
-    private def d1(in: JsonReader, default: Seq[Device]): Seq[Device] = 
+    private def d1(in: JsonReader, default: Seq[Device]): Seq[Device] =
       if (in.isNextToken('[')) {
         if (in.isNextToken(']')) default
         else {
@@ -66,7 +66,7 @@ object UserAPI {
         }
       } else in.readNullOrTokenError(default, '[')
 
-    private def d0(in: JsonReader, default: User): User = 
+    private def d0(in: JsonReader, default: User): User =
       if (in.isNextToken('{')) {
         var _name: String = null
         var _devices: Seq[Device] = Seq.empty[Device]
