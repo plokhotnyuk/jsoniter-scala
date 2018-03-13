@@ -40,7 +40,7 @@ class ArrayOfFloatsBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
-/* FIXME: Play-JSON serialize double values instead of float
+/* FIXME: Play-JSON serialize BigDecimal values instead of float
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */

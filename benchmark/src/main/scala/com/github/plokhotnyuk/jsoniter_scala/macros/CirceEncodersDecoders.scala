@@ -26,6 +26,6 @@ object CirceEncodersDecoders {
   }
   implicit val zoneOffsetEncoder: Encoder[ZoneOffset] = Encoder.encodeString.contramap[ZoneOffset](_.toString)
   implicit val zoneOffsetDecoder: Decoder[ZoneOffset] = Decoder.decodeString.emap { str =>
-    Either.catchNonFatal(ZoneOffset.of(str)).leftMap(t => "Suit")
+    Either.catchNonFatal(ZoneOffset.of(str)).leftMap(t => "ZoneOffset")
   }
 }
