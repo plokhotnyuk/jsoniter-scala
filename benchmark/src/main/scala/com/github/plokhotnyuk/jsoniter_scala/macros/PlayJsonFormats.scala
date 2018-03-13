@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.time.{OffsetTime, ZoneOffset}
+
 import julienrf.json.derived.flat
 import play.api.libs.json._
 import ai.x.play.json.Jsonx
@@ -124,4 +126,10 @@ object PlayJsonFormats {
     Reads[Array[BigInt]](js => JsSuccess(js.as[Array[JsNumber]]
       .map(js => js.value.toBigIntExact().getOrElse(throw new NumberFormatException("illegal BigInt value"))))),
     Writes[Array[BigInt]](es => JsArray(es.map(v => JsNumber(BigDecimal(v))))))
+  val offsetTimeArrayFormat: Format[Array[OffsetTime]] = Format(
+    Reads[Array[OffsetTime]](js => JsSuccess(js.as[Array[JsString]].map(js => OffsetTime.parse(js.value)))),
+    Writes[Array[OffsetTime]](es => JsArray(es.map(v => JsString(v.toString)))))
+  val zoneOffsetArrayFormat: Format[Array[ZoneOffset]] = Format(
+    Reads[Array[ZoneOffset]](js => JsSuccess(js.as[Array[JsString]].map(js => ZoneOffset.of(js.value)))),
+    Writes[Array[ZoneOffset]](es => JsArray(es.map(v => JsString(v.toString)))))
 }

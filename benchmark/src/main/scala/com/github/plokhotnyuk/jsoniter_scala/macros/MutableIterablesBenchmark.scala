@@ -29,7 +29,6 @@ class MutableIterablesBenchmark extends CommonParams {
   @Benchmark
   def readJacksonScala(): MutableIterables = jacksonMapper.readValue[MutableIterables](jsonBytes)
 */
-
   @Benchmark
   def readJsoniterScala(): MutableIterables = readFromArray[MutableIterables](jsonBytes)
 

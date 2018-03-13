@@ -7,8 +7,7 @@ class MutableMapsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       //FIXME: Circe doesn't support parsing of mutable maps
       //benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: Jackson-module-scala parse keys as String
-      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
     }

@@ -3,12 +3,12 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats.javaEnumArrayFormat
-//import io.circe.parser._
-//import io.circe.syntax._
+import io.circe.parser._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
@@ -23,10 +23,10 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
   }.toArray
   val jsonString: String = obj.mkString("[\"", "\",\"", "\"]")
   val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
-/* FIXME circe doesn't support Java enums
+
   @Benchmark
   def readCirce(): Array[Suit] = decode[Array[Suit]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-*/
+
   @Benchmark
   def readJacksonScala(): Array[Suit] = jacksonMapper.readValue[Array[Suit]](jsonBytes)
 
@@ -35,10 +35,10 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Array[Suit] = Json.parse(jsonBytes).as[Array[Suit]](javaEnumArrayFormat)
-/* FIXME circe doesn't support Java enums
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

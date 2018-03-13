@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.JsonToken._
+import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonParseException => ParseException}
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -12,7 +13,7 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 
-import scala.collection.immutable.BitSet
+import scala.collection.immutable.{BitSet, HashMap, Map}
 import scala.collection.mutable
 
 object JacksonSerDesers {
@@ -100,4 +101,21 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
   }
 
   override def isEmpty(provider: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
+}
+
+class CustomMapDeserializer extends
+    StdDeserializer[Map[Int, HashMap[Long, Double]]](classOf[Map[Int, HashMap[Long, Double]]]) {
+  override def deserialize(p: JsonParser, ctxt: DeserializationContext): Map[Int, HashMap[Long, Double]] =
+    p.readValueAs(new TypeReference[Map[java.lang.Integer, HashMap[java.lang.Long, Double]]]{})
+
+  override def getNullValue(ctxt: DeserializationContext): Map[Int, HashMap[Long, Double]] = Map.empty
+}
+
+class CustomMutableMapDeserializer extends
+    StdDeserializer[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]](classOf[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]]) {
+  override def deserialize(p: JsonParser, ctxt: DeserializationContext): mutable.Map[Int, mutable.OpenHashMap[Long, Double]] =
+    p.readValueAs(new TypeReference[mutable.Map[java.lang.Integer, mutable.OpenHashMap[java.lang.Long, Double]]]{})
+
+  override def getNullValue(ctxt: DeserializationContext): mutable.Map[Int, mutable.OpenHashMap[Long, Double]] =
+    mutable.Map.empty
 }

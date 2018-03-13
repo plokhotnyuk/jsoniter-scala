@@ -6,8 +6,7 @@ class MapsBenchmarkSpec extends BenchmarkSpecBase {
   "MapsBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: Jackson-module-scala parse keys as String
-      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
     }

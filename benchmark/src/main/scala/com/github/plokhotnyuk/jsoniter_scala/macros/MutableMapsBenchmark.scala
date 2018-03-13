@@ -2,9 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import io.circe.generic.auto._
@@ -15,7 +16,8 @@ import play.api.libs.json.Json
 
 import scala.collection.mutable
 
-case class MutableMaps(m: mutable.HashMap[String, Double], mm: mutable.Map[Int, mutable.OpenHashMap[Long, Double]])
+case class MutableMaps(m: mutable.HashMap[String, Double],
+                       @JsonDeserialize(using = classOf[CustomMutableMapDeserializer]) mm: mutable.Map[Int, mutable.OpenHashMap[Long, Double]])
 
 class MutableMapsBenchmark extends CommonParams {
   val obj: MutableMaps = MutableMaps(mutable.HashMap("1" -> 1.1, "2" -> 2.2),
@@ -27,10 +29,9 @@ class MutableMapsBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): MutableMaps = decode[MutableMaps](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 */
-/*FIXME: Jackson-module-scala parse keys as String
   @Benchmark
   def readJacksonScala(): MutableMaps = jacksonMapper.readValue[MutableMaps](jsonBytes)
-*/
+
   @Benchmark
   def readJsoniterScala(): MutableMaps = readFromArray[MutableMaps](jsonBytes)
 
