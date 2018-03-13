@@ -31,10 +31,8 @@ class ArrayOfBytesBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
-/* FIXME: jackson serializes an array of bytes to a string encoded in base64
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-*/
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)

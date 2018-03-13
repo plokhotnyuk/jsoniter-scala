@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import io.circe.parser._
-//import io.circe.syntax._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
@@ -30,6 +30,7 @@ case class C(l: AdtBase, r: AdtBase) extends AdtBase
 class AdtBenchmark extends CommonParams {
   val obj: AdtBase = C(A(1), B("VVV"))
   val jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
+  val jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
   @Benchmark
@@ -43,10 +44,10 @@ class AdtBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
-/* FIXME: circe appends discriminator as a last field
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

@@ -34,10 +34,10 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
 */
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME jackson serializes OffsetTime as array of numbers and string
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-*/
+
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 

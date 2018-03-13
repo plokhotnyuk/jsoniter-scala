@@ -33,10 +33,9 @@ class ArrayOfLocalTimesBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
-/* FIXME jackson serializes LocalTime as array of numbers
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-*/
+
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 

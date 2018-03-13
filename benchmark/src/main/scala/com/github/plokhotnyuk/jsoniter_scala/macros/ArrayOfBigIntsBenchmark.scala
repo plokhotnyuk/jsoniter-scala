@@ -3,10 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import play.api.libs.json.Json
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
@@ -25,10 +26,9 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterScala(): Array[BigInt] = readFromArray[Array[BigInt]](jsonBytes)
 
-/* FIXME: add format for BigInt arrays
   @Benchmark
-  def readPlayJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]]
-*/
+  def readPlayJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]](bigIntArrayFormat)
+
 /* FIXME: Circe uses an engineering decimal notation to serialize BigInt
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -41,8 +41,8 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
-/* FIXME: add format for BigInt arrays
+/* FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bigIntArrayFormat))
 */
 }

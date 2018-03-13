@@ -5,7 +5,7 @@ import java.time.{ZoneId, _}
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.java8.time._
 import io.circe.parser._
@@ -25,10 +25,10 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Array[ZonedDateTime] = decode[Array[ZonedDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-/* FIXME jackson parse ZonedDateTime with conversion to Z time zone
+
   @Benchmark
   def readJacksonScala(): Array[ZonedDateTime] = jacksonMapper.readValue[Array[ZonedDateTime]](jsonBytes)
-*/
+
   @Benchmark
   def readJsoniterScala(): Array[ZonedDateTime] = readFromArray[Array[ZonedDateTime]](jsonBytes)
 
@@ -37,7 +37,7 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME jackson serializes ZonedDateTime as array of numbers
+/* FIXME jackson serializes ZonedDateTime without IANA region
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */

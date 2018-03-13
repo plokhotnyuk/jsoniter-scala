@@ -28,10 +28,9 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterScala(): String = readFromArray[String](jsonBytes)
 
-/* FIXME: find proper way to parse string value in Play JSON
   @Benchmark
-  def readPlayJson(): String = Json.parse(jsonBytes).toString()
-*/
+  def readPlayJson(): String = Json.parse(jsonBytes).as[String]
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 

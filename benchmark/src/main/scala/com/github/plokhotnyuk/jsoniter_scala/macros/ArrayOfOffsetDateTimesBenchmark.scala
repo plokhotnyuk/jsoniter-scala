@@ -5,7 +5,7 @@ import java.time._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.java8.time._
 import io.circe.parser._
@@ -23,10 +23,10 @@ class ArrayOfOffsetDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Array[OffsetDateTime] = decode[Array[OffsetDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-/*  FIXME jackson parse OffsetDateTime with conversion to Z time zone
+
   @Benchmark
   def readJacksonScala(): Array[OffsetDateTime] = jacksonMapper.readValue[Array[OffsetDateTime]](jsonBytes)
-*/
+
   @Benchmark
   def readJsoniterScala(): Array[OffsetDateTime] = readFromArray[Array[OffsetDateTime]](jsonBytes)
 
@@ -35,10 +35,10 @@ class ArrayOfOffsetDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME jackson serializes OffsetDateTime as array of numbers
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-*/
+
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 

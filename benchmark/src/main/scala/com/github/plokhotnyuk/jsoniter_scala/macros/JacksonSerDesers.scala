@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonP
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.fasterxml.jackson.databind.{DeserializationContext, DeserializationFeature, ObjectMapper, SerializerProvider}
+import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -23,11 +23,14 @@ object JacksonSerDesers {
     registerModule(new SimpleModule()
       .addSerializer(classOf[BitSet], new BitSetSerializer)
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
+      .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
       .addDeserializer(classOf[BitSet], new BitSetDeserializer)
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer))
     registerModule(new JavaTimeModule())
     registerModule(new AfterburnerModule)
+    configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
     setSerializationInclusion(Include.NON_EMPTY)
   }
@@ -80,4 +83,21 @@ class MutableBitSetSerializer extends StdSerializer[mutable.BitSet](classOf[muta
   }
 
   override def isEmpty(provider: SerializerProvider, value: mutable.BitSet): Boolean = value.isEmpty
+}
+
+class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]]) {
+  override def serialize(value: Array[Byte], gen: JsonGenerator, provider: SerializerProvider): Unit = {
+    gen.writeStartArray()
+    if (!isEmpty(provider, value)) {
+      val l = value.length
+      var i = 0
+      while (i < l) {
+        gen.writeNumber(value(i))
+        i += 1
+      }
+    }
+    gen.writeEndArray()
+  }
+
+  override def isEmpty(provider: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
 }

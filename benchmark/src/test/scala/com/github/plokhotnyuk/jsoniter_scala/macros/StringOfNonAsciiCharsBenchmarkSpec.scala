@@ -8,8 +8,7 @@ class StringOfNonAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
-      //FIXME: find proper way to parse string value in Play JSON
-      //benchmark.readNonAsciiStringPlayJson() shouldBe benchmark.nonAsciiStringObj
+      benchmark.readPlayJson() shouldBe benchmark.obj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
