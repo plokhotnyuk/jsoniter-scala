@@ -700,10 +700,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 6
   }
 
-  private[this] def toHexDigit(n: Int): Byte = {
-    val nibble = n & 15
-    (((9 - nibble) >> 31) & 39) + (nibble + 48) // branchless conversion of nibble to hex digit
-  }.toByte
+  private[this] def toHexDigit(n: Int): Byte = hexDigits(n & 15)
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
@@ -1262,6 +1259,8 @@ object JsonWriter {
   }(breakOut)
   private final val digits: Array[Short] =
     (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
+  private final val hexDigits: Array[Byte] =
+    Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
   private final val minIntBytes: Array[Byte] = "-2147483648".getBytes
   private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
   private final val maxZonedDateTimeLength: Int = {

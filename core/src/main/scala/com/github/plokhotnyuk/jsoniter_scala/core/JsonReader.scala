@@ -3031,13 +3031,9 @@ final class JsonReader private[jsoniter_scala](
     ((fromHexDigit(pos) << 12) + (fromHexDigit(pos + 1) << 8) + (fromHexDigit(pos + 2) << 4) + fromHexDigit(pos + 3)).toChar
 
   private[this] def fromHexDigit(pos: Int): Int = {
-    val b = buf(pos)
-    if (b >= '0' && b <= '9') b - '0'
-    else {
-      val b1 = b | 0x20 // 0x20 == 'A' ^ 'a' or 'B' ^ 'b', etc.
-      if (b1 >= 'a' && b1 <= 'f') b1 - 0x57 // 0x57 == 'a' - 10
-      else decodeError("expected hex digit", pos)
-    }
+    val n = nibbles(buf(pos))
+    if (n < 0) decodeError("expected hex digit", pos)
+    n
   }
 
   private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
@@ -3282,6 +3278,32 @@ object JsonReader {
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
   private final val nanoMultiplier: Array[Int] =
     Array(1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
+  private final val nibbles: Array[Byte] = {
+    val ns = Array.fill[Byte](256)(-1)
+    ns('0') = 0
+    ns('1') = 1
+    ns('2') = 2
+    ns('3') = 3
+    ns('4') = 4
+    ns('5') = 5
+    ns('6') = 6
+    ns('7') = 7
+    ns('8') = 8
+    ns('9') = 9
+    ns('A') = 10
+    ns('B') = 11
+    ns('C') = 12
+    ns('D') = 13
+    ns('E') = 14
+    ns('F') = 15
+    ns('a') = 10
+    ns('b') = 11
+    ns('c') = 12
+    ns('d') = 13
+    ns('e') = 14
+    ns('f') = 15
+    ns
+  }
   private final val dumpHeader: Array[Char] = {
     "\n           +-------------------------------------------------+" +
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
