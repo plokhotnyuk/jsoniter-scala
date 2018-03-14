@@ -20,7 +20,7 @@ object CirceEncodersDecoders {
   implicit val adtDecoder: Decoder[AdtBase] = deriveDecoder[AdtBase]
   implicit val enumEncoder: Encoder[SuitEnum.Value] = Encoder.enumEncoder(SuitEnum)
   implicit val enumDecoder: Decoder[SuitEnum.Value] = Decoder.enumDecoder(SuitEnum)
-  implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap[Suit](_.toString)
+  implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap[Suit](_.name)
   implicit val suitDecoder: Decoder[Suit] = Decoder.decodeString.emap { str =>
     Either.catchNonFatal(Suit.valueOf(str)).leftMap(t => "Suit")
   }
