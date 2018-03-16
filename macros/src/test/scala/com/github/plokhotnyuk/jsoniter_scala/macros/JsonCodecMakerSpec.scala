@@ -931,6 +931,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           .stripMargin.replace('\n', ' ')
       })
     }
+    "don't generate codec for ADT base without leaf classes" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X
+          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Cannot find leaf classes for ADT base 'X'. Please consider adding them or using a custom implicitly
+          |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed abstract class X
+          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Cannot find leaf classes for ADT base 'X'. Please consider adding them or using a custom implicitly
+          |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+      })
+    }
     "don't generate codec for case objects which are mapped to the same discriminator value" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X

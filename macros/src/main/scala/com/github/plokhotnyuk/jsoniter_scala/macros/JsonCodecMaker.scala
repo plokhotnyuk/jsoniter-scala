@@ -143,12 +143,20 @@ object JsonCodecMaker {
             s"of a sealed definition for '$tpe' or using a custom implicitly accessible codec for the ADT base."))
       }
 
-      def adtLeafClasses(tpe: Type): Set[Type] = tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
-        val subTpe = s.asClass.toType
-        if (isSealedAdtBase(subTpe)) adtLeafClasses(subTpe)
-        else if (s.asClass.isCaseClass) Set(subTpe)
-        else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
-          s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
+      def adtLeafClasses(tpe: Type): Seq[Type] = {
+        def collectRecursively(tpe: Type): Set[Type] =
+          tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
+            val subTpe = s.asClass.toType
+            if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
+            else if (s.asClass.isCaseClass) Set(subTpe)
+            else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
+              s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
+          }
+
+        val classes = collectRecursively(tpe).toSeq
+        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. Please consider adding them or " +
+          "using a custom implicitly accessible codec for the ADT base.")
+        classes
       }
 
       def companion(tpe: Type): Tree = Ident(tpe.typeSymbol.companion)
@@ -702,7 +710,7 @@ object JsonCodecMaker {
             JsonReader.toHashCode(cs, cs.length)
           }
 
-          val leafClasses = adtLeafClasses(tpe).toSeq
+          val leafClasses = adtLeafClasses(tpe)
           val discrName = codecConfig.discriminatorFieldName
           checkDiscriminatorValueCollisions(discrName, leafClasses.map(discriminatorValue))
           val discriminatorValueError = q"in.discriminatorValueError($discrName)"
