@@ -8,15 +8,29 @@ import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.prop.PropertyChecks
 
 class PackageSpec extends WordSpec with Matchers with PropertyChecks {
-  "read" should {
+  "readFromStream" should {
     "parse JSON from the provided input stream" in {
       readFromStream(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
     }
+    "throw an exception if cannot parse input with message containing input offset & hex dump of affected part" in {
+      assert(intercept[JsonParseException](readFromStream(new ByteArrayInputStream(httpMessage))(codec)).getMessage ==
+        """expected '{', offset: 0x00000000, buf:
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
+          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
+          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
+    "throw an exception in case of the provided params are invalid" in {
+      intercept[NullPointerException](readFromStream(new ByteArrayInputStream(compactJson))(null))
+      intercept[NullPointerException](readFromStream(null)(codec))
+    }
+  }
+  "readFromArray" should {
     "parse JSON from the byte array" in {
       readFromArray(compactJson)(codec) shouldBe user
-    }
-    "parse JSON from the byte array within specified positions" in {
-      readFromSubArray(httpMessage, 66, httpMessage.length)(codec) shouldBe user
     }
     "throw an exception if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonParseException](readFromArray(httpMessage)(codec)).getMessage ==
@@ -31,12 +45,27 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw an exception in case of the provided params are invalid" in {
       intercept[NullPointerException](readFromArray(compactJson)(null))
-      intercept[NullPointerException](readFromStream(new ByteArrayInputStream(compactJson))(null))
-      intercept[NullPointerException](readFromSubArray(httpMessage, 66, httpMessage.length)(null))
       intercept[NullPointerException](readFromArray(null.asInstanceOf[Array[Byte]])(codec))
+    }
+  }
+  "readFromSubArray" should {
+    "parse JSON from the byte array within specified positions" in {
+      readFromSubArray(httpMessage, 66, httpMessage.length)(codec) shouldBe user
+    }
+    "throw an exception if cannot parse input with message containing input offset & hex dump of affected part" in {
+      assert(intercept[JsonParseException](readFromSubArray(httpMessage, 0, httpMessage.length)(codec)).getMessage ==
+        """expected '{', offset: 0x00000000, buf:
+          |           +-------------------------------------------------+
+          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
+          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
+          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
+    "throw an exception in case of the provided params are invalid" in {
+      intercept[NullPointerException](readFromSubArray(httpMessage, 66, httpMessage.length)(null))
       intercept[NullPointerException](readFromSubArray(null.asInstanceOf[Array[Byte]], 0, 50)(codec))
-      intercept[NullPointerException](readFromStream(null.asInstanceOf[InputStream])(codec))
-      intercept[NullPointerException](readFromStream(new ByteArrayInputStream(compactJson), null)(codec))
       intercept[NullPointerException](readFromSubArray(httpMessage, 66, httpMessage.length, null)(codec))
       assert(intercept[ArrayIndexOutOfBoundsException](readFromSubArray(httpMessage, 50, 200)(codec))
         .getMessage.contains("`to` should be positive and not greater than `buf` length"))
@@ -98,9 +127,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       intercept[NullPointerException](scanJsonArrayFromStream(inputStream)(npe)(codec))
     }
   }
-  "write" should {
-    val buf = new Array[Byte](150)
-
+  "writeToStream" should {
     "serialize an object to the provided output stream" in {
       val out1 = new ByteArrayOutputStream()
       writeToStream(user, out1)(codec)
@@ -109,10 +136,25 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       writeToStream(user, out2, WriterConfig(indentionStep = 2))(codec)
       out2.toString("UTF-8") shouldBe toString(prettyJson)
     }
+    "throw i/o exception in case of the provided params are invalid" in {
+      intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream())(null))
+      intercept[NullPointerException](writeToStream(user, null.asInstanceOf[OutputStream])(codec))
+      intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream(), null)(codec))
+    }
+  }
+  "writeToArray" should {
     "serialize an object to a new instance of byte array" in {
       toString(writeToArray(user)(codec)) shouldBe toString(compactJson)
       toString(writeToArray(user, WriterConfig(indentionStep = 2))(codec)) shouldBe toString(prettyJson)
     }
+    "throw i/o exception in case of the provided params are invalid" in {
+      intercept[NullPointerException](writeToArray(user)(null))
+      intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
+    }
+  }
+  "writeToPreallocatedArray" should {
+    val buf = new Array[Byte](150)
+
     "serialize an object to the provided byte array from specified position" in {
       val from1 = 10
       val to1 = writeToPreallocatedArray(user, buf, from1)(codec)
@@ -126,13 +168,8 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("`buf` length exceeded"))
     }
     "throw i/o exception in case of the provided params are invalid" in {
-      intercept[NullPointerException](writeToArray(user)(null))
-      intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream())(null))
       intercept[NullPointerException](writeToPreallocatedArray(user, buf, 0)(null))
-      intercept[NullPointerException](writeToStream(user, null.asInstanceOf[OutputStream])(codec))
       intercept[NullPointerException](writeToPreallocatedArray(user, null, 50)(codec))
-      intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
-      intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream(), null)(codec))
       intercept[NullPointerException](writeToPreallocatedArray(user, buf, 0, null)(codec))
       assert(intercept[ArrayIndexOutOfBoundsException](writeToPreallocatedArray(user, new Array[Byte](10), 50)(codec))
         .getMessage.contains("`from` should be positive and not greater than `buf` length"))
