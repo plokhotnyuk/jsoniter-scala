@@ -115,8 +115,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Operators(`=<>!#%^&|*/\\~+-:$`: Int)
 
-  val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
-
   case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
 
   val stringified = Stringified(1, 2, List(1), List(2))
@@ -730,6 +728,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("missing required field \"camel-case\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys overridden by annotation and throw parse exception when they are missing" in {
+      val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
       verifySerDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""".getBytes)
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""".getBytes)
