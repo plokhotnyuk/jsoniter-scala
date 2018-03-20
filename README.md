@@ -104,7 +104,7 @@ That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_sc
 Now you can use it for parsing and serialization:
 
 ```scala
-val user = readFromArray("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes)
+val user = readFromArray("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 

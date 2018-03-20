@@ -1261,8 +1261,8 @@ object JsonWriter {
     (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
   private final val hexDigits: Array[Byte] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
-  private final val minIntBytes: Array[Byte] = "-2147483648".getBytes
-  private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes
+  private final val minIntBytes: Array[Byte] = "-2147483648".getBytes("UTF-8")
+  private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes("UTF-8")
   private final val maxZonedDateTimeLength: Int = {
     val mostLongZoneId = ZoneId.of(ZoneId.getAvailableZoneIds.asScala.maxBy(_.length))
     ZonedDateTime.ofLocal(LocalDateTime.MAX, mostLongZoneId, ZoneOffset.UTC).toString.length + 5
