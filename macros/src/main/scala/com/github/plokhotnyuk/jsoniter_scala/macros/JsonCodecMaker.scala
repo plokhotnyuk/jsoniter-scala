@@ -577,18 +577,14 @@ object JsonCodecMaker {
             q"""var x = new Array[$tpe1](16)
                 var i = 0""",
             q"""if (i == x.length) {
-                  val y = new Array[$tpe1](i << 1)
-                  System.arraycopy(x, 0, y, 0, i)
-                  x = y
+                  val x1 = new Array[$tpe1](i << 1)
+                  System.arraycopy(x, 0, x1, 0, i)
+                  x = x1
                 }
                 x(i) = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
                 i += 1""",
             q"""if (i == x.length) x
-                else {
-                  val y = new Array[$tpe1](i)
-                  System.arraycopy(x, 0, y, 0, i)
-                  y
-                }""")
+                else java.util.Arrays.copyOf(x, i)""")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()

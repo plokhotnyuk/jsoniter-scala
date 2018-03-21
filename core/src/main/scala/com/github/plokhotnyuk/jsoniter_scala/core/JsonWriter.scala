@@ -345,9 +345,7 @@ final class JsonWriter private[jsoniter_scala](
       this.indention = 0
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
-      val arr = new Array[Byte](count)
-      System.arraycopy(buf, 0, arr, 0, arr.length)
-      arr
+      java.util.Arrays.copyOf(buf, count)
     } finally freeTooLongBuf()
 
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
@@ -1185,8 +1183,9 @@ final class JsonWriter private[jsoniter_scala](
     else ((999999999 - q0) >>> 31) + 8
 
   private[this] def writeByteArray(bs: Array[Byte], pos: Int): Int = {
-    System.arraycopy(bs, 0, buf, pos, bs.length)
-    pos + bs.length
+    val len = bs.length
+    System.arraycopy(bs, 0, buf, pos, len)
+    pos + len
   }
 
   private[this] def writeFloat(x: Float): Unit =
@@ -1222,8 +1221,9 @@ final class JsonWriter private[jsoniter_scala](
     val newPos = flushBuffer(pos)
     if (buf.length < pos + required) {
       if (isBufGrowingAllowed) {
-        val bs = new Array[Byte](Math.max(buf.length << 1, pos + required))
-        System.arraycopy(buf, 0, bs, 0, buf.length)
+        val len = buf.length
+        val bs = new Array[Byte](Math.max(len << 1, pos + required))
+        System.arraycopy(buf, 0, bs, 0, len)
         buf = bs
       } else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
     }
