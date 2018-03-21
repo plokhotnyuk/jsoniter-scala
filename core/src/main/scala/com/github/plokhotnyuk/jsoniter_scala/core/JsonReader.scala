@@ -3173,11 +3173,8 @@ final class JsonReader private[jsoniter_scala](
   }.toChar
 
   private[this] def growCharBuf(required: Int): Int = {
-    val lim = charBuf.length
-    val newLim = Math.max(lim << 1, required)
-    val cs = new Array[Char](newLim)
-    System.arraycopy(charBuf, 0, cs, 0, lim)
-    charBuf = cs
+    val newLim = Math.max(charBuf.length << 1, required)
+    charBuf = java.util.Arrays.copyOf(charBuf, newLim)
     newLim
   }
 
@@ -3250,11 +3247,7 @@ final class JsonReader private[jsoniter_scala](
         if (mark != 2147483647) mark -= minPos
       }
       tail = remaining
-    } else if (tail > 0) {
-      val bs = new Array[Byte](buf.length << 1)
-      System.arraycopy(buf, 0, bs, 0, buf.length)
-      buf = bs
-    }
+    } else if (tail > 0) buf = java.util.Arrays.copyOf(buf, buf.length << 1)
     minPos
   }
 

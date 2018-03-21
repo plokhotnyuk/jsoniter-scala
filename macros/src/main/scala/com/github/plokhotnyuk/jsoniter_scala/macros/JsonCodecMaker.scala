@@ -576,11 +576,7 @@ object JsonCodecMaker {
           genReadArray(
             q"""var x = new Array[$tpe1](16)
                 var i = 0""",
-            q"""if (i == x.length) {
-                  val x1 = new Array[$tpe1](i << 1)
-                  System.arraycopy(x, 0, x1, 0, i)
-                  x = x1
-                }
+            q"""if (i == x.length) x = java.util.Arrays.copyOf(x, i << 1)
                 x(i) = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
                 i += 1""",
             q"""if (i == x.length) x
