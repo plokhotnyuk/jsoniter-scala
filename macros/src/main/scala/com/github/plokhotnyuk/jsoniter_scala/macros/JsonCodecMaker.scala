@@ -9,6 +9,7 @@ import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
 import scala.collection.generic.Growable
 import scala.collection.immutable.{BitSet, IntMap, LongMap}
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
@@ -386,11 +387,8 @@ object JsonCodecMaker {
       def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
         annotations.get(defaultName).fold(codecConfig.fieldNameMapper(defaultName))(_.name)
 
-      def getCollisions(names: Traversable[String]): Traversable[String] =
-        names.groupBy(identity).collect { case (x, xs) if xs.size > 1 => x }
-
-      def checkFieldNameCollisions(tpe: Type, names: Traversable[String]): Unit = {
-        val collisions = getCollisions(names)
+      def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
+        val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
@@ -400,8 +398,8 @@ object JsonCodecMaker {
         }
       }
 
-      def checkDiscriminatorValueCollisions(discriminatorFieldName: String, names: Traversable[String]): Unit = {
-        val collisions = getCollisions(names)
+      def checkDiscriminatorValueCollisions(discriminatorFieldName: String, names: Seq[String]): Unit = {
+        val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated values defined for '$discriminatorFieldName': $formattedCollisions. " +
@@ -914,12 +912,22 @@ object JsonCodecMaker {
     i != len
   }
 
-  private[this] def groupByOrdered[A, K](xs: Traversable[A])(f: A => K): mutable.Map[K, mutable.Buffer[A]] = {
-    val m = mutable.LinkedHashMap.empty[K, mutable.Buffer[A]].withDefault(_ => mutable.Buffer.empty[A])
+  private[this] def groupByOrdered[A, K](xs: Seq[A])(f: A => K): mutable.Map[K, Seq[A]] = {
+    val m = mutable.LinkedHashMap.empty[K, Seq[A]].withDefault(_ => new ArrayBuffer[A])
     xs.foreach { x =>
       val k = f(x)
       m(k) = m(k) :+ x
     }
     m
+  }
+
+  private[this] def duplicated[A](xs: Seq[A]): Seq[A] = {
+    val seen = new mutable.HashSet[A]
+    val dup = new ArrayBuffer[A]
+    xs.foreach[Unit] { x =>
+      if (seen(x)) dup += x
+      else seen += x
+    }
+    dup
   }
 }
