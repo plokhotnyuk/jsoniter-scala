@@ -123,6 +123,8 @@ object JsonCodecMaker {
 
       def info(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
 
+      def decodedName(s: Symbol): String = s.name.decodedName.toString
+
       def methodType(m: MethodSymbol): Type = m.returnType.dealias
 
       def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
@@ -131,7 +133,7 @@ object JsonCodecMaker {
 
       def isCaseClass(tpe: Type): Boolean = tpe.typeSymbol.asClass.isCaseClass
 
-      val tupleSymbols = definitions.TupleClass.seq.toSet[Symbol]
+      val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
 
@@ -181,10 +183,14 @@ object JsonCodecMaker {
         enumSymbol
       }
 
+      def getType(typeTree: Tree): Type = c.typecheck(typeTree, c.TYPEmode).tpe
+
+      def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
+
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
       def findImplicitKeyCodec(tpe: Type): Tree = inferredKeyCodecs.getOrElseUpdate(tpe,
-        c.inferImplicitValue(c.typecheck(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]", c.TYPEmode).tpe))
+        c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]")))
 
       def genReadKey(tpe: Type): Tree = {
         val implKeyCodec = findImplicitKeyCodec(tpe)
@@ -303,12 +309,13 @@ object JsonCodecMaker {
             }
             out.writeObjectEnd()"""
 
-      def cannotFindCodecError(tpe: Type): Nothing = fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
+      def cannotFindCodecError(tpe: Type): Nothing =
+        fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
       val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
       def findImplicitCodec(tpe: Type): Tree =
-        inferredCodecs.getOrElseUpdate(tpe, c.inferImplicitValue(c.typecheck(tq"JsonValueCodec[$tpe]", c.TYPEmode).tpe))
+        inferredCodecs.getOrElseUpdate(tpe, c.inferImplicitValue(getType(tq"JsonValueCodec[$tpe]")))
 
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
@@ -318,20 +325,19 @@ object JsonCodecMaker {
           m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
             a.tree.tpe =:= typeOf[stringified])
         } =>
-          val fieldName = m.name.decodedName.toString.trim // FIXME: Why is there a space at the end of field name?!
+          val name = decodedName(m).trim // FIXME: Why is there a space at the end of field name?!
           val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
-          if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$fieldName' of '$tpe'.")
+          if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
           val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
-          if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$fieldName' of '$tpe'.")
+          if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$name' of '$tpe'.")
           val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
-          if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
+          if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
           if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
             warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
-              s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$fieldName' of '$tpe'.")
+              s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
           }
-          val name = named.headOption.flatMap(x => Option(c.eval[named](c.Expr[named](c.untypecheck(x.tree))).name))
-            .getOrElse(fieldName)
-          (fieldName, FieldAnnotations(name, trans.nonEmpty, strings.nonEmpty))
+          val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
+          (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
       }(breakOut)
 
       def getModule(tpe: Type): ModuleSymbol = {
@@ -350,12 +356,12 @@ object JsonCodecMaker {
       def getDefaults(tpe: Type): Map[String, Tree] = {
         val module = getModule(tpe)
         getParams(tpe).zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
-          (p.name.decodedName.toString, q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
+          (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }(breakOut)
       }
 
       def getMembers(annotations: Map[String, FieldAnnotations], tpe: c.universe.Type): Seq[MethodSymbol] = {
-        def nonTransient(m: MethodSymbol): Boolean = annotations.get(m.name.decodedName.toString).fold(true)(!_.transient)
+        def nonTransient(m: MethodSymbol): Boolean = annotations.get(decodedName(m)).fold(true)(!_.transient)
 
         tpe.members.collect {
           case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
@@ -363,7 +369,7 @@ object JsonCodecMaker {
       }
 
       val rootTpe = weakTypeOf[A].dealias
-      val codecConfig = c.eval[CodecMakerConfig](c.Expr[CodecMakerConfig](c.untypecheck(config.tree)))
+      val codecConfig = eval[CodecMakerConfig](config.tree)
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedKeyError(l)"
@@ -628,7 +634,7 @@ object JsonCodecMaker {
         } else if (isCaseClass(tpe)) withDecoderFor(methodKey, default) {
           val annotations = getFieldAnnotations(tpe)
 
-          def name(m: MethodSymbol): String = getMappedName(annotations, m.name.decodedName.toString)
+          def name(m: MethodSymbol): String = getMappedName(annotations, decodedName(m))
 
           def hashCode(m: MethodSymbol): Int = {
             val cs = name(m).toCharArray
@@ -640,7 +646,7 @@ object JsonCodecMaker {
             (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
           val params = getParams(tpe)
           val required = params.collect {
-            case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => p.name.decodedName.toString
+            case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => decodedName(p)
           }
           val reqVarNum = required.size
           val lastReqVarIndex = reqVarNum >> 5
@@ -667,15 +673,14 @@ object JsonCodecMaker {
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
             val tpe = methodType(m)
-            q"var ${TermName("_" + m.name)}: $tpe = ${defaults.getOrElse(m.name.decodedName.toString, nullValue(tpe))}"
+            q"var ${TermName("_" + m.name)}: $tpe = ${defaults.getOrElse(decodedName(m), nullValue(tpe))}"
           }
           val readFields = groupByOrdered(members)(hashCode).map { case (hashCode, ms) =>
             val checkNameAndReadValue = ms.foldRight(unexpectedFieldHandler) { case (m, acc) =>
-              val decodedName = m.name.decodedName.toString
               val varName = TermName("_" + m.name)
-              val isStringified = getStringified(annotations, decodedName)
+              val isStringified = getStringified(annotations, decodedName(m))
               val readValue = q"$varName = ${genReadVal(methodType(m), q"$varName", isStringified)}"
-              val resetReqFieldFlag = bitmasks.getOrElse(decodedName, EmptyTree)
+              val resetReqFieldFlag = bitmasks.getOrElse(decodedName(m), EmptyTree)
               q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
                     ..$readValue
                     ..$resetReqFieldFlag
@@ -805,10 +810,10 @@ object JsonCodecMaker {
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
             val tpe = methodType(m)
-            val decodedName = m.name.decodedName.toString
-            val mappedName = getMappedName(annotations, decodedName)
-            val isStringified = getStringified(annotations, decodedName)
-            defaults.get(decodedName) match {
+            val name = decodedName(m)
+            val mappedName = getMappedName(annotations, name)
+            val isStringified = getStringified(annotations, name)
+            defaults.get(name) match {
               case Some(d) =>
                 if (tpe <:< typeOf[Traversable[_]]) {
                   q"""val v = x.$m
