@@ -129,6 +129,12 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
 
+      def isCaseClass(tpe: Type): Boolean = tpe.typeSymbol.asClass.isCaseClass
+
+      val tupleSymbols = definitions.TupleClass.seq.toSet[Symbol]
+
+      def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
+
       def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.asClass.isDerivedValueClass
 
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
@@ -148,7 +154,7 @@ object JsonCodecMaker {
           tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
             val subTpe = s.asClass.toType
             if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
-            else if (s.asClass.isCaseClass) Set(subTpe)
+            else if (isCaseClass(subTpe)) Set(subTpe)
             else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
               s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
           }
@@ -159,13 +165,13 @@ object JsonCodecMaker {
         classes
       }
 
-      def companion(tpe: Type): Tree = Ident(tpe.typeSymbol.companion)
+      def companion(tpe: Type): Symbol = tpe.typeSymbol.companion
 
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
 
       def collectionCompanion(tpe: Type): Tree = {
-        val comp = tpe.typeSymbol.companion
+        val comp = companion(tpe)
         if (comp.isModule && comp.fullName.startsWith("scala.collection.")) Ident(comp)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
       }
@@ -602,7 +608,7 @@ object JsonCodecMaker {
                 in.skip()
                 ${tpe.typeSymbol.asClass.module}
               } else in.readNullOrTokenError(default, '{')"""
-        } else if (tpe.typeSymbol.fullName.startsWith("scala.Tuple")) withDecoderFor(methodKey, default) {
+        } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
           val indexedTypes = tpe.typeArgs.zipWithIndex
           val readFields = indexedTypes.tail.foldLeft {
             val t = tpe.typeArgs.head
@@ -619,7 +625,7 @@ object JsonCodecMaker {
                 if (in.isNextToken(']')) new $tpe(..$vals)
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
-        } else if (tpe.typeSymbol.asClass.isCaseClass) withDecoderFor(methodKey, default) {
+        } else if (isCaseClass(tpe)) withDecoderFor(methodKey, default) {
           val annotations = getFieldAnnotations(tpe)
 
           def name(m: MethodSymbol): String = getMappedName(annotations, m.name.decodedName.toString)
@@ -785,7 +791,7 @@ object JsonCodecMaker {
           q"""out.writeObjectStart()
               ..$discriminator
               out.writeObjectEnd()"""
-        } else if (tpe.typeSymbol.fullName.startsWith("scala.Tuple")) withEncoderFor(methodKey, m) {
+        } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
           val writeFields = tpe.typeArgs.zipWithIndex.map { case (t, i) =>
             q"""out.writeComma()
                 ${genWriteVal(q"x.${TermName("_" + (i + 1))}", t, isStringified)}"""
@@ -793,7 +799,7 @@ object JsonCodecMaker {
           q"""out.writeArrayStart()
               ..$writeFields
               out.writeArrayEnd()"""
-        } else if (tpe.typeSymbol.asClass.isCaseClass) withEncoderFor(methodKey, m) {
+        } else if (isCaseClass(tpe)) withEncoderFor(methodKey, m) {
           val annotations = getFieldAnnotations(tpe)
           val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
