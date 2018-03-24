@@ -104,6 +104,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class CamelSnakeKebabCases(camelCase: Int, snake_case: Int, `kebab-case`: Int,
                                   `camel1`: Int, `snake_1`: Int, `kebab-1`: Int)
 
+  val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
+
   case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Double])
 
   val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> -90.0, 'N' -> 90.0, 'W' -> -180.0, 'E' -> 180.0))
@@ -728,7 +730,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("missing required field \"camel-case\", offset: 0x00000051"))
     }
     "serialize and deserialize with keys overridden by annotation and throw parse exception when they are missing" in {
-      val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make[NameOverridden](CodecMakerConfig())
       verifySerDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""".getBytes("UTF-8"))
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""".getBytes("UTF-8"))
