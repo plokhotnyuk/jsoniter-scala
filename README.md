@@ -40,7 +40,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, tuples,
   `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes with 
   values/fields having any of types listed here 
-- Case classes should be defined as a top-level class or directly inside of another class or object and with a public 
+- Case classes should be defined as a top-level class or directly inside of another class or object and with a primary 
   constructor that has one list of arguments for all non-transient fields
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 

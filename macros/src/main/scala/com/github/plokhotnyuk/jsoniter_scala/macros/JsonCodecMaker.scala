@@ -350,9 +350,12 @@ object JsonCodecMaker {
         comp.asModule //FIXME: module cannot be resolved properly for deeply nested inner case classes
       }
 
-      def getParams(tpe: Type): Seq[TermSymbol] = tpe.decl(termNames.CONSTRUCTOR).asTerm.alternatives.flatMap {
-        case m: MethodSymbol => m.paramLists.head.map(_.asTerm)
-      } //FIXME: handling only default val params from the first list because subsequent might depend on previous params
+      def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
+        case m: MethodSymbol if m.isPrimaryConstructor => m
+      }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
+
+      //FIXME: handling only default val params from the first list because subsequent might depend on previous params
+      def getParams(tpe: Type): Seq[TermSymbol] = getPrimaryConstructor(tpe).paramLists.head.map(_.asTerm)
 
       def getDefaults(tpe: Type): Map[String, Tree] = {
         val module = getModule(tpe)
@@ -413,11 +416,8 @@ object JsonCodecMaker {
       // use it only for immutable values which doesn't have public constants
       def withNullValueFor(tpe: Type)(f: => Tree): Tree = {
         val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("v" + nullValueNames.size))
-        nullValueTrees.getOrElseUpdate(tpe, {
-          val impl = f
-          q"private[this] val $nullValueName: $tpe = $impl"
-        })
-        q"$nullValueName"
+        nullValueTrees.getOrElseUpdate(tpe, q"private[this] val $nullValueName: $tpe = $f")
+        Ident(nullValueName)
       }
 
       val reqFieldNames = mutable.LinkedHashMap.empty[Type, TermName]
@@ -425,11 +425,8 @@ object JsonCodecMaker {
 
       def withReqFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val reqFieldName = reqFieldNames.getOrElseUpdate(tpe, TermName("r" + reqFieldNames.size))
-        reqFieldTrees.getOrElseUpdate(tpe, {
-          val impl = f
-          q"private[this] val $reqFieldName: Array[String] = Array(..$impl)"
-        })
-        q"$reqFieldName"
+        reqFieldTrees.getOrElseUpdate(tpe, q"private[this] val $reqFieldName: Array[String] = Array(..$f)")
+        Ident(reqFieldName)
       }
 
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
@@ -442,10 +439,8 @@ object JsonCodecMaker {
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethodNames.getOrElseUpdate(methodKey, TermName("d" + decodeMethodNames.size))
-        decodeMethodTrees.getOrElseUpdate(methodKey, {
-          val impl = f
-          q"private[this] def $decodeMethodName(in: JsonReader, default: ${methodKey.tpe}): ${methodKey.tpe} = $impl"
-        })
+        decodeMethodTrees.getOrElseUpdate(methodKey,
+          q"private[this] def $decodeMethodName(in: JsonReader, default: ${methodKey.tpe}): ${methodKey.tpe} = $f")
         q"$decodeMethodName(in, $arg)"
       }
 
@@ -454,10 +449,8 @@ object JsonCodecMaker {
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encodeMethodNames.getOrElseUpdate(methodKey, TermName("e" + encodeMethodNames.size))
-        encodeMethodTrees.getOrElseUpdate(methodKey, {
-          val impl = f
-          q"private[this] def $encodeMethodName(x: ${methodKey.tpe}, out: JsonWriter): Unit = $impl"
-        })
+        encodeMethodTrees.getOrElseUpdate(methodKey,
+          q"private[this] def $encodeMethodName(x: ${methodKey.tpe}, out: JsonWriter): Unit = $f")
         q"$encodeMethodName($arg, out)"
       }
 

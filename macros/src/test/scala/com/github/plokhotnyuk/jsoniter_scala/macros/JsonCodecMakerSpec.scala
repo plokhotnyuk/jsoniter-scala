@@ -184,6 +184,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class TypeAliases(i: I, s: S, l: L, m: M)
 
+  case class PrivatePrimaryConstructor private(i: Int) {
+    def this(s: String) = this(s.toInt)
+  }
+
+  object PrivatePrimaryConstructor {
+    implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
+      JsonCodecMaker.make[PrivatePrimaryConstructor](CodecMakerConfig())
+
+    def apply(s: String) = new PrivatePrimaryConstructor(s)
+  }
+
   "JsonValueCodec" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
@@ -1072,6 +1083,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize top-level aliased types" in {
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
+    }
+    "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
+      verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}".getBytes("UTF-8"))
     }
     "don't generate codec for unsupported classes" in {
       assert(intercept[TestFailedException](assertCompiles {
