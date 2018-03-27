@@ -9,9 +9,9 @@ Scala macros that generate codecs for case classes, standard types and collectio
 to get maximum performance of JSON parsing and serialization.
 
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
-performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using JDK 8 & 9 on the following environment: 
-Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-32-generic, 
-Oracle JDK 64-bit (builds 1.8.0_161-b12 and 9.0.4+11 accordingly) 
+performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using different JDK versions on the following 
+environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
+Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12, 9.0.4+11 and "10" 2018-03-20) 
 
 ## Goals
 
@@ -19,8 +19,8 @@ Initially, this library was developed for requirements of real-time bidding in a
 - do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but 
   do it crazily fast without runtime-reflection, intermediate AST-trees, strings or events, with minimum allocations and
   copying
-- do validation of UTF-8 encoding, JSON format and mapped values efficiently with clear reporting, do not replace 
-  illegally encoded characters of string values by placeholder characters
+- do validation of UTF-8 encoding, JSON format and mapped values efficiently (fail fast approach) with clear reporting, 
+  do not replace illegally encoded characters of string values by placeholder characters
 - define in _compile-time_ classes that will be instantiated during parsing to minimize a probability of runtime issues, 
   generated sources can be inspected to prove that there are no security vulnerabilities during parsing
 
@@ -57,6 +57,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
   an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
+- Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
 - No dependencies on extra libraries excluding Scala's `scala-library` and `scala-reflect` 
   
@@ -215,8 +216,8 @@ sbt publishM2
 For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double check binary and source compatibility (including behavior) and release using the following command (credentials 
-required):
+Double check binary and source compatibility, including behavior, and release using the following command (credentials 
+are required):
 
 ```sh
 sbt release

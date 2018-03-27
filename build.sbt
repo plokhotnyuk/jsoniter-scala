@@ -42,7 +42,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "2.12.4",
+  scalaVersion := "2.12.5",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -89,7 +89,7 @@ lazy val core = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M3", "2.12.4", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M3", "2.12.5", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
@@ -102,7 +102,7 @@ lazy val macros = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M3", "2.12.4", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M3", "2.12.5", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,
@@ -116,7 +116,7 @@ lazy val benchmark = project
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.12.4", "2.11.12"),
+    crossScalaVersions := Seq("2.12.5", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.4",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.4",
@@ -124,12 +124,12 @@ lazy val benchmark = project
       "com.fasterxml.jackson.core" % "jackson-core" % "2.9.4",
       "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.4",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.4",
-      "io.circe" %% "circe-generic" % "0.9.1",
-      "io.circe" %% "circe-generic-extras" % "0.9.1",
-      "io.circe" %% "circe-parser" % "0.9.1",
-      "io.circe" %% "circe-java8" % "0.9.1",
+      "io.circe" %% "circe-generic" % "0.9.2",
+      "io.circe" %% "circe-generic-extras" % "0.9.2",
+      "io.circe" %% "circe-parser" % "0.9.2",
+      "io.circe" %% "circe-java8" % "0.9.2",
       "ai.x" %% "play-json-extensions" % "0.10.0",
-      "com.typesafe.play" %% "play-json" % "2.6.8",
+      "com.typesafe.play" %% "play-json" % "2.6.9",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.3",
       "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
