@@ -12,6 +12,7 @@ import scala.collection.immutable.{BitSet, IntMap, LongMap}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
+import scala.reflect.NameTransformer
 import scala.reflect.macros.blackbox
 
 @field
@@ -124,7 +125,7 @@ object JsonCodecMaker {
 
       def info(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
 
-      def decodedName(s: Symbol): String = s.name.decodedName.toString
+      def decodedName(s: Symbol): String = decodeName(s.name.toString)
 
       def methodType(m: MethodSymbol): Type = m.returnType.dealias
 
@@ -382,7 +383,7 @@ object JsonCodecMaker {
         cq"${JsonReader.toHashCode(cs, cs.length)} => in.skip()"
       }
 
-      def discriminatorValue(tpe: Type): String = codecConfig.adtLeafClassNameMapper(tpe.typeSymbol.fullName)
+      def discriminatorValue(tpe: Type): String = codecConfig.adtLeafClassNameMapper(decodeName(tpe.typeSymbol.fullName))
 
       def getStringified(annotations: Map[String, FieldAnnotations], name: String): Boolean =
         annotations.get(name).fold(false)(_.stringified)
@@ -897,6 +898,10 @@ object JsonCodecMaker {
       c.Expr[JsonValueCodec[A]](codec)
     }
   }
+
+  private[this] def decodeName(s: String): String =
+    if (s.indexOf('$') >= 0) NameTransformer.decode(s)
+    else s
 
   private[this] def isEncodingRequired(s: String): Boolean = {
     val len = s.length

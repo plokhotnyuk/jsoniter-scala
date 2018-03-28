@@ -163,6 +163,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case object D extends AdtBase
 
+  sealed trait TimeZone
+
+  case object `US/Alaska` extends TimeZone
+
+  case object `Europe/Paris` extends TimeZone
+
   sealed abstract class База
 
   case class А(б: Б) extends База
@@ -888,6 +894,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип", skipUnexpectedFields = false)),
         List(А(Б("x")), Б("x")),
         """[{"тип":"А","б":{"с":"x"}},{"тип":"Б","с":"x"}]""".getBytes("UTF-8"))
+    }
+    "serialize and deserialize ADTs with Scala operators in names" in {
+      verifySerDeser(make[List[TimeZone]](CodecMakerConfig(discriminatorFieldName = "zoneId")),
+        List(`US/Alaska`, `Europe/Paris`),
+        """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""".getBytes("UTF-8"))
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {
