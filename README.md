@@ -13,6 +13,17 @@ performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using d
 environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
 Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12, 9.0.4+11 and "10" 2018-03-20) 
 
+## Acknowledgments
+
+This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
+generated codecs for them but then evolved to have own core of mechanics for parsing and serialization. 
+
+Idea to generate codecs by Scala macros and main details was borrowed from 
+[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of the JSON domain. 
+  
+Other Scala macros features were peeped in 
+[AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros)
+
 ## Goals
 
 Initially, this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
@@ -226,13 +237,3 @@ sbt release
 Do not push changes to github until promoted artifacts for the new version are not available for download on 
 [Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/macros_2.12/)
 to avoid binary compatibility check failures in triggered Travis CI builds. 
-
-## Acknowledgments
-
-This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and 
-generated codecs for them but then evolved to have own core of mechanics for parsing and serialization. 
-
-Idea to generate codecs by Scala macros and main details was borrowed from 
-[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of JSON domain. 
-  
-Other Scala macros features were peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons)
