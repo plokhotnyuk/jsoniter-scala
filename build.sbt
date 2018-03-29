@@ -46,6 +46,7 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
+    "-target:jvm-1.8",
     "-feature",
     "-unchecked",
     "-Yno-adapted-args",
@@ -53,7 +54,11 @@ lazy val commonSettings = Seq(
     "-Xfuture",
     "-Xlint",
     "-Xmacro-settings:print-codecs"
-  ),
+  ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, x)) if x >= 12 => Seq("-opt:l:method")
+    case Some((2, x)) if x == 11 => Seq("-Ybackend:GenBCode", "-Ydelambdafy:inline")
+    case _ => Seq()
+  }),
   testOptions in Test += Tests.Argument("-oDF")
 )
 
