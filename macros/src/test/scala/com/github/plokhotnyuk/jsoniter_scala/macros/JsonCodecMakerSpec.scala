@@ -201,7 +201,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     def apply(s: String) = new PrivatePrimaryConstructor(s)
   }
 
-  "JsonValueCodec" should {
+  "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes("UTF-8"))
