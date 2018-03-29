@@ -1098,14 +1098,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}".getBytes("UTF-8"))
     }
-    "don't generate codec for unsupported classes" in {
+    "don't generate codecs for unsupported classes" in {
       assert(intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
       }).getMessage.contains {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
       })
     }
-    "don't generate codec for too deeply defined case classes" in {
+    "don't generate codecs for too deeply defined case classes" in {
       assert(intercept[TestFailedException](assertCompiles {
         """val codecOfFoo = () => {
           |  case class Foo(i: Int)
@@ -1115,6 +1115,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }).getMessage.contains {
         """Can't find companion object for 'Foo'. This can happen when it's nested too deeply. Please consider defining
           |it as a top-level object or directly inside of another class or object.""".stripMargin.replace('\n', ' ')
+      })
+    }
+    "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class MultiListOfArgs(i: Int)(l: Long)
+          |JsonCodecMaker.make[MultiListOfArgs](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """'MultiListOfArgs' has a primary constructor with multiple parameter lists.
+          |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
       })
     }
   }

@@ -355,12 +355,16 @@ object JsonCodecMaker {
         case m: MethodSymbol if m.isPrimaryConstructor => m
       }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
 
-      //FIXME: handling only default val params from the first list because subsequent might depend on previous params
-      def getParams(tpe: Type): Seq[TermSymbol] = getPrimaryConstructor(tpe).paramLists.head.map(_.asTerm)
+      def getParams(tpe: Type): Seq[TermSymbol] = getPrimaryConstructor(tpe).paramLists match {
+        case paramList :: Nil => paramList.map(_.asTerm)
+        case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
+          "Please consider using a custom implicitly accessible codec for this type.")
+      }
 
       def getDefaults(tpe: Type): Map[String, Tree] = {
+        val params = getParams(tpe)
         val module = getModule(tpe)
-        getParams(tpe).zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
+        params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }(breakOut)
       }
