@@ -145,8 +145,14 @@ sbt -J-XX:MaxMetaspaceSize=512m clean +coverage +test +coverageReport +mimaRepor
 
 ### Run benchmarks
 
+```sh
+sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors clean 'benchmark/jmh:run -jvm /usr/lib/jvm/java-8-oracle/bin/java -prof gc -rf json -rff jdk8.json .*' >jdk8.txt
+sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors clean 'benchmark/jmh:run -jvm /usr/lib/jvm/java-9-oracle/bin/java -prof gc -rf json -rff jdk9.json .*' >jdk9.txt
+sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors clean 'benchmark/jmh:run -jvm /usr/lib/jvm/jdk-10/bin/java -prof gc -rf json -rff jdk10.json .*' >jdk10.txt
+```   
+
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check 
-[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](http://openjdk.java.net/projects/code-tools/jmh/). 
+[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](http://openjdk.java.net/projects/code-tools/jmh/).
 
 Learn how to write benchmarks in [JMH samples](http://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/)
  and JMH articles posted in [Aleksey Shipilёv’s](https://shipilev.net/) and [Nitsan Wakart’s](http://psy-lob-saw.blogspot.com/p/jmh-related-posts.html) 
