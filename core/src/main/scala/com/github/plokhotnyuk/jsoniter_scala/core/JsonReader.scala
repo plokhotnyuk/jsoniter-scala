@@ -2727,15 +2727,8 @@ final class JsonReader private[jsoniter_scala](
     if (hour > 23) decodeError("illegal hour")
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
-    val y = if (yearNeg) -year else year
-    (365L * y + ({
-      if (y > 0) (y + 3) / 4 - (y + 99) / 100 + (y + 399) / 400
-      else y / 4 - y / 100 + y / 400
-    } + ((367 * month - 362) / 12) - {
-      if (month > 2) {
-        if (isLeap(y)) 1 else 2
-      } else 0
-    } + day - 719529)) * 86400 + (hour * 3600 + minute * 60 + second) // 719528 == days 0000 to 1970
+    (epochDayForYear(yearNeg, year) + (dayOfYearForYearMonth(year, month) + day - 719529)) * 86400 + // 719528 == days 0000 to 1970
+      secondOfDay(hour, minute, second)
   }
 
   private[this] def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
@@ -2776,7 +2769,7 @@ final class JsonReader private[jsoniter_scala](
     if (offsetHour > 18) decodeError("illegal zone offset hour")
     if (offsetMinute > 59) decodeError("illegal zone offset minute")
     if (offsetSecond > 59) decodeError("illegal zone offset second")
-    val offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
+    val offsetTotal = secondOfDay(offsetHour, offsetMinute, offsetSecond)
     if (offsetTotal > 64800) decodeError("illegal zone offset") // 64800 == 18 * 60 * 60
     try ZoneOffset.ofTotalSeconds(if (offsetNeg) -offsetTotal else offsetTotal)  catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
@@ -2789,10 +2782,22 @@ final class JsonReader private[jsoniter_scala](
       case ex: ZoneRulesException => dateTimeZoneError(ex)
     }
 
-  private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
+  private[this] def epochDayForYear(yearNeg: Boolean, positiveYear: Int): Long =
+    if (yearNeg) {
+      val century = positiveYear * 1374389535L >> 37
+      -365L * positiveYear - (positiveYear >> 2) + century - (century >> 2)
+    } else {
+      365L * positiveYear + ((positiveYear + 3) >> 2) - ((positiveYear + 99) * 1374389535L >> 37) +
+        ((positiveYear + 399) * 1374389535L >> 39)
+    }
+
+  private[this] def dayOfYearForYearMonth(positiveYear: Int, month: Int): Int =
+    ((month * 1050835331877L - 1036518774222L) >> 35).toInt - (if (month > 2) if (isLeap(positiveYear)) 1 else 2 else 0)
+
+  private[this] def maxDayForYearMonth(positiveYear: Int, month: Int): Int =
     (month: @switch) match {
       case 1 => 31
-      case 2 => if (isLeap(year)) 29 else 28
+      case 2 => if (isLeap(positiveYear)) 29 else 28
       case 3 => 31
       case 4 => 30
       case 5 => 31
@@ -2805,11 +2810,13 @@ final class JsonReader private[jsoniter_scala](
       case 12 => 31
     }
 
-  private[this] def isLeap(year: Int): Boolean =
-    (year & 3) == 0 && {
-      val century = year / 100
-      century * 100 != year || (century & 3) == 0
+  private[this] def isLeap(positiveYear: Int): Boolean =
+    (positiveYear & 3) == 0 && {
+      val century = (positiveYear * 1374389535L >> 37).toInt
+      century * 100 != positiveYear || (century & 3) == 0
     }
+
+  private[this] def secondOfDay(hour: Int, month: Int, day: Int): Int = hour * 3600 + month * 60 + day
 
   private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
