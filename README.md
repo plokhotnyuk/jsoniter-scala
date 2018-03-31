@@ -146,9 +146,7 @@ sbt -J-XX:MaxMetaspaceSize=512m clean +coverage +test +coverageReport +mimaRepor
 ### Run benchmarks
 
 ```sh
-sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors clean 'benchmark/jmh:run -jvm /usr/lib/jvm/java-8-oracle/bin/java -prof gc -rf json -rff jdk8.json .*' >jdk8.txt
-sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors clean 'benchmark/jmh:run -jvm /usr/lib/jvm/java-9-oracle/bin/java -prof gc -rf json -rff jdk9.json .*' >jdk9.txt
-sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors clean 'benchmark/jmh:run -jvm /usr/lib/jvm/jdk-10/bin/java -prof gc -rf json -rff jdk10.json .*' >jdk10.txt
+./benchmark.sh
 ```   
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check 
