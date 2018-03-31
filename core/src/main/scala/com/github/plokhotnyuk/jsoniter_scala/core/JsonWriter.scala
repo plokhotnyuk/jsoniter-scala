@@ -332,7 +332,7 @@ final class JsonWriter private[jsoniter_scala](
       indention = 0
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
-      flushBuffer() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
+      flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
     } finally {
       this.out = null // do not close output stream, just help GC instead
       freeTooLongBuf()
@@ -376,20 +376,20 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeBytes(b: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(1)
+    val pos = ensureBufCapacity(1)
     buf(pos) = b
     pos + 1
   }
 
   private def writeBytes(b1: Byte, b2: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(2)
+    val pos = ensureBufCapacity(2)
     buf(pos) = b1
     buf(pos + 1) = b2
     pos + 2
   }
 
   private def writeBytes(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(3)
+    val pos = ensureBufCapacity(3)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
@@ -397,7 +397,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(4)
+    val pos = ensureBufCapacity(4)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
@@ -406,7 +406,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(5)
+    val pos = ensureBufCapacity(5)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
@@ -416,7 +416,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(6)
+    val pos = ensureBufCapacity(6)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
@@ -427,7 +427,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte, b7: Byte): Unit = count = {
-    val pos = ensureBufferCapacity(7)
+    val pos = ensureBufCapacity(7)
     buf(pos) = b1
     buf(pos + 1) = b2
     buf(pos + 2) = b3
@@ -440,14 +440,14 @@ final class JsonWriter private[jsoniter_scala](
 
   private def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
     val len = s.length
-    val pos = ensureBufferCapacity(len)
+    val pos = ensureBufCapacity(len)
     s.getBytes(0, len, buf, pos)
     pos + len
   }
 
   private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {
     val len = s.length
-    val pos = ensureBufferCapacity(len + 2)
+    val pos = ensureBufCapacity(len + 2)
     buf(pos) = '"'
     s.getBytes(0, len, buf, pos + 1)
     buf(pos + len + 1) = '"'
@@ -455,7 +455,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeUUID(x: UUID): Unit = count = {
-    val pos = ensureBufferCapacity(38)
+    val pos = ensureBufCapacity(38)
     val mostSigBits1 = (x.getMostSignificantBits >> 32).toInt
     val mostSigBits2 = x.getMostSignificantBits.toInt
     val leastSigBits1 = (x.getLeastSignificantBits >> 32).toInt
@@ -502,7 +502,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeString(s: String): Unit = count = {
-    var pos = ensureBufferCapacity(2)
+    var pos = ensureBufCapacity(2)
     buf(pos) = '"'
     pos = {
       val bs = UnsafeUtils.getLatin1Array(s)
@@ -516,7 +516,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeString(s, from, to, growBuffer(2, pos), buf.length - 1, escapedChars)
+    else if (pos >= posLim) writeString(s, from, to, growBuf(2, pos), buf.length - 1, escapedChars)
     else {
       val ch = s.charAt(from)
       if (ch < 128 && escapedChars(ch) == 0) {
@@ -529,7 +529,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEncodedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEncodedString(s, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
+    else if (pos >= posLim) writeEncodedString(s, from, to, growBuf(7, pos), buf.length - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
@@ -567,7 +567,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(s, from, to, growBuffer(13, pos), buf.length - 12, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, growBuf(13, pos), buf.length - 12, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) {
@@ -593,7 +593,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeString(bs, from, to, growBuffer(2, pos), buf.length - 1, escapedChars)
+    else if (pos >= posLim) writeString(bs, from, to, growBuf(2, pos), buf.length - 1, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0 && escapedChars(b) == 0) {
@@ -606,7 +606,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEncodedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEncodedString(bs, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
+    else if (pos >= posLim) writeEncodedString(bs, from, to, growBuf(7, pos), buf.length - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) { // 1 byte, 7 bits: 0xxxxxxx
@@ -629,7 +629,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEscapedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(bs, from, to, growBuffer(7, pos), buf.length - 6, escapedChars)
+    else if (pos >= posLim) writeEscapedString(bs, from, to, growBuf(7, pos), buf.length - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) {
@@ -646,7 +646,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeChar(ch: Char): Unit = count = {
-    var pos = ensureBufferCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
+    var pos = ensureBufCapacity(8) // 6 bytes per char for escaped unicode + make room for the quotes
     buf(pos) = '"'
     pos += 1
     pos = {
@@ -718,7 +718,7 @@ final class JsonWriter private[jsoniter_scala](
     else writeBytes(':')
 
   private[this] def writeByte(x: Byte): Unit = count = {
-    var pos = ensureBufferCapacity(4) // Byte.MinValue.toString.length
+    var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
     val buf = this.buf
     val q0: Int =
       if (x >= 0) x
@@ -771,7 +771,7 @@ final class JsonWriter private[jsoniter_scala](
         if (nanos == 0) writeBytes('S', '"')
         else {
           nanos = if (totalSecs < 0) 2000000000 - nanos else 1000000000 + nanos
-          val posLim = ensureBufferCapacity(10)
+          val posLim = ensureBufCapacity(10)
           val buf = this.buf
           var pos = posLim + 9
           writeIntRem(nanos, pos, buf, digits, 4)
@@ -811,7 +811,7 @@ final class JsonWriter private[jsoniter_scala](
     val secsOfHour = secsOfDay - hour * 3600
     val minute = (secsOfHour * 2290649225L >> 37).toInt // divide positive int by 60
     val second = secsOfHour - minute * 60
-    var pos = ensureBufferCapacity(39) // 39 == Instant.MAX.toString.length + 2
+    var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -829,7 +829,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLocalDate(x: LocalDate): Unit = count = {
-    var pos = ensureBufferCapacity(18) // 18 == LocalDate.MAX.toString.length + 2
+    var pos = ensureBufCapacity(18) // 18 == LocalDate.MAX.toString.length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeLocalDate(x, pos + 1, buf, digits)
@@ -838,7 +838,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLocalDateTime(x: LocalDateTime): Unit = count = {
-    var pos = ensureBufferCapacity(37) // 37 == LocalDateTime.MAX.toString.length + 2
+    var pos = ensureBufCapacity(37) // 37 == LocalDateTime.MAX.toString.length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -850,7 +850,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLocalTime(x: LocalTime): Unit = count = {
-    var pos = ensureBufferCapacity(20) // 20 == LocalTime.MAX.toString.length + 2
+    var pos = ensureBufCapacity(20) // 20 == LocalTime.MAX.toString.length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeLocalTime(x, pos + 1, buf, digits)
@@ -859,7 +859,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeMonthDay(x: MonthDay): Unit = count = {
-    var pos = ensureBufferCapacity(9) // 9 == "--01-01".length + 2
+    var pos = ensureBufCapacity(9) // 9 == "--01-01".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -873,7 +873,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffsetDateTime(x: OffsetDateTime): Unit = count = {
-    var pos = ensureBufferCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
+    var pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -885,7 +885,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffsetTime(x: OffsetTime): Unit = count = {
-    var pos = ensureBufferCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
+    var pos = ensureBufCapacity(29) // 29 == "00:00:07.999999998+00:00:08".length + 2
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -916,7 +916,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeYearMonth(x: YearMonth): Unit = count = {
-    var pos = ensureBufferCapacity(15) // 15 == "+999999999-12".length + 2
+    var pos = ensureBufCapacity(15) // 15 == "+999999999-12".length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeYearMonth(x.getYear, x.getMonthValue, pos + 1, buf, digits)
@@ -925,7 +925,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeZonedDateTime(x: ZonedDateTime): Unit = count = {
-    var pos = ensureBufferCapacity(maxZonedDateTimeLength) // ~80 for current time zones
+    var pos = ensureBufCapacity(maxZonedDateTimeLength) // ~80 for current time zones
     val buf = this.buf
     val ds = digits
     buf(pos) = '"'
@@ -948,7 +948,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeZoneOffset(x: ZoneOffset): Unit = count = {
-    var pos = ensureBufferCapacity(12) // 12 == "+10:10:10".length + 2
+    var pos = ensureBufCapacity(12) // 12 == "+10:10:10".length + 2
     val buf = this.buf
     buf(pos) = '"'
     pos = writeOffset(x, pos + 1, buf, digits)
@@ -1015,21 +1015,21 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffset(x: ZoneOffset, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val ots = x.getTotalSeconds
-    if (ots == 0) {
+    val offsetTotalSeconds = x.getTotalSeconds
+    if (offsetTotalSeconds == 0) {
       buf(p) = 'Z'
       p + 1
     } else {
-      val pots =
-        if (ots >= 0) {
+      val posOffsetTotalSeconds =
+        if (offsetTotalSeconds >= 0) {
           buf(p) = '+'
-          ots
+          offsetTotalSeconds
         } else {
           buf(p) = '-'
-          -ots
+          -offsetTotalSeconds
         }
-      val q1 = (pots * 2443359173L >> 43).toInt // divide positive int by 3600
-      val r1 = pots - q1 * 3600
+      val q1 = (posOffsetTotalSeconds * 2443359173L >> 43).toInt // divide positive int by 3600
+      val r1 = posOffsetTotalSeconds - q1 * 3600
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'
       val q2 = (r1 * 2290649225L >> 37).toInt // divide positive int by 60
@@ -1064,7 +1064,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeShort(x: Short): Unit = count = {
-    var pos = ensureBufferCapacity(6) // Short.MinValue.toString.length
+    var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
     val q0: Int =
       if (x >= 0) x
@@ -1090,7 +1090,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeInt(x: Int): Unit = count = {
-    var pos = ensureBufferCapacity(11) // minIntBytes.length
+    var pos = ensureBufCapacity(11) // minIntBytes.length
     if (x == -2147483648) writeByteArray(minIntBytes, pos)
     else {
       val buf = this.buf
@@ -1107,7 +1107,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLong(x: Long): Unit = count = {
-    var pos = ensureBufferCapacity(20) // minLongBytes.length
+    var pos = ensureBufCapacity(20) // minLongBytes.length
     if (x == -9223372036854775808L) writeByteArray(minLongBytes, pos)
     else {
       val buf = this.buf
@@ -1200,7 +1200,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeNewLineAndSpaces(delta: Int): Unit = count = {
     val toWrite = indention - delta
-    var pos = ensureBufferCapacity(toWrite + 1)
+    var pos = ensureBufCapacity(toWrite + 1)
     buf(pos) = '\n'
     pos += 1
     val to = pos + toWrite
@@ -1211,28 +1211,24 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
-  private[this] def ensureBufferCapacity(required: Int): Int = {
+  private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
-    if (buf.length < pos + required) growBuffer(required, pos)
+    if (buf.length < pos + required) growBuf(required, pos)
     else pos
   }
 
-  private[this] def growBuffer(required: Int, pos: Int): Int = {
-    val newPos = flushBuffer(pos)
+  private[this] def growBuf(required: Int, pos: Int): Int = {
+    val newPos = flushBuf(pos)
     if (buf.length < pos + required) {
-      if (isBufGrowingAllowed) {
-        val len = buf.length
-        val bs = new Array[Byte](Math.max(len << 1, pos + required))
-        System.arraycopy(buf, 0, bs, 0, len)
-        buf = bs
-      } else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
+      if (isBufGrowingAllowed) buf = java.util.Arrays.copyOf(buf, Math.max(buf.length << 1, pos + required))
+      else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
     }
     newPos
   }
 
-  private[jsoniter_scala] def flushBuffer(): Unit = count = flushBuffer(count)
+  private[jsoniter_scala] def flushBuf(): Unit = count = flushBuf(count)
 
-  private[this] def flushBuffer(pos: Int): Int =
+  private[this] def flushBuf(pos: Int): Int =
     if (out eq null) pos
     else {
       out.write(buf, 0, pos)

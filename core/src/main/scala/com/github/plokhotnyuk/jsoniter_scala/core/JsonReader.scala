@@ -2782,22 +2782,23 @@ final class JsonReader private[jsoniter_scala](
       case ex: ZoneRulesException => dateTimeZoneError(ex)
     }
 
-  private[this] def epochDayForYear(yearNeg: Boolean, positiveYear: Int): Long =
+  private[this] def epochDayForYear(yearNeg: Boolean, posYear: Int): Long =
     if (yearNeg) {
-      val century = positiveYear * 1374389535L >> 37
-      -365L * positiveYear - (positiveYear >> 2) + century - (century >> 2)
+      val century = posYear * 1374389535L >> 37 // divide positive int by 100
+      -365L * posYear - (posYear >> 2) + century - (century >> 2)
     } else {
-      365L * positiveYear + ((positiveYear + 3) >> 2) - ((positiveYear + 99) * 1374389535L >> 37) +
-        ((positiveYear + 399) * 1374389535L >> 39)
+      365L * posYear + ((posYear + 3) >> 2) - ((posYear + 99) * 1374389535L >> 37) + // divide positive int by 100
+        ((posYear + 399) * 1374389535L >> 39) // divide positive int by 400
     }
 
-  private[this] def dayOfYearForYearMonth(positiveYear: Int, month: Int): Int =
-    ((month * 1050835331877L - 1036518774222L) >> 35).toInt - (if (month > 2) if (isLeap(positiveYear)) 1 else 2 else 0)
+  private[this] def dayOfYearForYearMonth(posYear: Int, month: Int): Int =
+    ((month * 1050835331877L - 1036518774222L) >> 35).toInt - // == (367 * month - 362) / 12
+      (if (month > 2) if (isLeap(posYear)) 1 else 2 else 0)
 
-  private[this] def maxDayForYearMonth(positiveYear: Int, month: Int): Int =
+  private[this] def maxDayForYearMonth(posYear: Int, month: Int): Int =
     (month: @switch) match {
       case 1 => 31
-      case 2 => if (isLeap(positiveYear)) 29 else 28
+      case 2 => if (isLeap(posYear)) 29 else 28
       case 3 => 31
       case 4 => 30
       case 5 => 31
@@ -2810,10 +2811,10 @@ final class JsonReader private[jsoniter_scala](
       case 12 => 31
     }
 
-  private[this] def isLeap(positiveYear: Int): Boolean =
-    (positiveYear & 3) == 0 && {
-      val century = (positiveYear * 1374389535L >> 37).toInt
-      century * 100 != positiveYear || (century & 3) == 0
+  private[this] def isLeap(posYear: Int): Boolean =
+    (posYear & 3) == 0 && {
+      val century = (posYear * 1374389535L >> 37).toInt // divide positive int by 100
+      century * 100 != posYear || (century & 3) == 0
     }
 
   private[this] def secondOfDay(hour: Int, month: Int, day: Int): Int = hour * 3600 + month * 60 + day
@@ -3279,7 +3280,8 @@ object JsonReader {
   private final val nanoMultiplier: Array[Int] =
     Array(1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
   private final val nibbles: Array[Byte] = {
-    val ns = Array.fill[Byte](256)(-1)
+    val ns = new Array[Byte](256)
+    java.util.Arrays.fill(ns, -1: Byte)
     ns('0') = 0
     ns('1') = 1
     ns('2') = 2

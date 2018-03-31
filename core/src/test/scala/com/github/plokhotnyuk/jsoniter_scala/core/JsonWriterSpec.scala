@@ -549,7 +549,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     val out = new ByteArrayOutputStream(256)
     val writer = new JsonWriter(new Array[Byte](0), 0, 0, false, true, out, cfg)
     try f(writer)
-    finally writer.flushBuffer()
+    finally writer.flushBuf()
     out.toString("UTF-8")
   }
 
