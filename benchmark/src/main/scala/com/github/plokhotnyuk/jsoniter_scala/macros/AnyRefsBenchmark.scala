@@ -1,9 +1,12 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets._
 
+import com.dslplatform.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -24,6 +27,9 @@ class AnyRefsBenchmark extends CommonParams {
   def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
+  def readDslJsonScala(): AnyRefs = dslJson.decode[AnyRefs](jsonBytes)
+
+  @Benchmark
   def readJacksonScala(): AnyRefs = jacksonMapper.readValue[AnyRefs](jsonBytes)
 
   @Benchmark
@@ -34,6 +40,13 @@ class AnyRefsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = {
+    val baos = new ByteArrayOutputStream
+    dslJson.encode(obj, baos)
+    baos.toByteArray
+  }
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
