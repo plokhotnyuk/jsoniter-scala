@@ -3175,13 +3175,10 @@ final class JsonReader private[jsoniter_scala](
     charBuf(i + 1) = toHexDigit(b)
   }
 
-  private[this] def toHexDigit(n: Int): Char = {
-    val nibble = n & 15
-    (((9 - nibble) >> 31) & 39) + (nibble + 48) // branchless conversion of nibble to hex digit
-  }.toChar
+  private[this] def toHexDigit(n: Int): Char = hexDigits(n & 15)
 
   private[this] def growCharBuf(required: Int): Int = {
-    val newLim = Math.max(charBuf.length << 1, required)
+    val newLim = Integer.highestOneBit(charBuf.length | required) << 1
     charBuf = java.util.Arrays.copyOf(charBuf, newLim)
     newLim
   }
@@ -3306,6 +3303,8 @@ object JsonReader {
     ns('f') = 15
     ns
   }
+  private final val hexDigits: Array[Char] =
+    Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
   private final val dumpHeader: Array[Char] = {
     "\n           +-------------------------------------------------+" +
     "\n           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |"
