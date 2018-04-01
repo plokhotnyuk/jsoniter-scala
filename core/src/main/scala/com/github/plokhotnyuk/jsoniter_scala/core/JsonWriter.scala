@@ -361,13 +361,13 @@ final class JsonWriter private[jsoniter_scala](
     } finally this.buf = currBuf
   }
 
-  private def writeNestedStart(b: Byte): Unit = {
+  private[this] def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
     comma = false
     writeBytes(b)
   }
 
-  private def writeNestedEnd(b: Byte): Unit = {
+  private[this] def writeNestedEnd(b: Byte): Unit = {
     val indentionStep = config.indentionStep
     writeIndention(indentionStep)
     indention -= indentionStep
@@ -375,20 +375,20 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes(b)
   }
 
-  private def writeBytes(b: Byte): Unit = count = {
+  private[this] def writeBytes(b: Byte): Unit = count = {
     val pos = ensureBufCapacity(1)
     buf(pos) = b
     pos + 1
   }
 
-  private def writeBytes(b1: Byte, b2: Byte): Unit = count = {
+  private[this] def writeBytes(b1: Byte, b2: Byte): Unit = count = {
     val pos = ensureBufCapacity(2)
     buf(pos) = b1
     buf(pos + 1) = b2
     pos + 2
   }
 
-  private def writeBytes(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
+  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
     val pos = ensureBufCapacity(3)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -396,7 +396,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 3
   }
 
-  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
+  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
     val pos = ensureBufCapacity(4)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -405,7 +405,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
-  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
+  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
     val pos = ensureBufCapacity(5)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -415,7 +415,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 5
   }
 
-  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): Unit = count = {
+  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): Unit = count = {
     val pos = ensureBufCapacity(6)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -426,7 +426,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 6
   }
 
-  private def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte, b7: Byte): Unit = count = {
+  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte, b7: Byte): Unit = count = {
     val pos = ensureBufCapacity(7)
     buf(pos) = b1
     buf(pos + 1) = b2
@@ -438,7 +438,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 7
   }
 
-  private def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
+  private[this] def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
     val len = s.length
     val pos = ensureBufCapacity(len)
     s.getBytes(0, len, buf, pos)
