@@ -26,7 +26,7 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): String = readFromArray[String](jsonBytes)
+  def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
 
   @Benchmark
   def readPlayJson(): String = Json.parse(jsonBytes).as[String]
@@ -38,10 +38,10 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(stringCodec)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)(stringCodec)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
