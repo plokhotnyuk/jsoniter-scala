@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.util.concurrent.TimeUnit
 
+import com.dslplatform.json.JsonWriter
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
@@ -23,4 +24,5 @@ import org.openjdk.jmh.annotations._
 abstract class CommonParams {
   val preallocatedBuf: Array[Byte] = new Array(32768)
   val preallocatedOutputStream: PreallocByteArrayOutputStream = new PreallocByteArrayOutputStream(preallocatedBuf)
+  val preallocatedWriter: JsonWriter = DslPlatformJson.dslJson.newWriter(preallocatedBuf)
 }
