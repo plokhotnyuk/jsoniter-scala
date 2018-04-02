@@ -14,6 +14,7 @@ class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, benchmark.writeDslJsonScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString

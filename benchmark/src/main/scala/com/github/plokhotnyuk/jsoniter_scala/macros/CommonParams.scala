@@ -22,4 +22,5 @@ import org.openjdk.jmh.annotations._
 @OutputTimeUnit(TimeUnit.SECONDS)
 abstract class CommonParams {
   val preallocatedBuf: Array[Byte] = new Array(32768)
+  val preallocatedOutputStream: PreallocByteArrayOutputStream = new PreallocByteArrayOutputStream(preallocatedBuf)
 }

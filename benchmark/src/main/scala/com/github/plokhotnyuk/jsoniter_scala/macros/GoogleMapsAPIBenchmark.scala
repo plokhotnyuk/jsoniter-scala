@@ -46,6 +46,13 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   }
 
   @Benchmark
+  def writeDslJsonScalaPrealloc(): Int = {
+    preallocatedOutputStream.count = 0
+    dslJson.encode(obj, preallocatedOutputStream)
+    preallocatedOutputStream.count
+  }
+
+  @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
