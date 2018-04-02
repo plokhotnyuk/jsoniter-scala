@@ -27,6 +27,9 @@ class AnyRefsBenchmark extends CommonParams {
   def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
+  def readDslJsonJava(): AnyRefs = dslJson.deserialize(classOf[AnyRefs], jsonBytes, jsonBytes.length)
+
+  @Benchmark
   def readDslJsonScala(): AnyRefs = dslJson.decode[AnyRefs](jsonBytes)
 
   @Benchmark
@@ -40,6 +43,20 @@ class AnyRefsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def writeDslJsonJava(): Array[Byte] = {
+    preallocatedWriter.reset()
+    dslJson.serialize(preallocatedWriter, classOf[AnyRefs], obj)
+    java.util.Arrays.copyOf(preallocatedBuf, preallocatedWriter.size())
+  }
+
+  @Benchmark
+  def writeDslJsonJavaPrealloc(): Int = {
+    preallocatedWriter.reset()
+    dslJson.serialize(preallocatedWriter, classOf[AnyRefs], obj)
+    preallocatedWriter.size()
+  }
 
   @Benchmark
   def writeDslJsonScala(): Array[Byte] = {
