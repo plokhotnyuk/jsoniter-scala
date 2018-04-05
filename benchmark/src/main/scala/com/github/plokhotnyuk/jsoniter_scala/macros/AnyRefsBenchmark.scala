@@ -1,9 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets._
 
-import com.dslplatform.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
@@ -27,10 +25,7 @@ class AnyRefsBenchmark extends CommonParams {
   def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readDslJsonJava(): AnyRefs = dslJson.deserialize(classOf[AnyRefs], jsonBytes, jsonBytes.length)
-
-  @Benchmark
-  def readDslJsonScala(): AnyRefs = dslJson.decode[AnyRefs](jsonBytes)
+  def readDslJsonJava(): AnyRefs = decodeDslJson[AnyRefs](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): AnyRefs = jacksonMapper.readValue[AnyRefs](jsonBytes)
@@ -45,32 +40,10 @@ class AnyRefsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = {
-    preallocatedWriter.reset()
-    dslJson.serialize(preallocatedWriter, classOf[AnyRefs], obj)
-    java.util.Arrays.copyOf(preallocatedBuf, preallocatedWriter.size())
-  }
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[AnyRefs](obj).toByteArray
 
   @Benchmark
-  def writeDslJsonJavaPrealloc(): Int = {
-    preallocatedWriter.reset()
-    dslJson.serialize(preallocatedWriter, classOf[AnyRefs], obj)
-    preallocatedWriter.size()
-  }
-
-  @Benchmark
-  def writeDslJsonScala(): Array[Byte] = {
-    val baos = new ByteArrayOutputStream
-    dslJson.encode(obj, baos)
-    baos.toByteArray
-  }
-
-  @Benchmark
-  def writeDslJsonScalaPrealloc(): Int = {
-    preallocatedOutputStream.count = 0
-    dslJson.encode(obj, preallocatedOutputStream)
-    preallocatedOutputStream.count
-  }
+  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[AnyRefs](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

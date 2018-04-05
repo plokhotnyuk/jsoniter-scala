@@ -1,9 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets._
 
-import com.dslplatform.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
@@ -24,7 +22,7 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readDslJsonScala(): DistanceMatrix = dslJson.decode[DistanceMatrix](jsonBytes)
+  def readDslJsonJava(): DistanceMatrix = decodeDslJson[DistanceMatrix](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
@@ -39,18 +37,10 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = {
-    val baos = new ByteArrayOutputStream
-    dslJson.encode(obj, baos)
-    baos.toByteArray
-  }
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[DistanceMatrix](obj).toByteArray
 
   @Benchmark
-  def writeDslJsonScalaPrealloc(): Int = {
-    preallocatedOutputStream.count = 0
-    dslJson.encode(obj, preallocatedOutputStream)
-    preallocatedOutputStream.count
-  }
+  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[DistanceMatrix](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
