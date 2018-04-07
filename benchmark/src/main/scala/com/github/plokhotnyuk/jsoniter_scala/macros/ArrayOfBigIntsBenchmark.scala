@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import play.api.libs.json.Json
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -20,6 +21,10 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
+/* FIXME: dsl-json throws Error parsing number at position: 33. Integer overflow detected
+  @Benchmark
+  def readDslJsonJava(): Array[Int] = decodeDslJson[Array[Int]](jsonBytes)
+*/
   @Benchmark
   def readJacksonScala(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
 
@@ -32,6 +37,13 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 /* FIXME: Circe uses an engineering decimal notation to serialize BigInt
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+*/
+/* FIXME: dsl-json cannot find encoder for array of BigInt
+  @Benchmark
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[BigInt]](obj).toByteArray
+
+  @Benchmark
+  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[BigInt]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

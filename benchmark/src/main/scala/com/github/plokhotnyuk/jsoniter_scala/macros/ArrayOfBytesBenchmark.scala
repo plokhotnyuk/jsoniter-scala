@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
@@ -18,7 +19,10 @@ class ArrayOfBytesBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-
+/*FIXME:dsl-json expects a base64 string for the byte array
+  @Benchmark
+  def readDslJsonJava(): Array[Byte] = decodeDslJson[Array[Byte]](jsonBytes)
+*/
   @Benchmark
   def readJacksonScala(): Array[Byte] = jacksonMapper.readValue[Array[Byte]](jsonBytes)
 
@@ -30,7 +34,13 @@ class ArrayOfBytesBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+/* FIXME:dsl-json serializes a byte array to the base64 string
+  @Benchmark
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Byte]](obj).toByteArray
 
+  @Benchmark
+  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[Byte]](obj)
+*/
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

@@ -122,6 +122,9 @@ object PlayJsonFormats {
   val javaEnumArrayFormat: Format[Array[Suit]] = Format(
     Reads[Array[Suit]](js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
     Writes[Array[Suit]](es => JsArray(es.map(v => JsString(v.name)))))
+  val charArrayFormat: Format[Array[Char]] = Format(
+    Reads[Array[Char]](js => JsSuccess(js.as[Array[JsString]].map(_.value.charAt(0)))),
+    Writes[Array[Char]](es => JsArray(es.map(v => JsString(v.toString)))))
   val bigIntArrayFormat: Format[Array[BigInt]] = Format(
     Reads[Array[BigInt]](js => JsSuccess(js.as[Array[JsNumber]]
       .map(js => js.value.toBigIntExact().getOrElse(throw new NumberFormatException("illegal BigInt value"))))),

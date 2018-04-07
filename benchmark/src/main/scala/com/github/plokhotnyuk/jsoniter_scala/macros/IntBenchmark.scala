@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
@@ -23,6 +24,9 @@ class IntBenchmark extends CommonParams {
   def readCirce(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
+  def readDslJsonJava(): Int = decodeDslJson[Int](jsonBytes)
+
+  @Benchmark
   def readJacksonScala(): Int = jacksonMapper.readValue[Int](jsonBytes)
 
   @Benchmark
@@ -36,6 +40,12 @@ class IntBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Int](obj).toByteArray
+
+  @Benchmark
+  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Int](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
