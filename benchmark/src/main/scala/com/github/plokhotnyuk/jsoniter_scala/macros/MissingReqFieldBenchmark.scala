@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.io.IOException
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
@@ -7,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
@@ -23,6 +25,14 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): String =
     decode[MissingReqFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _ => null)
+
+  @Benchmark
+  def readDslJsonJava(): String =
+    try {
+      decodeDslJson[MissingReqFields](jsonBytes).toString // toString() should not be called
+    } catch {
+      case ex: IOException => ex.getMessage
+    }
 
   @Benchmark
   def readJacksonScala(): String =

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
@@ -21,6 +22,9 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def readCirce(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
+  def readDslJsonJava(): Array[Double] = decodeDslJson[Array[Double]](jsonBytes)
+
+  @Benchmark
   def readJacksonScala(): Array[Double] = jacksonMapper.readValue[Array[Double]](jsonBytes)
 
   @Benchmark
@@ -32,6 +36,14 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
+/*FIXME: dsl-json serialize doubles in a plain representation
+  @Benchmark
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Double]](obj).toByteArray
+
+  @Benchmark
+  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[Double]](obj)
+
+*/
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

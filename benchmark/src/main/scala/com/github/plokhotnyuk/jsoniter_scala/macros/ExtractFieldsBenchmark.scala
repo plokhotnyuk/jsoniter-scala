@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
@@ -21,6 +22,9 @@ class ExtractFieldsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+
+  @Benchmark
+  def readDslJsonJava(): ExtractFields = decodeDslJson[ExtractFields](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)

@@ -34,6 +34,7 @@ object JacksonSerDesers {
     registerModule(new AfterburnerModule)
     configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
     configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
     configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)

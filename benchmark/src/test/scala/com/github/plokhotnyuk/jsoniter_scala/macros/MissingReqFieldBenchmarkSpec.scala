@@ -7,6 +7,8 @@ class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
     "return some parsing error" in {
       benchmark.readCirce() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"
+      benchmark.readDslJsonJava() shouldBe
+        "Mandatory properties (s, i) not found at position: 2"
       benchmark.readJacksonScala() shouldBe
         """Missing required creator property 's' (index 0)
           | at [Source: (byte[])"{}"; line: 1, column: 2]""".stripMargin

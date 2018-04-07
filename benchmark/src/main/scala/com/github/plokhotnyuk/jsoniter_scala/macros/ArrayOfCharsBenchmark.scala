@@ -4,42 +4,33 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
-class ArrayOfShortsBenchmark extends CommonParams {
-  val obj: Array[Short] = (1 to 128).map(i => (i * 64).toShort).toArray
-  val jsonString: String = obj.mkString("[", ",", "]")
+class ArrayOfCharsBenchmark extends CommonParams {
+  val obj: Array[Char] = (1 to 128).map(i => ((((i * 1498724053) / Math.pow(10, i % 10)) % 10) + 48).toChar).toArray
+  val jsonString: String = obj.mkString("[\"", "\",\"", "\"]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
   @Benchmark
-  def readCirce(): Array[Short] = decode[Array[Short]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Char] = decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readDslJsonJava(): Array[Short] = decodeDslJson[Array[Short]](jsonBytes)
+  def readJacksonScala(): Array[Char] = jacksonMapper.readValue[Array[Char]](jsonBytes)
 
   @Benchmark
-  def readJacksonScala(): Array[Short] = jacksonMapper.readValue[Array[Short]](jsonBytes)
+  def readJsoniterScala(): Array[Char] = readFromArray[Array[Char]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Array[Short] = readFromArray[Array[Short]](jsonBytes)
-
-  @Benchmark
-  def readPlayJson(): Array[Short] = Json.parse(jsonBytes).as[Array[Short]]
+  def readPlayJson(): Array[Char] = Json.parse(jsonBytes).as[Array[Char]](charArrayFormat)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
-  @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Short]](obj).toByteArray
-
-  @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[Short]](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -51,5 +42,5 @@ class ArrayOfShortsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(charArrayFormat))
 }
