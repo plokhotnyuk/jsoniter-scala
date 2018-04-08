@@ -1054,13 +1054,44 @@ final class JsonWriter private[jsoniter_scala](
     val q1 = (x * 1374389535L >> 37).toInt // divide positive int by 100
     val r1 = x - 100 * q1
     buf(pos) = (q1 + '0').toByte
-    write2Digits(r1, pos + 1, buf, ds)
+    val d = ds(r1)
+    buf(pos + 1) = (d >> 8).toByte
+    buf(pos + 2) = d.toByte
+    pos + 3
   }
 
   private[this] def write4Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = (x * 1374389535L >> 37).toInt // divide positive int by 100
     val r1 = x - 100 * q1
-    write2Digits(r1, write2Digits(q1, pos, buf, ds), buf, ds)
+    val d1 = ds(q1)
+    buf(pos) = (d1 >> 8).toByte
+    buf(pos + 1) = d1.toByte
+    val d2 = ds(r1)
+    buf(pos + 2) = (d2 >> 8).toByte
+    buf(pos + 3) = d2.toByte
+    pos + 4
+  }
+
+  private[this] def write8Digits(x: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = (x * 3518437209L >> 45).toInt // divide positive int by 10000
+    val r1 = x - 10000 * q1
+    val q2 = (q1 * 1374389535L >> 37).toInt // divide positive int by 100
+    val r2 = q1 - 100 * q2
+    val d1 = ds(q2)
+    buf(pos) = (d1 >> 8).toByte
+    buf(pos + 1) = d1.toByte
+    val d2 = ds(r2)
+    buf(pos + 2) = (d2 >> 8).toByte
+    buf(pos + 3) = d2.toByte
+    val q3 = (r1 * 1374389535L >> 37).toInt // divide positive int by 100
+    val r3 = r1 - 100 * q3
+    val d3 = ds(q3)
+    buf(pos + 4) = (d3 >> 8).toByte
+    buf(pos + 5) = d3.toByte
+    val d4 = ds(r3)
+    buf(pos + 6) = (d4 >> 8).toByte
+    buf(pos + 7) = d4.toByte
+    pos + 8
   }
 
   private[this] def writeShort(x: Short): Unit = count = {
@@ -1119,21 +1150,21 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      if (q0 >= 100000000) {
-        val q1 = q0 / 100000000
-        val r1 = (q0 - 100000000 * q1).toInt
-        if (q1 >= 100000000) {
-          val q2 = q1 / 100000000
-          val r2 = (q1 - 100000000 * q2).toInt
-          val off = offset(q2.toInt) + 16
-          writeIntFirst(q2.toInt, writeIntRem(r2, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds, 3), buf, ds) + off
-        } else {
-          val off = offset(q1.toInt) + 8
-          writeIntFirst(q1.toInt, writeIntRem(r1, pos + off, buf, ds, 3), buf, ds) + off
-        }
-      } else {
+      if (q0 < 100000000) {
         val off = offset(q0.toInt)
         writeIntFirst(q0.toInt, pos + off, buf, ds) + off
+      } else {
+        val q1 = q0 / 100000000
+        val r1 = (q0 - 100000000 * q1).toInt
+        if (q1 < 100000000) {
+          val off = offset(q1.toInt)
+          write8Digits(r1, writeIntFirst(q1.toInt, pos + off, buf, ds) + off, buf, ds)
+        } else {
+          val q2 = q1 / 100000000
+          val r2 = (q1 - 100000000 * q2).toInt
+          val off = offset(q2.toInt)
+          write8Digits(r1, write8Digits(r2, writeIntFirst(q2.toInt, pos + off, buf, ds) + off, buf, ds), buf, ds)
+        }
       }
     }
   }
