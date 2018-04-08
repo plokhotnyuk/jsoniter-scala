@@ -21,9 +21,9 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
-/* FIXME: dsl-json throws Error parsing number at position: 33. Integer overflow detected
+/* FIXME: dsl-json cannot find decoder for array of BigInt
   @Benchmark
-  def readDslJsonJava(): Array[Int] = decodeDslJson[Array[Int]](jsonBytes)
+  def readDslJsonJava(): Array[BigInt] = decodeDslJson[Array[BigInt]](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
