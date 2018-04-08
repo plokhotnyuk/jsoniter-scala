@@ -979,10 +979,9 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
         -year
       }
-    if (posYear >= 10000) {
-      val off = offset(posYear)
-      pos = writeIntFirst(posYear, pos + off, buf, ds) + off
-    } else pos = write4Digits(posYear, pos, buf, ds)
+    pos =
+      if (posYear >= 10000) writeInt(posYear, pos, buf, ds)
+      else write4Digits(posYear, pos, buf, ds)
     buf(pos) = '-'
     write2Digits(month, pos + 1, buf, ds)
   }
@@ -991,7 +990,7 @@ final class JsonWriter private[jsoniter_scala](
     writeLocalTime(x.getHour, x.getMinute, x.getSecond, x.getNano, pos, buf, ds, full = false)
 
   private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, p: Int, buf: Array[Byte],
-                             ds: Array[Short], full: Boolean): Int = {
+                                   ds: Array[Short], full: Boolean): Int = {
     var pos = write2Digits(hour, p, buf, ds)
     buf(pos) = ':'
     pos = write2Digits(minute, pos + 1, buf, ds)
@@ -1132,8 +1131,7 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      val off = offset(q0)
-      writeIntFirst(q0, pos + off, buf, digits) + off
+      writeInt(q0, pos, buf, digits)
     }
   }
 
@@ -1150,23 +1148,25 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      if (q0 < 100000000) {
-        val off = offset(q0.toInt)
-        writeIntFirst(q0.toInt, pos + off, buf, ds) + off
-      } else {
+      val q0i = q0.toInt
+      if (q0 == q0i) writeInt(q0i, pos, buf, ds)
+      else {
         val q1 = q0 / 100000000
         val r1 = (q0 - 100000000 * q1).toInt
-        if (q1 < 100000000) {
-          val off = offset(q1.toInt)
-          write8Digits(r1, writeIntFirst(q1.toInt, pos + off, buf, ds) + off, buf, ds)
-        } else {
+        val q1i = q1.toInt
+        if (q1 == q1i) write8Digits(r1, writeInt(q1i, pos, buf, ds), buf, ds)
+        else {
           val q2 = q1 / 100000000
           val r2 = (q1 - 100000000 * q2).toInt
-          val off = offset(q2.toInt)
-          write8Digits(r1, write8Digits(r2, writeIntFirst(q2.toInt, pos + off, buf, ds) + off, buf, ds), buf, ds)
+          write8Digits(r1, write8Digits(r2, writeInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
         }
       }
     }
+  }
+
+  private[this] def writeInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val off = offset(q0)
+    writeIntFirst(q0, pos + off, buf, ds) + off
   }
 
   @tailrec
