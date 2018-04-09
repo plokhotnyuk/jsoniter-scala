@@ -14,12 +14,12 @@ case class Elements(
   status: String)
 
 case class DistanceMatrix(
-  destination_addresses: Seq[String],
-  origin_addresses: Seq[String],
-  rows: Seq[Rows],
+  destination_addresses: IndexedSeq[String],
+  origin_addresses: IndexedSeq[String],
+  rows: IndexedSeq[Rows],
   status: String)
 
-case class Rows(elements: Seq[Elements])
+case class Rows(elements: IndexedSeq[Elements])
 
 object GoogleMapsAPI {
   //Distance Matrix API call for top-10 by population cities in US:

@@ -781,6 +781,16 @@ object JsonCodecMaker {
                 l = l.tail
               }
               out.writeArrayEnd()"""
+        } else if (tpe <:< typeOf[IndexedSeq[_]]) withEncoderFor(methodKey, m) {
+          q"""out.writeArrayStart()
+              val l = x.size
+              var i = 0
+              while (i < l) {
+                out.writeComma()
+                ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
+                i += 1
+              }
+              out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
