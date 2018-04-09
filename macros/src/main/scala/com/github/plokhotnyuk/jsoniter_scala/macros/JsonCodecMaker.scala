@@ -772,6 +772,15 @@ object JsonCodecMaker {
           genWriteMap(q"x", genWriteKey(q"kv._1", typeArg1(tpe)), genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
         } else if (tpe =:= typeOf[mutable.BitSet] || tpe =:= typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", if (isStringified) q"out.writeValAsString(x)" else q"out.writeVal(x)")
+        } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
+          q"""out.writeArrayStart()
+              var l = x
+              while (!l.isEmpty) {
+                out.writeComma()
+                ..${genWriteVal(q"l.head", typeArg1(tpe), isStringified)}
+                l = l.tail
+              }
+              out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
