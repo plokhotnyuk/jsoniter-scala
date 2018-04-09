@@ -14,11 +14,9 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeDslJsonJava()) shouldBe GoogleMapsAPI.compactJsonString
-      val writer = benchmark.writeDslJsonJavaPrealloc()
-      toString(writer.getByteBuffer, writer.size()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJsoniterScala()) shouldBe GoogleMapsAPI.compactJsonString
-      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writePlayJson()) shouldBe GoogleMapsAPI.compactJsonString
     }
   }

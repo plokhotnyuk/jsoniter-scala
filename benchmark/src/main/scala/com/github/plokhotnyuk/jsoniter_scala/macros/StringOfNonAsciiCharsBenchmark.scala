@@ -42,16 +42,13 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[String](obj).toByteArray
 
   @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[String](obj)
-
-  @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(stringCodec)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)(stringCodec)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)(stringCodec)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

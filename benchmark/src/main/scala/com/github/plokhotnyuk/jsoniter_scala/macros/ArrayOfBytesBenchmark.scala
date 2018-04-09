@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
@@ -37,9 +37,6 @@ class ArrayOfBytesBenchmark extends CommonParams {
 /* FIXME:dsl-json serializes a byte array to the base64 string
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Byte]](obj).toByteArray
-
-  @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[Byte]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -48,7 +45,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

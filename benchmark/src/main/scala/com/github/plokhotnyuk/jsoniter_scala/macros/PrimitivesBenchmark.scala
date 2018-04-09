@@ -42,9 +42,6 @@ class PrimitivesBenchmark extends CommonParams {
 /* FIXME: dsl-json throws com.dslplatform.json.SerializationException: Unable to find writer for char
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[Primitives](obj).toByteArray
-
-  @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Primitives](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -53,7 +50,7 @@ class PrimitivesBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))

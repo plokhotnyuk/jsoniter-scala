@@ -41,9 +41,6 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 /* FIXME: dsl-json cannot find encoder for array of BigInt
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[BigInt]](obj).toByteArray
-
-  @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[BigInt]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -52,7 +49,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 /* FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bigIntArrayFormat))

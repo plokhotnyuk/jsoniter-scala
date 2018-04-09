@@ -16,6 +16,7 @@ class BitSetsBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeCirce()) shouldBe benchmark.bitSetsJsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }

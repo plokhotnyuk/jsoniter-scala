@@ -16,11 +16,9 @@ class ArrayOfBytesBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME:dsl-json serializes a byte array to the base64 string
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
-      //val writer = benchmark.writeDslJsonJavaPrealloc()
-      //toString(writer.getByteBuffer, writer.size()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }

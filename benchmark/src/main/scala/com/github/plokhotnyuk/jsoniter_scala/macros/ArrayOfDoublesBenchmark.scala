@@ -39,10 +39,6 @@ class ArrayOfDoublesBenchmark extends CommonParams {
 /*FIXME: dsl-json serialize doubles in a plain representation
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Double]](obj).toByteArray
-
-  @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Array[Double]](obj)
-
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -51,7 +47,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 /* FIXME: Play serializes doubles in BigDecimal format: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

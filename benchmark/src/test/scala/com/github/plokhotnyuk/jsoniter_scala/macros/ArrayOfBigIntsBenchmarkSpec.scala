@@ -17,11 +17,9 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME: dsl-json cannot find serializer for array of BigInt
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
-      //val writer = benchmark.writeDslJsonJavaPrealloc()
-      //toString(writer.getByteBuffer, writer.size()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }

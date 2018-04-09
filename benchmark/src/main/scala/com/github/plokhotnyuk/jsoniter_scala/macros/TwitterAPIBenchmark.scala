@@ -40,9 +40,6 @@ class TwitterAPIBenchmark extends CommonParams {
 /* FIXME: dsl-json cannot find decoder for interface scala.collection.Seq
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[Seq[Tweet]](obj).toByteArray
-
-  @Benchmark
-  def writeDslJsonJavaPrealloc(): com.dslplatform.json.JsonWriter = encodeDslJson[Seq[Tweet]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -51,7 +48,7 @@ class TwitterAPIBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, 0)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))

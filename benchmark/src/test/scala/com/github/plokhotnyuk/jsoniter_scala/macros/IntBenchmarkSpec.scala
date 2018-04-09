@@ -16,11 +16,9 @@ class IntBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeNaiveScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
-      val writer = benchmark.writeDslJsonJavaPrealloc()
-      toString(writer.getByteBuffer, writer.size()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
     }
   }

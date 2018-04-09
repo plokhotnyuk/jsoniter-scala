@@ -17,11 +17,9 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
       //FIXME: dsl-json serializes empty collections
       //toString(benchmark.writeDslJsonJava()) shouldBe TwitterAPI.compactJsonString
-      //val writer = benchmark.writeDslJsonJavaPrealloc()
-      //toString(writer.getByteBuffer, writer.size()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJsoniterScala()) shouldBe TwitterAPI.compactJsonString
-      toString(benchmark.preallocatedBuf, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
       //FIXME: Play-JSON serializes empty collections
       //toString(benchmark.writePlayJson()) shouldBe TwitterAPI.compactJsonString
     }
