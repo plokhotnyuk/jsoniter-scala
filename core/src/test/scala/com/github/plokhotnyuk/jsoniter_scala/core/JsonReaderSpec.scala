@@ -1972,6 +1972,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("missing required field \"name\", offset: 0x00000000"))
     }
   }
+  "JsonReader.duplicatedKeyError" should {
+    "throw parsing exception with name of duplicated key" in {
+      val jsonReader = reader("\"xxx\"".getBytes("UTF-8"))
+      val len = jsonReader.readStringAsCharBuf()
+      assert(intercept[JsonParseException](jsonReader.duplicatedKeyError(len))
+        .getMessage.contains("duplicated field \"xxx\", offset: 0x00000004"))
+    }
+  }
   "JsonReader.unexpectedKeyError" should {
     "throw parsing exception with name of unexpected key" in {
       val jsonReader = reader("\"xxx\"".getBytes("UTF-8"))

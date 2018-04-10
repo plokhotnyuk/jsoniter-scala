@@ -304,23 +304,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfBigDecimal,
         BigDecimal("1234567890.12345678901234567890"), "\"1234567890.12345678901234567890\"".getBytes("UTF-8"))
     }
-    "deserialize case classes with duplicated fields, the last field value is accepted" in {
-      verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
-        s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""".getBytes("UTF-8"))
-    }
-    "throw parse exception in case of invalid value is detected for first occurrence of duplicated fields" in {
+    "throw parse exception in case of duplicated key for case classe was detected" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
-          s"""{"s":false,"s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""".getBytes("UTF-8"))
-      }.getMessage.contains("expected '\"', offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
-          s"""{"s":"XXX","s":"VVV","bi":false,"bi":1,"bd":20.0,"bd":2.0}""".getBytes("UTF-8"))
-      }.getMessage.contains("illegal number, offset: 0x0000001a"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
-          s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":false,"bd":2.0}""".getBytes("UTF-8"))
-      }.getMessage.contains("illegal number, offset: 0x00000029"))
+          s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""".getBytes("UTF-8"))
+      }.getMessage.contains("duplicated field \"s\", offset: 0x0000000e"))
     }
     "throw parse exception in case of illegal UTF-8 encoded field names" in {
       assert(intercept[JsonParseException] {
@@ -899,6 +887,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[List[TimeZone]](CodecMakerConfig(discriminatorFieldName = "zoneId")),
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""".getBytes("UTF-8"))
+    }
+    "throw parse exception in case of duplicated discriminator field" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList, List(A(1)), """[{"type":"A","a":1,"type":"A"}]""".getBytes("UTF-8"))
+      }.getMessage.contains("""duplicated field "type", offset: 0x00000019"""))
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {

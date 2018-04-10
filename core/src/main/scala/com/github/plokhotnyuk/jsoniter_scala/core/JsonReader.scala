@@ -63,6 +63,12 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def duplicatedKeyError(len: Int): Nothing = {
+    var i = prependString("duplicated field \"", len)
+    i = appendChar('"', i)
+    decodeError(i, head - 1, null)
+  }
+
   def unexpectedKeyError(len: Int): Nothing = {
     var i = prependString("unexpected field \"", len)
     i = appendChar('"', i)
