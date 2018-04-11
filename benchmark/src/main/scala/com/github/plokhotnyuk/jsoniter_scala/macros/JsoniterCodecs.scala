@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
+import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object JsoniterCodecs {
@@ -19,7 +20,7 @@ object JsoniterCodecs {
   implicit val arraysCodec: JsonValueCodec[Arrays] = make[Arrays](CodecMakerConfig())
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make[Array[BigDecimal]](CodecMakerConfig())
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make[Array[BigInt]](CodecMakerConfig())
-  implicit val bitSetsCodec: JsonValueCodec[BitSets] = make[BitSets](CodecMakerConfig())
+  implicit val bitSetCodec: JsonValueCodec[BitSet] = make[BitSet](CodecMakerConfig())
   implicit val booleanArrayCodec: JsonValueCodec[Array[Boolean]] = make[Array[Boolean]](CodecMakerConfig())
   implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make[mutable.ArrayBuffer[Boolean]](CodecMakerConfig())
   implicit val booleanListCodec: JsonValueCodec[List[Boolean]] = make[List[Boolean]](CodecMakerConfig())
@@ -48,6 +49,7 @@ object JsoniterCodecs {
   implicit val iterablesCodec: JsonValueCodec[Iterables] = make[Iterables](CodecMakerConfig())
   implicit val mapsCodec: JsonValueCodec[Maps] = make[Maps](CodecMakerConfig())
   implicit val missingReqFieldCodec: JsonValueCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())
+  implicit val mutableBitSetCodec: JsonValueCodec[mutable.BitSet] = make[mutable.BitSet](CodecMakerConfig())
   implicit val mutableIterablesCodec: JsonValueCodec[MutableIterables] = make[MutableIterables](CodecMakerConfig())
   implicit val mutableMapsCodec: JsonValueCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
   implicit val intAndLongMapsCodec: JsonValueCodec[IntAndLongMaps] = make[IntAndLongMaps](CodecMakerConfig())

@@ -19,12 +19,12 @@ object PlayJsonFormats {
       Writes[Array[BigInt]](a => JsArray(a.map(v => JsNumber(BigDecimal(v))))))
     Json.format[Arrays]
   }
-  val bitSetsFormat: OFormat[BitSets] = {
-    implicit val v1: Reads[BitSet] = Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*)))
-    implicit val v2: Reads[mutable.BitSet] =
-      Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*)))
-    Json.format[BitSets]
-  }
+  val bitSetFormat: Format[BitSet] = Format(
+    Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*))),
+    Writes[BitSet]((es: BitSet) => JsArray(es.map(v => JsNumber(BigDecimal(v)))(breakOut))))
+  val mutableBitSetFormat: Format[mutable.BitSet] = Format(
+    Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*))),
+    Writes[mutable.BitSet]((es: mutable.BitSet) => JsArray(es.map(v => JsNumber(BigDecimal(v)))(breakOut))))
   val iterablesFormat: OFormat[Iterables] = Json.format[Iterables]
   val mutableIterablesFormat: OFormat[MutableIterables] = Json.format[MutableIterables]
   val mapsFormat: OFormat[Maps] = {

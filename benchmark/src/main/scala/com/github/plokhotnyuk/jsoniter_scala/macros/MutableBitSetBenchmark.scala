@@ -11,29 +11,26 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
-import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
-case class BitSets(bs: BitSet, mbs: mutable.BitSet)
-
-class BitSetsBenchmark extends CommonParams {
-  val obj: BitSets = BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6))
-  val jsonString: String = """{"bs":[1,2,3],"mbs":[4,5,6]}"""
+class MutableBitSetBenchmark extends CommonParams {
+  val obj: mutable.BitSet = mutable.BitSet(0 to 127: _*)
+  val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
   def readCirce(): BitSets = decode[BitSets](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 */
+/* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
+  @Benchmark
+  def readJacksonScala(): BitSet = jacksonMapper.readValue[BitSet](jsonBytes)
+*/
+  @Benchmark
+  def readJsoniterScala(): mutable.BitSet = readFromArray[mutable.BitSet](jsonBytes)
 
   @Benchmark
-  def readJacksonScala(): BitSets = jacksonMapper.readValue[BitSets](jsonBytes)
-
-  @Benchmark
-  def readJsoniterScala(): BitSets = readFromArray[BitSets](jsonBytes)
-
-  @Benchmark
-  def readPlayJson(): BitSets = Json.parse(jsonBytes).as[BitSets](bitSetsFormat)
+  def readPlayJson(): mutable.BitSet = Json.parse(jsonBytes).as[mutable.BitSet](mutableBitSetFormat)
 
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
@@ -50,5 +47,5 @@ class BitSetsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bitSetsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableBitSetFormat))
 }
