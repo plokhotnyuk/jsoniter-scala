@@ -278,13 +278,13 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeValAsString(x: Byte): Unit = {
     writeBytes('"')
-    writeInt(x.toInt)
+    writeByte(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Short): Unit = {
     writeBytes('"')
-    writeInt(x.toInt)
+    writeShort(x)
     writeBytes('"')
   }
 
