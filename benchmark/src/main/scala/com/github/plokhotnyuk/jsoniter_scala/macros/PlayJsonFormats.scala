@@ -7,7 +7,7 @@ import play.api.libs.json._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
-import scala.collection.immutable.{BitSet, HashMap, IntMap, LongMap}
+import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.{breakOut, mutable}
 
 object PlayJsonFormats {
@@ -25,58 +25,18 @@ object PlayJsonFormats {
   val mutableBitSetFormat: Format[mutable.BitSet] = Format(
     Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*))),
     Writes[mutable.BitSet]((es: mutable.BitSet) => JsArray(es.map(v => JsNumber(BigDecimal(v)))(breakOut))))
-  val mapsFormat: OFormat[Maps] = {
-    implicit val v1: OFormat[HashMap[String, Double]] = OFormat(
-      Reads[HashMap[String, Double]](js => JsSuccess(js.as[Map[String, Double]].map(identity)(breakOut))),
-      OWrites[HashMap[String, Double]](m => Json.toJsObject[Map[String, Double]](m)))
-    implicit val v2: OFormat[Map[Int, HashMap[Long, Double]]] = OFormat(
-      Reads[Map[Int, HashMap[Long, Double]]](js => JsSuccess(js.as[Map[String, Map[String, Double]]].map { kv =>
-        (java.lang.Integer.parseInt(kv._1), kv._2.map { kv1 =>
-          (java.lang.Long.parseLong(kv1._1), kv1._2)
-        }(breakOut): HashMap[Long, Double])
-      }(breakOut))),
-      OWrites[Map[Int, HashMap[Long, Double]]](m => Json.toJsObject[Map[String, Map[String, Double]]](m.map { kv =>
-        (kv._1.toString, kv._2.map(kv1 => (kv1._1.toString, kv1._2)))
-      })))
-    Json.format[Maps]
-  }
-  val mutableMapsFormat: OFormat[MutableMaps] = {
-    implicit val v1: OFormat[mutable.HashMap[String, Double]] = OFormat(
-      Reads[mutable.HashMap[String, Double]](js => JsSuccess(js.as[Map[String, Double]].map(identity)(breakOut))),
-      OWrites[mutable.HashMap[String, Double]](m => Json.toJsObject[Map[String, Double]](m.toMap)))
-    implicit val v2: OFormat[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]] = OFormat(
-      Reads[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]] { js =>
-        JsSuccess(js.as[Map[String, Map[String, Double]]].map { kv =>
-          val v = kv._2
-          val newV = new mutable.OpenHashMap[Long, Double](v.size)
-          v.foreach(kv1 => newV.update(java.lang.Long.parseLong(kv1._1), kv1._2))
-          (java.lang.Integer.parseInt(kv._1), newV)
-        }(breakOut): mutable.Map[Int, mutable.OpenHashMap[Long, Double]])
-      },
-      OWrites[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]] { m =>
-        Json.toJsObject[Map[String, Map[String, Double]]](m.map { kv =>
-          (kv._1.toString, kv._2.map(kv1 => (kv1._1.toString, kv1._2))(breakOut): Map[String, Double])
-        }(breakOut): Map[String, Map[String, Double]])
-      })
-    Json.format[MutableMaps]
-  }
-  val intAndLongMapsFormat: OFormat[IntAndLongMaps] = {
-    implicit val v1: OFormat[IntMap[Double]] = OFormat(
-      Reads[IntMap[Double]](js => JsSuccess(js.as[Map[String, Double]].map { kv =>
-        (java.lang.Integer.parseInt(kv._1), kv._2)
-      }(breakOut))),
-      OWrites[IntMap[Double]](m => Json.toJsObject[Map[String, Double]](m.map { kv => (kv._1.toString, kv._2) })))
-    implicit val v2: OFormat[mutable.LongMap[LongMap[Double]]] = OFormat(
-      Reads[mutable.LongMap[LongMap[Double]]](js => JsSuccess(js.as[Map[String, Map[String, Double]]].map { kv =>
-        (java.lang.Long.parseLong(kv._1), kv._2.map { kv1 =>
-          (java.lang.Long.parseLong(kv1._1), kv1._2)
-        }(breakOut): LongMap[Double])
-      }(breakOut))),
-      OWrites[mutable.LongMap[LongMap[Double]]](m => Json.toJsObject[Map[String, Map[String, Double]]](m.map { kv =>
-        (kv._1.toString, kv._2.map(kv1 => (kv1._1.toString, kv1._2))(breakOut): Map[String, Double])
-      }(breakOut): Map[String, Map[String, Double]])))
-    Json.format[IntAndLongMaps]
-  }
+  val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
+    Reads[IntMap[Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toInt, e._2))(breakOut))),
+    OWrites[IntMap[Boolean]](m => Json.toJsObject[mutable.LinkedHashMap[String, Boolean]](m.map(e => (e._1.toString, e._2))(breakOut))))
+  val mapOfIntsToBooleansFormat: OFormat[Map[Int, Boolean]] = OFormat(
+    Reads[Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toInt, e._2)))),
+    OWrites[Map[Int, Boolean]](m => Json.toJsObject[mutable.LinkedHashMap[String, Boolean]](m.map(e => (e._1.toString, e._2))(breakOut))))
+  val mutableLongMapOfBooleansFormat: OFormat[mutable.LongMap[Boolean]] = OFormat(
+    Reads[mutable.LongMap[Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toLong, e._2))(breakOut))),
+    OWrites[mutable.LongMap[Boolean]](m => Json.toJsObject[mutable.LinkedHashMap[String, Boolean]](m.map(e => (e._1.toString, e._2))(breakOut))))
+  val mutableMapOfIntsToBooleansFormat: OFormat[mutable.Map[Int, Boolean]] = OFormat(
+    Reads[mutable.Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toInt, e._2))(breakOut))),
+    OWrites[mutable.Map[Int, Boolean]](m => Json.toJsObject[mutable.LinkedHashMap[String, Boolean]](m.map(e => (e._1.toString, e._2))(breakOut))))
   val primitivesFormat: OFormat[Primitives] = {
     implicit val v1: Format[Char] = Format(
       Reads[Char](js => JsSuccess(js.as[String].charAt(0))),

@@ -1,22 +1,21 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class IntAndLongMapsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new IntAndLongMapsBenchmark
+class IntMapOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
+  val benchmark = new IntMapOfBooleansBenchmark
   
-  "IntAndLongMapsBenchmark" should {
+  "IntMapOfBooleansBenchmark" should {
     "deserialize properly" in {
-      //FIXME: Circe doesn't support parsing of int & long maps
+      //FIXME: Circe doesn't support IntMap
       //benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: Jackson-module-scala doesn't support parsing of int & long maps
+      //FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)
       //benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: Circe doesn't support writing of int & long maps
+      //FIXME: Circe doesn't support IntMap
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      //FIXME: Jackson doesn't store key value pair when value is empty and `SerializationInclusion` set to `Include.NON_EMPTY`
-      //toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString

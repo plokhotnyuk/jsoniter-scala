@@ -7,7 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
-import scala.collection.immutable.BitSet
+import scala.collection.immutable.{BitSet, IntMap, Map, Set}
 import scala.collection.mutable
 
 object JsoniterCodecs {
@@ -46,12 +46,13 @@ object JsoniterCodecs {
   implicit val shortArrayCodec: JsonValueCodec[Array[Short]] = make[Array[Short]](CodecMakerConfig())
   implicit val longArrayCodec: JsonValueCodec[Array[Long]] = make[Array[Long]](CodecMakerConfig())
   implicit val uuidArrayCodec: JsonValueCodec[Array[UUID]] = make[Array[UUID]](CodecMakerConfig())
-  implicit val mapsCodec: JsonValueCodec[Maps] = make[Maps](CodecMakerConfig())
+  implicit val intMapOfBooleansCodec: JsonValueCodec[IntMap[Boolean]] = make[IntMap[Boolean]](CodecMakerConfig())
+  implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] = make[Map[Int, Boolean]](CodecMakerConfig())
   implicit val missingReqFieldCodec: JsonValueCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())
   implicit val mutableBitSetCodec: JsonValueCodec[mutable.BitSet] = make[mutable.BitSet](CodecMakerConfig())
-  implicit val mutableMapsCodec: JsonValueCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
+  implicit val mutableLongMapOfBooleansCodec: JsonValueCodec[mutable.LongMap[Boolean]] = make[mutable.LongMap[Boolean]](CodecMakerConfig())
+  implicit val mutableMapOfIntsToBooleansCodec: JsonValueCodec[mutable.Map[Int, Boolean]] = make[mutable.Map[Int, Boolean]](CodecMakerConfig())
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] = make[mutable.Set[Int]](CodecMakerConfig())
-  implicit val intAndLongMapsCodec: JsonValueCodec[IntAndLongMaps] = make[IntAndLongMaps](CodecMakerConfig())
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make[Primitives](CodecMakerConfig())
   implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   implicit val adtCodec: JsonValueCodec[AdtBase] = make[AdtBase](CodecMakerConfig())

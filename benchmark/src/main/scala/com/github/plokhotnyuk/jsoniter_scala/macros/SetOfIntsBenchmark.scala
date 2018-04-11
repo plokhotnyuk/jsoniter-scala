@@ -11,6 +11,8 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
+import scala.collection.immutable.Set
+
 class SetOfIntsBenchmark extends CommonParams {
   val obj: Set[Int] = (1 to 128).map(i => ((i * 1498724053) / Math.pow(10, i % 10)).toInt).toSet
   val jsonString: String = obj.mkString("[", ",", "]")
