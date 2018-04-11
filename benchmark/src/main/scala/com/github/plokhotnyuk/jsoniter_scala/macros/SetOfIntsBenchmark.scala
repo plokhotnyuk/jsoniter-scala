@@ -5,34 +5,28 @@ import java.nio.charset.StandardCharsets._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
-import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
-import scala.collection.immutable.HashSet
-
-case class Iterables(l: Vector[String], s: Set[Int], ls: List[HashSet[Long]])
-
-class IterablesBenchmark extends CommonParams {
-  val obj: Iterables = Iterables(Vector("1", "2", "3"), Set(4, 5, 6), List(HashSet(1, 2), HashSet()))
-  val jsonString: String = """{"l":["1","2","3"],"s":[4,5,6],"ls":[[1,2],[]]}"""
+class SetOfIntsBenchmark extends CommonParams {
+  val obj: Set[Int] = (1 to 128).map(i => ((i * 1498724053) / Math.pow(10, i % 10)).toInt).toSet
+  val jsonString: String = obj.mkString("[", ",", "]")
   val jsonBytes: Array[Byte] = jsonString.getBytes
 
   @Benchmark
-  def readCirce(): Iterables = decode[Iterables](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJacksonScala(): Iterables = jacksonMapper.readValue[Iterables](jsonBytes)
+  def readJacksonScala(): Set[Int] = jacksonMapper.readValue[Set[Int]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): Iterables = readFromArray[Iterables](jsonBytes)
+  def readJsoniterScala(): Set[Int] = readFromArray[Set[Int]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Iterables = Json.parse(jsonBytes).as[Iterables](iterablesFormat)
+  def readPlayJson(): Set[Int] = Json.parse(jsonBytes).as[Set[Int]]
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -47,5 +41,5 @@ class IterablesBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(iterablesFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 }

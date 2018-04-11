@@ -1,13 +1,12 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class MutableIterablesBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new MutableIterablesBenchmark
+class MutableSetOfIntsBenchmarkSpec extends BenchmarkSpecBase {
+  val benchmark = new MutableSetOfIntsBenchmark
   
-  "MutableIterablesBenchmark" should {
+  "MutableSetOfIntsBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: Jackson-module-scala doesn't support parsing of tree sets
-      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
     }

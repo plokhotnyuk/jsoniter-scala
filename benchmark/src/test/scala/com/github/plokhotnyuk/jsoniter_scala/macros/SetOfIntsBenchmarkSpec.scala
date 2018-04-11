@@ -1,9 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class IterablesBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new IterablesBenchmark
+class SetOfIntsBenchmarkSpec extends BenchmarkSpecBase {
+  val benchmark = new SetOfIntsBenchmark
   
-  "IterablesBenchmark" should {
+  "SetOfIntsBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
