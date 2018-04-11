@@ -749,8 +749,8 @@ final class JsonWriter private[jsoniter_scala](
     else {
       writeBytes('"', 'P', 'T')
       val totalSecs = x.getSeconds
+      val nanos = x.getNano
       var effectiveTotalSecs = totalSecs
-      var nanos = x.getNano
       if (effectiveTotalSecs < 0 && nanos > 0) effectiveTotalSecs += 1
       val hours = effectiveTotalSecs / 3600
       if (hours != 0) {
@@ -770,17 +770,30 @@ final class JsonWriter private[jsoniter_scala](
         else writeInt(seconds)
         if (nanos == 0) writeBytes('S', '"')
         else {
-          nanos = if (totalSecs < 0) 2000000000 - nanos else 1000000000 + nanos
-          val posLim = ensureBufCapacity(12)
+          var pos = ensureBufCapacity(12)
           val buf = this.buf
-          var pos = posLim + 9
-          writeIntRem(nanos, pos, buf, digits, 4)
-          buf(posLim) = '.'
-          while (pos > posLim && buf(pos) == '0') pos -= 1
-          buf(pos + 1) = 'S'
-          buf(pos + 2) = '"'
-          count = pos + 3
+          buf(pos) = '.'
+          pos = writeNanos(if (totalSecs < 0) 1000000000 - nanos else nanos, pos, buf)
+          buf(pos) = 'S'
+          buf(pos + 1) = '"'
+          count = pos + 2
         }
+      }
+    }
+
+  private[this] def writeNanos(x: Int, pos: Int, buf: Array[Byte]): Int =
+    writeSignificantFractionDigits(x, pos + 9, pos, 0, buf)
+
+  @tailrec
+  private[this] def writeSignificantFractionDigits(x: Int, pos: Int, posLim: Int, posMax: Int, buf: Array[Byte]): Int =
+    if (pos == posLim) posMax
+    else {
+      val q0 = (x * 3435973837L >> 35).toInt // divide positive int by 10
+      val r0 = x - 10 * q0
+      if (posMax == 0 && r0 == 0) writeSignificantFractionDigits(q0, pos - 1, posLim, 0, buf)
+      else {
+        buf(pos) = ('0' + r0).toByte
+        writeSignificantFractionDigits(q0, pos - 1, posLim, if (posMax == 0) pos + 1 else posMax, buf)
       }
     }
 
@@ -1188,22 +1201,6 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = d.toByte
       buf(pos - 1) = (d >> 8).toByte
       writeIntFirst(q1, pos - 2, buf, ds)
-    }
-
-  @tailrec
-  private[this] def writeIntRem(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short], i: Int): Int =
-    if (i == 0) {
-      val d = ds(q0)
-      buf(pos) = d.toByte
-      buf(pos - 1) = (d >> 8).toByte
-      pos - 2
-    } else {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-      val r1 = q0 - 100 * q1
-      val d = ds(r1)
-      buf(pos) = d.toByte
-      buf(pos - 1) = (d >> 8).toByte
-      writeIntRem(q1, pos - 2, buf, ds, i - 1)
     }
 
   private[this] def offset(q0: Int): Int =
