@@ -679,6 +679,20 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifySerDeser(make[BitSet](CodecMakerConfig(bitSetValueLimit = 1000)), BitSet(1, 2, 1000),
           """[1,2,1000]""".getBytes("UTF-8"))
       }.getMessage.contains("illegal value for bit set, offset: 0x00000008"))
+      assert(intercept[JsonParseException] {
+        verifySerDeser(make[mutable.BitSet](CodecMakerConfig()), mutable.BitSet(1, 2, 10000),
+          """[1,2,10000]""".getBytes("UTF-8"))
+      }.getMessage.contains("illegal value for bit set, offset: 0x00000009"))
+    }
+    "throw parse exception when negative numbers are parsed for mutable & immutable bitsets" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[BitSet](CodecMakerConfig()), BitSet(1, 2, 0),
+          """[1,2,-1]""".getBytes("UTF-8"))
+      }.getMessage.contains("illegal value for bit set, offset: 0x00000006"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[mutable.BitSet](CodecMakerConfig()), mutable.BitSet(1, 2, 0),
+          """[1,2,-1]""".getBytes("UTF-8"))
+      }.getMessage.contains("illegal value for bit set, offset: 0x00000006"))
     }
     "don't generate codec for maps with not supported types of keys" in {
       assert(intercept[TestFailedException](assertCompiles {
