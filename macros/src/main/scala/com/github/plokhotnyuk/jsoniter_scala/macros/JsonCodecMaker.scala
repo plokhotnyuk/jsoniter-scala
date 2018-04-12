@@ -8,7 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
 import scala.collection.generic.Growable
-import scala.collection.immutable.{BitSet, IntMap, LongMap}
+import scala.collection.BitSet
+import scala.collection.immutable.{IntMap, LongMap}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
@@ -36,13 +37,15 @@ final class stringified extends StaticAnnotation
   *                      value classes (turned off by default)
   * @param skipUnexpectedFields a flag that turn on skipping of unexpected fields or in other case a parse exception
   *                             will be thrown (turned on by default)
+  * @param bitSetValueLimit an exclusive limit for accepted numeric values in bit sets (8192 by default)
   */
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
   adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
   discriminatorFieldName: String = "type",
   isStringified: Boolean = false,
-  skipUnexpectedFields: Boolean = true)
+  skipUnexpectedFields: Boolean = true,
+  bitSetValueLimit: Int = 8192/* 1Kb */)
 
 object JsonCodecMaker {
   def enforceCamelCase(s: String): String =
@@ -479,7 +482,7 @@ object JsonCodecMaker {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe =:= typeOf[mutable.BitSet] || tpe =:= typeOf[BitSet]) q"${collectionCompanion(tpe)}.empty"
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${collectionCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[Traversable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
@@ -565,14 +568,21 @@ object JsonCodecMaker {
           val comp = collectionCompanion(tpe)
           genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
-        } else if (tpe =:= typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
-          val readVal = if (isStringified) q"x.add(in.readStringAsInt())" else q"x.add(in.readInt())"
-          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty", readVal)
-        } else if (tpe =:= typeOf[BitSet]) withDecoderFor(methodKey, default) {
+          val readVal = if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
+          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty",
+            q"""val v = $readVal
+                if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
+                x.add(v)""")
+        } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
-          val readVal = if (isStringified) q"x += in.readStringAsInt()" else q"x += in.readInt()"
-          genReadArray(q"val x = $comp.newBuilder", readVal, q"x.result()")
+          val readVal = if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
+          genReadArray(q"val x = $comp.newBuilder",
+            q"""val v = $readVal
+                if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
+                x += v""",
+            q"x.result()")
         } else if (tpe <:< typeOf[mutable.Traversable[_] with Growable[_]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
@@ -782,7 +792,7 @@ object JsonCodecMaker {
           genWriteMap(q"x", q"out.writeKey(kv._1)", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", genWriteKey(q"kv._1", typeArg1(tpe)), genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
-        } else if (tpe =:= typeOf[mutable.BitSet] || tpe =:= typeOf[BitSet]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", if (isStringified) q"out.writeValAsString(x)" else q"out.writeVal(x)")
         } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()

@@ -674,6 +674,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         mutable.LongMap(1L -> IntMap(2 -> mutable.BitSet(4, 5, 6), 3 -> mutable.BitSet.empty)),
         """{"1":{"2":["4","5","6"],"3":[]}}""".getBytes("UTF-8"))
     }
+    "throw parse exception when too big numbers are parsed for mutable & immutable bitsets" in {
+      assert(intercept[JsonParseException] {
+        verifySerDeser(make[BitSet](CodecMakerConfig(bitSetValueLimit = 1000)), BitSet(1, 2, 1000),
+          """[1,2,1000]""".getBytes("UTF-8"))
+      }.getMessage.contains("illegal value for bit set, offset: 0x00000008"))
+    }
     "don't generate codec for maps with not supported types of keys" in {
       assert(intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[Map[java.util.Date,String]](CodecMakerConfig())"""
