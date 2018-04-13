@@ -4,13 +4,12 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-import org.openjdk.jmh.annotations.{Param, Setup}
 //import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
 import scala.collection.breakOut
