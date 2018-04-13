@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import org.openjdk.jmh.annotations.{Param, Setup}
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -14,10 +15,21 @@ import play.api.libs.json.Json
 import scala.collection.mutable
 
 class MutableBitSetBenchmark extends CommonParams {
-  val obj: mutable.BitSet = mutable.BitSet(0 to 127: _*)
-  val jsonString: String = obj.mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: mutable.BitSet = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
 
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = mutable.BitSet(0 until size: _*)
+    jsonString = obj.mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes("UTF-8")
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
   def readCirce(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

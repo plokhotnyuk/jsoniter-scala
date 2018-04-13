@@ -9,20 +9,34 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats.javaEnumArrayFormat
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
+import scala.collection.breakOut
+
 class ArrayOfJavaEnumsBenchmark extends CommonParams {
-  val obj: Array[Suit] = (1 to 128).map { i =>
-    (i * 1498724053) & 3 match {
-      case 0 => Suit.Hearts
-      case 1 => Suit.Spades
-      case 2 => Suit.Diamonds
-      case 3 => Suit.Clubs
-    }
-  }.toArray
-  val jsonString: String = obj.mkString("[\"", "\",\"", "\"]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: Array[Suit] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = (1 to size).map { i =>
+      (i * 1498724053) & 3 match {
+        case 0 => Suit.Hearts
+        case 1 => Suit.Spades
+        case 2 => Suit.Diamonds
+        case 3 => Suit.Clubs
+      }
+    }(breakOut)
+    jsonString = obj.mkString("[\"", "\",\"", "\"]")
+    jsonBytes = jsonString.getBytes(UTF_8)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): Array[Suit] = decode[Array[Suit]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

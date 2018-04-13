@@ -8,14 +8,27 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+
 import scala.collection.breakOut
 
 class ListOfBooleansBenchmark extends CommonParams {
-  val obj: List[Boolean] = (1 to 128).map(i => ((i * 1498724053) & 1) == 0)(breakOut)
-  val jsonString: String = obj.mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: List[Boolean] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = (1 to size).map(i => ((i * 1498724053) & 1) == 0)(breakOut)
+    jsonString = obj.mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): List[Boolean] = decode[List[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

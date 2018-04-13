@@ -9,14 +9,28 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
+import scala.collection.breakOut
+
 class ArrayOfDoublesBenchmark extends CommonParams {
-  val obj: Array[Double] = (1 to 128)
-    .map(i => ((i * 372036854775807L) / Math.pow(10, i % 19)).toLong * Math.pow(10, (i % 38) - 19)).toArray
-  val jsonString: String = obj.mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: Array[Double] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = (1 to size)
+      .map(i => ((i * 372036854775807L) / Math.pow(10, i % 19)).toLong * Math.pow(10, (i % 38) - 19))(breakOut)
+    jsonString = obj.mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

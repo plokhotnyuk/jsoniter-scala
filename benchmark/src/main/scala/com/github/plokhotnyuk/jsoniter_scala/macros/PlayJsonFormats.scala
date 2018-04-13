@@ -13,12 +13,6 @@ import scala.collection.{breakOut, mutable}
 object PlayJsonFormats {
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
-  val arraysFormat: OFormat[Arrays] = {
-    implicit val v1: Format[Array[BigInt]] = Format(
-      Reads[Array[BigInt]](js => JsSuccess(js.as[Array[JsNumber]].map(_.value.toBigInt()))),
-      Writes[Array[BigInt]](a => JsArray(a.map(v => JsNumber(BigDecimal(v))))))
-    Json.format[Arrays]
-  }
   val bitSetFormat: Format[BitSet] = Format(
     Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*))),
     Writes[BitSet]((es: BitSet) => JsArray(es.map(v => JsNumber(BigDecimal(v)))(breakOut))))

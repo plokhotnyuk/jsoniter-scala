@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import org.openjdk.jmh.annotations.{Param, Setup}
 //import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import play.api.libs.json.Json
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
@@ -13,10 +14,24 @@ import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 
+import scala.collection.breakOut
+
 class ArrayOfBigIntsBenchmark extends CommonParams {
-  val obj: Array[BigInt] = (1 to 128).map(i => BigInt(Array.fill((i & 15) + 1)(i.toByte))).toArray // up to 128-bit numbers
-  val jsonString: String = obj.map(x => new java.math.BigDecimal(x.bigInteger).toPlainString).mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: Array[BigInt] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj  = (1 to size).map(i => BigInt(Array.fill((i & 15) + 1)(i.toByte)))(breakOut) // up to 128-bit numbers
+    jsonString = obj.map(x => new java.math.BigDecimal(x.bigInteger).toPlainString).mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

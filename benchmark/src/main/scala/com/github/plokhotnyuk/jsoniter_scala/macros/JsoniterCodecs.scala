@@ -17,7 +17,6 @@ object JsoniterCodecs {
   val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make[String](CodecMakerConfig()) // don't define implicit for supported types
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
-  implicit val arraysCodec: JsonValueCodec[Arrays] = make[Arrays](CodecMakerConfig())
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make[Array[BigDecimal]](CodecMakerConfig())
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make[Array[BigInt]](CodecMakerConfig())
   implicit val bitSetCodec: JsonValueCodec[BitSet] = make[BitSet](CodecMakerConfig())

@@ -32,7 +32,7 @@ Initially, this library was developed for requirements of real-time bidding in a
   copying
 - do validation of UTF-8 encoding, JSON format and mapped values efficiently (fail fast approach) with clear reporting, 
   do not replace illegally encoded characters of string values by placeholder characters
-- define in _compile-time_ classes that will be instantiated during parsing to minimize a probability of runtime issues, 
+- define classes, that will be instantiated during parsing, in _compile-time_ to minimize a probability of runtime issues, 
   generated sources can be inspected to prove that there are no security vulnerabilities during parsing
 
 It targets JDK 8+ without any platform restrictions.
@@ -192,6 +192,12 @@ additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blo
 
 ```sh
 sbt clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
+```
+
+For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
+
+```sh
+sbt clean 'benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
 ```
 
 To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:

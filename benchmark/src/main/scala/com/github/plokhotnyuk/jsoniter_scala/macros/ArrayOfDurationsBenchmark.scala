@@ -10,17 +10,31 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.java8.time._
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
+import scala.collection.breakOut
+
 class ArrayOfDurationsBenchmark extends CommonParams {
-  val obj: Array[Duration] = (1 to 128).map { i =>
-    val x = Math.abs((i * 1498724053) / Math.pow(10, i % 10)).toInt
-    val y = Math.abs(i * Math.pow(10, i % 10)).toInt
-    Duration.ofSeconds(x.toLong, y)
-  }.toArray
-  val jsonString: String = obj.mkString("[\"", "\",\"", "\"]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: Array[Duration] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = (1 to size).map { i =>
+      val x = Math.abs((i * 1498724053) / Math.pow(10, i % 10)).toInt
+      val y = Math.abs(i * Math.pow(10, i % 10)).toInt
+      Duration.ofSeconds(x.toLong, y)
+    }(breakOut)
+    jsonString = obj.mkString("[\"", "\",\"", "\"]")
+    jsonBytes = jsonString.getBytes
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): Array[Duration] = decode[Array[Duration]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

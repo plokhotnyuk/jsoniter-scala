@@ -8,16 +8,28 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
 class ArrayOfBigDecimalsBenchmark extends CommonParams {
-  val sourceObj: Array[BigDecimal] = (1 to 128).map { i =>
-    //FIXME | 1 is used to hide JDK bug of serialization redundant 0 after .
-    BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), i % 37)
-  }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
-  val jsonString: String = sourceObj.mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var sourceObj: Array[BigDecimal] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    sourceObj = (1 to size).map { i =>
+      //FIXME | 1 is used to hide JDK bug of serialization redundant 0 after .
+      BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), i % 37)
+    }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
+    jsonString = sourceObj.mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   //FIXME it affects results but required to avoid misleading results due internal caching of the string representation
   private def obj: Array[BigDecimal] =
