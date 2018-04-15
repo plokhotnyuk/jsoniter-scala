@@ -896,149 +896,90 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseDouble(isToken: Boolean): Double = {
-    var posMan = 0L
-    var manExp = 0
-    var posExp = 0
-    var isNeg = false
-    var isExpNeg = false
-    var isZeroFirst = false
-    var state = 0
-    var pos = head
+    var b = if (isToken) nextToken(head) else nextByte(head)
     val mark = this.mark
-    this.mark = Math.min(mark, pos)
+    this.mark = Math.min(mark, head - 1)
     try {
-      while (pos < tail || {
-        pos = loadMore(pos)
-        pos < tail
-      }) {
-        val b = buf(pos)
-        (state: @switch) match {
-          case 0 => // start
-            if (b >= '0' && b <= '9') {
-              posMan = b - '0'
-              isZeroFirst = posMan == 0
-              state = 3
-            } else if (b == '-') {
-              isNeg = true
-              state = 2
-            } else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
-              if (!isToken) numberError(pos)
-              state = 1
-            } else numberError(pos)
-          case 1 => // whitespaces
-            if (b == ' ' || b == '\n' || b == '\t' || b == '\r') () // for fast skipping of whitespaces
-            else if (b >= '0' && b <= '9') {
-              posMan = b - '0'
-              isZeroFirst = posMan == 0
-              state = 3
-            } else if (b == '-') {
-              isNeg = true
-              state = 2
-            } else numberError(pos)
-          case 2 => // signum
-            if (b >= '0' && b <= '9') {
-              posMan = b - '0'
-              isZeroFirst = posMan == 0
-              state = 3
-            } else numberError(pos)
-          case 3 => // first int digit
-            if (b >= '0' && b <= '9') {
-              posMan = posMan * 10 + (b - '0')
-              if (isToken && isZeroFirst) leadingZeroError(pos - 1)
-              state = 4
-            } else if (b == '.') state = 5
-            else if ((b | 0x20) == 'e') state = 7
-            else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-            }
-          case 4 => // int digit
-            if (b >= '0' && b <= '9') {
-              if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
-              else manExp += 1
-            } else if (b == '.') state = 5
-            else if ((b | 0x20) == 'e') state = 7
-            else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-            }
-          case 5 => // dot
-            if (b >= '0' && b <= '9') {
-              if (posMan < 4503599627370496L) {
-                posMan = posMan * 10 + (b - '0')
-                manExp -= 1
-              }
-              state = 6
-            } else numberError(pos)
-          case 6 => // frac digit
-            if (b >= '0' && b <= '9') {
-              if (posMan < 4503599627370496L) {
-                posMan = posMan * 10 + (b - '0')
-                manExp -= 1
-              }
-            } else if ((b | 0x20) == 'e') state = 7
-            else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-            }
-          case 7 => // e char
-            if (b >= '0' && b <= '9') {
-              posExp = b - '0'
-              state = 9
-            } else if (b == '-') {
-              isExpNeg = true
-              state = 8
-            } else if (b == '+') state = 8
-            else numberError(pos)
-          case 8 => // exp. sign
-            if (b >= '0' && b <= '9') {
-              posExp = b - '0'
-              state = 9
-            } else numberError(pos)
-          case 9 => // exp. digit
-            if (b >= '0' && b <= '9') {
-              posExp = posExp * 10 + (b - '0')
-              if (Math.abs(toExp(manExp, isExpNeg, posExp)) > 350) state = 10
-            } else {
-              head = pos
-              return toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-            }
-          case 10 => // exp. digit overflow
-            if (b >= '0' && b <= '9') ()
-            else {
-              head = pos
-              return toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-            }
+      val isNeg = b == '-'
+      if (isNeg) b = nextByte(head)
+      var pos = head
+      if (b >= '0' && b <= '9') {
+        var posMan: Long = b - '0'
+        var manExp = 0
+        var posExp = 0
+        var isExpNeg = false
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) pos = {
+          if (isToken && posMan == 0) leadingZeroError(pos - 1)
+          if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
+          else manExp += 1
+          pos + 1
         }
-        pos += 1
-      }
-      head = pos
-      if (state == 3 || state == 4 || state == 6 || state == 9) toDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-      else if (state == 10) toExpOverflowDouble(isNeg, posMan, manExp, isExpNeg, posExp)
-      else numberError(pos)
+        if (b == '.') {
+          head = pos + 1
+          b = nextByte(head)
+          pos = head
+          if (b >= '0' && b <= '9') {
+            if (posMan < 4503599627370496L) {
+              posMan = posMan * 10 + (b - '0')
+              manExp -= 1
+            }
+            while ((pos < tail || {
+              pos = loadMore(pos)
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos = {
+              if (posMan < 4503599627370496L) {
+                posMan = posMan * 10 + (b - '0')
+                manExp -= 1
+              }
+              pos + 1
+            }
+          } else numberError(pos - 1)
+        }
+        if ((b | 0x20) == 'e') {
+          head = pos + 1
+          b = nextByte(head)
+          if (b == '-' || b == '+') {
+            isExpNeg = b == '-'
+            b = nextByte(head)
+          }
+          pos = head
+          if (b >= '0' && b <= '9') {
+            posExp = b - '0'
+            while ((pos < tail || {
+              pos = loadMore(pos)
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos = {
+              if (posExp < 350) posExp = posExp * 10 + (b - '0')
+              pos + 1
+            }
+          } else numberError(pos - 1)
+        }
+        head = pos
+        val exp = manExp + (if (isExpNeg) -posExp else posExp)
+        if (posMan < 4503599627370496L) { // 4503599627370496L == 1L < 52, max mantissa that can be converted w/o rounding error by double mul or div
+          val man = if (isNeg) -posMan else posMan
+          if (exp == 0) man
+          else if (exp < 0 && exp > -22) man / pow10(-exp) // 22 == pow10.length
+          else if (exp > 0 && exp < 22) man * pow10(exp)
+          else toDouble(pos)
+        } else toDouble(pos)
+      } else numberError(pos - 1)
     } finally this.mark = mark
   }
 
-  private[this] def toDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
-    if (posMan < 4503599627370496L) { // 4503599627370496L == 1L < 52, max mantissa that can be converted w/o rounding error by double mul or div
-      val man = if (isNeg) -posMan else posMan
-      val exp = toExp(manExp, isExpNeg, posExp)
-      if (exp == 0) man
-      else if (exp < 0 && exp > -22) man / pow10(-exp) // 22 == pow10.length
-      else if (exp > 0 && exp < 22) man * pow10(exp)
-      else toDouble
-    } else toDouble
-
-  private[this] def toDouble: Double = java.lang.Double.parseDouble(new String(buf, 0, mark, head - mark))
-
-  private[this] def toExpOverflowDouble(isNeg: Boolean, posMan: Long, manExp: Int, isExpNeg: Boolean, posExp: Int): Double =
-    if (toExp(manExp, isExpNeg, posExp) > 0 && posMan != 0) {
-      if (isNeg) Double.NegativeInfinity else Double.PositiveInfinity
-    } else {
-      if (isNeg) -0.0 else 0.0
-    }
-
-  private[this] def toExp(manExp: Int, isExpNeg: Boolean, exp: Int): Int = manExp + (if (isExpNeg) -exp else exp)
+  private[this] def toDouble(pos: Int): Double = java.lang.Double.parseDouble(new String(buf, 0, mark, pos - mark))
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)
@@ -1053,7 +994,7 @@ final class JsonReader private[jsoniter_scala](
         if (negative) b = nextByte(head)
         var pos = head
         if (b >= '0' && b <= '9') {
-          val isZeroFirst = b == '0'
+          val isZeroFirst = isToken && b == '0'
           while ((pos < tail || {
             pos = loadMore(pos)
             pos < tail
@@ -1061,7 +1002,7 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) pos = {
-            if (isToken && isZeroFirst) leadingZeroError(pos - 1)
+            if (isZeroFirst) leadingZeroError(pos - 1)
             pos + 1
           }
           head = pos
@@ -1073,8 +1014,8 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def toBigInt(negative: Boolean, pos: Int): BigInt = {
-    var signPos = this.mark
-    var numPos = signPos + (if (negative) 1 else 0)
+    val startPos = this.mark
+    var numPos = startPos + (if (negative) 1 else 0)
     if (pos < 19 + numPos) { // 19 == Long.MaxValue.toString.length
       var x = 0L
       while (numPos < pos) {
@@ -1083,169 +1024,81 @@ final class JsonReader private[jsoniter_scala](
       }
       new BigInt(BigInteger.valueOf(if (negative) -x else x))
     } else {
-      val required = pos - signPos
-      var charBuf = this.charBuf
-      if (required > charBuf.length) {
-        growCharBuf(required)
-        charBuf = this.charBuf
+      val len = copyAsciiToCharBuf(buf, startPos, pos)
+      try new BigInt(new java.math.BigDecimal(charBuf, 0, len).toBigIntegerExact) catch {
+        case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
       }
-      var i = 0
-      while (signPos < pos) signPos = {
-        charBuf(i) = buf(signPos).toChar
-        i += 1
-        signPos + 1
-      }
-      new BigInt(new java.math.BigDecimal(charBuf, 0, i).toBigIntegerExact)
     }
   }
 
   private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal): BigDecimal = {
-    var isZeroFirst = false
-    var posExp = 0L
-    var charBuf = this.charBuf
-    var lim = charBuf.length
-    var i = 0
-    var state = 0
-    var pos = head
-    while (pos < tail || {
-      pos = loadMore(pos)
-      pos < tail
-    }) {
-      if (i >= lim) {
-        lim = growCharBuf(i + 1)
-        charBuf = this.charBuf
-      }
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // start
-          if (b >= '0' && b <= '9') {
-            charBuf(i) = b.toChar
-            i += 1
-            isZeroFirst = b == '0'
-            state = 3
-          } else if (b == '-') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 2
-          } else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') {
-            if (!isToken) numberError(pos)
-            state = 1
-          } else if (b == 'n' && isToken) return readNullOrNumberError(default, pos + 1)
-          else numberError(pos)
-        case 1 => // whitespaces
-          if (b == ' ' || b == '\n' || b == '\t' || b == '\r') () // for fast skipping of whitespaces
-          else if (b >= '0' && b <= '9') {
-            charBuf(i) = b.toChar
-            i += 1
-            isZeroFirst = b == '0'
-            state = 3
-          } else if (b == '-') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 2
-          } else if (b == 'n' && isToken) state = 10
-          else numberError(pos)
-        case 2 => // signum
-          if (b >= '0' && b <= '9') {
-            charBuf(i) = b.toChar
-            i += 1
-            isZeroFirst = b == '0'
-            state = 3
-          } else numberError(pos)
-        case 3 => // first int digit
-          if (b >= '0' && b <= '9') {
-            if (isToken && isZeroFirst) leadingZeroError(pos - 1)
-            charBuf(i) = b.toChar
-            i += 1
-            state = 4
-          } else if (b == '.') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 5
-          } else if ((b | 0x20) == 'e') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 7
-          } else {
-            head = pos
-            return toBigDecimal(i)
+    var b = if (isToken) nextToken(head) else nextByte(head)
+    if (b == 'n') {
+      if (isToken) readNullOrNumberError(default, head)
+      else numberError(head)
+    } else {
+      val mark = this.mark
+      this.mark = Math.min(mark, head - 1)
+      try {
+        val isNeg = b == '-'
+        if (isNeg) b = nextByte(head)
+        var pos = head
+        if (b >= '0' && b <= '9') {
+          val isZeroFirst = isToken && b == '0'
+          while ((pos < tail || {
+            pos = loadMore(pos)
+            pos < tail
+          }) && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) pos = {
+            if (isZeroFirst) leadingZeroError(pos - 1)
+            pos + 1
           }
-        case 4 => // int digit
-          if (b >= '0' && b <= '9') {
-            charBuf(i) = b.toChar
-            i += 1
-          } else if (b == '.') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 5
-          } else if ((b | 0x20) == 'e') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 7
-          } else {
-            head = pos
-            return toBigDecimal(i)
+          if (b == '.') {
+            head = pos + 1
+            b = nextByte(head)
+            pos = head
+            if (b >= '0' && b <= '9') {
+              while ((pos < tail || {
+                pos = loadMore(pos)
+                pos < tail
+              }) && {
+                b = buf(pos)
+                b >= '0' && b <= '9'
+              }) pos += 1
+            } else numberError(pos - 1)
           }
-        case 5 => // dot
-          if (b >= '0' && b <= '9') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 6
-          } else numberError(pos)
-        case 6 => // frac digit
-          if (b >= '0' && b <= '9') {
-            charBuf(i) = b.toChar
-            i += 1
-          } else if ((b | 0x20) == 'e') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 7
-          } else {
-            head = pos
-            return toBigDecimal(i)
+          if ((b | 0x20) == 'e') {
+            head = pos + 1
+            b = nextByte(head)
+            if (b == '-' || b == '+') {
+              b = nextByte(head)
+            }
+            pos = head
+            if (b >= '0' && b <= '9') {
+              while ((pos < tail || {
+                pos = loadMore(pos)
+                pos < tail
+              }) && {
+                b = buf(pos)
+                b >= '0' && b <= '9'
+              }) pos += 1
+            } else numberError(pos - 1)
           }
-        case 7 => // e char
-          if (b >= '0' && b <= '9') {
-            posExp = 10 * posExp + (b - '0')
-            if (posExp != posExp.toInt) numberError(pos)
-            charBuf(i) = b.toChar
-            i += 1
-            state = 9
-          } else if (b == '-' || b == '+') {
-            charBuf(i) = b.toChar
-            i += 1
-            state = 8
-          } else numberError(pos)
-        case 8 => // exp. sign
-          if (b >= '0' && b <= '9') {
-            posExp = 10 * posExp + (b - '0')
-            if (posExp != posExp.toInt) numberError(pos)
-            charBuf(i) = b.toChar
-            i += 1
-            state = 9
-          } else numberError(pos)
-        case 9 => // exp. digit
-          if (b >= '0' && b <= '9') {
-            posExp = 10 * posExp + (b - '0')
-            if (posExp != posExp.toInt) numberError(pos)
-            charBuf(i) = b.toChar
-            i += 1
-          } else {
-            head = pos
-            return toBigDecimal(i)
-          }
-      }
-      pos += 1
+          head = pos
+          toBigDecimal(pos)
+        } else numberError(pos - 1)
+      } finally this.mark = mark
     }
-    head = pos
-    if (state == 3 || state == 4 || state == 6 || state == 9) toBigDecimal(i)
-    else numberError(pos)
   }
 
-  private[this] def toBigDecimal(len: Int): BigDecimal =
+  private[this] def toBigDecimal(pos: Int): BigDecimal = {
+    val len = copyAsciiToCharBuf(buf, this.mark, pos)
     try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len)) catch {
-      case ex: NumberFormatException => decodeError("illegal number", head - 1, ex)
+      case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
     }
+  }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
     if (default == null) numberError(pos - 1)
@@ -3182,6 +3035,23 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def toHexDigit(n: Int): Char = hexDigits(n & 15)
+
+  private[this] def copyAsciiToCharBuf(buf: Array[Byte], from: Int, to: Int): Int = {
+    val required = to - from
+    var pos = from
+    var charBuf = this.charBuf
+    var i = 0
+    if (required > charBuf.length) {
+      growCharBuf(required)
+      charBuf = this.charBuf
+    }
+    while (pos < to) pos = {
+      charBuf(i) = buf(pos).toChar
+      i += 1
+      pos + 1
+    }
+    required
+  }
 
   private[this] def growCharBuf(required: Int): Int = {
     val newLim = Integer.highestOneBit(charBuf.length | required) << 1

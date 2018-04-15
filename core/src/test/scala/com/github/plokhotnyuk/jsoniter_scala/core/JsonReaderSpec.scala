@@ -1668,9 +1668,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345678901234567890e-12345678901234567890", -0.0f)
     }
     "throw parsing exception on illegal or empty input" in {
-      checkError("", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError(" ", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
-      checkError("-", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
@@ -1747,9 +1747,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-1234567890123456789e-12345678901234567890", -0.0)
     }
     "throw parsing exception on illegal or empty input" in {
-      checkError("", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError(" ", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
-      checkError("-", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
@@ -1899,20 +1899,20 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw number format exception for too big exponents" in {
       checkError("12345678901234567890e12345678901234567890",
-        "illegal number, offset: 0x0000001f", "illegal number, offset: 0x00000020")
+        "illegal number, offset: 0x00000028", "illegal number, offset: 0x00000029")
       checkError("-12345678901234567890e12345678901234567890",
-        "illegal number, offset: 0x00000020", "illegal number, offset: 0x00000021")
+        "illegal number, offset: 0x00000029", "illegal number, offset: 0x0000002a")
       checkError("12345678901234567890e-12345678901234567890",
-        "illegal number, offset: 0x00000020", "illegal number, offset: 0x00000021")
+        "illegal number, offset: 0x00000029", "illegal number, offset: 0x0000002a")
       checkError("-12345678901234567890e-12345678901234567890",
-        "illegal number, offset: 0x00000021", "illegal number, offset: 0x00000022")
+        "illegal number, offset: 0x0000002a", "illegal number, offset: 0x0000002b")
       checkError("12345678901234567890e12345678901234567890$",
-        "illegal number, offset: 0x0000001f", "illegal number, offset: 0x00000020")
+        "illegal number, offset: 0x00000028", "illegal number, offset: 0x00000029")
     }
     "throw parsing exception on illegal or empty input" in {
-      checkError("", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError(" ", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
-      checkError("-", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
+      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
+      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
