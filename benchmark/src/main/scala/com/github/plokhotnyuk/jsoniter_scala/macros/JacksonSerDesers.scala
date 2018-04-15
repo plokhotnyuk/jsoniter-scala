@@ -14,7 +14,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
-import scala.collection.immutable.{BitSet, HashMap, Map}
+import scala.collection.immutable.{BitSet/*, HashMap, Map*/}
 import scala.collection.mutable
 
 object JacksonSerDesers {
@@ -32,7 +32,7 @@ object JacksonSerDesers {
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer)
 */
       .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
-    registerModule(new JavaTimeModule())
+    registerModule(new JavaTimeModule)
     registerModule(new AfterburnerModule)
     configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
