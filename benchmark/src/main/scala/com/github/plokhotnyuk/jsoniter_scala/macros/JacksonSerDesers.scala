@@ -1,10 +1,10 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-import com.fasterxml.jackson.core.JsonToken._
-import com.fasterxml.jackson.core.`type`.TypeReference
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonToken, JsonParseException => ParseException}
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+//import com.fasterxml.jackson.core.JsonToken._
+//import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonToken/*, JsonParseException => ParseException*/}
+//import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.databind._
@@ -27,8 +27,10 @@ object JacksonSerDesers {
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
       .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
       .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
+/*
       .addDeserializer(classOf[BitSet], new BitSetDeserializer)
       .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer)
+*/
       .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
     registerModule(new JavaTimeModule())
     registerModule(new AfterburnerModule)
@@ -42,6 +44,7 @@ object JacksonSerDesers {
   }
 }
 
+/*
 class BitSetDeserializer extends StdDeserializer[BitSet](classOf[BitSet]) {
   override def deserialize(p: JsonParser, ctxt: DeserializationContext): BitSet =
     if (p.getCurrentToken != START_ARRAY) throw new ParseException(p, "expected '[' or null")
@@ -56,6 +59,7 @@ class BitSetDeserializer extends StdDeserializer[BitSet](classOf[BitSet]) {
 
   override def getNullValue(ctxt: DeserializationContext): BitSet = BitSet.empty
 }
+*/
 
 class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {
   override def serialize(value: BitSet, gen: JsonGenerator, provider: SerializerProvider): Unit = {
@@ -67,6 +71,7 @@ class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {
   override def isEmpty(provider: SerializerProvider, value: BitSet): Boolean = value.isEmpty
 }
 
+/*
 class MutableBitSetDeserializer extends StdDeserializer[mutable.BitSet](classOf[mutable.BitSet]) {
   override def deserialize(p: JsonParser, ctxt: DeserializationContext): mutable.BitSet =
     if (p.getCurrentToken != START_ARRAY) throw new ParseException(p, "expected '[' or null")
@@ -80,6 +85,7 @@ class MutableBitSetDeserializer extends StdDeserializer[mutable.BitSet](classOf[
 
   override def getNullValue(ctxt: DeserializationContext): mutable.BitSet = new mutable.BitSet
 }
+*/
 
 class MutableBitSetSerializer extends StdSerializer[mutable.BitSet](classOf[mutable.BitSet]) {
   override def serialize(value: mutable.BitSet, gen: JsonGenerator, provider: SerializerProvider): Unit = {
@@ -106,23 +112,6 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
   }
 
   override def isEmpty(provider: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
-}
-
-class CustomMapDeserializer extends
-    StdDeserializer[Map[Int, HashMap[Long, Double]]](classOf[Map[Int, HashMap[Long, Double]]]) {
-  override def deserialize(p: JsonParser, ctxt: DeserializationContext): Map[Int, HashMap[Long, Double]] =
-    p.readValueAs(new TypeReference[Map[java.lang.Integer, HashMap[java.lang.Long, Double]]]{})
-
-  override def getNullValue(ctxt: DeserializationContext): Map[Int, HashMap[Long, Double]] = Map.empty
-}
-
-class CustomMutableMapDeserializer extends
-    StdDeserializer[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]](classOf[mutable.Map[Int, mutable.OpenHashMap[Long, Double]]]) {
-  override def deserialize(p: JsonParser, ctxt: DeserializationContext): mutable.Map[Int, mutable.OpenHashMap[Long, Double]] =
-    p.readValueAs(new TypeReference[mutable.Map[java.lang.Integer, mutable.OpenHashMap[java.lang.Long, Double]]]{})
-
-  override def getNullValue(ctxt: DeserializationContext): mutable.Map[Int, mutable.OpenHashMap[Long, Double]] =
-    mutable.Map.empty
 }
 
 class SuitEnumSerializer extends JsonSerializer[SuitEnum] {
