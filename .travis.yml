@@ -4,10 +4,6 @@ matrix:
     - os: linux
       jdk: oraclejdk9
       scala: 2.12.4
-      addons:
-        apt:
-          packages:
-            - oracle-java9-installer # Forces use of newer JDK 9 build
     - os: linux
       jdk: openjdk8
       scala: 2.12.4
