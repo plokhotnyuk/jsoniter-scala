@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
@@ -24,10 +23,7 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-/* FIXME: dsl-json cannot find decoder for class com.github.plokhotnyuk.jsoniter_scala.macros.Primitives
-  @Benchmark
-  def readDslJsonJava(): Primitives = decodeDslJson[Primitives](jsonBytes)
-*/
+
   @Benchmark
   def readJacksonScala(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)
 
@@ -39,10 +35,7 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME: dsl-json throws com.dslplatform.json.SerializationException: Unable to find writer for char
-  @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Primitives](obj).toByteArray
-*/
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

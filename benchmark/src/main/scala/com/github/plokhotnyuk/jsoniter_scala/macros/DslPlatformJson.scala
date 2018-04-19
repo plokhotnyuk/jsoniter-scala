@@ -5,11 +5,11 @@ import com.dslplatform.json._
 import scala.reflect.ClassTag
 
 object DslPlatformJson {
-  private val dslJson = new DslJson[Any]
-  private val tlWriter = new ThreadLocal[JsonWriter] {
+  private[this] val dslJson = new DslJson[Any]
+  private[this] val tlWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter()
   }
-  private val tlReader = new ThreadLocal[JsonReader[_]] {
+  private[this] val tlReader = new ThreadLocal[JsonReader[_]] {
     override def initialValue(): JsonReader[_] = dslJson.newReader()
   }
 
@@ -26,13 +26,6 @@ object DslPlatformJson {
   implicit val (intEncoder, intDecoder) = setupCodecs[Int]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = setupCodecs[MissingReqFields]
   implicit val (stringEncoder, stringDecoder) = setupCodecs[String]
-  implicit val (primitivesEncoder, primitivesDecoder) = setupCodecs[Primitives]
-
-  private def setupCodecs[T](implicit ct: ClassTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) = {
-    val encoder = dslJson.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]
-    val decoder = dslJson.tryFindReader(ct.runtimeClass).asInstanceOf[JsonReader.ReadObject[T]]
-    encoder -> decoder
-  }
 
   def decodeDslJson[T](bytes: Array[Byte])(implicit decoder: JsonReader.ReadObject[T]): T = {
     val reader = tlReader.get().process(bytes, bytes.length)
@@ -45,5 +38,11 @@ object DslPlatformJson {
     writer.reset()
     encoder.write(writer, obj)
     writer.toByteArray
+  }
+
+  private[this] def setupCodecs[T](implicit ct: ClassTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) = {
+    val encoder = dslJson.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]
+    val decoder = dslJson.tryFindReader(ct.runtimeClass).asInstanceOf[JsonReader.ReadObject[T]]
+    encoder -> decoder
   }
 }
