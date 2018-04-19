@@ -14,10 +14,8 @@ object DslPlatformJson {
   }
 
   implicit val (anyRefEncoder, anyRefDecoder) = setupCodecs[AnyRefs]
-  implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = setupCodecs[Array[BigInt]]
   implicit val (arrayOfBooleansEncoder, arrayOfBooleansDecoder) = setupCodecs[Array[Boolean]]
   implicit val (arrayOfBytesEncoder, arrayOfBytesDecoder) = setupCodecs[Array[Byte]]
-  implicit val (arrayOfCharsEncoder, arrayOfCharsDecoder) = setupCodecs[Array[Char]]
   implicit val (arrayOfDoublesEncoder, arrayOfDoublesDecoder) = setupCodecs[Array[Double]]
   implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = setupCodecs[Array[Float]]
   implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = setupCodecs[Array[Int]]
@@ -34,8 +32,6 @@ object DslPlatformJson {
   private def setupCodecs[T](implicit ct: ClassTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) = {
     val encoder = dslJson.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]
     val decoder = dslJson.tryFindReader(ct.runtimeClass).asInstanceOf[JsonReader.ReadObject[T]]
-    //require(encoder != null, s"cannot find encoder for ${ct.runtimeClass}")
-    //require(decoder != null, s"cannot find decoder for ${ct.runtimeClass}")
     encoder -> decoder
   }
 
