@@ -55,6 +55,7 @@ object JsoniterCodecs {
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make[Primitives](CodecMakerConfig())
   implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   implicit val adtCodec: JsonValueCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
+  implicit val geoJSONCodec: JsonValueCodec[GeoJSON] = make[GeoJSON](CodecMakerConfig())
   implicit val googleMapsAPICodec: JsonValueCodec[DistanceMatrix] = make[DistanceMatrix](CodecMakerConfig())
   implicit val twitterAPICodec: JsonValueCodec[Seq[Tweet]] = make[Seq[Tweet]](CodecMakerConfig())
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make[Set[Int]](CodecMakerConfig())

@@ -28,4 +28,27 @@ object CirceEncodersDecoders {
   implicit val zoneOffsetDecoder: Decoder[ZoneOffset] = Decoder.decodeString.emap { str =>
     Either.catchNonFatal(ZoneOffset.of(str)).leftMap(t => "ZoneOffset")
   }
+  // GeoJSON
+  implicit val featureEncoder: Encoder[Feature] = deriveEncoder[Feature]
+  implicit val featureDecoder: Decoder[Feature] = deriveDecoder[Feature]
+  implicit val featureCollectionEncoder: Encoder[FeatureCollection] = deriveEncoder[FeatureCollection]
+  implicit val featureCollectionDecoder: Decoder[FeatureCollection] = deriveDecoder[FeatureCollection]
+  implicit val geoJSONEncoder: Encoder[GeoJSON] = deriveEncoder[GeoJSON]
+  implicit val geoJSONDecoder: Decoder[GeoJSON] = deriveDecoder[GeoJSON]
+  implicit val pointEncoder: Encoder[Point] = deriveEncoder[Point]
+  implicit val pointDecoder: Decoder[Point] = deriveDecoder[Point]
+  implicit val multiPointEncoder: Encoder[MultiPoint] = deriveEncoder[MultiPoint]
+  implicit val multiPointDecoder: Decoder[MultiPoint] = deriveDecoder[MultiPoint]
+  implicit val lineStringEncoder: Encoder[LineString] = deriveEncoder[LineString]
+  implicit val lineStringDecoder: Decoder[LineString] = deriveDecoder[LineString]
+  implicit val multiLineStringEncoder: Encoder[MultiLineString] = deriveEncoder[MultiLineString]
+  implicit val multiLineStringDecoder: Decoder[MultiLineString] = deriveDecoder[MultiLineString]
+  implicit val polygonEncoder: Encoder[Polygon] = deriveEncoder[Polygon]
+  implicit val polygonDecoder: Decoder[Polygon] = deriveDecoder[Polygon]
+  implicit val multiPolygonEncoder: Encoder[MultiPolygon] = deriveEncoder[MultiPolygon]
+  implicit val multiPolygonDecoder: Decoder[MultiPolygon] = deriveDecoder[MultiPolygon]
+  implicit val geometryCollectionEncoder: Encoder[GeometryCollection] = deriveEncoder[GeometryCollection]
+  implicit val geometryCollectionDecoder: Decoder[GeometryCollection] = deriveDecoder[GeometryCollection]
+  implicit val geometryEncoder: Encoder[Geometry] = deriveEncoder[Geometry]
+  implicit val geometryDecoder: Decoder[Geometry] = deriveDecoder[Geometry]
 }
