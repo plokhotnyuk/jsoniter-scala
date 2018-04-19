@@ -27,7 +27,6 @@ object DslPlatformJson {
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = setupCodecs[MissingReqFields]
   implicit val (stringEncoder, stringDecoder) = setupCodecs[String]
   implicit val (primitivesEncoder, primitivesDecoder) = setupCodecs[Primitives]
-  implicit val (twitterAPIEncoder, twitterAPIDecoder) = setupCodecs[Seq[Tweet]]
 
   private def setupCodecs[T](implicit ct: ClassTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) = {
     val encoder = dslJson.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]

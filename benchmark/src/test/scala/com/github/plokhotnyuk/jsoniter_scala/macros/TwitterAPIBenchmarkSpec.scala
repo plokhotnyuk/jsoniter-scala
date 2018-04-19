@@ -6,8 +6,6 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
   "TwitterAPIBenchmark" should {
     "deserialize properly" in {
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: dsl-json cannot find decoder for interface scala.collection.Seq
-      //benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
@@ -15,8 +13,6 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
     "serialize properly" in {
       //FIXME: circe serializes empty collections
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
-      //FIXME: dsl-json serializes empty collections
-      //toString(benchmark.writeDslJsonJava()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJsoniterScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
