@@ -51,7 +51,7 @@ class ArrayOfFloatsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Float]](obj).toByteArray
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Float]](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

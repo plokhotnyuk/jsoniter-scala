@@ -50,7 +50,7 @@ class ArrayOfShortsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Short]](obj).toByteArray
+  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Short]](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

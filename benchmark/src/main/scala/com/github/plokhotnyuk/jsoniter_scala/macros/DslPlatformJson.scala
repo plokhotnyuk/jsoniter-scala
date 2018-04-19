@@ -45,10 +45,10 @@ object DslPlatformJson {
     decoder.read(reader)
   }
 
-  def encodeDslJson[T](obj: T)(implicit encoder: JsonWriter.WriteObject[T]): JsonWriter = {
+  def encodeDslJson[T](obj: T)(implicit encoder: JsonWriter.WriteObject[T]): Array[Byte] = {
     val writer = tlWriter.get()
     writer.reset()
     encoder.write(writer, obj)
-    writer
+    writer.toByteArray
   }
 }
