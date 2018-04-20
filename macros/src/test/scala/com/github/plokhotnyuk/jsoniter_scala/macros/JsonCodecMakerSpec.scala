@@ -24,9 +24,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val primitives = Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f)
   val codecOfPrimitives: JsonValueCodec[Primitives] = make[Primitives](CodecMakerConfig())
 
-  case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.Integer, l: java.lang.Long,
-                             bl: java.lang.Boolean, ch: java.lang.Character, dbl: java.lang.Double, f: java.lang.Float)
-
   case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
 
   val standardTypes = StandardTypes("VVV", 1, 1.1)
@@ -52,8 +49,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
-  case class ValueClassTypes(uid: UserId, oid: OrderId)
-
   case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long],
                      ojl: Option[java.lang.Long])
 
@@ -67,16 +62,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
   val codecOfArrays: JsonValueCodec[Arrays] = make[Arrays](CodecMakerConfig())
-
-  case class MutableTraversables(ml: mutable.MutableList[mutable.SortedSet[String]],
-                                 ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
-                                 as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
-                                 b: mutable.Buffer[mutable.HashSet[Double]],
-                                 lb: mutable.ListBuffer[mutable.TreeSet[Long]],
-                                 is: mutable.IndexedSeq[mutable.ArrayStack[Float]],
-                                 ub: mutable.UnrolledBuffer[mutable.Traversable[Short]],
-                                 ls: mutable.LinearSeq[Byte],
-                                 ra: mutable.ResizableArray[mutable.Seq[Double]])
 
   case class ImmutableTraversables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
                                    is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]],
@@ -95,12 +80,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make[ImmutableMaps](CodecMakerConfig())
 
-  case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])
-
-  case class ImmutableIntLongMaps(im: IntMap[Double], lm: LongMap[String])
-
-  case class BitSets(bs: BitSet, mbs: mutable.BitSet)
-
   case class CamelSnakeKebabCases(camelCase: Int, snake_case: Int, `kebab-case`: Int,
                                   `camel1`: Int, `snake_1`: Int, `kebab-1`: Int)
 
@@ -114,8 +93,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class UTF8KeysAndValues(გასაღები: String)
 
   val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make[UTF8KeysAndValues](CodecMakerConfig())
-
-  case class Operators(`=<>!#%^&|*/\\~+-:$`: Int)
 
   case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
 
@@ -132,23 +109,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     val ignored: String = s"$required-$transient"
   }
 
-  case class NullAndNoneValues(opt: Option[String])
-
-  case class EmptyTraversables(l: List[String], s: Set[Int], ls: List[Set[Int]])
-
-  case class Unknown()
-
-  case class Required(r00: Int, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
-                      r10: Int, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
-                      r20: Int, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
-                      r30: Int, r31: Int, r32: Int, r33: Int, r34: Int, r35: Int, r36: Int, r37: Int, r38: Int, r39: Int,
-                      r40: Int, r41: Int, r42: Int, r43: Int, r44: Int, r45: Int, r46: Int, r47: Int, r48: Int, r49: Int,
-                      r50: Int, r51: Int, r52: Int, r53: Int, r54: Int, r55: Int, r56: Int, r57: Int, r58: Int, r59: Int,
-                      r60: Int, r61: Int, r62: Int, r63: Int, r64: Int, r65: Int, r66: Int, r67: Int, r68: Int, r69: Int,
-                      r70: Int, r71: Int, r72: Int, r73: Int, r74: Int, r75: Int, r76: Int, r77: Int, r78: Int, r79: Int,
-                      r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
-                      r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
-
   sealed trait AdtBase extends Product with Serializable
 
   sealed abstract class Inner extends AdtBase {
@@ -163,43 +123,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case object D extends AdtBase
 
-  sealed trait TimeZone
-
-  case object `US/Alaska` extends TimeZone
-
-  case object `Europe/Paris` extends TimeZone
-
-  sealed abstract class База
-
-  case class А(б: Б) extends База
-
-  case class Б(с: String) extends База
-
   val codecOfADTList: JsonValueCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
-
-  case class JavaTimeTypes(d: Duration, i: Instant, ld: LocalDate,
-                           ldt: LocalDateTime, lt: LocalTime, md: MonthDay,
-                           odt: OffsetDateTime, ot: OffsetTime, p: Period,
-                           y: Year, ym: YearMonth, zdt: ZonedDateTime,
-                           zi: ZoneId, zo: ZoneOffset)
-
-  type I = Int
-  type S = String
-  type L = List[I]
-  type M = Map[I, S]
-
-  case class TypeAliases(i: I, s: S, l: L, m: M)
-
-  case class PrivatePrimaryConstructor private(i: Int) {
-    def this(s: String) = this(s.toInt)
-  }
-
-  object PrivatePrimaryConstructor {
-    implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
-      JsonCodecMaker.make[PrivatePrimaryConstructor](CodecMakerConfig())
-
-    def apply(s: String) = new PrivatePrimaryConstructor(s)
-  }
 
   "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize case classes with primitives" in {
@@ -242,6 +166,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |+----------+-------------------------------------------------+------------------+""".stripMargin))
     }
     "serialize and deserialize case classes with boxed primitives" in {
+      case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.Integer, l: java.lang.Long,
+                                 bl: java.lang.Boolean, ch: java.lang.Character, dbl: java.lang.Double, f: java.lang.Float)
+
       verifySerDeser(make[BoxedPrimitives](CodecMakerConfig()),
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""".getBytes("UTF-8"))
@@ -468,6 +395,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"1":0}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with value classes" in {
+      case class ValueClassTypes(uid: UserId, oid: OrderId)
+
       verifySerDeser(make[ValueClassTypes](CodecMakerConfig()),
         ValueClassTypes(UserId("123abc"), OrderId(123123)),
         """{"uid":"123abc","oid":123123}""".getBytes("UTF-8"))
@@ -570,6 +499,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
     "serialize and deserialize case classes with mutable traversables" in {
+      case class MutableTraversables(ml: mutable.MutableList[mutable.SortedSet[String]],
+                                     ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
+                                     as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
+                                     b: mutable.Buffer[mutable.HashSet[Double]],
+                                     lb: mutable.ListBuffer[mutable.TreeSet[Long]],
+                                     is: mutable.IndexedSeq[mutable.ArrayStack[Float]],
+                                     ub: mutable.UnrolledBuffer[mutable.Traversable[Short]],
+                                     ls: mutable.LinearSeq[Byte],
+                                     ra: mutable.ResizableArray[mutable.Seq[Double]])
+
       verifySerDeser(make[MutableTraversables](CodecMakerConfig()),
         MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
           mutable.ArrayBuffer(mutable.Set[BigInt](4), mutable.Set.empty[BigInt]),
@@ -648,16 +587,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal number, offset: 0x0000000f"))
     }
     "serialize and deserialize case classes with mutable long maps" in {
+      case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])
+
       verifySerDeser(make[MutableLongMaps](CodecMakerConfig()),
         MutableLongMaps(mutable.LongMap(1L -> 1.1), mutable.LongMap(3L -> "33")),
         """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable int and long maps" in {
+      case class ImmutableIntLongMaps(im: IntMap[Double], lm: LongMap[String])
+
       verifySerDeser(make[ImmutableIntLongMaps](CodecMakerConfig()),
         ImmutableIntLongMaps(IntMap(1 -> 1.1, 2 -> 2.2), LongMap(3L -> "33")),
         """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with mutable & immutable bitsets" in {
+      case class BitSets(bs: BitSet, mbs: mutable.BitSet)
+
       verifySerDeser(make[BitSets](CodecMakerConfig()), BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6)),
         """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes("UTF-8"))
     }
@@ -829,6 +774,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         WriterConfig(escapeUnicode = true))
     }
     "serialize and deserialize case classes with Scala operators in field names" in {
+      case class Operators(`=<>!#%^&|*/\\~+-:$`: Int)
+
       verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""".getBytes("UTF-8"))
     }
     "don't serialize default values of case classes that defined for fields" in {
@@ -844,21 +791,41 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"required":"VVV"}""".getBytes("UTF-8"))
     }
     "don't serialize case class fields with 'None' values" in {
+      case class NullAndNoneValues(opt: Option[String])
+
       verifySer(make[NullAndNoneValues](CodecMakerConfig()), NullAndNoneValues(None), """{}""".getBytes("UTF-8"))
       verifySer(make[List[NullAndNoneValues]](CodecMakerConfig()), List(NullAndNoneValues(None)), """[{}]""".getBytes("UTF-8"))
     }
     "don't serialize case class fields with empty collections" in {
+      case class EmptyTraversables(l: List[String], s: Set[Int], ls: List[Set[Int]])
+
       verifySer(make[EmptyTraversables](CodecMakerConfig()), EmptyTraversables(List(), Set(), List()), """{}""".getBytes("UTF-8"))
     }
-    "throw parse exception in case of unknown case class fields" in {
-      verifyDeser(make[Unknown](CodecMakerConfig()), Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes("UTF-8"))
+    "parse with skipping of unknown case class fields" in {
+      case class SkipUnknown()
+
+      verifyDeser(make[SkipUnknown](CodecMakerConfig()), SkipUnknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes("UTF-8"))
     }
     "throw parse exception for unknown case class fields if skipping of them wasn't allowed in materialize call" in {
+      case class DetectUnknown()
+
       assert(intercept[JsonParseException] {
-        verifyDeser(make[Unknown](CodecMakerConfig(skipUnexpectedFields = false)), Unknown(), """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes("UTF-8"))
+        verifyDeser(make[DetectUnknown](CodecMakerConfig(skipUnexpectedFields = false)), DetectUnknown(),
+          """{"x":1,"y":[1,2],"z":{"a",3}}""".getBytes("UTF-8"))
       }.getMessage.contains("unexpected field \"x\", offset: 0x00000004"))
     }
     "throw parse exception in case of missing required case class fields detected during deserialization" in {
+      case class Required(r00: Int, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
+                          r10: Int, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
+                          r20: Int, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
+                          r30: Int, r31: Int, r32: Int, r33: Int, r34: Int, r35: Int, r36: Int, r37: Int, r38: Int, r39: Int,
+                          r40: Int, r41: Int, r42: Int, r43: Int, r44: Int, r45: Int, r46: Int, r47: Int, r48: Int, r49: Int,
+                          r50: Int, r51: Int, r52: Int, r53: Int, r54: Int, r55: Int, r56: Int, r57: Int, r58: Int, r59: Int,
+                          r60: Int, r61: Int, r62: Int, r63: Int, r64: Int, r65: Int, r66: Int, r67: Int, r68: Int, r69: Int,
+                          r70: Int, r71: Int, r72: Int, r73: Int, r74: Int, r75: Int, r76: Int, r77: Int, r78: Int, r79: Int,
+                          r80: Int, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
+                          r90: Int, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
+
       assert(intercept[JsonParseException] {
         val obj = Required(
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
@@ -899,11 +866,23 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         s"""[{"t":"C","a":2,"b":"WWW"},{"t":"C","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
+      sealed abstract class База
+
+      case class А(б: Б) extends База
+
+      case class Б(с: String) extends База
+
       verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип", skipUnexpectedFields = false)),
         List(А(Б("x")), Б("x")),
         """[{"тип":"А","б":{"с":"x"}},{"тип":"Б","с":"x"}]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs with Scala operators in names" in {
+      sealed trait TimeZone
+
+      case object `US/Alaska` extends TimeZone
+
+      case object `Europe/Paris` extends TimeZone
+
       verifySerDeser(make[List[TimeZone]](CodecMakerConfig(discriminatorFieldName = "zoneId")),
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""".getBytes("UTF-8"))
@@ -1010,6 +989,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(implicitRootCodec, 1, "1".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with Java time types" in {
+      case class JavaTimeTypes(d: Duration, i: Instant, ld: LocalDate,
+                               ldt: LocalDateTime, lt: LocalTime, md: MonthDay,
+                               odt: OffsetDateTime, ot: OffsetTime, p: Period,
+                               y: Year, ym: YearMonth, zdt: ZonedDateTime,
+                               zi: ZoneId, zo: ZoneOffset)
+
       verifySerDeser(make[JavaTimeTypes](CodecMakerConfig()),
         obj = JavaTimeTypes(
           d = Duration.parse("PT10H30M"),
@@ -1099,16 +1084,40 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfYear, Year.of(2008), "\"2008\"".getBytes("UTF-8"))
     }
     "serialize and deserialize case class with aliased typed methods" in {
+      type I = Int
+      type S = String
+      type L = List[I]
+      type M = Map[I, S]
+
+      case class TypeAliases(i: I, s: S, l: L, m: M)
+
       verifySerDeser(make[TypeAliases](CodecMakerConfig()), TypeAliases(1, "VVV", List(1, 2, 3), Map(1 -> "VVV")),
         """{"i":1,"s":"VVV","l":[1,2,3],"m":{"1":"VVV"}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize collection with aliased type arguments" in {
+      type I = Int
+      type S = String
+
       verifySerDeser(make[Map[I, S]](CodecMakerConfig()), Map(1 -> "VVV"), "{\"1\":\"VVV\"}".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level aliased types" in {
+      type I = Int
+      type L = List[I]
+
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
+      case class PrivatePrimaryConstructor private(i: Int) {
+        def this(s: String) = this(s.toInt)
+      }
+
+      object PrivatePrimaryConstructor {
+        implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
+          JsonCodecMaker.make[PrivatePrimaryConstructor](CodecMakerConfig())
+
+        def apply(s: String) = new PrivatePrimaryConstructor(s)
+      }
+
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}".getBytes("UTF-8"))
     }
     "don't generate codecs for unsupported classes" in {
@@ -1118,15 +1127,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
       })
     }
-    "don't generate codecs for too deeply defined case classes" in {
+    "don't generate codecs for too deeply defined case classes with default values" in {
       assert(intercept[TestFailedException](assertCompiles {
         """val codecOfFoo = () => {
-          |  case class Foo(i: Int)
+          |  case class Foo(i: Int = 1)
           |  JsonCodecMaker.make[Foo](CodecMakerConfig())
           |}
           |codecOfFoo()""".stripMargin
       }).getMessage.contains {
-        """Can't find companion object for 'Foo'. This can happen when it's nested too deeply. Please consider defining
+        """Can't find companion object with synthetic methods for default values of the primary constructor of 'Foo'.
+          |This can happen when it's nested too deeply. Please consider defining
           |it as a top-level object or directly inside of another class or object.""".stripMargin.replace('\n', ' ')
       })
     }

@@ -348,8 +348,9 @@ object JsonCodecMaker {
       def getModule(tpe: Type): ModuleSymbol = {
         val comp = tpe.typeSymbol.companion
         if (!comp.isModule) {
-          fail(s"Can't find companion object for '$tpe'. This can happen when it's nested too deeply. " +
-              "Please consider defining it as a top-level object or directly inside of another class or object.")
+          fail("Can't find companion object with synthetic methods for default values of the primary constructor of " +
+            s"'$tpe'. This can happen when it's nested too deeply. Please consider defining it as a top-level object " +
+            "or directly inside of another class or object.")
         }
         comp.asModule //FIXME: module cannot be resolved properly for deeply nested inner case classes
       }
@@ -366,7 +367,7 @@ object JsonCodecMaker {
 
       def getDefaults(tpe: Type): Map[String, Tree] = {
         val params = getParams(tpe)
-        val module = getModule(tpe)
+        lazy val module = getModule(tpe) // don't lookup for the companion when there are no default values for constructor params
         params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }(breakOut)
