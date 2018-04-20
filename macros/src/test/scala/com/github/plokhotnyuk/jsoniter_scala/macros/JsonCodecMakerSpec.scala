@@ -125,17 +125,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfADTList: JsonValueCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
-  case class PrivatePrimaryConstructor private(i: Int) {
-    def this(s: String) = this(s.toInt)
-  }
-
-  object PrivatePrimaryConstructor {
-    implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
-      JsonCodecMaker.make[PrivatePrimaryConstructor](CodecMakerConfig())
-
-    def apply(s: String) = new PrivatePrimaryConstructor(s)
-  }
-
   "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, primitives,
@@ -1118,6 +1107,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
+      object PrivatePrimaryConstructor {
+        implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
+          JsonCodecMaker.make[PrivatePrimaryConstructor](CodecMakerConfig())
+
+        def apply(s: String) = new PrivatePrimaryConstructor(s)
+      }
+
+      case class PrivatePrimaryConstructor private(i: Int) {
+        def this(s: String) = this(s.toInt)
+      }
+
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}".getBytes("UTF-8"))
     }
     "don't generate codecs for unsupported classes" in {

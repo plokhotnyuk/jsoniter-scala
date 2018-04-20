@@ -134,7 +134,7 @@ For more use cases and examples, please, check out tests:
 
 ## Known issues
 
-1. Scalac has a bug and affects case classes which have 2 fields where name of one is a prefix for the another name that 
+1. Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that 
 contains a character that should be encoded immediately after the prefix (like `o` and `o-o`). You will got compilation 
 or runtime error, depending of version of the compiler, see details here: https://github.com/scala/bug/issues/10825
 W/a are: move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is affected by 
