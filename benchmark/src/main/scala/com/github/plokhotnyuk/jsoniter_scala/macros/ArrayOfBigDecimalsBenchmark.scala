@@ -27,7 +27,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
       BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), i % 37)
     }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
     jsonString = sourceObj.mkString("[", ",", "]")
-    jsonBytes = jsonString.getBytes
+    jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 

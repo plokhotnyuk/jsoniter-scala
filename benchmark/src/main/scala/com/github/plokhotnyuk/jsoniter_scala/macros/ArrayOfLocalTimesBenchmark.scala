@@ -28,7 +28,7 @@ class ArrayOfLocalTimesBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = (1 to size).map(i => LocalTime.ofSecondOfDay((Math.abs(i * 1498724053) % 86000) | 1))(breakOut)
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
-    jsonBytes = jsonString.getBytes
+    jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 

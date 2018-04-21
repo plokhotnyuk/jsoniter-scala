@@ -19,7 +19,7 @@ case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
 class AnyRefsBenchmark extends CommonParams {
   val obj: AnyRefs = AnyRefs("s", 1, Some("os"))
   val jsonString: String = """{"s":"s","bd":1,"os":"os"}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

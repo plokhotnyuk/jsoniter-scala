@@ -18,7 +18,7 @@ class ExtractFieldsBenchmark extends CommonParams {
   val obj: ExtractFields = ExtractFields("s", 1L)
   val jsonString: String =
     """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"l":1,"i3":{"1":1.1,"2":2.2}}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

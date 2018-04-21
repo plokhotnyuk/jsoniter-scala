@@ -31,7 +31,7 @@ class ArrayOfOffsetDateTimesBenchmark extends CommonParams {
         ZoneOffset.ofHours(i % 17))
     }(breakOut)
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
-    jsonBytes = jsonString.getBytes
+    jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 

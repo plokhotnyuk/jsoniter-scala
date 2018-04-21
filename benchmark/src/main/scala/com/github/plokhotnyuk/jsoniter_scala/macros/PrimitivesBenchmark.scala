@@ -19,7 +19,7 @@ class PrimitivesBenchmark extends CommonParams {
   //FIXME 2.5 is for hiding of Play-JSON bug in serialization of floats: 2.2 -> 2.200000047683716
   val obj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
   val jsonString: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

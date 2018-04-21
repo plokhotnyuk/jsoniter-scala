@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-//import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
@@ -20,7 +20,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
     (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 1) == 0)
   }(breakOut)
   val jsonString: String = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
 /* FIXME: Circe doesn't support IntMap
   @Benchmark

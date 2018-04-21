@@ -27,7 +27,7 @@ class ArrayOfLongsBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = (1 to size).map(i => (i * 372036854775807L) / Math.pow(10, i % 18).toLong)(breakOut)
     jsonString = obj.mkString("[", ",", "]")
-    jsonBytes = jsonString.getBytes
+    jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 

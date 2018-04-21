@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-//import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
@@ -30,7 +30,7 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
       ((i * 372036854775807L) / Math.pow(10, i % 18).toLong, ((i * 1498724053) & 1) == 0)
     }(breakOut)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
-    jsonBytes = jsonString.getBytes
+    jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 

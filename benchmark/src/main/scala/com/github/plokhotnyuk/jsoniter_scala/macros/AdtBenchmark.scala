@@ -31,7 +31,7 @@ class AdtBenchmark extends CommonParams {
   val obj: AdtBase = C(A(1), B("VVV"))
   val jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
   val jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): AdtBase = decode[AdtBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

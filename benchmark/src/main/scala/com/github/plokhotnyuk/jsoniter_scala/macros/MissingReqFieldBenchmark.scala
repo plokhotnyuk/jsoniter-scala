@@ -20,7 +20,7 @@ case class MissingReqFields(
 
 class MissingReqFieldBenchmark extends CommonParams {
   val jsonString: String = """{}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): String =

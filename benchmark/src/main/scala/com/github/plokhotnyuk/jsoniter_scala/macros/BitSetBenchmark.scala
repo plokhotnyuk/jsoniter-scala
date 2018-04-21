@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -16,7 +18,7 @@ import scala.collection.immutable.BitSet
 class BitSetBenchmark extends CommonParams {
   val obj: BitSet = BitSet(0 to 127: _*)
   val jsonString: String = obj.mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes
+  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
