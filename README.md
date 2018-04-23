@@ -11,7 +11,7 @@ to get maximum performance of JSON parsing and serialization.
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
 performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using different JDK versions on the following 
 environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
-Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12, 9.0.4+11 and "10" 2018-03-20) 
+Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and "10" 2018-03-20) 
 
 ## Acknowledgments
 
