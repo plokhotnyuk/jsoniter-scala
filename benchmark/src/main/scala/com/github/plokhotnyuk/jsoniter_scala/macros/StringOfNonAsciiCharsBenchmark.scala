@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.lang.Character._
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -7,18 +8,45 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import org.openjdk.jmh.annotations.{Param, Setup}
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class StringOfNonAsciiCharsBenchmark extends CommonParams {
-  val obj: String =
-    "倒排索引  维基百科，自由的百科全书    倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。"
-  val jsonString: String =
-    """"倒排索引  维基百科，自由的百科全书    倒排索引（英语：Inverted index），也常被称为反向索引、置入档案或反向档案，是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射。它是文档检索系统中最常用的数据结构。""""
-  val jsonBytes: Array[Byte] = jsonString.getBytes("UTF-8")
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: String = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = {
+      val cs = new Array[Char](size)
+      var i = 0
+      var j = 1
+      while (i < cs.length) {
+        cs(i) = {
+          var ch: Char = 0
+          do {
+            ch = (j * 1498724053).toChar
+            j += 1
+          } while (ch < 128 || isSurrogate(ch) ||
+            ch == 0xFFFE || ch == 0xFFFF) // FIXME: required for dsl-json, remove after fix of https://github.com/ngs-doo/dsl-json/issues/51
+          ch
+        }
+        i += 1
+      }
+      new String(cs)
+    }
+    jsonString = "\"" + obj + "\""
+    jsonBytes = jsonString.getBytes(UTF_8)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

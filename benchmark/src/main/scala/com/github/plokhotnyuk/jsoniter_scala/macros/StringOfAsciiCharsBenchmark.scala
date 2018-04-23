@@ -7,18 +7,44 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import org.openjdk.jmh.annotations.{Param, Setup}
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class StringOfAsciiCharsBenchmark extends CommonParams {
-  val obj: String =
-    "In computer science, an inverted index is an index data structure storing a mapping from content to its locations in a document."
-  val jsonString: String =
-    """"In computer science, an inverted index is an index data structure storing a mapping from content to its locations in a document.""""
-  val jsonBytes: Array[Byte] = jsonString.getBytes("UTF-8")
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: String = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  setup()
+
+  @Setup
+  def setup(): Unit = {
+    obj = {
+      val cs = new Array[Char](size)
+      var i = 0
+      var j = 1
+      while (i < cs.length) {
+        cs(i) = {
+          var ch: Char = 0
+          do {
+            ch = ((j * 1498724053) % 128).toChar
+            j += 1
+          } while (!JsonWriter.isNonEscapedAscii(ch))
+          ch
+        }
+        i += 1
+      }
+      new String(cs)
+    }
+    jsonString = "\"" + obj + "\""
+    jsonBytes = jsonString.getBytes(UTF_8)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
   @Benchmark
   def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
