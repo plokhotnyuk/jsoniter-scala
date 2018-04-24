@@ -66,14 +66,16 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Duration])))
     }
     "write Duration as a string representation according to ISO-8601 format" in {
-      def check(x: Duration): Unit = {
-        val s = x.toString
+      def check(x: Duration, s: String): Unit = {
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
-      check(Duration.ZERO)
-      forAll(genDuration, minSuccessful(100000))(check)
+      check(Duration.ZERO, "PT0S")
+      check(Duration.ofSeconds(-60, -1), "PT-1M-0.000000001S")
+      check(Duration.ofSeconds(-60, 1), "PT-59.999999999S")
+      check(Duration.ofSeconds(-60, 20000000000L), "PT-40S")
+      forAll(genDuration, minSuccessful(100000))(x => check(x, x.toString))
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
