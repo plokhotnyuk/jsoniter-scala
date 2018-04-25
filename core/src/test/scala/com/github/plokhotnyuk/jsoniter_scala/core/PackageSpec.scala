@@ -92,7 +92,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       }(codec)
       users shouldBe Seq(user)
     }
-    "throw an exception in case of the provided params are invalid" in {
+    "throw an exception in case of the provided params are null" in {
       val skip = (_: User) => true
       val npe = null.asInstanceOf[User => Boolean]
       intercept[NullPointerException](scanJsonValuesFromStream(null.asInstanceOf[InputStream])(skip)(codec))
@@ -119,7 +119,29 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       }(codec)
       users shouldBe Seq(user)
     }
-    "throw an exception in case of the provided params are invalid" in {
+    "scan null value from the provided input stream" in {
+      var users: Seq[User] = Seq.empty
+      scanJsonArrayFromStream(new ByteArrayInputStream("null".getBytes("UTF-8"))) { (u: User) =>
+        users = users :+ u
+        true
+      }(codec)
+      users shouldBe Seq()
+    }
+    "throw a parse exception in case of JSON array is not closed properly" in {
+      assert(intercept[JsonParseException] {
+        scanJsonArrayFromStream(new ByteArrayInputStream("""[{"name":"x"}y""".getBytes("UTF-8"))) { (_: User) =>
+          true
+        }(codec)
+      }.getMessage.contains("expected ']' or ',', offset: 0x0000000d"))
+    }
+    "throw a parse exception in case of input isn't JSON array or null" in {
+      assert(intercept[JsonParseException] {
+        scanJsonArrayFromStream(new ByteArrayInputStream("""{}""".getBytes("UTF-8"))) { (_: User) =>
+          true
+        }(codec)
+      }.getMessage.contains("expected '[' or null, offset: 0x00000000"))
+    }
+    "throw an exception in case of the provided params are null" in {
       val skip = (_: User) => true
       val npe = null.asInstanceOf[User => Boolean]
       intercept[NullPointerException](scanJsonArrayFromStream(null.asInstanceOf[InputStream])(skip)(codec))
@@ -136,7 +158,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       writeToStream(user, out2, WriterConfig(indentionStep = 2))(codec)
       out2.toString("UTF-8") shouldBe toString(prettyJson)
     }
-    "throw i/o exception in case of the provided params are invalid" in {
+    "throw i/o exception in case of the provided params are null" in {
       intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream())(null))
       intercept[NullPointerException](writeToStream(user, null.asInstanceOf[OutputStream])(codec))
       intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream(), null)(codec))
@@ -147,7 +169,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       toString(writeToArray(user)(codec)) shouldBe toString(compactJson)
       toString(writeToArray(user, WriterConfig(indentionStep = 2))(codec)) shouldBe toString(prettyJson)
     }
-    "throw i/o exception in case of the provided params are invalid" in {
+    "throw i/o exception in case of the provided params are null" in {
       intercept[NullPointerException](writeToArray(user)(null))
       intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
     }
@@ -167,7 +189,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       assert(intercept[ArrayIndexOutOfBoundsException](writeToPreallocatedArray(user, buf, 100)(codec))
         .getMessage.contains("`buf` length exceeded"))
     }
-    "throw i/o exception in case of the provided params are invalid" in {
+    "throw i/o exception in case of the provided params are invalid or null" in {
       intercept[NullPointerException](writeToPreallocatedArray(user, buf, 0)(null))
       intercept[NullPointerException](writeToPreallocatedArray(user, null, 50)(codec))
       intercept[NullPointerException](writeToPreallocatedArray(user, buf, 0, null)(codec))
