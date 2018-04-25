@@ -137,6 +137,62 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
   }
+  "JsonReader.readNullOrError" should {
+    "parse null value" in {
+      val r = reader("null".getBytes("UTF-8"))
+      r.isNextToken('n') shouldBe true
+      r.readNullOrError("default", "error") shouldBe "default"
+    }
+    "throw parse exception in case of invalid null value" in {
+      assert(intercept[JsonParseException] {
+        val r = reader("nxll".getBytes("UTF-8"))
+        r.isNextToken('n') shouldBe true
+        r.readNullOrError("default", "expected null") shouldBe "default"
+      }.getMessage.contains("expected null, offset: 0x00000001"))
+      assert(intercept[JsonParseException] {
+        val r = reader("nuxl".getBytes("UTF-8"))
+        r.isNextToken('n') shouldBe true
+        r.readNullOrError("default", "expected null") shouldBe "default"
+      }.getMessage.contains("expected null, offset: 0x00000002"))
+      assert(intercept[JsonParseException] {
+        val r = reader("nulx".getBytes("UTF-8"))
+        r.isNextToken('n') shouldBe true
+        r.readNullOrError("default", "expected null") shouldBe "default"
+      }.getMessage.contains("expected null, offset: 0x00000003"))
+    }
+    "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
+      assert(intercept[ArrayIndexOutOfBoundsException](reader("null".getBytes("UTF-8")).readNullOrError("default", "error"))
+        .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
+    }
+  }
+  "JsonReader.readNullOrTokenError" should {
+    "parse null value" in {
+      val r = reader("null".getBytes("UTF-8"))
+      r.isNextToken('n') shouldBe true
+      r.readNullOrTokenError("default", 'x') shouldBe "default"
+    }
+    "throw parse exception in case of invalid null value" in {
+      assert(intercept[JsonParseException] {
+        val r = reader("nxll".getBytes("UTF-8"))
+        r.isNextToken('n') shouldBe true
+        r.readNullOrTokenError("default", 'x') shouldBe "default"
+      }.getMessage.contains("expected 'x' or null, offset: 0x00000001"))
+      assert(intercept[JsonParseException] {
+        val r = reader("nuxl".getBytes("UTF-8"))
+        r.isNextToken('n') shouldBe true
+        r.readNullOrTokenError("default", 'x') shouldBe "default"
+      }.getMessage.contains("expected 'x' or null, offset: 0x00000002"))
+      assert(intercept[JsonParseException] {
+        val r = reader("nulx".getBytes("UTF-8"))
+        r.isNextToken('n') shouldBe true
+        r.readNullOrTokenError("default", 'x') shouldBe "default"
+      }.getMessage.contains("expected 'x' or null, offset: 0x00000003"))
+    }
+    "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
+      assert(intercept[ArrayIndexOutOfBoundsException](reader("null".getBytes("UTF-8")).readNullOrError("default", "error"))
+        .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
+    }
+  }
   "JsonReader.rollbackToken" should {
     "rollback of reading last byte of input" in {
       val r = reader("""{"x":1}""".getBytes("UTF-8"))
@@ -147,9 +203,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       r.rollbackToken()
       assert(r.nextToken() == '"')
     }
-    "throw array index out of bounds in case of missing preceding call of 'nextToken()'" in {
+    "throw array index out of bounds exception in case of missing preceding call of 'nextToken()' or 'isNextToken()'" in {
       assert(intercept[ArrayIndexOutOfBoundsException](reader("{}".getBytes("UTF-8")).rollbackToken())
-        .getMessage.contains("expected preceding call of 'nextToken()'"))
+        .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
   "JsonReader.readBoolean, JsonReader.readStringAsBoolean and JsonReader.readKeyAsBoolean" should {
