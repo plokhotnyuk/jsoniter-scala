@@ -23,7 +23,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
-    "throw an exception in case of the provided params are invalid" in {
+    "throw an exception in case of the provided params are null" in {
       intercept[NullPointerException](readFromStream(new ByteArrayInputStream(compactJson))(null))
       intercept[NullPointerException](readFromStream(null)(codec))
     }
@@ -43,7 +43,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
-    "throw an exception in case of the provided params are invalid" in {
+    "throw an exception in case of the provided params are null" in {
       intercept[NullPointerException](readFromArray(compactJson)(null))
       intercept[NullPointerException](readFromArray(null.asInstanceOf[Array[Byte]])(codec))
     }
@@ -63,7 +63,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
-    "throw an exception in case of the provided params are invalid" in {
+    "throw an exception in case of the provided params are invalid or null" in {
       intercept[NullPointerException](readFromSubArray(httpMessage, 66, httpMessage.length)(null))
       intercept[NullPointerException](readFromSubArray(null.asInstanceOf[Array[Byte]], 0, 50)(codec))
       intercept[NullPointerException](readFromSubArray(httpMessage, 66, httpMessage.length, null)(codec))

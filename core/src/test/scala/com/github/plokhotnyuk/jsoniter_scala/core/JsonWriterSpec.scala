@@ -10,6 +10,19 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
+  "WriterConfig.<init>" should {
+    "have handy defaults" in {
+      WriterConfig().indentionStep shouldBe 0
+      WriterConfig().escapeUnicode shouldBe false
+      WriterConfig().preferredBufSize shouldBe 16384
+    }
+    "throw exception in case for unsupported values of params" in {
+      assert(intercept[IllegalArgumentException](WriterConfig(indentionStep = -1))
+        .getMessage.contains("'indentionStep' should be not less than 0"))
+      assert(intercept[IllegalArgumentException](WriterConfig(preferredBufSize = -1))
+        .getMessage.contains("'preferredBufSize' should be not less than 0"))
+    }
+  }
   "JsonWriter.isNonEscapedAscii" should {
     "return false for all escaped ASCII or non-ASCII chars" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>

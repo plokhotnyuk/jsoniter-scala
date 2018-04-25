@@ -10,6 +10,20 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
+  "ReaderConfig.<init>" should {
+    "have handy defaults" in {
+      ReaderConfig().throwParseExceptionWithStackTrace shouldBe true
+      ReaderConfig().appendHexDumpToParseException shouldBe true
+      ReaderConfig().preferredBufSize shouldBe 16384
+      ReaderConfig().preferredCharBufSize shouldBe 2048
+    }
+    "throw exception in case for unsupported values of params" in {
+      assert(intercept[IllegalArgumentException](ReaderConfig(preferredBufSize = 11))
+        .getMessage.contains("'preferredBufSize' should be not less than 12"))
+      assert(intercept[IllegalArgumentException](ReaderConfig(preferredCharBufSize = -1))
+        .getMessage.contains("'preferredCharBufSize' should be not less than 0"))
+    }
+  }
   "JsonReader.skip" should {
     "skip string values" in {
       validateSkip("\"\"")
