@@ -572,18 +572,27 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
           val readVal = if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
-          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty",
+          genReadArray(q"var x = new Array[Long](2)",
             q"""val v = $readVal
                 if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
-                x.add(v)""")
+                val i = v >>> 6
+                if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
+                x(i) |= 1L << (v & 63)""",
+            q"$comp.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
           val readVal = if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
-          genReadArray(q"val x = $comp.newBuilder",
+          genReadArray(q"var x = new Array[Long](2); var mi = 0",
             q"""val v = $readVal
                 if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
-                x += v""",
-            q"x.result()")
+                val i = v >>> 6
+                if (i > mi) {
+                  mi = i
+                  if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
+                }
+                x(i) |= 1L << (v & 63)""",
+            q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
+                $comp.fromBitMaskNoCopy(x)""")
         } else if (tpe <:< typeOf[mutable.Traversable[_] with Growable[_]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
