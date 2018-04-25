@@ -304,13 +304,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readDuration(default) shouldBe default
     }
     "parse Duration from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
-      def check(x: Duration, s: String): Unit = {
+      def check(s: String, x: Duration): Unit = {
         readDuration(s) shouldBe x
         readKeyAsDuration(s) shouldBe x
       }
 
-      check(Duration.ZERO, "PT0S")
-      forAll(genDuration, minSuccessful(100000))(x => check(x, x.toString))
+      check("P0D", Duration.ZERO)
+      check("PT0S", Duration.ZERO)
+      forAll(genDuration, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genDuration, minSuccessful(100000))((x: Duration) => check("-" + x.toString, x.negated()))
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -326,6 +328,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P-XD\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003")
       checkError("\"P1XD\"".getBytes("UTF-8"), "expected 'D' or digit, offset: 0x00000003")
       checkError("\"P106751991167301D\"".getBytes("UTF-8"), "llegal duration, offset: 0x00000011")
+      checkError("\"P1067519911673000D\"".getBytes("UTF-8"), "llegal duration, offset: 0x00000011")
       checkError("\"P-106751991167301D\"".getBytes("UTF-8"), "llegal duration, offset: 0x00000012")
       checkError("\"P1DX1H\"".getBytes("UTF-8"), "expected 'T' or '\"', offset: 0x00000004")
       checkError("\"P1DTXH\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
@@ -336,6 +339,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P0DT153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000017")
       checkError("\"P0DT-153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
       checkError("\"P0DT9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
+      checkError("\"P0DT92233720368547758000S\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
       checkError("\"P0DT-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
       checkError("\"P1DT1HXM\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000007")
       checkError("\"P1DT1H-XM\"".getBytes("UTF-8"), "expected digit, offset: 0x00000008")
@@ -343,6 +347,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P0DT0H153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000019")
       checkError("\"P0DT0H-153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
       checkError("\"P0DT0H9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
+      checkError("\"P0DT0H92233720368547758000S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
       checkError("\"P0DT0H-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
       checkError("\"P1DT1H1MXS\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000009")
       checkError("\"P1DT1H1M-XS\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
@@ -351,6 +356,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P1DT1H1M0.012345678XS\"".getBytes("UTF-8"), "expected 'S', offset: 0x00000014")
       checkError("\"P1DT1H1M0.0123456789S\"".getBytes("UTF-8"), "expected 'S', offset: 0x00000014")
       checkError("\"P0DT0H0M9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
+      checkError("\"P0DT0H0M92233720368547758080S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
+      checkError("\"P0DT0H0M-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
       checkError("\"P106751991167300DT24H\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000017")
       checkError("\"P0DT2562047788015215H60M\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
       checkError("\"P0DT0H153722867280912930M60S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001e")

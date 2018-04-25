@@ -1159,7 +1159,6 @@ final class JsonReader private[jsoniter_scala](
           if (b >= '0' && b <= '9') {
             if (x < -10675199116730L) durationError(pos)
             x = x * 10 + ('0' - b)
-            if (x > 0) durationError(pos)
           } else if (b == 'D') {
             if (x < -106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
             daysAsSecs = (if (neg ^ xNeg) x else -x) * 86400
@@ -1262,11 +1261,11 @@ final class JsonReader private[jsoniter_scala](
             nanoDigits += 1
             nanos += nanoMultiplier(nanoDigits) * (b - '0')
             if (nanoDigits == 9) {
-              if (xNeg) nanos = -nanos
+              if (neg ^ xNeg) nanos = -nanos
               state = 16
             }
           } else if (b == 'S') {
-            if (xNeg) nanos = -nanos
+            if (neg ^ xNeg) nanos = -nanos
             state = 17
           } else tokenOrDigitError('S', pos)
         case 16 => // 'S'
