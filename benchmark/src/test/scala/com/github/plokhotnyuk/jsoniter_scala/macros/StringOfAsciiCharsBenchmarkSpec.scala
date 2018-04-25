@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class StringOfAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new StringOfAsciiCharsBenchmark
+  private val benchmark = new StringOfAsciiCharsBenchmark {
+    setup()
+  }
   
   "StringOfAsciiCharsBenchmark" should {
     "deserialize properly" in {

@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfJavaEnumsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfJavaEnumsBenchmark
+  private val benchmark = new ArrayOfJavaEnumsBenchmark {
+    setup()
+  }
   
   "ArrayOfJavaEnumsBenchmark" should {
     "deserialize properly" in {

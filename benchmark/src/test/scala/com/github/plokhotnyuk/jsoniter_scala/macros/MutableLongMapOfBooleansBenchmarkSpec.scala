@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class MutableLongMapOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new MutableLongMapOfBooleansBenchmark
+  private val benchmark = new MutableLongMapOfBooleansBenchmark {
+    setup()
+  }
   
   "MutableLongMapOfBooleansBenchmark" should {
     "deserialize properly" in {

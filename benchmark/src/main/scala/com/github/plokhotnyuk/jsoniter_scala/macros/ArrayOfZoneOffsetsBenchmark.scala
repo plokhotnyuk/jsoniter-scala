@@ -22,8 +22,6 @@ class ArrayOfZoneOffsetsBenchmark extends CommonParams {
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
 
-  setup()
-
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map(i => ZoneOffset.ofHoursMinutesSeconds(i % 17, (i % 4) * 15, 0))(breakOut)

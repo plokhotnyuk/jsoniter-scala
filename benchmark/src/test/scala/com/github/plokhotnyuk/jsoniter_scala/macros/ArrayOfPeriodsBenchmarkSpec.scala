@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfPeriodsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfPeriodsBenchmark
+  private val benchmark = new ArrayOfPeriodsBenchmark {
+    setup()
+  }
   
   "ArrayOfPeriodsBenchmark" should {
     "deserialize properly" in {

@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class MutableSetOfIntsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new MutableSetOfIntsBenchmark
+  private val benchmark = new MutableSetOfIntsBenchmark {
+    setup()
+  }
   
   "MutableSetOfIntsBenchmark" should {
     "deserialize properly" in {

@@ -3,24 +3,34 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 //import io.circe.parser._
 //import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 import scala.collection.breakOut
 import scala.collection.immutable.IntMap
 
 class IntMapOfBooleansBenchmark extends CommonParams {
-  val obj: IntMap[Boolean] = (1 to 128).map { i =>
-    (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 1) == 0)
-  }(breakOut)
-  val jsonString: String = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
-  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: IntMap[Boolean] = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  @Setup
+  def setup(): Unit = {
+    obj = (1 to size).map { i =>
+      (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 1) == 0)
+    }(breakOut)
+    jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
+    jsonBytes = jsonString.getBytes(UTF_8)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
 /* FIXME: Circe doesn't support IntMap
   @Benchmark

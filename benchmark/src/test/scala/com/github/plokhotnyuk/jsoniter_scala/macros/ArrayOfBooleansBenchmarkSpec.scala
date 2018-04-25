@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfBooleansBenchmark
+  private val benchmark = new ArrayOfBooleansBenchmark {
+    setup()
+  }
   
   "ArrayOfBooleansBenchmark" should {
     "deserialize properly" in {

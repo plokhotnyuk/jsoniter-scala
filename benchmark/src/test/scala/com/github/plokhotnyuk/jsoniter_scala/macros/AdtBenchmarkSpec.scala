@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class AdtBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new AdtBenchmark
+  private val benchmark = new AdtBenchmark
   
   "AdtBenchmark" should {
     "deserialize properly" in {

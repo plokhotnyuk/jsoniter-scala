@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class MutableBitSetBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new MutableBitSetBenchmark
+  private val benchmark = new MutableBitSetBenchmark {
+    setup()
+  }
   
   "MutableBitSetBenchmark" should {
     "deserialize properly" in {

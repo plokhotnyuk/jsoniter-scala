@@ -1,8 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.nio.charset.StandardCharsets.UTF_8
+//import java.nio.charset.StandardCharsets.UTF_8
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -10,15 +11,24 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 //import io.circe.generic.auto._
 //import io.circe.parser._
 //import io.circe.syntax._
-import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 import scala.collection.immutable.BitSet
 
 class BitSetBenchmark extends CommonParams {
-  val obj: BitSet = BitSet(0 to 127: _*)
-  val jsonString: String = obj.mkString("[", ",", "]")
-  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  var size: Int = 10
+  var obj: BitSet = _
+  var jsonString: String = _
+  var jsonBytes: Array[Byte] = _
+
+  @Setup
+  def setup(): Unit = {
+    obj = BitSet(0 until size: _*)
+    jsonString = obj.mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes("UTF-8")
+    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  }
 
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new AnyRefsBenchmark
+  private val benchmark = new AnyRefsBenchmark
   
   "AnyRefsBenchmark" should {
     "deserialize properly" in {

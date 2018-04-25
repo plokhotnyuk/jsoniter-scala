@@ -20,8 +20,6 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
 
-  setup()
-
   @Setup
   def setup(): Unit = {
     obj = {

@@ -21,8 +21,6 @@ class ArrayOfBooleansBenchmark extends CommonParams {
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
 
-  setup()
-
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map(i => ((i * 1498724053) & 1) == 0)(breakOut)

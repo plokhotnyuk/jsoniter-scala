@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfIntsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfIntsBenchmark
+  private val benchmark = new ArrayOfIntsBenchmark {
+    setup()
+  }
   
   "ArrayOfIntsBenchmark" should {
     "deserialize properly" in {

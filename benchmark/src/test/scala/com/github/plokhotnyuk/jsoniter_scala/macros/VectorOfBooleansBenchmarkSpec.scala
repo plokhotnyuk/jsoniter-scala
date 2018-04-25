@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class VectorOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new VectorOfBooleansBenchmark
+  private val benchmark = new VectorOfBooleansBenchmark {
+    setup()
+  }
   
   "VectorOfBooleansBenchmark" should {
     "deserialize properly" in {

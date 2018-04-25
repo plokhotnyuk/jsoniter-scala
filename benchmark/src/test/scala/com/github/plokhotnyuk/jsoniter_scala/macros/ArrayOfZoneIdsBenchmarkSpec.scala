@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfZoneIdsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfZoneIdsBenchmark
+  private val benchmark = new ArrayOfZoneIdsBenchmark {
+    setup()
+  }
   
   "ArrayOfZoneIdsBenchmark" should {
     "deserialize properly" in {

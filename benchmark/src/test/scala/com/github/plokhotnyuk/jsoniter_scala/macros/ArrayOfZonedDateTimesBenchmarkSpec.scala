@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfZonedDateTimesBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfZonedDateTimesBenchmark
+  private val benchmark = new ArrayOfZonedDateTimesBenchmark {
+    setup()
+  }
   
   "ArrayOfZonedDateTimesBenchmark" should {
     "deserialize properly" in {

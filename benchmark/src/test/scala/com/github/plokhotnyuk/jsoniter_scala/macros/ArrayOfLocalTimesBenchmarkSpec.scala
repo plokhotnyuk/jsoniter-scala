@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ArrayOfLocalTimesBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfLocalTimesBenchmark
+  private val benchmark = new ArrayOfLocalTimesBenchmark {
+    setup()
+  }
   
   "ArrayOfLocalTimesBenchmark" should {
     "deserialize properly" in {

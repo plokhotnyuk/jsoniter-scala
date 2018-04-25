@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class MapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new MapOfIntsToBooleansBenchmark
+  private val benchmark = new MapOfIntsToBooleansBenchmark {
+    setup()
+  }
   
   "MapOfIntsToBooleansBenchmark" should {
     "deserialize properly" in {

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new MissingReqFieldBenchmark
+  private val benchmark = new MissingReqFieldBenchmark
   
   "MissingReqFieldBenchmark" should {
     "return some parsing error" in {

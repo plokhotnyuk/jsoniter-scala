@@ -1,7 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class BitSetBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new BitSetBenchmark
+  private val benchmark = new BitSetBenchmark {
+    setup()
+  }
   
   "BitSetBenchmark" should {
     "deserialize properly" in {

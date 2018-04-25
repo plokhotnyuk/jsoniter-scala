@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new TwitterAPIBenchmark
+  private val benchmark = new TwitterAPIBenchmark
   
   "TwitterAPIBenchmark" should {
     "deserialize properly" in {

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class PrimitivesBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new PrimitivesBenchmark
+  private val benchmark = new PrimitivesBenchmark
   
   "PrimitivesBenchmark" should {
     "deserialize properly" in {

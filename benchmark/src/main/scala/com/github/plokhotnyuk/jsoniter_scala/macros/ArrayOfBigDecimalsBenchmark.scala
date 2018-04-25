@@ -18,8 +18,6 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
 
-  setup()
-
   @Setup
   def setup(): Unit = {
     sourceObj = (1 to size).map { i =>

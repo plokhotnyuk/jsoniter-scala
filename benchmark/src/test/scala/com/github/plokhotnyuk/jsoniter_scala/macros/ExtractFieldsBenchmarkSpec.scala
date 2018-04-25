@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class ExtractFieldsBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new ExtractFieldsBenchmark
+  private val benchmark = new ExtractFieldsBenchmark
   
   "ExtractFieldsBenchmark" should {
     "deserialize properly" in {

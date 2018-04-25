@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class GeoJSONBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new GeoJSONBenchmark
+  private val benchmark = new GeoJSONBenchmark
   
   "GoogleMapsAPIBenchmark" should {
     "deserialize properly" in {

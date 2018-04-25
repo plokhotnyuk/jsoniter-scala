@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 class IntBenchmarkSpec extends BenchmarkSpecBase {
-  val benchmark = new IntBenchmark
+  private val benchmark = new IntBenchmark
   
   "IntBenchmark" should {
     "deserialize properly" in {
