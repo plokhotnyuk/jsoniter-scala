@@ -1134,15 +1134,17 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readZoneOffset(default) shouldBe default
     }
     "parse ZoneOffset from a string representation according to ISO-8601 format" in {
-      def check(x: ZoneOffset): Unit = {
-        val s = x.toString
+      def check(s: String, x: ZoneOffset): Unit = {
         readZoneOffset(s) shouldBe x
         readKeyAsZoneOffset(s) shouldBe x
       }
 
-      check(ZoneOffset.MAX)
-      check(ZoneOffset.MIN)
-      forAll(genZoneOffset, minSuccessful(100000))(check)
+      check("Z", ZoneOffset.UTC)
+      check("+18", ZoneOffset.MAX)
+      check("+18:00", ZoneOffset.MAX)
+      check("-18", ZoneOffset.MIN)
+      check("-18:00", ZoneOffset.MIN)
+      forAll(genZoneOffset, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -2094,9 +2096,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader" should {
     "support hex dumps with offsets that greater than 4Gb" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8"), 1L << 33).readInt())
+      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8"), 1L << 41).readInt())
         .getMessage.contains(
-          """illegal number, offset: 0x200000000, buf:
+          """illegal number, offset: 0x20000000000, buf:
             |           +-------------------------------------------------+
             |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
             |+----------+-------------------------------------------------+------------------+
