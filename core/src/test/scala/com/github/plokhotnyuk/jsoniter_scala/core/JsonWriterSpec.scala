@@ -558,7 +558,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
 
-  def withWriter(f: JsonWriter => Unit): String = withWriter(WriterConfig())(f)
+  def withWriter(f: JsonWriter => Unit): String = withWriter(WriterConfig(preferredBufSize = 0))(f)
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val out = new ByteArrayOutputStream(256)

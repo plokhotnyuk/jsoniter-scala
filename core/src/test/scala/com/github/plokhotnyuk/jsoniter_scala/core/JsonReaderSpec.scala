@@ -974,15 +974,19 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readZonedDateTime(default) shouldBe default
     }
     "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA time zone identifier in JDK 8+ format" in {
-      def check(x: ZonedDateTime): Unit = {
-        val s = x.toString
+      def check(s: String, x: ZonedDateTime): Unit = {
         readZonedDateTime(s) shouldBe x
         readKeyAsZonedDateTime(s) shouldBe x
       }
 
-      check(ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
-      check(ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN))
-      forAll(genZonedDateTime, minSuccessful(100000))(check)
+      check("2018-01-01T00:00:00Z", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.UTC))
+      check("2018-01-01T00:00:00+18", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.MAX))
+      check("2018-01-01T00:00:00+18[UTC+18]", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneId.of("UTC+18")))
+      check("2018-01-01T00:00:00-18", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.MIN))
+      check("2018-01-01T00:00:00-18[UTC-18]", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneId.of("UTC-18")))
+      check("+999999999-12-31T23:59:59.999999999+18:00", ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
+      check("-999999999-01-01T00:00:00-18:00", ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN))
+      forAll(genZonedDateTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
