@@ -954,7 +954,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-999999999", Year.of(Year.MIN_VALUE))
       check("+999999999", Year.of(Year.MAX_VALUE))
       forAll(genYear, minSuccessful(100000)) { (x: Year) =>
-        check(if (x.getValue > 9999) "+" + x else x.toString, x) // FIXME: It looks like a bug in JDK that Year.toString doesn't serialize years > 9999 with the '+' prefix
+        check((if (x.getValue > 9999) "+" else "") + f"${x.getValue}%04d", x) // FIXME: It looks like a bug in JDK that Year.toString doesn't serialize years > 9999 with the '+' prefix
       }
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {
