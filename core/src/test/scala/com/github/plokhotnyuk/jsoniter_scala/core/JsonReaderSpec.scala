@@ -305,14 +305,16 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "parse Duration from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
       def check(s: String, x: Duration): Unit = {
+        val xx = x.negated()
         readDuration(s) shouldBe x
         readKeyAsDuration(s) shouldBe x
+        readDuration('-' + s) shouldBe xx
+        readKeyAsDuration('-' + s) shouldBe xx
       }
 
       check("P0D", Duration.ZERO)
       check("PT0S", Duration.ZERO)
       forAll(genDuration, minSuccessful(100000))(x => check(x.toString, x))
-      forAll(genDuration, minSuccessful(100000))((x: Duration) => check("-" + x.toString, x.negated()))
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -681,15 +683,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readOffsetDateTime(default) shouldBe default
     }
     "parse OffsetDateTime from a string representation according to ISO-8601 format" in {
-      def check(x: OffsetDateTime): Unit = {
-        val s = x.toString
+      def check(s: String, x: OffsetDateTime): Unit = {
         readOffsetDateTime(s) shouldBe x
         readKeyAsOffsetDateTime(s) shouldBe x
       }
 
-      check(OffsetDateTime.MAX)
-      check(OffsetDateTime.MIN)
-      forAll(genOffsetDateTime, minSuccessful(100000))(check)
+      check("+999999999-12-31T23:59:59.999999999-18:00", OffsetDateTime.MAX)
+      check("-999999999-01-01T00:00:00+18:00", OffsetDateTime.MIN)
+      check("2018-01-01T00:00Z", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+      check("2018-01-01T00:00:00.000Z", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+      check("2018-01-01T00:00:00.000000000Z", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+      check("2018-01-01T00:00:00.000000000+00", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+      forAll(genOffsetDateTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -772,15 +777,18 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readOffsetTime(default) shouldBe default
     }
     "parse OffsetTime from a string representation according to ISO-8601 format" in {
-      def check(x: OffsetTime): Unit = {
-        val s = x.toString
+      def check(s: String, x: OffsetTime): Unit = {
         readOffsetTime(s) shouldBe x
         readKeyAsOffsetTime(s) shouldBe x
       }
 
-      check(OffsetTime.MAX)
-      check(OffsetTime.MIN)
-      forAll(genOffsetTime, minSuccessful(100000))(check)
+      check("23:59:59.999999999-18:00", OffsetTime.MAX)
+      check("00:00:00+18:00", OffsetTime.MIN)
+      check("00:00Z", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
+      check("00:00:00.000Z", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
+      check("00:00:00.000000000Z", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
+      check("00:00:00.000000000+00", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
+      forAll(genOffsetTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -836,30 +844,36 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readPeriod(default) shouldBe default
     }
     "parse Period from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
-      def check(x: Period, s: String): Unit = {
-        val xx = Period.of(-x.getYears, -x.getMonths, -x.getDays)
+      def check(s: String, x: Period): Unit = {
+        val xx = x.negated()
         readPeriod(s) shouldBe x
         readKeyAsPeriod(s) shouldBe x
         readPeriod('-' + s) shouldBe xx
         readKeyAsPeriod('-' + s) shouldBe xx
       }
 
-      check(Period.ZERO, "P0D")
-      forAll(genPeriod, minSuccessful(100000))(x => check(x, x.toString))
+      check("P0D", Period.ZERO)
+      forAll(genPeriod, minSuccessful(100000))(x => check(x.toString, x))
       forAll(Gen.choose(Int.MinValue, Int.MaxValue), Gen.choose(Int.MinValue, Int.MaxValue), minSuccessful(100000)) {
         (x: Int, y: Int) =>
-          check(Period.of(x, 0, 0), s"P${x}Y")
-          check(Period.of(0, x, 0), s"P${x}M")
-          check(Period.of(0, 0, x), s"P${x}D")
-          check(Period.of(x, y, 0), s"P${x}Y${y}M")
-          check(Period.of(0, x, y), s"P${x}M${y}D")
-          check(Period.of(x, 0, y), s"P${x}Y${y}D")
+          check(s"P${x}Y", Period.of(x, 0, 0))
+          check(s"P${x}M", Period.of(0, x, 0))
+          check(s"P${x}D", Period.of(0, 0, x))
+          check(s"P${x}Y${y}M", Period.of(x, y, 0))
+          check(s"P${x}M${y}D", Period.of(0, x, y))
+          check(s"P${x}Y${y}D", Period.of(x, 0, y))
+      }
+      forAll(Gen.choose(-1000000, 1000000), minSuccessful(100000)) {
+        (weeks: Int) =>
+          check(s"P${weeks}W", Period.of(0, 0, weeks * 7))
+          check(s"P1Y${weeks}W", Period.of(1, 0, weeks * 7))
+          check(s"P1Y1M${weeks}W", Period.of(1, 1, weeks * 7))
       }
       forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(100000)) {
         (weeks: Int, days: Int) =>
-          check(Period.of(0, 0, weeks * 7 + days), s"P${weeks}W${days}D")
-          check(Period.of(1, 0, weeks * 7 + days), s"P1Y${weeks}W${days}D")
-          check(Period.of(1, 1, weeks * 7 + days), s"P1Y1M${weeks}W${days}D")
+          check(s"P${weeks}W${days}D", Period.of(0, 0, weeks * 7 + days))
+          check(s"P1Y${weeks}W${days}D", Period.of(1, 0, weeks * 7 + days))
+          check(s"P1Y1M${weeks}W${days}D", Period.of(1, 1, weeks * 7 + days))
       }
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
@@ -912,6 +926,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P1Y1M1W1XD\"".getBytes("UTF-8"), "expected 'D' or digit, offset: 0x00000009")
       checkError("\"P1Y1M306783378W8D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000011")
       checkError("\"P1Y1M-306783378W-8D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000013")
+      checkError("\"P1Y1M1W2147483647D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M-1W-2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000014")
       checkError("\"P1Y1M0W2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
       checkError("\"P1Y1M0W21474836470D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
       checkError("\"P1Y1M0W-2147483649D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
