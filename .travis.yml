@@ -4,10 +4,11 @@ matrix:
     - os: linux
       jdk: oraclejdk9
       scala: 2.12.4
-    - os: osx # default JDK build is 1.8.0_112-b16, according to: https://docs.travis-ci.com/user/reference/osx/#JDK-and-OS-X
-      scala: 2.12.4
     - os: linux
       jdk: openjdk8
+      scala: 2.12.4
+    - os: linux
+      jdk: oraclejdk8
       scala: 2.11.12
 script:
   - travis_wait 30 sbt -no-colors ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
