@@ -1,0 +1,19 @@
+os: Windows Server 2012
+init:
+  - git config --global core.autocrlf input
+install:
+  - ps: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      if (!(Test-Path -Path "C:\sbt" )) {
+        (new-object System.Net.WebClient).DownloadFile(
+          'https://github.com/sbt/sbt/releases/download/v1.1.4/sbt-1.1.4.zip',
+          'C:\sbt-bin.zip'
+        )
+        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
+      }
+  - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET SBT_OPTS=-XX:MaxPermSize=2g -Xmx4g -Dfile.encoding=UTF8
+build_script:
+  - sbt clean compile
+test_script:
+  - sbt test
