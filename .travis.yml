@@ -4,7 +4,7 @@ matrix:
     - os: linux
       jdk: oraclejdk9
       scala: 2.12.4
-    - os: linux
+    - os: osx
       jdk: openjdk8
       scala: 2.12.4
     - os: linux
