@@ -603,14 +603,14 @@ final class JsonReader private[jsoniter_scala](
     pos != tail
   }
 
-  private[this] def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
+  private[this] def tokenOrDigitError(b: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendString("' or digit", i)
     decodeError(i, pos, null)
   }
 
-  private[this] def tokensError(b1: Byte, b2: Byte, pos: Int): Nothing = {
+  private[this] def tokensError(b1: Byte, b2: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b1.toChar, i)
     i = appendString("' or '", i)
@@ -654,6 +654,8 @@ final class JsonReader private[jsoniter_scala](
       buf(pos)
     } else nextByte(loadMoreOrError(pos))
 
+  private[this] def nextByteOrError(b: Byte): Unit = if (nextByte(head) != b) tokenError(b)
+
   @tailrec
   private[this] def nextToken(pos: Int): Byte =
     if (pos < tail) {
@@ -682,6 +684,14 @@ final class JsonReader private[jsoniter_scala](
   private[this] def isCurrentToken(b: Byte, pos: Int): Boolean =
     if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
     else buf(pos - 1) == b
+
+  private[this] def nextDigit(): Int = {
+    val b = nextByte(head)
+    if (b < '0' || b > '9') digitError()
+    b - '0'
+  }
+
+  private[this] def next2Digits(): Int = nextDigit() * 10 + nextDigit()
 
   @tailrec
   private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
@@ -1292,130 +1302,61 @@ final class JsonReader private[jsoniter_scala](
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
-    var month = 0
-    var day = 0
-    var hour = 0
-    var minute = 0
+    var b = nextByte(head)
+    if (b >= '0' && b <= '9') {
+      year = b - '0'
+      yearDigits = 1
+    } else if (b == '-') yearNeg = true
+    else if (b == '+') yearMinDigits = 5
+    else decodeError("expected '-' or '+' or digit")
+    do {
+      year = year * 10 + nextDigit()
+      yearDigits += 1
+    } while (yearDigits < yearMinDigits)
+    var continue = true
+    do {
+      b = nextByte(head)
+      if (b >= '0' && b <= '9') {
+        year = year * 10 + (b - '0')
+        yearDigits += 1
+        if (yearDigits == 10) {
+          nextByteOrError('-')
+          continue = false
+        }
+      } else if (b == '-') continue = false
+      else tokenOrDigitError('-')
+    } while (continue)
+    val month = next2Digits()
+    nextByteOrError('-')
+    val day = next2Digits()
+    nextByteOrError('T')
+    val hour = next2Digits()
+    nextByteOrError(':')
+    val minute = next2Digits()
     var second = 0
     var nano = 0
-    var nanoDigits = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or '+' or year digit
-          if (b >= '0' && b <= '9') {
-            year = b - '0'
-            yearDigits = 1
-            state = 1
-          } else if (b == '-') {
-            yearNeg = true
-            state = 1
-          } else if (b == '+') {
-            yearMinDigits = 5
-            state = 1
-          } else decodeError("expected '-' or '+' or digit", pos)
-        case 1 => // year digit
-          if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == yearMinDigits) state = 2
-          } else digitError(pos)
-        case 2 => // '-' or year digit
-          if (b == '-') state = 4
-          else if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == 10) state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // '-'
-          if (b == '-') state = 4
-          else tokenError('-', pos)
-        case 4 => // month (1st digit)
-          if (b >= '0' && b <= '9') {
-            month = b - '0'
-            state = 5
-          } else digitError(pos)
-        case 5 => // month (2nd digit)
-          if (b >= '0' && b <= '9') {
-            month = month * 10 + (b - '0')
-            state = 6
-          } else digitError(pos)
-        case 6 => // '-'
-          if (b == '-') state = 7
-          else tokenError('-', pos)
-        case 7 => // day (1st digit)
-          if (b >= '0' && b <= '9') {
-            day = b - '0'
-            state = 8
-          } else digitError(pos)
-        case 8 => // day (2nd digit)
-          if (b >= '0' && b <= '9') {
-            day = day * 10 + (b - '0')
-            state = 9
-          } else digitError(pos)
-        case 9 => // 'T'
-          if (b == 'T') state = 10
-          else tokenError('T', pos)
-        case 10 => // hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            hour = b - '0'
-            state = 11
-          } else digitError(pos)
-        case 11 => // hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            hour = hour * 10 + (b - '0')
-            state = 12
-          } else digitError(pos)
-        case 12 => // ':'
-          if (b == ':') state = 13
-          else tokenError(':', pos)
-        case 13 => // minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            minute = b - '0'
-            state = 14
-          } else digitError(pos)
-        case 14 => // minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            minute = minute * 10 + (b - '0')
-            state = 15
-          } else digitError(pos)
-        case 15 => // ':'
-          if (b == ':') state = 16
-          else tokenError(':', pos)
-        case 16 => // second (1st digit)
-          if (b >= '0' && b <= '9') {
-            second = b - '0'
-            state = 17
-          } else digitError(pos)
-        case 17 => // second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            second = second * 10 + (b - '0')
-            state = 18
-          } else digitError(pos)
-        case 18 => // 'Z' or '.'
-          if (b == '.') state = 19
-          else if (b == 'Z') state = 21
-          else tokensError('Z', '.', pos)
-        case 19 => // 'Z' or nano digit
+    b = nextByte(head)
+    if (b == ':') {
+      second = next2Digits()
+      b = nextByte(head)
+      if (b == '.') {
+        var nanoDigits = 0
+        var continue = true
+        do {
+          b = nextByte(head)
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) state = 20
-          } else if (b == 'Z') state = 21
-          else tokenOrDigitError('Z', pos)
-        case 20 => // 'Z'
-          if (b == 'Z') state = 21
-          else tokenError('Z', pos)
-        case 21 => // '"'
-          if (b == '"') state = 22
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 22)
-    head = pos
+            if (nanoDigits == 9) {
+              nextByteOrError('Z')
+              continue = false
+            }
+          } else if (b == 'Z') continue = false
+          else tokenOrDigitError('Z')
+        } while (continue)
+      } else if (b != 'Z') tokensError('.', 'Z')
+    } else if (b != 'Z') tokensError(':', 'Z')
+    nextByteOrError('"')
     Instant.ofEpochSecond(epochSecond(yearNeg, year, month, day, hour, minute, second), nano)
   }
 
@@ -1424,72 +1365,34 @@ final class JsonReader private[jsoniter_scala](
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
-    var month = 0
-    var day = 0
-    var state = 0
-    var pos = head
+    var b = nextByte(head)
+    if (b >= '0' && b <= '9') {
+      year = b - '0'
+      yearDigits = 1
+    } else if (b == '-') yearNeg = true
+    else if (b == '+') yearMinDigits = 5
+    else decodeError("expected '-' or '+' or digit")
     do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or '+' or year digit
-          if (b >= '0' && b <= '9') {
-            year = b - '0'
-            yearDigits = 1
-            state = 1
-          } else if (b == '-') {
-            yearNeg = true
-            state = 1
-          } else if (b == '+') {
-            yearMinDigits = 5
-            state = 1
-          } else decodeError("expected '-' or '+' or digit", pos)
-        case 1 => // year digit
-          if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == yearMinDigits) state = 2
-          } else digitError(pos)
-        case 2 => // '-' or year digit
-          if (b == '-') state = 4
-          else if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == 9) state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // '-'
-          if (b == '-') state = 4
-          else tokenError('-', pos)
-        case 4 => // month (1st digit)
-          if (b >= '0' && b <= '9') {
-            month = b - '0'
-            state = 5
-          } else digitError(pos)
-        case 5 => // month (2nd digit)
-          if (b >= '0' && b <= '9') {
-            month = month * 10 + (b - '0')
-            state = 6
-          } else digitError(pos)
-        case 6 => // '-'
-          if (b == '-') state = 7
-          else tokenError('-', pos)
-        case 7 => // day (1st digit)
-          if (b >= '0' && b <= '9') {
-            day = b - '0'
-            state = 8
-          } else digitError(pos)
-        case 8 => // day (2nd digit)
-          if (b >= '0' && b <= '9') {
-            day = day * 10 + (b - '0')
-            state = 9
-          } else digitError(pos)
-        case 9 => // '"'
-          if (b == '"') state = 10
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 10)
-    head = pos
+      year = year * 10 + nextDigit()
+      yearDigits += 1
+    } while (yearDigits < yearMinDigits)
+    var continue = true
+    do {
+      b = nextByte(head)
+      if (b >= '0' && b <= '9') {
+        year = year * 10 + (b - '0')
+        yearDigits += 1
+        if (yearDigits == 9) {
+          nextByteOrError('-')
+          continue = false
+        }
+      } else if (b == '-') continue = false
+      else tokenOrDigitError('-')
+    } while (continue)
+    val month = next2Digits()
+    nextByteOrError('-')
+    val day = next2Digits()
+    nextByteOrError('"')
     localDate(yearNeg, year, month, day)
   }
 
@@ -1498,246 +1401,100 @@ final class JsonReader private[jsoniter_scala](
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
-    var month = 0
-    var day = 0
-    var hour = 0
-    var minute = 0
+    var b = nextByte(head)
+    if (b >= '0' && b <= '9') {
+      year = b - '0'
+      yearDigits = 1
+    } else if (b == '-') yearNeg = true
+    else if (b == '+') yearMinDigits = 5
+    else decodeError("expected '-' or '+' or digit")
+    do {
+      year = year * 10 + nextDigit()
+      yearDigits += 1
+    } while (yearDigits < yearMinDigits)
+    var continue = true
+    do {
+      b = nextByte(head)
+      if (b >= '0' && b <= '9') {
+        year = year * 10 + (b - '0')
+        yearDigits += 1
+        if (yearDigits == 9) {
+          nextByteOrError('-')
+          continue = false
+        }
+      } else if (b == '-') continue = false
+      else tokenOrDigitError('-')
+    } while (continue)
+    val month = next2Digits()
+    nextByteOrError('-')
+    val day = next2Digits()
+    nextByteOrError('T')
+    val hour = next2Digits()
+    nextByteOrError(':')
+    val minute = next2Digits()
     var second = 0
     var nano = 0
-    var nanoDigits = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or '+' or year digits
-          if (b >= '0' && b <= '9') {
-            year = b - '0'
-            yearDigits = 1
-            state = 1
-          } else if (b == '-') {
-            yearNeg = true
-            state = 1
-          } else if (b == '+') {
-            yearMinDigits = 5
-            state = 1
-          } else decodeError("expected '-' or '+' or digit", pos)
-        case 1 => // year digit
-          if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == yearMinDigits) state = 2
-          } else digitError(pos)
-        case 2 => // '-' or year digit
-          if (b == '-') state = 4
-          else if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == 9) state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // '-'
-          if (b == '-') state = 4
-          else tokenError('-', pos)
-        case 4 => // month (1st digit)
-          if (b >= '0' && b <= '9') {
-            month = b - '0'
-            state = 5
-          } else digitError(pos)
-        case 5 => // month (2nd digit)
-          if (b >= '0' && b <= '9') {
-            month = month * 10 + (b - '0')
-            state = 6
-          } else digitError(pos)
-        case 6 => // '-'
-          if (b == '-') state = 7
-          else tokenError('-', pos)
-        case 7 => // day (1st digit)
-          if (b >= '0' && b <= '9') {
-            day = b - '0'
-            state = 8
-          } else digitError(pos)
-        case 8 => // day (2nd digit)
-          if (b >= '0' && b <= '9') {
-            day = day * 10 + (b - '0')
-            state = 9
-          } else digitError(pos)
-        case 9 => // 'T'
-          if (b == 'T') state = 10
-          else tokenError('T', pos)
-        case 10 => // hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            hour = b - '0'
-            state = 11
-          } else digitError(pos)
-        case 11 => // hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            hour = hour * 10 + (b - '0')
-            state = 12
-          } else digitError(pos)
-        case 12 => // ':'
-          if (b == ':') state = 13
-          else tokenError(':', pos)
-        case 13 => // minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            minute = b - '0'
-            state = 14
-          } else digitError(pos)
-        case 14 => // minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            minute = minute * 10 + (b - '0')
-            state = 15
-          } else digitError(pos)
-        case 15 => // ':' or '"'
-          if (b == ':') state = 16
-          else if (b == '"') state = 21
-          else tokensError(':', '"', pos)
-        case 16 => // second (1st digit)
-          if (b >= '0' && b <= '9') {
-            second = b - '0'
-            state = 17
-          } else digitError(pos)
-        case 17 => // second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            second = second * 10 + (b - '0')
-            state = 18
-          } else digitError(pos)
-        case 18 => // '"' or '.'
-          if (b == '.') state = 19
-          else if (b == '"') state = 21
-          else tokensError('.', '"', pos)
-        case 19 => // '"' or nano digit
+    b = nextByte(head)
+    if (b == ':') {
+      second = next2Digits()
+      b = nextByte(head)
+      if (b == '.') {
+        var nanoDigits = 0
+        var continue = true
+        do {
+          b = nextByte(head)
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) state = 20
-          } else if (b == '"') state = 21
-          else tokenOrDigitError('"', pos)
-        case 20 => // '"'
-          if (b == '"') state = 21
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 21)
-    head = pos
+            if (nanoDigits == 9) {
+              nextByteOrError('"')
+              continue = false
+            }
+          } else if (b == '"') continue = false
+          else tokenOrDigitError('"')
+        } while (continue)
+      } else if (b != '"') tokensError('.', '"')
+    } else if (b != '"') tokensError(':', '"')
     LocalDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano))
   }
 
   private[this] def parseLocalTime(): LocalTime = {
-    var hour = 0
-    var minute = 0
+    val hour = next2Digits()
+    nextByteOrError(':')
+    val minute = next2Digits()
     var second = 0
     var nano = 0
-    var nanoDigits = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            hour = b - '0'
-            state = 1
-          } else digitError(pos)
-        case 1 => // hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            hour = hour * 10 + (b - '0')
-            state = 2
-          } else digitError(pos)
-        case 2 => // ':'
-          if (b == ':') state = 3
-          else tokenError(':', pos)
-        case 3 => // minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            minute = b - '0'
-            state = 4
-          } else digitError(pos)
-        case 4 => // minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            minute = minute * 10 + (b - '0')
-            state = 5
-          } else digitError(pos)
-        case 5 => // ':' or '"'
-          if (b == ':') state = 6
-          else if (b == '"') state = 11
-          else tokensError(':', '"', pos)
-        case 6 => // second (1st digit)
-          if (b >= '0' && b <= '9') {
-            second = b - '0'
-            state = 7
-          } else digitError(pos)
-        case 7 => // second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            second = second * 10 + (b - '0')
-            state = 8
-          } else digitError(pos)
-        case 8 => // '"' or '.'
-          if (b == '.') state = 9
-          else if (b == '"') state = 11
-          else tokensError('.', '"', pos)
-        case 9 => // '"' or nano digit
+    var b = nextByte(head)
+    if (b == ':') {
+      second = next2Digits()
+      b = nextByte(head)
+      if (b == '.') {
+        var nanoDigits = 0
+        var continue = true
+        do {
+          b = nextByte(head)
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) state = 10
-          } else if (b == '"') state = 11
-          else tokenOrDigitError('"', pos)
-        case 10 => // '"'
-          if (b == '"') state = 11
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 11)
-    head = pos
+            if (nanoDigits == 9) {
+              nextByteOrError('"')
+              continue = false
+            }
+          } else if (b == '"') continue = false
+          else tokenOrDigitError('"')
+        } while (continue)
+      } else if (b != '"') tokensError('.', '"')
+    } else if (b != '"') tokensError(':', '"')
     localTime(hour, minute, second, nano)
   }
 
   private[this] def parseMonthDay(): MonthDay = {
-    var month = 0
-    var day = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-'
-          if (b == '-') state = 1
-          else tokenError('-', pos)
-        case 1 => // '-'
-          if (b == '-') state = 2
-          else tokenError('-', pos)
-        case 2 => // month (1st digit)
-          if (b >= '0' && b <= '9') {
-            month = b - '0'
-            state = 3
-          } else digitError(pos)
-        case 3 => // month (2nd digit)
-          if (b >= '0' && b <= '9') {
-            month = month * 10 + (b - '0')
-            state = 4
-          } else digitError(pos)
-        case 4 => // '-'
-          if (b == '-') state = 5
-          else tokenError('-', pos)
-        case 5 => // day (1st digit)
-          if (b >= '0' && b <= '9') {
-            day = b - '0'
-            state = 6
-          } else digitError(pos)
-        case 6 => // day (2nd digit)
-          if (b >= '0' && b <= '9') {
-            day = day * 10 + (b - '0')
-            state = 7
-          } else digitError(pos)
-        case 7 => // '"'
-          if (b == '"') state = 8
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 8)
-    head = pos
+    nextByteOrError('-')
+    nextByteOrError('-')
+    val month = next2Digits()
+    nextByteOrError('-')
+    val day = next2Digits()
+    nextByteOrError('"')
     monthDay(month, day)
   }
 
@@ -1746,321 +1503,147 @@ final class JsonReader private[jsoniter_scala](
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
-    var month = 0
-    var day = 0
-    var hour = 0
-    var minute = 0
+    var b = nextByte(head)
+    if (b >= '0' && b <= '9') {
+      year = b - '0'
+      yearDigits = 1
+    } else if (b == '-') yearNeg = true
+    else if (b == '+') yearMinDigits = 5
+    else decodeError("expected '-' or '+' or digit")
+    do {
+      year = year * 10 + nextDigit()
+      yearDigits += 1
+    } while (yearDigits < yearMinDigits)
+    var continue = true
+    do {
+      b = nextByte(head)
+      if (b >= '0' && b <= '9') {
+        year = year * 10 + (b - '0')
+        yearDigits += 1
+        if (yearDigits == 9) {
+          nextByteOrError('-')
+          continue = false
+        }
+      } else if (b == '-') continue = false
+      else tokenOrDigitError('-')
+    } while (continue)
+    val month = next2Digits()
+    nextByteOrError('-')
+    val day = next2Digits()
+    nextByteOrError('T')
+    val hour = next2Digits()
+    nextByteOrError(':')
+    val minute = next2Digits()
+    var hasSecond = false
     var second = 0
+    var hasNano = false
     var nano = 0
     var nanoDigits = 0
     var offsetNeg = false
     var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or '+' or year digit
-          if (b >= '0' && b <= '9') {
-            year = b - '0'
-            yearDigits = 1
-            state = 1
-          } else if (b == '-') {
-            yearNeg = true
-            state = 1
-          } else if (b == '+') {
-            yearMinDigits = 5
-            state = 1
-          } else decodeError("expected '-' or '+' or digit", pos)
-        case 1 => // year digit
-          if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == yearMinDigits) state = 2
-          } else digitError(pos)
-        case 2 => // '-' or year digit
-          if (b == '-') state = 4
-          else if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == 9) state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // '-'
-          if (b == '-') state = 4
-          else tokenError('-', pos)
-        case 4 => // month (1st digit)
-          if (b >= '0' && b <= '9') {
-            month = b - '0'
-            state = 5
-          } else digitError(pos)
-        case 5 => // month (2nd digit)
-          if (b >= '0' && b <= '9') {
-            month = month * 10 + (b - '0')
-            state = 6
-          } else digitError(pos)
-        case 6 => // '-'
-          if (b == '-') state = 7
-          else tokenError('-', pos)
-        case 7 => // day (1st digit)
-          if (b >= '0' && b <= '9') {
-            day = b - '0'
-            state = 8
-          } else digitError(pos)
-        case 8 => // day (2nd digit)
-          if (b >= '0' && b <= '9') {
-            day = day * 10 + (b - '0')
-            state = 9
-          } else digitError(pos)
-        case 9 => // 'T'
-          if (b == 'T') state = 10
-          else tokenError('T', pos)
-        case 10 => // hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            hour = b - '0'
-            state = 11
-          } else digitError(pos)
-        case 11 => // hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            hour = hour * 10 + (b - '0')
-            state = 12
-          } else digitError(pos)
-        case 12 => // ':'
-          if (b == ':') state = 13
-          else tokenError(':', pos)
-        case 13 => // minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            minute = b - '0'
-            state = 14
-          } else digitError(pos)
-        case 14 => // minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            minute = minute * 10 + (b - '0')
-            state = 15
-          } else digitError(pos)
-        case 15 => // ':' or '+' or '-' or 'Z'
-          if (b == ':') state = 16
-          else if (b == '+') state = 21
-          else if (b == '-') {
-            offsetNeg = true
-            state = 21
-          } else if (b == 'Z') state = 29
-          else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
-        case 16 => // second (1st digit)
-          if (b >= '0' && b <= '9') {
-            second = b - '0'
-            state = 17
-          } else digitError(pos)
-        case 17 => // second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            second = second * 10 + (b - '0')
-            state = 18
-          } else digitError(pos)
-        case 18 => // 'Z' or '.' or '-' or '+'
-          if (b == '.') state = 19
-          else if (b == '+') state = 21
-          else if (b == '-') {
-            offsetNeg = true
-            state = 21
-          } else if (b == 'Z') state = 29
-          else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
-        case 19 => // 'Z' or '-' or '+' or nano digit
+    b = nextByte(head)
+    if (b == ':') {
+      hasSecond = true
+      second = next2Digits()
+      b = nextByte(head)
+      if (b == '.') {
+        hasNano = true
+        var continue = true
+        do {
+          b = nextByte(head)
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) state = 20
-          } else if (b == '+') state = 21
-          else if (b == '-') {
-            offsetNeg = true
-            state = 21
-          } else if (b == 'Z') state = 29
-          else decodeError("expected '+' or '-' or 'Z' or digit", pos)
-        case 20 => // 'Z' or '-' or '+'
-          if (b == '+') state = 21
-          else if (b == '-') {
-            offsetNeg = true
-            state = 21
-          } else if (b == 'Z') state = 29
-          else decodeError("expected '+' or '-' or 'Z'", pos)
-        case 21 => // offset hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetHour = b - '0'
-            state = 22
-          } else digitError(pos)
-        case 22 => // offset hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetHour = offsetHour * 10 + (b - '0')
-            state = 23
-          } else digitError(pos)
-        case 23 => // ':'
-          if (b == ':') state = 24
-          else if (b == '"') state = 30
-          else tokensError(':', '"', pos)
-        case 24 => // offset minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetMinute = b - '0'
-            state = 25
-          } else digitError(pos)
-        case 25 => // offset minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetMinute = offsetMinute * 10 + (b - '0')
-            state = 26
-          } else digitError(pos)
-        case 26 => // ':' or '"'
-          if (b == ':') state = 27
-          else if (b == '"') state = 30
-          else tokensError(':', '"', pos)
-        case 27 => // offset second (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetSecond = b - '0'
-            state = 28
-          } else digitError(pos)
-        case 28 => // offset second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 29
-          } else digitError(pos)
-        case 29 => // '"'
-          if (b == '"') state = 30
-          else tokenError('"', pos)
+            if (nanoDigits == 9) {
+              b = nextByte(head)
+              continue = false
+            }
+          } else continue = false
+        } while (continue)
       }
-      pos += 1
-    } while (state != 30)
-    head = pos
+    }
+    if (b != 'Z') {
+      if (b == '-') offsetNeg = true
+      else if (b != '+') decodeError {
+        if (hasSecond) {
+          if (hasNano) {
+            if (nanoDigits == 9) "expected '+' or '-' or 'Z'"
+            else "expected '+' or '-' or 'Z' or digit"
+          } else "expected '.' or '+' or '-' or 'Z'"
+        } else "expected ':' or '+' or '-' or 'Z'"
+      }
+      offsetHour = next2Digits()
+      b = nextByte(head)
+      if (b == ':') {
+        offsetMinute = next2Digits()
+        b = nextByte(head)
+        if (b == ':') {
+          offsetSecond = next2Digits()
+          nextByteOrError('"')
+        } else if (b != '"') tokensError(':', '"')
+      } else if (b != '"') tokensError(':', '"')
+    } else nextByteOrError('"')
     OffsetDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano),
       zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
-    var hour = 0
-    var minute = 0
+    val hour = next2Digits()
+    nextByteOrError(':')
+    val minute = next2Digits()
+    var hasSecond = false
     var second = 0
+    var hasNano = false
     var nano = 0
     var nanoDigits = 0
     var offsetNeg = false
     var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            hour = b - '0'
-            state = 1
-          } else digitError(pos)
-        case 1 => // hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            hour = hour * 10 + (b - '0')
-            state = 2
-          } else digitError(pos)
-        case 2 => // ':'
-          if (b == ':') state = 3
-          else tokenError(':', pos)
-        case 3 => // minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            minute = b - '0'
-            state = 4
-          } else digitError(pos)
-        case 4 => // minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            minute = minute * 10 + (b - '0')
-            state = 5
-          } else digitError(pos)
-        case 5 => // ':' or '+' or '-' or 'Z'
-          if (b == ':') state = 6
-          else if (b == '+') state = 11
-          else if (b == '-') {
-            offsetNeg = true
-            state = 11
-          } else if (b == 'Z') state = 19
-          else decodeError("expected ':' or '+' or '-' or 'Z'", pos)
-        case 6 => // second (1st digit)
-          if (b >= '0' && b <= '9') {
-            second = b - '0'
-            state = 7
-          } else digitError(pos)
-        case 7 => // second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            second = second * 10 + (b - '0')
-            state = 8
-          } else digitError(pos)
-        case 8 => // 'Z' or '.' or '-' or '+'
-          if (b == '.') state = 9
-          else if (b == '+') state = 11
-          else if (b == '-') {
-            offsetNeg = true
-            state = 11
-          } else if (b == 'Z') state = 19
-          else decodeError("expected '.' or '+' or '-' or 'Z'", pos)
-        case 9 => // 'Z' or '-' or '+' or nano digit
+    var b = nextByte(head)
+    if (b == ':') {
+      hasSecond = true
+      second = next2Digits()
+      b = nextByte(head)
+      if (b == '.') {
+        hasNano = true
+        var continue = true
+        do {
+          b = nextByte(head)
           if (b >= '0' && b <= '9') {
             nanoDigits += 1
             nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) state = 10
-          } else if (b == '+') state = 11
-          else if (b == '-') {
-            offsetNeg = true
-            state = 11
-          } else if (b == 'Z') state = 19
-          else decodeError("expected '+' or '-' or 'Z' or digit", pos)
-        case 10 => // 'Z' or '-' or '+'
-          if (b == '+') state = 11
-          else if (b == '-') {
-            offsetNeg = true
-            state = 11
-          } else if (b == 'Z') state = 19
-          else decodeError("expected '+' or '-' or 'Z'", pos)
-        case 11 => // offset hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetHour = b - '0'
-            state = 12
-          } else digitError(pos)
-        case 12 => // offset hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetHour = offsetHour * 10 + (b - '0')
-            state = 13
-          } else digitError(pos)
-        case 13 => // ':'
-          if (b == ':') state = 14
-          else if (b == '"') state = 20
-          else tokensError(':', '"', pos)
-        case 14 => // offset minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetMinute = b - '0'
-            state = 15
-          } else digitError(pos)
-        case 15 => // offset minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetMinute = offsetMinute * 10 + (b - '0')
-            state = 16
-          } else digitError(pos)
-        case 16 => // ':' or '"'
-          if (b == ':') state = 17
-          else if (b == '"') state = 20
-          else tokensError(':', '"', pos)
-        case 17 => // offset second (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetSecond = b - '0'
-            state = 18
-          } else digitError(pos)
-        case 18 => // offset second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 19
-          } else digitError(pos)
-        case 19 => // '"'
-          if (b == '"') state = 20
-          else tokenError('"', pos)
+            if (nanoDigits == 9) {
+              b = nextByte(head)
+              continue = false
+            }
+          } else continue = false
+        } while (continue)
       }
-      pos += 1
-    } while (state != 20)
-    head = pos
+    }
+    if (b != 'Z') {
+      if (b == '-') offsetNeg = true
+      else if (b != '+') decodeError {
+        if (hasSecond) {
+          if (hasNano) {
+            if (nanoDigits == 9) "expected '+' or '-' or 'Z'"
+            else "expected '+' or '-' or 'Z' or digit"
+          } else "expected '.' or '+' or '-' or 'Z'"
+        } else "expected ':' or '+' or '-' or 'Z'"
+      }
+      offsetHour = next2Digits()
+      b = nextByte(head)
+      if (b == ':') {
+        offsetMinute = next2Digits()
+        b = nextByte(head)
+        if (b == ':') {
+          offsetSecond = next2Digits()
+          nextByteOrError('"')
+        } else if (b != '"') tokensError(':', '"')
+      } else if (b != '"') tokensError(':', '"')
+    } else nextByteOrError('"')
     OffsetTime.of(localTime(hour, minute, second, nano),
       zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
@@ -2244,58 +1827,32 @@ final class JsonReader private[jsoniter_scala](
     var yearNeg = false
     var yearDigits = 0
     var yearMinDigits = 4
-    var month = 0
-    var state = 0
-    var pos = head
+    var b = nextByte(head)
+    if (b >= '0' && b <= '9') {
+      year = b - '0'
+      yearDigits = 1
+    } else if (b == '-') yearNeg = true
+    else if (b == '+') yearMinDigits = 5
+    else decodeError("expected '-' or '+' or digit")
     do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or '+' or year digit
-          if (b >= '0' && b <= '9') {
-            year = b - '0'
-            yearDigits = 1
-            state = 1
-          } else if (b == '-') {
-            yearNeg = true
-            state = 1
-          } else if (b == '+') {
-            yearMinDigits = 5
-            state = 1
-          } else decodeError("expected '-' or '+' or digit", pos)
-        case 1 => // year digit
-          if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == yearMinDigits) state = 2
-          } else digitError(pos)
-        case 2 => // '-' or year digit
-          if (b == '-') state = 4
-          else if (b >= '0' && b <= '9') {
-            year = year * 10 + (b - '0')
-            yearDigits += 1
-            if (yearDigits == 9) state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // '-'
-          if (b == '-') state = 4
-          else tokenError('-', pos)
-        case 4 => // month (1st digit)
-          if (b >= '0' && b <= '9') {
-            month = b - '0'
-            state = 5
-          } else digitError(pos)
-        case 5 => // month (2nd digit)
-          if (b >= '0' && b <= '9') {
-            month = month * 10 + (b - '0')
-            state = 6
-          } else digitError(pos)
-        case 6 => // '"'
-          if (b == '"') state = 7
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 7)
-    head = pos
+      year = year * 10 + nextDigit()
+      yearDigits += 1
+    } while (yearDigits < yearMinDigits)
+    var continue = true
+    do {
+      b = nextByte(head)
+      if (b >= '0' && b <= '9') {
+        year = year * 10 + (b - '0')
+        yearDigits += 1
+        if (yearDigits == 9) {
+          nextByteOrError('-')
+          continue = false
+        }
+      } else if (b == '-') continue = false
+      else tokenOrDigitError('-')
+    } while (continue)
+    val month = next2Digits()
+    nextByteOrError('"')
     yearMonth(yearNeg, year, month)
   }
 
@@ -2517,64 +2074,21 @@ final class JsonReader private[jsoniter_scala](
     var offsetHour = 0
     var offsetMinute = 0
     var offsetSecond = 0
-    var state = 0
-    var pos = head
-    do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // 'Z' or '-' or '+'
-          if (b == '+') state = 1
-          else if (b == '-') {
-            offsetNeg = true
-            state = 1
-          } else if (b == 'Z') state = 9
-          else decodeError("expected '+' or '-' or 'Z'", pos)
-        case 1 => // offset hour (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetHour = b - '0'
-            state = 2
-          } else digitError(pos)
-        case 2 => // offset hour (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetHour = offsetHour * 10 + (b - '0')
-            state = 3
-          } else digitError(pos)
-        case 3 => // ':'
-          if (b == ':') state = 4
-          else if (b == '"') state = 10
-          else tokensError(':', '"', pos)
-        case 4 => // offset minute (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetMinute = b - '0'
-            state = 5
-          } else digitError(pos)
-        case 5 => // offset minute (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetMinute = offsetMinute * 10 + (b - '0')
-            state = 6
-          } else digitError(pos)
-        case 6 => // ':' or '"'
-          if (b == ':') state = 7
-          else if (b == '"') state = 10
-          else tokensError(':', '"', pos)
-        case 7 => // offset second (1st digit)
-          if (b >= '0' && b <= '9') {
-            offsetSecond = b - '0'
-            state = 8
-          } else digitError(pos)
-        case 8 => // offset second (2nd digit)
-          if (b >= '0' && b <= '9') {
-            offsetSecond = offsetSecond * 10 + (b - '0')
-            state = 9
-          } else digitError(pos)
-        case 9 => // '"'
-          if (b == '"') state = 10
-          else tokenError('"', pos)
-      }
-      pos += 1
-    } while (state != 10)
-    head = pos
+    var b = nextByte(head)
+    if (b != 'Z') {
+      if (b == '-') offsetNeg = true
+      else if (b != '+') decodeError("expected '+' or '-' or 'Z'")
+      offsetHour = next2Digits()
+      b = nextByte(head)
+      if (b == ':') {
+        offsetMinute = next2Digits()
+        b = nextByte(head)
+        if (b == ':') {
+          offsetSecond = next2Digits()
+          nextByteOrError('"')
+        } else if (b != '"') tokensError(':', '"')
+      } else if (b != '"') tokensError(':', '"')
+    } else nextByteOrError('"')
     zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
   }
 
@@ -2677,7 +2191,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondOfDay(hour: Int, month: Int, day: Int): Int = hour * 3600 + month * 60 + day
 
-  private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
+  private[this] def digitError(pos: Int = head - 1): Nothing = decodeError("expected digit", pos)
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
