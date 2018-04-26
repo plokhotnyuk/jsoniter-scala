@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.time.{OffsetTime, ZoneOffset}
+import java.time.{OffsetTime, Year, YearMonth, ZoneOffset}
 
 import julienrf.json.derived.flat
 import play.api.libs.json._
@@ -99,6 +99,12 @@ object PlayJsonFormats {
   val offsetTimeArrayFormat: Format[Array[OffsetTime]] = Format(
     Reads[Array[OffsetTime]](js => JsSuccess(js.as[Array[JsString]].map(js => OffsetTime.parse(js.value)))),
     Writes[Array[OffsetTime]](es => JsArray(es.map(v => JsString(v.toString)))))
+  val yearArrayFormat: Format[Array[Year]] = Format(
+    Reads[Array[Year]](js => JsSuccess(js.as[Array[JsString]].map(js => Year.parse(js.value)))),
+    Writes[Array[Year]](es => JsArray(es.map(v => JsString(v.toString)))))
+  val yearMonthArrayFormat: Format[Array[YearMonth]] = Format(
+    Reads[Array[YearMonth]](js => JsSuccess(js.as[Array[JsString]].map(js => YearMonth.parse(js.value)))),
+    Writes[Array[YearMonth]](es => JsArray(es.map(v => JsString(v.toString)))))
   val zoneOffsetArrayFormat: Format[Array[ZoneOffset]] = Format(
     Reads[Array[ZoneOffset]](js => JsSuccess(js.as[Array[JsString]].map(js => ZoneOffset.of(js.value)))),
     Writes[Array[ZoneOffset]](es => JsArray(es.map(v => JsString(v.toString)))))

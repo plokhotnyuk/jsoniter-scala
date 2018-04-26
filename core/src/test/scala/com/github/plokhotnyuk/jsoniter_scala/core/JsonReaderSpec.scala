@@ -934,69 +934,41 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P1Y1M1W1DX".getBytes("UTF-8"), "expected '\"', offset: 0x0000000a")
     }
   }
-  "JsonReader.readYear" should {
-    "parse valid number values with skipping of JSON space characters" in {
-      readYear(" \n\t\r123456789", null) shouldBe Year.of(123456789)
-      readYear(" \n\t\r-123456789", null) shouldBe Year.of(-123456789)
-    }
-    "parse valid number values and stops on not numeric chars (except '.', 'e', 'E')" in {
-      readYear("0$", null) shouldBe Year.of(0)
-      readYear("123456789$", null) shouldBe Year.of(123456789)
-    }
-  }
-  "JsonReader.readYear and JsonReader.readStringAsYear" should {
+  "JsonReader.readYear and JsonReader.readKeyAsYear" should {
     "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readYear(null))
-        .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readStringAsYear(null))
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsYear())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      readYear("null", Year.of(2008)) shouldBe Year.of(2008)
-      reader("null".getBytes("UTF-8")).readStringAsYear(Year.of(2008)) shouldBe Year.of(2008)
+      val default = Year.parse("2008")
+      reader("null".getBytes("UTF-8")).readYear(default) shouldBe default
     }
-  }
-  "JsonReader.readYear, JsonReader.readStringAsYear and JsonReader.readKeyAsYear" should {
-    def check(n: Year): Unit = {
-      val s = n.toString
-      readYear(s, null) shouldBe n
-      readKeyAsYear(s) shouldBe n
-      readStringAsYear(s, null) shouldBe n
-    }
+    "parse Year from a string representation according to ISO-8601 format" in {
+      def check(s: String, x: Year): Unit = {
+        readYear(s) shouldBe x
+        readKeyAsYear(s) shouldBe x
+      }
 
-    def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readYear(s, null)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsYear(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsYear(s, null)).getMessage.contains(error2))
+      check("-999999999", Year.of(Year.MIN_VALUE))
+      check("+999999999", Year.of(Year.MAX_VALUE))
+      forAll(genYear, minSuccessful(100000)) { (x: Year) =>
+        check(if (x.getValue > 9999) "+" + x else x.toString, x) // FIXME: It looks like a bug in JDK that Year.toString doesn't serialize years > 9999 with the '+' prefix
+      }
     }
+    "throw parsing exception for empty input and illegal or broken Year string" in {
+      def checkError(bytes: Array[Byte], error: String): Unit = {
+        assert(intercept[JsonParseException](reader(bytes).readYear(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(bytes).readKeyAsYear()).getMessage.contains(error))
+      }
 
-    "parse valid number values" in {
-      forAll(genYear, minSuccessful(100000))(check)
-    }
-    "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
-      checkError("12345.0", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
-      checkError("12345e5", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
-      checkError("12345E5", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
-    }
-    "throw parsing exception on illegal or empty input" in {
-      checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
-      checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
-      checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
-      checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
-      checkError("NaN", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError("Inf", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-      checkError("Infinity", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
-    }
-    "throw parsing exception on leading zero" in {
-      def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readYear(s, null)).getMessage.contains(error))
-
-      checkError("00", "illegal number with leading zero, offset: 0x00000000")
-      checkError("-00", "illegal number with leading zero, offset: 0x00000001")
-      checkError("012345", "illegal number with leading zero, offset: 0x00000000")
-      checkError("-012345", "illegal number with leading zero, offset: 0x00000001")
+      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000005")
+      checkError("\"008\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
+      checkError("\"+1000000000\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000000b")
+      checkError("\"-1000000000\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000000b")
     }
   }
   "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
@@ -1011,15 +983,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null".getBytes("UTF-8")).readYearMonth(default) shouldBe default
     }
     "parse YearMonth from a string representation according to ISO-8601 format" in {
-      def check(x: YearMonth): Unit = {
-        val s = x.toString
+      def check(s: String, x: YearMonth): Unit = {
         readYearMonth(s) shouldBe x
         readKeyAsYearMonth(s) shouldBe x
       }
 
-      check(YearMonth.of(Year.MIN_VALUE, 12))
-      check(YearMonth.of(Year.MIN_VALUE, 1))
-      forAll(genYearMonth, minSuccessful(100000))(check)
+      check("+999999999-12", YearMonth.of(Year.MAX_VALUE, 12))
+      check("-999999999-01", YearMonth.of(Year.MIN_VALUE, 1))
+      forAll(genYearMonth, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
@@ -2237,9 +2208,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def readPeriod(buf: Array[Byte]): Period = reader(stringify(buf)).readPeriod(null)
 
-  def readYear(s: String, default: Year): Year = readYear(s.getBytes("UTF-8"), default)
+  def readYear(s: String): Year = readYear(s.getBytes("UTF-8"))
 
-  def readYear(buf: Array[Byte], default: Year): Year = reader(buf).readYear(default)
+  def readYear(buf: Array[Byte]): Year = reader(stringify(buf)).readYear(null)
 
   def readYearMonth(s: String): YearMonth = readYearMonth(s.getBytes("UTF-8"))
 
@@ -2412,12 +2383,6 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readKeyAsBigDecimal(s: String): BigDecimal = readKeyAsBigDecimal(s.getBytes("UTF-8"))
 
   def readKeyAsBigDecimal(buf: Array[Byte]): BigDecimal = reader(stringify(buf) :+ ':'.toByte).readKeyAsBigDecimal()
-
-  def readStringAsYear(s: String, default: Year): Year =
-    readStringAsYear(s.getBytes("UTF-8"), default)
-
-  def readStringAsYear(buf: Array[Byte], default: Year): Year =
-    reader(stringify(buf)).readStringAsYear(default)
 
   def readStringAsByte(s: String): Byte = readStringAsByte(s.getBytes("UTF-8"))
 

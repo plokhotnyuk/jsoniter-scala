@@ -1015,7 +1015,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         json =
           ("""{"d":"PT10H30M","i":"2007-12-03T10:15:30.001Z","ld":"2007-12-03","ldt":"2007-12-03T10:15:30",""" +
           """"lt":"10:15:30","md":"--12-03","odt":"2007-12-03T10:15:30+01:00","ot":"10:15:30+01:00",""" +
-          """"p":"P1Y2M25D","y":2007,"ym":"2007-12","zdt":"2007-12-03T10:15:30+01:00[Europe/Paris]",""" +
+          """"p":"P1Y2M25D","y":"2007","ym":"2007-12","zdt":"2007-12-03T10:15:30+01:00[Europe/Paris]",""" +
           """"zi":"Europe/Paris","zo":"+01:00"}""").getBytes("UTF-8"))
     }
     "serialize and deserialize top-level Java time types" in {
@@ -1037,7 +1037,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         OffsetTime.parse("10:15:30+01:00"), "\"10:15:30+01:00\"".getBytes("UTF-8"))
       verifySerDeser(make[Period](CodecMakerConfig()),
         Period.parse("P1Y2M25D"), "\"P1Y2M25D\"".getBytes("UTF-8"))
-      verifySerDeser(make[Year](CodecMakerConfig()), Year.parse("2007"), "2007".getBytes("UTF-8"))
+      verifySerDeser(make[Year](CodecMakerConfig()), Year.parse("2007"), "\"2007\"".getBytes("UTF-8"))
       verifySerDeser(make[YearMonth](CodecMakerConfig()),
         YearMonth.parse("2007-12"), "\"2007-12\"".getBytes("UTF-8"))
       verifySerDeser(make[ZonedDateTime](CodecMakerConfig()),

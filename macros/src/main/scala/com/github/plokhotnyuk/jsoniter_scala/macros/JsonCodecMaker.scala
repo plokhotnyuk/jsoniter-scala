@@ -522,9 +522,8 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[OffsetDateTime]) q"in.readOffsetDateTime($default)"
         else if (tpe =:= typeOf[OffsetTime]) q"in.readOffsetTime($default)"
         else if (tpe =:= typeOf[Period]) q"in.readPeriod($default)"
-        else if (tpe =:= typeOf[Year]) {
-          if (isStringified) q"in.readStringAsYear($default)" else q"in.readYear($default)"
-        } else if (tpe =:= typeOf[YearMonth]) q"in.readYearMonth($default)"
+        else if (tpe =:= typeOf[Year]) q"in.readYear($default)"
+        else if (tpe =:= typeOf[YearMonth]) q"in.readYearMonth($default)"
         else if (tpe =:= typeOf[ZonedDateTime]) q"in.readZonedDateTime($default)"
         else if (tpe =:= typeOf[ZoneId]) q"in.readZoneId($default)"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readZoneOffset($default)"
@@ -781,7 +780,7 @@ object JsonCodecMaker {
           tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long] ||
           tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
           tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
-          tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal] || tpe =:= typeOf[Year]) {
+          tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
           if (isStringified) q"out.writeValAsString($m)" else q"out.writeVal($m)"
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
           tpe =:= typeOf[String] || tpe =:= typeOf[java.util.UUID] ||
@@ -789,11 +788,10 @@ object JsonCodecMaker {
           tpe =:= typeOf[LocalDate] || tpe =:= typeOf[LocalDateTime] ||
           tpe =:= typeOf[LocalTime] || tpe =:= typeOf[MonthDay] ||
           tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
-          tpe =:= typeOf[Period] || tpe =:= typeOf[YearMonth] ||
-          tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] ||
-          tpe =:= typeOf[ZoneOffset]) {
-          q"out.writeVal($m)"
-        } else if (isValueClass(tpe)) {
+          tpe =:= typeOf[Period] || tpe =:= typeOf[Year] ||
+          tpe =:= typeOf[YearMonth] || tpe =:= typeOf[ZonedDateTime] ||
+          tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
+        else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe), isStringified)
         } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
           q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe), isStringified)}"

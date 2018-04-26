@@ -189,8 +189,8 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsYear(): Year = {
     readParenthesesToken()
-    val x = parseYear(false)
-    readParenthesesByteWithColonToken()
+    val x = parseYear()
+    readColonToken()
     x
   }
 
@@ -365,11 +365,8 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readYear(default: Year): Year =
-    if (isNextToken('n', head)) readNullOrNumberError(default, head)
-    else {
-      rollbackToken()
-      parseYear(true)
-    }
+    if (isNextToken('"', head)) parseYear()
+    else readNullOrTokenError(default, '"')
 
   def readYearMonth(default: YearMonth): YearMonth =
     if (isNextToken('"', head)) parseYearMonth()
@@ -449,13 +446,6 @@ final class JsonReader private[jsoniter_scala](
   def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
     if (isNextToken('"', head)) {
       val x = parseBigDecimal(isToken = false, default)
-      readParenthesesByte()
-      x
-    } else readNullOrTokenError(default, '"')
-
-  def readStringAsYear(default: Year): Year =
-    if (isNextToken('"', head)) {
-      val x = parseYear(false)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
@@ -1814,10 +1804,37 @@ final class JsonReader private[jsoniter_scala](
     Period.of(years, months, days)
   }
 
-  private[this] def parseYear(isToken: Boolean) = {
-    val year = parseInt(isToken)
-    if (year < -999999999 || year > 999999999) decodeError("illegal year")
-    try Year.of(year) catch {
+  private[this] def parseYear(): Year = {
+    var year = 0
+    var yearNeg = false
+    var yearDigits = 0
+    var yearMinDigits = 4
+    var b = nextByte(head)
+    if (b >= '0' && b <= '9') {
+      year = b - '0'
+      yearDigits = 1
+    } else if (b == '-') yearNeg = true
+    else if (b == '+') yearMinDigits = 5
+    else decodeError("expected '-' or '+' or digit")
+    do {
+      year = year * 10 + nextDigit()
+      yearDigits += 1
+    } while (yearDigits < yearMinDigits)
+    var continue = true
+    do {
+      b = nextByte(head)
+      if (b >= '0' && b <= '9') {
+        year = year * 10 + (b - '0')
+        yearDigits += 1
+        if (yearDigits == 9) {
+          nextByteOrError('"')
+          continue = false
+        }
+      } else if (b == '"') continue = false
+      else tokenOrDigitError('"')
+    } while (continue)
+    if (year > 999999999) decodeError("illegal year")
+    try Year.of(if (yearNeg) -year else year) catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }

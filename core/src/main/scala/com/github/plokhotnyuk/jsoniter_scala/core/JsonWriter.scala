@@ -185,9 +185,9 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeKey(x: Year): Unit = {
-    writeCommaWithParentheses()
-    writeInt(x.getValue)
-    writeParenthesesWithColon()
+    writeComma()
+    writeYear(x)
+    writeColon()
   }
 
   def writeKey(x: YearMonth): Unit = {
@@ -245,7 +245,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: Period): Unit = writePeriod(x)
 
-  def writeVal(x: Year): Unit = writeInt(x.getValue)
+  def writeVal(x: Year): Unit = writeYear(x)
 
   def writeVal(x: YearMonth): Unit = writeYearMonth(x)
 
@@ -314,8 +314,6 @@ final class JsonWriter private[jsoniter_scala](
     writeDouble(x)
     writeBytes('"')
   }
-
-  def writeValAsString(x: Year): Unit = writeValAsString(x.getValue)
 
   def writeNull(): Unit = writeBytes('n', 'u', 'l', 'l')
 
@@ -931,6 +929,15 @@ final class JsonWriter private[jsoniter_scala](
       } else writeBytes('"')
     }
 
+  private[this] def writeYear(x: Year): Unit = count = {
+    var pos = ensureBufCapacity(12) // 12 == "+999999999".length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    pos = writeYear(x.getValue, pos + 1, buf, digits)
+    buf(pos) = '"'
+    pos + 1
+  }
+
   private[this] def writeYearMonth(x: YearMonth): Unit = count = {
     var pos = ensureBufCapacity(15) // 15 == "+999999999-12".length + 2
     val buf = this.buf
@@ -982,6 +989,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeYearMonth(year: Int, month: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val pos = writeYear(year, p, buf, ds)
+    buf(pos) = '-'
+    write2Digits(month, pos + 1, buf, ds)
+  }
+
+  private[this] def writeYear(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var pos = p
     val posYear =
       if (year >= 0) {
@@ -995,11 +1008,8 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
         -year
       }
-    pos =
-      if (posYear >= 10000) writeInt(posYear, pos, buf, ds)
-      else write4Digits(posYear, pos, buf, ds)
-    buf(pos) = '-'
-    write2Digits(month, pos + 1, buf, ds)
+    if (posYear >= 10000) writeInt(posYear, pos, buf, ds)
+    else write4Digits(posYear, pos, buf, ds)
   }
 
   private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =

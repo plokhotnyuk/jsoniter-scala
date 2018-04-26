@@ -229,20 +229,21 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
   }
-  "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for Year" should {
+  "JsonWriter.writeVal and JsonWriter.writeKey for Year" should {
     "don't write null value" in {
       intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Year])))
-      intercept[NullPointerException](withWriter(_.writeValAsString(null.asInstanceOf[Year])))
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Year])))
     }
-    "write number values" in {
+    "write Year as a string representation according to ISO-8601 format" in {
       def check(x: Year): Unit = {
-        val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe s
-        withWriter(_.writeValAsString(x)) shouldBe '"' + s + '"'
+        // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
+        val s = if (x.getValue > 9999) "+" + x else x.toString
+        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
 
+      check(Year.of(Year.MAX_VALUE))
+      check(Year.of(Year.MIN_VALUE))
       forAll(genYear, minSuccessful(100000))(check)
     }
   }
