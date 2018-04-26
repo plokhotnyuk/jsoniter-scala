@@ -1170,7 +1170,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
       checkError("\"\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000001")
       checkError("\"+\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000002")
-      //checkError("\"+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003") FIXME looks a like bug in ZoneId.of() parser
+      //checkError("\"+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003") FIXME looks like a bug in ZoneId.of() parser
       checkError("\"+10=\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
       checkError("\"+10:\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
       checkError("\"+10:1\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000006")
@@ -1445,6 +1445,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000000")
       checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
       checkError("\"\\".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000002")
+      checkError("\"\"".getBytes("UTF-8"), "illegal value for char, offset: 0x00000001")
     }
     "throw parsing exception for null, boolean values & numbers" in {
       checkError("null".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")

@@ -2842,7 +2842,7 @@ final class JsonReader private[jsoniter_scala](
     if (remaining > 0) {
       val b1 = buf(pos)
       if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
-        if (b1 == '"') decodeError("illegal value for char")
+        if (b1 == '"') decodeError("illegal value for char", pos)
         else if (b1 != '\\') {
           if (b1 < ' ') unescapedControlCharacterError(pos)
           head = pos + 1
