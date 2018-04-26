@@ -1058,9 +1058,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         readKeyAsZonedDateTime(s) shouldBe x
       }
 
+      check("2018-01-01T00:00Z", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.UTC))
       check("2018-01-01T00:00:00Z", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.UTC))
+      check("2018-01-01T00:00+18", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.MAX))
       check("2018-01-01T00:00:00+18", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.MAX))
       check("2018-01-01T00:00:00+18[UTC+18]", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneId.of("UTC+18")))
+      check("2018-01-01T00:00-18", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.MIN))
       check("2018-01-01T00:00:00-18", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.MIN))
       check("2018-01-01T00:00:00-18[UTC-18]", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneId.of("UTC-18")))
       check("+999999999-12-31T23:59:59.999999999+18:00", ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
@@ -1167,7 +1170,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
       checkError("\"\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000001")
       checkError("\"+\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000002")
-      //checkError("\"+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003") FIXME looks like bug in ZoneId.of() parser
+      //checkError("\"+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003") FIXME looks a like bug in ZoneId.of() parser
       checkError("\"+10=\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
       checkError("\"+10:\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
       checkError("\"+10:1\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000006")
