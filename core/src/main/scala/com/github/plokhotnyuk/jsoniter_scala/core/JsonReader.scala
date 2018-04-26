@@ -2189,9 +2189,9 @@ final class JsonReader private[jsoniter_scala](
             state = 11
           } else if (b == 'D') {
             x = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
-            val r = days + x
-            if (((x ^ r) & (days ^ r)) < 0) periodError(pos)
-            days = r
+            val r = days + x.toLong
+            days = r.toInt
+            if (r != days) periodError(pos)
             state = 14
           } else decodeError("expected 'W' or 'D' or digit", pos)
         case 11 => // '-' or '"' or digit
@@ -2216,9 +2216,9 @@ final class JsonReader private[jsoniter_scala](
             state = 13
           } else if (b == 'D') {
             x = if (neg ^ xNeg) x else if (x == -2147483648) periodError(pos) else -x
-            val r = days + x
-            if (((x ^ r) & (days ^ r)) < 0) periodError(pos)
-            days = r
+            val r = days + x.toLong
+            days = r.toInt
+            if (r != days) periodError(pos)
             state = 14
           } else tokenOrDigitError('D', pos)
         case 14 => // '"'
