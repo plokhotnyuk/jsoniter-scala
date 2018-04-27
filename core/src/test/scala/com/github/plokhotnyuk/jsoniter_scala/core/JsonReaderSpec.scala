@@ -954,6 +954,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-999999999", Year.of(Year.MIN_VALUE))
       check("+999999999", Year.of(Year.MAX_VALUE))
       forAll(genYear, minSuccessful(100000)) { (x: Year) =>
+        // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
         val s = // FIXME: It looks like a bug in JDK that Year.toString doesn't serialize years > 9999 with the '+' prefix
           if (x.getValue > 0) (if (x.getValue > 9999) "+" else "") + f"${x.getValue}%04d"
           else f"-${-x.getValue}%04d"

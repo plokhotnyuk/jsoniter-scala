@@ -1331,7 +1331,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         var nanoDigits = 0
-        var continue = true
+        continue = true
         do {
           b = nextByte(head)
           if (b >= '0' && b <= '9') {
@@ -1430,7 +1430,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         var nanoDigits = 0
-        var continue = true
+        continue = true
         do {
           b = nextByte(head)
           if (b >= '0' && b <= '9') {
@@ -1540,7 +1540,7 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        var continue = true
+        continue = true
         do {
           b = nextByte(head)
           if (b >= '0' && b <= '9') {
