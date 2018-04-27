@@ -955,7 +955,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("+999999999", Year.of(Year.MAX_VALUE))
       forAll(genYear, minSuccessful(100000)) { (x: Year) =>
         // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
-        val s = // FIXME: It looks like a bug in JDK that Year.toString doesn't serialize years > 9999 with the '+' prefix
+        val s = // FIXME: It looks like a bug in JDK that Year.toString serialize years as integer numbers
           if (x.getValue > 0) (if (x.getValue > 9999) "+" else "") + f"${x.getValue}%04d"
           else f"-${-x.getValue}%04d"
         check(s, x)
@@ -1072,7 +1072,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:X3Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
       checkError("\"2008-01-20T07:24:3XZ[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000013")
       checkError("\"2008-01-20T07:24:33X[UTC]\"".getBytes("UTF-8"), "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
-      checkError("\"2008-01-20T07:24:33ZZ".getBytes("UTF-8"), "expected '[', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33ZZ".getBytes("UTF-8"), "expected '[' or '\"', offset: 0x00000015")
       checkError("\"2008-01-20T07:24:33.[UTC]\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
       checkError("\"2008-01-20T07:24:33.000[UTC]\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
       checkError("\"2008-01-20T07:24:33.123456789X[UTC]\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z', offset: 0x0000001e")
