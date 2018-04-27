@@ -41,7 +41,8 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  scalaVersion := "2.12.5",
+  resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
+  scalaVersion := "2.12.6",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -88,7 +89,7 @@ lazy val core = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M3", "2.12.5", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M3", "2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
@@ -101,7 +102,7 @@ lazy val macros = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M3", "2.12.5", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M3", "2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
@@ -115,7 +116,7 @@ lazy val benchmark = project
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.12.5", "2.11.12"),
+    crossScalaVersions := Seq("2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.dslplatform" %% "dsl-json-scala" % "1.7.3",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5",
