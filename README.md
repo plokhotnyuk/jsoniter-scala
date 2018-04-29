@@ -10,9 +10,14 @@ Scala macros that generate codecs for case classes, standard types and collectio
 to get maximum performance of JSON parsing and serialization.
 
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
-performance of Jsoniter Scala vs. Jackson, Circe and Play-JSON libraries using different JDK versions on the following 
-environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 16.04, 
-Linux notebook 4.13.0-32-generic, Oracle JDK 64-bit (builds 1.8.0_161-b12 and "10" 2018-03-20) 
+performance of Jsoniter Scala vs. [Jackson](https://github.com/FasterXML/jackson-module-scala), 
+[Circe](https://github.com/circe/circe) and [Play-JSON](https://github.com/playframework/play-json) libraries using 
+different JDK and GraalVM versions on the following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), 
+RAM 16Gb DDR4-2400, Ubuntu 16.04, Linux notebook 4.13.0-39-generic, latest versions of Oracle JDK 8/10 and GraalVM CE/EE
+
+WARNING: Results of GraalVM CE/EE are only for a rough evaluation of possible potential of this new platform. 
+Final results can change significantly after JMH tool and GraalVM developers will provide mutual compatibility and 
+will start its support.   
 
 ## Acknowledgments
 
