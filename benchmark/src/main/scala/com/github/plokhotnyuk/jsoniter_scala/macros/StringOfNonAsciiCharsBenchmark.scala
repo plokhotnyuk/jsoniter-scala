@@ -32,8 +32,7 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
           do {
             ch = (j * 1498724053).toChar
             j += 1
-          } while (ch < 128 || isSurrogate(ch) ||
-            ch == 0xFFFE || ch == 0xFFFF) // FIXME: required for dsl-json, remove after fix of https://github.com/ngs-doo/dsl-json/issues/51
+          } while (ch < 128 || isSurrogate(ch))
           ch
         }
         i += 1
