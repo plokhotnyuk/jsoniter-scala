@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
-import java.time.{LocalDate, YearMonth}
+import java.time.YearMonth
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
