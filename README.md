@@ -13,7 +13,7 @@ to get maximum performance of JSON parsing and serialization.
 performance of Jsoniter Scala vs. [dsl-json](https://github.com/ngs-doo/dsl-json) (using its Java API only),
 [Jackson](https://github.com/FasterXML/jackson-module-scala), [Circe](https://github.com/circe/circe), and 
 [Play-JSON](https://github.com/playframework/play-json) libraries using different JDK and GraalVM versions on the 
-following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, and latest 
+following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, latest 
 versions of Oracle JDK 8/10 and GraalVM CE/EE
 
 WARNING: Results of GraalVM CE/EE are only for a rough evaluation of possible potential of this new platform. 
@@ -161,10 +161,6 @@ sbt -J-XX:MaxMetaspaceSize=512m clean +coverage +test +coverageReport +mimaRepor
 
 ### Run benchmarks
 
-```sh
-./benchmark.sh
-```   
-
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check 
 [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](http://openjdk.java.net/projects/code-tools/jmh/).
 
@@ -257,7 +253,7 @@ Double check binary and source compatibility, including behavior, and release us
 are required):
 
 ```sh
-sbt release
+sbt -J-XX:MaxMetaspaceSize=512m release
 ```
 
 Do not push changes to github until promoted artifacts for the new version are not available for download on 
