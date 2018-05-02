@@ -266,7 +266,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsFloat(): Float = {
     readParenthesesToken()
-    val x = parseDouble(isToken = false).toFloat
+    val x = parseFloat(isToken = false)
     readParenthesesByteWithColonToken()
     x
   }
@@ -316,7 +316,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readDouble(): Double = parseDouble(isToken = true)
 
-  def readFloat(): Float = parseDouble(isToken = true).toFloat
+  def readFloat(): Float = parseFloat(isToken = true)
 
   def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default)
 
@@ -431,7 +431,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readStringAsFloat(): Float = {
     readParenthesesToken()
-    val x = parseDouble(isToken = false).toFloat
+    val x = parseFloat(isToken = false)
     readParenthesesByte()
     x
   }
@@ -965,7 +965,7 @@ final class JsonReader private[jsoniter_scala](
               b = buf(pos)
               b >= '0' && b <= '9'
             }) pos = {
-              if (posExp < 350) posExp = posExp * 10 + (b - '0')
+              if (posExp < 100) posExp = posExp * 10 + (b - '0')
               pos + 1
             }
           } else numberError(pos - 1)
@@ -973,17 +973,104 @@ final class JsonReader private[jsoniter_scala](
         head = pos
         val exp = manExp + (if (isExpNeg) -posExp else posExp)
         if (posMan < 4503599627370496L) { // 4503599627370496L == 1L < 52, max mantissa that can be converted w/o rounding error by double mul or div
-          val man = if (isNeg) -posMan else posMan
-          if (exp == 0) man
-          else if (exp < 0 && exp > -22) man / pow10(-exp) // 22 == pow10.length
-          else if (exp > 0 && exp < 22) man * pow10(exp)
+          if (exp == 0) toSignedDouble(isNeg, posMan)
+          else if (exp < 0 && exp > -pow10.length) toSignedDouble(isNeg, posMan / pow10(-exp))
+          else if (exp > 0 && exp < pow10.length) toSignedDouble(isNeg, posMan * pow10(exp))
           else toDouble(pos)
         } else toDouble(pos)
       } else numberError(pos - 1)
     } finally this.mark = mark
   }
 
+  private[this] def toSignedDouble(isNeg: Boolean, posX: Double): Double = if (isNeg) -posX else posX
+
   private[this] def toDouble(pos: Int): Double = java.lang.Double.parseDouble(new String(buf, 0, mark, pos - mark))
+
+  private[this] def parseFloat(isToken: Boolean): Float = {
+    var b = if (isToken) nextToken(head) else nextByte(head)
+    val mark = this.mark
+    this.mark = Math.min(mark, head - 1)
+    try {
+      val isNeg = b == '-'
+      if (isNeg) b = nextByte(head)
+      var pos = head
+      if (b >= '0' && b <= '9') {
+        var posMan: Long = b - '0'
+        val isZeroFirst = isToken && posMan == 0
+        var manExp = 0
+        var posExp = 0
+        var isExpNeg = false
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) pos = {
+          if (isZeroFirst) leadingZeroError(pos - 1)
+          if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
+          else manExp += 1
+          pos + 1
+        }
+        if (b == '.') {
+          b = nextByte(pos + 1)
+          pos = head
+          if (b >= '0' && b <= '9') {
+            if (posMan < 4503599627370496L) {
+              posMan = posMan * 10 + (b - '0')
+              manExp -= 1
+            }
+            while ((pos < tail || {
+              pos = loadMore(pos)
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos = {
+              if (posMan < 4503599627370496L) {
+                posMan = posMan * 10 + (b - '0')
+                manExp -= 1
+              }
+              pos + 1
+            }
+          } else numberError(pos - 1)
+        }
+        if ((b | 0x20) == 'e') {
+          b = nextByte(pos + 1)
+          if (b == '-' || b == '+') {
+            isExpNeg = b == '-'
+            b = nextByte(head)
+          }
+          pos = head
+          if (b >= '0' && b <= '9') {
+            posExp = b - '0'
+            while ((pos < tail || {
+              pos = loadMore(pos)
+              pos < tail
+            }) && {
+              b = buf(pos)
+              b >= '0' && b <= '9'
+            }) pos = {
+              if (posExp < 100) posExp = posExp * 10 + (b - '0')
+              pos + 1
+            }
+          } else numberError(pos - 1)
+        }
+        head = pos
+        val exp = manExp + (if (isExpNeg) -posExp else posExp)
+        if (posMan < 4503599627370496L) { // 4503599627370496L == 1L < 52, max mantissa that can be converted w/o rounding error by double mul or div
+          if (exp == 0) toSignedFloat(isNeg, posMan)
+          else if (exp < 0 && exp > -11) toSignedFloat(isNeg, (posMan / pow10(-exp)).toFloat) // 11 to avoid the case of a double rounding error
+          else if (exp > 0 && exp < pow10.length) toSignedFloat(isNeg, (posMan * pow10(exp)).toFloat)
+          else toFloat(pos)
+        } else toFloat(pos)
+      } else numberError(pos - 1)
+    } finally this.mark = mark
+  }
+
+  private[this] def toSignedFloat(isNeg: Boolean, posX: Float): Float = if (isNeg) -posX else posX
+
+  private[this] def toFloat(pos: Int): Float = java.lang.Float.parseFloat(new String(buf, 0, mark, pos - mark))
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)

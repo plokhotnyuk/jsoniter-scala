@@ -1739,6 +1739,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readStringAsFloat(s) shouldBe n
     }
 
+    def check2(s: String): Unit = {
+      readFloat(s).toString shouldBe s
+      readKeyAsFloat(s).toString shouldBe s
+      readStringAsFloat(s).toString shouldBe s
+    }
+
     def checkFloat(s: String): Unit = check(s, java.lang.Float.parseFloat(s))
 
     def checkError(s: String, error1: String, error2: String): Unit = {
@@ -1750,6 +1756,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "parse valid float values" in {
       forAll(minSuccessful(100000)) { (n: Float) =>
         checkFloat(n.toString)
+      }
+      //(1 to Int.MaxValue).par.foreach { n =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
+        val x = java.lang.Float.floatToRawIntBits(n)
+        if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkFloat(n.toString)
@@ -1771,6 +1782,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345e-6789", -0.0f)
       check("12345678901234567890e-12345678901234567890", 0.0f)
       check("-12345678901234567890e-12345678901234567890", -0.0f)
+    }
+    "parse positive and negative zero" in {
+      check2("0.0")
+      check2("-0.0")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -1818,6 +1833,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       readStringAsDouble(s) shouldBe n
     }
 
+    def check2(s: String): Unit = {
+      readDouble(s).toString shouldBe s
+      readKeyAsDouble(s).toString shouldBe s
+      readStringAsDouble(s).toString shouldBe s
+    }
+
     def checkDouble(s: String): Unit = check(s, java.lang.Double.parseDouble(s))
 
     def checkError(s: String, error1: String, error2: String): Unit = {
@@ -1829,6 +1850,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "parse valid double values" in {
       forAll(minSuccessful(100000)) { (n: Double) =>
         checkDouble(n.toString)
+      }
+      forAll(minSuccessful(100000)) { (n: Long) =>
+        val x = java.lang.Double.doubleToRawLongBits(n)
+        if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkDouble(n.toString)
@@ -1850,6 +1875,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345e-6789", -0.0)
       check("12345678901234567890e-12345678901234567890", 0.0)
       check("-1234567890123456789e-12345678901234567890", -0.0)
+    }
+    "parse positive and negative zero" in {
+      check2("0.0")
+      check2("-0.0")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
