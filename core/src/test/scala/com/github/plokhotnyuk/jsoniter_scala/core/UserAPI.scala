@@ -15,20 +15,19 @@ object UserAPI {
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_compact_response.json"))
   val httpMessage: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_http_response.txt"))
   val codec: JsonValueCodec[User] = new JsonValueCodec[User] {
-    private val r0: Array[String] = Array("name")
-    private val r1: Array[String] = Array("id", "model")
-
+    private[this] val r0: Array[String] = Array("name")
+    private[this] val r1: Array[String] = Array("id", "model")
     val nullValue: User = null
 
     def decodeValue(in: JsonReader, default: User): User = d0(in, default)
 
     def encodeValue(x: User, out: JsonWriter): Unit = e0(x, out)
 
-    private def d2(in: JsonReader, default: Device): Device =
+    private[this] def d2(in: JsonReader, default: Device): Device =
       if (in.isNextToken('{')) {
         var _id: Int = 0
         var _model: String = null
-        var req0 = 3
+        var p0 = 3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
           do {
@@ -36,24 +35,27 @@ object UserAPI {
             (in.charBufToHashCode(l): @switch) match {
               case 3355 =>
                 if (in.isCharBufEqualsTo(l, "id")) {
+                  if ((p0 & 1) != 0) p0 ^= 1
+                  else in.duplicatedKeyError(l)
                   _id = in.readInt()
-                  req0 &= -2
                 } else in.skip()
               case 104069929 =>
                 if (in.isCharBufEqualsTo(l, "model")) {
+                  if ((p0 & 2) != 0) p0 ^= 2
+                  else in.duplicatedKeyError(l)
                   _model = in.readString(_model)
-                  req0 &= -3
                 } else in.skip()
-              case _ => in.skip()
+              case _ =>
+                in.skip()
             }
           } while (in.isNextToken(','))
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if (req0 != 0) in.requiredFieldError(r1(Integer.numberOfTrailingZeros(req0)))
+        if ((p0 & 3) != 0) in.requiredFieldError(r1(Integer.numberOfTrailingZeros(p0)))
         new Device(id = _id, model = _model)
       } else in.readNullOrTokenError(default, '{')
 
-    private def d1(in: JsonReader, default: Seq[Device]): Seq[Device] =
+    private[this] def d1(in: JsonReader, default: Seq[Device]): Seq[Device] =
       if (in.isNextToken('[')) {
         if (in.isNextToken(']')) default
         else {
@@ -62,15 +64,15 @@ object UserAPI {
           do x += d2(in, null)
           while (in.isNextToken(','))
           if (in.isCurrentToken(']')) x.result()
-          else in.arrayEndError()
+          else in.arrayEndOrCommaError()
         }
       } else in.readNullOrTokenError(default, '[')
 
-    private def d0(in: JsonReader, default: User): User =
+    private[this] def d0(in: JsonReader, default: User): User =
       if (in.isNextToken('{')) {
         var _name: String = null
         var _devices: Seq[Device] = Seq.empty[Device]
-        var req0 = 1
+        var p0 = 3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
           do {
@@ -78,22 +80,26 @@ object UserAPI {
             (in.charBufToHashCode(l): @switch) match {
               case 3373707 =>
                 if (in.isCharBufEqualsTo(l, "name")) {
+                  if ((p0 & 1) != 0) p0 ^= 1
+                  else in.duplicatedKeyError(l)
                   _name = in.readString(_name)
-                  req0 &= -2
                 } else in.skip()
               case 1559801053 =>
-                if (in.isCharBufEqualsTo(l, "devices")) _devices = d1(in, _devices)
-                else in.skip()
+                if (in.isCharBufEqualsTo(l, "devices")) {
+                  if ((p0 & 2) != 0) p0 ^= 2
+                  else in.duplicatedKeyError(l)
+                  _devices = d1(in, _devices)
+                } else in.skip()
               case _ => in.skip()
             }
           } while (in.isNextToken(','))
-          if (in.isCurrentToken('}').`unary_!`) in.objectEndOrCommaError()
+          if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if (req0 != 0) in.requiredFieldError(r0(Integer.numberOfTrailingZeros(req0)))
+        if ((p0 & 1) != 0) in.requiredFieldError(r0(Integer.numberOfTrailingZeros(p0)))
         new User(name = _name, devices = _devices)
       } else in.readNullOrTokenError(default, '{')
 
-    private def e2(x: Device, out: JsonWriter): Unit = {
+    private[this] def e2(x: Device, out: JsonWriter): Unit = {
       out.writeObjectStart()
       out.writeNonEscapedAsciiKey("id")
       out.writeVal(x.id)
@@ -102,7 +108,7 @@ object UserAPI {
       out.writeObjectEnd()
     }
 
-    private def e1(x: Seq[Device], out: JsonWriter): Unit = {
+    private[this] def e1(x: Seq[Device], out: JsonWriter): Unit = {
       out.writeArrayStart()
       x.foreach { x =>
         out.writeComma()
@@ -111,7 +117,7 @@ object UserAPI {
       out.writeArrayEnd()
     }
 
-    private def e0(x: User, out: JsonWriter): Unit = {
+    private[this] def e0(x: User, out: JsonWriter): Unit = {
       out.writeObjectStart()
       out.writeNonEscapedAsciiKey("name")
       out.writeVal(x.name)
