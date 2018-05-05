@@ -5,16 +5,16 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
-@Warmup(iterations = 3)
-@Measurement(iterations = 5)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1, jvmArgs = Array(
   "-server",
-  "-Xms1g",
-  "-Xmx1g",
-  "-XX:NewSize=512m",
-  "-XX:MaxNewSize=512m",
-  "-XX:InitialCodeCacheSize=256m",
-  "-XX:ReservedCodeCacheSize=256m",
+  "-Xms2g",
+  "-Xmx2g",
+  "-XX:NewSize=1g",
+  "-XX:MaxNewSize=1g",
+  "-XX:InitialCodeCacheSize=512m",
+  "-XX:ReservedCodeCacheSize=512m",
   "-XX:-UseBiasedLocking",
   "-XX:+AlwaysPreTouch"
 ))
