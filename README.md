@@ -17,8 +17,6 @@ following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 
 versions of Oracle JDK 8/10 and GraalVM CE/EE
 
 WARNING: Results of GraalVM CE/EE are only for a rough evaluation of possible potential of this new platform. 
-Final results can change significantly after JMH tool and GraalVM developers will provide mutual compatibility and 
-will start its support.   
 
 ## Acknowledgments
 
