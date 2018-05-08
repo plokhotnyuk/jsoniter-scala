@@ -172,6 +172,11 @@ List of available option can be printed by:
 sbt 'benchmark/jmh:run -h'
 ```
 
+Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
+```sh
+sbt 'benchmark/jmh:run -lrf
+``` 
+
 JMH allows to run benchmarks with different profilers, to get a list of supported use:
 
 ```sh
@@ -184,12 +189,48 @@ Help for profiler options can be printed by following command:
 sbt 'benchmark/jmh:run -prof <profiler_name>:help'
 ```
 
-To get a result for some benchmarks in-flight recording file (which you can then open and analyze offline using JMC) use 
-command like this:
+For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR -wi 10 -i 50 .*GoogleMapsAPI.*readJsoniter.*'
+sbt clean 'benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
 ```
+
+To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
+
+```sh
+sbt clean 'benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Benchmark.*'
+```
+
+Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
+of your file to the drop zone or using the `source` parameter with an HTTP link to your file in the URL like 
+[here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/jdk8.json).
+
+To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
+
+```sh
+sbt clean 'benchmark/jmh:run -prof jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true -wi 10 -i 60 .*GoogleMapsAPI.*readJsoniter.*'
+```
+
+Now you can open files from the `/tmp/profile-jfr` directory:
+```sh
+profile.jfr                             # JFR profile, open and analyze it using JMC
+jfr-collapsed-cpu.txt                   # Data from JFR profile that are extracted for Flame Graph tool
+flame-graph-cpu.svg                     # Flame graph of CPU usage 
+flame-graph-cpu-reverse.svg             # Reversed flame graph of CPU usage
+flame-graph-allocation-tlab.svg         # Flame graph of heap allocations in TLAB
+flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocations in TLAB
+``` 
+
+To run benchmarks with recordings by Async profiler, clone its repository and use command like this:
+
+```sh
+sbt -no-colors 'benchmark/jmh:run -prof jmh.extras.Async:dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
+```
+
+Then open `/tmp/profile-async` directory with recordings and reports:
+```sh
+
+``` 
 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
@@ -204,29 +245,7 @@ additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blo
 sbt clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
 ```
 
-For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
-
-```sh
-sbt clean 'benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
-```
-
-To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
-
-```sh
-sbt clean 'benchmark/jmh:run -prof gc .*Benchmark.*'
-```
-
-Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
-```sh
-sbt 'benchmark/jmh:run -lrf
-``` 
-
-Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
-of your file to the drop zone or using the `source` parameter with an HTTP link to your file in the URL like 
-[here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/jdk8.json).
-
-More info about extras, including `jmh.extras.Async` and ability to generate flame graphs see in
-[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
+More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 ### Publish locally
 
