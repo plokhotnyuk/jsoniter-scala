@@ -434,12 +434,12 @@ object JsonCodecMaker {
         Ident(nullValueName)
       }
 
-      val reqFieldNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val reqFieldTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val fieldNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val fieldTrees = mutable.LinkedHashMap.empty[Type, Tree]
 
-      def withReqFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
-        val reqFieldName = reqFieldNames.getOrElseUpdate(tpe, TermName("r" + reqFieldNames.size))
-        reqFieldTrees.getOrElseUpdate(tpe, q"private[this] val $reqFieldName: Array[String] = Array(..$f)")
+      def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
+        val reqFieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
+        fieldTrees.getOrElseUpdate(tpe, q"private[this] val $reqFieldName: Array[String] = Array(..$f)")
         Ident(reqFieldName)
       }
 
@@ -664,7 +664,9 @@ object JsonCodecMaker {
           val members = getMembers(annotations, tpe)
           checkFieldNameCollisions(tpe,
             (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
-          val params = getParams(tpe)
+          val params = getParams(tpe).filterNot { p =>
+            annotations.get(decodedName(p)).fold(false)(_.transient)
+          }
           val required = params.collect {
             case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => name(p)
           }
@@ -681,15 +683,15 @@ object JsonCodecMaker {
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
           val checkReqVars = if (required.isEmpty) Nil else {
-            val reqFields = withReqFieldsFor(tpe)(required)
+            val fields = withFieldsFor(tpe)(params.map(name))
             val reqSet = required.toSet
             val reqMasks = params.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (n, i)) =>
               acc | (if (reqSet(name(n))) 1 << i else 0)
             }).toSeq
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
-              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($reqFields(Integer.numberOfTrailingZeros($n)))"
-              else q"if (($n & $m) != 0) in.requiredFieldError($reqFields(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
+              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($fields(Integer.numberOfTrailingZeros($n)))"
+              else q"if (($n & $m) != 0) in.requiredFieldError($fields(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
             }
           }
           val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
@@ -703,7 +705,7 @@ object JsonCodecMaker {
               val varName = TermName("_" + m.name)
               val isStringified = getStringified(annotations, decodedName(m))
               val readValue = q"$varName = ${genReadVal(methodType(m), q"$varName", isStringified)}"
-              val resetFieldFlag = bitmasks.getOrElse(decodedName(m), EmptyTree)
+              val resetFieldFlag = bitmasks(decodedName(m))
               q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
                     ..$resetFieldFlag
                     ..$readValue
@@ -943,7 +945,7 @@ object JsonCodecMaker {
               def encodeValue(x: $rootTpe, out: JsonWriter): Unit =
                 ${genWriteVal(q"x", rootTpe, codecConfig.isStringified, isRoot = true)}
               ..${nullValueTrees.values}
-              ..${reqFieldTrees.values}
+              ..${fieldTrees.values}
               ..${decodeMethodTrees.values}
               ..${encodeMethodTrees.values}
             }"""
