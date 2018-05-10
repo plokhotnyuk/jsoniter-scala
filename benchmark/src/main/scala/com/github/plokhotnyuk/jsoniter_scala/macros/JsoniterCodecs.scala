@@ -16,7 +16,8 @@ object JsoniterCodecs {
     ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
   val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make[String](CodecMakerConfig()) // don't define implicit for supported types
-  implicit val adtCodec: JsonValueCodec[AdtBase] = make[AdtBase](CodecMakerConfig())
+  val adtCodec: JsonValueCodec[AdtBase] = make[AdtBase](CodecMakerConfig()) // don't define implicit for recursive structures
+  val geoJSONCodec: JsonValueCodec[GeoJSON] = make[GeoJSON](CodecMakerConfig()) // don't define implicit for recursive structures
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make[AnyRefs](CodecMakerConfig())
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make[Array[BigDecimal]](CodecMakerConfig())
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make[Array[BigInt]](CodecMakerConfig())
@@ -50,7 +51,6 @@ object JsoniterCodecs {
   implicit val bitSetCodec: JsonValueCodec[BitSet] = make[BitSet](CodecMakerConfig(bitSetValueLimit = Int.MaxValue /*WARNING: don't do this for open-system*/))
   implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make[ExtractFields](CodecMakerConfig())
   implicit val intMapOfBooleansCodec: JsonValueCodec[IntMap[Boolean]] = make[IntMap[Boolean]](CodecMakerConfig())
-  implicit val geoJSONCodec: JsonValueCodec[GeoJSON] = make[GeoJSON](CodecMakerConfig())
   implicit val googleMapsAPICodec: JsonValueCodec[DistanceMatrix] = make[DistanceMatrix](CodecMakerConfig())
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] = make[Map[Int, Boolean]](CodecMakerConfig())
   implicit val missingReqFieldCodec: JsonValueCodec[MissingReqFields] = make[MissingReqFields](CodecMakerConfig())

@@ -14,7 +14,7 @@ import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
 
 class GeoJSONBenchmark extends CommonParams {
-  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)
+  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
 
   @Benchmark
   def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -23,7 +23,7 @@ class GeoJSONBenchmark extends CommonParams {
   def readJacksonScala(): GeoJSON = jacksonMapper.readValue[GeoJSON](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes)
+  def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
 /* FIXME: Play-JSON doesn't support Tuple2?
   @Benchmark
   def readPlayJson(): GeoJSON = Json.parse(jsonBytes).as[GeoJSON](geoJSONFormat)
@@ -35,10 +35,10 @@ class GeoJSONBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(geoJSONCodec)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)(geoJSONCodec)
 /* FIXME: Play-JSON doesn't support Tuple2?
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(geoJSONFormat))
