@@ -205,6 +205,12 @@ Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://j
 of your file to the drop zone or using the `source` parameter with an HTTP link to your file in the URL like 
 [here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/jdk8.json).
 
+On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
+
+```sh
+sbt clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
+```
+
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 
 ```sh
@@ -224,18 +230,31 @@ flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocatio
 To run benchmarks with recordings by Async profiler, clone its repository and use command like this:
 
 ```sh
-sbt -no-colors 'benchmark/jmh:run -prof jmh.extras.Async:dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
+sbt -no-colors 'benchmark/jmh:run -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
 ```
 
-Then open `/tmp/profile-async` directory with recordings and reports:
+To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
+names for currently running Java processes. While your Java process still running launch the Async Profiler with the 
+`list` option and ID of your process like here:  
 ```sh
-
-``` 
-
-On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
-
-```sh
-sbt clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
+$ ~/Projects/com/github/jvm-profiling-tools/async-profiler/profiler.sh list 6924
+Perf events:
+  cpu
+  page-faults
+  context-switches
+  cycles
+  instructions
+  cache-references
+  cache-misses
+  branches
+  branch-misses
+  bus-cycles
+  L1-dcache-load-misses
+  LLC-load-misses
+  dTLB-load-misses
+Java events:
+  alloc
+  lock
 ```
 
 Following command can be used to profile and print assembly code of hottest methods, but it requires [a setup of an 
