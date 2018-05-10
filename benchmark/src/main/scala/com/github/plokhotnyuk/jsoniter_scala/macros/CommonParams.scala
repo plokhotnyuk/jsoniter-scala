@@ -16,7 +16,9 @@ import org.openjdk.jmh.annotations._
   "-XX:InitialCodeCacheSize=512m",
   "-XX:ReservedCodeCacheSize=512m",
   "-XX:-UseBiasedLocking",
-  "-XX:+AlwaysPreTouch"
+  "-XX:+AlwaysPreTouch"/*, Uncomment for profiling
+  "-XX:+UnlockDiagnosticVMOptions",
+  "-XX:+DebugNonSafepoints"*/
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
