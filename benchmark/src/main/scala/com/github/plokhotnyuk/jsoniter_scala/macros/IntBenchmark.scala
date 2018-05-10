@@ -13,9 +13,9 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class IntBenchmark extends CommonParams {
-  val obj: Int = 1234567890
-  val jsonString: String = obj.toString
-  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  var obj: Int = 1234567890
+  var jsonString: String = obj.toString
+  var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readNaiveScala(): Int = new String(jsonBytes, UTF_8).toInt

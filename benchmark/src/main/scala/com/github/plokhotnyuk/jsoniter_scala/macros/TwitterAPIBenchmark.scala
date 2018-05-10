@@ -15,7 +15,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class TwitterAPIBenchmark extends CommonParams {
-  val obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
+  var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
 
   @Benchmark
   def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

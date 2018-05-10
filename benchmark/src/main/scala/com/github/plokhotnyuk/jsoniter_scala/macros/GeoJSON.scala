@@ -35,9 +35,9 @@ case class FeatureCollection(features: IndexedSeq[GeoJSON]) extends GeoJSON
 
 object GeoJSON {
   //Borders of Switzerland, from: https://github.com/mledoze/countries/blob/master/data/che.geo.json
-  val jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che.geo.json"))
-  val jsonString: String = new String(jsonBytes, UTF_8)
+  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che.geo.json"))
+  var jsonString: String = new String(jsonBytes, UTF_8)
   //the same as previous but changed position of the `type` fields
-  val jsonBytes2: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-2.geo.json"))
-  val jsonString2: String = new String(jsonBytes2, UTF_8)
+  var jsonBytes2: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-2.geo.json"))
+  var jsonString2: String = new String(jsonBytes2, UTF_8)
 }

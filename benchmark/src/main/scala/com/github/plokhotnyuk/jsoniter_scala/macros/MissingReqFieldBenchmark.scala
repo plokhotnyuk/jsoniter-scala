@@ -19,8 +19,8 @@ case class MissingReqFields(
     @com.fasterxml.jackson.annotation.JsonProperty(required = true) i: Int)
 
 class MissingReqFieldBenchmark extends CommonParams {
-  val jsonString: String = """{}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  var jsonString: String = """{}"""
+  var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): String =

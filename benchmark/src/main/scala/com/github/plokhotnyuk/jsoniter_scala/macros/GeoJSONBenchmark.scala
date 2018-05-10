@@ -14,7 +14,7 @@ import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
 
 class GeoJSONBenchmark extends CommonParams {
-  val obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)
+  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)
 
   @Benchmark
   def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

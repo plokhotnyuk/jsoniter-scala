@@ -16,7 +16,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class GoogleMapsAPIBenchmark extends CommonParams {
-  val obj: DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes)
+  var obj: DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes)
 
   @Benchmark
   def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

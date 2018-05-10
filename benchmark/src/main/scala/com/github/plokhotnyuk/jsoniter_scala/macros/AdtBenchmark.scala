@@ -28,10 +28,10 @@ case class B(b: String) extends AdtBase
 case class C(l: AdtBase, r: AdtBase) extends AdtBase
 
 class AdtBenchmark extends CommonParams {
-  val obj: AdtBase = C(A(1), B("VVV"))
-  val jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
-  val jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
-  val jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  var obj: AdtBase = C(A(1), B("VVV"))
+  var jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
+  var jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
+  var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
   def readCirce(): AdtBase = decode[AdtBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

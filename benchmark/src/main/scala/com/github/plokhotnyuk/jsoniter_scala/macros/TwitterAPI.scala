@@ -127,8 +127,8 @@ case class UserMentions(
   indices: Seq[Int])
 
 object TwitterAPI {
-  val jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
-  val jsonString: String = new String(jsonBytes, UTF_8)
-  val compactJsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
-  val compactJsonString: String = new String(compactJsonBytes, UTF_8)
+  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  var jsonString: String = new String(jsonBytes, UTF_8)
+  var compactJsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
+  var compactJsonString: String = new String(compactJsonBytes, UTF_8)
 }
