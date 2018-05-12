@@ -360,9 +360,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P0DT0H0M9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
       checkError("\"P0DT0H0M92233720368547758080S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
       checkError("\"P0DT0H0M-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
-      checkError("\"P106751991167300DT24H\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000017")
-      checkError("\"P0DT2562047788015215H60M\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
-      checkError("\"P0DT0H153722867280912930M60S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001e")
+      checkError("\"P106751991167300DT24H\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000016")
+      checkError("\"P0DT2562047788015215H60M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000019")
+      checkError("\"P0DT0H153722867280912930M60S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001d")
     }
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {

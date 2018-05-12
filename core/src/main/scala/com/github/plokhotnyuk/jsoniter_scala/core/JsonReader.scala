@@ -1365,13 +1365,13 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     } while (state != 18)
     head = pos
-    val minutesWithSecs = minutesAsSecs + seconds
-    if (((minutesAsSecs ^ minutesWithSecs) & (seconds ^ minutesWithSecs)) < 0) durationError(pos)
-    val hoursWithMinsWithSecs = hoursAsSecs + minutesWithSecs
-    if (((hoursAsSecs ^ hoursWithMinsWithSecs) & (minutesWithSecs ^ hoursWithMinsWithSecs)) < 0) durationError(pos)
-    val totalSeconds = daysAsSecs + hoursWithMinsWithSecs
-    if (((daysAsSecs ^ totalSeconds) & (hoursWithMinsWithSecs ^ totalSeconds)) < 0) durationError(pos)
-    Duration.ofSeconds(totalSeconds, nanos)
+    Duration.ofSeconds(sumSeconds(sumSeconds(sumSeconds(minutesAsSecs, seconds), hoursAsSecs), daysAsSecs), nanos)
+  }
+
+  private[this] def sumSeconds(s1: Long, s2: Long): Long = {
+    val s = s1 + s2
+    if (((s1 ^ s) & (s2 ^ s)) < 0) durationError()
+    s
   }
 
   private[this] def parseInstant(): Instant = {
@@ -2206,7 +2206,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
-  private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
+  private[this] def durationError(pos: Int = head - 1): Nothing = decodeError("illegal duration", pos)
 
   private[this] def dateTimeZoneError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
 
