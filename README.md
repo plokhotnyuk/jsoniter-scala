@@ -14,9 +14,7 @@ performance of Jsoniter Scala vs. [dsl-json](https://github.com/ngs-doo/dsl-json
 [Jackson](https://github.com/FasterXML/jackson-module-scala), [Circe](https://github.com/circe/circe), and 
 [Play-JSON](https://github.com/playframework/play-json) libraries using different JDK and GraalVM versions on the 
 following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, latest 
-versions of Oracle JDK 8/10 and GraalVM CE/EE
-
-WARNING: Results of GraalVM CE/EE are only for a rough evaluation of possible potential of this new platform. 
+versions of Oracle JDK 8/10, Oracle JDK 10 + Graal compiler, and GraalVM CE/EE
 
 ## Acknowledgments
 
