@@ -1345,8 +1345,8 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected 'S or '.' or digit", pos)
         case 15 => // 'S' or nano digit
           if (b >= '0' && b <= '9') {
-            nanoDigits += 1
             nanos += nanoMultiplier(nanoDigits) * (b - '0')
+            nanoDigits += 1
             if (nanoDigits == 9) {
               if (neg ^ xNeg) nanos = -nanos
               state = 16
@@ -1390,19 +1390,14 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 10) {
-          nextByteOrError('-')
-          continue = false
-        }
-      } else if (b == '-') continue = false
-      else tokenOrDigitError('-')
-    } while (continue)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
+    }
+    if (b != '-') tokenError('-')
     val month = next2Digits()
     nextByteOrError('-')
     val day = next2Digits()
@@ -1411,28 +1406,34 @@ final class JsonReader private[jsoniter_scala](
     nextByteOrError(':')
     val minute = next2Digits()
     var second = 0
+    var hasSecond = false
     var nano = 0
+    var hasNano = false
     b = nextByte(head)
     if (b == ':') {
+      hasSecond = true
       second = next2Digits()
       b = nextByte(head)
       if (b == '.') {
+        hasNano = true
         var nanoDigits = 0
-        continue = true
-        do {
+        val nanoMul = nanoMultiplier
+        while ({
           b = nextByte(head)
-          if (b >= '0' && b <= '9') {
-            nanoDigits += 1
-            nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) {
-              nextByteOrError('Z')
-              continue = false
-            }
-          } else if (b == 'Z') continue = false
-          else tokenOrDigitError('Z')
-        } while (continue)
-      } else if (b != 'Z') tokensError('.', 'Z')
-    } else if (b != 'Z') tokensError(':', 'Z')
+          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != 'Z') && tokenOrDigitError('Z'))
+        }) {
+          nano += (b - '0') * nanoMul(nanoDigits)
+          nanoDigits += 1
+        }
+      }
+    }
+    if (b != 'Z') {
+      if (hasSecond) {
+        if (hasNano) tokenError('Z')
+        else tokensError('.', 'Z')
+      }
+      else tokensError(':', 'Z')
+    }
     nextByteOrError('"')
     Instant.ofEpochSecond(epochSecond(yearNeg, year, month, day, hour, minute, second), nano)
   }
@@ -1453,24 +1454,19 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 9) {
-          nextByteOrError('-')
-          continue = false
-        }
-      } else if (b == '-') continue = false
-      else tokenOrDigitError('-')
-    } while (continue)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
+    }
+    if (b != '-') tokenError('-')
     val month = next2Digits()
     nextByteOrError('-')
     val day = next2Digits()
     nextByteOrError('"')
-    localDate(yearNeg, year, month, day)
+    toLocalDate(yearNeg, year, month, day)
   }
 
   private[this] def parseLocalDateTime(): LocalDateTime = {
@@ -1489,19 +1485,14 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 9) {
-          nextByteOrError('-')
-          continue = false
-        }
-      } else if (b == '-') continue = false
-      else tokenOrDigitError('-')
-    } while (continue)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
+    }
+    if (b != '-') tokenError('-')
     val month = next2Digits()
     nextByteOrError('-')
     val day = next2Digits()
@@ -1510,29 +1501,35 @@ final class JsonReader private[jsoniter_scala](
     nextByteOrError(':')
     val minute = next2Digits()
     var second = 0
+    var hasSecond = false
     var nano = 0
+    var hasNano = false
     b = nextByte(head)
     if (b == ':') {
+      hasSecond = true
       second = next2Digits()
       b = nextByte(head)
       if (b == '.') {
+        hasNano = true
         var nanoDigits = 0
-        continue = true
-        do {
+        val nanoMul = nanoMultiplier
+        while ({
           b = nextByte(head)
-          if (b >= '0' && b <= '9') {
-            nanoDigits += 1
-            nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) {
-              nextByteOrError('"')
-              continue = false
-            }
-          } else if (b == '"') continue = false
-          else tokenOrDigitError('"')
-        } while (continue)
-      } else if (b != '"') tokensError('.', '"')
-    } else if (b != '"') tokensError(':', '"')
-    LocalDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano))
+          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"') && tokenOrDigitError('"'))
+        }) {
+          nano += (b - '0') * nanoMul(nanoDigits)
+          nanoDigits += 1
+        }
+      }
+    }
+    if (b != '"') {
+      if (hasSecond) {
+        if (hasNano) tokenError('"')
+        else tokensError('.', '"')
+      }
+      else tokensError(':', '"')
+    }
+    LocalDateTime.of(toLocalDate(yearNeg, year, month, day), toLocalTime(hour, minute, second, nano))
   }
 
   private[this] def parseLocalTime(): LocalTime = {
@@ -1540,29 +1537,35 @@ final class JsonReader private[jsoniter_scala](
     nextByteOrError(':')
     val minute = next2Digits()
     var second = 0
+    var hasSecond = false
     var nano = 0
+    var hasNano = false
     var b = nextByte(head)
     if (b == ':') {
+      hasSecond = true
       second = next2Digits()
       b = nextByte(head)
       if (b == '.') {
+        hasNano = true
         var nanoDigits = 0
-        var continue = true
-        do {
+        val nanoMul = nanoMultiplier
+        while ({
           b = nextByte(head)
-          if (b >= '0' && b <= '9') {
-            nanoDigits += 1
-            nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) {
-              nextByteOrError('"')
-              continue = false
-            }
-          } else if (b == '"') continue = false
-          else tokenOrDigitError('"')
-        } while (continue)
-      } else if (b != '"') tokensError('.', '"')
-    } else if (b != '"') tokensError(':', '"')
-    localTime(hour, minute, second, nano)
+          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"') && tokenOrDigitError('"'))
+        }) {
+          nano += (b - '0') * nanoMul(nanoDigits)
+          nanoDigits += 1
+        }
+      }
+    }
+    if (b != '"') {
+      if (hasSecond) {
+        if (hasNano) tokenError('"')
+        else tokensError('.', '"')
+      }
+      else tokensError(':', '"')
+    }
+    toLocalTime(hour, minute, second, nano)
   }
 
   private[this] def parseMonthDay(): MonthDay = {
@@ -1572,7 +1575,7 @@ final class JsonReader private[jsoniter_scala](
     nextByteOrError('-')
     val day = next2Digits()
     nextByteOrError('"')
-    monthDay(month, day)
+    toMonthDay(month, day)
   }
 
   private[this] def parseOffsetDateTime(): OffsetDateTime = {
@@ -1591,19 +1594,14 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 9) {
-          nextByteOrError('-')
-          continue = false
-        }
-      } else if (b == '-') continue = false
-      else tokenOrDigitError('-')
-    } while (continue)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
+    }
+    if (b != '-') tokenError('-')
     val month = next2Digits()
     nextByteOrError('-')
     val day = next2Digits()
@@ -1627,18 +1625,14 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        continue = true
-        do {
+        val nanoMul = nanoMultiplier
+        while ({
           b = nextByte(head)
-          if (b >= '0' && b <= '9') {
-            nanoDigits += 1
-            nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) {
-              b = nextByte(head)
-              continue = false
-            }
-          } else continue = false
-        } while (continue)
+          nanoDigits < 9 && b >= '0' && b <= '9'
+        }) {
+          nano += (b - '0') * nanoMul(nanoDigits)
+          nanoDigits += 1
+        }
       }
     }
     if (b != 'Z') {
@@ -1662,8 +1656,8 @@ final class JsonReader private[jsoniter_scala](
         } else if (b != '"') tokensError(':', '"')
       } else if (b != '"') tokensError(':', '"')
     } else nextByteOrError('"')
-    OffsetDateTime.of(localDate(yearNeg, year, month, day), localTime(hour, minute, second, nano),
-      zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
+    OffsetDateTime.of(toLocalDate(yearNeg, year, month, day), toLocalTime(hour, minute, second, nano),
+      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
@@ -1686,18 +1680,14 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        var continue = true
-        do {
+        val nanoMul = nanoMultiplier
+        while ({
           b = nextByte(head)
-          if (b >= '0' && b <= '9') {
-            nanoDigits += 1
-            nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) {
-              b = nextByte(head)
-              continue = false
-            }
-          } else continue = false
-        } while (continue)
+          nanoDigits < 9 && b >= '0' && b <= '9'
+        }) {
+          nano += (b - '0') * nanoMul(nanoDigits)
+          nanoDigits += 1
+        }
       }
     }
     if (b != 'Z') {
@@ -1721,8 +1711,8 @@ final class JsonReader private[jsoniter_scala](
         } else if (b != '"') tokensError(':', '"')
       } else if (b != '"') tokensError(':', '"')
     } else nextByteOrError('"')
-    OffsetTime.of(localTime(hour, minute, second, nano),
-      zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
+    OffsetTime.of(toLocalTime(hour, minute, second, nano),
+      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
   }
 
   private[this] def parsePeriod(): Period = {
@@ -1907,23 +1897,15 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 9) {
-          nextByteOrError('"')
-          continue = false
-        }
-      } else if (b == '"') continue = false
-      else tokenOrDigitError('"')
-    } while (continue)
-    if (year > 999999999) decodeError("illegal year")
-    try Year.of(if (yearNeg) -year else year) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '"') && tokenOrDigitError('"'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
     }
+    if (b != '"') tokenError('"')
+    toYear(yearNeg, year)
   }
 
   private[this] def parseYearMonth(): YearMonth = {
@@ -1942,22 +1924,17 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 9) {
-          nextByteOrError('-')
-          continue = false
-        }
-      } else if (b == '-') continue = false
-      else tokenOrDigitError('-')
-    } while (continue)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
+    }
+    if (b != '-') tokenError('-')
     val month = next2Digits()
     nextByteOrError('"')
-    yearMonth(yearNeg, year, month)
+    toYearMonth(yearNeg, year, month)
   }
 
   private[this] def parseZonedDateTime(): ZonedDateTime = {
@@ -1976,19 +1953,14 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + nextDigit()
       yearDigits += 1
     } while (yearDigits < yearMinDigits)
-    var continue = true
-    do {
+    while ({
       b = nextByte(head)
-      if (b >= '0' && b <= '9') {
-        year = year * 10 + (b - '0')
-        yearDigits += 1
-        if (yearDigits == 9) {
-          nextByteOrError('-')
-          continue = false
-        }
-      } else if (b == '-') continue = false
-      else tokenOrDigitError('-')
-    } while (continue)
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+    }) {
+      year = year * 10 + (b - '0')
+      yearDigits += 1
+    }
+    if (b != '-') tokenError('-')
     val month = next2Digits()
     nextByteOrError('-')
     val day = next2Digits()
@@ -2014,18 +1986,14 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        continue = true
-        do {
+        val nanoMul = nanoMultiplier
+        while ({
           b = nextByte(head)
-          if (b >= '0' && b <= '9') {
-            nanoDigits += 1
-            nano += nanoMultiplier(nanoDigits) * (b - '0')
-            if (nanoDigits == 9) {
-              b = nextByte(head)
-              continue = false
-            }
-          } else continue = false
-        } while (continue)
+          nanoDigits < 9 && b >= '0' && b <= '9'
+        }) {
+          nano += (b - '0') * nanoMul(nanoDigits)
+          nanoDigits += 1
+        }
       }
     }
     if (b != 'Z') {
@@ -2068,16 +2036,16 @@ final class JsonReader private[jsoniter_scala](
       else if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
       else decodeError("expected ':' or '[' or '\"'")
     }
-    val ld = localDate(yearNeg, year, month, day)
-    val lt = localTime(hour, minute, second, nano)
-    val zo = zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+    val ld = toLocalDate(yearNeg, year, month, day)
+    val lt = toLocalTime(hour, minute, second, nano)
+    val zo = toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
     if (zone == null) ZonedDateTime.of(ld, lt, zo)
-    else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), zoneId(zone), zo)
+    else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), toZoneId(zone), zo)
   }
 
   private[this] def parseZoneId(): ZoneId = {
     val len = parseString()
-    zoneId(new String(charBuf, 0, len))
+    toZoneId(new String(charBuf, 0, len))
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
@@ -2100,7 +2068,7 @@ final class JsonReader private[jsoniter_scala](
         } else if (b != '"') tokensError(':', '"')
       } else if (b != '"') tokensError(':', '"')
     } else nextByteOrError('"')
-    zoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+    toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
   }
 
   private[this] def epochSecond(yearNeg: Boolean, year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long = {
@@ -2114,7 +2082,7 @@ final class JsonReader private[jsoniter_scala](
       secondOfDay(hour, minute, second)
   }
 
-  private[this] def localDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
+  private[this] def toLocalDate(yearNeg: Boolean, year: Int, month: Int, day: Int): LocalDate = {
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
@@ -2123,7 +2091,14 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def yearMonth(yearNeg: Boolean, year: Int, month: Int): YearMonth = {
+  private[this] def toYear(yearNeg: Boolean, year: Int): Year = {
+    if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
+    try Year.of(if (yearNeg) -year else year) catch {
+      case ex: DateTimeException => dateTimeZoneError(ex)
+    }
+  }
+
+  private[this] def toYearMonth(yearNeg: Boolean, year: Int, month: Int): YearMonth = {
     if (yearNeg && year == 0 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     try YearMonth.of(if (yearNeg) -year else year, month) catch {
@@ -2131,7 +2106,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def monthDay(month: Int, day: Int): MonthDay = {
+  private[this] def toMonthDay(month: Int, day: Int): MonthDay = {
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(2004, month))) decodeError("illegal day")
     try MonthDay.of(month, day) catch {
@@ -2139,7 +2114,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def localTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
+  private[this] def toLocalTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
     if (hour > 23) decodeError("illegal hour")
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
@@ -2148,7 +2123,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def zoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
+  private[this] def toZoneOffset(offsetNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     if (offsetHour > 18) decodeError("illegal zone offset hour")
     if (offsetMinute > 59) decodeError("illegal zone offset minute")
     if (offsetSecond > 59) decodeError("illegal zone offset second")
@@ -2159,7 +2134,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def zoneId(zone: String): ZoneId =
+  private[this] def toZoneId(zone: String): ZoneId =
     try ZoneId.of(zone) catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
       case ex: ZoneRulesException => dateTimeZoneError(ex)
@@ -2675,7 +2650,7 @@ object JsonReader {
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
   private final val nanoMultiplier: Array[Int] =
-    Array(1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
+    Array(100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
   private final val nibbles: Array[Byte] = {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
