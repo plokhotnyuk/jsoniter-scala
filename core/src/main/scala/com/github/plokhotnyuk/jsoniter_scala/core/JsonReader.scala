@@ -1392,7 +1392,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1420,7 +1420,7 @@ final class JsonReader private[jsoniter_scala](
         val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != 'Z') && tokenOrDigitError('Z'))
+          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != 'Z' && tokenOrDigitError('Z')))
         }) {
           nano += (b - '0') * nanoMul(nanoDigits)
           nanoDigits += 1
@@ -1456,7 +1456,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1487,7 +1487,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1515,7 +1515,7 @@ final class JsonReader private[jsoniter_scala](
         val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"') && tokenOrDigitError('"'))
+          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
         }) {
           nano += (b - '0') * nanoMul(nanoDigits)
           nanoDigits += 1
@@ -1551,7 +1551,7 @@ final class JsonReader private[jsoniter_scala](
         val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"') && tokenOrDigitError('"'))
+          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
         }) {
           nano += (b - '0') * nanoMul(nanoDigits)
           nanoDigits += 1
@@ -1596,7 +1596,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1899,7 +1899,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '"') && tokenOrDigitError('"'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1926,7 +1926,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1955,7 +1955,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-') && tokenOrDigitError('-'))
+      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
