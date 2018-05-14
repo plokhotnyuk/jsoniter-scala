@@ -1394,7 +1394,9 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
-      year = year * 10 + (b - '0')
+      year =
+        if (year > 100000000) 1000000001
+        else year * 10 + (b - '0')
       yearDigits += 1
     }
     if (b != '-') tokenError('-')
@@ -1431,8 +1433,7 @@ final class JsonReader private[jsoniter_scala](
       if (hasSecond) {
         if (hasNano) tokenError('Z')
         else tokensError('.', 'Z')
-      }
-      else tokensError(':', 'Z')
+      } else tokensError(':', 'Z')
     }
     nextByteOrError('"')
     Instant.ofEpochSecond(epochSecond(yearNeg, year, month, day, hour, minute, second), nano)
@@ -1456,7 +1457,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
+      yearDigits < 9 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1487,7 +1488,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
+      yearDigits < 9 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1526,8 +1527,7 @@ final class JsonReader private[jsoniter_scala](
       if (hasSecond) {
         if (hasNano) tokenError('"')
         else tokensError('.', '"')
-      }
-      else tokensError(':', '"')
+      } else tokensError(':', '"')
     }
     LocalDateTime.of(toLocalDate(yearNeg, year, month, day), toLocalTime(hour, minute, second, nano))
   }
@@ -1562,8 +1562,7 @@ final class JsonReader private[jsoniter_scala](
       if (hasSecond) {
         if (hasNano) tokenError('"')
         else tokensError('.', '"')
-      }
-      else tokensError(':', '"')
+      } else tokensError(':', '"')
     }
     toLocalTime(hour, minute, second, nano)
   }
@@ -1596,7 +1595,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
+      yearDigits < 9 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1899,7 +1898,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
+      yearDigits < 9 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1926,7 +1925,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
+      yearDigits < 9 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
@@ -1955,7 +1954,7 @@ final class JsonReader private[jsoniter_scala](
     } while (yearDigits < yearMinDigits)
     while ({
       b = nextByte(head)
-      yearDigits < 10 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
+      yearDigits < 9 && ((b >= '0' && b <= '9') || (b != '-' && tokenOrDigitError('-')))
     }) {
       year = year * 10 + (b - '0')
       yearDigits += 1
