@@ -45,21 +45,6 @@ object PlayJsonFormats {
     implicit lazy val v4: OFormat[AdtBase] = flat.oformat((__ \ "type").format[String])
     v4
   }
-/* FIXME: Play-JSON doesn't support Tuple2?
-  val geoJSONFormat: OFormat[GeoJSON] = {
-    implicit lazy val v1: OFormat[Point] = Json.format[Point]
-    implicit lazy val v2: OFormat[MultiPoint] = Json.format[MultiPoint]
-    implicit lazy val v3: OFormat[LineString] = Json.format[LineString]
-    implicit lazy val v4: OFormat[Polygon] = Json.format[Polygon]
-    implicit lazy val v5: OFormat[MultiPolygon] = Json.format[MultiPolygon]
-    implicit lazy val v6: OFormat[GeometryCollection] = Json.format[GeometryCollection]
-    implicit lazy val v7: OFormat[Geometry] = flat.oformat((__ \ "type").format[String])
-    implicit lazy val v8: OFormat[Feature] = Json.format[Feature]
-    implicit lazy val v9: OFormat[FeatureCollection] = Json.format[FeatureCollection]
-    implicit lazy val v10: OFormat[GeoJSON] = flat.oformat((__ \ "type").format[String])
-    v10
-  }
-*/
   val googleMapsAPIFormat: OFormat[DistanceMatrix] = {
     implicit val v1: OFormat[Value] = Json.format[Value]
     implicit val v2: OFormat[Elements] = Json.format[Elements]
