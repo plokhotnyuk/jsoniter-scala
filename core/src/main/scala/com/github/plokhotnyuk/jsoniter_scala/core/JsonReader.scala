@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
-import java.math.BigInteger
+import java.math.{BigInteger, MathContext}
 import java.time._
 import java.time.zone.ZoneRulesException
 import java.util.UUID
@@ -285,9 +285,9 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readKeyAsBigDecimal(): BigDecimal = {
+  def readKeyAsBigDecimal(maxScale: Int = defaultMaxScale, mc: MathContext = defaultMathContext): BigDecimal = {
     readParenthesesToken()
-    val x = parseBigDecimal(isToken = false, null)
+    val x = parseBigDecimal(isToken = false, null, maxScale, mc)
     readParenthesesByteWithColonToken()
     x
   }
@@ -320,7 +320,9 @@ final class JsonReader private[jsoniter_scala](
 
   def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default)
 
-  def readBigDecimal(default: BigDecimal): BigDecimal = parseBigDecimal(isToken = true, default)
+  def readBigDecimal(default: BigDecimal, maxScale: Int = defaultMaxScale,
+                     mc: MathContext = defaultMathContext): BigDecimal =
+    parseBigDecimal(isToken = true, default, maxScale, mc)
 
   def readString(default: String): String =
     if (isNextToken('"', head)) {
@@ -443,9 +445,10 @@ final class JsonReader private[jsoniter_scala](
       x
     } else readNullOrTokenError(default, '"')
 
-  def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
+  def readStringAsBigDecimal(default: BigDecimal, maxScale: Int = defaultMaxScale,
+                             mc: MathContext = defaultMathContext): BigDecimal =
     if (isNextToken('"', head)) {
-      val x = parseBigDecimal(isToken = false, default)
+      val x = parseBigDecimal(isToken = false, default, maxScale, mc)
       readParenthesesByte()
       x
     } else readNullOrTokenError(default, '"')
@@ -1122,7 +1125,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal): BigDecimal = {
+  private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, maxScale: Int, mc: MathContext): BigDecimal = {
     var b = if (isToken) nextToken(head) else nextByte(head)
     if (b == 'n') {
       if (isToken) readNullOrNumberError(default, head)
@@ -1174,15 +1177,17 @@ final class JsonReader private[jsoniter_scala](
             } else numberError(pos - 1)
           }
           head = pos
-          toBigDecimal(pos)
+          val x = toBigDecimal(pos, mc)
+          if (Math.abs(x.scale) >= maxScale) numberError(pos - 1)
+          x
         } else numberError(pos - 1)
       } finally this.mark = mark
     }
   }
 
-  private[this] def toBigDecimal(pos: Int): BigDecimal = {
+  private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal = {
     val len = copyAsciiToCharBuf(buf, this.mark, pos)
-    try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len)) catch {
+    try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len, mc)) catch {
       case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
     }
   }
@@ -2685,6 +2690,9 @@ object JsonReader {
   }.toCharArray
   private final val dumpBorder: Array[Char] =
     "\n+----------+-------------------------------------------------+------------------+".toCharArray
+
+  final val defaultMaxScale: Int = 300
+  final val defaultMathContext: MathContext = MathContext.DECIMAL128
 
   final def toHashCode(cs: Array[Char], len: Int): Int = {
     var h = 0

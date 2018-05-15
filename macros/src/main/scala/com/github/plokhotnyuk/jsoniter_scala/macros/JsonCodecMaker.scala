@@ -37,7 +37,8 @@ final class stringified extends StaticAnnotation
   *                      value classes (turned off by default)
   * @param skipUnexpectedFields a flag that turn on skipping of unexpected fields or in other case a parse exception
   *                             will be thrown (turned on by default)
-  * @param bitSetValueLimit an exclusive limit for accepted numeric values in bit sets (8192 by default)
+  * @param bitSetValueLimit an exclusive limit for accepted numeric values in bit sets (1024 by default)
+  * @param bigDecimalScaleLimit an exclusive limit for accepted scale of 'BigDecimal' values (300 by default)
   */
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
@@ -45,7 +46,8 @@ case class CodecMakerConfig(
   discriminatorFieldName: String = "type",
   isStringified: Boolean = false,
   skipUnexpectedFields: Boolean = true,
-  bitSetValueLimit: Int = 8192/* 1Kb */)
+  bitSetValueLimit: Int = 1024, // ~128 bytes
+  bigDecimalScaleLimit: Int = 300) // ~128 bytes, (BigDecimal("1e300") + 1).underlying.unscaledValue.toByteArray.length
 
 object JsonCodecMaker {
   def enforceCamelCase(s: String): String =
@@ -192,6 +194,7 @@ object JsonCodecMaker {
 
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
+      val codecConfig = eval[CodecMakerConfig](config.tree)
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
       def findImplicitKeyCodec(tpe: Type): Tree = inferredKeyCodecs.getOrElseUpdate(tpe,
@@ -211,8 +214,9 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
         else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt()"
-        else if (tpe =:= typeOf[BigDecimal]) q"in.readKeyAsBigDecimal()"
-        else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
+        else if (tpe =:= typeOf[BigDecimal]) {
+          q"in.readKeyAsBigDecimal(${codecConfig.bigDecimalScaleLimit})"
+        } else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
         else if (tpe =:= typeOf[Duration]) q"in.readKeyAsDuration()"
         else if (tpe =:= typeOf[Instant]) q"in.readKeyAsInstant()"
         else if (tpe =:= typeOf[LocalDate]) q"in.readKeyAsLocalDate()"
@@ -382,7 +386,6 @@ object JsonCodecMaker {
       }
 
       val rootTpe = weakTypeOf[A].dealias
-      val codecConfig = eval[CodecMakerConfig](config.tree)
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedKeyError(l)"
@@ -530,7 +533,11 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[BigInt]) {
           if (isStringified) q"in.readStringAsBigInt($default)" else q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
-          if (isStringified) q"in.readStringAsBigDecimal($default)" else q"in.readBigDecimal($default)"
+          if (isStringified) {
+            q"in.readStringAsBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
+          } else {
+            q"in.readBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
+          }
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
