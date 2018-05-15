@@ -214,9 +214,8 @@ object JsonCodecMaker {
         else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
         else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt()"
-        else if (tpe =:= typeOf[BigDecimal]) {
-          q"in.readKeyAsBigDecimal(${codecConfig.bigDecimalScaleLimit})"
-        } else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
+        else if (tpe =:= typeOf[BigDecimal]) q"in.readKeyAsBigDecimal(${codecConfig.bigDecimalScaleLimit})"
+        else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
         else if (tpe =:= typeOf[Duration]) q"in.readKeyAsDuration()"
         else if (tpe =:= typeOf[Instant]) q"in.readKeyAsInstant()"
         else if (tpe =:= typeOf[LocalDate]) q"in.readKeyAsLocalDate()"
@@ -533,11 +532,8 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[BigInt]) {
           if (isStringified) q"in.readStringAsBigInt($default)" else q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
-          if (isStringified) {
-            q"in.readStringAsBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
-          } else {
-            q"in.readBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
-          }
+          if (isStringified) q"in.readStringAsBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
+          else q"in.readBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
