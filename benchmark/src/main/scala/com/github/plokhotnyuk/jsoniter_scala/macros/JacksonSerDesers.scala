@@ -1,10 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-//import com.fasterxml.jackson.core.JsonToken._
-//import com.fasterxml.jackson.core.`type`.TypeReference
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonToken/*, JsonParseException => ParseException*/}
-//import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonToken}
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.databind._
@@ -14,7 +11,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
-import scala.collection.immutable.{BitSet/*, HashMap, Map*/}
+import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object JacksonSerDesers {
@@ -27,10 +24,6 @@ object JacksonSerDesers {
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
       .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
       .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
-/*
-      .addDeserializer(classOf[BitSet], new BitSetDeserializer)
-      .addDeserializer(classOf[mutable.BitSet], new MutableBitSetDeserializer)
-*/
       .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
     registerModule(new JavaTimeModule)
     registerModule(new AfterburnerModule)
@@ -44,23 +37,6 @@ object JacksonSerDesers {
   }
 }
 
-/*
-class BitSetDeserializer extends StdDeserializer[BitSet](classOf[BitSet]) {
-  override def deserialize(p: JsonParser, ctxt: DeserializationContext): BitSet =
-    if (p.getCurrentToken != START_ARRAY) throw new ParseException(p, "expected '[' or null")
-    else if (p.nextToken() == END_ARRAY) getNullValue(ctxt)
-    else {
-      val s = BitSet.newBuilder
-      do {
-        s += p.getIntValue
-      } while (p.nextToken() != END_ARRAY)
-      s.result
-    }
-
-  override def getNullValue(ctxt: DeserializationContext): BitSet = BitSet.empty
-}
-*/
-
 class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {
   override def serialize(value: BitSet, gen: JsonGenerator, provider: SerializerProvider): Unit = {
     gen.writeStartArray()
@@ -70,22 +46,6 @@ class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {
 
   override def isEmpty(provider: SerializerProvider, value: BitSet): Boolean = value.isEmpty
 }
-
-/*
-class MutableBitSetDeserializer extends StdDeserializer[mutable.BitSet](classOf[mutable.BitSet]) {
-  override def deserialize(p: JsonParser, ctxt: DeserializationContext): mutable.BitSet =
-    if (p.getCurrentToken != START_ARRAY) throw new ParseException(p, "expected '[' or null")
-    else {
-      val s = getNullValue(ctxt)
-      while (p.nextToken() != END_ARRAY) {
-        s.add(p.getIntValue)
-      }
-      s
-    }
-
-  override def getNullValue(ctxt: DeserializationContext): mutable.BitSet = new mutable.BitSet
-}
-*/
 
 class MutableBitSetSerializer extends StdSerializer[mutable.BitSet](classOf[mutable.BitSet]) {
   override def serialize(value: mutable.BitSet, gen: JsonGenerator, provider: SerializerProvider): Unit = {
