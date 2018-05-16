@@ -63,11 +63,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
   val codecOfArrays: JsonValueCodec[Arrays] = make[Arrays](CodecMakerConfig())
 
-  case class ImmutableTraversables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
+  case class ImmutableIterables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
                                    is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]],
-                                   v: Vector[Traversable[Long]])
+                                   v: Vector[Iterable[Long]])
 
-  val codecOfImmutableTraversables: JsonValueCodec[ImmutableTraversables] = make[ImmutableTraversables](CodecMakerConfig())
+  val codecOfImmutableIterables: JsonValueCodec[ImmutableIterables] = make[ImmutableIterables](CodecMakerConfig())
 
   case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
                          m: mutable.Map[Float, mutable.ListMap[BigInt, String]],
@@ -509,44 +509,44 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3,]],"a":[]}""".getBytes("UTF-8"))
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
-    "serialize and deserialize case classes with mutable traversables" in {
-      case class MutableTraversables(ml: mutable.MutableList[mutable.SortedSet[String]],
+    "serialize and deserialize case classes with mutable Iterables" in {
+      case class MutableIterables(ml: mutable.MutableList[mutable.SortedSet[String]],
                                      ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
                                      as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
                                      b: mutable.Buffer[mutable.HashSet[Double]],
                                      lb: mutable.ListBuffer[mutable.TreeSet[Long]],
                                      is: mutable.IndexedSeq[mutable.ArrayStack[Float]],
-                                     ub: mutable.UnrolledBuffer[mutable.Traversable[Short]],
+                                     ub: mutable.UnrolledBuffer[mutable.Iterable[Short]],
                                      ls: mutable.LinearSeq[Byte],
                                      ra: mutable.ResizableArray[mutable.Seq[Double]])
 
-      verifySerDeser(make[MutableTraversables](CodecMakerConfig()),
-        MutableTraversables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
+      verifySerDeser(make[MutableIterables](CodecMakerConfig()),
+        MutableIterables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
           mutable.ArrayBuffer(mutable.Set[BigInt](4), mutable.Set.empty[BigInt]),
           mutable.ArraySeq(mutable.LinkedHashSet(5, 6), mutable.LinkedHashSet.empty[Int]),
           mutable.Buffer(mutable.HashSet(7.7, 8.8)),
           mutable.ListBuffer(mutable.TreeSet(9L, 10L)),
           mutable.IndexedSeq(mutable.ArrayStack(11.11f, 12.12f)),
-          mutable.UnrolledBuffer(mutable.Traversable(13.toShort, 14.toShort)),
+          mutable.UnrolledBuffer(mutable.Iterable(13.toShort, 14.toShort)),
           mutable.LinearSeq(15.toByte, 16.toByte),
           mutable.ResizableArray(mutable.Seq(17.17, 18.18))),
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]],"ls":[15,16],"ra":[[17.17,18.18]]}""".getBytes("UTF-8"))
     }
-    "serialize and deserialize case classes with immutable traversables" in {
-      verifySerDeser(codecOfImmutableTraversables,
-        ImmutableTraversables(List(ListSet("1")), Queue(Set[BigInt](4, 5, 6)),
-          IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Traversable(10L, 11L))),
+    "serialize and deserialize case classes with immutable Iterables" in {
+      verifySerDeser(codecOfImmutableIterables,
+        ImmutableIterables(List(ListSet("1")), Queue(Set[BigInt](4, 5, 6)),
+          IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Iterable(10L, 11L))),
         """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[[10,11]]}""".getBytes("UTF-8"))
     }
-    "serialize and deserialize top-level traversables" in {
-      val codecOfImmutableTraversables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig())
-      verifySerDeser(codecOfImmutableTraversables,
+    "serialize and deserialize top-level Iterables" in {
+      val codecOfImmutableIterables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig())
+      verifySerDeser(codecOfImmutableIterables,
         mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[[3.3],[1.1,2.2]]""".getBytes("UTF-8"))
     }
-    "serialize and deserialize stringified top-level traversables" in {
-      val codecOfImmutableTraversables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfImmutableTraversables,
+    "serialize and deserialize stringified top-level Iterables" in {
+      val codecOfImmutableIterables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
+      verifySerDeser(codecOfImmutableIterables,
         mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[["3.3"],["1.1","2.2"]]""".getBytes("UTF-8"))
     }
@@ -809,9 +809,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(make[List[NullAndNoneValues]](CodecMakerConfig()), List(NullAndNoneValues(None)), """[{}]""".getBytes("UTF-8"))
     }
     "don't serialize case class fields with empty collections" in {
-      case class EmptyTraversables(l: List[String], s: Set[Int], ls: List[Set[Int]])
+      case class EmptyIterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
 
-      verifySer(make[EmptyTraversables](CodecMakerConfig()), EmptyTraversables(List(), Set(), List()), """{}""".getBytes("UTF-8"))
+      verifySer(make[EmptyIterables](CodecMakerConfig()), EmptyIterables(List(), Set(), List()), """{}""".getBytes("UTF-8"))
     }
     "parse with skipping of unknown case class fields" in {
       case class SkipUnknown()

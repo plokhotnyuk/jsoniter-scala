@@ -177,7 +177,7 @@ object JsonCodecMaker {
       def companion(tpe: Type): Symbol = tpe.typeSymbol.companion
 
       def isContainer(tpe: Type): Boolean =
-        tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
+        tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
 
       def collectionCompanion(tpe: Type): Tree = {
         val comp = companion(tpe)
@@ -486,7 +486,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${collectionCompanion(tpe)}.empty"
-        else if (tpe <:< typeOf[Traversable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[Iterable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
         else q"null"
@@ -595,13 +595,13 @@ object JsonCodecMaker {
                 x(i) |= 1L << (v & 63)""",
             q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
                 $comp.fromBitMaskNoCopy(x)""")
-        } else if (tpe <:< typeOf[mutable.Traversable[_] with Growable[_]] &&
+        } else if (tpe <:< typeOf[mutable.Iterable[_] with Growable[_]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
           val comp = collectionCompanion(tpe)
           genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
-        } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = collectionCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder[$tpe1]",
@@ -826,7 +826,7 @@ object JsonCodecMaker {
                 i += 1
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
@@ -865,7 +865,7 @@ object JsonCodecMaker {
             val isStringified = getStringified(annotations, name)
             defaults.get(name) match {
               case Some(d) =>
-                if (tpe <:< typeOf[Traversable[_]]) {
+                if (tpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty && v != $d) {
                         ..${genWriteConstantKey(mappedName)}
@@ -894,7 +894,7 @@ object JsonCodecMaker {
                       }"""
                 }
               case None =>
-                if (tpe <:< typeOf[Traversable[_]]) {
+                if (tpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty) {
                         ..${genWriteConstantKey(mappedName)}
