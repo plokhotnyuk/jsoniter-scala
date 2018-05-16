@@ -1416,6 +1416,7 @@ final class JsonReader private[jsoniter_scala](
     var hasSecond = false
     var nano = 0
     var hasNano = false
+    var nanoDigits = 0
     b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1423,11 +1424,10 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        var nanoDigits = 0
         val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != 'Z' && tokenOrDigitError('Z')))
+          nanoDigits < 9 && b >= '0' && b <= '9'
         }) {
           nano += (b - '0') * nanoMul(nanoDigits)
           nanoDigits += 1
@@ -1436,8 +1436,10 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b != 'Z') {
       if (hasSecond) {
-        if (hasNano) tokenError('Z')
-        else tokensError('.', 'Z')
+        if (hasNano) {
+          if (nanoDigits == 9) tokenError('Z')
+          else tokenOrDigitError('Z')
+        } else tokensError('.', 'Z')
       } else tokensError(':', 'Z')
     }
     nextByteOrError('"')
@@ -1510,6 +1512,7 @@ final class JsonReader private[jsoniter_scala](
     var hasSecond = false
     var nano = 0
     var hasNano = false
+    var nanoDigits = 0
     b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1517,11 +1520,10 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        var nanoDigits = 0
         val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
+          nanoDigits < 9 && b >= '0' && b <= '9'
         }) {
           nano += (b - '0') * nanoMul(nanoDigits)
           nanoDigits += 1
@@ -1530,8 +1532,10 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b != '"') {
       if (hasSecond) {
-        if (hasNano) tokenError('"')
-        else tokensError('.', '"')
+        if (hasNano) {
+          if (nanoDigits == 9) tokenError('"')
+          else tokenOrDigitError('"')
+        } else tokensError('.', '"')
       } else tokensError(':', '"')
     }
     LocalDateTime.of(toLocalDate(yearNeg, year, month, day), toLocalTime(hour, minute, second, nano))
@@ -1545,6 +1549,7 @@ final class JsonReader private[jsoniter_scala](
     var hasSecond = false
     var nano = 0
     var hasNano = false
+    var nanoDigits = 0
     var b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1552,11 +1557,10 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        var nanoDigits = 0
         val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && ((b >= '0' && b <= '9') || (b != '"' && tokenOrDigitError('"')))
+          nanoDigits < 9 && b >= '0' && b <= '9'
         }) {
           nano += (b - '0') * nanoMul(nanoDigits)
           nanoDigits += 1
@@ -1565,8 +1569,10 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b != '"') {
       if (hasSecond) {
-        if (hasNano) tokenError('"')
-        else tokensError('.', '"')
+        if (hasNano) {
+          if (nanoDigits == 9) tokenError('"')
+          else tokenOrDigitError('"')
+        } else tokensError('.', '"')
       } else tokensError(':', '"')
     }
     toLocalTime(hour, minute, second, nano)
