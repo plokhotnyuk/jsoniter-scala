@@ -12,7 +12,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 //import io.circe.syntax._
 import play.api.libs.json.Json
 
-import scala.collection.breakOut
 import scala.collection.immutable.IntMap
 
 class IntMapOfBooleansBenchmark extends CommonParams {
@@ -24,9 +23,9 @@ class IntMapOfBooleansBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map { i =>
+    obj = IntMap((1 to size).map { i =>
       (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 1) == 0)
-    }(breakOut)
+    }:_*)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

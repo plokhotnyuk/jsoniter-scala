@@ -12,8 +12,6 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
-import scala.collection.breakOut
-
 class ArrayOfBytesBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 10
@@ -23,7 +21,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(_.toByte)(breakOut)
+    obj = (1 to size).map(_.toByte).to
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

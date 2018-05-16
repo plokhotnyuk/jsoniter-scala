@@ -10,8 +10,8 @@ import scala.annotation.meta.field
 import scala.collection.generic.Growable
 import scala.collection.BitSet
 import scala.collection.immutable.{IntMap, LongMap}
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
 import scala.reflect.macros.blackbox
@@ -346,7 +346,7 @@ object JsonCodecMaker {
           }
           val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
           (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
-      }(breakOut)
+      }.toMap
 
       def getModule(tpe: Type): ModuleSymbol = {
         val comp = tpe.typeSymbol.companion
@@ -373,7 +373,7 @@ object JsonCodecMaker {
         lazy val module = getModule(tpe) // don't lookup for the companion when there are no default values for constructor params
         params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
-        }(breakOut)
+        }.toMap
       }
 
       def getMembers(annotations: Map[String, FieldAnnotations], tpe: c.universe.Type): Seq[MethodSymbol] = {
@@ -381,7 +381,7 @@ object JsonCodecMaker {
 
         tpe.members.collect {
           case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
-        }(breakOut).reverse
+        }.toSeq.reverse
       }
 
       val rootTpe = weakTypeOf[A].dealias
@@ -682,7 +682,7 @@ object JsonCodecMaker {
               val n = paramVarNames(i >> 5)
               val bit = 1 << i
               (decodedName(r), q"if (($n & $bit) != 0) $n ^= $bit else in.duplicatedKeyError(l)")
-          }(breakOut)
+          }.toMap
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
           val checkReqVars = if (required.isEmpty) Nil else {
@@ -715,7 +715,7 @@ object JsonCodecMaker {
                   } else $acc"""
             }
             cq"$hashCode => $checkNameAndReadValue"
-          }(breakOut)
+          }.toSeq
           val readFieldsBlock =
             (if (discriminator.isEmpty) readFields
             else readFields :+ discriminator) :+ cq"_ => $unexpectedFieldHandler"
@@ -757,7 +757,7 @@ object JsonCodecMaker {
                   } else $acc"""
             }
             cq"$hashCode => $checkNameAndReadValue"
-          }(breakOut)
+          }.toSeq
           q"""in.setMark()
               if (in.isNextToken('{')) {
                 if (in.skipToKey($discrName)) {

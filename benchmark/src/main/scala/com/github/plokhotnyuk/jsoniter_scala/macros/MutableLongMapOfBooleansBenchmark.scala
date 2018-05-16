@@ -12,7 +12,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
-import scala.collection.breakOut
 import scala.collection.mutable
 
 class MutableLongMapOfBooleansBenchmark extends CommonParams {
@@ -24,9 +23,9 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map { i =>
+    obj = mutable.LongMap((1 to size).map { i =>
       ((i * 372036854775807L) / Math.pow(10, i % 18).toLong, ((i * 1498724053) & 1) == 0)
-    }(breakOut)
+    }:_*)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

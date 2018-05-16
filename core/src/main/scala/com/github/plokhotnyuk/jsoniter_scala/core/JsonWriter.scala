@@ -6,9 +6,7 @@ import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
 
-import scala.annotation.{switch, tailrec}
-import scala.collection.breakOut
-import scala.collection.JavaConverters._
+import scala.annotation.tailrec
 import scala.{specialized => sp}
 
 /**
@@ -948,8 +946,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeZonedDateTime(x: ZonedDateTime): Unit = count = {
-    var pos = ensureBufCapacity(maxZonedDateTimeLength) // ~80 for current time zones
-    val buf = this.buf
+    var pos = ensureBufCapacity(46) // 46 == "+999999999-12-31T23:59:59.999999999+00:00:01".length + 2
+    var buf = this.buf
     val ds = digits
     buf(pos) = '"'
     pos = writeLocalDate(x.toLocalDate, pos + 1, buf, ds)
@@ -957,10 +955,15 @@ final class JsonWriter private[jsoniter_scala](
     pos = writeOffset(x.getOffset, writeLocalTime(x.toLocalTime, pos + 1, buf, ds), buf, ds)
     val zone = x.getZone
     if (!zone.isInstanceOf[ZoneOffset]) {
-      buf(pos) = '['
-      pos += 1
       val zoneId = zone.getId
       val len = zoneId.length
+      val required = len + 3
+      if (buf.length < pos + required) {
+        pos = flushAndGrowBuf(required, pos)
+        buf = this.buf
+      }
+      buf(pos) = '['
+      pos += 1
       zoneId.getBytes(0, len, buf, pos)
       pos += len
       buf(pos) = ']'
@@ -1284,29 +1287,39 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private final val escapedChars: Array[Byte] = (0 to 127).map { b =>
-    ((b: @switch) match {
-      case '\n' => 'n'
-      case '\r' => 'r'
-      case '\t' => 't'
-      case '\b' => 'b'
-      case '\f' => 'f'
-      case '\\' => '\\'
-      case '\"' => '"'
-      case x if x <= 31 || x >= 127 => -1 // hex escaped chars
-      case _ => 0 // non-escaped chars
-    }).toByte
-  }(breakOut)
-  private final val digits: Array[Short] =
-    (0 to 99).map(i => (((i / 10 + '0') << 8) + (i % 10 + '0')).toShort)(breakOut)
+  private final val escapedChars: Array[Byte] = {
+    val es = new Array[Byte](128)
+    java.util.Arrays.fill(es, 0, 32, -1: Byte)
+    es('\n') = 'n'
+    es('\r') = 'r'
+    es('\t') = 't'
+    es('\b') = 'b'
+    es('\f') = 'f'
+    es('\\') = '\\'
+    es('\"') = '"'
+    es(127) = -1
+    es
+  }
+  private final val digits: Array[Short] = {
+    val ds = new Array[Short](100)
+    var i = 0
+    var j = 0
+    do {
+      var k = 0
+      do {
+        ds(i) = (((j + '0') << 8) + (k + '0')).toShort
+        i += 1
+        k += 1
+      } while (k < 10)
+      j += 1
+    } while (j < 10)
+    ds
+  }
   private final val hexDigits: Array[Byte] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
-  private final val minIntBytes: Array[Byte] = "-2147483648".getBytes("UTF-8")
-  private final val minLongBytes: Array[Byte] = "-9223372036854775808".getBytes("UTF-8")
-  private final val maxZonedDateTimeLength: Int = {
-    val mostLongZoneId = ZoneId.of(ZoneId.getAvailableZoneIds.asScala.maxBy(_.length))
-    ZonedDateTime.ofLocal(LocalDateTime.MAX, mostLongZoneId, ZoneOffset.UTC).toString.length + 5
-  }
+  private final val minIntBytes: Array[Byte] = Array('-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8')
+  private final val minLongBytes: Array[Byte] =
+    Array('-', '9', '2', '2', '3', '3', '7', '2', '0', '3', '6', '8', '5', '4', '7', '7', '5', '8', '0', '8')
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
 }
