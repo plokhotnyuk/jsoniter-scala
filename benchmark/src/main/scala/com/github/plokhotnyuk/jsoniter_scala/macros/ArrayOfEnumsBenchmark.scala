@@ -13,8 +13,6 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
-import scala.collection.breakOut
-
 object SuitEnum extends Enumeration {
   type SuitEnum = Value
   //FIXME setting of ids & names save from locking at synchronized block during withName() or toString() calls
@@ -33,7 +31,7 @@ class ArrayOfEnumsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => SuitEnum((i * 1498724053) & 3))(breakOut)
+    obj = (1 to size).map(i => SuitEnum((i * 1498724053) & 3)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

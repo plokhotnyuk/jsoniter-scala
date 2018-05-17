@@ -10,8 +10,8 @@ import scala.annotation.meta.field
 import scala.collection.generic.Growable
 import scala.collection.BitSet
 import scala.collection.immutable.{IntMap, LongMap}
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{breakOut, mutable}
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
 import scala.reflect.macros.blackbox
@@ -177,7 +177,7 @@ object JsonCodecMaker {
       def companion(tpe: Type): Symbol = tpe.typeSymbol.companion
 
       def isContainer(tpe: Type): Boolean =
-        tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Traversable[_]] || tpe <:< typeOf[Array[_]]
+        tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
 
       def collectionCompanion(tpe: Type): Tree = {
         val comp = companion(tpe)
@@ -346,7 +346,7 @@ object JsonCodecMaker {
           }
           val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
           (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
-      }(breakOut)
+      }.toMap
 
       def getModule(tpe: Type): ModuleSymbol = {
         val comp = tpe.typeSymbol.companion
@@ -373,7 +373,7 @@ object JsonCodecMaker {
         lazy val module = getModule(tpe) // don't lookup for the companion when there are no default values for constructor params
         params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
-        }(breakOut)
+        }.toMap
       }
 
       def getMembers(annotations: Map[String, FieldAnnotations], tpe: c.universe.Type): Seq[MethodSymbol] = {
@@ -381,7 +381,7 @@ object JsonCodecMaker {
 
         tpe.members.collect {
           case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
-        }(breakOut).reverse
+        }.toSeq.reverse
       }
 
       val rootTpe = weakTypeOf[A].dealias
@@ -486,7 +486,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${collectionCompanion(tpe)}.empty"
-        else if (tpe <:< typeOf[Traversable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[Iterable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
         else q"null"
@@ -595,13 +595,13 @@ object JsonCodecMaker {
                 x(i) |= 1L << (v & 63)""",
             q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
                 $comp.fromBitMaskNoCopy(x)""")
-        } else if (tpe <:< typeOf[mutable.Traversable[_] with Growable[_]] &&
+        } else if (tpe <:< typeOf[mutable.Iterable[_] with Growable[_]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
           val comp = collectionCompanion(tpe)
           genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
-        } else if (tpe <:< typeOf[Traversable[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = collectionCompanion(tpe)
           genReadArray(q"val x = $comp.newBuilder[$tpe1]",
@@ -682,7 +682,7 @@ object JsonCodecMaker {
               val n = paramVarNames(i >> 5)
               val bit = 1 << i
               (decodedName(r), q"if (($n & $bit) != 0) $n ^= $bit else in.duplicatedKeyError(l)")
-          }(breakOut)
+          }.toMap
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
           val checkReqVars = if (required.isEmpty) Nil else {
@@ -715,7 +715,7 @@ object JsonCodecMaker {
                   } else $acc"""
             }
             cq"$hashCode => $checkNameAndReadValue"
-          }(breakOut)
+          }.toSeq
           val readFieldsBlock =
             (if (discriminator.isEmpty) readFields
             else readFields :+ discriminator) :+ cq"_ => $unexpectedFieldHandler"
@@ -757,7 +757,7 @@ object JsonCodecMaker {
                   } else $acc"""
             }
             cq"$hashCode => $checkNameAndReadValue"
-          }(breakOut)
+          }.toSeq
           q"""in.setMark()
               if (in.isNextToken('{')) {
                 if (in.skipToKey($discrName)) {
@@ -826,7 +826,7 @@ object JsonCodecMaker {
                 i += 1
               }
               out.writeArrayEnd()"""
-        } else if (tpe <:< typeOf[Traversable[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[Iterable[_]]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x", genWriteVal(q"x", typeArg1(tpe), isStringified))
         } else if (tpe <:< typeOf[Array[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
@@ -865,7 +865,7 @@ object JsonCodecMaker {
             val isStringified = getStringified(annotations, name)
             defaults.get(name) match {
               case Some(d) =>
-                if (tpe <:< typeOf[Traversable[_]]) {
+                if (tpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty && v != $d) {
                         ..${genWriteConstantKey(mappedName)}
@@ -894,7 +894,7 @@ object JsonCodecMaker {
                       }"""
                 }
               case None =>
-                if (tpe <:< typeOf[Traversable[_]]) {
+                if (tpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty) {
                         ..${genWriteConstantKey(mappedName)}
