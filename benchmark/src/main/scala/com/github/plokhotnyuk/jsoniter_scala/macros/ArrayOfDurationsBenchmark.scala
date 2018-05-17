@@ -26,7 +26,7 @@ class ArrayOfDurationsBenchmark extends CommonParams {
       val x = Math.abs((i * 1498724053) / Math.pow(10, i % 10)).toInt
       val y = Math.abs(i * Math.pow(10, i % 10)).toInt
       Duration.ofSeconds(x.toLong, y)
-    }.to
+    }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

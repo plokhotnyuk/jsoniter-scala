@@ -29,7 +29,7 @@ class ArrayOfZoneIdsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => zoneIds(i % zoneIds.length)).to
+    obj = (1 to size).map(i => zoneIds(i % zoneIds.length)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

@@ -23,7 +23,7 @@ class ArrayOfYearsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => Year.of(i % 1000 + 2000)).to
+    obj = (1 to size).map(i => Year.of(i % 1000 + 2000)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

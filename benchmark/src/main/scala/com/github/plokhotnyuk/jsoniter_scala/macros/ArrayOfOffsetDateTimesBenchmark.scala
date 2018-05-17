@@ -26,7 +26,7 @@ class ArrayOfOffsetDateTimesBenchmark extends CommonParams {
       OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(i),
         LocalTime.ofSecondOfDay((Math.abs(i * 1498724053) % 86000) | 1)),
         ZoneOffset.ofHours(i % 17))
-    }.to
+    }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

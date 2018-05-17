@@ -23,7 +23,7 @@ class ArrayOfYearMonthsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => YearMonth.of(i % 1000 + 2000, (i % 12) + 1)).to
+    obj = (1 to size).map(i => YearMonth.of(i % 1000 + 2000, (i % 12) + 1)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
