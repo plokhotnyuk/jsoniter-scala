@@ -738,12 +738,13 @@ final class JsonReader private[jsoniter_scala](
     val len = s.length
     val required = i + len
     if (required > charBuf.length) growCharBuf(required)
-    var j = required - 1
-    while (j >= len) {
-      charBuf(j) = charBuf(j - len)
-      j -= 1
+    var i1 = required - 1
+    var i2 = i1 - len
+    while (i2 >= 0) {
+      charBuf(i1) = charBuf(i2)
+      i1 -= 1
+      i2 -= 1
     }
-    j = 0
     s.getChars(0, len, charBuf, 0)
     required
   }
