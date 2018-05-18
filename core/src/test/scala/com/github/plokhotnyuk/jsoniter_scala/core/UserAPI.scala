@@ -15,8 +15,6 @@ object UserAPI {
   val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_compact_response.json"))
   val httpMessage: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_http_response.txt"))
   val codec: JsonValueCodec[User] = new JsonValueCodec[User] {
-    private[this] val r0: Array[String] = Array("name")
-    private[this] val r1: Array[String] = Array("id", "model")
     val nullValue: User = null
 
     def decodeValue(in: JsonReader, default: User): User = d0(in, default)
@@ -51,7 +49,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if ((p0 & 3) != 0) in.requiredFieldError(r1(Integer.numberOfTrailingZeros(p0)))
+        if ((p0 & 3) != 0) in.requiredFieldError(f1(Integer.numberOfTrailingZeros(p0)))
         new Device(id = _id, model = _model)
       } else in.readNullOrTokenError(default, '{')
 
@@ -95,7 +93,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if ((p0 & 1) != 0) in.requiredFieldError(r0(Integer.numberOfTrailingZeros(p0)))
+        if ((p0 & 1) != 0) in.requiredFieldError(f0(Integer.numberOfTrailingZeros(p0)))
         new User(name = _name, devices = _devices)
       } else in.readNullOrTokenError(default, '{')
 
@@ -127,6 +125,15 @@ object UserAPI {
         e1(v, out)
       }
       out.writeObjectEnd()
+    }
+
+    private[this] def f0(i: Int): String = (i: @switch) match {
+      case 0 => "name"
+    }
+
+    private[this] def f1(i: Int): String = (i: @switch) match {
+      case 0 => "id"
+      case 1 => "model"
     }
   }
 }

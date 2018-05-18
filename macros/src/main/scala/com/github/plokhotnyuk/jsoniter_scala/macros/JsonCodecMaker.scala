@@ -440,9 +440,12 @@ object JsonCodecMaker {
       val fieldTrees = mutable.LinkedHashMap.empty[Type, Tree]
 
       def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
-        val reqFieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
-        fieldTrees.getOrElseUpdate(tpe, q"private[this] val $reqFieldName: Array[String] = Array(..$f)")
-        Ident(reqFieldName)
+        val fieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
+        fieldTrees.getOrElseUpdate(tpe,
+          q"""private[this] def $fieldName(i: Int): String = (i: @switch) match {
+                case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n"}}
+              }""")
+        Ident(fieldName)
       }
 
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
@@ -947,10 +950,10 @@ object JsonCodecMaker {
                 ${genReadVal(rootTpe, q"default", codecConfig.isStringified, isRoot = true)}
               def encodeValue(x: $rootTpe, out: JsonWriter): Unit =
                 ${genWriteVal(q"x", rootTpe, codecConfig.isStringified, isRoot = true)}
-              ..${nullValueTrees.values}
-              ..${fieldTrees.values}
               ..${decodeMethodTrees.values}
               ..${encodeMethodTrees.values}
+              ..${fieldTrees.values}
+              ..${nullValueTrees.values}
             }"""
       if (c.settings.contains("print-codecs")) info(s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}")
       c.Expr[JsonValueCodec[A]](codec)
