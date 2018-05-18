@@ -2185,20 +2185,9 @@ final class JsonReader private[jsoniter_scala](
       (if (month > 2) if (isLeap(posYear)) 1 else 2 else 0)
 
   private[this] def maxDayForYearMonth(posYear: Int, month: Int): Int =
-    (month: @switch) match {
-      case 1 => 31
-      case 2 => if (isLeap(posYear)) 29 else 28
-      case 3 => 31
-      case 4 => 30
-      case 5 => 31
-      case 6 => 30
-      case 7 => 31
-      case 8 => 31
-      case 9 => 30
-      case 10 => 31
-      case 11 => 30
-      case 12 => 31
-    }
+    if (month != 2) ((month >> 3) ^ (month & 1)) + 30
+    else if (isLeap(posYear)) 29
+    else 28
 
   private[this] def isLeap(posYear: Int): Boolean =
     (posYear & 3) == 0 && {
