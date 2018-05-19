@@ -7,10 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
-import scala.collection.generic.Growable
-import scala.collection.BitSet
+import scala.collection.{BitSet, mutable}
 import scala.collection.immutable.{IntMap, LongMap}
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
@@ -598,11 +596,10 @@ object JsonCodecMaker {
                 x(i) |= 1L << (v & 63)""",
             q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
                 $comp.fromBitMaskNoCopy(x)""")
-        } else if (tpe <:< typeOf[mutable.Iterable[_] with Growable[_]] &&
-            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { // ArrayStack uses 'push' for '+='
+        } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
+            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadArray(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
+          genReadArray(q"val x = default; if (x.nonEmpty) x.clear(); ",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
         } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -971,8 +968,8 @@ object JsonCodecMaker {
     i != len
   }
 
-  private[this] def groupByOrdered[A, K](xs: Seq[A])(f: A => K): mutable.Map[K, Seq[A]] = {
-    val m = mutable.LinkedHashMap.empty[K, Seq[A]].withDefault(_ => new ArrayBuffer[A])
+  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): mutable.Map[K, collection.Seq[A]] = {
+    val m = mutable.LinkedHashMap.empty[K, collection.Seq[A]].withDefault(_ => new ArrayBuffer[A])
     xs.foreach { x =>
       val k = f(x)
       m(k) = m(k) :+ x
@@ -980,7 +977,7 @@ object JsonCodecMaker {
     m
   }
 
-  private[this] def duplicated[A](xs: Seq[A]): Seq[A] = {
+  private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = {
     val seen = new mutable.HashSet[A]
     val dup = new ArrayBuffer[A]
     xs.foreach[Unit] { x =>
