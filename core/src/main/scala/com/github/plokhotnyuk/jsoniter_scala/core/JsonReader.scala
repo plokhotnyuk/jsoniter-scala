@@ -708,9 +708,7 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private[this] def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
-    if (i == len) true
-    else if (charBuf(i) != s.charAt(i)) false
-    else isCharBufEqualsTo(len, s, i + 1)
+    i == len || (charBuf(i) == s.charAt(i) && isCharBufEqualsTo(len, s, i + 1))
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
     if (i >= charBuf.length) growCharBuf(i + 1)
