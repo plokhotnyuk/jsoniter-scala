@@ -492,8 +492,8 @@ final class JsonReader private[jsoniter_scala](
     else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
     else if (b == 'n' || b == 't') skipFixedBytes(3, head)
     else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '{') skipNested('{', '}', 0, head)
-    else if (b == '[') skipNested('[', ']', 0, head)
+    else if (b == '[') skipArray(0, head)
+    else if (b == '{') skipObject(0, head)
     else decodeError("expected value", head - 1)
   }
 
@@ -802,11 +802,11 @@ final class JsonReader private[jsoniter_scala](
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
-      }) pos = {
+      }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
         x = x * 10 + ('0' - b)
         if (x < -128) byteOverflowError(pos)
-        pos + 1
+        pos += 1
       }
       head = pos
       if (b == '.' || (b | 0x20) == 'e') numberError(pos)
@@ -830,11 +830,11 @@ final class JsonReader private[jsoniter_scala](
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
-      }) pos = {
+      }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
         x = x * 10 + ('0' - b)
         if (x < -32768) shortOverflowError(pos)
-        pos + 1
+        pos += 1
       }
       head = pos
       if (b == '.' || (b | 0x20) == 'e') numberError(pos)
@@ -858,12 +858,12 @@ final class JsonReader private[jsoniter_scala](
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
-      }) pos = {
+      }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
         if (x < -214748364) intOverflowError(pos)
         x = x * 10 + ('0' - b)
         if (x > 0) intOverflowError(pos)
-        pos + 1
+        pos += 1
       }
       head = pos
       if (b == '.' || (b | 0x20) == 'e') numberError(pos)
@@ -887,12 +887,12 @@ final class JsonReader private[jsoniter_scala](
       }) && {
         b = buf(pos)
         b >= '0' && b <= '9'
-      }) pos = {
+      }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
         if (x < -922337203685477580L) longOverflowError(pos)
         x = x * 10 + ('0' - b)
         if (x > 0) longOverflowError(pos)
-        pos + 1
+        pos += 1
       }
       head = pos
       if (b == '.' || (b | 0x20) == 'e') numberError(pos)
@@ -922,11 +922,11 @@ final class JsonReader private[jsoniter_scala](
         }) && {
           b = buf(pos)
           b >= '0' && b <= '9'
-        }) pos = {
+        }) {
           if (isZeroFirst) leadingZeroError(pos - 1)
           if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
           else manExp += 1
-          pos + 1
+          pos += 1
         }
         if (b == '.') {
           b = nextByte(pos + 1)
@@ -942,12 +942,12 @@ final class JsonReader private[jsoniter_scala](
             }) && {
               b = buf(pos)
               b >= '0' && b <= '9'
-            }) pos = {
+            }) {
               if (posMan < 4503599627370496L) {
                 posMan = posMan * 10 + (b - '0')
                 manExp -= 1
               }
-              pos + 1
+              pos += 1
             }
           } else numberError(pos - 1)
         }
@@ -966,9 +966,9 @@ final class JsonReader private[jsoniter_scala](
             }) && {
               b = buf(pos)
               b >= '0' && b <= '9'
-            }) pos = {
+            }) {
               if (posExp < 100) posExp = posExp * 10 + (b - '0')
-              pos + 1
+              pos += 1
             }
           } else numberError(pos - 1)
         }
@@ -1008,11 +1008,11 @@ final class JsonReader private[jsoniter_scala](
         }) && {
           b = buf(pos)
           b >= '0' && b <= '9'
-        }) pos = {
+        }) {
           if (isZeroFirst) leadingZeroError(pos - 1)
           if (posMan < 4503599627370496L) posMan = posMan * 10 + (b - '0')
           else manExp += 1
-          pos + 1
+          pos += 1
         }
         if (b == '.') {
           b = nextByte(pos + 1)
@@ -1028,12 +1028,12 @@ final class JsonReader private[jsoniter_scala](
             }) && {
               b = buf(pos)
               b >= '0' && b <= '9'
-            }) pos = {
+            }) {
               if (posMan < 4503599627370496L) {
                 posMan = posMan * 10 + (b - '0')
                 manExp -= 1
               }
-              pos + 1
+              pos += 1
             }
           } else numberError(pos - 1)
         }
@@ -1052,9 +1052,9 @@ final class JsonReader private[jsoniter_scala](
             }) && {
               b = buf(pos)
               b >= '0' && b <= '9'
-            }) pos = {
+            }) {
               if (posExp < 100) posExp = posExp * 10 + (b - '0')
-              pos + 1
+              pos += 1
             }
           } else numberError(pos - 1)
         }
@@ -1094,9 +1094,9 @@ final class JsonReader private[jsoniter_scala](
           }) && {
             b = buf(pos)
             b >= '0' && b <= '9'
-          }) pos = {
+          }) {
             if (isZeroFirst) leadingZeroError(pos - 1)
-            pos + 1
+            pos += 1
           }
           head = pos
           if (b == '.' || (b | 0x20) == 'e') numberError(pos)
@@ -1144,9 +1144,9 @@ final class JsonReader private[jsoniter_scala](
           }) && {
             b = buf(pos)
             b >= '0' && b <= '9'
-          }) pos = {
+          }) {
             if (isZeroFirst) leadingZeroError(pos - 1)
-            pos + 1
+            pos += 1
           }
           if (b == '.') {
             b = nextByte(pos + 1)
@@ -2563,10 +2563,10 @@ final class JsonReader private[jsoniter_scala](
       growCharBuf(required)
       charBuf = this.charBuf
     }
-    while (pos < to) pos = {
+    while (pos < to) {
       charBuf(i) = buf(pos).toChar
       i += 1
-      pos + 1
+      pos += 1
     }
     required
   }
@@ -2594,16 +2594,28 @@ final class JsonReader private[jsoniter_scala](
     } else skipNumber(loadMoreOrError(pos))
 
   @tailrec
-  private[this] def skipNested(opening: Byte, closing: Byte, level: Int, pos: Int): Int =
+  private[this] def skipObject(level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == '"') skipNested(opening, closing, level, skipString(evenBackSlashes = true, pos + 1))
-      else if (b == closing) {
+      if (b == '"') skipObject(level, skipString(evenBackSlashes = true, pos + 1))
+      else if (b == '}') {
         if (level == 0) pos + 1
-        else skipNested(opening, closing, level - 1, pos + 1)
-      } else if (b == opening) skipNested(opening, closing, level + 1, pos + 1)
-      else skipNested(opening, closing, level, pos + 1)
-    } else skipNested(opening, closing, level, loadMoreOrError(pos))
+        else skipObject(level - 1, pos + 1)
+      } else if (b == '{') skipObject(level + 1, pos + 1)
+      else skipObject(level, pos + 1)
+    } else skipObject(level, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipArray(level: Int, pos: Int): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipArray(level, skipString(evenBackSlashes = true, pos + 1))
+      else if (b == ']') {
+        if (level == 0) pos + 1
+        else skipArray(level - 1, pos + 1)
+      } else if (b == '[') skipArray(level + 1, pos + 1)
+      else skipArray(level, pos + 1)
+    } else skipArray(level, loadMoreOrError(pos))
 
   @tailrec
   private[this] def skipFixedBytes(n: Int, pos: Int): Int = {
@@ -2705,16 +2717,15 @@ object JsonReader {
   }.toCharArray
   private final val dumpBorder: Array[Char] =
     "\n+----------+-------------------------------------------------+------------------+".toCharArray
-
   final val defaultMaxScale: Int = 300
   final val defaultMathContext: MathContext = MathContext.DECIMAL128
 
   final def toHashCode(cs: Array[Char], len: Int): Int = {
     var h = 0
     var i = 0
-    while (i < len) i = {
+    while (i < len) {
       h = (h << 5) + (cs(i) - h)
-      i + 1
+      i += 1
     }
     h
   }
