@@ -136,19 +136,19 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
 
-      def isCaseClass(tpe: Type): Boolean = tpe.typeSymbol.asClass.isCaseClass
+      def isCaseClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isCaseClass
 
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
 
-      def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.asClass.isDerivedValueClass
+      def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass
 
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
       def valueClassValueType(tpe: Type): Type = methodType(valueClassValueMethod(tpe))
 
-      def isSealedAdtBase(tpe: Type): Boolean = {
+      def isSealedAdtBase(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
         val classSymbol = tpe.typeSymbol.asClass
         (classSymbol.isAbstract || classSymbol.isTrait) &&
           (if (classSymbol.isSealed) true
@@ -157,7 +157,7 @@ object JsonCodecMaker {
       }
 
       def adtLeafClasses(tpe: Type): Seq[Type] = {
-        def collectRecursively(tpe: Type): Set[Type] =
+        def collectRecursively(tpe: Type): Set[Type] = if (tpe.typeSymbol.isClass) {
           tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
             val subTpe = s.asClass.toType
             if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
@@ -165,6 +165,7 @@ object JsonCodecMaker {
             else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
               s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
           }
+        } else Set.empty
 
         val classes = collectRecursively(tpe).toSeq
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. Please consider adding them or " +
@@ -392,8 +393,7 @@ object JsonCodecMaker {
              if (pd) {
                pd = !pd
                in.skip()
-             } else in.duplicatedKeyError(l)
-          """
+             } else in.duplicatedKeyError(l)"""
       }
 
       def discriminatorValue(tpe: Type): String = codecConfig.adtLeafClassNameMapper(decodeName(tpe.typeSymbol.fullName))

@@ -1150,6 +1150,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
       })
     }
+    "don't generate codecs for higher kinded types" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """import scala.language.higherKinds
+          |case class HigherKinded[F[_]](i: Int, hk: F[HigherKinded[F]])
+          |JsonCodecMaker.make[HigherKinded[Option]](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'F[HigherKinded[F]]'."""
+          .stripMargin.replace('\n', ' ')
+      })
+    }
   }
   "JsonCodecMaker.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {

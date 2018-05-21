@@ -54,8 +54,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Codecs can be generated for primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, `Option`, tuples,
   `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes with 
   values/fields having any of types listed here 
-- Case classes should be defined as a top-level class or directly inside of another class or object and with a primary 
-  constructor that has one list of arguments for all non-transient fields
+- Case classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
+- Case classes with higher kinded types are not supported
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
@@ -64,8 +64,10 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
-- Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to 
-  provide a sparse output 
+- Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
+  provide a sparse output
+- Case classes with fields that have default values should be defined as a top-level class or directly inside of another
+  class or object
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
