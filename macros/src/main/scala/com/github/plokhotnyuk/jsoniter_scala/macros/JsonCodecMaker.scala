@@ -130,8 +130,6 @@ object JsonCodecMaker {
 
       def decodedName(s: Symbol): String = decodeName(s.name.toString)
 
-      def methodType(m: MethodSymbol): Type = m.returnType.dealias
-
       def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
@@ -144,9 +142,19 @@ object JsonCodecMaker {
 
       def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass
 
+      def resolveConcreteType(tpe: Type, mtpe: Type): Type = {
+        val tpeTypeParams =
+          if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.typeParams
+          else Nil
+        if (tpeTypeParams.isEmpty) mtpe
+        else mtpe.substituteTypes(tpeTypeParams, tpe.typeArgs)
+      }
+
+      def methodType(tpe: Type, m: MethodSymbol): Type = resolveConcreteType(tpe, m.returnType.dealias)
+
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
-      def valueClassValueType(tpe: Type): Type = methodType(valueClassValueMethod(tpe))
+      def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
 
       def isSealedAdtBase(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
         val classSymbol = tpe.typeSymbol.asClass
@@ -671,7 +679,7 @@ object JsonCodecMaker {
             annotations.get(decodedName(p)).fold(false)(_.transient)
           }
           val required = params.collect {
-            case p if !p.isParamWithDefault && !isContainer(p.typeSignature) => name(p)
+            case p if !p.isParamWithDefault && !isContainer(resolveConcreteType(tpe, p.typeSignature.dealias)) => name(p)
           }
           val paramVarNum = params.size
           val lastParamVarIndex = paramVarNum >> 5
@@ -700,14 +708,14 @@ object JsonCodecMaker {
           val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
           val defaults = getDefaults(tpe)
           val readVars = members.map { m =>
-            val tpe = methodType(m)
-            q"var ${TermName("_" + m.name)}: $tpe = ${defaults.getOrElse(decodedName(m), nullValue(tpe))}"
+            val mtpe = methodType(tpe, m)
+            q"var ${TermName("_" + m.name)}: $mtpe = ${defaults.getOrElse(decodedName(m), nullValue(mtpe))}"
           }
           val readFields = groupByOrdered(members)(hashCode).map { case (hashCode, ms) =>
             val checkNameAndReadValue = ms.foldRight(unexpectedFieldHandler) { case (m, acc) =>
               val varName = TermName("_" + m.name)
               val isStringified = getStringified(annotations, decodedName(m))
-              val readValue = q"$varName = ${genReadVal(methodType(m), q"$varName", isStringified)}"
+              val readValue = q"$varName = ${genReadVal(methodType(tpe, m), q"$varName", isStringified)}"
               val resetFieldFlag = bitmasks(decodedName(m))
               q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
                     ..$resetFieldFlag
@@ -859,62 +867,62 @@ object JsonCodecMaker {
           val members = getMembers(annotations, tpe)
           val defaults = getDefaults(tpe)
           val writeFields = members.map { m =>
-            val tpe = methodType(m)
+            val mtpe = methodType(tpe, m)
             val name = decodedName(m)
             val mappedName = getMappedName(annotations, name)
             val isStringified = getStringified(annotations, name)
             defaults.get(name) match {
               case Some(d) =>
-                if (tpe <:< typeOf[Iterable[_]]) {
+                if (mtpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty && v != $d) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..${genWriteVal(q"v", mtpe, isStringified)}
                       }"""
-                } else if (tpe <:< typeOf[Option[_]]) {
+                } else if (mtpe <:< typeOf[Option[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty && v != $d) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(tpe), isStringified)}
+                        ..${genWriteVal(q"v.get", typeArg1(mtpe), isStringified)}
                       }"""
-                } else if (tpe <:< typeOf[Array[_]]) {
+                } else if (mtpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if (v.length > 0 && {
                             val d = $d
                             v.length != d.length || v.deep != d.deep
                           }) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..${genWriteVal(q"v", mtpe, isStringified)}
                       }"""
                 } else {
                   q"""val v = x.$m
                       if (v != $d) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..${genWriteVal(q"v", mtpe, isStringified)}
                       }"""
                 }
               case None =>
-                if (tpe <:< typeOf[Iterable[_]]) {
+                if (mtpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..${genWriteVal(q"v", mtpe, isStringified)}
                       }"""
-                } else if (tpe <:< typeOf[Option[_]]) {
+                } else if (mtpe <:< typeOf[Option[_]]) {
                   q"""val v = x.$m
                       if (!v.isEmpty) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(tpe), isStringified)}
+                        ..${genWriteVal(q"v.get", typeArg1(mtpe), isStringified)}
                       }"""
-                } else if (tpe <:< typeOf[Array[_]]) {
+                } else if (mtpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
                       if (v.length > 0) {
                         ..${genWriteConstantKey(mappedName)}
-                        ..${genWriteVal(q"v", tpe, isStringified)}
+                        ..${genWriteVal(q"v", mtpe, isStringified)}
                       }"""
                 } else {
                   q"""..${genWriteConstantKey(mappedName)}
-                      ..${genWriteVal(q"x.$m", tpe, isStringified)}"""
+                      ..${genWriteVal(q"x.$m", mtpe, isStringified)}"""
                 }
             }
           }

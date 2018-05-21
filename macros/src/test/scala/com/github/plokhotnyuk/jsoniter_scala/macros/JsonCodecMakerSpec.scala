@@ -18,6 +18,8 @@ case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
 
+case class Id[A](id: A) extends AnyVal
+
 class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
@@ -1107,6 +1109,38 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
     }
+    "serialize and deserialize first-order types" in {
+      case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
+
+      verifySerDeser(make[FirstOrderType[Int, String]](CodecMakerConfig()),
+        FirstOrderType[Int, String](1, "VVV", Some(1), List("WWW")),
+        """{"a":1,"b":"VVV","oa":1,"bs":["WWW"]}""".getBytes("UTF-8"))
+      verifySerDeser(make[FirstOrderType[Id[Int], Id[String]]](CodecMakerConfig()),
+        FirstOrderType[Id[Int], Id[String]](Id[Int](1), Id[String]("VVV"), Some(Id[Int](2)), List(Id[String]("WWW"))),
+        """{"a":1,"b":"VVV","oa":2,"bs":["WWW"]}""".getBytes("UTF-8"))
+    }
+    "don't generate codecs for first-order types that are specified using 'Any' type parameter" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class FirstOrder[A](a: A)
+          |JsonCodecMaker.make[FirstOrder[_]](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
+          |definition for 'Any' or using a custom implicitly accessible codec for the ADT base."""
+          .stripMargin.replace('\n', ' ')
+      })
+    }
+    "serialize and deserialize higher-kinded types" in {
+      import scala.language.higherKinds
+
+      case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
+
+      verifySerDeser(make[HigherKindedType[Option]](CodecMakerConfig()),
+        HigherKindedType[Option](Some(1), Some(HigherKindedType[Option](Some(2), None))),
+        """{"f":1,"fs":{"f":2}}""".getBytes("UTF-8"))
+      verifySerDeser(make[HigherKindedType[List]](CodecMakerConfig()),
+        HigherKindedType[List](List(1), List(HigherKindedType[List](List(2), Nil))),
+        """{"f":[1],"fs":[{"f":[2]}]}""".getBytes("UTF-8"))
+    }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
       object PrivatePrimaryConstructor {
         implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
@@ -1148,16 +1182,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }).getMessage.contains {
         """'MultiListOfArgs' has a primary constructor with multiple parameter lists.
           |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
-      })
-    }
-    "don't generate codecs for higher kinded types" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """import scala.language.higherKinds
-          |case class HigherKinded[F[_]](i: Int, hk: F[HigherKinded[F]])
-          |JsonCodecMaker.make[HigherKinded[Option]](CodecMakerConfig())""".stripMargin
-      }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'F[HigherKinded[F]]'."""
-          .stripMargin.replace('\n', ' ')
       })
     }
   }

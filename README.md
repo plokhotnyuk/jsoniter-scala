@@ -55,9 +55,9 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes with 
   values/fields having any of types listed here 
 - Case classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
-- Case classes with higher kinded types are not supported
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
+- Support of first-order and higher-kinded types for case classes and value classes
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
   using discriminator field with string type of value
 - Implicitly resolvable values codecs for JSON values and key codecs for JSON object keys that are mapped to maps
