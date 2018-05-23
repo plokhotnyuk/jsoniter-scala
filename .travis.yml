@@ -11,6 +11,6 @@ matrix:
       jdk: oraclejdk8
       scala: 2.11.12
 script:
-  - travis_wait 30 sbt -no-colors ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
+  - travis_wait 30 sbt -no-colors ++$TRAVIS_SCALA_VERSION -J-Xms2g -J-Xmx2g -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport mimaReportBinaryIssues
 after_success:
   - bash <(curl -s https://codecov.io/bash)
