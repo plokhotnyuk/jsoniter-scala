@@ -32,6 +32,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make[StandardTypes](CodecMakerConfig())
 
   case class JavaTypes(uuid: UUID)
+
   val codecOfJavaTypes: JsonValueCodec[JavaTypes] = make[JavaTypes](CodecMakerConfig())
 
   object LocationType extends Enumeration {
@@ -128,13 +129,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     def a: Int
   }
 
-  case class A(a: Int) extends Inner
+  case class AAA(a: Int) extends Inner
 
-  case class B(a: String) extends AdtBase
+  case class BBB(a: String) extends AdtBase
 
-  case class C(a: Int, b: String) extends Inner
+  case class CCC(a: Int, b: String) extends Inner
 
-  case object D extends AdtBase
+  case object DDD extends AdtBase
 
   val codecOfADTList: JsonValueCodec[List[AdtBase]] = make[List[AdtBase]](CodecMakerConfig())
 
@@ -343,27 +344,28 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"HIGH":0}""".getBytes("UTF-8"))
     }
     "serialize and deserialize outer types using custom codecs for inner types" in {
-      implicit val codecForEither = new JsonValueCodec[Either[String, StandardTypes]] {
-        val nullValue: Either[String, StandardTypes] = null
+      implicit val codecForEither: JsonValueCodec[Either[String, StandardTypes]] =
+        new JsonValueCodec[Either[String, StandardTypes]] {
+          val nullValue: Either[String, StandardTypes] = null
 
-        def decodeValue(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
-          (in.nextToken(): @switch) match {
-            case '{' =>
-              in.rollbackToken()
-              Right(codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue))
-            case '"' =>
-              in.rollbackToken()
-              Left(in.readString(null))
-            case _ =>
-              in.decodeError("expected '{' or '\"'")
-          }
+          def decodeValue(in: JsonReader, default: Either[String, StandardTypes]): Either[String, StandardTypes] =
+            (in.nextToken(): @switch) match {
+              case '{' =>
+                in.rollbackToken()
+                Right(codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue))
+              case '"' =>
+                in.rollbackToken()
+                Left(in.readString(null))
+              case _ =>
+                in.decodeError("expected '{' or '\"'")
+            }
 
-        def encodeValue(x: Either[String, StandardTypes], out: JsonWriter): Unit =
-          x match {
-            case Left(s) => out.writeVal(s)
-            case Right(st) => codecOfStandardTypes.encodeValue(st, out)
-          }
-      }
+          def encodeValue(x: Either[String, StandardTypes], out: JsonWriter): Unit =
+            x match {
+              case Left(s) => out.writeVal(s)
+              case Right(st) => codecOfStandardTypes.encodeValue(st, out)
+            }
+        }
       val codecOfOuterTypes = make[OuterTypes](CodecMakerConfig())
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Right(standardTypes)),
         """{"s":"X","st":{"s":"VVV","bi":1,"bd":1.1}}""".getBytes("UTF-8"))
@@ -392,7 +394,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal number, offset: 0x00000006"))
     }
     "serialize and deserialize outer types using custom key codecs for map keys" in {
-      implicit val codecForLevel = new JsonKeyCodec[Level] {
+      implicit val codecForLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
         override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
           case 0 => Level.LOW
           case 1 => Level.HIGH
@@ -858,18 +860,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList,
-        List(A(1), B("VVV"), C(1, "VVV"), D),
-        """[{"type":"A","a":1},{"type":"B","a":"VVV"},{"type":"C","a":1,"b":"VVV"},{"type":"D"}]""".getBytes("UTF-8"))
+        List(AAA(1), BBB("VVV"), CCC(1, "VVV"), DDD),
+        """[{"type":"AAA","a":1},{"type":"BBB","a":"VVV"},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]"""
+          .getBytes("UTF-8"))
       val longStr = new String(Array.fill(100000)('W'))
       verifyDeser(codecOfADTList,
-        List(C(2, longStr), C(1, "VVV")),
-        s"""[{"a":2,"b":"$longStr","type":"C"},{"a":1,"type":"C","b":"VVV"}]""".getBytes("UTF-8"))
+        List(CCC(2, longStr), CCC(1, "VVV")),
+        s"""[{"a":2,"b":"$longStr","type":"CCC"},{"a":1,"type":"CCC","b":"VVV"}]""".getBytes("UTF-8"))
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t")),
-        List(C(2, "WWW"), C(1, "VVV")),
-        s"""[{"t":"C","a":2,"b":"WWW"},{"t":"C","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
+        List(CCC(2, "WWW"), CCC(1, "VVV")),
+        s"""[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
-      sealed abstract class База
+      sealed abstract class База extends Product with Serializable
 
       case class А(б: Б) extends База
 
@@ -880,7 +883,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """[{"тип":"А","б":{"с":"x"}},{"тип":"Б","с":"x"}]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs with Scala operators in names" in {
-      sealed trait TimeZone
+      sealed trait TimeZone extends Product with Serializable
 
       case object `US/Alaska` extends TimeZone
 
@@ -892,18 +895,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "throw parse exception in case of duplicated discriminator field" in {
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(A(1)), """[{"type":"A","a":1,"type":"A"}]""".getBytes("UTF-8"))
-      }.getMessage.contains("""duplicated field "type", offset: 0x00000019"""))
+        verifyDeser(codecOfADTList, List(AAA(1)), """[{"type":"AAA","a":1,"type":"AAA"}]""".getBytes("UTF-8"))
+      }.getMessage.contains("""duplicated field "type", offset: 0x0000001b"""))
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1}]""".getBytes("UTF-8"))
+        verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1}]""".getBytes("UTF-8"))
       }.getMessage.contains("""missing required field "type", offset: 0x00000007"""))
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":"AAA"}]""".getBytes("UTF-8"))
+        verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1,"type":"aaa"}]""".getBytes("UTF-8"))
       }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000013"""))
       assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(A(1)), """[{"a":1,"type":123}]""".getBytes("UTF-8"))
+        verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1,"type":123}]""".getBytes("UTF-8"))
       }.getMessage.contains("""expected '"', offset: 0x0000000f"""))
     }
     "don't generate codec for non sealed traits or abstract classes as an ADT base" in {
@@ -930,7 +933,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "don't generate codec for non case classes as ADT leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X
+        """sealed trait X extends Product with Serializable
           |class A(i: Int) extends X
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
@@ -939,7 +942,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           .stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X
+        """sealed trait X extends Product with Serializable
           |object A extends X
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
@@ -950,14 +953,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "don't generate codec for ADT base without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X
+        """sealed trait X extends Product with Serializable
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
         """Cannot find leaf classes for ADT base 'X'. Please consider adding them or using a custom implicitly
           |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed abstract class X
+        """sealed abstract class X extends Product with Serializable
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
         """Cannot find leaf classes for ADT base 'X'. Please consider adding them or using a custom implicitly
@@ -966,7 +969,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "don't generate codec for case objects which are mapped to the same discriminator value" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X
+        """sealed trait X extends Product with Serializable
           |case object A extends X
           |case object B extends X
           |JsonCodecMaker.make[X](CodecMakerConfig(adtLeafClassNameMapper = _ => "Z"))""".stripMargin
@@ -977,7 +980,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "don't generate codec for case classes with fields that the same name as discriminator name" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait DuplicatedJsonName
+        """sealed trait DuplicatedJsonName extends Product with Serializable
           |case class A(x: Int) extends DuplicatedJsonName
           |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(discriminatorFieldName = "x"))""".stripMargin
       }).getMessage.contains {
@@ -1110,6 +1113,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
     }
     "serialize and deserialize first-order types" in {
+      verifySerDeser(make[Either[Int, String]](CodecMakerConfig()), Right("VVV"),
+        """{"type":"Right","value":"VVV"}""".getBytes("UTF-8"))
+
       case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
       verifySerDeser(make[FirstOrderType[Int, String]](CodecMakerConfig()),
@@ -1132,14 +1138,24 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize higher-kinded types" in {
       import scala.language.higherKinds
 
+      sealed trait Foo[A[_]] extends Product with Serializable
+
+      case class Bar[A[_]](a: A[Int]) extends Foo[A]
+
+      case class Baz[A[_]](a: A[String]) extends Foo[A]
+
+      val codecOfFooOption: JsonValueCodec[Foo[Option]] = make[Foo[Option]](CodecMakerConfig())
+      verifySerDeser(codecOfFooOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""".getBytes("UTF-8"))
+      verifySerDeser(codecOfFooOption, Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""".getBytes("UTF-8"))
+
       case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
 
       verifySerDeser(make[HigherKindedType[Option]](CodecMakerConfig()),
         HigherKindedType[Option](Some(1), Some(HigherKindedType[Option](Some(2), None))),
         """{"f":1,"fs":{"f":2}}""".getBytes("UTF-8"))
       verifySerDeser(make[HigherKindedType[List]](CodecMakerConfig()),
-        HigherKindedType[List](List(1), List(HigherKindedType[List](List(2), Nil))),
-        """{"f":[1],"fs":[{"f":[2]}]}""".getBytes("UTF-8"))
+        HigherKindedType[List](List(1), List(HigherKindedType[List](List(2, 3, 4), Nil))),
+        """{"f":[1],"fs":[{"f":[2,3,4]}]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
       object PrivatePrimaryConstructor {

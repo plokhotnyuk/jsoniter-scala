@@ -16,7 +16,7 @@ import scala.reflect.io.Streamable
   new Type(value = classOf[Polygon], name = "Polygon"),
   new Type(value = classOf[MultiPolygon], name = "MultiPolygon"),
   new Type(value = classOf[GeometryCollection], name = "GeometryCollection")))
-sealed trait Geometry
+sealed trait Geometry extends Product with Serializable
 case class Point(coordinates: (Double, Double)) extends Geometry
 case class MultiPoint(coordinates: IndexedSeq[(Double, Double)]) extends Geometry
 case class LineString(coordinates: IndexedSeq[(Double, Double)]) extends Geometry
@@ -29,7 +29,7 @@ case class GeometryCollection(geometries: IndexedSeq[Geometry]) extends Geometry
 @JsonSubTypes(Array(
   new Type(value = classOf[Feature], name = "Feature"),
   new Type(value = classOf[FeatureCollection], name = "FeatureCollection")))
-sealed trait GeoJSON
+sealed trait GeoJSON extends Product with Serializable
 case class Feature(properties: Map[String, String], geometry: Geometry) extends GeoJSON
 case class FeatureCollection(features: IndexedSeq[GeoJSON]) extends GeoJSON
 

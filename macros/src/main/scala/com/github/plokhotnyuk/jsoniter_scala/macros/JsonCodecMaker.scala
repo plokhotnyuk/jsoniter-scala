@@ -167,7 +167,10 @@ object JsonCodecMaker {
       def adtLeafClasses(tpe: Type): Seq[Type] = {
         def collectRecursively(tpe: Type): Set[Type] = if (tpe.typeSymbol.isClass) {
           tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
-            val subTpe = s.asClass.toType
+            val classSymbol = s.asClass
+            val subTpe =
+              if (classSymbol.typeParams.isEmpty) classSymbol.toType
+              else classSymbol.toType.substituteTypes(classSymbol.typeParams, tpe.typeArgs)
             if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
             else if (isCaseClass(subTpe)) Set(subTpe)
             else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
