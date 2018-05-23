@@ -1113,7 +1113,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
     }
     "serialize and deserialize first-order types" in {
-      verifySerDeser(make[Either[Int, String]](CodecMakerConfig()), Right("VVV"),
+      verifySerDeser(make[Either[Int, String]](CodecMakerConfig(fieldNameMapper = { (x: String) =>
+        if (x == "a") "value" // replace deprecated name of Left value
+        else if (x == "b") "value" // replace deprecated name of Right value
+        else x
+      })), Right("VVV"),
         """{"type":"Right","value":"VVV"}""".getBytes("UTF-8"))
 
       case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
