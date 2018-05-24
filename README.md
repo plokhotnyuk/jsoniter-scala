@@ -49,14 +49,15 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   values in the memory
 - Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
 - Support writing to pre-allocated `Array[Byte]` by specifying of a position of writing from
-- Support of UTF-8 encoding
-- Parsing of strings with escaped characters for JSON keys and string values 
+- Support of UTF-8 encoding only
+- Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`, 
   `Either`, `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes 
   with values/fields having any of types listed here 
 - Case classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
+- Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
 - Support of first-order and higher-kinded types for case classes and value classes
 - Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
   using discriminator field with string type of value
