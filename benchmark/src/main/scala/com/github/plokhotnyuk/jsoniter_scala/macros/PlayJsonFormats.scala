@@ -12,6 +12,7 @@ import scala.collection.mutable
 
 object PlayJsonFormats {
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format[MissingReqFields]
+  val nestedStructsFormat: OFormat[NestedStructs] = Json.format[NestedStructs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
   val bitSetFormat: Format[BitSet] = Format(
     Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*))),

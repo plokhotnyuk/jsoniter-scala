@@ -25,6 +25,7 @@ object DslPlatformJson {
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = setupCodecs[DistanceMatrix]
   implicit val (intEncoder, intDecoder) = setupCodecs[Int]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = setupCodecs[MissingReqFields]
+  implicit val (nestedStructsEncoder, nestedStructsDecoder) = setupCodecs[NestedStructs]
   implicit val (stringEncoder, stringDecoder) = setupCodecs[String]
 
   def decodeDslJson[T](bytes: Array[Byte])(implicit decoder: JsonReader.ReadObject[T]): T = {
