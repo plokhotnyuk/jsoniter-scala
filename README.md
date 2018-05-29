@@ -231,7 +231,7 @@ flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocatio
 To run benchmarks with recordings by Async profiler, clone its repository and use command like this:
 
 ```sh
-sbt -no-colors 'benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
+sbt -no-colors 'benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
 ```
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
