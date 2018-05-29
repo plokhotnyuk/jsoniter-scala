@@ -599,7 +599,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfMutableMaps,
           MutableMaps(null, mutable.Map(1.1f -> mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
           """{"m":{"1.1":{"null":"2"}}""".getBytes("UTF-8"))
-      }.getMessage.contains("illegal number, offset: 0x0000000f"))
+      }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
     "serialize and deserialize case classes with mutable long maps" in {
       case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])

@@ -1076,10 +1076,8 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt): BigInt = {
     var b = if (isToken) nextToken(head) else nextByte(head)
-    if (b == 'n') {
-      if (isToken) readNullOrNumberError(default, head)
-      else numberError(head)
-    } else {
+    if (isToken && b == 'n') readNullOrNumberError(default, head)
+    else {
       val mark = this.mark
       this.mark = Math.min(mark, head - 1)
       try {
@@ -1126,10 +1124,8 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, maxScale: Int, mc: MathContext): BigDecimal = {
     var b = if (isToken) nextToken(head) else nextByte(head)
-    if (b == 'n') {
-      if (isToken) readNullOrNumberError(default, head)
-      else numberError(head)
-    } else {
+    if (isToken && b == 'n') readNullOrNumberError(default, head)
+    else {
       val mark = this.mark
       this.mark = Math.min(mark, head - 1)
       try {
