@@ -832,6 +832,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "throw parse exception in case of missing required case class fields detected during deserialization" in {
       assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
+          """{"s":null,"bi":0,"bd":1}""".stripMargin.getBytes("UTF-8"))
+      }.getMessage.contains("""expected '"', offset: 0x00000005"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
+          """{"s":"VVV","bi":null,"bd":1}""".stripMargin.getBytes("UTF-8"))
+      }.getMessage.contains("""illegal number, offset: 0x00000010"""))
+      assert(intercept[JsonParseException] {
         val obj = Required(
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
           10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
