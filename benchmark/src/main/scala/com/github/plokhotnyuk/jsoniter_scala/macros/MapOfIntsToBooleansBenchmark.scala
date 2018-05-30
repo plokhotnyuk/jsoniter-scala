@@ -7,10 +7,12 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+//import upickle.default._
 
 import scala.collection.immutable.Map
 
@@ -42,6 +44,10 @@ class MapOfIntsToBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Map[Int, Boolean] = Json.parse(jsonBytes).as[Map[Int, Boolean]](mapOfIntsToBooleansFormat)
+/* FIXME: uPickle parses maps from JSON arrays only
+  @Benchmark
+  def readUPickle(): Map[Int, Boolean] = read[Map[Int, Boolean]](jsonBytes)
+*/
 /* FIXME: Circe changes order of entries
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -57,4 +63,8 @@ class MapOfIntsToBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mapOfIntsToBooleansFormat))
+/* FIXME: uPickle serializes maps as JSON arrays
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

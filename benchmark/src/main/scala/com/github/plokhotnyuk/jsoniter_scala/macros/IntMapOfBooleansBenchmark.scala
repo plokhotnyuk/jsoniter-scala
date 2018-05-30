@@ -8,9 +8,11 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 //import io.circe.parser._
 //import io.circe.syntax._
 import play.api.libs.json.Json
+//import upickle.default._
 
 import scala.collection.immutable.IntMap
 
@@ -44,6 +46,10 @@ class IntMapOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): IntMap[Boolean] = Json.parse(jsonBytes).as[IntMap[Boolean]](intMapOfBooleansFormat)
+/* FIXME: uPickle doesn't support IntMap
+  @Benchmark
+  def readUPickle(): IntMap[Boolean] = read[IntMap[Boolean]](jsonBytes)
+*/
 /* FIXME: Circe doesn't support IntMap
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -59,4 +65,8 @@ class IntMapOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(intMapOfBooleansFormat))
+/* FIXME: uPickle doesn't support IntMap
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

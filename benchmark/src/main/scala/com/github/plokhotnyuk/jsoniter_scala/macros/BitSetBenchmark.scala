@@ -8,10 +8,12 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 //import io.circe.generic.auto._
 //import io.circe.parser._
 //import io.circe.syntax._
 import play.api.libs.json.Json
+//import upickle.default._
 
 import scala.collection.immutable.BitSet
 
@@ -44,6 +46,10 @@ class BitSetBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): BitSet = Json.parse(jsonBytes).as[BitSet](bitSetFormat)
 
+/* FIXME: uPickle doesn't support reading of bitsets
+  @Benchmark
+  def readUPickle(): BitSet = read[BitSet](jsonBytes)
+*/
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -60,4 +66,9 @@ class BitSetBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bitSetFormat))
+
+/* FIXME: uPickle doesn't support writing of bitsets
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

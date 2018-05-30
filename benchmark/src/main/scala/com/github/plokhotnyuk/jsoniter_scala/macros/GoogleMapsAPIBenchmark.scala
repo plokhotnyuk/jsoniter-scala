@@ -9,11 +9,13 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.GoogleMapsAPI._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
+import upickle.default._
 
 class GoogleMapsAPIBenchmark extends CommonParams {
   var obj: DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes)
@@ -34,6 +36,9 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def readPlayJson(): DistanceMatrix = Json.parse(jsonBytes).as[DistanceMatrix](googleMapsAPIFormat)
 
   @Benchmark
+  def readUPickle(): DistanceMatrix = read[DistanceMatrix](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -50,4 +55,7 @@ class GoogleMapsAPIBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(googleMapsAPIFormat))
+
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }

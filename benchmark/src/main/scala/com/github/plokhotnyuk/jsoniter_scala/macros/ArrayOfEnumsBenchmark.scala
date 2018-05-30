@@ -8,10 +8,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import upickle.default._
 
 object SuitEnum extends Enumeration {
   type SuitEnum = Value
@@ -50,6 +52,9 @@ class ArrayOfEnumsBenchmark extends CommonParams {
   def readPlayJson(): Array[SuitEnum] = Json.parse(jsonBytes).as[Array[SuitEnum]](enumArrayFormat)
 
   @Benchmark
+  def readUPickle(): Array[SuitEnum] = read[Array[SuitEnum]](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -63,4 +68,7 @@ class ArrayOfEnumsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(enumArrayFormat))
+
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }

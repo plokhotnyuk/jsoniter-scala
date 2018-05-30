@@ -10,6 +10,7 @@ class ExtractFieldsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readUPickle() shouldBe benchmark.obj
     }
   }
 }

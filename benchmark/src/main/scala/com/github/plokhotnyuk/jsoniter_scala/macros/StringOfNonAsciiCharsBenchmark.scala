@@ -8,10 +8,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import io.circe.parser._
 import io.circe.syntax._
 import play.api.libs.json.Json
+import upickle.default._
 
 class StringOfNonAsciiCharsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -60,6 +62,9 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   def readPlayJson(): String = Json.parse(jsonBytes).as[String]
 
   @Benchmark
+  def readUPickle(): String = read[String](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -76,4 +81,8 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+/* FIXME uPickle serializes escaped chars instead of UTF-8
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

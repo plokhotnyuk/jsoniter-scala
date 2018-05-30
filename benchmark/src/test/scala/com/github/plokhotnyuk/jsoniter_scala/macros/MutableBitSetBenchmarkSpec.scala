@@ -13,6 +13,8 @@ class MutableBitSetBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      //FIXME: uPickle doesn't support mutable bitsets
+      //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
       //FIXME: Circe doesn't support writing of bitsets
@@ -21,6 +23,8 @@ class MutableBitSetBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: uPickle doesn't support mutable bitsets
+      //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
 }

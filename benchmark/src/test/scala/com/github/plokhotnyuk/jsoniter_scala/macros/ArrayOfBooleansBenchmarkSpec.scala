@@ -12,6 +12,7 @@ class ArrayOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
       benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readUPickle().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
@@ -19,7 +20,7 @@ class ArrayOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
 }

@@ -137,6 +137,7 @@ lazy val benchmark = project
   .settings(
     crossScalaVersions := Seq("2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "upickle" % "0.6.6",
       "com.dslplatform" %% "dsl-json-scala" % "1.7.4",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.5",

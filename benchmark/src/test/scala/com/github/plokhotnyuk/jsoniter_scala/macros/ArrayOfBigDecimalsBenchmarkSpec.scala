@@ -11,6 +11,8 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala().deep shouldBe benchmark.sourceObj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.sourceObj.deep
       benchmark.readPlayJson().deep shouldBe benchmark.sourceObj.deep
+      //FIXME: uPickle parses BigDecimal from JSON strings only
+      //benchmark.readUPickle().deep shouldBe benchmark.sourceObj.deep
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
@@ -18,6 +20,8 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: uPickle serializes longs to JSON strings
+      //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
 }

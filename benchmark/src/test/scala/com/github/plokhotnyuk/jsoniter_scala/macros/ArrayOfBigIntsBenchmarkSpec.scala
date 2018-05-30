@@ -13,6 +13,8 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
       benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      //FIXME: uPickle parses BigInt from JSON strings only
+      //benchmark.readUPickle().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
       //FIXME: Circe uses an engineering decimal notation to serialize BigInt
@@ -24,6 +26,8 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: uPickle serializes BigInt to JSON strings
+      //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
 }

@@ -9,10 +9,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
+import upickle.default._
 
 case class MissingReqFields(
     @com.fasterxml.jackson.annotation.JsonProperty(required = true) s: String,
@@ -72,5 +74,13 @@ class MissingReqFieldBenchmark extends CommonParams {
       Json.parse(jsonBytes).as[MissingReqFields](missingReqFieldFormat).toString // toString() should not be called
     } catch {
       case ex: JsResultException => ex.getMessage
+    }
+
+  @Benchmark
+  def readUPickle(): String =
+    try {
+      read[MissingReqFields](jsonBytes).toString // toString() should not be called
+    } catch {
+      case ex: ujson.JsonProcessingException => ex.getMessage
     }
 }

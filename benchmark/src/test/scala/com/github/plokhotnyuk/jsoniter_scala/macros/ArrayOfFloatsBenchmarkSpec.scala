@@ -12,6 +12,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
       benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readUPickle().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
@@ -21,6 +22,8 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-JSON serialize double values instead of float
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME uPickle serializes double values instead of float
+      //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
 }
