@@ -30,6 +30,8 @@ class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
         """missing required field "s", offset: 0x00000001"""
       benchmark.readPlayJson() shouldBe
         "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
+      benchmark.readUPickle() shouldBe
+        "missing keys in dictionary: s, i at index 1"
     }
   }
 }

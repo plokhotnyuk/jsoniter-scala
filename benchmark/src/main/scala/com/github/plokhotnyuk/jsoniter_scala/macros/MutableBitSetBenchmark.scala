@@ -5,11 +5,13 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 //import io.circe.generic.auto._
 //import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+//import upickle.default._
 
 import scala.collection.mutable
 
@@ -41,6 +43,10 @@ class MutableBitSetBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): mutable.BitSet = Json.parse(jsonBytes).as[mutable.BitSet](mutableBitSetFormat)
 
+/* FIXME: uPickle doesn't support mutable bitsets
+  @Benchmark
+  def readUPickle(): mutable.BitSet = read[mutable.BitSet](jsonBytes)
+*/
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -57,4 +63,8 @@ class MutableBitSetBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableBitSetFormat))
+/* FIXME: uPickle doesn't support mutable bitsets
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

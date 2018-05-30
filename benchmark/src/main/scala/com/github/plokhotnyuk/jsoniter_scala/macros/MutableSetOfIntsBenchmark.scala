@@ -6,10 +6,12 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import upickle.default._
 
 import scala.collection.mutable
 
@@ -41,6 +43,9 @@ class MutableSetOfIntsBenchmark extends CommonParams {
   def readPlayJson(): mutable.Set[Int] = Json.parse(jsonBytes).as[mutable.Set[Int]]
 
   @Benchmark
+  def readUPickle(): mutable.Set[Int] = read[mutable.Set[Int]](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -54,4 +59,7 @@ class MutableSetOfIntsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }

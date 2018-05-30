@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.time.ZoneOffset
 
 import cats.syntax.either._
+import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 import io.circe._
 import io.circe.generic.extras._
 import io.circe.generic.extras.semiauto._
@@ -18,8 +19,8 @@ object CirceEncodersDecoders {
   implicit val cDecoder: Decoder[C] = deriveDecoder[C]
   implicit val adtEncoder: Encoder[AdtBase] = deriveEncoder[AdtBase]
   implicit val adtDecoder: Decoder[AdtBase] = deriveDecoder[AdtBase]
-  implicit val enumEncoder: Encoder[SuitEnum.Value] = Encoder.enumEncoder(SuitEnum)
-  implicit val enumDecoder: Decoder[SuitEnum.Value] = Decoder.enumDecoder(SuitEnum)
+  implicit val enumEncoder: Encoder[SuitEnum] = Encoder.enumEncoder(SuitEnum)
+  implicit val enumDecoder: Decoder[SuitEnum] = Decoder.enumDecoder(SuitEnum)
   implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap[Suit](_.name)
   implicit val suitDecoder: Decoder[Suit] = Decoder.decodeString.emap { str =>
     Either.catchNonFatal(Suit.valueOf(str)).leftMap(t => "Suit")

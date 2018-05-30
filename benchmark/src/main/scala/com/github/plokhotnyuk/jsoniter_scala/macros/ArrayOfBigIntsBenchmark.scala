@@ -9,9 +9,11 @@ import play.api.libs.json.Json
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
+//import upickle.default._
 
 class ArrayOfBigIntsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -43,7 +45,10 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]](bigIntArrayFormat)
-
+/* FIXME: uPickle parses BigInt from JSON strings only
+  @Benchmark
+  def readUPickle(): Array[BigInt] = read[Array[BigInt]](jsonBytes)
+*/
 /* FIXME: Circe uses an engineering decimal notation to serialize BigInt
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -63,5 +68,9 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 /* FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bigIntArrayFormat))
+*/
+/* FIXME: uPickle serializes BigInt to JSON strings
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }

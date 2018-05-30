@@ -6,10 +6,12 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+//import upickle.default._
 
 class ArrayOfBigDecimalsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -44,7 +46,10 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
-
+/* FIXME: uPickle parses BigDecimal from JSON strings only
+  @Benchmark
+  def readUPickle(): Array[BigDecimal] = read[Array[BigDecimal]](jsonBytes)
+*/
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
@@ -59,4 +64,8 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+/* FIXME: uPickle serializes longs to JSON strings
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

@@ -7,11 +7,13 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+//import upickle.default._
 
 case class NestedStructs(n: Option[NestedStructs])
 
@@ -50,6 +52,10 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs](nestedStructsFormat)
 
+/* FIXME cannot alter uPickle to parse missing optional fields as None
+  @Benchmark
+  def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
+*/
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
@@ -65,4 +71,9 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
+
+/* FIXME cannot alter uPickle to don't serialize empty optional values
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

@@ -9,10 +9,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
+//import upickle.default._
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(Array(
@@ -45,6 +47,10 @@ class AdtBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
 
+/* FIXME cannot alter uPickle discriminator name and value for ADT
+  @Benchmark
+  def readUPickle(): AdtBase = read[AdtBase](jsonBytes)
+*/
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
@@ -59,4 +65,9 @@ class AdtBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(adtFormat))
+
+/* FIXME cannot alter uPickle discriminator name and value for ADT
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

@@ -12,6 +12,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
       benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readUPickle().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
@@ -22,6 +23,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
 }

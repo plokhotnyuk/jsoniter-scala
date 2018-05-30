@@ -7,11 +7,13 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
+//import upickle.default._
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
@@ -32,7 +34,10 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Primitives = Json.parse(jsonBytes).as[Primitives](primitivesFormat)
-
+/* FIXME: uPickle parses Long from JSON string only
+  @Benchmark
+  def readUPickle(): Primitives = read[Primitives](jsonBytes)
+*/
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
@@ -47,4 +52,8 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))
+/* FIXME: uPickle serializes Long as JSON string
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+*/
 }

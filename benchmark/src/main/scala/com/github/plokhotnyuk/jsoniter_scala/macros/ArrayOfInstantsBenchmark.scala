@@ -7,11 +7,13 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.java8.time._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import upickle.default._
 
 class ArrayOfInstantsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -41,6 +43,9 @@ class ArrayOfInstantsBenchmark extends CommonParams {
   def readPlayJson(): Array[Instant] = Json.parse(jsonBytes).as[Array[Instant]]
 
   @Benchmark
+  def readUPickle(): Array[Instant] = read[Array[Instant]](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -54,4 +59,7 @@ class ArrayOfInstantsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }

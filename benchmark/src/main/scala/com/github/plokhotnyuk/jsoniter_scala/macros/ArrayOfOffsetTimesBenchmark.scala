@@ -8,11 +8,13 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats.offsetTimeArrayFormat
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.java8.time._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import upickle.default._
 
 class ArrayOfOffsetTimesBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -44,6 +46,9 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
   def readPlayJson(): Array[OffsetTime] = Json.parse(jsonBytes).as[Array[OffsetTime]](offsetTimeArrayFormat)
 
   @Benchmark
+  def readUPickle(): Array[OffsetTime] = read[Array[OffsetTime]](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
@@ -57,4 +62,7 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(offsetTimeArrayFormat))
+
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }

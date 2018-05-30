@@ -7,10 +7,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import upickle.default._
 
 class ArrayOfBytesBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -43,6 +45,9 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def readPlayJson(): Array[Byte] = Json.parse(jsonBytes).as[Array[Byte]]
 
   @Benchmark
+  def readUPickle(): Array[Byte] = read[Array[Byte]](jsonBytes)
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME:dsl-json serializes a byte array to the base64 string
   @Benchmark
@@ -59,4 +64,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }
