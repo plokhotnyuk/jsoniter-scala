@@ -7,13 +7,6 @@ import ujson.BytesRenderer
 import upickle.default._
 
 object UPickleReaderWriters {
-  // FIXME:  uPickle encodes Option[_] to JSON arrays
-  def optionWriter[T: Writer]: Writer[Option[T]] = writer[T].comapNulls[Option[T]](_.getOrElse(null.asInstanceOf[T]))
-
-  def optionReader[T: Reader]: Reader[Option[T]] = reader[T].map[Option[T]](Option.apply)
-
-  implicit def optionRW[T: Reader: Writer]: ReadWriter[Option[T]] = ReadWriter.join(optionReader, optionWriter)
-
   implicit val adtReaderWriter: ReadWriter[AdtBase] = ReadWriter.merge(macroRW[A], macroRW[B], macroRW[C])
   implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW[AnyRefs]
   implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW[ExtractFields]
