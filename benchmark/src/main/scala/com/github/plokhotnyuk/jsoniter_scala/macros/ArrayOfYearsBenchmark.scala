@@ -62,5 +62,5 @@ class ArrayOfYearsBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(yearArrayFormat))
 
   @Benchmark
-  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }

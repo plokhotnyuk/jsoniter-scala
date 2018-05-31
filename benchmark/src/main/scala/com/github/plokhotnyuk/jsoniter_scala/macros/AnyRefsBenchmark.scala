@@ -62,6 +62,6 @@ class AnyRefsBenchmark extends CommonParams {
 
 /* FIXME cannot alter uPickle to store BigDecimal as JSON number
   @Benchmark
-  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
 }

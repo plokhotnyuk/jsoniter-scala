@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
@@ -66,6 +65,6 @@ class ArrayOfLongsBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: uPickle serializes longs to JSON strings
   @Benchmark
-  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
 }

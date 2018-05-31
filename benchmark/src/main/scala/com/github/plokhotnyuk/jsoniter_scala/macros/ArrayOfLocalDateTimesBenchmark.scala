@@ -63,5 +63,5 @@ class ArrayOfLocalDateTimesBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }

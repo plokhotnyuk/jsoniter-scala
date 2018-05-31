@@ -67,8 +67,4 @@ object UPickleReaderWriters {
   implicit val zoneIdReaderWriter: ReadWriter[ZoneId] = readwriter[String].bimap[ZoneId](_.toString, ZoneId.of)
   implicit val zoneOffsetReaderWriter: ReadWriter[ZoneOffset] =
     readwriter[String].bimap[ZoneOffset](_.toString, ZoneOffset.of)
-
-  // FIXME uPickle serializes to bytes through java.io.OutputStreamWriter
-  def writeToBytes[T](t: T, indent: Int = -1)(implicit writer: Writer[T]): Array[Byte] =
-    transform(t)(writer).to(BytesRenderer(indent)).toBytes
 }

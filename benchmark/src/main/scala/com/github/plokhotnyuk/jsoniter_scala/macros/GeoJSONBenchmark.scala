@@ -51,6 +51,6 @@ class GeoJSONBenchmark extends CommonParams {
 */
 /* FIXME cannot alter uPickle discriminator name and value for ADT
   @Benchmark
-  def writeUPickle(): Array[Byte] = writeToBytes(obj)
+  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
 }
