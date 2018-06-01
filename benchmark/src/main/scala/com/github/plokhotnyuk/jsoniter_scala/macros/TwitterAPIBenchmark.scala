@@ -52,6 +52,6 @@ class TwitterAPIBenchmark extends CommonParams {
 */
 /* FIXME cannot alter uPickle to store BigDecimal as JSON number
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }

@@ -5,6 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 //import io.circe.generic.auto._
 //import io.circe.parser._
 //import io.circe.syntax._
@@ -64,6 +65,6 @@ class MutableBitSetBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableBitSetFormat))
 /* FIXME: uPickle doesn't support mutable bitsets
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }

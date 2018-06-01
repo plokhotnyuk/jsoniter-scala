@@ -68,5 +68,5 @@ class ArrayOfZoneIdsBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 }

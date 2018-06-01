@@ -70,6 +70,6 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 */
 /* FIXME: uPickle serializes BigInt to JSON strings
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }

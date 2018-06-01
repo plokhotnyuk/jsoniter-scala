@@ -1,12 +1,17 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.io.{Serializable, Writer}
+import java.nio.charset.StandardCharsets
 import java.time._
 
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
-import ujson.BytesRenderer
 import upickle.default._
 
 object UPickleReaderWriters {
+  private[this] final val writerPool: ThreadLocal[UTF8Writer] = new ThreadLocal[UTF8Writer] {
+    override def initialValue(): UTF8Writer = new UTF8Writer(16 * 1024)
+  }
+
   implicit val adtReaderWriter: ReadWriter[AdtBase] = ReadWriter.merge(macroRW[A], macroRW[B], macroRW[C])
   implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW[AnyRefs]
   implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW[ExtractFields]
@@ -67,4 +72,44 @@ object UPickleReaderWriters {
   implicit val zoneIdReaderWriter: ReadWriter[ZoneId] = readwriter[String].bimap[ZoneId](_.toString, ZoneId.of)
   implicit val zoneOffsetReaderWriter: ReadWriter[ZoneOffset] =
     readwriter[String].bimap[ZoneOffset](_.toString, ZoneOffset.of)
+
+  def writeToBytes[A: upickle.default.Writer](x: A, indent: Int = -1, prefBufSize: Int = 16384): Array[Byte] = {
+    val w = writerPool.get
+    w.reset(prefBufSize)
+    writeTo(x, w, indent)
+    w.toBytes
+  }
+}
+
+final class UTF8Writer(capacity: Int) extends Writer with Serializable {
+  private[this] var buf = new java.lang.StringBuilder(capacity)
+
+  def reset(prefBufSize: Int): Unit =
+    if (buf.capacity() <= prefBufSize) buf.setLength(0)
+    else buf = new java.lang.StringBuilder(prefBufSize)
+
+  override def append(value: Char): Writer = {
+    buf.append(value)
+    this
+  }
+
+  override def append(value: CharSequence): Writer = {
+    buf.append(value)
+    this
+  }
+
+  override def append(value: CharSequence, start: Int, end: Int): Writer = {
+    buf.append(value, start, end)
+    this
+  }
+
+  override def close(): Unit = ()
+
+  override def flush(): Unit = ()
+
+  override def write(value: String): Unit = buf.append(value)
+
+  override def write(value: Array[Char], offset: Int, length: Int): Unit = buf.append(value, offset, length)
+
+  def toBytes: Array[Byte] = buf.toString.getBytes(StandardCharsets.UTF_8)
 }

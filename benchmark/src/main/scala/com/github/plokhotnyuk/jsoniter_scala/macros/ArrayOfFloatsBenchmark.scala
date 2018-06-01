@@ -67,6 +67,6 @@ class ArrayOfFloatsBenchmark extends CommonParams {
 */
 /* FIXME: uPickle serializes double values instead of float
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }

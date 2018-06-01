@@ -65,6 +65,6 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: uPickle serializes longs to JSON strings
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }

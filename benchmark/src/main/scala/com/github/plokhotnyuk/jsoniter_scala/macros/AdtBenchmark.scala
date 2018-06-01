@@ -68,6 +68,6 @@ class AdtBenchmark extends CommonParams {
 
 /* FIXME cannot alter uPickle discriminator name and value for ADT
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = writeToBytes(obj)
 */
 }
