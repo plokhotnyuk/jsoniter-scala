@@ -319,6 +319,11 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeArrayEnd(): Unit = writeNestedEnd(']')
 
+  def writeArrayEnd2(): Unit = {
+    count -= 1
+    writeNestedEnd(']')
+  }
+
   def writeObjectStart(): Unit = writeNestedStart('{')
 
   def writeObjectEnd(): Unit = writeNestedEnd('}')
@@ -437,7 +442,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 7
   }
 
-  private[this] def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
+  def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
     val len = s.length
     val pos = ensureBufCapacity(len)
     s.getBytes(0, len, buf, pos)
