@@ -22,7 +22,7 @@ releaseProcess := Seq[ReleaseStep](
   runClean,
   releaseStepCommandAndRemaining("test"), //FIXME: revert "+test" after restoring of testing for 2.13.0-M4
   setReleaseVersion,
-  releaseStepCommandAndRemaining("mimaReportBinaryIssues"), //FIXME: revert "+mimaReportBinaryIssues" 1st release for 2.13.0-M4
+  releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
   updateVersionInReadme,
   commitReleaseVersion,
   tagRelease,
