@@ -607,6 +607,10 @@ object JsonCodecMaker {
                 x(i) |= 1L << (v & 63)""",
             q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
                 $comp.fromBitMaskNoCopy(x)""")
+        } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          genReadArray(q"val x = new mutable.ListBuffer[$tpe1]",
+            q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
