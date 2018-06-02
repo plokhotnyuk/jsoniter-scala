@@ -52,7 +52,7 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs](nestedStructsFormat)
 
-/* FIXME cannot alter uPickle to parse missing optional fields as None
+/* FIXME: cannot alter uPickle to parse missing optional fields as None
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
 */
@@ -72,7 +72,7 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
 
-/* FIXME cannot alter uPickle to don't serialize empty optional values
+/* FIXME: cannot alter uPickle to don't serialize empty optional values
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */

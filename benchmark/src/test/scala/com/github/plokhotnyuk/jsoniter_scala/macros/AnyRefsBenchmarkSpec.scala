@@ -10,7 +10,7 @@ class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
-      // FIXME cannot alter uPickle to store BigDecimal as JSON number
+      // FIXME: cannot alter uPickle to store BigDecimal as JSON number
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -20,7 +20,7 @@ class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
-      // FIXME cannot alter uPickle to store BigDecimal as JSON number
+      // FIXME: cannot alter uPickle to store BigDecimal as JSON number
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }

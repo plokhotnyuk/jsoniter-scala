@@ -17,7 +17,7 @@ import upickle.default._
 
 object SuitEnum extends Enumeration {
   type SuitEnum = Value
-  //FIXME setting of ids & names save from locking at synchronized block during withName() or toString() calls
+  //FIXME: setting of ids & names save from locking at synchronized block during withName() or toString() calls
   val Hearts: SuitEnum = Value(0, "Hearts")
   val Spades: SuitEnum = Value(1, "Spades")
   val Diamonds: SuitEnum = Value(2, "Diamonds")

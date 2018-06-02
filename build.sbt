@@ -93,7 +93,7 @@ lazy val core = project
       val scalaV = scalaVersion.value
       CrossVersion.partialVersion(scalaV) match {
         case Some((2, v)) if v >= 13 && scalaV != "2.13.0-M3" =>
-          // TODO scalatest for Scala 2.13.0-M4
+          // TODO: scalatest for Scala 2.13.0-M4
           Nil
         case _ =>
           Seq(
@@ -118,7 +118,7 @@ lazy val macros = project
       val scalaV = scalaVersion.value
       CrossVersion.partialVersion(scalaV) match {
         case Some((2, v)) if v >= 13 && scalaV != "2.13.0-M3" =>
-          // TODO scalatest for Scala 2.13.0-M4
+          // TODO: scalatest for Scala 2.13.0-M4
           Nil
         case _ =>
           Seq(

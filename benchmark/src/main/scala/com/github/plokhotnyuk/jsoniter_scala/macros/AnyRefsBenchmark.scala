@@ -38,7 +38,7 @@ class AnyRefsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs](anyRefsFormat)
 
-/* FIXME cannot alter uPickle to store BigDecimal as JSON number
+/* FIXME: cannot alter uPickle to store BigDecimal as JSON number
   @Benchmark
   def readUPickle(): AnyRefs = read[AnyRefs](jsonBytes)
 */
@@ -60,7 +60,7 @@ class AnyRefsBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyRefsFormat))
 
-/* FIXME cannot alter uPickle to store BigDecimal as JSON number
+/* FIXME: cannot alter uPickle to store BigDecimal as JSON number
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */

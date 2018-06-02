@@ -30,7 +30,7 @@ class TwitterAPIBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
-/* FIXME cannot alter uPickle to store BigDecimal as JSON number
+/* FIXME: cannot alter uPickle to store Long as JSON number
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
 */
@@ -50,7 +50,7 @@ class TwitterAPIBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
 */
-/* FIXME cannot alter uPickle to store BigDecimal as JSON number
+/* FIXME: cannot alter uPickle to store Long as JSON number
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */

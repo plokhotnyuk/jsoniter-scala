@@ -30,7 +30,7 @@ class GeoJSONBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): GeoJSON = Json.parse(jsonBytes).as[GeoJSON](geoJSONFormat)
 */
-/* FIXME cannot alter uPickle discriminator name and value for ADT
+/* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def readUPickle(): GeoJSON = read[GeoJSON](jsonBytes)
 */
@@ -49,7 +49,7 @@ class GeoJSONBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(geoJSONFormat))
 */
-/* FIXME cannot alter uPickle discriminator name and value for ADT
+/* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */

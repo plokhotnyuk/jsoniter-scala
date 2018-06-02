@@ -22,7 +22,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-JSON serialize double values instead of float
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
-      //FIXME uPickle serializes double values instead of float
+      //FIXME: uPickle serializes double values instead of float
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }

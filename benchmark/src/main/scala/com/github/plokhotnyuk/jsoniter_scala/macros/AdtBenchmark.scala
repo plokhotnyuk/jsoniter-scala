@@ -47,7 +47,7 @@ class AdtBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
 
-/* FIXME cannot alter uPickle discriminator name and value for ADT
+/* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def readUPickle(): AdtBase = read[AdtBase](jsonBytes)
 */
@@ -66,7 +66,7 @@ class AdtBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(adtFormat))
 
-/* FIXME cannot alter uPickle discriminator name and value for ADT
+/* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
