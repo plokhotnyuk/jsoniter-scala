@@ -68,7 +68,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
   provide a sparse output
 - Case classes with fields that have default values should be defined as a top-level class or directly inside of another
-  class or object
+  class or object, or as an option a dependency to Scala compiler should be added
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 

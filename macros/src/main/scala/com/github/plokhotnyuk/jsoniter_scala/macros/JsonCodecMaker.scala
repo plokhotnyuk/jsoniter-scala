@@ -12,7 +12,8 @@ import scala.collection.immutable.{IntMap, LongMap}
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
-import scala.reflect.macros.blackbox
+import scala.reflect.macros.{blackbox, runtime}
+import scala.util.control.NonFatal
 
 @field
 final class named(val name: String) extends StaticAnnotation
@@ -184,14 +185,72 @@ object JsonCodecMaker {
         classes
       }
 
-      def companion(tpe: Type): Symbol = tpe.typeSymbol.companion
+      // Borrowed from Chimney: https://github.com/scalalandio/chimney/blob/master/chimney/src/main/scala/io/scalaland/chimney/internal/CompanionUtils.scala#L10-L63
+      // Copied from Magnolia: https://github.com/propensive/magnolia/blob/master/core/shared/src/main/scala/globalutil.scala
+      // From Shapeless: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/generic.scala#L698
+      // Cut-n-pasted (with most original comments) and slightly adapted from
+      // https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
+      def patchedCompanionRef(tpe: Type): Tree = {
+        val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+        val typer = c.asInstanceOf[runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+        val ctx = typer.context
+        val globalType = tpe.asInstanceOf[global.Type]
+        val original = globalType.typeSymbol
+        val companion = original.companion.orElse {
+          import global._
+
+          implicit class PatchedContext(ctx: global.analyzer.Context) {
+            trait PatchedLookupResult {
+              def suchThat(criterion: Symbol => Boolean): Symbol
+            }
+
+            def patchedLookup(name: Name, expectedOwner: Symbol): PatchedLookupResult = new PatchedLookupResult {
+              override def suchThat(criterion: Symbol => Boolean): Symbol = {
+                var res: Symbol = NoSymbol
+                var ctx = PatchedContext.this.ctx
+                while (res == NoSymbol && ctx.outer != ctx) {
+                  // NOTE: original implementation says `val s = ctx.scope lookup name`
+                  // but we can't use it, because Scope.lookup returns wrong results when the lookup is ambiguous
+                  // and that triggers https://github.com/scalamacros/paradise/issues/64
+                  val s = ctx.scope.lookupAll(name).filter(criterion).toList match {
+                    case Nil => NoSymbol
+                    case List(unique) => unique
+                    case _ => fail(s"Unexpected multiple results for a companion symbol lookup for $original")
+                  }
+                  if (s != NoSymbol && s.owner == expectedOwner) res = s
+                  else ctx = ctx.outer
+                }
+                res
+              }
+            }
+          }
+
+          ctx.patchedLookup(original.name.companionName, original.owner).suchThat { sym =>
+            (original.isTerm || sym.hasModuleFlag) && sym.isCoDefinedWith(original)
+          }
+        }
+        global.gen.mkAttributedRef(globalType.prefix, companion).asInstanceOf[Tree]
+      }
+
+      def companion(tpe: Type): Symbol = {
+        val comp = tpe.typeSymbol.companion
+        if (comp.isModule) comp
+        else {
+          try patchedCompanionRef(tpe).symbol
+          catch {
+            case NonFatal(ex) =>
+              fail(s"Can't find companion object of '$tpe'. This can happen when it's nested too deeply. " +
+                "Please consider defining it as a top-level object or directly inside of another class or object. " +
+                "Another option is adding of Scala compiler dependency.")
+          }
+        }
+      }
 
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
 
       def collectionCompanion(tpe: Type): Tree = {
-        val comp = companion(tpe)
-        if (comp.isModule && comp.fullName.startsWith("scala.collection.")) Ident(comp)
+        if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
       }
 
@@ -358,16 +417,6 @@ object JsonCodecMaker {
           (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
       }.toMap
 
-      def getModule(tpe: Type): ModuleSymbol = {
-        val comp = tpe.typeSymbol.companion
-        if (!comp.isModule) {
-          fail("Can't find companion object with synthetic methods for default values of the primary constructor of " +
-            s"'$tpe'. This can happen when it's nested too deeply. Please consider defining it as a top-level object " +
-            "or directly inside of another class or object.")
-        }
-        comp.asModule //FIXME: module cannot be resolved properly for deeply nested inner case classes
-      }
-
       def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
         case m: MethodSymbol if m.isPrimaryConstructor => m
       }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
@@ -380,7 +429,7 @@ object JsonCodecMaker {
 
       def getDefaults(tpe: Type): Map[String, Tree] = {
         val params = getParams(tpe)
-        lazy val module = getModule(tpe) // don't lookup for the companion when there are no default values for constructor params
+        lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
         params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }.toMap
