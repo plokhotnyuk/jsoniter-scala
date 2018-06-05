@@ -68,7 +68,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
   provide a sparse output
 - Case classes with fields that have default values should be defined as a top-level class or directly inside of another
-  class or object
+  class or object, or as an option a dependency to Scala compiler should be added
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in case classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
@@ -76,7 +76,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
-- No dependencies on extra libraries excluding Scala's `scala-library` and `scala-reflect` 
+- No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library` 
   
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
@@ -98,10 +98,13 @@ and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 
 ## How to use
 
-Add the library to your dependencies list
+Add the core library with a "compile" scope and the macros library with a "provided" scope to your dependencies list:
 
 ```sbt
-libraryDependencies += "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.27.2"
+libraryDependencies ++= Seq(
+  "com.github.plokhotnyuk.jsoniter-scala" %% "core" % "0.27.2" % Compile, 
+  "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.27.2" % Provided // required only in compile-time
+)
 ```
 
 Generate codecs for your case classes, collections, etc.
@@ -155,7 +158,9 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m clean +coverage +test +coverageReport +mimaReportBinaryIssues
+sbt -J-XX:MaxMetaspaceSize=512m ++2.11.12 clean coverage test coverageReport
+sbt -J-XX:MaxMetaspaceSize=512m ++2.12.6 clean coverage test coverageReport
+sbt -J-XX:MaxMetaspaceSize=512m clean +mimaReportBinaryIssues
 ```
 
 ### Run benchmarks

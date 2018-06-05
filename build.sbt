@@ -112,6 +112,7 @@ lazy val macros = project
   .settings(
     crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
     libraryDependencies ++= {

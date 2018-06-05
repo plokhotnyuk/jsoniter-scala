@@ -102,16 +102,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val stringified = Stringified(1, 2, List(1), List(2))
   val codecOfStringified: JsonValueCodec[Stringified] = make[Stringified](CodecMakerConfig())
 
-  case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                      l: List[Int] = List(0), e: Level = Level.HIGH)
-
-  val defaults = Defaults()
-  val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
-
-  case class Transient(@transient transient: String = "default", required: String) {
-    val ignored: String = s"$required-$transient"
-  }
-
   case class Required(r00: Int = 0, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
                       r10: Int = 10, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
                       r20: Int = 20, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
@@ -793,16 +783,23 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""".getBytes("UTF-8"))
     }
-    "don't serialize default values of case classes that defined for fields" in {
-      verifySer(codecOfDefaults, defaults, "{}".getBytes("UTF-8"))
-      verifySer(codecOfDefaults, defaults.copy(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
-    }
-    "deserialize default values in case of missing field or null/empty values" in {
-      verifyDeser(codecOfDefaults, defaults, """{}""".getBytes("UTF-8"))
-      verifyDeser(codecOfDefaults, defaults, """{"s":null,"bi":null,"l":null,"oc":null,"e":null}""".getBytes("UTF-8"))
-      verifyDeser(codecOfDefaults, defaults, """{"l":[]}""".getBytes("UTF-8"))
+    "don't serialize default values of case classes that defined for fields but deserialize them" in {
+      case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
+                          l: List[Int] = List(0), e: Level = Level.HIGH)
+
+      val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
+
+      verifySer(codecOfDefaults, Defaults(), "{}".getBytes("UTF-8"))
+      verifySer(codecOfDefaults, Defaults(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
+      verifyDeser(codecOfDefaults, Defaults(), """{}""".getBytes("UTF-8"))
+      verifyDeser(codecOfDefaults, Defaults(), """{"s":null,"bi":null,"l":null,"oc":null,"e":null}""".getBytes("UTF-8"))
+      verifyDeser(codecOfDefaults, Defaults(), """{"l":[]}""".getBytes("UTF-8"))
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
+      case class Transient(@transient transient: String = "default", required: String) {
+        val ignored: String = s"$required-$transient"
+      }
+
       verifySer(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"required":"VVV"}""".getBytes("UTF-8"))
       verifyDeser(make[Transient](CodecMakerConfig()), Transient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""".getBytes("UTF-8"))
     }
@@ -1184,19 +1181,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
       }).getMessage.contains {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
-      })
-    }
-    "don't generate codecs for too deeply defined case classes with default values" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """val codecOfFoo = () => {
-          |  case class Foo(i: Int = 1)
-          |  JsonCodecMaker.make[Foo](CodecMakerConfig())
-          |}
-          |codecOfFoo()""".stripMargin
-      }).getMessage.contains {
-        """Can't find companion object with synthetic methods for default values of the primary constructor of 'Foo'.
-          |This can happen when it's nested too deeply. Please consider defining
-          |it as a top-level object or directly inside of another class or object.""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
