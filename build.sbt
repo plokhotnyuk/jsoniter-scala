@@ -149,7 +149,6 @@ lazy val benchmark = project
       "io.circe" %% "circe-generic-extras" % "0.10.0-M1",
       "io.circe" %% "circe-parser" % "0.10.0-M1",
       "io.circe" %% "circe-java8" % "0.10.0-M1",
-      compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full), // required for circe benchmark
       "ai.x" %% "play-json-extensions" % "0.10.0",
       "com.typesafe.play" %% "play-json" % "2.6.9",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
