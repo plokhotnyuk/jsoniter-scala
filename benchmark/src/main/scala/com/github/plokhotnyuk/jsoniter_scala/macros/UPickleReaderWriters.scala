@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.time._
 
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
-import ujson.BytesRenderer
 import upickle.default._
 
 object UPickleReaderWriters {
