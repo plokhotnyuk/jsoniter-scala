@@ -88,7 +88,7 @@ lazy val core = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
     libraryDependencies ++= {
       val scalaV = scalaVersion.value
       CrossVersion.partialVersion(scalaV) match {
@@ -110,7 +110,7 @@ lazy val macros = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ),
@@ -149,6 +149,7 @@ lazy val benchmark = project
       "io.circe" %% "circe-generic-extras" % "0.10.0-M1",
       "io.circe" %% "circe-parser" % "0.10.0-M1",
       "io.circe" %% "circe-java8" % "0.10.0-M1",
+      compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full), // required for circe benchmark
       "ai.x" %% "play-json-extensions" % "0.10.0",
       "com.typesafe.play" %% "play-json" % "2.6.9",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
