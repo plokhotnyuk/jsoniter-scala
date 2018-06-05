@@ -11,8 +11,6 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.annotation.switch
-import scala.collection.immutable._
-import scala.collection.mutable
 
 case class UserId(id: String) extends AnyVal
 
@@ -66,20 +64,23 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
   val codecOfArrays: JsonValueCodec[Arrays] = make[Arrays](CodecMakerConfig())
 
-  case class ImmutableIterables(l: List[ListSet[String]], q: Queue[Set[BigInt]],
-                                   is: IndexedSeq[SortedSet[Int]], s: Stream[TreeSet[Double]],
-                                   v: Vector[Iterable[Long]])
+  case class ImmutableIterables(l: List[collection.immutable.ListSet[String]],
+                                q: collection.immutable.Queue[Set[BigInt]],
+                                is: IndexedSeq[collection.immutable.SortedSet[Int]],
+                                s: Stream[collection.immutable.TreeSet[Double]],
+                                v: Vector[Iterable[Long]])
 
   val codecOfImmutableIterables: JsonValueCodec[ImmutableIterables] = make[ImmutableIterables](CodecMakerConfig())
 
-  case class MutableMaps(hm: mutable.HashMap[Boolean, mutable.AnyRefMap[BigDecimal, Int]],
-                         m: mutable.Map[Float, mutable.ListMap[BigInt, String]],
-                         ohm: mutable.OpenHashMap[Double, mutable.LinkedHashMap[Short, Double]])
+  case class MutableMaps(hm: collection.mutable.HashMap[Boolean, collection.mutable.AnyRefMap[BigDecimal, Int]],
+                         m: collection.mutable.Map[Float, collection.mutable.ListMap[BigInt, String]],
+                         ohm: collection.mutable.OpenHashMap[Double, collection.mutable.LinkedHashMap[Short, Double]])
 
   val codecOfMutableMaps: JsonValueCodec[MutableMaps] = make[MutableMaps](CodecMakerConfig())
 
-  case class ImmutableMaps(m: Map[Int, Double], hm: HashMap[String, ListMap[Char, BigInt]],
-                           sm: SortedMap[Long, TreeMap[Byte, Float]])
+  case class ImmutableMaps(m: Map[Int, Double],
+                           hm: collection.immutable.HashMap[String, collection.immutable.ListMap[Char, BigInt]],
+                           sm: collection.immutable.SortedMap[Long, collection.immutable.TreeMap[Byte, Float]])
 
   val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make[ImmutableMaps](CodecMakerConfig())
 
@@ -504,73 +505,77 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
     "serialize and deserialize case classes with mutable Iterables" in {
-      case class MutableIterables(ml: mutable.MutableList[mutable.SortedSet[String]],
-                                     ab: mutable.ArrayBuffer[mutable.Set[BigInt]],
-                                     as: mutable.ArraySeq[mutable.LinkedHashSet[Int]],
-                                     b: mutable.Buffer[mutable.HashSet[Double]],
-                                     lb: mutable.ListBuffer[mutable.TreeSet[Long]],
-                                     is: mutable.IndexedSeq[mutable.ArrayStack[Float]],
-                                     ub: mutable.UnrolledBuffer[mutable.Iterable[Short]],
-                                     ls: mutable.LinearSeq[Byte],
-                                     ra: mutable.ResizableArray[mutable.Seq[Double]])
+      case class MutableIterables(ml: collection.mutable.MutableList[collection.mutable.SortedSet[String]],
+                                     ab: collection.mutable.ArrayBuffer[collection.mutable.Set[BigInt]],
+                                     as: collection.mutable.ArraySeq[collection.mutable.LinkedHashSet[Int]],
+                                     b: collection.mutable.Buffer[collection.mutable.HashSet[Double]],
+                                     lb: collection.mutable.ListBuffer[collection.mutable.TreeSet[Long]],
+                                     is: collection.mutable.IndexedSeq[collection.mutable.ArrayStack[Float]],
+                                     ub: collection.mutable.UnrolledBuffer[collection.mutable.Iterable[Short]],
+                                     ls: collection.mutable.LinearSeq[Byte],
+                                     ra: collection.mutable.ResizableArray[collection.mutable.Seq[Double]])
 
       verifySerDeser(make[MutableIterables](CodecMakerConfig()),
-        MutableIterables(mutable.MutableList(mutable.SortedSet("1", "2", "3")),
-          mutable.ArrayBuffer(mutable.Set[BigInt](4), mutable.Set.empty[BigInt]),
-          mutable.ArraySeq(mutable.LinkedHashSet(5, 6), mutable.LinkedHashSet.empty[Int]),
-          mutable.Buffer(mutable.HashSet(7.7, 8.8)),
-          mutable.ListBuffer(mutable.TreeSet(9L, 10L)),
-          mutable.IndexedSeq(mutable.ArrayStack(11.11f, 12.12f)),
-          mutable.UnrolledBuffer(mutable.Iterable(13.toShort, 14.toShort)),
-          mutable.LinearSeq(15.toByte, 16.toByte),
-          mutable.ResizableArray(mutable.Seq(17.17, 18.18))),
+        MutableIterables(collection.mutable.MutableList(collection.mutable.SortedSet("1", "2", "3")),
+          collection.mutable.ArrayBuffer(collection.mutable.Set[BigInt](4), collection.mutable.Set.empty[BigInt]),
+          collection.mutable.ArraySeq(collection.mutable.LinkedHashSet(5, 6), collection.mutable.LinkedHashSet.empty[Int]),
+          collection.mutable.Buffer(collection.mutable.HashSet(7.7, 8.8)),
+          collection.mutable.ListBuffer(collection.mutable.TreeSet(9L, 10L)),
+          collection.mutable.IndexedSeq(collection.mutable.ArrayStack(11.11f, 12.12f)),
+          collection.mutable.UnrolledBuffer(collection.mutable.Iterable(13.toShort, 14.toShort)),
+          collection.mutable.LinearSeq(15.toByte, 16.toByte),
+          collection.mutable.ResizableArray(collection.mutable.Seq(17.17, 18.18))),
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]],"ls":[15,16],"ra":[[17.17,18.18]]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable Iterables" in {
       verifySerDeser(codecOfImmutableIterables,
-        ImmutableIterables(List(ListSet("1")), Queue(Set[BigInt](4, 5, 6)),
-          IndexedSeq(SortedSet(7, 8), SortedSet()), Stream(TreeSet(9.9)), Vector(Iterable(10L, 11L))),
+        ImmutableIterables(List(collection.immutable.ListSet("1")), collection.immutable.Queue(Set[BigInt](4, 5, 6)),
+          IndexedSeq(collection.immutable.SortedSet(7, 8), collection.immutable.SortedSet()),
+          Stream(collection.immutable.TreeSet(9.9)), Vector(Iterable(10L, 11L))),
         """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[[10,11]]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level Iterables" in {
-      val codecOfImmutableIterables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig())
+      val codecOfImmutableIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig())
       verifySerDeser(codecOfImmutableIterables,
-        mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
+        collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[[3.3],[1.1,2.2]]""".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level Iterables" in {
-      val codecOfImmutableIterables = make[mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
+      val codecOfImmutableIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfImmutableIterables,
-        mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
+        collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[["3.3"],["1.1","2.2"]]""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with mutable maps" in {
       verifySerDeser(codecOfMutableMaps,
-        MutableMaps(mutable.HashMap(true -> mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
-          mutable.Map(1.1f -> mutable.ListMap(BigInt(2) -> "2")),
-          mutable.OpenHashMap(1.1 -> mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> mutable.LinkedHashMap())),
+        MutableMaps(collection.mutable.HashMap(true -> collection.mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
+          collection.mutable.Map(1.1f -> collection.mutable.ListMap(BigInt(2) -> "2")),
+          collection.mutable.OpenHashMap(1.1 -> collection.mutable.LinkedHashMap(3.toShort -> 3.3), 2.2 -> collection.mutable.LinkedHashMap())),
         """{"hm":{"true":{"1.1":1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable maps" in {
       verifySerDeser(make[ImmutableMaps](CodecMakerConfig()),
-        ImmutableMaps(Map(1 -> 1.1), HashMap("2" -> ListMap('V' -> 2), "3" -> ListMap('X' -> 3)),
-          SortedMap(4L -> TreeMap(4.toByte -> 4.4f), 5L -> TreeMap.empty[Byte, Float])),
+        ImmutableMaps(Map(1 -> 1.1), collection.immutable.HashMap("2" -> collection.immutable.ListMap('V' -> 2),
+          "3" -> collection.immutable.ListMap('X' -> 3)),
+          collection.immutable.SortedMap(4L -> collection.immutable.TreeMap(4.toByte -> 4.4f),
+            5L -> collection.immutable.TreeMap.empty[Byte, Float])),
         """{"m":{"1":1.1},"hm":{"2":{"V":2},"3":{"X":3}},"sm":{"4":{"4":4.4},"5":{}}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level maps" in {
-      val codecOfMaps = make[mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig())
+      val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig())
       verifySerDeser(codecOfMaps,
-        mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
+        collection.mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":true,"X":false},"2":{}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level maps" in {
-      val codecOfMaps = make[mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true))
+      val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfMaps,
-        mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
+        collection.mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":"true","X":"false"},"2":{}}""".getBytes("UTF-8"))
     }
     "throw parse exception in case of JSON object is not properly started/closed or with leading/trailing comma" in {
-      val immutableMaps = ImmutableMaps(Map(1 -> 1.1), HashMap.empty, SortedMap.empty)
+      val immutableMaps = ImmutableMaps(Map(1 -> 1.1), collection.immutable.HashMap.empty,
+        collection.immutable.SortedMap.empty)
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":["1":1.1},"hm":{},"sm":{}}""".getBytes("UTF-8"))
       }.getMessage.contains("expected '{' or null, offset: 0x00000005"))
@@ -587,60 +592,65 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "throw parse exception in case of illegal keys found during deserialization of maps" in {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfMutableMaps,
-          MutableMaps(null, mutable.Map(1.1f -> mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
+          MutableMaps(null, collection.mutable.Map(1.1f -> collection.mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
           """{"m":{"1.1":{"null":"2"}}""".getBytes("UTF-8"))
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
     "serialize and deserialize case classes with mutable long maps" in {
-      case class MutableLongMaps(lm1: mutable.LongMap[Double], lm2: mutable.LongMap[String])
+      case class MutableLongMaps(lm1: collection.mutable.LongMap[Double], lm2: collection.mutable.LongMap[String])
 
       verifySerDeser(make[MutableLongMaps](CodecMakerConfig()),
-        MutableLongMaps(mutable.LongMap(1L -> 1.1), mutable.LongMap(3L -> "33")),
+        MutableLongMaps(collection.mutable.LongMap(1L -> 1.1), collection.mutable.LongMap(3L -> "33")),
         """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable int and long maps" in {
-      case class ImmutableIntLongMaps(im: IntMap[Double], lm: LongMap[String])
+      case class ImmutableIntLongMaps(im: collection.immutable.IntMap[Double], lm: collection.immutable.LongMap[String])
 
       verifySerDeser(make[ImmutableIntLongMaps](CodecMakerConfig()),
-        ImmutableIntLongMaps(IntMap(1 -> 1.1, 2 -> 2.2), LongMap(3L -> "33")),
+        ImmutableIntLongMaps(collection.immutable.IntMap(1 -> 1.1, 2 -> 2.2), collection.immutable.LongMap(3L -> "33")),
         """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with mutable & immutable bitsets" in {
-      case class BitSets(bs: BitSet, mbs: mutable.BitSet)
+      case class BitSets(bs: collection.immutable.BitSet, mbs: collection.mutable.BitSet)
 
-      verifySerDeser(make[BitSets](CodecMakerConfig()), BitSets(BitSet(1, 2, 3), mutable.BitSet(4, 5, 6)),
+      verifySerDeser(make[BitSets](CodecMakerConfig()),
+        BitSets(collection.immutable.BitSet(1, 2, 3), collection.mutable.BitSet(4, 5, 6)),
         """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level int/long maps & bitsets" in {
-      val codecOfIntLongMapsAndBitSets = make[mutable.LongMap[IntMap[mutable.BitSet]]](CodecMakerConfig())
+      val codecOfIntLongMapsAndBitSets =
+        make[collection.mutable.LongMap[collection.immutable.IntMap[collection.mutable.BitSet]]](CodecMakerConfig())
       verifySerDeser(codecOfIntLongMapsAndBitSets,
-        mutable.LongMap(1L -> IntMap(2 -> mutable.BitSet(4, 5, 6), 3 -> mutable.BitSet.empty)),
+        collection.mutable.LongMap(1L -> collection.immutable.IntMap(2 -> collection.mutable.BitSet(4, 5, 6),
+          3 -> collection.mutable.BitSet.empty)),
         """{"1":{"2":[4,5,6],"3":[]}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level int/long maps & bitsets" in {
       val codecOfIntLongMapsAndBitSets =
-        make[mutable.LongMap[IntMap[mutable.BitSet]]](CodecMakerConfig(isStringified = true))
+        make[collection.mutable.LongMap[collection.immutable.IntMap[collection.mutable.BitSet]]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfIntLongMapsAndBitSets,
-        mutable.LongMap(1L -> IntMap(2 -> mutable.BitSet(4, 5, 6), 3 -> mutable.BitSet.empty)),
+        collection.mutable.LongMap(1L -> collection.immutable.IntMap(2 -> collection.mutable.BitSet(4, 5, 6),
+          3 -> collection.mutable.BitSet.empty)),
         """{"1":{"2":["4","5","6"],"3":[]}}""".getBytes("UTF-8"))
     }
     "throw parse exception when too big numbers are parsed for mutable & immutable bitsets" in {
       assert(intercept[JsonParseException] {
-        verifySerDeser(make[BitSet](CodecMakerConfig(bitSetValueLimit = 1000)), BitSet(1, 2, 1000),
+        verifySerDeser(make[collection.immutable.BitSet](CodecMakerConfig(bitSetValueLimit = 1000)),
+          collection.immutable.BitSet(1, 2, 1000),
           """[1,2,1000]""".getBytes("UTF-8"))
       }.getMessage.contains("illegal value for bit set, offset: 0x00000008"))
       assert(intercept[JsonParseException] {
-        verifySerDeser(make[mutable.BitSet](CodecMakerConfig()), mutable.BitSet(1, 2, 10000),
+        verifySerDeser(make[collection.mutable.BitSet](CodecMakerConfig()), collection.mutable.BitSet(1, 2, 10000),
           """[1,2,10000]""".getBytes("UTF-8"))
       }.getMessage.contains("illegal value for bit set, offset: 0x00000009"))
     }
     "throw parse exception when negative numbers are parsed for mutable & immutable bitsets" in {
       assert(intercept[JsonParseException] {
-        verifyDeser(make[BitSet](CodecMakerConfig()), BitSet(1, 2, 0),
+        verifyDeser(make[collection.immutable.BitSet](CodecMakerConfig()), collection.immutable.BitSet(1, 2, 0),
           """[1,2,-1]""".getBytes("UTF-8"))
       }.getMessage.contains("illegal value for bit set, offset: 0x00000006"))
       assert(intercept[JsonParseException] {
-        verifyDeser(make[mutable.BitSet](CodecMakerConfig()), mutable.BitSet(1, 2, 0),
+        verifyDeser(make[collection.mutable.BitSet](CodecMakerConfig()), collection.mutable.BitSet(1, 2, 0),
           """[1,2,-1]""".getBytes("UTF-8"))
       }.getMessage.contains("illegal value for bit set, offset: 0x00000006"))
     }

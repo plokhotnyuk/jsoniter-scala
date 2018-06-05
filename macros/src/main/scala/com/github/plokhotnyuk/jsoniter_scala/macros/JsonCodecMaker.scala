@@ -12,7 +12,8 @@ import scala.collection.immutable.{IntMap, LongMap}
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
-import scala.reflect.macros.{blackbox, runtime}
+import scala.reflect.macros.contexts.Context
+import scala.reflect.macros.blackbox
 import scala.util.control.NonFatal
 
 @field
@@ -198,7 +199,7 @@ object JsonCodecMaker {
           import global._
           val name = original.name.companionName
           val expectedOwner = original.owner
-          var ctx = c.asInstanceOf[runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer].context
+          var ctx = c.asInstanceOf[Context].callsiteTyper.asInstanceOf[global.analyzer.Typer].context
           var res: Symbol = NoSymbol
           while (res == NoSymbol && ctx.outer != ctx) {
             // NOTE: original implementation says `val s = ctx.scope lookup name`
@@ -642,7 +643,7 @@ object JsonCodecMaker {
                 $comp.fromBitMaskNoCopy(x)""")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = new mutable.ListBuffer[$tpe1]",
+          genReadArray(q"val x = new scala.collection.mutable.ListBuffer[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
