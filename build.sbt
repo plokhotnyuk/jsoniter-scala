@@ -146,7 +146,6 @@ lazy val benchmark = project
       "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5",
       "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.5",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5",
-      compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full), // required for circe
       "io.circe" %% "circe-generic" % "0.10.0-M1",
       "io.circe" %% "circe-generic-extras" % "0.10.0-M1",
       "io.circe" %% "circe-parser" % "0.10.0-M1",
