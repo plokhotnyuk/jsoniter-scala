@@ -222,12 +222,10 @@ object JsonCodecMaker {
         val comp = tpe.typeSymbol.companion
         if (comp.isModule) comp
         else {
-          try patchedCompanionRef(tpe).symbol
-          catch {
+          try patchedCompanionRef(tpe).symbol catch {
             case NonFatal(ex) =>
               fail(s"Can't find companion object of '$tpe'. This can happen when it's nested too deeply. " +
-                "Please consider defining it as a top-level object or directly inside of another class or object. " +
-                "Another option is adding of Scala compiler dependency.")
+                "Please consider defining it as a top-level object or directly inside of another class or object.")
           }
         }
       }
