@@ -74,7 +74,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
-- No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library` 
+- No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
+- Support of compilation to a native image by GraalVM 
   
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
