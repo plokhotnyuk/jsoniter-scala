@@ -4,7 +4,7 @@
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala) 
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Scaladex](https://img.shields.io/badge/macros-0.27.4-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
+[![Scaladex](https://img.shields.io/badge/macros-0.28.0-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
 
 Scala macros that generate codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing and serialization.
@@ -101,8 +101,8 @@ Add the core library with a "compile" scope and the macros library with a "provi
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "core" % "0.27.4" % Compile, 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.27.4" % Provided // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "core" % "0.28.0" % Compile, 
+  "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.28.0" % Provided // required only in compile-time
 )
 ```
 
