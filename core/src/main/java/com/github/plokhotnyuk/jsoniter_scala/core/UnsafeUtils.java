@@ -16,8 +16,8 @@ public class UnsafeUtils {
             Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
             f.setAccessible(true);
             u = (sun.misc.Unsafe) f.get(null);
-            sco = u.objectFieldOffset(String.class.getDeclaredField("coder"));
             svo = u.objectFieldOffset(String.class.getDeclaredField("value"));
+            sco = u.objectFieldOffset(String.class.getDeclaredField("coder"));
         } catch (Throwable e) {
             // ignore
         }
@@ -27,6 +27,7 @@ public class UnsafeUtils {
     }
 
     static byte[] getLatin1Array(String s) {
+        //System.out.println("\nSTRING_VALUE_OFFSET=" + STRING_VALUE_OFFSET);
         if (STRING_CODER_OFFSET == 0 || s == null || UNSAFE.getByte(s, STRING_CODER_OFFSET) != 0) {
             return null;
         }
