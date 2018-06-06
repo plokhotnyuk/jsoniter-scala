@@ -123,17 +123,19 @@ That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_sc
 Now you can use it for parsing and serialization:
 
 ```scala
-val user = readFromArray("""{"name":"John","devices":[{"id":1,model:"HTC One X"}]}""".getBytes("UTF-8"))
+val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
 To see generated code add the following line to your sbt build file
 
 ```sbt
-scalaOptions += "-Xmacro-settings:print-codecs"
+scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-For more use cases and examples, please, check out tests: 
+Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/examples) directory 
+
+For more use cases, please, check out tests: 
 - [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
 - [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
 - [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
