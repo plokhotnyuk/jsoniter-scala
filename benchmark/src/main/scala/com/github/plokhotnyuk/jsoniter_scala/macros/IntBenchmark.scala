@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
@@ -19,7 +20,7 @@ class IntBenchmark extends CommonParams {
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
-  def readNaiveScala(): Int = new String(jsonBytes, UTF_8).toInt
+  def readAVSystemGenCodec(): Int = JsonStringInput.read[Int](new String(jsonBytes, UTF_8))
 
   @Benchmark
   def readCirce(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -34,13 +35,16 @@ class IntBenchmark extends CommonParams {
   def readJsoniterScala(): Int = readFromArray[Int](jsonBytes)(intCodec)
 
   @Benchmark
+  def readNaiveScala(): Int = new String(jsonBytes, UTF_8).toInt
+
+  @Benchmark
   def readPlayJson(): Int = Json.parse(jsonBytes).as[Int]
 
   @Benchmark
   def readUPickle(): Int = read[Int](jsonBytes)
 
   @Benchmark
-  def writeNaiveScala(): Array[Byte] = obj.toString.getBytes(UTF_8)
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -56,6 +60,9 @@ class IntBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)(intCodec)
+
+  @Benchmark
+  def writeNaiveScala(): Array[Byte] = obj.toString.getBytes(UTF_8)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

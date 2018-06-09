@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+//import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -34,6 +35,10 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   private def obj: Array[BigDecimal] =
     sourceObj.map(x => BigDecimal(x.bigDecimal.unscaledValue(), x.bigDecimal.scale()))
 
+/* FIXME: AVSystem GenCodec parses BigDecimal from JSON string only
+  @Benchmark
+  def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8))
+*/
   @Benchmark
   def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
@@ -45,9 +50,13 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
-/* FIXME: uPickle parses BigDecimal from JSON strings only
+/* FIXME: uPickle parses BigDecimal from JSON string only
   @Benchmark
   def readUPickle(): Array[BigDecimal] = read[Array[BigDecimal]](jsonBytes)
+*/
+/* FIXME: AVSystem GenCodec serializes BigDecimal to JSON string
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
@@ -63,7 +72,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: uPickle serializes longs to JSON strings
+/* FIXME: uPickle serializes BigDecimal to JSON string
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */

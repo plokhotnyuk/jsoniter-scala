@@ -5,6 +5,8 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
   
   "TwitterAPIBenchmark" should {
     "deserialize properly" in {
+      //FIXME:com.avsystem.commons.serialization.GenCodec$ReadFailure: Expected object but got list: null
+      //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -13,6 +15,8 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
+      //FIXME: java.lang.StackOverflowError
+      //toString(benchmark.writeAVSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
       //FIXME: circe serializes empty collections
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe TwitterAPI.compactJsonString

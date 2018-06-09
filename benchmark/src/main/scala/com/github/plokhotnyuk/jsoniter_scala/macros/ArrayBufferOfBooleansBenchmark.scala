@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -30,7 +31,12 @@ class ArrayBufferOfBooleansBenchmark extends CommonParams {
   }
 
   @Benchmark
-  def readCirce(): ArrayBuffer[Boolean] = decode[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readAVSystemGenCodec(): ArrayBuffer[Boolean] =
+    JsonStringInput.read[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def readCirce(): ArrayBuffer[Boolean] =
+    decode[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
   def readJacksonScala(): ArrayBuffer[Boolean] = jacksonMapper.readValue[ArrayBuffer[Boolean]](jsonBytes)
@@ -43,6 +49,9 @@ class ArrayBufferOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): ArrayBuffer[Boolean] = read[ArrayBuffer[Boolean]](jsonBytes)
+
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

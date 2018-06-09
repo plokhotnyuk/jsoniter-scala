@@ -3,7 +3,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -33,6 +35,9 @@ class ArrayOfLocalDateTimesBenchmark extends CommonParams {
   }
 
   @Benchmark
+  def readAVSystemGenCodec(): Array[LocalDateTime] = JsonStringInput.read[Array[LocalDateTime]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
   def readCirce(): Array[LocalDateTime] = decode[Array[LocalDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
@@ -46,6 +51,9 @@ class ArrayOfLocalDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): Array[LocalDateTime] = read[Array[LocalDateTime]](jsonBytes)
+
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -21,6 +23,9 @@ class ExtractFieldsBenchmark extends CommonParams {
   var jsonString: String =
     """{"i1":["1","2"],"s":"s","i2":{"m":[[1,2],[3,4]],"f":true},"i":1,"i3":{"1":1.1,"2":2.2}}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+
+  @Benchmark
+  def readAVSystemGenCodec(): ExtractFields = JsonStringInput.read[ExtractFields](new String(jsonBytes, UTF_8))
 
   @Benchmark
   def readCirce(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

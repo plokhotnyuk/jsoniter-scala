@@ -1,6 +1,10 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.nio.charset.StandardCharsets.UTF_8
+
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -28,13 +32,16 @@ class MutableBitSetBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes("UTF-8")
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
+
+  @Benchmark
+  def readAVSystemGenCodec(): mutable.BitSet = JsonStringInput.read[mutable.BitSet](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readCirce(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): mutable.BitSet = decode[mutable.BitSet](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 */
 /* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
   @Benchmark
-  def readJacksonScala(): BitSet = jacksonMapper.readValue[BitSet](jsonBytes)
+  def readJacksonScala(): mutable.BitSet = jacksonMapper.readValue[mutable.BitSet](jsonBytes)
 */
   @Benchmark
   def readJsoniterScala(): mutable.BitSet = readFromArray[mutable.BitSet](jsonBytes)
@@ -46,6 +53,8 @@ class MutableBitSetBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): mutable.BitSet = read[mutable.BitSet](jsonBytes)
 */
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

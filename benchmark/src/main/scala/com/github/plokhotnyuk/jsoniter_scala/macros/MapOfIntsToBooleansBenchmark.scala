@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -33,6 +34,9 @@ class MapOfIntsToBooleansBenchmark extends CommonParams {
   }
 
   @Benchmark
+  def readAVSystemGenCodec(): Map[Int, Boolean] = JsonStringInput.read[Map[Int, Boolean]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
   def readCirce(): Map[Int, Boolean] = decode[Map[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
@@ -47,6 +51,8 @@ class MapOfIntsToBooleansBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): Map[Int, Boolean] = read[Map[Int, Boolean]](jsonBytes)
 */
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe changes order of entries
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

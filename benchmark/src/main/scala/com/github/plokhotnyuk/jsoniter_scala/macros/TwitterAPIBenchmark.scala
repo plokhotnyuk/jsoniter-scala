@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+//import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
@@ -18,7 +20,10 @@ import play.api.libs.json.Json
 
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
-
+/* FIXME:com.avsystem.commons.serialization.GenCodec$ReadFailure: Expected object but got list: null
+  @Benchmark
+  def readAVSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
+*/
   @Benchmark
   def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
@@ -33,6 +38,10 @@ class TwitterAPIBenchmark extends CommonParams {
 /* FIXME: cannot alter uPickle to store Long as JSON number
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
+*/
+/* FIXME: java.lang.StackOverflowError
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
 /* FIXME: circe serializes empty collections
   @Benchmark

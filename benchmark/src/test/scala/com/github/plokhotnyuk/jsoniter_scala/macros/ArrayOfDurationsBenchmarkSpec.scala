@@ -7,6 +7,7 @@ class ArrayOfDurationsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfDurationsBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec().deep shouldBe benchmark.obj.deep
       benchmark.readCirce().deep shouldBe benchmark.obj.deep
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
       benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
@@ -14,6 +15,7 @@ class ArrayOfDurationsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readUPickle().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString

@@ -3,7 +3,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 import java.time.Year
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -30,6 +32,9 @@ class ArrayOfYearsBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
+
+  @Benchmark
+  def readAVSystemGenCodec(): Array[Year] = JsonStringInput.read[Array[Year]](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't supports java.time.Year
   @Benchmark
   def readCirce(): Array[Year] = decode[Array[Year]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -45,6 +50,9 @@ class ArrayOfYearsBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): Array[Year] = read[Array[Year]](jsonBytes)
+
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe doesn't supports java.time.Year
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

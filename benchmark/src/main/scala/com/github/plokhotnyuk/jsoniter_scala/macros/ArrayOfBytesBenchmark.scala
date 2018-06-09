@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+//import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
@@ -27,7 +28,10 @@ class ArrayOfBytesBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
-
+/* FIXME: AVSystem GenCodec expects a string of hexadecimal representation of bytes
+  @Benchmark
+  def readAVSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8))
+*/
   @Benchmark
   def readCirce(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 /*FIXME:dsl-json expects a base64 string for the byte array
@@ -45,7 +49,10 @@ class ArrayOfBytesBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): Array[Byte] = read[Array[Byte]](jsonBytes)
-
+/* FIXME: AVSystem GenCodec serializes a byte array to a string of hexadecimal representation of bytes
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+*/
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME:dsl-json serializes a byte array to the base64 string

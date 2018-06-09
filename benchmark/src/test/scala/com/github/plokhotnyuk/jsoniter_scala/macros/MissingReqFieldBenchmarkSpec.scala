@@ -5,6 +5,8 @@ class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
   
   "MissingReqFieldBenchmark" should {
     "return some parsing error" in {
+      benchmark.readAVSystemGenCodec() shouldBe
+        "Cannot read com.github.plokhotnyuk.jsoniter_scala.macros.MissingReqFields, field s is missing in decoded data"
       benchmark.readCirce() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"
       benchmark.readDslJsonJava() shouldBe

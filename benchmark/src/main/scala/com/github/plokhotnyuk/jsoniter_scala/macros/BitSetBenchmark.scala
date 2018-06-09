@@ -1,9 +1,11 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-//import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.charset.StandardCharsets.UTF_8
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -31,6 +33,8 @@ class BitSetBenchmark extends CommonParams {
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 
+  @Benchmark
+  def readAVSystemGenCodec(): BitSet = JsonStringInput.read[BitSet](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
   def readCirce(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -49,6 +53,8 @@ class BitSetBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): BitSet = read[BitSet](jsonBytes)
 */
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe doesn't support writing of bitsets
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

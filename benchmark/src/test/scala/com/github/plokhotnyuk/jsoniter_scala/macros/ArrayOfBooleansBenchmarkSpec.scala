@@ -7,6 +7,7 @@ class ArrayOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBooleansBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce().deep shouldBe benchmark.obj.deep
       benchmark.readDslJsonJava().deep shouldBe benchmark.obj.deep
       benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
@@ -15,6 +16,7 @@ class ArrayOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readUPickle().deep shouldBe benchmark.obj.deep
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
