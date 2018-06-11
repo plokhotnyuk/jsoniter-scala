@@ -32,18 +32,18 @@ object AVSystemCodecs {
   implicit val zoneIdGenCodec: GenCodec[ZoneId] = transformed[ZoneId, String](_.toString, ZoneId.of)
   implicit val zoneOffsetGenCodec: GenCodec[ZoneOffset] = transformed[ZoneOffset, String](_.toString, ZoneOffset.of)
   implicit val bitSetGenCodec: GenCodec[BitSet] = transformed[BitSet, Array[Int]](_.toArray, x => BitSet(x:_*)) // WARNING: don't do this for open-system
-  implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = GenCodec.materialize[ExtractFields]
-  implicit val geometryGenCodec: GenCodec[Geometry] = GenCodec.materializeRecursively[Geometry]
-  implicit val geoJSONGenCodec: GenCodec[GeoJSON] = GenCodec.materializeRecursively[GeoJSON] // FIXME: cannot derive GeoJSON w/o Geometry codec
-  implicit val googleMapsAPIGenCodec: GenCodec[DistanceMatrix] = GenCodec.materializeRecursively[DistanceMatrix]
+  implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = materialize[ExtractFields]
+  implicit val geometryGenCodec: GenCodec[Geometry] = materializeRecursively[Geometry]
+  implicit val geoJSONGenCodec: GenCodec[GeoJSON] = materializeRecursively[GeoJSON] // FIXME: cannot derive GeoJSON w/o Geometry codec
+  implicit val googleMapsAPIGenCodec: GenCodec[DistanceMatrix] = materializeRecursively[DistanceMatrix]
   implicit val intMapOfBooleansGenCodec: GenCodec[IntMap[Boolean]] =
     transformed[IntMap[Boolean], Map[Int, Boolean]](_.seq, x => IntMap(x.toArray:_*))
-  implicit val missingReqFieldGenCodec: GenCodec[MissingReqFields] = GenCodec.materialize[MissingReqFields]
+  implicit val missingReqFieldGenCodec: GenCodec[MissingReqFields] = materialize[MissingReqFields]
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] = // WARNING: don't do this for open-system
     transformed[mutable.BitSet, Array[Int]](_.toArray, x => mutable.BitSet(x:_*))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed[mutable.LongMap[Boolean], mutable.Map[Long, Boolean]](_.seq, x => mutable.LongMap(x.toArray:_*))
-  implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = GenCodec.materializeRecursively[NestedStructs]
-  implicit val primitivesGenCodec: GenCodec[Primitives] = GenCodec.materialize[Primitives]
-  implicit val twitterAPIGenCodec: GenCodec[Seq[Tweet]] = GenCodec.materializeRecursively[Seq[Tweet]]
+  implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively[NestedStructs]
+  implicit val primitivesGenCodec: GenCodec[Primitives] = materialize[Primitives]
+  //implicit val twitterAPIGenCodec: GenCodec[Tweet] = materializeRecursively[Tweet] // FIXME: cannot derive codecs for classes with 22+ fields
 }

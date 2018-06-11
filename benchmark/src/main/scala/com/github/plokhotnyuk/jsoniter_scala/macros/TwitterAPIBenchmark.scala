@@ -20,7 +20,7 @@ import play.api.libs.json.Json
 
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
-/* FIXME:com.avsystem.commons.serialization.GenCodec$ReadFailure: Expected object but got list: null
+/* FIXME: cannot derive codecs for classes with 22+ fields
   @Benchmark
   def readAVSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
 */
@@ -39,7 +39,7 @@ class TwitterAPIBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
 */
-/* FIXME: java.lang.StackOverflowError
+/* FIXME: cannot derive codecs for classes with 22+ fields
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
