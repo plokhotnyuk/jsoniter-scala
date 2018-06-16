@@ -8,11 +8,11 @@ class ArrayOfYearsBenchmarkSpec extends BenchmarkSpecBase {
   "ArrayOfYearsBenchmark" should {
     "deserialize properly" in {
       //FIXME: Circe doesn't supports java.time.Year
-      //benchmark.readCirce().deep shouldBe benchmark.obj.deep
-      benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
-      benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
-      benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
-      benchmark.readUPickle().deep shouldBe benchmark.obj.deep
+      //benchmark.readCirce() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
       //FIXME: Circe doesn't supports java.time.Year

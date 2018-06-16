@@ -88,20 +88,11 @@ lazy val core = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
-    libraryDependencies ++= {
-      val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v >= 13 && scalaV != "2.13.0-M3" =>
-          // TODO: scalatest for Scala 2.13.0-M4
-          Nil
-        case _ =>
-          Seq(
-            "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-            "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
-          )
-      }
-    }
+    crossScalaVersions := Seq("2.13.0-M4", "2.12.6", "2.11.12"),
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
+    )
   )
 
 lazy val macros = project
@@ -110,24 +101,13 @@ lazy val macros = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M4", "2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    ),
-    libraryDependencies ++= {
-      val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v >= 13 && scalaV != "2.13.0-M3" =>
-          // TODO: scalatest for Scala 2.13.0-M4
-          Nil
-        case _ =>
-          Seq(
-            "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-            "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
-          )
-      }
-    }
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
+    )
   )
 
 lazy val benchmark = project
@@ -154,6 +134,6 @@ lazy val benchmark = project
       "com.typesafe.play" %% "play-json" % "2.6.9",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
-      "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
     )
   )

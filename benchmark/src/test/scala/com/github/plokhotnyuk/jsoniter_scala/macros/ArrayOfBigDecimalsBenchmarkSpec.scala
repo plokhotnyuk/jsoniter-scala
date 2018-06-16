@@ -7,12 +7,12 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBigDecimalsBenchmark" should {
     "deserialize properly" in {
-      benchmark.readCirce().deep shouldBe benchmark.sourceObj.deep
-      benchmark.readJacksonScala().deep shouldBe benchmark.sourceObj.deep
-      benchmark.readJsoniterScala().deep shouldBe benchmark.sourceObj.deep
-      benchmark.readPlayJson().deep shouldBe benchmark.sourceObj.deep
+      benchmark.readCirce() shouldBe benchmark.sourceObj
+      benchmark.readJacksonScala() shouldBe benchmark.sourceObj
+      benchmark.readJsoniterScala() shouldBe benchmark.sourceObj
+      benchmark.readPlayJson() shouldBe benchmark.sourceObj
       //FIXME: uPickle parses BigDecimal from JSON strings only
-      //benchmark.readUPickle().deep shouldBe benchmark.sourceObj.deep
+      //benchmark.readUPickle() shouldBe benchmark.sourceObj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString

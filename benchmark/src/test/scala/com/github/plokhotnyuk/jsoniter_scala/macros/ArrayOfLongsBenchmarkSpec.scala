@@ -7,13 +7,13 @@ class ArrayOfLongsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfLongsBenchmark" should {
     "deserialize properly" in {
-      benchmark.readCirce().deep shouldBe benchmark.obj.deep
-      benchmark.readDslJsonJava().deep shouldBe benchmark.obj.deep
-      benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
-      benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
-      benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
+      benchmark.readCirce() shouldBe benchmark.obj
+      benchmark.readDslJsonJava() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
       //FIXME: uPickle parses longs from JSON strings only
-      //benchmark.readUPickle().deep shouldBe benchmark.obj.deep
+      //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString

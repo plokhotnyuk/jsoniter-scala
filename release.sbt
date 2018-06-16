@@ -20,7 +20,7 @@ releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
   runClean,
-  releaseStepCommandAndRemaining("test"), //FIXME: revert "+test" after restoring of testing for 2.13.0-M4
+  releaseStepCommandAndRemaining("+test"),
   setReleaseVersion,
   releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
   updateVersionInReadme,

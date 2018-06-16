@@ -91,7 +91,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Double])
 
-  val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> -90.0, 'N' -> 90.0, 'W' -> -180.0, 'E' -> 180.0))
+  val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> -90.0))
   val codecOfIndented: JsonValueCodec[Indented] = make[Indented](CodecMakerConfig())
 
   case class UTF8KeysAndValues(გასაღები: String)
@@ -463,8 +463,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes("UTF-8")
       verifySer(codecOfArrays, arrays, json)
       val parsedObj = readFromArray(json)(codecOfArrays)
-      parsedObj.aa.deep shouldBe arrays.aa.deep
-      parsedObj.a.deep shouldBe arrays.a.deep
+      parsedObj.aa shouldBe arrays.aa
+      parsedObj.a shouldBe arrays.a
     }
     "serialize and deserialize top-level arrays" in {
       val json = """[[1,2,3],[4,5,6]]""".getBytes("UTF-8")
@@ -472,7 +472,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig())
       verifySer(codecOfArrayOfArray, arrayOfArray, json)
       val parsedObj = readFromArray(json)(codecOfArrayOfArray)
-      parsedObj.deep shouldBe arrayOfArray.deep
+      parsedObj shouldBe arrayOfArray
     }
     "serialize and deserialize stringified top-level arrays" in {
       val json = """[["1","2","3"],["4","5","6"]]""".getBytes("UTF-8")
@@ -480,15 +480,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfStringifiedArrayOfArray = make[Array[Array[Int]]](CodecMakerConfig(isStringified = true))
       verifySer(codecOfStringifiedArrayOfArray, arrayOfArray, json)
       val parsedObj = readFromArray(json)(codecOfStringifiedArrayOfArray)
-      parsedObj.deep shouldBe arrayOfArray.deep
+      parsedObj shouldBe arrayOfArray
     }
     "do not serialize fields of case classes with empty arrays" in {
       val json = """{"aa":[[],[]]}""".getBytes("UTF-8")
       val arrays = Arrays(Array(Array(), Array()), Array())
       verifySer(codecOfArrays, arrays, json)
       val parsedObj = readFromArray(json)(codecOfArrays)
-      parsedObj.aa.deep shouldBe arrays.aa.deep
-      parsedObj.a.deep shouldBe arrays.a.deep
+      parsedObj.aa shouldBe arrays.aa
+      parsedObj.a shouldBe arrays.a
     }
     "throw parse exception in case of JSON array is not properly started/closed or with leading/trailing comma" in {
       assert(intercept[JsonParseException] {
@@ -505,34 +505,30 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
     "serialize and deserialize case classes with mutable Iterables" in {
-      case class MutableIterables(ml: collection.mutable.MutableList[collection.mutable.SortedSet[String]],
+      case class MutableIterables(ml: collection.mutable.Seq[collection.mutable.SortedSet[String]],
                                      ab: collection.mutable.ArrayBuffer[collection.mutable.Set[BigInt]],
                                      as: collection.mutable.ArraySeq[collection.mutable.LinkedHashSet[Int]],
                                      b: collection.mutable.Buffer[collection.mutable.HashSet[Double]],
                                      lb: collection.mutable.ListBuffer[collection.mutable.TreeSet[Long]],
                                      is: collection.mutable.IndexedSeq[collection.mutable.ArrayStack[Float]],
-                                     ub: collection.mutable.UnrolledBuffer[collection.mutable.Iterable[Short]],
-                                     ls: collection.mutable.LinearSeq[Byte],
-                                     ra: collection.mutable.ResizableArray[collection.mutable.Seq[Double]])
+                                     ub: collection.mutable.UnrolledBuffer[collection.mutable.Iterable[Short]])
 
       verifySerDeser(make[MutableIterables](CodecMakerConfig()),
-        MutableIterables(collection.mutable.MutableList(collection.mutable.SortedSet("1", "2", "3")),
+        MutableIterables(collection.mutable.Seq(collection.mutable.SortedSet("1", "2", "3")),
           collection.mutable.ArrayBuffer(collection.mutable.Set[BigInt](4), collection.mutable.Set.empty[BigInt]),
           collection.mutable.ArraySeq(collection.mutable.LinkedHashSet(5, 6), collection.mutable.LinkedHashSet.empty[Int]),
           collection.mutable.Buffer(collection.mutable.HashSet(7.7, 8.8)),
           collection.mutable.ListBuffer(collection.mutable.TreeSet(9L, 10L)),
           collection.mutable.IndexedSeq(collection.mutable.ArrayStack(11.11f, 12.12f)),
-          collection.mutable.UnrolledBuffer(collection.mutable.Iterable(13.toShort, 14.toShort)),
-          collection.mutable.LinearSeq(15.toByte, 16.toByte),
-          collection.mutable.ResizableArray(collection.mutable.Seq(17.17, 18.18))),
-        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]],"ls":[15,16],"ra":[[17.17,18.18]]}""".getBytes("UTF-8"))
+          collection.mutable.UnrolledBuffer(collection.mutable.Iterable(13.toShort, 14.toShort))),
+        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable Iterables" in {
       verifySerDeser(codecOfImmutableIterables,
-        ImmutableIterables(List(collection.immutable.ListSet("1")), collection.immutable.Queue(Set[BigInt](4, 5, 6)),
-          IndexedSeq(collection.immutable.SortedSet(7, 8), collection.immutable.SortedSet()),
-          Stream(collection.immutable.TreeSet(9.9)), Vector(Iterable(10L, 11L))),
-        """{"l":[["1"]],"q":[[4,5,6]],"is":[[7,8],[]],"s":[[9.9]],"v":[[10,11]]}""".getBytes("UTF-8"))
+        ImmutableIterables(List(collection.immutable.ListSet("1")), collection.immutable.Queue(Set[BigInt](4)),
+          IndexedSeq(collection.immutable.SortedSet(5, 6, 7), collection.immutable.SortedSet()),
+          Stream(collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
+        """{"l":[["1"]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level Iterables" in {
       val codecOfImmutableIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig())
@@ -564,14 +560,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize top-level maps" in {
       val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig())
       verifySerDeser(codecOfMaps,
-        collection.mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
-        """{"1":{"V":true,"X":false},"2":{}}""".getBytes("UTF-8"))
+        collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
+        """{"1":{"V":true},"2":{}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level maps" in {
       val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true))
       verifySerDeser(codecOfMaps,
-        collection.mutable.LinkedHashMap(1 -> Map('V' -> true, 'X' -> false), 2 -> Map.empty[Char, Boolean]),
-        """{"1":{"V":"true","X":"false"},"2":{}}""".getBytes("UTF-8"))
+        collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
+        """{"1":{"V":"true"},"2":{}}""".getBytes("UTF-8"))
     }
     "throw parse exception in case of JSON object is not properly started/closed or with leading/trailing comma" in {
       val immutableMaps = ImmutableMaps(Map(1 -> 1.1), collection.immutable.HashMap.empty,
@@ -765,17 +761,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |    3
           |  ],
           |  "m": {
-          |    "S": -90.0,
-          |    "N": 90.0,
-          |    "W": -180.0,
-          |    "E": 180.0
+          |    "S": -90.0
           |  }
           |}""".stripMargin.getBytes("UTF-8"),
         WriterConfig(indentionStep = 2))
     }
     "deserialize JSON with tabs & line returns" in {
       verifyDeser(codecOfIndented, indented,
-        "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\r\t\t\"S\":\t-90.0,\r\t\t\"N\":\t90.0,\r\t\t\"W\":\t-180.0,\r\t\t\"E\":\t180.0\r\t}\r}".getBytes("UTF-8"))
+        "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\r\t\t\"S\":\t-90.0}\r}".getBytes("UTF-8"))
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"),
@@ -793,17 +786,25 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""".getBytes("UTF-8"))
     }
-    "don't serialize default values of case classes that defined for fields but deserialize them" in {
-      case class Defaults(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                          l: List[Int] = List(0), e: Level = Level.HIGH)
+    "don't serialize default values of case classes that defined for fields" in {
+      case class Defaults1(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
+                           l: List[Int] = List(0), e: Level = Level.HIGH,
+                           a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)))
 
-      val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
+      val codecOfDefaults: JsonValueCodec[Defaults1] = make[Defaults1](CodecMakerConfig())
 
-      verifySer(codecOfDefaults, Defaults(), "{}".getBytes("UTF-8"))
-      verifySer(codecOfDefaults, Defaults(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
-      verifyDeser(codecOfDefaults, Defaults(), """{}""".getBytes("UTF-8"))
-      verifyDeser(codecOfDefaults, Defaults(), """{"s":null,"bi":null,"l":null,"oc":null,"e":null}""".getBytes("UTF-8"))
-      verifyDeser(codecOfDefaults, Defaults(), """{"l":[]}""".getBytes("UTF-8"))
+      verifySer(codecOfDefaults, Defaults1(), "{}".getBytes("UTF-8"))
+      verifySer(codecOfDefaults, Defaults1(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
+    }
+    "deserialize default values of case classes that defined for fields" in {
+      case class Defaults2(s: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
+                           l: List[Int] = List(0), e: Level = Level.HIGH)
+
+      val codecOfDefaults: JsonValueCodec[Defaults2] = make[Defaults2](CodecMakerConfig())
+
+      verifyDeser(codecOfDefaults, Defaults2(), """{}""".getBytes("UTF-8"))
+      verifyDeser(codecOfDefaults, Defaults2(), """{"s":null,"bi":null,"l":null,"oc":null,"e":null}""".getBytes("UTF-8"))
+      verifyDeser(codecOfDefaults, Defaults2(), """{"l":[]}""".getBytes("UTF-8"))
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       case class Transient(@transient transient: String = "default", required: String) {

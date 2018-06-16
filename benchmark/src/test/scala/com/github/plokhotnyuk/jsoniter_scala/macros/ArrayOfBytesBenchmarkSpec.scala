@@ -7,13 +7,13 @@ class ArrayOfBytesBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBytesBenchmark" should {
     "deserialize properly" in {
-      benchmark.readCirce().deep shouldBe benchmark.obj.deep
+      benchmark.readCirce() shouldBe benchmark.obj
       //FIXME:dsl-json expects a base64 string for the byte array
-      //benchmark.readDslJsonJava().deep shouldBe benchmark.obj.deep
-      benchmark.readJacksonScala().deep shouldBe benchmark.obj.deep
-      benchmark.readJsoniterScala().deep shouldBe benchmark.obj.deep
-      benchmark.readPlayJson().deep shouldBe benchmark.obj.deep
-      benchmark.readUPickle().deep shouldBe benchmark.obj.deep
+      //benchmark.readDslJsonJava() shouldBe benchmark.obj
+      benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterScala() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString

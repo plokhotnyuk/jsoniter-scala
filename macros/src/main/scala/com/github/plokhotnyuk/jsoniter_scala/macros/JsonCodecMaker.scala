@@ -491,6 +491,16 @@ object JsonCodecMaker {
         Ident(fieldName)
       }
 
+      val equalsMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val equalsMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+
+      def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
+        val equalsMethodName = equalsMethodNames.getOrElseUpdate(tpe, TermName("q" + equalsMethodNames.size))
+        equalsMethodTrees.getOrElseUpdate(tpe,
+          q"""private[this] def $equalsMethodName(x1: $tpe, x2: $tpe): Boolean = $f""")
+        q"$equalsMethodName($arg1, $arg2)"
+      }
+
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
       def getMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree): MethodKey =
@@ -928,10 +938,7 @@ object JsonCodecMaker {
                       }"""
                 } else if (mtpe <:< typeOf[Array[_]]) {
                   q"""val v = x.$m
-                      if (v.length > 0 && {
-                            val d = $d
-                            v.length != d.length || v.deep != d.deep
-                          }) {
+                      if (v.length > 0 && !${withEqualsFor(mtpe, q"v", d)(genArrayEquals(mtpe))}) {
                         ..${genWriteConstantKey(mappedName)}
                         ..${genWriteVal(q"v", mtpe, isStringified)}
                       }"""
@@ -987,6 +994,25 @@ object JsonCodecMaker {
         } else cannotFindCodecError(tpe)
       }
 
+      def genArrayEquals(tpe: Type): Tree = {
+        val tpe1 = typeArg1(tpe)
+        if (tpe1 <:< typeOf[Array[_]]) {
+          val equals = withEqualsFor(tpe1, q"x1(i)", q"x2(i)")(genArrayEquals(tpe1))
+          q"""if (x1 eq x2) true
+              else if ((x1 eq null) || (x2 eq null)) false
+              else {
+                val l1 = x1.length
+                val l2 = x2.length
+                if (l1 != l2) false
+                else {
+                  var i = 0
+                  while (i < l1 && $equals) i += 1
+                  i == l1
+                }
+              }"""
+        } else q"java.util.Arrays.equals(x1, x2)"
+      }
+
       val codec =
         q"""import com.github.plokhotnyuk.jsoniter_scala.core._
             import scala.annotation.switch
@@ -999,6 +1025,7 @@ object JsonCodecMaker {
               ..${decodeMethodTrees.values}
               ..${encodeMethodTrees.values}
               ..${fieldTrees.values}
+              ..${equalsMethodTrees.values}
               ..${nullValueTrees.values}
             }"""
       if (c.settings.contains("print-codecs")) info(s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}")

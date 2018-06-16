@@ -338,9 +338,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "write strings with chars that should be escaped" in {
       def check(s: String, escapeUnicode: Boolean): Unit = {
         withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe
-          "\"" + s.flatMap(toEscaped) + "\""
+          "\"" + s.flatMap(toEscaped(_)) + "\""
         withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)) shouldBe
-          "\"" + s.flatMap(toEscaped) + "\":"
+          "\"" + s.flatMap(toEscaped(_)) + "\":"
       }
 
       forAll(Gen.listOf(genEscapedAsciiChar).map(_.mkString), Gen.oneOf(true, false), minSuccessful(10000)) {
@@ -350,8 +350,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "write strings with escaped Unicode chars if it is specified by provided writer config" in {
       def check(s: String): Unit = {
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\":"
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\":"
       }
 
       forAll(minSuccessful(100000)) { (s: String) =>
@@ -364,8 +364,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       def check(s: String): Unit = {
         withWriter(WriterConfig(escapeUnicode = false))(_.writeVal(s)) shouldBe "\"" + s + "\""
         withWriter(WriterConfig(escapeUnicode = false))(_.writeKey(s)) shouldBe "\"" + s + "\":"
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped) + "\":"
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\":"
       }
 
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (ch1: Char, ch2: Char) =>
