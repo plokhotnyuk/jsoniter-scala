@@ -159,9 +159,8 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m ++2.11.12 clean coverage test coverageReport
-sbt -J-XX:MaxMetaspaceSize=512m ++2.12.6 clean coverage test coverageReport
-sbt -J-XX:MaxMetaspaceSize=512m clean +mimaReportBinaryIssues
+sbt clean coverage test coverageReport
+sbt -J-XX:MaxMetaspaceSize=512m clean +test +mimaReportBinaryIssues
 ```
 
 ### Run benchmarks
