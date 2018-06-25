@@ -3,7 +3,7 @@ matrix:
   include:
     - os: linux
       jdk: oraclejdk10
-      scala: 2.12.6
+      scala: 2.11.12
     - os: linux
       jdk: oraclejdk9
       scala: 2.12.6
