@@ -2,10 +2,10 @@ language: scala
 matrix:
   include:
     - os: linux
-      jdk: oraclejdk9
-      scala: 2.12.6
+      jdk: oraclejdk10
+      scala: 2.11.12
     - os: linux
-      jdk: openjdk8
+      jdk: oraclejdk9
       scala: 2.12.6
     - os: linux
       jdk: oraclejdk8
