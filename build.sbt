@@ -55,7 +55,7 @@ lazy val commonSettings = Seq(
     "-Xmacro-settings:print-codecs"
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, x)) if x >= 12 => Seq("-opt:l:method")
-    case Some((2, x)) if x == 11 => Seq("-Ybackend:GenBCode", "-Ydelambdafy:method")
+    case Some((2, x)) if x == 11 => Seq("-Ybackend:GenBCode", "-Ydelambdafy:inline")
     case _ => Seq()
   }),
   testOptions in Test += Tests.Argument("-oDF")
