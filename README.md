@@ -13,8 +13,8 @@ to get maximum performance of JSON parsing and serialization.
 performance of Jsoniter Scala vs. [Jackson](https://github.com/FasterXML/jackson-module-scala), [Circe](https://github.com/circe/circe),  
 [Play-JSON](https://github.com/playframework/play-json), [uPickle](https://github.com/lihaoyi/upickle) and [dsl-json](https://github.com/ngs-doo/dsl-json) 
 (Java API only) libraries using different JDK and GraalVM versions on the following environment: 
-Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, latest versions of 
-Oracle JDK 8/10, Oracle JDK 10 + Graal compiler, and GraalVM CE/EE
+Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, latest versions of Open JDK 8, 
+Oracle JDK 8, Open JDK 11, Oracle JDK 11, Open JDK 11 + Graal JIT, Oracle JDK 11 + Graal JIT, and GraalVM CE/EE
 
 ## Acknowledgments
 
