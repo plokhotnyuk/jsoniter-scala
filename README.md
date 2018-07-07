@@ -53,14 +53,15 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`, 
   `Either`, `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes 
-  with values/fields having any of types listed here 
-- Case classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
+  with values/fields having any of types listed here
+- Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
+- Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary constructor     
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
-- Support of first-order and higher-kinded types for case classes and value classes
-- Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
-  using discriminator field with string type of value
+- Support of first-order and higher-kinded types
+- Support of ADTs with sealed trait or sealed abstract class base and non-abstract Scala classes or objects as leaf 
+  classes, using discriminator field with string type of value
 - Implicitly resolvable values codecs for JSON values and key codecs for JSON object keys that are mapped to maps
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
@@ -68,7 +69,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
   provide a sparse output
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
-- Field names can be overridden for serialization/parsing by field annotation in case classes
+- Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
   an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
@@ -80,8 +81,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
-- Mapping function for names between case classes and JSON, including predefined functions which enforce 
-  snake_case, kebab-case or camelCase names for all fields
+- Mapping function for names between classes and JSON, including predefined functions which enforce snake_case, 
+  kebab-case or camelCase names for all fields
 - Name of a discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
 
@@ -106,7 +107,7 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Generate codecs for your case classes, collections, etc.
+Generate codecs for your Scala classes and collections:
     
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.macros._

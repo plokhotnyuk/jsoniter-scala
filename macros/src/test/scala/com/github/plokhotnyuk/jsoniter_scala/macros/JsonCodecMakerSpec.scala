@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.util.UUID
+import java.util.{Objects, UUID}
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
@@ -28,6 +28,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val standardTypes = StandardTypes("VVV", 1, 1.1)
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make[StandardTypes](CodecMakerConfig())
+
+  class NonCaseClass(val id: Int, var name: String) {
+    override def hashCode(): Int = id * 31 + Objects.hashCode(name)
+
+    override def equals(obj: scala.Any): Boolean = obj match {
+      case c: NonCaseClass => id == c.id && Objects.equals(name, c.name)
+      case _ => false
+    }
+
+    override def toString: String = s"NonCaseClass(id=$id,name=$name)"
+  }
+
+  val codecOfNonCaseClass: JsonValueCodec[NonCaseClass] = make[NonCaseClass](CodecMakerConfig())
 
   case class JavaTypes(uuid: UUID)
 
@@ -276,6 +289,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""".getBytes("UTF-8"))
       }.getMessage.contains("expected '\"', offset: 0x00000019"))
+    }
+    "serialize and deserialize Scala classes which has a primary constructor with 'var' or 'var' parameters only" in {
+      verifySerDeser(codecOfNonCaseClass, new NonCaseClass(1, "VVV"),
+        """{"id":1,"name":"VVV"}""".getBytes("UTF-8"))
     }
     "serialize and deserialize Java types" in {
       verifySerDeser(codecOfJavaTypes, JavaTypes(new UUID(0, 0)),
@@ -905,6 +922,24 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         List(CCC(2, "WWW"), CCC(1, "VVV")),
         s"""[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
     }
+    "serialize and deserialize ADTs with leaf types that are not case classes or case objects" in {
+      sealed trait X
+
+      class A() extends X {
+        override def hashCode(): Int = 0
+
+        override def equals(obj: scala.Any): Boolean = obj.isInstanceOf[A]
+
+        override def toString: String = "A()"
+      }
+
+      object B extends X {
+        override def toString: String = "B"
+      }
+
+      verifySerDeser(make[List[X]](CodecMakerConfig()),
+        List(new A(), B), """[{"type":"A"},{"type":"B"}]""".getBytes("UTF-8"))
+    }
     "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
       sealed abstract class База extends Product with Serializable
 
@@ -962,26 +997,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }).getMessage.contains {
         """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
           |definition for 'X' or using a custom implicitly accessible codec for the ADT base."""
-          .stripMargin.replace('\n', ' ')
-      })
-    }
-    "don't generate codec for non case classes as ADT leaf classes" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X extends Product with Serializable
-          |class A(i: Int) extends X
-          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
-      }).getMessage.contains {
-        """Only case classes & case objects are supported for ADT leaf classes. Please consider using
-          |of them for ADT with base 'X' or using a custom implicitly accessible codec for the ADT base."""
-          .stripMargin.replace('\n', ' ')
-      })
-      assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X extends Product with Serializable
-          |object A extends X
-          |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
-      }).getMessage.contains {
-        """Only case classes & case objects are supported for ADT leaf classes. Please consider using
-          |of them for ADT with base 'X' or using a custom implicitly accessible codec for the ADT base."""
           .stripMargin.replace('\n', ' ')
       })
     }
@@ -1219,6 +1234,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }).getMessage.contains {
         """'MultiListOfArgs' has a primary constructor with multiple parameter lists.
           |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
+      })
+    }
+    "don't generate codecs for classes with parameters in a primary constructor that have no accessor for read" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """class ParamHasNoAccessor(val i: Int, a: String)
+          |JsonCodecMaker.make[ParamHasNoAccessor](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """'ParamHasNoAccessor' should be a case class or should have only 'val' or 'var' parameters
+          |in the primary constructor.""".stripMargin.replace('\n', ' ')
       })
     }
   }

@@ -136,7 +136,10 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
 
-      def isCaseClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isCaseClass
+      def isNonAbstractScalaClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
+        val clazz = tpe.typeSymbol.asClass
+        clazz.isCaseClass || (!clazz.isJava && !clazz.isAbstract)
+      }
 
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
@@ -176,9 +179,9 @@ object JsonCodecMaker {
               if (classSymbol.typeParams.isEmpty) classSymbol.toType
               else classSymbol.toType.substituteTypes(classSymbol.typeParams, tpe.typeArgs)
             if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
-            else if (isCaseClass(subTpe)) Set(subTpe)
-            else fail("Only case classes & case objects are supported for ADT leaf classes. Please consider using " +
-              s"of them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
+            else if (isNonAbstractScalaClass(subTpe)) Set(subTpe)
+            else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
+              s"for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
           }
         } else Set.empty
 
@@ -386,9 +389,9 @@ object JsonCodecMaker {
       case class ClassInfo(tpe: Type, annotations: Map[String, FieldAnnotations], params: Seq[TermSymbol],
                           defaults: Map[String, Tree], members: Seq[MethodSymbol])
 
-      val metaInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
+      val classInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
 
-      def getClassInfo(tpe: Type): ClassInfo = metaInfos.getOrElseUpdate(tpe, {
+      def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         val annotations = tpe.members.collect {
           case m: TermSymbol if {
             m.info // to enforce the type information completeness and availability of annotations
@@ -426,8 +429,13 @@ object JsonCodecMaker {
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }.toMap
         val members = tpe.members.collect {
-          case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
+          case m: MethodSymbol if m.isParamAccessor && m.isGetter && nonTransient(m) => m
         }.toSeq.reverse
+        if (members.size != params.size) {
+          info(s"params = ${params.map(decodedName)}")
+          info(s"members = ${members.map(decodedName)}")
+          fail(s"'$tpe' should be a case class or should have only 'val' or 'var' parameters in the primary constructor.")
+        }
         ClassInfo(tpe, annotations, params, defaults, members)
       })
 
@@ -716,7 +724,7 @@ object JsonCodecMaker {
                 if (in.isNextToken(']')) new $tpe(..$vals)
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
-        } else if (isCaseClass(tpe)) withDecoderFor(methodKey, default) {
+        } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
           val classInfo = getClassInfo(tpe)
 
           def name(m: Symbol): String = getMappedName(classInfo.annotations, decodedName(m))
@@ -912,7 +920,7 @@ object JsonCodecMaker {
           q"""out.writeArrayStart()
               ..$writeFields
               out.writeArrayEnd()"""
-        } else if (isCaseClass(tpe)) withEncoderFor(methodKey, m) {
+        } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
           val classInfo = getClassInfo(tpe)
           val writeFields = classInfo.members.map { m =>
             val mtpe = methodType(tpe, m)
