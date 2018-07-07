@@ -381,52 +381,55 @@ object JsonCodecMaker {
 
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
-      def getFieldAnnotations(tpe: Type): Map[String, FieldAnnotations] = tpe.members.collect {
-        case m: TermSymbol if {
-          m.info // to enforce the type information completeness and availability of annotations
-          m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
-            a.tree.tpe =:= typeOf[stringified])
-        } =>
-          val name = decodedName(m).trim // FIXME: Why is there a space at the end of field name?!
-          val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
-          if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
-          val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
-          if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$name' of '$tpe'.")
-          val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
-          if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
-          if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
-            warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
-              s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
-          }
-          val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
-          (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
-      }.toMap
+      case class MetaInfo(tpe: Type, annotations: Map[String, FieldAnnotations], params: Seq[TermSymbol],
+                          defaults: Map[String, Tree], members: Seq[MethodSymbol])
 
-      def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
-        case m: MethodSymbol if m.isPrimaryConstructor => m
-      }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
+      val metaInfos = mutable.LinkedHashMap.empty[Type, MetaInfo]
 
-      def getParams(tpe: Type): Seq[TermSymbol] = getPrimaryConstructor(tpe).paramLists match {
-        case paramList :: Nil => paramList.map(_.asTerm)
-        case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
-          "Please consider using a custom implicitly accessible codec for this type.")
-      }
+      def getMetaInfo(tpe: Type): MetaInfo = metaInfos.getOrElseUpdate(tpe, {
+        val annotations = tpe.members.collect {
+          case m: TermSymbol if {
+            m.info // to enforce the type information completeness and availability of annotations
+            m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
+              a.tree.tpe =:= typeOf[stringified])
+          } =>
+            val name = decodedName(m).trim // FIXME: Why is there a space at the end of field name?!
+            val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
+            if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
+            val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
+            if (trans.size > 1) warn(s"Duplicated '${typeOf[transient]}' defined for '$name' of '$tpe'.")
+            val strings = m.annotations.filter(_.tree.tpe =:= typeOf[stringified])
+            if (strings.size > 1) warn(s"Duplicated '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
+            if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
+              warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
+                s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
+            }
+            val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
+            (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
+        }.toMap
 
-      def getDefaults(tpe: Type): Map[String, Tree] = {
-        val params = getParams(tpe)
+        def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
+          case m: MethodSymbol if m.isPrimaryConstructor => m
+        }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
+
+        val params = getPrimaryConstructor(tpe).paramLists match {
+          case paramList :: Nil => paramList.map(_.asTerm)
+          case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
+            "Please consider using a custom implicitly accessible codec for this type.")
+        }
         lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
-        params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
+        val defaults = params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }.toMap
-      }
 
-      def getMembers(annotations: Map[String, FieldAnnotations], tpe: c.universe.Type): Seq[MethodSymbol] = {
         def nonTransient(m: MethodSymbol): Boolean = annotations.get(decodedName(m)).fold(true)(!_.transient)
 
-        tpe.members.collect {
+        val members = tpe.members.collect {
           case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
         }.toSeq.reverse
-      }
+
+        MetaInfo(tpe, annotations, params, defaults, members)
+      })
 
       val rootTpe = weakTypeOf[A].dealias
       val unexpectedFieldHandler =
@@ -714,29 +717,26 @@ object JsonCodecMaker {
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
         } else if (isCaseClass(tpe)) withDecoderFor(methodKey, default) {
-          val annotations = getFieldAnnotations(tpe)
+          val metaInfo = getMetaInfo(tpe)
 
-          def name(m: Symbol): String = getMappedName(annotations, decodedName(m))
+          def name(m: Symbol): String = getMappedName(metaInfo.annotations, decodedName(m))
 
           def hashCode(m: Symbol): Int = {
             val cs = name(m).toCharArray
             JsonReader.toHashCode(cs, cs.length)
           }
 
-          val members = getMembers(annotations, tpe)
           checkFieldNameCollisions(tpe,
-            (if (discriminator.isEmpty) Seq.empty else Seq(codecConfig.discriminatorFieldName)) ++ members.map(name))
-          val params = getParams(tpe).filterNot { p =>
-            annotations.get(decodedName(p)).fold(false)(_.transient)
-          }
-          val required = params.collect {
+            (if (discriminator.isEmpty) Seq.empty
+            else Seq(codecConfig.discriminatorFieldName)) ++ metaInfo.members.map(name))
+          val required = metaInfo.params.collect {
             case p if !p.isParamWithDefault && !isContainer(resolveConcreteType(tpe, p.typeSignature.dealias)) => name(p)
           }
-          val paramVarNum = params.size
+          val paramVarNum = metaInfo.params.size
           val lastParamVarIndex = paramVarNum >> 5
           val lastParamVarBits = (1 << paramVarNum) - 1
           val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-          val bitmasks: Map[String, Tree] = params.zipWithIndex.map {
+          val bitmasks: Map[String, Tree] = metaInfo.params.zipWithIndex.map {
             case (r, i) =>
               val n = paramVarNames(i >> 5)
               val bit = 1 << i
@@ -745,9 +745,9 @@ object JsonCodecMaker {
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
           val checkReqVars = if (required.isEmpty) Nil else {
-            val fields = withFieldsFor(tpe)(params.map(name))
+            val fields = withFieldsFor(tpe)(metaInfo.params.map(name))
             val reqSet = required.toSet
-            val reqMasks = params.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (n, i)) =>
+            val reqMasks = metaInfo.params.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (n, i)) =>
               acc | (if (reqSet(name(n))) 1 << i else 0)
             }).toSeq
             paramVarNames.zipWithIndex.map { case (n, i) =>
@@ -756,16 +756,15 @@ object JsonCodecMaker {
               else q"if (($n & $m) != 0) in.requiredFieldError($fields(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
             }
           }
-          val construct = q"new $tpe(..${members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
-          val defaults = getDefaults(tpe)
-          val readVars = members.map { m =>
+          val construct = q"new $tpe(..${metaInfo.members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
+          val readVars = metaInfo.members.map { m =>
             val mtpe = methodType(tpe, m)
-            q"var ${TermName("_" + m.name)}: $mtpe = ${defaults.getOrElse(decodedName(m), nullValue(mtpe))}"
+            q"var ${TermName("_" + m.name)}: $mtpe = ${metaInfo.defaults.getOrElse(decodedName(m), nullValue(mtpe))}"
           }
-          val readFields = groupByOrdered(members)(hashCode).map { case (hashCode, ms) =>
+          val readFields = groupByOrdered(metaInfo.members)(hashCode).map { case (hashCode, ms) =>
             val checkNameAndReadValue = ms.foldRight(unexpectedFieldHandler) { case (m, acc) =>
               val varName = TermName("_" + m.name)
-              val isStringified = getStringified(annotations, decodedName(m))
+              val isStringified = getStringified(metaInfo.annotations, decodedName(m))
               val readValue = q"$varName = ${genReadVal(methodType(tpe, m), q"$varName", isStringified)}"
               val resetFieldFlag = bitmasks(decodedName(m))
               q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
@@ -914,15 +913,13 @@ object JsonCodecMaker {
               ..$writeFields
               out.writeArrayEnd()"""
         } else if (isCaseClass(tpe)) withEncoderFor(methodKey, m) {
-          val annotations = getFieldAnnotations(tpe)
-          val members = getMembers(annotations, tpe)
-          val defaults = getDefaults(tpe)
-          val writeFields = members.map { m =>
+          val metaInfo = getMetaInfo(tpe)
+          val writeFields = metaInfo.members.map { m =>
             val mtpe = methodType(tpe, m)
             val name = decodedName(m)
-            val mappedName = getMappedName(annotations, name)
-            val isStringified = getStringified(annotations, name)
-            defaults.get(name) match {
+            val mappedName = getMappedName(metaInfo.annotations, name)
+            val isStringified = getStringified(metaInfo.annotations, name)
+            metaInfo.defaults.get(name) match {
               case Some(d) =>
                 if (mtpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
