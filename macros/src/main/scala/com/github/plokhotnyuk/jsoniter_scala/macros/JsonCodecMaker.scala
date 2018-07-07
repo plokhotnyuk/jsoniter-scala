@@ -154,6 +154,8 @@ object JsonCodecMaker {
 
       def methodType(tpe: Type, m: MethodSymbol): Type = resolveConcreteType(tpe, m.returnType.dealias)
 
+      def paramType(tpe: Type, p: TermSymbol): Type = resolveConcreteType(tpe, p.typeSignature.dealias)
+
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
@@ -381,12 +383,12 @@ object JsonCodecMaker {
 
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
-      case class MetaInfo(tpe: Type, annotations: Map[String, FieldAnnotations], params: Seq[TermSymbol],
+      case class ClassInfo(tpe: Type, annotations: Map[String, FieldAnnotations], params: Seq[TermSymbol],
                           defaults: Map[String, Tree], members: Seq[MethodSymbol])
 
-      val metaInfos = mutable.LinkedHashMap.empty[Type, MetaInfo]
+      val metaInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
 
-      def getMetaInfo(tpe: Type): MetaInfo = metaInfos.getOrElseUpdate(tpe, {
+      def getClassInfo(tpe: Type): ClassInfo = metaInfos.getOrElseUpdate(tpe, {
         val annotations = tpe.members.collect {
           case m: TermSymbol if {
             m.info // to enforce the type information completeness and availability of annotations
@@ -408,12 +410,14 @@ object JsonCodecMaker {
             (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
 
+        def nonTransient(s: TermSymbol): Boolean = annotations.get(decodedName(s)).fold(true)(!_.transient)
+
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
           case m: MethodSymbol if m.isPrimaryConstructor => m
         }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
 
         val params = getPrimaryConstructor(tpe).paramLists match {
-          case paramList :: Nil => paramList.map(_.asTerm)
+          case paramList :: Nil => paramList.map(_.asTerm).filter(nonTransient)
           case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
             "Please consider using a custom implicitly accessible codec for this type.")
         }
@@ -421,14 +425,10 @@ object JsonCodecMaker {
         val defaults = params.zipWithIndex.collect { case (p, i) if p.isParamWithDefault =>
           (decodedName(p), q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
         }.toMap
-
-        def nonTransient(m: MethodSymbol): Boolean = annotations.get(decodedName(m)).fold(true)(!_.transient)
-
         val members = tpe.members.collect {
           case m: MethodSymbol if m.isCaseAccessor && nonTransient(m) => m
         }.toSeq.reverse
-
-        MetaInfo(tpe, annotations, params, defaults, members)
+        ClassInfo(tpe, annotations, params, defaults, members)
       })
 
       val rootTpe = weakTypeOf[A].dealias
@@ -717,9 +717,9 @@ object JsonCodecMaker {
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
         } else if (isCaseClass(tpe)) withDecoderFor(methodKey, default) {
-          val metaInfo = getMetaInfo(tpe)
+          val classInfo = getClassInfo(tpe)
 
-          def name(m: Symbol): String = getMappedName(metaInfo.annotations, decodedName(m))
+          def name(m: Symbol): String = getMappedName(classInfo.annotations, decodedName(m))
 
           def hashCode(m: Symbol): Int = {
             val cs = name(m).toCharArray
@@ -728,15 +728,15 @@ object JsonCodecMaker {
 
           checkFieldNameCollisions(tpe,
             (if (discriminator.isEmpty) Seq.empty
-            else Seq(codecConfig.discriminatorFieldName)) ++ metaInfo.members.map(name))
-          val required = metaInfo.params.collect {
-            case p if !p.isParamWithDefault && !isContainer(resolveConcreteType(tpe, p.typeSignature.dealias)) => name(p)
+            else Seq(codecConfig.discriminatorFieldName)) ++ classInfo.params.map(name))
+          val required = classInfo.params.collect {
+            case p if !p.isParamWithDefault && !isContainer(paramType(tpe, p)) => name(p)
           }
-          val paramVarNum = metaInfo.params.size
+          val paramVarNum = classInfo.params.size
           val lastParamVarIndex = paramVarNum >> 5
           val lastParamVarBits = (1 << paramVarNum) - 1
           val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-          val bitmasks: Map[String, Tree] = metaInfo.params.zipWithIndex.map {
+          val bitmasks = classInfo.params.zipWithIndex.map {
             case (r, i) =>
               val n = paramVarNames(i >> 5)
               val bit = 1 << i
@@ -745,9 +745,9 @@ object JsonCodecMaker {
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
           val checkReqVars = if (required.isEmpty) Nil else {
-            val fields = withFieldsFor(tpe)(metaInfo.params.map(name))
+            val fields = withFieldsFor(tpe)(classInfo.params.map(name))
             val reqSet = required.toSet
-            val reqMasks = metaInfo.params.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (n, i)) =>
+            val reqMasks = classInfo.params.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (n, i)) =>
               acc | (if (reqSet(name(n))) 1 << i else 0)
             }).toSeq
             paramVarNames.zipWithIndex.map { case (n, i) =>
@@ -756,18 +756,18 @@ object JsonCodecMaker {
               else q"if (($n & $m) != 0) in.requiredFieldError($fields(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
             }
           }
-          val construct = q"new $tpe(..${metaInfo.members.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
-          val readVars = metaInfo.members.map { m =>
-            val mtpe = methodType(tpe, m)
-            q"var ${TermName("_" + m.name)}: $mtpe = ${metaInfo.defaults.getOrElse(decodedName(m), nullValue(mtpe))}"
+          val construct = q"new $tpe(..${classInfo.params.map(m => q"${m.name} = ${TermName("_" + m.name)}")})"
+          val readVars = classInfo.params.map { p =>
+            val ptpe = paramType(tpe, p)
+            q"var ${TermName("_" + p.name)}: $ptpe = ${classInfo.defaults.getOrElse(decodedName(p), nullValue(ptpe))}"
           }
-          val readFields = groupByOrdered(metaInfo.members)(hashCode).map { case (hashCode, ms) =>
-            val checkNameAndReadValue = ms.foldRight(unexpectedFieldHandler) { case (m, acc) =>
-              val varName = TermName("_" + m.name)
-              val isStringified = getStringified(metaInfo.annotations, decodedName(m))
-              val readValue = q"$varName = ${genReadVal(methodType(tpe, m), q"$varName", isStringified)}"
-              val resetFieldFlag = bitmasks(decodedName(m))
-              q"""if (in.isCharBufEqualsTo(l, ${name(m)})) {
+          val readFields = groupByOrdered(classInfo.params)(hashCode).map { case (hashCode, ps) =>
+            val checkNameAndReadValue = ps.foldRight(unexpectedFieldHandler) { case (p, acc) =>
+              val varName = TermName("_" + p.name)
+              val isStringified = getStringified(classInfo.annotations, decodedName(p))
+              val readValue = q"$varName = ${genReadVal(paramType(tpe, p), q"$varName", isStringified)}"
+              val resetFieldFlag = bitmasks(decodedName(p))
+              q"""if (in.isCharBufEqualsTo(l, ${name(p)})) {
                     ..$resetFieldFlag
                     ..$readValue
                   } else $acc"""
@@ -913,13 +913,13 @@ object JsonCodecMaker {
               ..$writeFields
               out.writeArrayEnd()"""
         } else if (isCaseClass(tpe)) withEncoderFor(methodKey, m) {
-          val metaInfo = getMetaInfo(tpe)
-          val writeFields = metaInfo.members.map { m =>
+          val classInfo = getClassInfo(tpe)
+          val writeFields = classInfo.members.map { m =>
             val mtpe = methodType(tpe, m)
             val name = decodedName(m)
-            val mappedName = getMappedName(metaInfo.annotations, name)
-            val isStringified = getStringified(metaInfo.annotations, name)
-            metaInfo.defaults.get(name) match {
+            val mappedName = getMappedName(classInfo.annotations, name)
+            val isStringified = getStringified(classInfo.annotations, name)
+            classInfo.defaults.get(name) match {
               case Some(d) =>
                 if (mtpe <:< typeOf[Iterable[_]]) {
                   q"""val v = x.$m
