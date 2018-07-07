@@ -102,8 +102,8 @@ Add the core library with a "compile" scope and the macros library with a "provi
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "core" % "0.28.1" % Compile, 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.28.1" % Provided // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "0.28.1" % Compile, 
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "0.28.1" % Provided // required only in compile-time
 )
 ```
 
@@ -135,13 +135,13 @@ To see generated code add the following line to your sbt build file
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/examples) directory 
+Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples) directory 
 
 For more use cases, please, check out tests: 
-- [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
-- [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
-- [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
-- [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
+- [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
+- [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
+- [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
+- [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
 
 ## Known issues
 
@@ -176,36 +176,36 @@ Learn how to write benchmarks in [JMH samples](http://hg.openjdk.java.net/code-t
 List of available option can be printed by:
 
 ```sh
-sbt 'benchmark/jmh:run -h'
+sbt 'jsoniter-scala-benchmark/jmh:run -h'
 ```
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
 ```sh
-sbt 'benchmark/jmh:run -lrf
+sbt 'jsoniter-scala-benchmark/jmh:run -lrf
 ``` 
 
 JMH allows to run benchmarks with different profilers, to get a list of supported use:
 
 ```sh
-sbt 'benchmark/jmh:run -lprof'
+sbt 'jsoniter-scala-benchmark/jmh:run -lprof'
 ```
 
 Help for profiler options can be printed by following command:
 
 ```sh
-sbt 'benchmark/jmh:run -prof <profiler_name>:help'
+sbt 'jsoniter-scala-benchmark/jmh:run -prof <profiler_name>:help'
 ```
 
 For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 
 ```sh
-sbt clean 'benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
 ```
 
 To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Benchmark.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Benchmark.*'
 ```
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
@@ -215,13 +215,13 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
 ```
 
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 
 ```sh
-sbt clean 'benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true -wi 10 -i 60 .*GoogleMapsAPI.*readJsoniter.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true -wi 10 -i 60 .*GoogleMapsAPI.*readJsoniter.*'
 ```
 
 Now you can open files from the `/tmp/profile-jfr` directory:
@@ -237,7 +237,7 @@ flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocatio
 To run benchmarks with recordings by Async profiler, clone its repository and use command like this:
 
 ```sh
-sbt -no-colors 'benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
+sbt -no-colors 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
 ```
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
@@ -268,7 +268,7 @@ Following command can be used to profile and print assembly code of hottest meth
 additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
 ```
 
 More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
@@ -300,5 +300,5 @@ sbt -J-XX:MaxMetaspaceSize=512m release
 ```
 
 Do not push changes to github until promoted artifacts for the new version are not available for download on 
-[Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/macros_2.12/)
+[Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds. 

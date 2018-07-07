@@ -80,10 +80,10 @@ lazy val publishSettings = Seq(
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
-  .aggregate(core, macros, benchmark)
+  .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
   .settings(noPublishSettings: _*)
 
-lazy val core = project
+lazy val `jsoniter-scala-core` = project
   .settings(commonSettings: _*)
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
@@ -95,8 +95,8 @@ lazy val core = project
     )
   )
 
-lazy val macros = project
-  .dependsOn(core)
+lazy val `jsoniter-scala-macros` = project
+  .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings: _*)
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
@@ -110,9 +110,9 @@ lazy val macros = project
     )
   )
 
-lazy val benchmark = project
+lazy val `jsoniter-scala-benchmark` = project
   .enablePlugins(JmhPlugin)
-  .dependsOn(macros)
+  .dependsOn(`jsoniter-scala-macros`)
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
