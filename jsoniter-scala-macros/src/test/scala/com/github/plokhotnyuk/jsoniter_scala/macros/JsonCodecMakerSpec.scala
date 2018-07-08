@@ -232,21 +232,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize top-level standard types" in {
       val text =
         "JavaScript Object Notation (JSON) is a lightweight, text-based, language-independent data interchange format."
-      val codecOfString = make[String](CodecMakerConfig())
-      verifySerDeser(codecOfString, text, s""""$text"""".getBytes("UTF-8"))
-      val codecOfBigInt = make[BigInt](CodecMakerConfig())
-      verifySerDeser(codecOfBigInt, BigInt("123456789012345678901234567890"),
+      verifySerDeser(make[String](CodecMakerConfig()), text, s""""$text"""".getBytes("UTF-8"))
+      verifySerDeser(make[BigInt](CodecMakerConfig()), BigInt("123456789012345678901234567890"),
         "123456789012345678901234567890".getBytes("UTF-8"))
-      val codecOfBigDecimal = make[BigDecimal](CodecMakerConfig())
-      verifySerDeser(codecOfBigDecimal, BigDecimal("1234567890.12345678901234567890"),
+      verifySerDeser(make[BigDecimal](CodecMakerConfig()), BigDecimal("1234567890.12345678901234567890"),
         "1234567890.12345678901234567890".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level standard types" in {
-      val codecOfBigInt = make[BigInt](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfBigInt,
+      verifySerDeser(make[BigInt](CodecMakerConfig(isStringified = true)),
         BigInt("123456789012345678901234567890"), "\"123456789012345678901234567890\"".getBytes("UTF-8"))
-      val codecOfBigDecimal = make[BigDecimal](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfBigDecimal,
+      verifySerDeser(make[BigDecimal](CodecMakerConfig(isStringified = true)),
         BigDecimal("1234567890.12345678901234567890"), "\"1234567890.12345678901234567890\"".getBytes("UTF-8"))
     }
     "throw parse exception in case of duplicated key for case classe was detected" in {
@@ -836,7 +831,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                            a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)))
 
       val codecOfDefaults: JsonValueCodec[Defaults1] = make[Defaults1](CodecMakerConfig())
-
       verifySer(codecOfDefaults, Defaults1(), "{}".getBytes("UTF-8"))
       verifySer(codecOfDefaults, Defaults1(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
     }
@@ -845,7 +839,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
                            l: List[Int] = List(0), e: Level = Level.HIGH)
 
       val codecOfDefaults: JsonValueCodec[Defaults2] = make[Defaults2](CodecMakerConfig())
-
       verifyDeser(codecOfDefaults, Defaults2(), """{}""".getBytes("UTF-8"))
       verifyDeser(codecOfDefaults, Defaults2(), """{"s":null,"bi":null,"l":null,"oc":null,"e":null}""".getBytes("UTF-8"))
       verifyDeser(codecOfDefaults, Defaults2(), """{"l":[]}""".getBytes("UTF-8"))
@@ -1144,8 +1137,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         Map(ZoneOffset.of("+01:00") -> 0), "{\"+01:00\":0}".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level Java time types" in {
-      val codecOfYear = make[Year](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfYear, Year.of(2008), "\"2008\"".getBytes("UTF-8"))
+      verifySerDeser(make[Year](CodecMakerConfig(isStringified = true)), Year.of(2008), "\"2008\"".getBytes("UTF-8"))
     }
     "serialize and deserialize case class with aliased typed methods" in {
       type I = Int
