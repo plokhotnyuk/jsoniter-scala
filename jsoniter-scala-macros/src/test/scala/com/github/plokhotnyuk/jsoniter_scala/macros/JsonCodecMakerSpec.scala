@@ -1241,8 +1241,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """class ParamHasNoAccessor(val i: Int, a: String)
           |JsonCodecMaker.make[ParamHasNoAccessor](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
-        """'ParamHasNoAccessor' should be a case class or a class that has only 'val' or 'var' parameters
-          |in the primary constructor.""".stripMargin.replace('\n', ' ')
+        """'a' parameter of 'ParamHasNoAccessor' should be defined as 'val' or 'var' in the primary constructor."""
       })
     }
   }

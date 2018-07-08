@@ -253,7 +253,11 @@ object JsonCodecMaker {
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
       val codecConfig = eval[CodecMakerConfig](config.tree)
+      val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
+
+      def findImplicitCodec(tpe: Type): Tree = inferredCodecs.getOrElseUpdate(tpe,
+        c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
 
       def findImplicitKeyCodec(tpe: Type): Tree = inferredKeyCodecs.getOrElseUpdate(tpe,
         c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]")))
@@ -378,24 +382,22 @@ object JsonCodecMaker {
       def cannotFindCodecError(tpe: Type): Nothing =
         fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
-      val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
+      case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
+                           defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
 
-      def findImplicitCodec(tpe: Type): Tree = inferredCodecs.getOrElseUpdate(tpe,
-        c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
-
-      case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
-
-      case class ParamInfo(symbol: TermSymbol, decodedName: String, mappedName: String, mappedNameHash: Int,
-                           resolvedTpe: Type)
-
-      case class MemberInfo(symbol: MethodSymbol, decodedName: String, mappedName: String, resolvedTpe: Type)
-
-      case class ClassInfo(tpe: Type, annotations: Map[String, FieldAnnotations], params: Seq[ParamInfo],
-                          defaults: Map[String, Tree], members: Seq[MemberInfo])
+      case class ClassInfo(tpe: Type, fields: Seq[FieldInfo])
 
       val classInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
+        case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
+
+        def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
+          case m: MethodSymbol if m.isPrimaryConstructor => m
+        }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
+
+        lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
+        val getters = tpe.members.collect { case m: MethodSymbol if m.isParamAccessor && m.isGetter => m }
         val annotations = tpe.members.collect {
           case m: TermSymbol if {
             m.info // to enforce the type information completeness and availability of annotations
@@ -416,45 +418,29 @@ object JsonCodecMaker {
             val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
             (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
-
-        def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
-          case m: MethodSymbol if m.isPrimaryConstructor => m
-        }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
-
-        def getMappedName(annotations: Map[String, FieldAnnotations], defaultName: String): String =
-          annotations.get(defaultName).fold(codecConfig.fieldNameMapper(defaultName))(_.name)
-
-        val params = getPrimaryConstructor(tpe).paramLists match {
-          case paramList :: Nil => paramList.flatMap { p =>
+        ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
+          case params :: Nil => params.zipWithIndex.flatMap { case (p, i) =>
             val symbol = p.asTerm
             val name = decodedName(symbol)
-            if (annotations.get(name).fold(true)(!_.transient)) {
-              val mappedName = getMappedName(annotations, name)
-              val mappedNameHashCode = JsonReader.toHashCode(mappedName.toCharArray, mappedName.length)
-              Some(ParamInfo(symbol, name, mappedName, mappedNameHashCode, paramType(tpe, symbol)))
-            } else None
+            val anno = annotations.get(name)
+            if (anno.fold(false)(_.transient)) None
+            else {
+              val mappedName = anno.fold(codecConfig.fieldNameMapper(name))(_.name)
+              val tmpName = TermName("_" + symbol.name)
+              val getter = getters.find(_.name == symbol.name).getOrElse {
+                fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
+              }
+              val defaultValue =
+                if (symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
+                else None
+              val ptpe = paramType(tpe, symbol)
+              val isStringified = anno.fold(false)(_.stringified)
+              Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, ptpe, isStringified))
+            }
           }
           case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
             "Please consider using a custom implicitly accessible codec for this type.")
-        }
-        lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
-        val defaults = params.zipWithIndex.collect { case (p, i) if p.symbol.isParamWithDefault =>
-          (p.decodedName, q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
-        }.toMap
-        val members = tpe.members.flatMap {
-          case m: MethodSymbol if m.isParamAccessor && m.isGetter =>
-            val name = decodedName(m)
-            if (annotations.get(name).fold(true)(!_.transient)) {
-              val mappedName = getMappedName(annotations, name)
-              Some(MemberInfo(m, name, mappedName, methodType(tpe, m)))
-            } else None
-          case _ => None
-        }.toSeq.reverse
-        if (members.size != params.size) {
-          fail(s"'$tpe' should be a case class or a class that has only 'val' or 'var' parameters " +
-            "in the primary constructor.")
-        }
-        ClassInfo(tpe, annotations, params, defaults, members)
+        })
       })
 
       val rootTpe = weakTypeOf[A].dealias
@@ -472,9 +458,6 @@ object JsonCodecMaker {
 
       def discriminatorValue(tpe: Type): String =
         codecConfig.adtLeafClassNameMapper(decodeName(tpe.typeSymbol.fullName))
-
-      def getStringified(annotations: Map[String, FieldAnnotations], name: String): Boolean =
-        annotations.get(name).fold(false)(_.stringified)
 
       def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
         val collisions = duplicated(names)
@@ -743,51 +726,48 @@ object JsonCodecMaker {
           val classInfo = getClassInfo(tpe)
           checkFieldNameCollisions(tpe,
             (if (discriminator.isEmpty) Seq.empty
-            else Seq(codecConfig.discriminatorFieldName)) ++ classInfo.params.map(_.mappedName))
-          val required = classInfo.params.collect {
-            case p if !p.symbol.isParamWithDefault && !isContainer(p.resolvedTpe) => p.mappedName
+            else Seq(codecConfig.discriminatorFieldName)) ++ classInfo.fields.map(_.mappedName))
+          val required = classInfo.fields.collect {
+            case f if !f.symbol.isParamWithDefault && !isContainer(f.resolvedTpe) => f.mappedName
           }
-          val paramVarNum = classInfo.params.size
+          val paramVarNum = classInfo.fields.size
           val lastParamVarIndex = paramVarNum >> 5
           val lastParamVarBits = (1 << paramVarNum) - 1
           val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-          val bitmasks = classInfo.params.zipWithIndex.map {
-            case (r, i) =>
+          val bitmasks = classInfo.fields.zipWithIndex.map {
+            case (f, i) =>
               val n = paramVarNames(i >> 5)
               val bit = 1 << i
-              (r.decodedName, q"if (($n & $bit) != 0) $n ^= $bit else in.duplicatedKeyError(l)")
+              (f.mappedName, q"if (($n & $bit) != 0) $n ^= $bit else in.duplicatedKeyError(l)")
           }.toMap
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
           val checkReqVars = if (required.isEmpty) Nil else {
-            val fields = withFieldsFor(tpe)(classInfo.params.map(_.mappedName))
+            val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
             val reqSet = required.toSet
-            val reqMasks = classInfo.params.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (n, i)) =>
-              acc | (if (reqSet(n.mappedName)) 1 << i else 0)
+            val reqMasks = classInfo.fields.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
+              acc | (if (reqSet(f.mappedName)) 1 << i else 0)
             }).toSeq
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
-              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($fields(Integer.numberOfTrailingZeros($n)))"
-              else q"if (($n & $m) != 0) in.requiredFieldError($fields(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
+              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n)))"
+              else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
             }
           }
-          val construct = q"new $tpe(..${classInfo.params.map(m => q"${m.symbol.name} = ${TermName("_" + m.symbol.name)}")})"
-          val readVars = classInfo.params.map { p =>
-            val ptpe = p.resolvedTpe
-            q"var ${TermName("_" + p.symbol.name)}: $ptpe = ${classInfo.defaults.getOrElse(p.decodedName, nullValue(ptpe))}"
-          }
-          val readFields = groupByOrdered(classInfo.params)(_.mappedNameHash).map { case (hashCode, ps) =>
-            val checkNameAndReadValue = ps.foldRight(unexpectedFieldHandler) { case (p, acc) =>
-              val varName = TermName("_" + p.symbol.name)
-              val isStringified = getStringified(classInfo.annotations, p.decodedName)
-              val readValue = q"$varName = ${genReadVal(p.resolvedTpe, q"$varName", isStringified)}"
-              val resetFieldFlag = bitmasks(p.decodedName)
-              q"""if (in.isCharBufEqualsTo(l, ${p.mappedName})) {
+          val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
+          val readVars = classInfo.fields
+            .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
+          val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
+          val readFields = groupByOrdered(classInfo.fields)(hashCode).map { case (hash, fs) =>
+            val checkNameAndReadValue = fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
+              val readValue = q"${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"
+              val resetFieldFlag = bitmasks(f.mappedName)
+              q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) {
                     ..$resetFieldFlag
                     ..$readValue
                   } else $acc"""
             }
-            cq"$hashCode => $checkNameAndReadValue"
+            cq"$hash => $checkNameAndReadValue"
           }.toSeq
           val readFieldsBlock =
             (if (discriminator.isEmpty) readFields
@@ -929,58 +909,56 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
           val classInfo = getClassInfo(tpe)
-          val writeFields = classInfo.members.map { m =>
-            val mtpe = m.resolvedTpe
-            val isStringified = getStringified(classInfo.annotations, m.decodedName)
-            classInfo.defaults.get(m.decodedName) match {
+          val writeFields = classInfo.fields.map { f =>
+            f.defaultValue match {
               case Some(d) =>
-                if (mtpe <:< typeOf[Iterable[_]]) {
-                  q"""val v = x.${m.symbol}
+                if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
+                  q"""val v = x.${f.getter}
                       if (!v.isEmpty && v != $d) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v", mtpe, isStringified)}
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
                       }"""
-                } else if (mtpe <:< typeOf[Option[_]]) {
-                  q"""val v = x.${m.symbol}
+                } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
+                  q"""val v = x.${f.getter}
                       if (!v.isEmpty && v != $d) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(mtpe), isStringified)}
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
                       }"""
-                } else if (mtpe <:< typeOf[Array[_]]) {
-                  q"""val v = x.${m.symbol}
-                      if (v.length > 0 && !${withEqualsFor(mtpe, q"v", d)(genArrayEquals(mtpe))}) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v", mtpe, isStringified)}
+                } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
+                  q"""val v = x.${f.getter}
+                      if (v.length > 0 && !${withEqualsFor(f.resolvedTpe, q"v", d)(genArrayEquals(f.resolvedTpe))}) {
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
                       }"""
                 } else {
-                  q"""val v = x.${m.symbol}
+                  q"""val v = x.${f.getter}
                       if (v != $d) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v", mtpe, isStringified)}
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
                       }"""
                 }
               case None =>
-                if (mtpe <:< typeOf[Iterable[_]]) {
-                  q"""val v = x.${m.symbol}
+                if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
+                  q"""val v = x.${f.getter}
                       if (!v.isEmpty) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v", mtpe, isStringified)}
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
                       }"""
-                } else if (mtpe <:< typeOf[Option[_]]) {
-                  q"""val v = x.${m.symbol}
+                } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
+                  q"""val v = x.${f.getter}
                       if (!v.isEmpty) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(mtpe), isStringified)}
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
                       }"""
-                } else if (mtpe <:< typeOf[Array[_]]) {
-                  q"""val v = x.${m.symbol}
+                } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
+                  q"""val v = x.${f.getter}
                       if (v.length > 0) {
-                        ..${genWriteConstantKey(m.mappedName)}
-                        ..${genWriteVal(q"v", mtpe, isStringified)}
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
                       }"""
                 } else {
-                  q"""..${genWriteConstantKey(m.mappedName)}
-                      ..${genWriteVal(q"x.${m.symbol}", mtpe, isStringified)}"""
+                  q"""..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"x.${f.getter}", f.resolvedTpe, f.isStringified)}"""
                 }
             }
           }
