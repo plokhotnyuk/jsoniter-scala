@@ -390,7 +390,7 @@ object JsonCodecMaker {
       val classInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
-        case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
+        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
 
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
           case m: MethodSymbol if m.isPrimaryConstructor => m
@@ -415,8 +415,8 @@ object JsonCodecMaker {
               warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
-            val mappedName = named.headOption.flatMap(x => Option(eval[named](x.tree).name)).getOrElse(name)
-            (name, FieldAnnotations(mappedName, trans.nonEmpty, strings.nonEmpty))
+            val partiallyMappedName = named.headOption.flatMap(a => Option(eval[named](a.tree).name)).getOrElse(name)
+            (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
         ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
           case params :: Nil => params.zipWithIndex.flatMap { case (p, i) =>
@@ -425,7 +425,7 @@ object JsonCodecMaker {
             val anno = annotations.get(name)
             if (anno.fold(false)(_.transient)) None
             else {
-              val mappedName = anno.fold(codecConfig.fieldNameMapper(name))(_.name)
+              val mappedName = anno.fold(codecConfig.fieldNameMapper(name))(_.partiallyMappedName)
               val tmpName = TermName("_" + symbol.name)
               val getter = getters.find(_.name == symbol.name).getOrElse {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
