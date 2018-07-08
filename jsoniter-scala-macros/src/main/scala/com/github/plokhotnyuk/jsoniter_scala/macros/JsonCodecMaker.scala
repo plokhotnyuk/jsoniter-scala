@@ -136,16 +136,13 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
 
-      def isNonAbstractScalaClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
-        val clazz = tpe.typeSymbol.asClass
-        clazz.isCaseClass || (!clazz.isJava && !clazz.isAbstract)
-      }
-
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
 
       def isValueClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isDerivedValueClass
+
+      def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
       def resolveConcreteType(tpe: Type, mtpe: Type): Type = {
         val tpeTypeParams =
@@ -159,9 +156,12 @@ object JsonCodecMaker {
 
       def paramType(tpe: Type, p: TermSymbol): Type = resolveConcreteType(tpe, p.typeSignature.dealias)
 
-      def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
-
       def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
+
+      def isNonAbstractScalaClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
+        val clazz = tpe.typeSymbol.asClass
+        clazz.isCaseClass || (!clazz.isJava && !clazz.isAbstract)
+      }
 
       def isSealedAdtBase(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
         val classSymbol = tpe.typeSymbol.asClass
@@ -194,8 +194,7 @@ object JsonCodecMaker {
       // Borrowed and refactored from Chimney: https://github.com/scalalandio/chimney/blob/master/chimney/src/main/scala/io/scalaland/chimney/internal/CompanionUtils.scala#L10-L63
       // Copied from Magnolia: https://github.com/propensive/magnolia/blob/master/core/shared/src/main/scala/globalutil.scala
       // From Shapeless: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/generic.scala#L698
-      // Cut-n-pasted (with most original comments) and slightly adapted from
-      // https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
+      // Cut-n-pasted (with most original comments) and slightly adapted from https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
       def patchedCompanionRef(tpe: Type): Tree = {
         val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
         val globalType = tpe.asInstanceOf[global.Type]
@@ -213,7 +212,7 @@ object JsonCodecMaker {
             val s = ctx.scope.lookupAll(name)
               .filter(sym => (original.isTerm || sym.hasModuleFlag) && sym.isCoDefinedWith(original)).toList match {
               case Nil => NoSymbol
-              case List(unique) => unique
+              case unique :: Nil => unique
               case _ => fail(s"Unexpected multiple results for a companion symbol lookup for $original")
             }
             if (s != NoSymbol && s.owner == expectedOwner) res = s
@@ -381,8 +380,8 @@ object JsonCodecMaker {
 
       val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
-      def findImplicitCodec(tpe: Type): Tree =
-        inferredCodecs.getOrElseUpdate(tpe, c.inferImplicitValue(getType(tq"JsonValueCodec[$tpe]")))
+      def findImplicitCodec(tpe: Type): Tree = inferredCodecs.getOrElseUpdate(tpe,
+        c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
 
       case class FieldAnnotations(name: String, transient: Boolean, stringified: Boolean)
 
@@ -452,7 +451,8 @@ object JsonCodecMaker {
              } else in.duplicatedKeyError(l)"""
       }
 
-      def discriminatorValue(tpe: Type): String = codecConfig.adtLeafClassNameMapper(decodeName(tpe.typeSymbol.fullName))
+      def discriminatorValue(tpe: Type): String =
+        codecConfig.adtLeafClassNameMapper(decodeName(tpe.typeSymbol.fullName))
 
       def getStringified(annotations: Map[String, FieldAnnotations], name: String): Boolean =
         annotations.get(name).fold(false)(_.stringified)
@@ -483,8 +483,7 @@ object JsonCodecMaker {
       val nullValueNames = mutable.LinkedHashMap.empty[Type, TermName]
       val nullValueTrees = mutable.LinkedHashMap.empty[Type, Tree]
 
-      // use it only for immutable values which doesn't have public constants
-      def withNullValueFor(tpe: Type)(f: => Tree): Tree = {
+      def withNullValueFor(tpe: Type)(f: => Tree): Tree = { // use it only for immutable values which doesn't have public constants
         val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("v" + nullValueNames.size))
         nullValueTrees.getOrElseUpdate(tpe, q"private[this] val $nullValueName: $tpe = $f")
         Ident(nullValueName)
