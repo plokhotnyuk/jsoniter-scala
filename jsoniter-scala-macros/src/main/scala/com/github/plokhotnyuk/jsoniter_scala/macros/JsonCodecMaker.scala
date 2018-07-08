@@ -132,9 +132,9 @@ object JsonCodecMaker {
 
       def decodedName(s: Symbol): String = decodeName(s.name.toString)
 
-      def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
+      def typeArg1(tpe: Type): Type = tpe.typeArgs.head
 
-      def typeArg2(tpe: Type): Type = tpe.typeArgs.tail.head.dealias
+      def typeArg2(tpe: Type): Type = tpe.typeArgs(1)
 
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 

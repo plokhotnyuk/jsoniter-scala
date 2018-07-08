@@ -487,12 +487,21 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("expected ']', offset: 0x00000027"))
     }
     "serialize and deserialize top-level tuples" in {
-      val codecOfTuple2 = make[(String, Int)](CodecMakerConfig())
-      verifySerDeser(codecOfTuple2, ("VVV", 1), "[\"VVV\",1]".getBytes("UTF-8"))
+      verifySerDeser(make[(String, Int)](CodecMakerConfig()), ("VVV", 1), "[\"VVV\",1]".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level numeric tuples" in {
-      val codecOfStringifiedTuple = make[(Long, Float, BigDecimal)](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfStringifiedTuple, (1L, 2.2f, BigDecimal(3.3)), "[\"1\",\"2.2\",\"3.3\"]".getBytes("UTF-8"))
+      verifySerDeser(make[(Long, Float, BigDecimal)](CodecMakerConfig(isStringified = true)),
+        (1L, 2.2f, BigDecimal(3.3)), "[\"1\",\"2.2\",\"3.3\"]".getBytes("UTF-8"))
+    }
+    "serialize and deserialize tuples with type aliases" in {
+      type I = Int
+      type S = String
+
+      case class Tuples(t1: (S, I), t2: (I, S))
+
+      verifySerDeser(make[Tuples](CodecMakerConfig()), Tuples(("VVV", 1), (2, "WWW")),
+        "{\"t1\":[\"VVV\",1],\"t2\":[2,\"WWW\"]}".getBytes("UTF-8"))
+      verifySerDeser(make[(S, I)](CodecMakerConfig()), ("VVV", 1), "[\"VVV\",1]".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}""".getBytes("UTF-8")
