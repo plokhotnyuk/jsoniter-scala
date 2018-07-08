@@ -431,9 +431,8 @@ object JsonCodecMaker {
           case m: MethodSymbol if m.isParamAccessor && m.isGetter && nonTransient(m) => m
         }.toSeq.reverse
         if (members.size != params.size) {
-          info(s"params = ${params.map(decodedName)}")
-          info(s"members = ${members.map(decodedName)}")
-          fail(s"'$tpe' should be a case class or should have only 'val' or 'var' parameters in the primary constructor.")
+          fail(s"'$tpe' should be a case class or a class that has only 'val' or 'var' parameters " +
+            "in the primary constructor.")
         }
         ClassInfo(tpe, annotations, params, defaults, members)
       })
