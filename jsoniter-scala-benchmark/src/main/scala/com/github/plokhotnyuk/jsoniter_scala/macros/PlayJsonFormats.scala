@@ -7,7 +7,7 @@ import play.api.libs.json._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
-import scala.collection.immutable.{BitSet, IntMap, Map}
+import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable
 
 object PlayJsonFormats {

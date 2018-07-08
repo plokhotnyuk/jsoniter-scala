@@ -16,6 +16,8 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 //import upickle.default._
 
+import scala.collection.immutable.Seq
+
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
 

@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import scala.collection.immutable.IndexedSeq
 import scala.reflect.io.Streamable
 
 case class Value(

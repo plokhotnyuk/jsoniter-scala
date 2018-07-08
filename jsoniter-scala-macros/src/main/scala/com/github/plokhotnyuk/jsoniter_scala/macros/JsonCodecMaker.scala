@@ -132,9 +132,9 @@ object JsonCodecMaker {
 
       def decodedName(s: Symbol): String = decodeName(s.name.toString)
 
-      def typeArg1(tpe: Type): Type = tpe.typeArgs.head
+      def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
 
-      def typeArg2(tpe: Type): Type = tpe.typeArgs(1)
+      def typeArg2(tpe: Type): Type = tpe.typeArgs(1).dealias
 
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
@@ -482,8 +482,8 @@ object JsonCodecMaker {
       val nullValueNames = mutable.LinkedHashMap.empty[Type, TermName]
       val nullValueTrees = mutable.LinkedHashMap.empty[Type, Tree]
 
-      def withNullValueFor(tpe: Type)(f: => Tree): Tree = { // use it only for immutable values which doesn't have public constants
-        val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("v" + nullValueNames.size))
+      def withNullValueFor(tpe: Type)(f: => Tree): Tree = {
+        val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("c" + nullValueNames.size))
         nullValueTrees.getOrElseUpdate(tpe, q"private[this] val $nullValueName: $tpe = $f")
         Ident(nullValueName)
       }
@@ -546,12 +546,17 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
         else if (isValueClass(tpe)) q"null.asInstanceOf[$tpe]"
         else if (tpe <:< typeOf[Option[_]]) q"None"
-        else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] || tpe <:< typeOf[mutable.LongMap[_]]) {
+        else if (tpe <:< typeOf[mutable.BitSet]) q"${collectionCompanion(tpe)}.empty"
+        else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty")
+        else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] ||
+          tpe <:< typeOf[collection.immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) {
+        } else if (tpe <:< typeOf[collection.immutable.Map[_, _]]) withNullValueFor(tpe) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) q"${collectionCompanion(tpe)}.empty"
-        else if (tpe <:< typeOf[Iterable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        } else if (tpe <:< typeOf[collection.Map[_, _]]) {
+          q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
+        } else if (tpe <:< typeOf[Iterable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
         else q"null"
@@ -612,7 +617,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = collectionCompanion(tpe)
-          genReadMap(q"var x = $comp.empty[$tpe1]",
+          genReadMap(q"var x = ${withNullValueFor(tpe)(q"$comp.empty[$tpe1]")}",
             q"x = x.updated(in.readKeyAsInt(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -622,7 +627,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val comp = collectionCompanion(tpe)
-          genReadMap(q"var x = $comp.empty[$tpe1]",
+          genReadMap(q"var x = ${withNullValueFor(tpe)(q"$comp.empty[$tpe1]")}",
             q"x = x.updated(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -634,7 +639,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val comp = collectionCompanion(tpe)
-          genReadMap(q"var x = $comp.empty[$tpe1, $tpe2]",
+          genReadMap(q"var x = ${withNullValueFor(tpe)(q"$comp.empty[$tpe1]")}",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
@@ -708,13 +713,14 @@ object JsonCodecMaker {
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default) {
           val indexedTypes = tpe.typeArgs.zipWithIndex
           val readFields = indexedTypes.tail.foldLeft {
-            val t = tpe.typeArgs.head
+            val t = typeArg1(tpe)
             q"val _1: $t = ${genReadVal(t, nullValue(t), isStringified)}": Tree
-          }{ case (acc, (t, i)) =>
-              q"""..$acc
-                  val ${TermName("_" + (i + 1))}: $t =
-                    if (in.isNextToken(',')) ${genReadVal(t, nullValue(t), isStringified)}
-                    else in.commaError()"""
+          }{ case (acc, (ta, i)) =>
+            val t = ta.dealias
+            q"""..$acc
+                val ${TermName("_" + (i + 1))}: $t =
+                  if (in.isNextToken(',')) ${genReadVal(t, nullValue(t), isStringified)}
+                  else in.commaError()"""
           }
           val vals = indexedTypes.map { case (t, i) => TermName("_" + (i + 1)) }
           q"""if (in.isNextToken('[')) {
@@ -900,9 +906,9 @@ object JsonCodecMaker {
               ..$discriminator
               out.writeObjectEnd()"""
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
-          val writeFields = tpe.typeArgs.zipWithIndex.map { case (t, i) =>
+          val writeFields = tpe.typeArgs.zipWithIndex.map { case (ta, i) =>
             q"""out.writeComma()
-                ${genWriteVal(q"x.${TermName("_" + (i + 1))}", t, isStringified)}"""
+                ${genWriteVal(q"x.${TermName("_" + (i + 1))}", ta.dealias, isStringified)}"""
           }
           q"""out.writeArrayStart()
               ..$writeFields

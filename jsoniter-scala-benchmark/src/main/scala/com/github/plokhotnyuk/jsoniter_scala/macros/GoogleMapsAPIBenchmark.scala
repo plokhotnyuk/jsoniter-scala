@@ -23,9 +23,10 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException
   @Benchmark
   def readDslJsonJava(): DistanceMatrix = decodeDslJson[DistanceMatrix](jsonBytes)
-
+*/
   @Benchmark
   def readJacksonScala(): DistanceMatrix = jacksonMapper.readValue[DistanceMatrix](jsonBytes)
 
