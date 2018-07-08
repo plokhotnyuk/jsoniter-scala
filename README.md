@@ -181,16 +181,18 @@ sbt 'jsoniter-scala-benchmark/jmh:run -h'
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -lrf
+sbt 'jsoniter-scala-benchmark/jmh:run -lrf'
 ``` 
 
-JMH allows to run benchmarks with different profilers, to get a list of supported use:
+JMH allows to run benchmarks with different profilers, to get a list of supported use (can require entering of user 
+password):
 
 ```sh
 sbt 'jsoniter-scala-benchmark/jmh:run -lprof'
 ```
 
-Help for profiler options can be printed by following command:
+Help for profiler options can be printed by following command (`<profiler_name>` should be replaced by name of the 
+supported profiler from the command above):
 
 ```sh
 sbt 'jsoniter-scala-benchmark/jmh:run -prof <profiler_name>:help'
@@ -199,7 +201,7 @@ sbt 'jsoniter-scala-benchmark/jmh:run -prof <profiler_name>:help'
 For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,1000 .*ArrayOf.*'
 ```
 
 To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
@@ -215,7 +217,7 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfnorm .*TwitterAPI.*JsoniterScala.*'
 ```
 
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
