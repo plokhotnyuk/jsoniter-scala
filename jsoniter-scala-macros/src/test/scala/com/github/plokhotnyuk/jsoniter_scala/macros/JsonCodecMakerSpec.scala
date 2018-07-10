@@ -885,13 +885,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       assert(intercept[JsonParseException] {
         verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
-          RequiredAfterOptionalFields(None, 2, None, 4),
-          """{}""".getBytes("UTF-8"))
+          RequiredAfterOptionalFields(None, 2, None, 4), """{}""".getBytes("UTF-8"))
       }.getMessage.contains("""missing required field "f2", offset: 0x00000001"""))
       assert(intercept[JsonParseException] {
         verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
-          RequiredAfterOptionalFields(None, 2, None, 4),
-          """{"f1":1,"f2":2}""".getBytes("UTF-8"))
+          RequiredAfterOptionalFields(None, 2, None, 4), """{"f2":2}""".getBytes("UTF-8"))
+      }.getMessage.contains("""missing required field "f4", offset: 0x00000007"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
+          RequiredAfterOptionalFields(None, 2, None, 4), """{"f1":1,"f2":2}""".getBytes("UTF-8"))
       }.getMessage.contains("""missing required field "f4", offset: 0x0000000e"""))
 
       assert(intercept[JsonParseException] {
