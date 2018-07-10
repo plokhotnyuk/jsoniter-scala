@@ -881,11 +881,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           """{"s":null,"bi":0,"bd":1}""".stripMargin.getBytes("UTF-8"))
       }.getMessage.contains("""expected '"', offset: 0x00000005"""))
 
-      case class TwoKeys(key1: Option[Long], key2: Long)
+      case class RequiredAfterOptionalFields(f1: Option[Long], f2: Long, f3: Option[Long], f4: Long)
 
       assert(intercept[JsonParseException] {
-        verifyDeser(make[TwoKeys](CodecMakerConfig()), TwoKeys(None, 2), "{}".getBytes("UTF-8"))
-      }.getMessage.contains("missing required field \"key2\", offset: 0x00000001"))
+        verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
+          RequiredAfterOptionalFields(None, 2, None, 4),
+          """{}""".getBytes("UTF-8"))
+      }.getMessage.contains("""missing required field "f2", offset: 0x00000001"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
+          RequiredAfterOptionalFields(None, 2, None, 4),
+          """{"f1":1,"f2":2}""".getBytes("UTF-8"))
+      }.getMessage.contains("""missing required field "f4", offset: 0x0000000e"""))
 
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
