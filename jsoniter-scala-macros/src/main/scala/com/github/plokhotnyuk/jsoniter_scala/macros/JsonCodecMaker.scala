@@ -14,7 +14,6 @@ import scala.language.experimental.macros
 import scala.reflect.NameTransformer
 import scala.reflect.macros.contexts.Context
 import scala.reflect.macros.blackbox
-import scala.util.control.NonFatal
 
 @field
 final class named(val name: String) extends StaticAnnotation
@@ -69,30 +68,11 @@ object JsonCodecMaker {
       sb.toString
     }
 
-  def enforce_snake_case(s: String): String = {
-    val len = s.length
-    val sb = new StringBuilder(len << 1)
-    var i = 0
-    var isPrecedingLowerCased = false
-    while (i < len) isPrecedingLowerCased = {
-      val ch = s.charAt(i)
-      i += 1
-      if (ch == '_' || ch == '-') {
-        sb.append('_')
-        false
-      } else if (isLowerCase(ch)) {
-        sb.append(ch)
-        true
-      } else {
-        if (isPrecedingLowerCased || i < len && isLowerCase(s.charAt(i))) sb.append('_')
-        sb.append(toLowerCase(ch))
-        false
-      }
-    }
-    sb.toString
-  }
+  def enforce_snake_case(s: String): String = enforceSnakeOrKebabCase(s, '_')
 
-  def `enforce-kebab-case`(s: String): String = {
+  def `enforce-kebab-case`(s: String): String = enforceSnakeOrKebabCase(s, '-')
+
+  private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
     val len = s.length
     val sb = new StringBuilder(len << 1)
     var i = 0
@@ -101,13 +81,13 @@ object JsonCodecMaker {
       val ch = s.charAt(i)
       i += 1
       if (ch == '_' || ch == '-') {
-        sb.append('-')
+        sb.append(separator)
         false
       } else if (isLowerCase(ch)) {
         sb.append(ch)
         true
       } else {
-        if (isPrecedingLowerCased || i < len && isLowerCase(s.charAt(i))) sb.append('-')
+        if (isPrecedingLowerCased || i < len && isLowerCase(s.charAt(i))) sb.append(separator)
         sb.append(toLowerCase(ch))
         false
       }
@@ -159,8 +139,8 @@ object JsonCodecMaker {
       def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
 
       def isNonAbstractScalaClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
-        val clazz = tpe.typeSymbol.asClass
-        clazz.isCaseClass || (!clazz.isJava && !clazz.isAbstract)
+        val classSymbol = tpe.typeSymbol.asClass
+        classSymbol.isCaseClass || (!classSymbol.isJava && !classSymbol.isAbstract)
       }
 
       def isSealedAdtBase(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
@@ -199,7 +179,7 @@ object JsonCodecMaker {
         val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
         val globalType = tpe.asInstanceOf[global.Type]
         val original = globalType.typeSymbol
-        val companion = original.companion.orElse {
+        global.gen.mkAttributedRef(globalType.prefix, original.companion.orElse {
           import global._
           val name = original.name.companionName
           val expectedOwner = original.owner
@@ -219,20 +199,13 @@ object JsonCodecMaker {
             else ctx = ctx.outer
           }
           res
-        }
-        global.gen.mkAttributedRef(globalType.prefix, companion).asInstanceOf[Tree]
+        }).asInstanceOf[Tree]
       }
 
       def companion(tpe: Type): Symbol = {
         val comp = tpe.typeSymbol.companion
         if (comp.isModule) comp
-        else {
-          try patchedCompanionRef(tpe).symbol catch {
-            case NonFatal(ex) =>
-              fail(s"Can't find companion object of '$tpe'. This can happen when it's nested too deeply. " +
-                "Please consider defining it as a top-level object or directly inside of another class or object.")
-          }
-        }
+        else patchedCompanionRef(tpe).symbol
       }
 
       def isContainer(tpe: Type): Boolean =
@@ -422,10 +395,10 @@ object JsonCodecMaker {
           case params :: Nil => params.zipWithIndex.flatMap { case (p, i) =>
             val symbol = p.asTerm
             val name = decodedName(symbol)
-            val anno = annotations.get(name)
-            if (anno.fold(false)(_.transient)) None
+            val annotationOption = annotations.get(name)
+            if (annotationOption.fold(false)(_.transient)) None
             else {
-              val mappedName = anno.fold(codecConfig.fieldNameMapper(name))(_.partiallyMappedName)
+              val mappedName = annotationOption.fold(codecConfig.fieldNameMapper(name))(_.partiallyMappedName)
               val tmpName = TermName("_" + symbol.name)
               val getter = getters.find(_.name == symbol.name).getOrElse {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
@@ -434,7 +407,7 @@ object JsonCodecMaker {
                 if (symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
                 else None
               val ptpe = paramType(tpe, symbol)
-              val isStringified = anno.fold(false)(_.stringified)
+              val isStringified = annotationOption.fold(false)(_.stringified)
               Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, ptpe, isStringified))
             }
           }
@@ -740,11 +713,9 @@ object JsonCodecMaker {
           val lastParamVarIndex = paramVarNum >> 5
           val lastParamVarBits = (1 << paramVarNum) - 1
           val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-          val bitmasks = classInfo.fields.zipWithIndex.map {
-            case (f, i) =>
-              val n = paramVarNames(i >> 5)
-              val bit = 1 << i
-              (f.mappedName, q"if (($n & $bit) != 0) $n ^= $bit else in.duplicatedKeyError(l)")
+          val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (f, i) =>
+            val (n, m) = (paramVarNames(i >> 5), 1 << i)
+            (f.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
           }.toMap
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
@@ -767,9 +738,8 @@ object JsonCodecMaker {
           val readFields = groupByOrdered(classInfo.fields)(hashCode).map { case (hash, fs) =>
             val checkNameAndReadValue = fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
               val readValue = q"${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"
-              val resetFieldFlag = bitmasks(f.mappedName)
               q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) {
-                    ..$resetFieldFlag
+                    ..${checkAndResetFieldPresenceFlags(f.mappedName)}
                     ..$readValue
                   } else $acc"""
             }
