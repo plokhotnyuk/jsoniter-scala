@@ -880,6 +880,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
           """{"s":null,"bi":0,"bd":1}""".stripMargin.getBytes("UTF-8"))
       }.getMessage.contains("""expected '"', offset: 0x00000005"""))
+
+      case class TwoKeys(key1: Option[Long], key2: Long)
+
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[TwoKeys](CodecMakerConfig()), TwoKeys(None, 2), "{}".getBytes("UTF-8"))
+      }.getMessage.contains("missing required field \"key2\", offset: 0x00000001"))
+
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
           """{"s":"VVV","bi":null,"bd":1}""".stripMargin.getBytes("UTF-8"))

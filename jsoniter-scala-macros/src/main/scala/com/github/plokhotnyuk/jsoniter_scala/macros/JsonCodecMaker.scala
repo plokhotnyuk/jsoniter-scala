@@ -756,8 +756,8 @@ object JsonCodecMaker {
             }).toSeq
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
-              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n)))"
-              else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n) + ${i << 5}))"
+              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m)))"
+              else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m) + ${i << 5}))"
             }
           }
           val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
