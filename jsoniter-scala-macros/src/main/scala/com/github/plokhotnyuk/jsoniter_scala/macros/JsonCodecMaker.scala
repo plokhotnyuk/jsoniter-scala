@@ -59,9 +59,11 @@ object JsonCodecMaker {
       while (i < len) isPrecedingDash = {
         val ch = s.charAt(i)
         i += 1
-        if (ch == '_' || ch == '-') true
-        else {
-          sb.append(if (isPrecedingDash) toUpperCase(ch) else toLowerCase(ch))
+        (ch == '_' || ch == '-') || {
+          val fixedCh =
+            if (isPrecedingDash) toUpperCase(ch)
+            else toLowerCase(ch)
+          sb.append(fixedCh)
           false
         }
       }
@@ -152,18 +154,19 @@ object JsonCodecMaker {
       }
 
       def adtLeafClasses(tpe: Type): Seq[Type] = {
-        def collectRecursively(tpe: Type): Set[Type] = if (tpe.typeSymbol.isClass) {
-          tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
-            val classSymbol = s.asClass
-            val subTpe =
-              if (classSymbol.typeParams.isEmpty) classSymbol.toType
-              else classSymbol.toType.substituteTypes(classSymbol.typeParams, tpe.typeArgs)
-            if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
-            else if (isNonAbstractScalaClass(subTpe)) Set(subTpe)
-            else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
-              s"for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
-          }
-        } else Set.empty
+        def collectRecursively(tpe: Type): Set[Type] =
+          if (tpe.typeSymbol.isClass) {
+            tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
+              val classSymbol = s.asClass
+              val subTpe =
+                if (classSymbol.typeParams.isEmpty) classSymbol.toType
+                else classSymbol.toType.substituteTypes(classSymbol.typeParams, tpe.typeArgs)
+              if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
+              else if (isNonAbstractScalaClass(subTpe)) Set(subTpe)
+              else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
+                s"them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
+            }
+          } else Set.empty
 
         val classes = collectRecursively(tpe).toSeq
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. Please consider adding them or " +
@@ -536,26 +539,35 @@ object JsonCodecMaker {
 
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree,
                      isRoot: Boolean = false): Tree = {
-        val implCodec = if (isRoot) EmptyTree else findImplicitCodec(tpe)
+        val implCodec =
+          if (isRoot) EmptyTree
+          else findImplicitCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.decodeValue(in, $default)"
         else if (decodeMethodName.isDefined) q"${decodeMethodName.get}(in, $default)"
         else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) {
-          if (isStringified) q"in.readStringAsBoolean()" else q"in.readBoolean()"
+          if (isStringified) q"in.readStringAsBoolean()"
+          else q"in.readBoolean()"
         } else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) {
-          if (isStringified) q"in.readStringAsByte()" else q"in.readByte()"
+          if (isStringified) q"in.readStringAsByte()"
+          else q"in.readByte()"
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readChar()"
         else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) {
-          if (isStringified) q"in.readStringAsShort()" else q"in.readShort()"
+          if (isStringified) q"in.readStringAsShort()"
+          else q"in.readShort()"
         } else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) {
-          if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
+          if (isStringified) q"in.readStringAsInt()"
+          else q"in.readInt()"
         } else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) {
-          if (isStringified) q"in.readStringAsLong()" else q"in.readLong()"
+          if (isStringified) q"in.readStringAsLong()"
+          else q"in.readLong()"
         } else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) {
-          if (isStringified) q"in.readStringAsFloat()" else q"in.readFloat()"
+          if (isStringified) q"in.readStringAsFloat()"
+          else q"in.readFloat()"
         } else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) {
-          if (isStringified) q"in.readStringAsDouble()" else q"in.readDouble()"
+          if (isStringified) q"in.readStringAsDouble()"
+          else q"in.readDouble()"
         } else if (tpe =:= typeOf[String]) q"in.readString($default)"
         else if (tpe =:= typeOf[java.util.UUID]) q"in.readUUID($default)"
         else if (tpe =:= typeOf[Duration]) q"in.readDuration($default)"
@@ -573,7 +585,8 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZoneId]) q"in.readZoneId($default)"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readZoneOffset($default)"
         else if (tpe =:= typeOf[BigInt]) {
-          if (isStringified) q"in.readStringAsBigInt($default)" else q"in.readBigInt($default)"
+          if (isStringified) q"in.readStringAsBigInt($default)"
+          else q"in.readBigInt($default)"
         } else if (tpe =:= typeOf[BigDecimal]) {
           if (isStringified) q"in.readStringAsBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
           else q"in.readBigDecimal($default, ${codecConfig.bigDecimalScaleLimit})"
@@ -616,7 +629,9 @@ object JsonCodecMaker {
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
-          val readVal = if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
+          val readVal =
+            if (isStringified) q"in.readStringAsInt()"
+            else q"in.readInt()"
           genReadArray(q"var x = new Array[Long](2)",
             q"""val v = $readVal
                 if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
@@ -626,7 +641,9 @@ object JsonCodecMaker {
             q"$comp.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val comp = collectionCompanion(tpe)
-          val readVal = if (isStringified) q"in.readStringAsInt()" else q"in.readInt()"
+          val readVal =
+            if (isStringified) q"in.readStringAsInt()"
+            else q"in.readInt()"
           genReadArray(q"var x = new Array[Long](2); var mi = 0",
             q"""val v = $readVal
                 if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
@@ -719,18 +736,20 @@ object JsonCodecMaker {
           }.toMap
           val paramVars =
             paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
-          val checkReqVars = if (required.isEmpty) Nil else {
-            val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
-            val reqSet = required.toSet
-            val reqMasks = classInfo.fields.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
-              acc | (if (reqSet(f.mappedName)) 1 << i else 0)
-            }).toSeq
-            paramVarNames.zipWithIndex.map { case (n, i) =>
-              val m = reqMasks(i)
-              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m)))"
-              else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m) + ${i << 5}))"
+          val checkReqVars =
+            if (required.isEmpty) Nil
+            else {
+              val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
+              val reqSet = required.toSet
+              val reqMasks = classInfo.fields.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
+                acc | (if (reqSet(f.mappedName)) 1 << i else 0)
+              }).toSeq
+              paramVarNames.zipWithIndex.map { case (n, i) =>
+                val m = reqMasks(i)
+                if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m)))"
+                else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m) + ${i << 5}))"
+              }
             }
-          }
           val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
           val readVars = classInfo.fields
             .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
@@ -802,7 +821,9 @@ object JsonCodecMaker {
 
       def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree,
                       isRoot: Boolean = false): Tree = {
-        val implCodec = if (isRoot) EmptyTree else findImplicitCodec(tpe)
+        val implCodec =
+          if (isRoot) EmptyTree
+          else findImplicitCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.encodeValue($m, out)"
@@ -815,7 +836,8 @@ object JsonCodecMaker {
           tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float] ||
           tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double] ||
           tpe =:= typeOf[BigInt] || tpe =:= typeOf[BigDecimal]) {
-          if (isStringified) q"out.writeValAsString($m)" else q"out.writeVal($m)"
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
         } else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character] ||
           tpe =:= typeOf[String] || tpe =:= typeOf[java.util.UUID] ||
           tpe =:= typeOf[Duration] || tpe =:= typeOf[Instant] ||
@@ -835,7 +857,9 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", genWriteKey(q"kv._1", typeArg1(tpe)), genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
         } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
-          genWriteArray(q"x", if (isStringified) q"out.writeValAsString(x)" else q"out.writeVal(x)")
+          genWriteArray(q"x",
+            if (isStringified) q"out.writeValAsString(x)"
+            else q"out.writeVal(x)")
         } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
           q"""out.writeArrayStart()
               var l = x
