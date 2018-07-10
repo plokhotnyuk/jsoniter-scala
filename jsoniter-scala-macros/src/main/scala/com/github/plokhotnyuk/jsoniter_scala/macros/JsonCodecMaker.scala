@@ -962,18 +962,15 @@ object JsonCodecMaker {
         val tpe1 = typeArg1(tpe)
         if (tpe1 <:< typeOf[Array[_]]) {
           val equals = withEqualsFor(tpe1, q"x1(i)", q"x2(i)")(genArrayEquals(tpe1))
-          q"""if (x1 eq x2) true
-              else if ((x1 eq null) || (x2 eq null)) false
-              else {
+          q"""(x1 eq x2) || ((x1 ne null) && (x2 ne null) && {
                 val l1 = x1.length
                 val l2 = x2.length
-                if (l1 != l2) false
-                else {
+                (l1 == l2) && {
                   var i = 0
                   while (i < l1 && $equals) i += 1
                   i == l1
                 }
-              }"""
+              })"""
         } else q"java.util.Arrays.equals(x1, x2)"
       }
 
