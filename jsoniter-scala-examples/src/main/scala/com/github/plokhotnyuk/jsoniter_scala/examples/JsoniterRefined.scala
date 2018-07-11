@@ -39,9 +39,9 @@ trait JsoniterRefined {
       override def decodeValue(in: JsonReader,
                                default: F[Int, P]): F[Int, P] = {
         if (in isNextToken 'n') {
-          in.rollbackToken()
           in.readNullOrError(default, "expected int value or null")
         } else {
+          in.rollbackToken()
           val unrefined = in.readInt()
           refType refine unrefined match {
             case Left(because) =>
@@ -97,9 +97,9 @@ trait JsoniterRefined {
       override def decodeValue(in: JsonReader,
                                default: F[String, P]): F[String, P] = {
         if (in isNextToken 'n') {
-          in.rollbackToken()
           in.readNullOrError(default, "expected String value or null")
         } else {
+          in.rollbackToken()
           // TODO: default correct?
           val unrefined = in.readString(refType unwrap default)
           refType refine unrefined match {
