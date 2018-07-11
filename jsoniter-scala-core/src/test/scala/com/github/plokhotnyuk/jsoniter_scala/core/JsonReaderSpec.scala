@@ -13,8 +13,8 @@ import org.scalatest.{Matchers, WordSpec}
 
 class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   "ReaderConfig.<init>" should {
-    "have handy defaults" in {
-      ReaderConfig().throwParseExceptionWithStackTrace shouldBe true
+    "have safe and handy defaults" in {
+      ReaderConfig().throwParseExceptionWithStackTrace shouldBe false
       ReaderConfig().appendHexDumpToParseException shouldBe true
       ReaderConfig().preferredBufSize shouldBe 16384
       ReaderConfig().preferredCharBufSize shouldBe 2048

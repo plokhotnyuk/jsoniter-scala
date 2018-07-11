@@ -24,7 +24,8 @@ class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
   * for performance reasons:
   * <ul>
   * <li>turn off stack traces for parsing exceptions to greatly reduce impact on performance for cases when exceptions
-  * can be not exceptional, see more details here: [[https://shipilev.net/blog/2014/exceptional-performance/]]</li>
+  * can be not exceptional (e.g. under DoS attacks over open to the world systems), see more details here:
+  * [[https://shipilev.net/blog/2014/exceptional-performance/]]</li>
   * <li>turn off appending of hex dump to minimize length of exception message</li>
   * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
   * buffers when lot of large strings with length greater than 2K need to be parsed</li>
@@ -32,7 +33,8 @@ class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
   * rate of grown and then reduced buffers when during parsing of large ADT instances (>16Kb) the discriminator field does
   * not appear in the beginning of the JSON object</li>
   * </ul>
-  * @param throwParseExceptionWithStackTrace a flag that allows to turn off a stack trace for parsing exceptions
+  * @param throwParseExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  *                                          development
   * @param appendHexDumpToParseException a flag that allows to turn off hex dumping of affected by error part of
   *                                      an internal byte buffer
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
@@ -40,7 +42,7 @@ class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
   */
 case class ReaderConfig(
-    throwParseExceptionWithStackTrace: Boolean = true,
+    throwParseExceptionWithStackTrace: Boolean = false,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
     preferredCharBufSize: Int = 2048) {

@@ -11,9 +11,8 @@ import scala.collection.immutable.{BitSet, IntMap, Map, Seq, Set}
 import scala.collection.mutable
 
 object JsoniterCodecs {
-  val stacklessExceptionConfig = ReaderConfig(throwParseExceptionWithStackTrace = false)
-  val stacklessExceptionWithoutDumpConfig =
-    ReaderConfig(throwParseExceptionWithStackTrace = false, appendHexDumpToParseException = false)
+  val exceptionWithStacktraceConfig = ReaderConfig(throwParseExceptionWithStackTrace = true)
+  val exceptionWithoutStractracesAndDumpConfig = ReaderConfig(appendHexDumpToParseException = false)
   val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make[String](CodecMakerConfig()) // don't define implicit for supported types
   val adtCodec: JsonValueCodec[AdtBase] = make[AdtBase](CodecMakerConfig()) // don't define implicit for recursive structures

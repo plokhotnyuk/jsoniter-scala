@@ -89,7 +89,8 @@ There are configurable options that can be set in compile-time:
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
-- Throwing of stack-less parsing exceptions to greatly reduce impact on performance  
+- Throwing of stack-less parsing exceptions by default to greatly reduce impact on performance, while stack traces can 
+  be turned on in development for debugging   
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
 - A preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
