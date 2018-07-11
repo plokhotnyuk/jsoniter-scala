@@ -13,12 +13,11 @@ case class User(name: String, devices: Seq[Device])
 
 object Examples extends JsoniterRefined {
 
-  // TODO: run also throw com.github.plokhotnyuk.jsoniter_scala.core.JsonParseException (not sure why)
   def main(args: Array[String]): Unit = {
 
-    // comment out to see compile error
-    implicit val codecForIntNonNegative: JsonCodec[Refined[Int, NonNegative]] = intCodec[Refined, NonNegative]
-    implicit val codecForStringNonEmpty: JsonCodec[Refined[String, NonEmpty]] = stringCodec[Refined, NonEmpty]
+      // comment in to fix compile error
+//    implicit val codecForIntNonNegative: JsonCodec[Refined[Int, NonNegative]] = intCodec[Refined, NonNegative]
+//    implicit val codecForStringNonEmpty: JsonCodec[Refined[String, NonEmpty]] = stringCodec[Refined, NonEmpty]
 
     implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig())
 
