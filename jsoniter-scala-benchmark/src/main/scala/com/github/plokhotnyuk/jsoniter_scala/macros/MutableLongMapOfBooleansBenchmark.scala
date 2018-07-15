@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -32,6 +34,9 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 
+  @Benchmark
+  def readAVSystemGenCodec(): mutable.LongMap[Boolean] = JsonStringInput.read[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8))
+
 /* FIXME: Circe doesn't support mutable.LongMap
   @Benchmark
   def readCirce(): mutable.LongMap[Boolean] = decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -49,6 +54,8 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): mutable.LongMap[Boolean] = read[mutable.LongMap[Boolean]](jsonBytes)
 */
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe doesn't support mutable.LongMap
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

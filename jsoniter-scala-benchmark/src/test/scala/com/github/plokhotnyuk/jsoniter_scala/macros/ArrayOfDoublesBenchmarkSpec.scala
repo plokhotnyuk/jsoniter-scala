@@ -7,6 +7,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfDoublesBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -15,6 +16,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME: dsl-json serialize doubles in a plain representation
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString

@@ -7,6 +7,7 @@ class ArrayOfLongsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfLongsBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -16,6 +17,7 @@ class ArrayOfLongsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

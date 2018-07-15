@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.GeoJSON._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -17,6 +19,9 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class GeoJSONBenchmark extends CommonParams {
   var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
+
+  @Benchmark
+  def readAVSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes, UTF_8))
 
   @Benchmark
   def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -34,6 +39,9 @@ class GeoJSONBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): GeoJSON = read[GeoJSON](jsonBytes)
 */
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 

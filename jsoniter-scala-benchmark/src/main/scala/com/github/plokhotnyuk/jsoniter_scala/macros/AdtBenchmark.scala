@@ -2,9 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.flatten
+import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -16,6 +19,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 //import upickle.default._
 
+@flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(Array(
   new Type(value = classOf[A], name = "A"),
@@ -36,6 +40,9 @@ class AdtBenchmark extends CommonParams {
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
+  def readAVSystemGenCodec(): AdtBase = JsonStringInput.read[AdtBase](new String(jsonBytes, UTF_8))
+
+  @Benchmark
   def readCirce(): AdtBase = decode[AdtBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
@@ -51,6 +58,9 @@ class AdtBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): AdtBase = read[AdtBase](jsonBytes)
 */
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 

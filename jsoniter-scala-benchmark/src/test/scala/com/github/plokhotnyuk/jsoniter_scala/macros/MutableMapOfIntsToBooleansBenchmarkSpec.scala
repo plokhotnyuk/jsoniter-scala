@@ -7,6 +7,7 @@ class MutableMapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
   
   "MutableMapOfIntsToBooleansBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -15,6 +16,7 @@ class MutableMapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe changes order of entries
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

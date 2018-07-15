@@ -3,8 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.io.IOException
 import java.nio.charset.StandardCharsets.UTF_8
 
+import com.avsystem.commons.serialization.GenCodec
+import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
@@ -23,6 +26,14 @@ case class MissingReqFields(
 class MissingReqFieldBenchmark extends CommonParams {
   var jsonString: String = """{}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+
+  @Benchmark
+  def readAVSystemGenCodec(): String =
+    try {
+      JsonStringInput.read[MissingReqFields](new String(jsonBytes, UTF_8)).toString // toString() should not be called
+    } catch {
+      case ex: GenCodec.ReadFailure => ex.getMessage
+    }
 
   @Benchmark
   def readCirce(): String =

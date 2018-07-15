@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+//import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -22,7 +24,10 @@ class AnyRefsBenchmark extends CommonParams {
   var obj: AnyRefs = AnyRefs("s", 1, Some("os"))
   var jsonString: String = """{"s":"s","bd":1,"os":"os"}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
-
+/* FIXME: AVSystem GenCodec store option field as JSON array
+  @Benchmark
+  def readAVSystemGenCodec(): AnyRefs = JsonStringInput.read[AnyRefs](new String(jsonBytes, UTF_8))
+*/
   @Benchmark
   def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
@@ -38,9 +43,13 @@ class AnyRefsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs](anyRefsFormat)
 
-/* FIXME: cannot alter uPickle to store BigDecimal as JSON number
+/* FIXME: cannot alter uPickle to store BigDecimal as JSON number, and option field as JSON array
   @Benchmark
   def readUPickle(): AnyRefs = read[AnyRefs](jsonBytes)
+*/
+/* FIXME: AVSystem GenCodec store option field as JSON array
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
@@ -29,6 +30,9 @@ class ArrayOfCharsBenchmark extends CommonParams {
   }
 
   @Benchmark
+  def readAVSystemGenCodec(): Array[Char] = JsonStringInput.read[Array[Char]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
   def readCirce(): Array[Char] = decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
@@ -42,6 +46,9 @@ class ArrayOfCharsBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): Array[Char] = read[Array[Char]](jsonBytes)
+
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

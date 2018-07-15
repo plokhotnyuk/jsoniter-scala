@@ -2,12 +2,14 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.flatten
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 import scala.collection.immutable.IndexedSeq
 import scala.reflect.io.Streamable
 
+@flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(Array(
   new Type(value = classOf[Point], name = "Point"),
@@ -26,6 +28,7 @@ case class Polygon(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extend
 case class MultiPolygon(coordinates: IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]) extends Geometry
 case class GeometryCollection(geometries: IndexedSeq[Geometry]) extends Geometry
 
+@flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(Array(
   new Type(value = classOf[Feature], name = "Feature"),

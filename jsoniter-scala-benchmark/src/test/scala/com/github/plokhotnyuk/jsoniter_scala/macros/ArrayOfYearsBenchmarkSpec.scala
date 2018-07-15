@@ -7,6 +7,7 @@ class ArrayOfYearsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfYearsBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Circe doesn't supports java.time.Year
       //benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -15,6 +16,7 @@ class ArrayOfYearsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe doesn't supports java.time.Year
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

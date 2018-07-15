@@ -15,10 +15,10 @@ object PlayJsonFormats {
   val nestedStructsFormat: OFormat[NestedStructs] = Json.format[NestedStructs]
   val anyRefsFormat: OFormat[AnyRefs] = Json.format[AnyRefs]
   val bitSetFormat: Format[BitSet] = Format(
-    Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*))),
+    Reads[BitSet](js => JsSuccess(BitSet(js.as[Array[Int]]: _*))), // WARNING: don't do this for open-system
     Writes[BitSet]((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   val mutableBitSetFormat: Format[mutable.BitSet] = Format(
-    Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*))),
+    Reads[mutable.BitSet](js => JsSuccess(mutable.BitSet(js.as[Array[Int]]: _*))), // WARNING: don't do this for open-system
     Writes[mutable.BitSet]((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
     Reads[IntMap[Boolean]](js => JsSuccess(IntMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),

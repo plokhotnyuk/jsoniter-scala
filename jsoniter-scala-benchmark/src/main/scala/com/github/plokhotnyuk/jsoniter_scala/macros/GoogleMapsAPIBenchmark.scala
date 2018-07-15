@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.GoogleMapsAPI._
@@ -19,6 +21,9 @@ import upickle.default._
 
 class GoogleMapsAPIBenchmark extends CommonParams {
   var obj: DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes)
+
+  @Benchmark
+  def readAVSystemGenCodec(): DistanceMatrix = JsonStringInput.read[DistanceMatrix](new String(jsonBytes, UTF_8))
 
   @Benchmark
   def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
@@ -38,6 +43,9 @@ class GoogleMapsAPIBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): DistanceMatrix = read[DistanceMatrix](jsonBytes)
+
+  @Benchmark
+  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

@@ -51,8 +51,8 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-Ywarn-dead-code",
     "-Xfuture",
-    "-Xlint",
-    "-Xmacro-settings:print-codecs"
+    "-Xlint"//,
+    //"-Xmacro-settings:print-codecs"
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, x)) if x >= 12 => Seq("-opt:l:method")
     case Some((2, x)) if x == 11 => Seq("-Ybackend:GenBCode", "-Ydelambdafy:inline")
@@ -118,6 +118,8 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     crossScalaVersions := Seq("2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
+      "com.avsystem.commons" %% "commons-core" % "1.28.2",
+      "com.github.ghik" %% "silencer-lib" % "0.6",
       "com.lihaoyi" %% "upickle" % "0.6.6",
       "com.dslplatform" %% "dsl-json-scala" % "1.7.4",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.6",

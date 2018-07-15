@@ -7,6 +7,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBigDecimalsBenchmark" should {
     "deserialize properly" in {
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       benchmark.readJacksonScala() shouldBe benchmark.sourceObj
       benchmark.readJsoniterScala() shouldBe benchmark.sourceObj
@@ -15,12 +16,13 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.sourceObj
     }
     "serialize properly" in {
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
-      //FIXME: uPickle serializes longs to JSON strings
+      //FIXME: uPickle serializes BigDecimal to JSON string
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }
