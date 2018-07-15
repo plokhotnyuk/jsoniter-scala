@@ -7,8 +7,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBigDecimalsBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystem GenCodec parses BigDecimal from JSON string only
-      //benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       benchmark.readJacksonScala() shouldBe benchmark.sourceObj
       benchmark.readJsoniterScala() shouldBe benchmark.sourceObj
@@ -17,8 +16,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.sourceObj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec serializes BigDecimal to JSON string
-      //toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString

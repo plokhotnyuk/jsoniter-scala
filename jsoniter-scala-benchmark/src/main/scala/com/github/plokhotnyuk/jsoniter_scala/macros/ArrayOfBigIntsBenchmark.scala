@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
-//import com.avsystem.commons.serialization.json._
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import play.api.libs.json.Json
@@ -30,13 +30,11 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
 
-/* FIXME: AVSystem GenCodec parses BigInt from JSON string only
   @Benchmark
   def readAVSystemGenCodec(): Array[BigInt] = JsonStringInput.read[Array[BigInt]](new String(jsonBytes, UTF_8))
-*/
+
   @Benchmark
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-
 /* FIXME: dsl-json cannot find decoder for array of BigInt
   @Benchmark
   def readDslJsonJava(): Array[BigInt] = decodeDslJson[Array[BigInt]](jsonBytes)
@@ -53,10 +51,8 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): Array[BigInt] = read[Array[BigInt]](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec serializes BigInt to JSON string
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-*/
 /* FIXME: Circe uses an engineering decimal notation to serialize BigInt
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
