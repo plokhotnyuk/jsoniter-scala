@@ -4,17 +4,17 @@
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala) 
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Scaladex](https://img.shields.io/badge/macros-0.28.0-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
+[![Scaladex](https://img.shields.io/badge/macros-0.29.2-blue.svg?)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/macros)
 
 Scala macros that generate codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing and serialization.
 
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
-performance of Jsoniter Scala vs. [dsl-json](https://github.com/ngs-doo/dsl-json) (using its Java API only),
-[Jackson](https://github.com/FasterXML/jackson-module-scala), [Circe](https://github.com/circe/circe),  
-[Play-JSON](https://github.com/playframework/play-json) and [uPickle](https://github.com/lihaoyi/upickle) libraries 
-using different JDK and GraalVM versions on the following environment: Intel® Core™ i7-7700HQ CPU @ 2.8GHz (max 3.8GHz), 
-RAM 16Gb DDR4-2400, Ubuntu 18.04, latest versions of Oracle JDK 8/10, Oracle JDK 10 + Graal compiler, and GraalVM CE/EE
+performance of Jsoniter Scala vs. [Jackson](https://github.com/FasterXML/jackson-module-scala), [Circe](https://github.com/circe/circe),  
+[Play-JSON](https://github.com/playframework/play-json), [uPickle](https://github.com/lihaoyi/upickle) and [dsl-json](https://github.com/ngs-doo/dsl-json) 
+(Java API only) libraries using different JDK and GraalVM versions on the following environment: 
+Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, latest versions of Open JDK 8, 
+Oracle JDK 8, Open JDK 11, Oracle JDK 11, Open JDK 11 + Graal JIT, Oracle JDK 11 + Graal JIT, and GraalVM CE/EE
 
 ## Acknowledgments
 
@@ -53,42 +53,49 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`, 
   `Either`, `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes 
-  with values/fields having any of types listed here 
-- Case classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
-- Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
-  `java.util.UUID`, `java.time.*`, and value classes for any of them 
+  with values/fields having any of types listed here
+- Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
+- Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary 
+  constructor
+- Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
+  `java.util.UUID`, `java.time.*`, and value classes for any of them
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
-- Support of first-order and higher-kinded types for case classes and value classes
-- Support of ADTs with sealed trait or sealed abstract class base and case classes or case objects as leaf classes, 
-  using discriminator field with string type of value
-- Implicitly resolvable values codecs for JSON values and key codecs for JSON object keys that are mapped to maps
+- Support of first-order and higher-kinded types
+- Support of ADTs with sealed trait or sealed abstract class base and non-abstract Scala classes or objects as leaf 
+  classes, using discriminator field with string type of value
+- Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
+  to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
+  supported classes
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
   provide a sparse output
+- Any values that used directly or as part of default values of the constructor parameters should have right 
+  implementations of the `equals` method to work properly when their instances
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
-- Field names can be overridden for serialization/parsing by field annotation in case classes
+- Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
   an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
-- No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
+- No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Support of compilation to a native image by GraalVM 
+- Support of compilation to a native image by GraalVM
   
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
-- Mapping function for names between case classes and JSON, including predefined functions which enforce 
-  snake_case, kebab-case or camelCase names for all fields
+- Mapping function for names between classes and JSON, including predefined functions which enforce snake_case, 
+  kebab-case or camelCase names for all fields
 - Name of a discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
-- Throwing of stack-less parsing exceptions to greatly reduce impact on performance  
+- Throwing of stack-less parsing exceptions by default to greatly reduce impact on performance, while stack traces can 
+  be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
 - A preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
@@ -101,12 +108,12 @@ Add the core library with a "compile" scope and the macros library with a "provi
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "core" % "0.28.0" % Compile, 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.28.0" % Provided // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "0.29.2" % Compile, 
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "0.29.2" % Provided // required only in compile-time
 )
 ```
 
-Generate codecs for your case classes, collections, etc.
+Generate codecs for your Scala classes and collections:
     
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.macros._
@@ -134,13 +141,13 @@ To see generated code add the following line to your sbt build file
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/examples) directory 
+Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples) directory 
 
 For more use cases, please, check out tests: 
-- [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
-- [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
-- [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
-- [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
+- [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
+- [PackageSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/PackageSpec.scala)
+- [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
+- [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
 
 ## Known issues
 
@@ -159,9 +166,8 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m ++2.11.12 clean coverage test coverageReport
-sbt -J-XX:MaxMetaspaceSize=512m ++2.12.6 clean coverage test coverageReport
-sbt -J-XX:MaxMetaspaceSize=512m clean +mimaReportBinaryIssues
+sbt clean coverage test coverageReport
+sbt -J-XX:MaxMetaspaceSize=512m clean +test +mimaReportBinaryIssues
 ```
 
 ### Run benchmarks
@@ -176,36 +182,38 @@ Learn how to write benchmarks in [JMH samples](http://hg.openjdk.java.net/code-t
 List of available option can be printed by:
 
 ```sh
-sbt 'benchmark/jmh:run -h'
+sbt 'jsoniter-scala-benchmark/jmh:run -h'
 ```
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
 ```sh
-sbt 'benchmark/jmh:run -lrf
+sbt 'jsoniter-scala-benchmark/jmh:run -lrf'
 ``` 
 
-JMH allows to run benchmarks with different profilers, to get a list of supported use:
+JMH allows to run benchmarks with different profilers, to get a list of supported use (can require entering of user 
+password):
 
 ```sh
-sbt 'benchmark/jmh:run -lprof'
+sbt 'jsoniter-scala-benchmark/jmh:run -lprof'
 ```
 
-Help for profiler options can be printed by following command:
+Help for profiler options can be printed by following command (`<profiler_name>` should be replaced by name of the 
+supported profiler from the command above):
 
 ```sh
-sbt 'benchmark/jmh:run -prof <profiler_name>:help'
+sbt 'jsoniter-scala-benchmark/jmh:run -prof <profiler_name>:help'
 ```
 
 For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 
 ```sh
-sbt clean 'benchmark/jmh:run -p size=1,10,100,100 .*ArrayOf.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,1000 .*ArrayOf.*'
 ```
 
 To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Benchmark.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Benchmark.*'
 ```
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
@@ -215,13 +223,13 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof perfnorm .*TwitterAPI.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfnorm .*TwitterAPI.*JsoniterScala.*'
 ```
 
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 
 ```sh
-sbt clean 'benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true -wi 10 -i 60 .*GoogleMapsAPI.*readJsoniter.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true -wi 10 -i 60 .*GoogleMapsAPI.*readJsoniter.*'
 ```
 
 Now you can open files from the `/tmp/profile-jfr` directory:
@@ -237,7 +245,7 @@ flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocatio
 To run benchmarks with recordings by Async profiler, clone its repository and use command like this:
 
 ```sh
-sbt -no-colors 'benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
+sbt -no-colors 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
 ```
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
@@ -268,7 +276,7 @@ Following command can be used to profile and print assembly code of hottest meth
 additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt clean 'benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*readJsoniter.*'
 ```
 
 More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
@@ -300,5 +308,5 @@ sbt -J-XX:MaxMetaspaceSize=512m release
 ```
 
 Do not push changes to github until promoted artifacts for the new version are not available for download on 
-[Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala/macros_2.12/)
+[Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds. 

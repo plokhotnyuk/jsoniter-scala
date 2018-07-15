@@ -80,73 +80,53 @@ lazy val publishSettings = Seq(
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
-  .aggregate(core, macros, benchmark)
+  .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
   .settings(noPublishSettings: _*)
 
-lazy val core = project
+lazy val `jsoniter-scala-core` = project
   .settings(commonSettings: _*)
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
-    libraryDependencies ++= {
-      val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v >= 13 && scalaV != "2.13.0-M3" =>
-          // TODO: scalatest for Scala 2.13.0-M4
-          Nil
-        case _ =>
-          Seq(
-            "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-            "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
-          )
-      }
-    }
+    crossScalaVersions := Seq("2.13.0-M4", "2.12.6", "2.11.12"),
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
+    )
   )
 
-lazy val macros = project
-  .dependsOn(core)
+lazy val `jsoniter-scala-macros` = project
+  .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings: _*)
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.13.0-M3", "2.12.6", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M4", "2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    ),
-    libraryDependencies ++= {
-      val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v >= 13 && scalaV != "2.13.0-M3" =>
-          // TODO: scalatest for Scala 2.13.0-M4
-          Nil
-        case _ =>
-          Seq(
-            "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-            "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
-          )
-      }
-    }
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
+    )
   )
 
-lazy val benchmark = project
+lazy val `jsoniter-scala-benchmark` = project
   .enablePlugins(JmhPlugin)
-  .dependsOn(macros)
+  .dependsOn(`jsoniter-scala-macros`)
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
     crossScalaVersions := Seq("2.12.6", "2.11.12"),
     libraryDependencies ++= Seq(
-      "com.avsystem.commons" %% "commons-core" % "1.27.7",
+      "com.avsystem.commons" %% "commons-core" % "1.28.2",
       "com.lihaoyi" %% "upickle" % "0.6.6",
       "com.dslplatform" %% "dsl-json-scala" % "1.7.4",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.5",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.5",
-      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5",
-      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.5",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.6",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.6",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.6",
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.6",
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.6",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.6",
       "io.circe" %% "circe-generic" % "0.10.0-M1",
       "io.circe" %% "circe-generic-extras" % "0.10.0-M1",
       "io.circe" %% "circe-parser" % "0.10.0-M1",
@@ -155,6 +135,6 @@ lazy val benchmark = project
       "com.typesafe.play" %% "play-json" % "2.6.9",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.0",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
-      "org.scalatest" %% "scalatest" % "3.0.5-M1" % Test
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
     )
   )
