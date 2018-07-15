@@ -57,7 +57,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
 - Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary 
   constructor and they should have right implementations of the `equals` method to work properly when their instances 
-  are used directly or as part of option/array/collection values or default values of the constructor parameters 
+  are used directly or as part of default values of the constructor parameters 
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
   `java.util.UUID`, `java.time.*`, and value classes for any of them 
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
