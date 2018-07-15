@@ -41,7 +41,7 @@ class NestedStructsBenchmark extends CommonParams {
     jsonString = new String(jsonBytes, UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
-/* FIXME: cannot alter AVSystem GenCodec to parse missing optional fields as None
+/* FIXME: AVSystem GenCodec parse option values from JSON arrays
   @Benchmark
   def readAVSystemGenCodec(): NestedStructs = JsonStringInput.read[NestedStructs](new String(jsonBytes, UTF_8))
 */
@@ -61,7 +61,7 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
 */
-/* FIXME: cannot alter AVSystem GenCodec to don't serialize empty optional values
+/* FIXME: AVSystem GenCodec serialize option values as JSON arrays
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
