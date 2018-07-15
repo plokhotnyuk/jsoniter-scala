@@ -72,7 +72,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
   provide a sparse output
 - Any values that used directly or as part of default values of the constructor parameters should have right 
-  implementations of the `equals` method to work properly when their instances
+  implementations of the `equals` method (it mostly concerns non-case classes or other types that have custom codecs)
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
