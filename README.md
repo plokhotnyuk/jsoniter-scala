@@ -56,29 +56,32 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   with values/fields having any of types listed here
 - Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
 - Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary 
-  constructor and they should have right implementations of the `equals` method to work properly when their instances 
-  are used directly or as part of default values of the constructor parameters 
-- Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`, 
-  `java.util.UUID`, `java.time.*`, and value classes for any of them 
+  constructor
+- Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
+  `java.util.UUID`, `java.time.*`, and value classes for any of them
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
 - Support of first-order and higher-kinded types
 - Support of ADTs with sealed trait or sealed abstract class base and non-abstract Scala classes or objects as leaf 
   classes, using discriminator field with string type of value
-- Implicitly resolvable values codecs for JSON values and key codecs for JSON object keys that are mapped to maps
+- Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
+  to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
+  supported classes
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
   provide a sparse output
+- Any values that used directly or as part of default values of the constructor parameters should have right 
+  implementations of the `equals` method to work properly when their instances
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
   an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
-- No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream` 
+- No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Support of compilation to a native image by GraalVM 
+- Support of compilation to a native image by GraalVM
   
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
@@ -92,7 +95,7 @@ List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
 - Throwing of stack-less parsing exceptions by default to greatly reduce impact on performance, while stack traces can 
-  be turned on in development for debugging   
+  be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
 - A preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
 
