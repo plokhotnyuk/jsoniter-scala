@@ -44,5 +44,5 @@ object AVSystemCodecs {
     transformed[mutable.LongMap[Boolean], mutable.Map[Long, Boolean]](_.seq, x => mutable.LongMap(x.toArray:_*))
   implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively[NestedStructs]
   implicit val primitivesGenCodec: GenCodec[Primitives] = materialize[Primitives]
-  //implicit val twitterAPIGenCodec: GenCodec[Tweet] = materializeRecursively[Tweet] // FIXME: cannot derive codecs for classes with 22+ fields
+  implicit val twitterAPIGenCodec: GenCodec[Tweet] = materializeRecursively[Tweet]
 }
