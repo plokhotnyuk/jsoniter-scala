@@ -112,8 +112,6 @@ object JsonCodecMaker {
 
       def info(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
 
-      def decodedName(s: Symbol): String = decodeName(s.name.toString)
-
       def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs(1).dealias
@@ -368,6 +366,8 @@ object JsonCodecMaker {
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
 
+        def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
+
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
           case m: MethodSymbol if m.isPrimaryConstructor => m
         }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
@@ -380,7 +380,7 @@ object JsonCodecMaker {
             m.annotations.exists(a => a.tree.tpe =:= typeOf[named] || a.tree.tpe =:= typeOf[transient] ||
               a.tree.tpe =:= typeOf[stringified])
           } =>
-            val name = decodedName(m).trim // FIXME: Why is there a space at the end of field name?!
+            val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
             val named = m.annotations.filter(_.tree.tpe =:= typeOf[named])
             if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$name' of '$tpe'.")
             val trans = m.annotations.filter(_.tree.tpe =:= typeOf[transient])
@@ -397,7 +397,7 @@ object JsonCodecMaker {
         ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
           case params :: Nil => params.zipWithIndex.flatMap { case (p, i) =>
             val symbol = p.asTerm
-            val name = decodedName(symbol)
+            val name = decodeName(symbol)
             val annotationOption = annotations.get(name)
             if (annotationOption.fold(false)(_.transient)) None
             else {
@@ -433,7 +433,7 @@ object JsonCodecMaker {
       }
 
       def discriminatorValue(tpe: Type): String =
-        codecConfig.adtLeafClassNameMapper(decodeName(tpe.typeSymbol.fullName))
+        codecConfig.adtLeafClassNameMapper(NameTransformer.decode(tpe.typeSymbol.fullName))
 
       def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
         val collisions = duplicated(names)
@@ -1017,10 +1017,6 @@ object JsonCodecMaker {
       c.Expr[JsonValueCodec[A]](codec)
     }
   }
-
-  private[this] def decodeName(s: String): String =
-    if (s.indexOf('$') >= 0) NameTransformer.decode(s)
-    else s
 
   private[this] def isEncodingRequired(s: String): Boolean = {
     val len = s.length
