@@ -172,38 +172,38 @@ object JsonCodecMaker {
         classes
       }
 
-      // Borrowed and refactored from Chimney: https://github.com/scalalandio/chimney/blob/master/chimney/src/main/scala/io/scalaland/chimney/internal/CompanionUtils.scala#L10-L63
-      // Copied from Magnolia: https://github.com/propensive/magnolia/blob/master/core/shared/src/main/scala/globalutil.scala
-      // From Shapeless: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/generic.scala#L698
-      // Cut-n-pasted (with most original comments) and slightly adapted from https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
-      def patchedCompanionRef(tpe: Type): Tree = {
-        val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-        val globalType = tpe.asInstanceOf[global.Type]
-        val original = globalType.typeSymbol
-        global.gen.mkAttributedRef(globalType.prefix, original.companion.orElse {
-          import global._
-          val name = original.name.companionName
-          val expectedOwner = original.owner
-          var ctx = c.asInstanceOf[Context].callsiteTyper.asInstanceOf[global.analyzer.Typer].context
-          var res: Symbol = NoSymbol
-          while (res == NoSymbol && ctx.outer != ctx) {
-            // NOTE: original implementation says `val s = ctx.scope lookup name`
-            // but we can't use it, because Scope.lookup returns wrong results when the lookup is ambiguous
-            // and that triggers https://github.com/scalamacros/paradise/issues/64
-            val s = ctx.scope.lookupAll(name)
-              .filter(sym => (original.isTerm || sym.hasModuleFlag) && sym.isCoDefinedWith(original)).toList match {
-              case Nil => NoSymbol
-              case unique :: Nil => unique
-              case _ => fail(s"Unexpected multiple results for a companion symbol lookup for $original")
-            }
-            if (s != NoSymbol && s.owner == expectedOwner) res = s
-            else ctx = ctx.outer
-          }
-          res
-        }).asInstanceOf[Tree]
-      }
-
       def companion(tpe: Type): Symbol = {
+        // Borrowed and refactored from Chimney: https://github.com/scalalandio/chimney/blob/master/chimney/src/main/scala/io/scalaland/chimney/internal/CompanionUtils.scala#L10-L63
+        // Copied from Magnolia: https://github.com/propensive/magnolia/blob/master/core/shared/src/main/scala/globalutil.scala
+        // From Shapeless: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/generic.scala#L698
+        // Cut-n-pasted (with most original comments) and slightly adapted from https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
+        def patchedCompanionRef(tpe: Type): Tree = {
+          val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+          val globalType = tpe.asInstanceOf[global.Type]
+          val original = globalType.typeSymbol
+          global.gen.mkAttributedRef(globalType.prefix, original.companion.orElse {
+            import global._
+            val name = original.name.companionName
+            val expectedOwner = original.owner
+            var ctx = c.asInstanceOf[Context].callsiteTyper.asInstanceOf[global.analyzer.Typer].context
+            var res: Symbol = NoSymbol
+            while (res == NoSymbol && ctx.outer != ctx) {
+              // NOTE: original implementation says `val s = ctx.scope lookup name`
+              // but we can't use it, because Scope.lookup returns wrong results when the lookup is ambiguous
+              // and that triggers https://github.com/scalamacros/paradise/issues/64
+              val s = ctx.scope.lookupAll(name)
+                .filter(sym => (original.isTerm || sym.hasModuleFlag) && sym.isCoDefinedWith(original)).toList match {
+                case Nil => NoSymbol
+                case unique :: Nil => unique
+                case _ => fail(s"Unexpected multiple results for a companion symbol lookup for $original")
+              }
+              if (s != NoSymbol && s.owner == expectedOwner) res = s
+              else ctx = ctx.outer
+            }
+            res
+          }).asInstanceOf[Tree]
+        }
+
         val comp = tpe.typeSymbol.companion
         if (comp.isModule) comp
         else patchedCompanionRef(tpe).symbol
@@ -227,14 +227,14 @@ object JsonCodecMaker {
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
       val codecConfig = eval[CodecMakerConfig](config.tree)
-      val inferredCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
-
-      def findImplicitCodec(tpe: Type): Tree = inferredCodecs.getOrElseUpdate(tpe,
-        c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
+      val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
       def findImplicitKeyCodec(tpe: Type): Tree = inferredKeyCodecs.getOrElseUpdate(tpe,
         c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]")))
+
+      def findImplicitValueCodec(tpe: Type): Tree = inferredValueCodecs.getOrElseUpdate(tpe,
+        c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
 
       def genReadKey(tpe: Type): Tree = {
         val implKeyCodec = findImplicitKeyCodec(tpe)
@@ -541,7 +541,7 @@ object JsonCodecMaker {
                      isRoot: Boolean = false): Tree = {
         val implCodec =
           if (isRoot) EmptyTree
-          else findImplicitCodec(tpe)
+          else findImplicitValueCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val decodeMethodName = decodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.decodeValue(in, $default)"
@@ -602,33 +602,27 @@ object JsonCodecMaker {
               }"""
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadMap(q"var x = ${withNullValueFor(tpe)(q"$comp.empty[$tpe1]")}",
+          genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}",
             q"x = x.updated(in.readKeyAsInt(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1]",
+          genReadMap(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
             q"x.update(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadMap(q"var x = ${withNullValueFor(tpe)(q"$comp.empty[$tpe1]")}",
+          genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}",
             q"x = x.updated(in.readKeyAsLong(), ${genReadVal(tpe1, nullValue(tpe1), isStringified)})")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadMap(q"val x = if (default.isEmpty) default else $comp.empty[$tpe1, $tpe2]",
+          genReadMap(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1, $tpe2]",
             q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
         } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadMap(q"var x = ${withNullValueFor(tpe)(q"$comp.empty[$tpe1]")}",
+          genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
         } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
-          val comp = collectionCompanion(tpe)
           val readVal =
             if (isStringified) q"in.readStringAsInt()"
             else q"in.readInt()"
@@ -638,9 +632,8 @@ object JsonCodecMaker {
                 val i = v >>> 6
                 if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
                 x(i) |= 1L << (v & 63)""",
-            q"$comp.fromBitMaskNoCopy(x)")
+            q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
-          val comp = collectionCompanion(tpe)
           val readVal =
             if (isStringified) q"in.readStringAsInt()"
             else q"in.readInt()"
@@ -654,7 +647,7 @@ object JsonCodecMaker {
                 }
                 x(i) |= 1L << (v & 63)""",
             q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
-                $comp.fromBitMaskNoCopy(x)""")
+                ${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)""")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = new scala.collection.mutable.ListBuffer[$tpe1]",
@@ -666,8 +659,7 @@ object JsonCodecMaker {
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
         } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val comp = collectionCompanion(tpe)
-          genReadArray(q"val x = $comp.newBuilder[$tpe1]",
+          genReadArray(q"val x = ${collectionCompanion(tpe)}.newBuilder[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -823,7 +815,7 @@ object JsonCodecMaker {
                       isRoot: Boolean = false): Tree = {
         val implCodec =
           if (isRoot) EmptyTree
-          else findImplicitCodec(tpe)
+          else findImplicitValueCodec(tpe)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
         val encodeMethodName = encodeMethodNames.get(methodKey)
         if (!implCodec.isEmpty) q"$implCodec.encodeValue($m, out)"
