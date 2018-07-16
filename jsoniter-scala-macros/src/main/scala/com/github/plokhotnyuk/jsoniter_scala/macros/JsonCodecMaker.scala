@@ -486,6 +486,22 @@ object JsonCodecMaker {
         q"$equalsMethodName($arg1, $arg2)"
       }
 
+      def genArrayEquals(tpe: Type): Tree = {
+        val tpe1 = typeArg1(tpe)
+        if (tpe1 <:< typeOf[Array[_]]) {
+          val equals = withEqualsFor(tpe1, q"x1(i)", q"x2(i)")(genArrayEquals(tpe1))
+          q"""(x1 eq x2) || ((x1 ne null) && (x2 ne null) && {
+                val l1 = x1.length
+                val l2 = x2.length
+                (l1 == l2) && {
+                  var i = 0
+                  while (i < l1 && $equals) i += 1
+                  i == l1
+                }
+              })"""
+        } else q"java.util.Arrays.equals(x1, x2)"
+      }
+
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
       def getMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree): MethodKey =
@@ -631,7 +647,7 @@ object JsonCodecMaker {
                 if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
                 val i = v >>> 6
                 if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
-                x(i) |= 1L << (v & 63)""",
+                x(i) |= 1L << v""",
             q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
@@ -645,7 +661,7 @@ object JsonCodecMaker {
                   mi = i
                   if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
                 }
-                x(i) |= 1L << (v & 63)""",
+                x(i) |= 1L << v""",
             q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
                 ${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)""")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
@@ -972,22 +988,6 @@ object JsonCodecMaker {
                 case ..$writeSubclasses
               }"""
         } else cannotFindCodecError(tpe)
-      }
-
-      def genArrayEquals(tpe: Type): Tree = {
-        val tpe1 = typeArg1(tpe)
-        if (tpe1 <:< typeOf[Array[_]]) {
-          val equals = withEqualsFor(tpe1, q"x1(i)", q"x2(i)")(genArrayEquals(tpe1))
-          q"""(x1 eq x2) || ((x1 ne null) && (x2 ne null) && {
-                val l1 = x1.length
-                val l2 = x2.length
-                (l1 == l2) && {
-                  var i = 0
-                  while (i < l1 && $equals) i += 1
-                  i == l1
-                }
-              })"""
-        } else q"java.util.Arrays.equals(x1, x2)"
       }
 
       val codec =
