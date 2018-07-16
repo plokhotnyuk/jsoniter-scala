@@ -61,7 +61,7 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec serialize option values as JSON arrays
+/* FIXME: AVSystem GenCodec serializes option values as JSON arrays
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
@@ -80,7 +80,7 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
-/* FIXME: cannot alter uPickle to don't serialize empty optional values
+/* FIXME: uPickle serializes empty optional values
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */

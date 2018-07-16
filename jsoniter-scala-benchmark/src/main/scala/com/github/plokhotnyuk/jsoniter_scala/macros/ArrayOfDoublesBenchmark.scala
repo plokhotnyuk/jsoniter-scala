@@ -57,7 +57,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
-/*FIXME: dsl-json serialize doubles in a plain representation
+/*FIXME: dsl-json serializes doubles in a plain representation
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Double]](obj).toByteArray
 */

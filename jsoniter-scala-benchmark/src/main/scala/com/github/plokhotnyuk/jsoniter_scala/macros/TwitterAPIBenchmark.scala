@@ -2,9 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
-import com.avsystem.commons.serialization.json._
+//import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
@@ -22,7 +22,7 @@ import scala.collection.immutable.Seq
 
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
-/* FIXME: AVSystem GenCodec use Vector as a Seq implementation instead of List
+/* FIXME: AVSystem GenCodec serializes option field as JSON array and use Vector as a Seq implementation instead of List
   @Benchmark
   def readAVSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
 */
@@ -41,7 +41,7 @@ class TwitterAPIBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec serializes empty collections
+/* FIXME: AVSystem GenCodec serializes option field as JSON array and serializes empty collections
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */

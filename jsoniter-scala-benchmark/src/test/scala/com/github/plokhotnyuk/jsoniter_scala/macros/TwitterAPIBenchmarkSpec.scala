@@ -5,7 +5,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
   
   "TwitterAPIBenchmark" should {
     "deserialize properly" in {
-      //FIXME:  AVSystem GenCodec use Vector as a Seq implementation instead of List
+      //FIXME: AVSystem GenCodec serializes option field as JSON array and use Vector as a Seq implementation instead of List
       //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -15,7 +15,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec serializes empty collections
+      //FIXME: AVSystem GenCodec serializes option field as JSON array and serializes empty collections
       //toString(benchmark.writeAVSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
       //FIXME: circe serializes empty collections
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString

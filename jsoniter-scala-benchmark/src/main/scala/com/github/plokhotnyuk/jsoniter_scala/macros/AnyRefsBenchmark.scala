@@ -24,7 +24,7 @@ class AnyRefsBenchmark extends CommonParams {
   var obj: AnyRefs = AnyRefs("s", 1, Some("os"))
   var jsonString: String = """{"s":"s","bd":1,"os":"os"}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
-/* FIXME: AVSystem GenCodec store option field as JSON array
+/* FIXME: AVSystem GenCodec serializes option field as JSON array
   @Benchmark
   def readAVSystemGenCodec(): AnyRefs = JsonStringInput.read[AnyRefs](new String(jsonBytes, UTF_8))
 */
@@ -47,7 +47,7 @@ class AnyRefsBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): AnyRefs = read[AnyRefs](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec store option field as JSON array
+/* FIXME: AVSystem GenCodec serializes option field as JSON array
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
