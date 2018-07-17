@@ -16,6 +16,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeCirce()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeDslJsonJava()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJsoniterScala()) shouldBe GoogleMapsAPI.compactJsonString
