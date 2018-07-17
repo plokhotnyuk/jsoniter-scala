@@ -11,7 +11,7 @@ to get maximum performance of JSON parsing and serialization.
 
 [Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization 
 performance of Jsoniter Scala with [Circe](https://github.com/circe/circe), 
-[Play-JSON](https://github.com/playframework/play-json), [Jackson](https://github.com/FasterXML/jackson-module-scala),   
+[Play-JSON](https://github.com/playframework/play-json), [Jackson](https://github.com/FasterXML/jackson-module-scala), 
 [uPickle](https://github.com/lihaoyi/upickle), [dsl-json](https://github.com/ngs-doo/dsl-json) (Java API only) and 
 [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons) libraries using different JDK and GraalVM versions
 on the following environment: Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, latest 
