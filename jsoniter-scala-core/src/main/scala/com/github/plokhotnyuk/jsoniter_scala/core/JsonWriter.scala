@@ -802,7 +802,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
-    val epochDay = (if (epochSecond < 0) epochSecond - 86399 else epochSecond) / 86400
+    val epochDay = (if (epochSecond < 0) epochSecond - 86399 else epochSecond) / 86400 // 86400 == seconds per day
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
@@ -1197,7 +1197,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val off = offset(q0)
+    val off =
+      if (q0 < 100) (9 - q0) >>> 31
+      else if (q0 < 10000) ((999 - q0) >>> 31) + 2
+      else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
+      else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
+      else ((999999999 - q0) >>> 31) + 8
     writeIntFirst(q0, pos + off, buf, ds) + off
   }
 
@@ -1209,25 +1214,18 @@ final class JsonWriter private[jsoniter_scala](
         pos + 1
       } else {
         val d = ds(q0)
-        buf(pos) = d.toByte
         buf(pos - 1) = (d >> 8).toByte
+        buf(pos) = d.toByte
         pos
       }
     } else {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
       val r1 = q0 - 100 * q1
       val d = ds(r1)
-      buf(pos) = d.toByte
       buf(pos - 1) = (d >> 8).toByte
+      buf(pos) = d.toByte
       writeIntFirst(q1, pos - 2, buf, ds)
     }
-
-  private[this] def offset(q0: Int): Int =
-    if (q0 < 100) (9 - q0) >>> 31
-    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
-    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
-    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
-    else ((999999999 - q0) >>> 31) + 8
 
   private[this] def writeByteArray(bs: Array[Byte], pos: Int): Int = {
     val len = bs.length
