@@ -804,22 +804,21 @@ final class JsonWriter private[jsoniter_scala](
     val epochSecond = x.getEpochSecond
     val epochDay = (if (epochSecond < 0) epochSecond - 86399 else epochSecond) / 86400
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
-    var adjust = 0L
+    var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
-      val adjustCycles = (marchZeroDay + 1) / 146097 - 1 // 146097 == number of days in a 400 year cycle
-      adjust = adjustCycles * 400
-      marchZeroDay -= adjustCycles * 146097
+      val adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1 // 146097 == number of days in a 400 year cycle
+      adjustYear = adjust400YearCycles * 400
+      marchZeroDay -= adjust400YearCycles * 146097L
     }
-    var yearEst = (400 * marchZeroDay + 591) / 146097
-    var dayOfYearEst = marchZeroDay - toDaysEst(yearEst)
-    if (dayOfYearEst < 0) { // fix estimate
+    var yearEst = ((400 * marchZeroDay + 591) / 146097).toInt
+    var marchDayOfYear = toMarchDayOfYear(marchZeroDay, yearEst)
+    if (marchDayOfYear < 0) { // fix estimate
       yearEst -= 1
-      dayOfYearEst = marchZeroDay - toDaysEst(yearEst)
+      marchDayOfYear = toMarchDayOfYear(marchZeroDay, yearEst)
     }
-    yearEst += adjust // reset any negative year
-    val marchDayOfYear = dayOfYearEst.toInt
+    yearEst += adjustYear // reset any negative year
     val marchMonth = ((marchDayOfYear * 17965876275L + 7186350510L) >> 39).toInt // == (marchDayOfYear * 5 + 2) / 153
-    val year = yearEst.toInt + (marchMonth * 3435973837L >> 35).toInt // == yearEst.toInt + marchMonth / 10 (convert march-based values back to january-based)
+    val year = yearEst + (marchMonth * 3435973837L >> 35).toInt // == yearEst + marchMonth / 10 (convert march-based values back to january-based)
     val month = marchMonth + (if (marchMonth < 10) 3 else -9)
     val day = marchDayOfYear - ((marchMonth * 1051407994122L - 17179869183L) >> 35).toInt // == marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
@@ -839,9 +838,9 @@ final class JsonWriter private[jsoniter_scala](
     pos + 2
   }
 
-  private[this] def toDaysEst(yearEst: Long): Long = {
+  private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
     val centuryEst = yearEst / 100
-    365 * yearEst + (yearEst >> 2) - centuryEst + (centuryEst >> 2)
+    (marchZeroDay - 365L * yearEst).toInt - (yearEst >> 2) + centuryEst - (centuryEst >> 2)
   }
 
   private[this] def writeLocalDate(x: LocalDate): Unit = count = {
