@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.time.ZoneOffset
 
-import cats.syntax.either._
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 import io.circe._
 import io.circe.generic.extras._
