@@ -58,23 +58,23 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readJsoniterScala(): String =
     try {
-      readFromArray[MissingReqFields](jsonBytes, exceptionWithStacktraceConfig).toString // toString() should not be called
-    } catch {
-      case ex: JsonParseException => ex.getMessage
-    }
-
-  @Benchmark
-  def readJsoniterStackless(): String =
-    try {
       readFromArray[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }
 
   @Benchmark
-  def readJsoniterStacklessNoDump(): String =
+  def readJsoniterScalaWithoutDump(): String =
     try {
-      readFromArray[MissingReqFields](jsonBytes, exceptionWithoutStractracesAndDumpConfig).toString // toString() should not be called
+      readFromArray[MissingReqFields](jsonBytes, exceptionWithoutDumpConfig).toString // toString() should not be called
+    } catch {
+      case ex: JsonParseException => ex.getMessage
+    }
+
+  @Benchmark
+  def readJsoniterScalaWithStacktrace(): String =
+    try {
+      readFromArray[MissingReqFields](jsonBytes, exceptionWithStacktraceConfig).toString // toString() should not be called
     } catch {
       case ex: JsonParseException => ex.getMessage
     }

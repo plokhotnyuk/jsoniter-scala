@@ -21,15 +21,15 @@ class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
-      benchmark.readJsoniterStackless() shouldBe
+      benchmark.readJsoniterScalaWithoutDump() shouldBe
+        """missing required field "s", offset: 0x00000001"""
+      benchmark.readJsoniterScalaWithStacktrace() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
-      benchmark.readJsoniterStacklessNoDump() shouldBe
-        """missing required field "s", offset: 0x00000001"""
       benchmark.readPlayJson() shouldBe
         "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
       benchmark.readUPickle() shouldBe
