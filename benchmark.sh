@@ -1,6 +1,6 @@
 #!/bin/bash
-sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/graalvm-ee-1.0.0-rc3/bin/java -prof gc -rf json -rff graalvmee1.json .*Benchmark.*' >graalvmee1.txt
-sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/graalvm-ce-1.0.0-rc3/bin/java -prof gc -rf json -rff graalvmce1.json .*Benchmark.*' >graalvmce1.txt
+sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/graalvm-ee-1.0.0/bin/java -prof gc -rf json -rff graalvmee1.json .*Benchmark.*' >graalvmee1.txt
+sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/graalvm-ce-1.0.0/bin/java -prof gc -rf json -rff graalvmce1.json .*Benchmark.*' >graalvmce1.txt
 sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/java-8-oracle/bin/java -prof gc -rf json -rff oraclejdk8.json .*Benchmark.*' >oraclejdk8.txt
 sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/java-8-openjdk-amd64/bin/java -prof gc -rf json -rff openjdk8.json .*Benchmark.*' >openjdk8.txt
 sbt -java-home /usr/lib/jvm/java-8-oracle -no-colors ++2.12.6 clean 'jsoniter-scala-benchmark/jmh:run -p size=128 -jvm /usr/lib/jvm/oraclejdk-11/bin/java -prof gc -rf json -rff oraclejdk11.json .*Benchmark.*' >oraclejdk11.txt
