@@ -9,8 +9,7 @@ class GeoJSONBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
-      //FIXME: Play-JSON doesn't support Tuple2?
-      //benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readPlayJson() shouldBe benchmark.obj
       //FIXME: cannot alter uPickle discriminator name and value for ADT
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
@@ -20,8 +19,7 @@ class GeoJSONBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJacksonScala()) shouldBe GeoJSON.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe GeoJSON.jsonString
       toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe GeoJSON.jsonString
-      //FIXME: Play-JSON doesn't support Tuple2?
-      //toString(benchmark.writePlayJson()) shouldBe GeoJSON.jsonString
+      toString(benchmark.writePlayJson()) shouldBe GeoJSON.jsonString
       //FIXME: cannot alter uPickle discriminator name and value for ADT
       //toString(benchmark.writeUPickle()) shouldBe GeoJSON.jsonString
     }

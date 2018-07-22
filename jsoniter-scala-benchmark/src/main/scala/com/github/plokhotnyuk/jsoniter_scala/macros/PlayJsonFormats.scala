@@ -4,6 +4,7 @@ import java.time.{OffsetTime, Year, YearMonth, ZoneOffset}
 
 import julienrf.json.derived.flat
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
@@ -11,6 +12,20 @@ import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable
 
 object PlayJsonFormats {
+  // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
+  // Borrowed from https://gist.github.com/alexanderjarvis/4595298
+  implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] = Reads[Tuple2[A, B]] {
+    case JsArray(arr) if arr.size == 2 => for {
+      a <- aReads.reads(arr(0))
+      b <- bReads.reads(arr(1))
+    } yield (a, b)
+    case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("Expected array of two elements"))))
+  }
+
+  implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] = new Writes[Tuple2[A, B]] {
+    def writes(tuple: Tuple2[A, B]) = JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
+  }
+
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format
   val nestedStructsFormat: OFormat[NestedStructs] = Json.format
   val anyRefsFormat: OFormat[AnyRefs] = Json.format
@@ -45,6 +60,20 @@ object PlayJsonFormats {
     implicit lazy val v3: OFormat[C] = Json.format
     implicit lazy val v4: OFormat[AdtBase] = flat.oformat((__ \ "type").format[String])
     v4
+  }
+  val geoJSONFormat: OFormat[GeoJSON] = {
+    implicit lazy val v1: Format[Point] = (__ \ "coordinates").format[(Double, Double)].inmap(Point.apply, _.coordinates)
+    implicit lazy val v2: OFormat[MultiPoint] = Json.format
+    implicit lazy val v3: OFormat[LineString] = Json.format
+    implicit lazy val v4: OFormat[MultiLineString] = Json.format
+    implicit lazy val v5: OFormat[Polygon] = Json.format
+    implicit lazy val v6: OFormat[MultiPolygon] = Json.format
+    implicit lazy val v7: OFormat[GeometryCollection] = Json.format
+    implicit lazy val v8: OFormat[Geometry] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v9: OFormat[Feature] = Json.format
+    implicit lazy val v10: OFormat[FeatureCollection] = Json.format
+    implicit lazy val v11: OFormat[GeoJSON] = flat.oformat((__ \ "type").format[String])
+    v11
   }
   val googleMapsAPIFormat: OFormat[DistanceMatrix] = {
     implicit val v1: OFormat[Value] = Json.format

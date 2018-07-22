@@ -9,12 +9,12 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.GeoJSON._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
-//import play.api.libs.json.Json
+import play.api.libs.json.Json
 //import upickle.default._
 
 class GeoJSONBenchmark extends CommonParams {
@@ -31,10 +31,9 @@ class GeoJSONBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
-/* FIXME: Play-JSON doesn't support Tuple2?
+
   @Benchmark
   def readPlayJson(): GeoJSON = Json.parse(jsonBytes).as[GeoJSON](geoJSONFormat)
-*/
 /* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def readUPickle(): GeoJSON = read[GeoJSON](jsonBytes)
@@ -53,10 +52,9 @@ class GeoJSONBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)(geoJSONCodec)
-/* FIXME: Play-JSON doesn't support Tuple2?
+
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(geoJSONFormat))
-*/
 /* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
