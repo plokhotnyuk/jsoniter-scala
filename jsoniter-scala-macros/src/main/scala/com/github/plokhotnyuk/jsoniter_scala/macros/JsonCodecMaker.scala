@@ -638,7 +638,7 @@ object JsonCodecMaker {
           val tpe2 = typeArg2(tpe)
           genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
-        } else if (tpe <:< typeOf[mutable.BitSet]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
             if (isStringified) q"in.readStringAsInt()"
             else q"in.readInt()"
@@ -649,21 +649,6 @@ object JsonCodecMaker {
                 if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
                 x(i) |= 1L << v""",
             q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
-        } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
-          val readVal =
-            if (isStringified) q"in.readStringAsInt()"
-            else q"in.readInt()"
-          genReadArray(q"var x = new Array[Long](2); var mi = 0",
-            q"""val v = $readVal
-                if (v < 0 || v >= ${codecConfig.bitSetValueLimit}) in.decodeError("illegal value for bit set")
-                val i = v >>> 6
-                if (i > mi) {
-                  mi = i
-                  if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
-                }
-                x(i) |= 1L << v""",
-            q"""if (mi > 1 && mi + 1 != x.length) x = java.util.Arrays.copyOf(x, mi + 1)
-                ${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)""")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = new scala.collection.mutable.ListBuffer[$tpe1]",
