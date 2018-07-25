@@ -5,8 +5,7 @@ class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
   
   "AnyRefsBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystem GenCodec serializes option field as JSON array
-      //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -16,8 +15,7 @@ class AnyRefsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec serializes option field as JSON array
-      //toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

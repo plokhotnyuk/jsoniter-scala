@@ -7,7 +7,7 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
   
   "NestedObjectsBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystem GenCodec parse option values from JSON arrays
+      //FIXME: AVSystem GenCodec cannot parse option values when field is missing
       //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -17,7 +17,7 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec serializes option values as JSON arrays
+      //FIXME: AVSystem GenCodec serializes empty option value as null
       //toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

@@ -40,7 +40,7 @@ object AVSystemCodecs {
     transformed(_.toArray, (x: Array[Int]) => mutable.BitSet(x:_*))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed(_.seq, (x: mutable.Map[Long, Boolean]) => mutable.LongMap(x.toArray:_*))
-  implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively
+  implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materialize
   implicit val primitivesGenCodec: GenCodec[Primitives] = materialize
   implicit val twitterAPIGenCodec: GenCodec[Tweet] = materializeRecursively
 }
