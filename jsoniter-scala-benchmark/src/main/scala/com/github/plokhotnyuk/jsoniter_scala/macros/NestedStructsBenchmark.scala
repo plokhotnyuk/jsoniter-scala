@@ -28,15 +28,7 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = {
-      var n = NestedStructs(None)
-      var i = 0
-      while (i < size) {
-        n = NestedStructs(Some(n))
-        i += 1
-      }
-      n
-    }
+    obj = (1 to size).foldLeft(NestedStructs(None))((n, _) => NestedStructs(Some(n)))
     jsonBytes = writeToArray(obj)(nestedStructsCodec)
     jsonString = new String(jsonBytes, UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)

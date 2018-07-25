@@ -36,7 +36,6 @@ class IntMapOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readAVSystemGenCodec(): IntMap[Boolean] = JsonStringInput.read[IntMap[Boolean]](new String(jsonBytes, UTF_8))
-
 /* FIXME: Circe doesn't support IntMap
   @Benchmark
   def readCirce(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)

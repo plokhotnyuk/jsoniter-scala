@@ -36,7 +36,6 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readAVSystemGenCodec(): mutable.LongMap[Boolean] = JsonStringInput.read[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8))
-
 /* FIXME: Circe doesn't support mutable.LongMap
   @Benchmark
   def readCirce(): mutable.LongMap[Boolean] = decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
