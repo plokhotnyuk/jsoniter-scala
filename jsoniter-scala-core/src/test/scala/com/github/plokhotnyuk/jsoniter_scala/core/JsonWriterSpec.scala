@@ -476,8 +476,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for float" should {
     "write finite float values" in {
       def check(n: Float): Unit = {
-        val s = n.toString
-        withWriter(_.writeVal(n)) shouldBe s
+        val s = withWriter(_.writeVal(n))
+        s.toFloat shouldBe n
+        s.length should be <= n.toString.length
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
@@ -499,7 +500,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for double" should {
     "write finite double values" in {
       def check(n: Double): Unit = {
-        val s = n.toString
+        val s = withWriter(_.writeVal(n))
+        s.toDouble shouldBe n
+        s.length should be <= n.toString.length
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"

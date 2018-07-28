@@ -17,16 +17,24 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       //FIXME: AVSystem GenCodec serializes double values instead of float
-      //toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      //sameOrBetter(toString(benchmark.writeAVSystemGenCodec()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeCirce()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeDslJsonJava()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeJacksonScala()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeJsoniterScala()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()),
+        benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
-      //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)
       //FIXME: uPickle serializes double values instead of float
-      //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
+      //sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
     }
   }
+
+  private[this] def sameOrBetter(actual: String, expected: String): Unit =
+    actual.substring(1, actual.length - 1).split(',')
+      .zip(expected.substring(1, expected.length - 1).split(',')).foreach { case (a, e) =>
+      require(a.toFloat == e.toFloat && a.length <= e.length,
+        s"expected the same or better: $e, but got: $a")
+    }
 }

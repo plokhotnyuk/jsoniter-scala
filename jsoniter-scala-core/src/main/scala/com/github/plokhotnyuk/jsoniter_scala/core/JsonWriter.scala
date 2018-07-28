@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
+import java.math.BigInteger
 import java.time._
 import java.util.UUID
 
@@ -1197,12 +1198,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val off =
-      if (q0 < 100) (9 - q0) >>> 31
-      else if (q0 < 10000) ((999 - q0) >>> 31) + 2
-      else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
-      else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
-      else ((999999999 - q0) >>> 31) + 8
+    val off = offset(q0)
     writeIntFirst(q0, pos + off, buf, ds) + off
   }
 
@@ -1233,13 +1229,404 @@ final class JsonWriter private[jsoniter_scala](
     pos + len
   }
 
-  private[this] def writeFloat(x: Float): Unit =
-    if (java.lang.Float.isFinite(x)) writeNonEscapedAsciiStringWithoutParentheses(java.lang.Float.toString(x))
-    else encodeError("illegal number: " + x)
+  // Based on a great work of Ulf Adams:
+  // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
+  // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuFloat.java
+  // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
+  private[this] def writeFloat(x: Float): Unit = {
+    if (!java.lang.Float.isFinite(x)) encodeError("illegal number: " + x)
+    val bits = java.lang.Float.floatToRawIntBits(x)
+    if (bits == 0) writeBytes('0', '.', '0')
+    else if (bits == 0x80000000) writeBytes('-', '0', '.', '0')
+    else count = {
+      val ieeeExponent = (bits >> 23) & 255
+      val ieeeMantissa = bits & 8388607
+      var e2 = 0
+      var m2 = 0
+      if (ieeeExponent == 0) {
+        e2 = -151
+        m2 = ieeeMantissa
+      } else {
+        e2 = ieeeExponent - 152
+        m2 = ieeeMantissa | 8388608
+      }
+      val sign = bits < 0
+      val even = (m2 & 1) == 0
+      val mv = m2 << 2
+      val mp = mv + 2
+      val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
+      var dp = 0
+      var dv = 0
+      var dm = 0
+      var e10 = 0
+      var dpIsTrailingZeros = false
+      var dmIsTrailingZeros = false
+      var lastRemovedDigit = 0
+      if (e2 >= 0) {
+        val q = (e2 * 5422872582025449L >> 54).toInt // == (e2 * Math.log10(2)).toInt
+        val k = 58 + pow5bits(q)
+        val i = -e2 + q + k
+        val ss = f32Pow5InvSplit
+        dv = mulPow5DivPow2(mv, q, i, ss)
+        dp = mulPow5DivPow2(mp, q, i, ss)
+        dm = mulPow5DivPow2(mm, q, i, ss)
+        if (q != 0 && (dp - 1 <= dm)) {
+          val l = 58 + pow5bits(q - 1)
+          val ds = mulPow5DivPow2(mv, q - 1, -e2 + q - 1 + l, ss)
+          lastRemovedDigit = ds - (ds * 3435973837L >> 35).toInt // divide positive int by 10
+        }
+        e10 = q
+        dpIsTrailingZeros = pow5Factor(mp, 0) >= q
+        dmIsTrailingZeros = pow5Factor(mm, 0) >= q
+      } else {
+        val q = (-e2 * 3147881031633675L >> 52).toInt // == (-e2 * Math.log10(5)).toInt
+        val i = -e2 - q
+        val k = pow5bits(i) - 61
+        var j = q - k
+        val ss = f32Pow5Split
+        dv = mulPow5DivPow2(mv, i, j, ss)
+        dp = mulPow5DivPow2(mp, i, j, ss)
+        dm = mulPow5DivPow2(mm, i, j, ss)
+        if (q != 0 && (dp - 1 <= dm)) {
+          j = q + 60 - pow5bits(i + 1)
+          val ds = mulPow5DivPow2(mv, i + 1, j, ss)
+          lastRemovedDigit = ds - (ds * 3435973837L >> 35).toInt // divide positive int by 10
+        }
+        e10 = q + e2
+        dpIsTrailingZeros = 1 >= q
+        dmIsTrailingZeros = (~mm & 1) >= q
+      }
+      val dplength = offset(dp) + 1
+      var exp = e10 + dplength - 1
+      val scientificNotation = !(exp >= -3 && exp < 7)
+      var removed = 0
+      if (dpIsTrailingZeros && !even) dp -= 1
+      var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+      var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+      while (newDp > newDm && (dp >= 100 || !scientificNotation)) {
+        dmIsTrailingZeros &= dm == 10 * newDm
+        dp = newDp
+        val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+        lastRemovedDigit = dv - 10 * newDv
+        dv = newDv
+        dm = newDm
+        newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+        newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+        removed += 1
+      }
+      if (dmIsTrailingZeros && even) {
+        newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+        while (dm == 10 * newDm && (dp >= 100 || !scientificNotation)) {
+          dp = (dp * 3435973837L >> 35).toInt
+          val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+          lastRemovedDigit = dv - 10 * newDv
+          dv = newDv
+          dm = newDm
+          newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+          removed += 1
+        }
+      }
+      var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
+      val olength = dplength - removed
+      var pos = ensureBufCapacity(15)
+      if (sign) {
+        buf(pos) = '-'
+        pos += 1
+      }
+      val ds = digits
+      if (scientificNotation) {
+        pos = writeNDigits(output, olength, pos + olength, buf, ds)
+        buf(pos) = buf(pos + 1)
+        buf(pos + 1) = '.'
+        pos += olength + 1
+        if (olength == 1) {
+          buf(pos) = '0'
+          pos += 1
+        }
+        buf(pos) = 'E'
+        pos += 1
+        if (exp < 0) {
+          buf(pos) = '-'
+          pos += 1
+          exp = -exp
+        }
+        if (exp >= 10) write2Digits(exp, pos, buf, ds)
+        else {
+          buf(pos) = ('0' + exp).toByte
+          pos + 1
+        }
+      } else if (exp < 0) {
+        buf(pos) = '0'
+        buf(pos + 1) = '.'
+        writeNDigits(output, olength, writeNZeros(-1 - exp, pos + 2, buf) + olength - 1, buf, ds) + olength + 1
+      } else if (exp + 1 >= olength) {
+        pos = writeNZeros(exp - olength + 1, writeNDigits(output, olength, pos + olength - 1, buf, ds) + olength + 1, buf)
+        buf(pos) = '.'
+        buf(pos + 1) = '0'
+        pos + 2
+      } else {
+        pos += olength
+        val ei = olength - 1 - exp
+        var i = 0
+        while (i < ei) {
+          val newOutput = (output * 3435973837L >> 35).toInt // divide positive int by 10
+          buf(pos) = ('0' + output - 10 * newOutput).toByte
+          output = newOutput
+          pos -= 1
+          i += 1
+        }
+        buf(pos) = '.'
+        writeNDigits(output, olength - i, pos - 1, buf, ds) + olength + 2
+      }
+    }
+  }
 
-  private[this] def writeDouble(x: Double): Unit =
-    if (java.lang.Double.isFinite(x)) writeNonEscapedAsciiStringWithoutParentheses(java.lang.Double.toString(x))
-    else encodeError("illegal number: " + x)
+  private[this] def pow5bits(e: Int) =
+    if (e == 0) 1 else ((e * 23219280L + 9999999) * 1801439851L >> 54).toInt // == Math.ceil(e * Math.log(5) / Math.log(2))
+
+  @tailrec
+  private[this] def pow5Factor(value: Int, count: Int): Int =  {
+    val newValue = (value * 3435973837L >> 34).toInt // divide positive int by 5
+    if (value != newValue + (newValue << 2)) count
+    else pow5Factor(newValue, count + 1)
+  }
+
+  private[this] def mulPow5DivPow2(m: Int, i: Int, j: Int, ss: Array[Int]): Int = {
+    val idx = i << 1
+    ((m.toLong * ss(idx + 1) + (m.toLong * ss(idx) >> 31)) >> (j - 31)).toInt
+  }
+
+  private[this] def offset(q0: Int): Int =
+    if (q0 < 100) (9 - q0) >>> 31
+    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
+    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
+    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
+    else ((999999999 - q0) >>> 31) + 8
+
+  @tailrec
+  private[this] def writeNDigits(q0: Int, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (n == 0) pos
+    else if (n == 1) {
+      buf(pos) =
+        if (q0 < 10) (q0 + '0').toByte
+        else if (q0 < 100) ds(q0).toByte
+        else (q0 % 10 + '0').toByte
+      pos - 1
+    } else {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+      val r1 = q0 - 100 * q1
+      val d = ds(r1)
+      buf(pos - 1) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      writeNDigits(q1, n - 2, pos - 2, buf, ds)
+    }
+
+  // Based on a great work of Ulf Adams:
+  // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
+  // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuDouble.java
+  // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
+  private[this] def writeDouble(x: Double): Unit = {
+    if (!java.lang.Double.isFinite(x)) encodeError("illegal number: " + x)
+    val bits = java.lang.Double.doubleToRawLongBits(x)
+    if (bits == 0) writeBytes('0', '.', '0')
+    else if (bits == 0x8000000000000000L) writeBytes('-', '0', '.', '0')
+    else count = {
+      val ieeeExponent = ((bits >> 52) & 2047).toInt
+      val ieeeMantissa = bits & 4503599627370495L
+      var e2 = 0
+      var m2 = 0L
+      if (ieeeExponent == 0) {
+        e2 = -1076
+        m2 = ieeeMantissa
+      } else {
+        e2 = ieeeExponent - 1077
+        m2 = ieeeMantissa | 4503599627370496L
+      }
+      val sign = bits < 0
+      val even = (m2 & 1) == 0
+      val mv = m2 << 2L
+      val mp = mv + 2
+      val mm = mv - (if (m2 != 4503599627370496L || ieeeExponent <= 1) 2 else 1)
+      var dp = 0L
+      var dv = 0L
+      var dm = 0L
+      var e10 = 0
+      var dpIsTrailingZeros = false
+      var dmIsTrailingZeros = false
+      if (e2 >= 0) {
+        val q = Math.max(0, (e2 * 5422872582025449L >> 54).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
+        val k = 121 + pow5bits(q)
+        val i = -e2 + q + k
+        val ss = f64Pow5InvSplit
+        dv = fullMulPow5DivPow2(mv, q, i, ss)
+        dp = fullMulPow5DivPow2(mp, q, i, ss)
+        dm = fullMulPow5DivPow2(mm, q, i, ss)
+        e10 = q
+        dpIsTrailingZeros = pow5Factor(mp, 0) >= q
+        dmIsTrailingZeros = pow5Factor(mm, 0) >= q
+      } else {
+        val q = Math.max(0, (-e2 * 3147881031633675L >> 52).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
+        val i = -e2 - q
+        val k = pow5bits(i) - 121
+        val j = q - k
+        val ss = f64Pow5Split
+        dv = fullMulPow5DivPow2(mv, i, j, ss)
+        dp = fullMulPow5DivPow2(mp, i, j, ss)
+        dm = fullMulPow5DivPow2(mm, i, j, ss)
+        e10 = q + e2
+        dpIsTrailingZeros = 1 >= q
+        dmIsTrailingZeros = (~mm & 1) >= q
+      }
+      val vplength = offset(dp) + 1
+      var exp = e10 + vplength - 1
+      val scientificNotation = !(exp >= -3 && exp < 7)
+      var removed = 0
+      if (dpIsTrailingZeros && !even) dp -= 1
+      var lastRemovedDigit = 0
+      var newDp = dp / 10
+      var newDm = dm / 10
+      while (newDp > newDm && (dp >= 100 || !scientificNotation)) {
+        dmIsTrailingZeros &= dm == 10 * newDm
+        dp = newDp
+        val newDv = dv / 10
+        lastRemovedDigit = (dv - 10 * newDv).toInt
+        dv = newDv
+        dm = newDm
+        newDp = dp / 10
+        newDm = dm / 10
+        removed += 1
+      }
+      if (dmIsTrailingZeros && even) {
+        var newDm = dm / 10
+        while (dm == 10 * newDm && (dp >= 100 || !scientificNotation)) {
+          dp /= 10
+          val newDv = dv / 10
+          lastRemovedDigit = (dv - 10 * newDv).toInt
+          dv = newDv
+          dm = newDm
+          newDm = dm / 10
+          removed += 1
+        }
+      }
+      var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
+      val olength = vplength - removed
+      var pos = ensureBufCapacity(24)
+      if (sign) {
+        buf(pos) = '-'
+        pos += 1
+      }
+      val ds = digits
+      if (scientificNotation) {
+        pos = writeNDigits(output, olength, pos + olength, buf, ds)
+        buf(pos) = buf(pos + 1)
+        buf(pos + 1) = '.'
+        pos += olength + 1
+        if (olength == 1) {
+          buf(pos) = '0'
+          pos += 1
+        }
+        buf(pos) = 'E'
+        pos += 1
+        if (exp < 0) {
+          buf(pos) = '-'
+          pos += 1
+          exp = -exp
+        }
+        if (exp >= 100) write3Digits(exp, pos, buf, ds)
+        else if (exp >= 10) write2Digits(exp, pos, buf, ds)
+        else {
+          buf(pos) = ('0' + exp).toByte
+          pos + 1
+        }
+      } else if (exp < 0) {
+        buf(pos) = '0'
+        buf(pos + 1) = '.'
+        writeNDigits(output, olength, writeNZeros(-1 - exp, pos + 2, buf) + olength - 1, buf, ds) + olength + 1
+      } else if (exp + 1 >= olength) {
+        pos = writeNZeros(exp - olength + 1, writeNDigits(output, olength, pos + olength - 1, buf, ds) + olength + 1, buf)
+        buf(pos) = '.'
+        buf(pos + 1) = '0'
+        pos + 2
+      } else {
+        pos += olength
+        val ei = olength - 1 - exp
+        var i = 0
+        while (i < ei) {
+          val newOutput = output / 10
+          buf(pos) = ('0' + output - 10 * newOutput).toByte
+          output = newOutput
+          pos -= 1
+          i += 1
+        }
+        buf(pos) = '.'
+        writeNDigits(output, olength - i, pos - 1, buf, ds) + olength + 2
+      }
+    }
+  }
+
+  @tailrec
+  private[this] def pow5Factor(value: Long, count: Int): Int =  {
+    val newValue = value / 5
+    if (value != newValue + (newValue << 2)) count
+    else if (newValue == newValue.toInt) pow5Factor(newValue.toInt, count + 1)
+    else pow5Factor(newValue, count + 1)
+  }
+
+  private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
+    val mHigh = m >>> 31
+    val mLow = m & 0x7fffffff
+    val idx = i << 2
+    val s0 = ss(idx)
+    val s1 = ss(idx + 1)
+    val s2 = ss(idx + 2)
+    val s3 = ss(idx + 3)
+    ((((((((mLow * s3 >>> 31) + mLow * s2 + mHigh * s3) >>> 31) + mLow * s1 +
+      mHigh * s2) >>> 31) + mLow * s0 + mHigh * s1) >>> 21) + (mHigh * s0 << 10)) >>> (j - 114)
+  }
+
+  private[this] def offset(q0: Long) = {
+    if (q0 < 100) (9 - q0) >>> 63
+    else if (q0 < 10000) ((999 - q0) >>> 63) + 2
+    else if (q0 < 1000000) ((99999 - q0) >>> 63) + 4
+    else if (q0 < 100000000) ((9999999 - q0) >>> 63) + 6
+    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63) + 8
+    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63) + 10
+    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63) + 12
+    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63) + 14
+    else if (q0 < 1000000000000000000L) ((99999999999999999L - q0) >>> 63) + 16
+    else 18
+  }.toInt
+
+  @tailrec
+  private[this] def writeNDigits(q0: Long, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (n == 0) pos
+    else if (n == 1) {
+      buf(pos) =
+        if (q0 < 10) (q0 + '0').toByte
+        else if (q0 < 100) ds(q0.toInt).toByte
+        else (q0 % 10 + '0').toByte
+      pos - 1
+    } else if (q0 == q0.toInt) writeNDigits(q0.toInt, n, pos, buf, ds)
+    else {
+      val q1 = q0 / 100
+      val r1 = (q0 - 100 * q1).toInt
+      val d = ds(r1)
+      buf(pos - 1) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      writeNDigits(q1, n - 2, pos - 2, buf, ds)
+    }
+
+  @tailrec
+  private[this] def writeNZeros(n: Int, pos: Int, buf: Array[Byte]): Int =
+    if (n <= 0) pos
+    else if (n == 1) {
+      buf(pos) = '0'
+      pos + 1
+    } else {
+      buf(pos) = '0'
+      buf(pos + 1) = '0'
+      writeNZeros(n - 2, pos + 2, buf)
+    }
 
   private[this] def writeIndention(delta: Int): Unit = if (indention != 0) writeNewLineAndSpaces(delta)
 
@@ -1258,20 +1645,19 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
-    if (buf.length < pos + required) flushAndGrowBuf(required, pos)
+    if (pos + required > buf.length) flushAndGrowBuf(required, pos)
     else pos
   }
 
-  private[this] def flushAndGrowBuf(required: Int, pos: Int): Int = {
+  private[this] def flushAndGrowBuf(required: Int, pos: Int): Int =
     if (out eq null) {
       growBuf(pos + required)
       pos
     } else {
       out.write(buf, 0, pos)
-      if (buf.length < required) growBuf(required)
+      if (required > buf.length) growBuf(required)
       0
     }
-  }
 
   private[jsoniter_scala] def flushBuf(): Unit =
     if (out ne null) {
@@ -1321,6 +1707,54 @@ object JsonWriter {
   private final val minIntBytes: Array[Byte] = Array('-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8')
   private final val minLongBytes: Array[Byte] =
     Array('-', '9', '2', '2', '3', '3', '7', '2', '0', '3', '6', '8', '5', '4', '7', '7', '5', '8', '0', '8')
+  private final val f32Pow5Split = new Array[Int](47 * 2)
+  private final val f32Pow5InvSplit = new Array[Int](31 * 2)
+  private final val f64Pow5Split = new Array[Int](326 * 4)
+  private final val f64Pow5InvSplit = new Array[Int](291 * 4)
+
+  {
+    var i = 0
+    while (i < (Math.max(f32Pow5Split.length, f32Pow5InvSplit.length) >> 1)) {
+      val pow = BigInteger.valueOf(5).pow(i)
+      val pow5len = pow.bitLength
+      if (i < (f32Pow5Split.length >> 1)) {
+        val s = pow.shiftRight(pow5len - 61).longValue
+        f32Pow5Split(i * 2) = (s & 2147483647).toInt
+        f32Pow5Split(i * 2 + 1) = (s >> 31).toInt
+      }
+      if (i < (f32Pow5InvSplit.length >> 1)) {
+        val s = BigInteger.ONE.shiftLeft(pow5len + 58).divide(pow).longValue + 1
+        f32Pow5InvSplit(i * 2) = (s & 2147483647).toInt
+        f32Pow5InvSplit(i * 2 + 1) = (s >> 31).toInt
+      }
+      i += 1
+    }
+    val mask = BigInteger.ONE.shiftLeft(31).subtract(BigInteger.ONE)
+    i = 0
+    while (i < (Math.max(f64Pow5Split.length, f64Pow5InvSplit.length) >> 2)) {
+      val pow = BigInteger.valueOf(5).pow(i)
+      val pow5len = pow.bitLength
+      if (i < (f64Pow5Split.length >> 2)) {
+        var j = 0
+        while (j < 4) {
+          f64Pow5Split(i * 4 + j) = pow.shiftRight(pow5len - 121 + (3 - j) * 31).and(mask).intValue
+          j += 1
+        }
+      }
+      if (i < (f64Pow5InvSplit.length >> 2)) {
+        val j = pow5len + 121
+        val inv = BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE)
+        var k = 0
+        while (k < 4) {
+          f64Pow5InvSplit(i * 4 + k) =
+            if (k == 0) inv.shiftRight((3 - k) * 31).intValue
+            else inv.shiftRight((3 - k) * 31).and(mask).intValue
+          k += 1
+        }
+      }
+      i += 1
+    }
+  }
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
 }
