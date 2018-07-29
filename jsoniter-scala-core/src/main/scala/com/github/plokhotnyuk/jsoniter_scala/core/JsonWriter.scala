@@ -1181,13 +1181,11 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      val q0i = q0.toInt
-      if (q0 == q0i) writeInt(q0i, pos, buf, ds)
+      if (q0 == q0.toInt) writeInt(q0.toInt, pos, buf, ds)
       else {
         val q1 = q0 / 100000000
         val r1 = (q0 - 100000000 * q1).toInt
-        val q1i = q1.toInt
-        if (q1 == q1i) write8Digits(r1, writeInt(q1i, pos, buf, ds), buf, ds)
+        if (q1 == q1.toInt) write8Digits(r1, writeInt(q1.toInt, pos, buf, ds), buf, ds)
         else {
           val q2 = q1 / 100000000
           val r2 = (q1 - 100000000 * q2).toInt
@@ -1381,26 +1379,6 @@ final class JsonWriter private[jsoniter_scala](
     else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
     else ((999999999 - q0) >>> 31) + 8
 
-  @tailrec
-  private[this] def writeNDigits(q0: Int, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (n <= 1) {
-      if (n == 0) pos
-      else {
-        buf(pos) = {
-          if (q0 < 100) ds(q0)
-          else q0 % 10 + '0'
-        }.toByte
-        pos - 1
-      }
-    } else {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-      val r1 = q0 - 100 * q1
-      val d = ds(r1)
-      buf(pos - 1) = (d >> 8).toByte
-      buf(pos) = d.toByte
-      writeNDigits(q1, n - 2, pos - 2, buf, ds)
-    }
-
   // Based on a great work of Ulf Adams:
   // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
   // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuDouble.java
@@ -1577,10 +1555,30 @@ final class JsonWriter private[jsoniter_scala](
         }.toByte
         pos - 1
       }
-    } else if (q0 == q0.toInt) writeNDigits(q0.toInt, n, pos, buf, ds)
-    else {
+    } else {
       val q1 = q0 / 100
       val r1 = (q0 - 100 * q1).toInt
+      val d = ds(r1)
+      buf(pos - 1) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      if (q1 == q1.toInt) writeNDigits(q1.toInt, n - 2, pos - 2, buf, ds)
+      else writeNDigits(q1, n - 2, pos - 2, buf, ds)
+    }
+
+  @tailrec
+  private[this] def writeNDigits(q0: Int, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (n <= 1) {
+      if (n == 0) pos
+      else {
+        buf(pos) = {
+          if (q0 < 100) ds(q0)
+          else q0 % 10 + '0'
+        }.toByte
+        pos - 1
+      }
+    } else {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+      val r1 = q0 - 100 * q1
       val d = ds(r1)
       buf(pos - 1) = (d >> 8).toByte
       buf(pos) = d.toByte
