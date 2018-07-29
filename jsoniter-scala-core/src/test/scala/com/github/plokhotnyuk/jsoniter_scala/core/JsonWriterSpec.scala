@@ -477,13 +477,63 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "write finite float values" in {
       def check(n: Float): Unit = {
         val s = withWriter(_.writeVal(n))
-        s.toFloat shouldBe n
-        s.length should be <= n.toString.length
+        s.toFloat shouldBe n // no data loss
+        s.length should be <= n.toString.length // rounding is more efficient
+        val i = s.indexOf('.')
+        i should be > 0 // has '.' character
+        Character.isDigit(s.charAt(i - 1)) shouldBe true // has digit before '.'
+        Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
+        s.indexOf('.') should be > 0
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
 
-      forAll(minSuccessful(100000)) { (n: Float) =>
+      check(0.0f)
+      check(-0.0f)
+      check(1.0f)
+      check(-1.0f)
+      check(1.0E7f)
+      check(java.lang.Float.intBitsToFloat(0x00800000)) // subnormal
+      check(9999999.0f)
+      check(0.001f)
+      check(0.0009999999f)
+      check(Float.MinValue)
+      check(Float.MinPositiveValue)
+      check(Float.MaxValue)
+      check(3.3554448E7f)
+      check(8.999999E9f)
+      check(3.4366717E10f)
+      check(4.7223665E21f)
+      check(8388608.0f)
+      check(1.6777216E7f)
+      check(3.3554436E7f)
+      check(6.7131496E7f)
+      check(1.9310392E-38f)
+      check(-2.47E-43f)
+      check(1.993244E-38f)
+      check(4103.9003f)
+      check(4103.9003f)
+      check(5.3399997E9f)
+      check(6.0898E-39f)
+      check(0.0010310042f)
+      check(2.8823261E17f)
+      check(7.038531E-26f)
+      check(9.2234038E17f)
+      check(6.7108872E7f)
+      check(1.0E-44f)
+      check(2.816025E14f)
+      check(9.223372E18f)
+      check(1.5846085E29f)
+      check(1.1811161E19f)
+      check(5.368709E18f)
+      check(4.6143165E18f)
+      check(0.007812537f)
+      check(1.4E-45f)
+      check(1.18697724E20f)
+      check(1.00014165E-36f)
+      check(200f)
+      check(3.3554432E7f)
+      forAll(minSuccessful(1000000)) { (n: Float) =>
         whenever(java.lang.Float.isFinite(n)) {
           check(n)
         }
@@ -501,14 +551,42 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "write finite double values" in {
       def check(n: Double): Unit = {
         val s = withWriter(_.writeVal(n))
-        s.toDouble shouldBe n
-        s.length should be <= n.toString.length
+        s.toDouble shouldBe n // no data loss
+        s.length should be <= n.toString.length // rounding is more efficient
+        val i = s.indexOf('.')
+        i should be > 0 // has '.' character
+        Character.isDigit(s.charAt(i - 1)) shouldBe true // has digit before '.'
+        Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
 
-      forAll(minSuccessful(100000)) { (n: Double) =>
+      check(0.0)
+      check(-0.0)
+      check(1.0)
+      check(-1.0)
+      check(java.lang.Double.longBitsToDouble(0x0010000000000000L)) // subnormal
+      check(1.0E7d)
+      check(9999999.999999998d)
+      check(0.001d)
+      check(0.0009999999999999998d)
+      check(Double.MinValue)
+      check(Double.MinPositiveValue)
+      check(Double.MaxValue)
+      check(-2.109808898695963E16)
+      check(4.940656E-318d)
+      check(1.18575755E-316d)
+      check(2.989102097996E-312d)
+      check(9.0608011534336E15d)
+      check(4.708356024711512E18)
+      check(9.409340012568248E18)
+      check(1.8531501765868567E21)
+      check(-3.347727380279489E33)
+      check(1.9430376160308388E16)
+      check(-6.9741824662760956E19)
+      check(4.3816050601147837E18)
+      forAll(minSuccessful(1000000)) { (n: Double) =>
         whenever(java.lang.Double.isFinite(n)) {
           check(n)
         }
