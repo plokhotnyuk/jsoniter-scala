@@ -1246,7 +1246,7 @@ final class JsonWriter private[jsoniter_scala](
       val mv = m2 << 2
       val mp = mv + 2
       val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
-      var dp, dv, dm, e10 = 0
+      var dp, dv, dm, exp = 0
       var dpIsTrailingZeros, dmIsTrailingZeros = false
       var lastRemovedDigit = 0
       if (e2 >= 0) {
@@ -1262,7 +1262,7 @@ final class JsonWriter private[jsoniter_scala](
           val ds = mulPow5DivPow2(mv, q - 1, -e2 + q - 1 + l, ss)
           lastRemovedDigit = ds - (ds * 3435973837L >> 35).toInt // divide positive int by 10
         }
-        e10 = q
+        exp = q
         dpIsTrailingZeros = pow5Factor(mp, 0) >= q
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
@@ -1279,15 +1279,15 @@ final class JsonWriter private[jsoniter_scala](
           val ds = mulPow5DivPow2(mv, i + 1, j, ss)
           lastRemovedDigit = ds - (ds * 3435973837L >> 35).toInt // divide positive int by 10
         }
-        e10 = q + e2
+        exp = q + e2
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
-      val dplength = offset(dp) + 1
-      var exp = e10 + dplength - 1
+      var olength = offset(dp)
+      exp += olength
+      olength += 1
       val decimalNotation = exp >= -3 && exp < 7
       val even = (m2 & 1) == 0
-      var removed = 0
       if (dpIsTrailingZeros && !even) dp -= 1
       var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
       var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
@@ -1300,7 +1300,7 @@ final class JsonWriter private[jsoniter_scala](
         dm = newDm
         newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
         newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-        removed += 1
+        olength -= 1
       }
       if (dmIsTrailingZeros && even) {
         newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
@@ -1311,11 +1311,10 @@ final class JsonWriter private[jsoniter_scala](
           dv = newDv
           dm = newDm
           newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-          removed += 1
+          olength -= 1
         }
       }
       var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
-      val olength = dplength - removed
       var pos = ensureBufCapacity(15)
       if (bits < 0) {
         buf(pos) = '-'
@@ -1419,7 +1418,7 @@ final class JsonWriter private[jsoniter_scala](
       val mp = mv + 2
       val mm = mv - (if (m2 != 4503599627370496L || ieeeExponent <= 1) 2 else 1)
       var dp, dv, dm = 0L
-      var e10 = 0
+      var exp = 0
       var dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
@@ -1429,7 +1428,7 @@ final class JsonWriter private[jsoniter_scala](
         dv = fullMulPow5DivPow2(mv, q, i, ss)
         dp = fullMulPow5DivPow2(mp, q, i, ss)
         dm = fullMulPow5DivPow2(mm, q, i, ss)
-        e10 = q
+        exp = q
         dpIsTrailingZeros = pow5Factor(mp, 0) >= q
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
@@ -1441,15 +1440,15 @@ final class JsonWriter private[jsoniter_scala](
         dv = fullMulPow5DivPow2(mv, i, j, ss)
         dp = fullMulPow5DivPow2(mp, i, j, ss)
         dm = fullMulPow5DivPow2(mm, i, j, ss)
-        e10 = q + e2
+        exp = q + e2
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
-      val vplength = offset(dp) + 1
-      var exp = e10 + vplength - 1
+      var olength = offset(dp)
+      exp += olength
+      olength += 1
       val decimalNotation = exp >= -3 && exp < 7
       val even = (m2 & 1) == 0
-      var removed = 0
       if (dpIsTrailingZeros && !even) dp -= 1
       var lastRemovedDigit = 0
       var newDp = dp / 10
@@ -1463,7 +1462,7 @@ final class JsonWriter private[jsoniter_scala](
         dm = newDm
         newDp = dp / 10
         newDm = dm / 10
-        removed += 1
+        olength -= 1
       }
       if (dmIsTrailingZeros && even) {
         var newDm = dm / 10
@@ -1474,11 +1473,10 @@ final class JsonWriter private[jsoniter_scala](
           dv = newDv
           dm = newDm
           newDm = dm / 10
-          removed += 1
+          olength -= 1
         }
       }
       var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
-      val olength = vplength - removed
       var pos = ensureBufCapacity(24)
       if (bits < 0) {
         buf(pos) = '-'
@@ -1689,23 +1687,23 @@ object JsonWriter {
   private final val minIntBytes: Array[Byte] = Array('-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8')
   private final val minLongBytes: Array[Byte] =
     Array('-', '9', '2', '2', '3', '3', '7', '2', '0', '3', '6', '8', '5', '4', '7', '7', '5', '8', '0', '8')
-  private final val f32Pow5Split = new Array[Int](47 * 2)
-  private final val f32Pow5InvSplit = new Array[Int](31 * 2)
-  private final val f64Pow5Split = new Array[Int](326 * 4)
-  private final val f64Pow5InvSplit = new Array[Int](291 * 4)
+  private final val f32Pow5Split = new Array[Int](94)
+  private final val f32Pow5InvSplit = new Array[Int](62)
+  private final val f64Pow5Split = new Array[Int](1304)
+  private final val f64Pow5InvSplit = new Array[Int](1164)
 
   {
     var i = 0
     while (i < (Math.max(f32Pow5Split.length, f32Pow5InvSplit.length) >> 1)) {
-      val pow = BigInteger.valueOf(5).pow(i)
-      val pow5len = pow.bitLength
+      val pow5 = BigInteger.valueOf(5).pow(i)
+      val pow5len = pow5.bitLength
       if (i < (f32Pow5Split.length >> 1)) {
-        val s = pow.shiftRight(pow5len - 61).longValue
+        val s = pow5.shiftRight(pow5len - 61).longValue
         f32Pow5Split(i * 2) = (s & 2147483647).toInt
         f32Pow5Split(i * 2 + 1) = (s >> 31).toInt
       }
       if (i < (f32Pow5InvSplit.length >> 1)) {
-        val s = BigInteger.ONE.shiftLeft(pow5len + 58).divide(pow).longValue + 1
+        val s = BigInteger.ONE.shiftLeft(pow5len + 58).divide(pow5).longValue + 1
         f32Pow5InvSplit(i * 2) = (s & 2147483647).toInt
         f32Pow5InvSplit(i * 2 + 1) = (s >> 31).toInt
       }
@@ -1714,24 +1712,23 @@ object JsonWriter {
     val mask = BigInteger.ONE.shiftLeft(31).subtract(BigInteger.ONE)
     i = 0
     while (i < (Math.max(f64Pow5Split.length, f64Pow5InvSplit.length) >> 2)) {
-      val pow = BigInteger.valueOf(5).pow(i)
-      val pow5len = pow.bitLength
+      val pow5 = BigInteger.valueOf(5).pow(i)
+      val pow5len = pow5.bitLength
       if (i < (f64Pow5Split.length >> 2)) {
         var j = 0
         while (j < 4) {
-          f64Pow5Split(i * 4 + j) = pow.shiftRight(pow5len - 121 + (3 - j) * 31).and(mask).intValue
+          f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).and(mask).intValue
           j += 1
         }
       }
       if (i < (f64Pow5InvSplit.length >> 2)) {
-        val j = pow5len + 121
-        val inv = BigInteger.ONE.shiftLeft(j).divide(pow).add(BigInteger.ONE)
-        var k = 0
-        while (k < 4) {
-          f64Pow5InvSplit(i * 4 + k) =
-            if (k == 0) inv.shiftRight((3 - k) * 31).intValue
-            else inv.shiftRight((3 - k) * 31).and(mask).intValue
-          k += 1
+        val inv = BigInteger.ONE.shiftLeft(pow5len + 121).divide(pow5).add(BigInteger.ONE)
+        var j = 0
+        while (j < 4) {
+          f64Pow5InvSplit(i * 4 + j) =
+            if (j == 0) inv.shiftRight((3 - j) * 31).intValue
+            else inv.shiftRight((3 - j) * 31).and(mask).intValue
+          j += 1
         }
       }
       i += 1
