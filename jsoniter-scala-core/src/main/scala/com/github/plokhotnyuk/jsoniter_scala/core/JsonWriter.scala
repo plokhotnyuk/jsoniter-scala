@@ -796,7 +796,7 @@ final class JsonWriter private[jsoniter_scala](
       val r0 = x - 10 * q0
       if (posMax == 0 && r0 == 0) writeSignificantFractionDigits(q0, pos - 1, posLim, 0, buf)
       else {
-        buf(pos) = ('0' + r0).toByte
+        buf(pos) = (r0 + '0').toByte
         writeSignificantFractionDigits(q0, pos - 1, posLim, if (posMax == 0) pos + 1 else posMax, buf)
       }
     }
@@ -1337,7 +1337,7 @@ final class JsonWriter private[jsoniter_scala](
           var i = 0
           while (i < ei) {
             val newOutput = (output * 3435973837L >> 35).toInt // divide positive int by 10
-            buf(pos) = ('0' + output - 10 * newOutput).toByte
+            buf(pos) = (output - 10 * newOutput + '0').toByte
             output = newOutput
             pos -= 1
             i += 1
@@ -1361,11 +1361,10 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           exp = -exp
         }
-        if (exp >= 10) write2Digits(exp, pos, buf, ds)
-        else {
-          buf(pos) = ('0' + exp).toByte
+        if (exp < 10) {
+          buf(pos) = (exp + '0').toByte
           pos + 1
-        }
+        } else write2Digits(exp, pos, buf, ds)
       }
     }
   }
@@ -1386,10 +1385,10 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeNDigits(q0: Int, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (n == 0) pos
     else if (n == 1) {
-      buf(pos) =
-        if (q0 < 10) (q0 + '0').toByte
-        else if (q0 < 100) ds(q0).toByte
-        else (q0 % 10 + '0').toByte
+      buf(pos) = {
+        if (q0 < 100) ds(q0)
+        else q0 % 10 + '0'
+      }.toByte
       pos - 1
     } else {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
@@ -1499,7 +1498,7 @@ final class JsonWriter private[jsoniter_scala](
           var i = 0
           while (i < ei) {
             val newOutput = output / 10
-            buf(pos) = ('0' + output - 10 * newOutput).toByte
+            buf(pos) = (output - 10 * newOutput + '0').toByte
             output = newOutput
             pos -= 1
             i += 1
@@ -1523,22 +1522,21 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           exp = -exp
         }
-        if (exp >= 100) write3Digits(exp, pos, buf, ds)
-        else if (exp >= 10) write2Digits(exp, pos, buf, ds)
-        else {
-          buf(pos) = ('0' + exp).toByte
+        if (exp < 10) {
+          buf(pos) = (exp + '0').toByte
           pos + 1
-        }
+        } else if (exp < 100) write2Digits(exp, pos, buf, ds)
+        else write3Digits(exp, pos, buf, ds)
       }
     }
   }
 
   @tailrec
-  private[this] def pow5Factor(value: Long, count: Int): Int =  {
-    val newValue = value / 5
-    if ((newValue << 2) + newValue != value) count
-    else if (newValue == newValue.toInt) pow5Factor(newValue.toInt, count + 1)
-    else pow5Factor(newValue, count + 1)
+  private[this] def pow5Factor(q0: Long, count: Int): Int =  {
+    val q1 = q0 / 5
+    if ((q1 << 2) + q1 != q0) count
+    else if (q1 == q1.toInt) pow5Factor(q1.toInt, count + 1)
+    else pow5Factor(q1, count + 1)
   }
 
   private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
@@ -1570,10 +1568,10 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeNDigits(q0: Long, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (n == 0) pos
     else if (n == 1) {
-      buf(pos) =
-        if (q0 < 10) (q0 + '0').toByte
-        else if (q0 < 100) ds(q0.toInt).toByte
-        else (q0 % 10 + '0').toByte
+      buf(pos) = {
+        if (q0 < 100) ds(q0.toInt)
+        else q0 % 10 + '0'
+      }.toByte
       pos - 1
     } else if (q0 == q0.toInt) writeNDigits(q0.toInt, n, pos, buf, ds)
     else {
@@ -1586,10 +1584,10 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   @tailrec
-  private[this] def pow5Factor(value: Int, count: Int): Int =  {
-    val newValue = (value * 3435973837L >> 34).toInt // divide positive int by 5
-    if ((newValue << 2) + newValue != value) count
-    else pow5Factor(newValue, count + 1)
+  private[this] def pow5Factor(q0: Int, count: Int): Int =  {
+    val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
+    if ((q1 << 2) + q1 != q0) count
+    else pow5Factor(q1, count + 1)
   }
 
   private[this] def pow5bits(e: Int): Int =
