@@ -1244,9 +1244,8 @@ final class JsonWriter private[jsoniter_scala](
       val mv = m2 << 2
       val mp = mv + 2
       val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
-      var dp, dv, dm, exp = 0
+      var dp, dv, dm, exp, lastRemovedDigit = 0
       var dpIsTrailingZeros, dmIsTrailingZeros = false
-      var lastRemovedDigit = 0
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 5422872582025449L >> 54).toInt // == (e2 * Math.log10(2)).toInt
@@ -1255,11 +1254,6 @@ final class JsonWriter private[jsoniter_scala](
         dv = mulPow5DivPow2(mv, q, i, ss)
         dp = mulPow5DivPow2(mp, q, i, ss)
         dm = mulPow5DivPow2(mm, q, i, ss)
-        if (q != 0 && (dp - 1 <= dm)) {
-          val l = 58 + pow5bits(q - 1)
-          val ds = mulPow5DivPow2(mv, q - 1, -e2 + q - 1 + l, ss)
-          lastRemovedDigit = ds - (ds * 3435973837L >> 35).toInt // divide positive int by 10
-        }
         exp = q
         dpIsTrailingZeros = pow5Factor(mp, 0) >= q
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
@@ -1272,11 +1266,6 @@ final class JsonWriter private[jsoniter_scala](
         dv = mulPow5DivPow2(mv, i, j, ss)
         dp = mulPow5DivPow2(mp, i, j, ss)
         dm = mulPow5DivPow2(mm, i, j, ss)
-        if (q != 0 && (dp - 1 <= dm)) {
-          j = q + 60 - pow5bits(i + 1)
-          val ds = mulPow5DivPow2(mv, i + 1, j, ss)
-          lastRemovedDigit = ds - (ds * 3435973837L >> 35).toInt // divide positive int by 10
-        }
         exp = q + e2
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
@@ -1397,7 +1386,7 @@ final class JsonWriter private[jsoniter_scala](
       val mp = mv + 2
       val mm = mv - (if (m2 != 4503599627370496L || ieeeExponent <= 1) 2 else 1)
       var dp, dv, dm = 0L
-      var exp = 0
+      var exp, lastRemovedDigit = 0
       var dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
@@ -1429,7 +1418,6 @@ final class JsonWriter private[jsoniter_scala](
       val decimalNotation = exp >= -3 && exp < 7
       val even = (m2 & 1) == 0
       if (dpIsTrailingZeros && !even) dp -= 1
-      var lastRemovedDigit = 0
       var newDp = dp / 10
       var newDm = dm / 10
       while (newDp > newDm && (dp >= 100 || decimalNotation)) {
