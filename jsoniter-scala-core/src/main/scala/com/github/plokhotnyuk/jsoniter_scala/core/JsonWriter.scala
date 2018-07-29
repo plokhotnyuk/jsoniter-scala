@@ -1597,13 +1597,9 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeNZeros(n: Int, pos: Int, buf: Array[Byte]): Int =
     if (n <= 0) pos
-    else if (n == 1) {
+    else {
       buf(pos) = '0'
-      pos + 1
-    } else {
-      buf(pos) = '0'
-      buf(pos + 1) = '0'
-      writeNZeros(n - 2, pos + 2, buf)
+      writeNZeros(n - 1, pos + 1, buf)
     }
 
   private[this] def writeIndention(delta: Int): Unit = if (indention != 0) writeNewLineAndSpaces(delta)
