@@ -1465,7 +1465,7 @@ final class JsonWriter private[jsoniter_scala](
         olength -= 1
       }
       if (dmIsTrailingZeros && even) {
-        var newDm = dm / 10
+        newDm = dm / 10
         while (dm == 10 * newDm && (dp >= 100 || decimalNotation)) {
           dp /= 10
           val newDv = dv / 10
