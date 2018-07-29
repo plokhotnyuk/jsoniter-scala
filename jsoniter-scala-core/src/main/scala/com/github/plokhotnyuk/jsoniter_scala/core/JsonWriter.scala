@@ -1383,13 +1383,15 @@ final class JsonWriter private[jsoniter_scala](
 
   @tailrec
   private[this] def writeNDigits(q0: Int, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (n == 0) pos
-    else if (n == 1) {
-      buf(pos) = {
-        if (q0 < 100) ds(q0)
-        else q0 % 10 + '0'
-      }.toByte
-      pos - 1
+    if (n <= 1) {
+      if (n == 0) pos
+      else {
+        buf(pos) = {
+          if (q0 < 100) ds(q0)
+          else q0 % 10 + '0'
+        }.toByte
+        pos - 1
+      }
     } else {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
       val r1 = q0 - 100 * q1
@@ -1566,13 +1568,15 @@ final class JsonWriter private[jsoniter_scala](
 
   @tailrec
   private[this] def writeNDigits(q0: Long, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (n == 0) pos
-    else if (n == 1) {
-      buf(pos) = {
-        if (q0 < 100) ds(q0.toInt)
-        else q0 % 10 + '0'
-      }.toByte
-      pos - 1
+    if (n <= 1) {
+      if (n == 0) pos
+      else {
+        buf(pos) = {
+          if (q0 < 100) ds(q0.toInt)
+          else q0 % 10 + '0'
+        }.toByte
+        pos - 1
+      }
     } else if (q0 == q0.toInt) writeNDigits(q0.toInt, n, pos, buf, ds)
     else {
       val q1 = q0 / 100
