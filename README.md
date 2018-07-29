@@ -137,7 +137,11 @@ val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
-To see generated code add the following line to your sbt build file
+If you don't know how make your data structures from scratch but have a JSON Schema or a sample then use
+[some tool](https://github.com/julianpeeters/case-class-generator) or [an on-line service](https://transform.now.sh/json-to-scala-case-class/)
+to generate an initial version of them.
+
+To see generated code for codecs add the following line to your sbt build file
 
 ```sbt
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
