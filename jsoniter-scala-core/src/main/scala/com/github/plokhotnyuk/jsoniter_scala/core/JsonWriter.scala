@@ -1266,7 +1266,7 @@ final class JsonWriter private[jsoniter_scala](
         val q = (-e2 * 3147881031633675L >> 52).toInt // == (-e2 * Math.log10(5)).toInt
         val i = -e2 - q
         val k = pow5bits(i) - 61
-        var j = q - k
+        val j = q - k
         dv = mulPow5DivPow2(mv, i, j, ss)
         dp = mulPow5DivPow2(mp, i, j, ss)
         dm = mulPow5DivPow2(mm, i, j, ss)
