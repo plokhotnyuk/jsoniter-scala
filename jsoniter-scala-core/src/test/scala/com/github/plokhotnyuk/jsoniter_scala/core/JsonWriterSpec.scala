@@ -533,6 +533,22 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(1.00014165E-36f)
       check(200f)
       check(3.3554432E7f)
+/* Uncomment for checking through whole set of positive finite floats
+      var i = 0
+      var f = 0f
+      val l = java.lang.Float.floatToIntBits(Float.MaxValue)
+      try {
+        while (i < l) {
+          f = java.lang.Float.floatToIntBits(i)
+          check(f)
+          if ((i & 1048575) == 0) println(s"i=$i f=$f")
+          i += 1
+        }
+      } catch {
+        case ex: Exception =>
+          println("ERROR!!! " + f)
+      }
+*/
       forAll(minSuccessful(1000000)) { (n: Float) =>
         whenever(java.lang.Float.isFinite(n)) {
           check(n)

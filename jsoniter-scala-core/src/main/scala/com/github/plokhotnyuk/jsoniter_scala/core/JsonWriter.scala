@@ -1341,10 +1341,6 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
-        if (olength == 1) {
-          buf(pos) = '0'
-          pos += 1
-        }
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
@@ -1487,10 +1483,6 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
-        if (olength == 1) {
-          buf(pos) = '0'
-          pos += 1
-        }
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
