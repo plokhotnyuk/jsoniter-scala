@@ -1572,6 +1572,11 @@ final class JsonWriter private[jsoniter_scala](
         }.toByte
         pos - 1
       }
+    } else if (q0 < 100) {
+      val d = ds(q0)
+      buf(pos - 1) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      pos - 2
     } else {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
       val r1 = q0 - 100 * q1
