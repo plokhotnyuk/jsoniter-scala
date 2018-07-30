@@ -1239,8 +1239,12 @@ final class JsonWriter private[jsoniter_scala](
     else count = {
       val ieeeExponent = (bits >> 23) & 255
       val ieeeMantissa = bits & 8388607
-      val e2 = if (ieeeExponent == 0) -151 else ieeeExponent - 152
-      val m2 = if (ieeeExponent == 0) ieeeMantissa else ieeeMantissa | 8388608
+      val e2 =
+        if (ieeeExponent == 0) -151
+        else ieeeExponent - 152
+      val m2 =
+        if (ieeeExponent == 0) ieeeMantissa
+        else ieeeMantissa | 8388608
       val mv = m2 << 2
       val mp = mv + 2
       val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
@@ -1380,8 +1384,12 @@ final class JsonWriter private[jsoniter_scala](
     else count = {
       val ieeeExponent = ((bits >> 52) & 2047).toInt
       val ieeeMantissa = bits & 4503599627370495L
-      val e2 = if (ieeeExponent == 0) -1076 else ieeeExponent - 1077
-      val m2 = if (ieeeExponent == 0) ieeeMantissa else ieeeMantissa | 4503599627370496L
+      val e2 =
+        if (ieeeExponent == 0) -1076
+        else ieeeExponent - 1077
+      val m2 =
+        if (ieeeExponent == 0) ieeeMantissa
+        else ieeeMantissa | 4503599627370496L
       val mv = m2 << 2L
       val mp = mv + 2
       val mm = mv - (if (m2 != 4503599627370496L || ieeeExponent <= 1) 2 else 1)

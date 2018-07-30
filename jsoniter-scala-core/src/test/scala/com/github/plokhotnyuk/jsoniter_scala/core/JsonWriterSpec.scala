@@ -477,12 +477,12 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "write finite float values" in {
       def check(n: Float): Unit = {
         val s = withWriter(_.writeVal(n))
-        s.toFloat shouldBe n // no data loss
-        s.length should be <= n.toString.length // rounding is more efficient
         val i = s.indexOf('.')
         i should be > 0 // has '.' character
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has digit before '.'
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
+        s.toFloat shouldBe n // no data loss
+        s.length should be <= n.toString.length // rounding isn't worse than in JDK
         s.indexOf('.') should be > 0
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
@@ -551,12 +551,12 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "write finite double values" in {
       def check(n: Double): Unit = {
         val s = withWriter(_.writeVal(n))
-        s.toDouble shouldBe n // no data loss
-        s.length should be <= n.toString.length // rounding is more efficient
         val i = s.indexOf('.')
         i should be > 0 // has '.' character
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has digit before '.'
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
+        s.toDouble shouldBe n // no data loss
+        s.length should be <= n.toString.length // rounding isn't worse than in JDK
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
