@@ -1181,11 +1181,11 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      if (q0 == q0.toInt) writeInt(q0.toInt, pos, buf, ds)
+      if (q0.toInt == q0) writeInt(q0.toInt, pos, buf, ds)
       else {
         val q1 = q0 / 100000000
         val r1 = (q0 - 100000000 * q1).toInt
-        if (q1 == q1.toInt) write8Digits(r1, writeInt(q1.toInt, pos, buf, ds), buf, ds)
+        if (q1.toInt == q1) write8Digits(r1, writeInt(q1.toInt, pos, buf, ds), buf, ds)
         else {
           val q2 = q1 / 100000000
           val r2 = (q1 - 100000000 * q2).toInt
@@ -1274,16 +1274,16 @@ final class JsonWriter private[jsoniter_scala](
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
+      val even = (m2 & 1) == 0
+      if (dpIsTrailingZeros && !even) dp -= 1
       var olength = offset(dp)
       exp += olength
       olength += 1
       val decimalNotation = exp >= -3 && exp < 7
-      val even = (m2 & 1) == 0
-      if (dpIsTrailingZeros && !even) dp -= 1
       var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
       var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
       while (newDp > newDm && (dp >= 100 || decimalNotation)) {
-        dmIsTrailingZeros &= dm == newDm * 10
+        dmIsTrailingZeros &= newDm * 10 == dm
         val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
         lastRemovedDigit = dv - newDv * 10
         dv = newDv
@@ -1295,7 +1295,7 @@ final class JsonWriter private[jsoniter_scala](
       }
       if (dmIsTrailingZeros && even) {
         newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-        while (dm == newDm * 10 && (dp >= 100 || decimalNotation)) {
+        while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
           dp = (dp * 3435973837L >> 35).toInt
           val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
           lastRemovedDigit = dv - newDv * 10
@@ -1416,16 +1416,16 @@ final class JsonWriter private[jsoniter_scala](
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
+      val even = (m2 & 1) == 0
+      if (dpIsTrailingZeros && !even) dp -= 1
       var olength = offset(dp)
       exp += olength
       olength += 1
       val decimalNotation = exp >= -3 && exp < 7
-      val even = (m2 & 1) == 0
-      if (dpIsTrailingZeros && !even) dp -= 1
       var newDp = dp / 10
       var newDm = dm / 10
       while (newDp > newDm && (dp >= 100 || decimalNotation)) {
-        dmIsTrailingZeros &= dm == newDm * 10
+        dmIsTrailingZeros &= newDm * 10 == dm
         val newDv = dv / 10
         lastRemovedDigit = (dv - newDv * 10).toInt
         dv = newDv
@@ -1437,7 +1437,7 @@ final class JsonWriter private[jsoniter_scala](
       }
       if (dmIsTrailingZeros && even) {
         newDm = dm / 10
-        while (dm == newDm * 10 && (dp >= 100 || decimalNotation)) {
+        while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
           dp /= 10
           val newDv = dv / 10
           lastRemovedDigit = (dv - newDv * 10).toInt
@@ -1503,7 +1503,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def pow5Factor(q0: Long, count: Int): Int =  {
     val q1 = q0 / 5
     if ((q1 << 2) + q1 != q0) count
-    else if (q1 == q1.toInt) pow5Factor(q1.toInt, count + 1)
+    else if (q1.toInt == q1) pow5Factor(q1.toInt, count + 1)
     else pow5Factor(q1, count + 1)
   }
 
@@ -1549,7 +1549,7 @@ final class JsonWriter private[jsoniter_scala](
       val d = ds(r1)
       buf(pos - 1) = (d >> 8).toByte
       buf(pos) = d.toByte
-      if (q1 == q1.toInt) writeNDigits(q1.toInt, n - 2, pos - 2, buf, ds)
+      if (q1.toInt == q1) writeNDigits(q1.toInt, n - 2, pos - 2, buf, ds)
       else writeNDigits(q1, n - 2, pos - 2, buf, ds)
     }
 
