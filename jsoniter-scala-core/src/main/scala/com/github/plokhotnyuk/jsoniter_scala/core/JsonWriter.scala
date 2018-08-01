@@ -1447,6 +1447,7 @@ final class JsonWriter private[jsoniter_scala](
       }
       var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
       var pos = ensureBufCapacity(24)
+      val buf = this.buf
       if (bits < 0) {
         buf(pos) = '-'
         pos += 1
