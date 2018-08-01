@@ -1781,7 +1781,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(100000)) { (n: Float) =>
         checkFloat(n.toString)
       }
-      //(1 to Int.MaxValue).par.foreach { n =>
+      //(0 to Int.MaxValue).par.foreach { n =>
       forAll(minSuccessful(100000)) { (n: Int) =>
         val x = java.lang.Float.floatToRawIntBits(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)

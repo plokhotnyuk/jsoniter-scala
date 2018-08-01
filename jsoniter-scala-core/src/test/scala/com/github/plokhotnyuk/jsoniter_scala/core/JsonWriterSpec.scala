@@ -533,25 +533,13 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(1.00014165E-36f)
       check(200f)
       check(3.3554432E7f)
-/* Uncomment for checking through whole set of positive finite floats
-      var i = 0
-      var f = 0f
-      try {
-        do {
-          f = java.lang.Float.intBitsToFloat(i)
-          if (java.lang.Float.isFinite(f)) check(f)
-          if ((i & 1048575) == 0) println(s"i=$i f=$f")
-          i += 1
-        } while (i != -i)
-      } catch {
-        case ex: Exception =>
-          println("ERROR!!! " + f)
+      //(0 to Int.MaxValue).par.foreach { n =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
+        val x = java.lang.Float.floatToRawIntBits(n)
+        if (java.lang.Float.isFinite(x)) check(x)
       }
-*/
-      forAll(minSuccessful(1000000)) { (n: Float) =>
-        whenever(java.lang.Float.isFinite(n)) {
-          check(n)
-        }
+      forAll(minSuccessful(100000)) { (n: Float) =>
+        if (java.lang.Float.isFinite(n)) check(n)
       }
     }
     "throw i/o exception on non-finite numbers" in {
@@ -572,7 +560,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
         s.toDouble shouldBe n // no data loss
         s.length should be <= n.toString.length // rounding isn't worse than in JDK
-        withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
@@ -601,10 +588,12 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(1.9430376160308388E16)
       check(-6.9741824662760956E19)
       check(4.3816050601147837E18)
-      forAll(minSuccessful(1000000)) { (n: Double) =>
-        whenever(java.lang.Double.isFinite(n)) {
-          check(n)
-        }
+      forAll(minSuccessful(100000)) { (n: Long) =>
+        val x = java.lang.Float.floatToRawIntBits(n)
+        if (java.lang.Double.isFinite(x)) check(x)
+      }
+      forAll(minSuccessful(100000)) { (n: Double) =>
+        if (java.lang.Double.isFinite(n)) check(n)
       }
     }
     "throw i/o exception on non-finite numbers" in {
