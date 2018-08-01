@@ -39,7 +39,11 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x).map(_ + 1)
+  def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x).map {
+    x =>
+      println("never add 1 to the following number using an unlimited math conetext: " + x)
+      x + 1
+  }
 
   @Benchmark
   def readJacksonScala(): Array[BigDecimal] = jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
