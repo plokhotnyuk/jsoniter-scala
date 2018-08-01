@@ -461,44 +461,43 @@ final class JsonWriter private[jsoniter_scala](
     val leastSigBits1 = (x.getLeastSignificantBits >>> 32).toInt
     val leastSigBits2 = x.getLeastSignificantBits.toInt
     val toHexDigit = hexDigits
-    val m = 15
     buf(pos) = '"'
     buf(pos + 1) = toHexDigit(mostSigBits1 >>> 28)
-    buf(pos + 2) = toHexDigit((mostSigBits1 >>> 24) & m)
-    buf(pos + 3) = toHexDigit((mostSigBits1 >>> 20) & m)
-    buf(pos + 4) = toHexDigit((mostSigBits1 >>> 16) & m)
-    buf(pos + 5) = toHexDigit((mostSigBits1 >>> 12) & m)
-    buf(pos + 6) = toHexDigit((mostSigBits1 >>> 8) & m)
-    buf(pos + 7) = toHexDigit((mostSigBits1 >>> 4) & m)
-    buf(pos + 8) = toHexDigit(mostSigBits1 & m)
+    buf(pos + 2) = toHexDigit((mostSigBits1 >>> 24) & 15)
+    buf(pos + 3) = toHexDigit((mostSigBits1 >>> 20) & 15)
+    buf(pos + 4) = toHexDigit((mostSigBits1 >>> 16) & 15)
+    buf(pos + 5) = toHexDigit((mostSigBits1 >>> 12) & 15)
+    buf(pos + 6) = toHexDigit((mostSigBits1 >>> 8) & 15)
+    buf(pos + 7) = toHexDigit((mostSigBits1 >>> 4) & 15)
+    buf(pos + 8) = toHexDigit(mostSigBits1 & 15)
     buf(pos + 9) = '-'
     buf(pos + 10) = toHexDigit(mostSigBits2 >>> 28)
-    buf(pos + 11) = toHexDigit((mostSigBits2 >>> 24) & m)
-    buf(pos + 12) = toHexDigit((mostSigBits2 >>> 20) & m)
-    buf(pos + 13) = toHexDigit((mostSigBits2 >>> 16) & m)
+    buf(pos + 11) = toHexDigit((mostSigBits2 >>> 24) & 15)
+    buf(pos + 12) = toHexDigit((mostSigBits2 >>> 20) & 15)
+    buf(pos + 13) = toHexDigit((mostSigBits2 >>> 16) & 15)
     buf(pos + 14) = '-'
-    buf(pos + 15) = toHexDigit((mostSigBits2 >>> 12) & m)
-    buf(pos + 16) = toHexDigit((mostSigBits2 >>> 8) & m)
-    buf(pos + 17) = toHexDigit((mostSigBits2 >>> 4) & m)
-    buf(pos + 18) = toHexDigit(mostSigBits2 & m)
+    buf(pos + 15) = toHexDigit((mostSigBits2 >>> 12) & 15)
+    buf(pos + 16) = toHexDigit((mostSigBits2 >>> 8) & 15)
+    buf(pos + 17) = toHexDigit((mostSigBits2 >>> 4) & 15)
+    buf(pos + 18) = toHexDigit(mostSigBits2 & 15)
     buf(pos + 19) = '-'
     buf(pos + 20) = toHexDigit(leastSigBits1 >>> 28)
-    buf(pos + 21) = toHexDigit((leastSigBits1 >>> 24) & m)
-    buf(pos + 22) = toHexDigit((leastSigBits1 >>> 20) & m)
-    buf(pos + 23) = toHexDigit((leastSigBits1 >>> 16) & m)
+    buf(pos + 21) = toHexDigit((leastSigBits1 >>> 24) & 15)
+    buf(pos + 22) = toHexDigit((leastSigBits1 >>> 20) & 15)
+    buf(pos + 23) = toHexDigit((leastSigBits1 >>> 16) & 15)
     buf(pos + 24) = '-'
-    buf(pos + 25) = toHexDigit((leastSigBits1 >>> 12) & m)
-    buf(pos + 26) = toHexDigit((leastSigBits1 >>> 8) & m)
-    buf(pos + 27) = toHexDigit((leastSigBits1 >>> 4) & m)
-    buf(pos + 28) = toHexDigit(leastSigBits1 & m)
+    buf(pos + 25) = toHexDigit((leastSigBits1 >>> 12) & 15)
+    buf(pos + 26) = toHexDigit((leastSigBits1 >>> 8) & 15)
+    buf(pos + 27) = toHexDigit((leastSigBits1 >>> 4) & 15)
+    buf(pos + 28) = toHexDigit(leastSigBits1 & 15)
     buf(pos + 29) = toHexDigit(leastSigBits2 >>> 28)
-    buf(pos + 30) = toHexDigit((leastSigBits2 >>> 24) & m)
-    buf(pos + 31) = toHexDigit((leastSigBits2 >>> 20) & m)
-    buf(pos + 32) = toHexDigit((leastSigBits2 >>> 16) & m)
-    buf(pos + 33) = toHexDigit((leastSigBits2 >>> 12) & m)
-    buf(pos + 34) = toHexDigit((leastSigBits2 >>> 8) & m)
-    buf(pos + 35) = toHexDigit((leastSigBits2 >>> 4) & m)
-    buf(pos + 36) = toHexDigit(leastSigBits2 & m)
+    buf(pos + 30) = toHexDigit((leastSigBits2 >>> 24) & 15)
+    buf(pos + 31) = toHexDigit((leastSigBits2 >>> 20) & 15)
+    buf(pos + 32) = toHexDigit((leastSigBits2 >>> 16) & 15)
+    buf(pos + 33) = toHexDigit((leastSigBits2 >>> 12) & 15)
+    buf(pos + 34) = toHexDigit((leastSigBits2 >>> 8) & 15)
+    buf(pos + 35) = toHexDigit((leastSigBits2 >>> 4) & 15)
+    buf(pos + 36) = toHexDigit(leastSigBits2 & 15)
     buf(pos + 37) = '"'
     pos + 38
   }
@@ -682,25 +681,23 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeEscapedUnicode(ch: Char, pos: Int): Int = {
     val toHexDigit = hexDigits
-    val m = 15
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = toHexDigit(ch >>> 12)
-    buf(pos + 3) = toHexDigit((ch >>> 8) & m)
-    buf(pos + 4) = toHexDigit((ch >>> 4) & m)
-    buf(pos + 5) = toHexDigit(ch & m)
+    buf(pos + 3) = toHexDigit((ch >>> 8) & 15)
+    buf(pos + 4) = toHexDigit((ch >>> 4) & 15)
+    buf(pos + 5) = toHexDigit(ch & 15)
     pos + 6
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int): Int = {
     val toHexDigit = hexDigits
-    val m = 15
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
     buf(pos + 3) = '0'
-    buf(pos + 4) = toHexDigit((b >>> 4) & m)
-    buf(pos + 5) = toHexDigit(b & m)
+    buf(pos + 4) = toHexDigit((b >>> 4) & 15)
+    buf(pos + 5) = toHexDigit(b & 15)
     pos + 6
   }
 
