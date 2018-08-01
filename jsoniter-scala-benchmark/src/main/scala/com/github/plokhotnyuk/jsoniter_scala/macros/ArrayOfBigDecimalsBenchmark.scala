@@ -24,7 +24,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def setup(): Unit = {
     sourceObj = (1 to size).map { i =>
       //FIXME: | 1 is used to hide JDK bug of serialization redundant 0 after .
-      BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), i % 37)
+      BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), -1000000000)
     }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
     jsonString = sourceObj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
@@ -39,7 +39,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x).map(_ + 1)
 
   @Benchmark
   def readJacksonScala(): Array[BigDecimal] = jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
