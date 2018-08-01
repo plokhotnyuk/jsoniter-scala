@@ -1246,7 +1246,7 @@ final class JsonWriter private[jsoniter_scala](
       val mp = mv + 2
       val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
       var dp, dv, dm, exp, lastRemovedDigit = 0
-      var dpIsTrailingZeros, dmIsTrailingZeros = false
+      var dpIsTrailingZeros, dvIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 5422872582025449L >> 54).toInt // == (e2 * Math.log10(2)).toInt
@@ -1257,6 +1257,7 @@ final class JsonWriter private[jsoniter_scala](
         dm = mulPow5DivPow2(mm, q, i, ss)
         exp = q
         dpIsTrailingZeros = pow5Factor(mp, 0) >= q
+        dvIsTrailingZeros = pow5Factor(mv, 0) >= q
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
         val ss = f32Pow5Split
@@ -1269,6 +1270,7 @@ final class JsonWriter private[jsoniter_scala](
         dm = mulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
         dpIsTrailingZeros = 1 >= q
+        dvIsTrailingZeros = (q < 23) && (mv & ((1 << (q - 1)) - 1)) == 0
         dmIsTrailingZeros = (~mm & 1) >= q
       }
       val even = (m2 & 1) == 0
@@ -1302,6 +1304,7 @@ final class JsonWriter private[jsoniter_scala](
           olength -= 1
         }
       }
+      if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0) lastRemovedDigit = 4
       var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
       var pos = ensureBufCapacity(15)
       val buf = this.buf
