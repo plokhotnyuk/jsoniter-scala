@@ -608,6 +608,18 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         if (java.lang.Double.isFinite(n)) check(n)
       }
     }
+    "write round-even double values" in {
+      def check(n: Double): Unit = {
+        val s = n.toString
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
+        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+      }
+
+      check(1.8557466319180092E15)
+      check(2.0273048448871122E15)
+      check(2.1454965803968662E14)
+    }
     "throw i/o exception on non-finite numbers" in {
       forAll(Gen.oneOf(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) { (n: Double) =>
         assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))

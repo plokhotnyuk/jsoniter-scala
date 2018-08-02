@@ -1245,8 +1245,8 @@ final class JsonWriter private[jsoniter_scala](
       val mv = m2 << 2
       val mp = mv + 2
       val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
-      var dp, dv, dm, exp, lastRemovedDigit = 0
-      var dpIsTrailingZeros, dvIsTrailingZeros, dmIsTrailingZeros = false
+      var dv, dp, dm, exp, lastRemovedDigit = 0
+      var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 5422872582025449L >> 54).toInt // == (e2 * Math.log10(2)).toInt
@@ -1256,8 +1256,8 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, q, i, ss)
         dm = mulPow5DivPow2(mm, q, i, ss)
         exp = q
-        dpIsTrailingZeros = pow5Factor(mp, 0) >= q
         dvIsTrailingZeros = pow5Factor(mv, 0) >= q
+        dpIsTrailingZeros = pow5Factor(mp, 0) >= q
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
         val ss = f32Pow5Split
@@ -1269,8 +1269,8 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, i, j, ss)
         dm = mulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
+        dvIsTrailingZeros = (q < 31) && (mv & ((1 << (q - 1)) - 1)) == 0
         dpIsTrailingZeros = 1 >= q
-        dvIsTrailingZeros = (q < 23) && (mv & ((1 << (q - 1)) - 1)) == 0
         dmIsTrailingZeros = (~mm & 1) >= q
       }
       val even = (m2 & 1) == 0
@@ -1283,6 +1283,7 @@ final class JsonWriter private[jsoniter_scala](
       var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
       while (newDp > newDm && (dp >= 100 || decimalNotation)) {
         dmIsTrailingZeros &= newDm * 10 == dm
+        dvIsTrailingZeros &= lastRemovedDigit == 0
         val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
         lastRemovedDigit = dv - newDv * 10
         dv = newDv
@@ -1296,6 +1297,7 @@ final class JsonWriter private[jsoniter_scala](
         newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
         while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
           dp = (dp * 3435973837L >> 35).toInt
+          dvIsTrailingZeros &= lastRemovedDigit == 0
           val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
           lastRemovedDigit = dv - newDv * 10
           dv = newDv
@@ -1390,9 +1392,9 @@ final class JsonWriter private[jsoniter_scala](
       val mv = m2 << 2L
       val mp = mv + 2
       val mm = mv - (if (m2 != 4503599627370496L || ieeeExponent <= 1) 2 else 1)
-      var dp, dv, dm = 0L
+      var dv, dp, dm = 0L
       var exp, lastRemovedDigit = 0
-      var dpIsTrailingZeros, dmIsTrailingZeros = false
+      var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
         val q = Math.max(0, (e2 * 5422872582025449L >> 54).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
@@ -1402,6 +1404,7 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, q, i, ss)
         dm = fullMulPow5DivPow2(mm, q, i, ss)
         exp = q
+        dvIsTrailingZeros = pow5Factor(mv, 0) >= q
         dpIsTrailingZeros = pow5Factor(mp, 0) >= q
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
@@ -1414,6 +1417,7 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, i, j, ss)
         dm = fullMulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
+        dvIsTrailingZeros = (q < 63) && (mv & ((1L << (q - 1)) - 1)) == 0
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
@@ -1427,6 +1431,7 @@ final class JsonWriter private[jsoniter_scala](
       var newDm = dm / 10
       while (newDp > newDm && (dp >= 100 || decimalNotation)) {
         dmIsTrailingZeros &= newDm * 10 == dm
+        dvIsTrailingZeros &= lastRemovedDigit == 0
         val newDv = dv / 10
         lastRemovedDigit = (dv - newDv * 10).toInt
         dv = newDv
@@ -1440,6 +1445,7 @@ final class JsonWriter private[jsoniter_scala](
         newDm = dm / 10
         while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
           dp /= 10
+          dvIsTrailingZeros &= lastRemovedDigit == 0
           val newDv = dv / 10
           lastRemovedDigit = (dv - newDv * 10).toInt
           dv = newDv
@@ -1448,6 +1454,7 @@ final class JsonWriter private[jsoniter_scala](
           olength -= 1
         }
       }
+      if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0) lastRemovedDigit = 4
       var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
       var pos = ensureBufCapacity(24)
       val buf = this.buf
