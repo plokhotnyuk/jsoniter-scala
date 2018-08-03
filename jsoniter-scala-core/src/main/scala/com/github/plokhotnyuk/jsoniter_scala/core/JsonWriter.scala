@@ -1269,7 +1269,7 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, i, j, ss)
         dm = mulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
-        dvIsTrailingZeros = (q < 31) && (mv & ((1 << (q - 1)) - 1)) == 0
+        dvIsTrailingZeros = (q < 23) && (mv & ((1 << (q - 1)) - 1)) == 0
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
@@ -1306,8 +1306,8 @@ final class JsonWriter private[jsoniter_scala](
           olength -= 1
         }
       }
-      if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0) lastRemovedDigit = 4
-      var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
+      var output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+        (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
       var pos = ensureBufCapacity(15)
       val buf = this.buf
       if (bits < 0) {
@@ -1417,7 +1417,7 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, i, j, ss)
         dm = fullMulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
-        dvIsTrailingZeros = (q < 63) && (mv & ((1L << (q - 1)) - 1)) == 0
+        dvIsTrailingZeros = (q < 52) && (mv & ((1L << (q - 1)) - 1)) == 0
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
@@ -1454,8 +1454,8 @@ final class JsonWriter private[jsoniter_scala](
           olength -= 1
         }
       }
-      if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0) lastRemovedDigit = 4
-      var output = dv + (if (lastRemovedDigit >= 5 || dv == dm && !(dmIsTrailingZeros && even)) 1 else 0)
+      var output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+        (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
       var pos = ensureBufCapacity(24)
       val buf = this.buf
       if (bits < 0) {
