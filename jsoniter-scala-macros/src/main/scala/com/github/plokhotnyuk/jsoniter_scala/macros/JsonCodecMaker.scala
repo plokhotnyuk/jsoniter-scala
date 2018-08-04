@@ -423,14 +423,11 @@ object JsonCodecMaker {
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedKeyError(l)"
-      val skipDiscriminatorField = {
-        val cs = codecConfig.discriminatorFieldName.toCharArray
-        cq"""${JsonReader.toHashCode(cs, cs.length)} =>
-             if (pd) {
-               pd = !pd
-               in.skip()
-             } else in.duplicatedKeyError(l)"""
-      }
+      val skipDiscriminatorField =
+        q"""if (pd) {
+              pd = !pd
+              in.skip()
+            } else in.duplicatedKeyError(l)"""
 
       def discriminatorValue(tpe: Type): String =
         codecConfig.adtLeafClassNameMapper(NameTransformer.decode(tpe.typeSymbol.fullName))
@@ -747,19 +744,23 @@ object JsonCodecMaker {
           val readVars = classInfo.fields
             .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
           val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
-          val readFields = groupByOrdered(classInfo.fields)(hashCode).map { case (hash, fs) =>
+          val fields =
+            if (discriminator.isEmpty) classInfo.fields
+            else classInfo.fields :+ FieldInfo(null, codecConfig.discriminatorFieldName, null, null, null, null, true)
+          val readFields = groupByOrdered(fields)(hashCode).map { case (hash, fs) =>
             val checkNameAndReadValue = fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
-              val readValue = q"${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"
-              q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) {
-                    ..${checkAndResetFieldPresenceFlags(f.mappedName)}
-                    ..$readValue
-                  } else $acc"""
+              val readValue =
+                if (discriminator.nonEmpty && f.mappedName == codecConfig.discriminatorFieldName) discriminator
+                else {
+                  q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
+                      ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
+                }
+              q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
+                  else $acc"""
             }
             cq"$hash => $checkNameAndReadValue"
           }.toSeq
-          val readFieldsBlock =
-            (if (discriminator.isEmpty) readFields
-            else readFields :+ discriminator) :+ cq"_ => $unexpectedFieldHandler"
+          val readFieldsBlock = readFields :+ cq"_ => $unexpectedFieldHandler"
           val discriminatorVar =
             if (discriminator.isEmpty) EmptyTree
             else q"var pd = true"
