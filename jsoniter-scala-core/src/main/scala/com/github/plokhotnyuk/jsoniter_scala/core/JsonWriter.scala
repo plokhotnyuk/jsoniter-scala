@@ -1244,7 +1244,7 @@ final class JsonWriter private[jsoniter_scala](
         else ieeeMantissa | 8388608
       val mv = m2 << 2
       val mp = mv + 2
-      val mm = mv - (if (m2 != 8388608 || ieeeExponent <= 1) 2 else 1)
+      val mm = mv - (if (ieeeMantissa != 0 || ieeeExponent <= 1) 2 else 1)
       var dv, dp, dm, exp, lastRemovedDigit = 0
       var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
@@ -1391,7 +1391,7 @@ final class JsonWriter private[jsoniter_scala](
         else ieeeMantissa | 4503599627370496L
       val mv = m2 << 2L
       val mp = mv + 2
-      val mm = mv - (if (m2 != 4503599627370496L || ieeeExponent <= 1) 2 else 1)
+      val mm = mv - (if (ieeeMantissa != 0 || ieeeExponent <= 1) 2 else 1)
       var dv, dp, dm = 0L
       var exp, lastRemovedDigit = 0
       var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
