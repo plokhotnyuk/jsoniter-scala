@@ -1250,7 +1250,7 @@ final class JsonWriter private[jsoniter_scala](
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 5422872582025449L >> 54).toInt // == (e2 * Math.log10(2)).toInt
-        val k = pow5bits(q) + 58
+        val k = pow5Bits(q) + 58
         val i = -e2 + q + k
         dv = mulPow5DivPow2(mv, q, i, ss)
         dp = mulPow5DivPow2(mp, q, i, ss)
@@ -1263,7 +1263,7 @@ final class JsonWriter private[jsoniter_scala](
         val ss = f32Pow5Split
         val q = (-e2 * 3147881031633675L >> 52).toInt // == (-e2 * Math.log10(5)).toInt
         val i = -e2 - q
-        val k = pow5bits(i) - 61
+        val k = pow5Bits(i) - 61
         val j = q - k
         dv = mulPow5DivPow2(mv, i, j, ss)
         dp = mulPow5DivPow2(mp, i, j, ss)
@@ -1398,7 +1398,7 @@ final class JsonWriter private[jsoniter_scala](
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
         val q = Math.max(0, (e2 * 5422872582025449L >> 54).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
-        val k = pow5bits(q) + 121
+        val k = pow5Bits(q) + 121
         val i = -e2 + q + k
         dv = fullMulPow5DivPow2(mv, q, i, ss)
         dp = fullMulPow5DivPow2(mp, q, i, ss)
@@ -1411,7 +1411,7 @@ final class JsonWriter private[jsoniter_scala](
         val ss = f64Pow5Split
         val q = Math.max(0, (-e2 * 3147881031633675L >> 52).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
         val i = -e2 - q
-        val k = pow5bits(i) - 121
+        val k = pow5Bits(i) - 121
         val j = q - k
         dv = fullMulPow5DivPow2(mv, i, j, ss)
         dp = fullMulPow5DivPow2(mp, i, j, ss)
@@ -1594,9 +1594,9 @@ final class JsonWriter private[jsoniter_scala](
     else pow5Factor(q1, count + 1)
   }
 
-  private[this] def pow5bits(e: Int): Int =
+  private[this] def pow5Bits(e: Int): Int =
     if (e == 0) 1
-    else ((e * 23219280L + 9999999) * 1801439851L >> 54).toInt // == Math.ceil(e * Math.log(5) / Math.log(2))
+    else ((e * 9972605231L + 4294967295L) >> 32).toInt // == Math.ceil(e * Math.log(5) / Math.log(2))
 
   @tailrec
   private[this] def writeNZeros(n: Int, pos: Int, buf: Array[Byte]): Int =
