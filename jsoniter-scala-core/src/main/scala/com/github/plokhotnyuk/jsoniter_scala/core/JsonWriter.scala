@@ -1229,12 +1229,12 @@ final class JsonWriter private[jsoniter_scala](
   // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuFloat.java
   // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
   private[this] def writeFloat(x: Float): Unit = {
-    if (!java.lang.Float.isFinite(x)) encodeError("illegal number: " + x)
     val bits = java.lang.Float.floatToRawIntBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
     else if (bits == 0x80000000) writeBytes('-', '0', '.', '0')
     else count = {
       val ieeeExponent = (bits >> 23) & 255
+      if (ieeeExponent == 255) encodeError("illegal number: " + x)
       val ieeeMantissa = bits & 8388607
       val e2 =
         if (ieeeExponent == 0) -151
@@ -1249,7 +1249,7 @@ final class JsonWriter private[jsoniter_scala](
       var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
-        val q = (e2 * 5422872582025449L >> 54).toInt // == (e2 * Math.log10(2)).toInt
+        val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
         val k = pow5Bits(q) + 58
         val i = -e2 + q + k
         dv = mulPow5DivPow2(mv, q, i, ss)
@@ -1261,7 +1261,7 @@ final class JsonWriter private[jsoniter_scala](
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
         val ss = f32Pow5Split
-        val q = (-e2 * 3147881031633675L >> 52).toInt // == (-e2 * Math.log10(5)).toInt
+        val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
         val i = -e2 - q
         val k = pow5Bits(i) - 61
         val j = q - k
@@ -1373,12 +1373,12 @@ final class JsonWriter private[jsoniter_scala](
   // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuDouble.java
   // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
   private[this] def writeDouble(x: Double): Unit = {
-    if (!java.lang.Double.isFinite(x)) encodeError("illegal number: " + x)
     val bits = java.lang.Double.doubleToRawLongBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
     else if (bits == 0x8000000000000000L) writeBytes('-', '0', '.', '0')
     else count = {
       val ieeeExponent = ((bits >> 52) & 2047).toInt
+      if (ieeeExponent == 2047) encodeError("illegal number: " + x)
       val ieeeMantissa = bits & 4503599627370495L
       val e2 =
         if (ieeeExponent == 0) -1076
@@ -1394,7 +1394,7 @@ final class JsonWriter private[jsoniter_scala](
       var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
-        val q = Math.max(0, (e2 * 5422872582025449L >> 54).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
+        val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
         val k = pow5Bits(q) + 121
         val i = -e2 + q + k
         dv = fullMulPow5DivPow2(mv, q, i, ss)
@@ -1406,7 +1406,7 @@ final class JsonWriter private[jsoniter_scala](
         dmIsTrailingZeros = pow5Factor(mm, 0) >= q
       } else {
         val ss = f64Pow5Split
-        val q = Math.max(0, (-e2 * 3147881031633675L >> 52).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
+        val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
         val i = -e2 - q
         val k = pow5Bits(i) - 121
         val j = q - k
