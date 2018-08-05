@@ -1306,7 +1306,7 @@ final class JsonWriter private[jsoniter_scala](
           olength -= 1
         }
       }
-      var output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+      val output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
         (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
       var pos = ensureBufCapacity(15)
       val buf = this.buf
@@ -1326,18 +1326,15 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = '0'
           pos + 2
         } else {
-          pos += olength
-          val ei = olength - 1 - exp
-          var i = 0
-          while (i < ei) {
-            val newOutput = (output * 3435973837L >> 35).toInt // divide positive int by 10
-            buf(pos) = (output - newOutput * 10 + '0').toByte
-            output = newOutput
-            pos -= 1
-            i += 1
+          val lastPos = pos + olength
+          val dotPos = pos + exp + 1
+          writeNDigits(output, olength, lastPos, buf, ds)
+          while (pos < dotPos) {
+            buf(pos) = buf(pos + 1)
+            pos += 1
           }
           buf(pos) = '.'
-          writeNDigits(output, olength - i, pos - 1, buf, ds) + olength + 2
+          lastPos + 1
         }
       } else {
         pos = writeNDigits(output, olength, pos + olength, buf, ds)
@@ -1454,7 +1451,7 @@ final class JsonWriter private[jsoniter_scala](
           olength -= 1
         }
       }
-      var output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+      val output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
         (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
       var pos = ensureBufCapacity(24)
       val buf = this.buf
@@ -1474,18 +1471,15 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = '0'
           pos + 2
         } else {
-          pos += olength
-          val ei = olength - 1 - exp
-          var i = 0
-          while (i < ei) {
-            val newOutput = output / 10
-            buf(pos) = (output - newOutput * 10 + '0').toByte
-            output = newOutput
-            pos -= 1
-            i += 1
+          val lastPos = pos + olength
+          val dotPos = pos + exp + 1
+          writeNDigits(output, olength, lastPos, buf, ds)
+          while (pos < dotPos) {
+            buf(pos) = buf(pos + 1)
+            pos += 1
           }
           buf(pos) = '.'
-          writeNDigits(output, olength - i, pos - 1, buf, ds) + olength + 2
+          lastPos + 1
         }
       } else {
         pos = writeNDigits(output, olength, pos + olength, buf, ds)
