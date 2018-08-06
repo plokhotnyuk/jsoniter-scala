@@ -16,10 +16,16 @@ public class UnsafeUtils {
             Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
             f.setAccessible(true);
             u = (sun.misc.Unsafe) f.get(null);
-            svo = u.objectFieldOffset(String.class.getDeclaredField("value"));
-            sco = u.objectFieldOffset(String.class.getDeclaredField("coder"));
         } catch (Throwable e) {
             // ignore
+        }
+        if (u != null) {
+            try {
+                svo = u.objectFieldOffset(String.class.getDeclaredField("value"));
+                sco = u.objectFieldOffset(String.class.getDeclaredField("coder"));
+            } catch (Throwable e) {
+                // ignore
+            }
         }
         UNSAFE = u;
         STRING_CODER_OFFSET = sco;
