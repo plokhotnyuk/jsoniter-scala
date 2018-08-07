@@ -753,13 +753,15 @@ final class JsonWriter private[jsoniter_scala](
       val nanos = x.getNano
       var effectiveTotalSecs = totalSecs
       if (effectiveTotalSecs < 0 && nanos > 0) effectiveTotalSecs += 1
-      val hours = effectiveTotalSecs / 3600
+      val hours =
+        if (effectiveTotalSecs.toInt != effectiveTotalSecs) effectiveTotalSecs / 3600
+        else (effectiveTotalSecs * 2443359173L >> 43) - (effectiveTotalSecs >> 63) // divide signed int by 3600
       if (hours != 0) {
         writeLong(hours)
         writeBytes('H')
       }
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
-      val minutes = secsOfHour / 60
+      val minutes = ((secsOfHour * 2290649225L >> 37) - (secsOfHour >> 31)).toInt // divide signed int by 60
       if (minutes != 0) {
         writeInt(minutes)
         writeBytes('M')
@@ -837,7 +839,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
-    val centuryEst = yearEst / 100
+    val centuryEst = (yearEst * 1374389535L >> 37).toInt - (yearEst >> 31) // divide signed int by 100
     (marchZeroDay - 365L * yearEst).toInt - (yearEst >> 2) + centuryEst - (centuryEst >> 2)
   }
 
