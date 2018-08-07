@@ -744,6 +744,7 @@ object JsonCodecMaker {
           val readVars = classInfo.fields
             .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
           val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
+          val length: FieldInfo => Int = _.mappedName.length
           val readFields =
             if (discriminator.isEmpty) classInfo.fields
             else classInfo.fields :+ FieldInfo(null, codecConfig.discriminatorFieldName, null, null, null, null, true)
@@ -761,7 +762,7 @@ object JsonCodecMaker {
             }
 
           val readFieldsBlock =
-            if (readFields.size <= 8 && readFields.size == readFields.map(_.mappedName.length).distinct.size) {
+            if (readFields.size <= 4 && readFields.size == readFields.map(length).distinct.size) {
               genReadCollisions(readFields)
             } else {
               val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
@@ -790,11 +791,11 @@ object JsonCodecMaker {
                 $construct
               } else in.readNullOrTokenError(default, '{')"""
         } else if (isSealedAdtBase(tpe)) withDecoderFor(methodKey, default) {
-          def hashCode(subTpe: Type): Int = {
-            val cs = discriminatorValue(subTpe).toCharArray
+          val hashCode: Type => Int = t => {
+            val cs = discriminatorValue(t).toCharArray
             JsonReader.toHashCode(cs, cs.length)
           }
-
+          val length: Type => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
           val discrName = codecConfig.discriminatorFieldName
           checkDiscriminatorValueCollisions(discrName, leafClasses.map(discriminatorValue))
@@ -809,13 +810,12 @@ object JsonCodecMaker {
             }
 
           val readSubclassesBlock =
-            if (leafClasses.size <= 8 &&
-              leafClasses.size == leafClasses.map(t => discriminatorValue(t).length).distinct.size) {
+            if (leafClasses.size <= 4 && leafClasses.size == leafClasses.map(length).distinct.size) {
               readCollisions(leafClasses)
             } else {
-              val cases = groupByOrdered(leafClasses)(hashCode).map { case (hashCode, ts) =>
+              val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
                 val checkNameAndReadValue = readCollisions(ts)
-                cq"$hashCode => $checkNameAndReadValue"
+                cq"$hash => $checkNameAndReadValue"
               }.toSeq
               q"""(in.charBufToHashCode(l): @switch) match {
                     case ..$cases
