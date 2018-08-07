@@ -806,11 +806,11 @@ final class JsonWriter private[jsoniter_scala](
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
-      val adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1 // 146097 == number of days in a 400 year cycle
+      val adjust400YearCycles = to400YearCycle(marchZeroDay + 1) - 1
       adjustYear = adjust400YearCycles * 400
       marchZeroDay -= adjust400YearCycles * 146097L
     }
-    var yearEst = ((400 * marchZeroDay + 591) / 146097).toInt
+    var yearEst = to400YearCycle(400 * marchZeroDay + 591)
     var marchDayOfYear = toMarchDayOfYear(marchZeroDay, yearEst)
     if (marchDayOfYear < 0) { // fix estimate
       yearEst -= 1
@@ -837,6 +837,11 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = '"'
     pos + 2
   }
+
+  private[this] def to400YearCycle(day: Long): Int = {
+    if (day.toInt != day) day / 146097 // 146097 == number of days in a 400 year cycle
+    else (day * 3853261556L >> 49) - (day >> 63) // divide signed int by 146097
+  }.toInt
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
     val centuryEst = (yearEst * 1374389535L >> 37).toInt - (yearEst >> 31) // divide signed int by 100
