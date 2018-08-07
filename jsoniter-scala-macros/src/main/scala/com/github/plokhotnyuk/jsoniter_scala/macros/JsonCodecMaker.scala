@@ -744,11 +744,13 @@ object JsonCodecMaker {
           val readVars = classInfo.fields
             .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
           val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
-          val fields =
+          val length: FieldInfo => Int = _.mappedName.length
+          val readFields =
             if (discriminator.isEmpty) classInfo.fields
             else classInfo.fields :+ FieldInfo(null, codecConfig.discriminatorFieldName, null, null, null, null, true)
-          val readFields = groupByOrdered(fields)(hashCode).map { case (hash, fs) =>
-            val checkNameAndReadValue = fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
+
+          def genReadCollisions(fs: Seq[FieldInfo]): Tree =
+            fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
               val readValue =
                 if (discriminator.nonEmpty && f.mappedName == codecConfig.discriminatorFieldName) discriminator
                 else {
@@ -758,9 +760,18 @@ object JsonCodecMaker {
               q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
                   else $acc"""
             }
-            cq"$hash => $checkNameAndReadValue"
-          }.toSeq
-          val readFieldsBlock = readFields :+ cq"_ => $unexpectedFieldHandler"
+
+          val readFieldsBlock =
+            if (readFields.size <= 4 && readFields.size == readFields.map(length).distinct.size) {
+              genReadCollisions(readFields)
+            } else {
+              val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
+                cq"$hash => ${genReadCollisions(fs)}"
+              }.toSeq :+ cq"_ => $unexpectedFieldHandler"
+              q"""(in.charBufToHashCode(l): @switch) match {
+                    case ..$cases
+                  }"""
+            }
           val discriminatorVar =
             if (discriminator.isEmpty) EmptyTree
             else q"var pd = true"
@@ -772,9 +783,7 @@ object JsonCodecMaker {
                   in.rollbackToken()
                   do {
                     val l = in.readKeyAsCharBuf()
-                    (in.charBufToHashCode(l): @switch) match {
-                      case ..$readFieldsBlock
-                    }
+                    ..$readFieldsBlock
                   } while (in.isNextToken(','))
                   if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
                 }
@@ -782,32 +791,42 @@ object JsonCodecMaker {
                 $construct
               } else in.readNullOrTokenError(default, '{')"""
         } else if (isSealedAdtBase(tpe)) withDecoderFor(methodKey, default) {
-          def hashCode(subTpe: Type): Int = {
-            val cs = discriminatorValue(subTpe).toCharArray
+          val hashCode: Type => Int = t => {
+            val cs = discriminatorValue(t).toCharArray
             JsonReader.toHashCode(cs, cs.length)
           }
-
+          val length: Type => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
           val discrName = codecConfig.discriminatorFieldName
           checkDiscriminatorValueCollisions(discrName, leafClasses.map(discriminatorValue))
           val discriminatorValueError = q"in.discriminatorValueError($discrName)"
-          val readSubclasses = groupByOrdered(leafClasses)(hashCode).map { case (hashCode, subTpes) =>
-            val checkNameAndReadValue = subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
+
+          def readCollisions(subTpes: Seq[Type]): Tree =
+            subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
               q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
                     in.rollbackToMark()
                     ..${genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)}
                   } else $acc"""
             }
-            cq"$hashCode => $checkNameAndReadValue"
-          }.toSeq
+
+          val readSubclassesBlock =
+            if (leafClasses.size <= 4 && leafClasses.size == leafClasses.map(length).distinct.size) {
+              readCollisions(leafClasses)
+            } else {
+              val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
+                val checkNameAndReadValue = readCollisions(ts)
+                cq"$hash => $checkNameAndReadValue"
+              }.toSeq
+              q"""(in.charBufToHashCode(l): @switch) match {
+                    case ..$cases
+                    case _ => $discriminatorValueError
+                  }"""
+            }
           q"""in.setMark()
               if (in.isNextToken('{')) {
                 if (in.skipToKey($discrName)) {
                   val l = in.readStringAsCharBuf()
-                  (in.charBufToHashCode(l): @switch) match {
-                    case ..$readSubclasses
-                    case _ => $discriminatorValueError
-                  }
+                  ..$readSubclassesBlock
                 } else in.requiredFieldError($discrName)
               } else in.readNullOrTokenError(default, '{')"""
         } else cannotFindCodecError(tpe)
