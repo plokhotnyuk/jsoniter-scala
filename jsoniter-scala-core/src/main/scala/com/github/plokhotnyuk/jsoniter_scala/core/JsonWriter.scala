@@ -1256,9 +1256,9 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, q, i, ss)
         dm = mulPow5DivPow2(mm, q, i, ss)
         exp = q
-        dvIsTrailingZeros = pow5Factor(mv, 0) >= q
-        dpIsTrailingZeros = pow5Factor(mp, 0) >= q
-        dmIsTrailingZeros = pow5Factor(mm, 0) >= q
+        dvIsTrailingZeros = multiplePowOf5(mv, q)
+        dpIsTrailingZeros = multiplePowOf5(mp, q)
+        dmIsTrailingZeros = multiplePowOf5(mm, q)
       } else {
         val ss = f32Pow5Split
         val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
@@ -1269,7 +1269,7 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, i, j, ss)
         dm = mulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
-        dvIsTrailingZeros = (q < 23) && (mv & ((1 << (q - 1)) - 1)) == 0
+        dvIsTrailingZeros = (q < 23) && multiplePowOf2(mv, q - 1)
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
@@ -1401,9 +1401,9 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, q, i, ss)
         dm = fullMulPow5DivPow2(mm, q, i, ss)
         exp = q
-        dvIsTrailingZeros = pow5Factor(mv, 0) >= q
-        dpIsTrailingZeros = pow5Factor(mp, 0) >= q
-        dmIsTrailingZeros = pow5Factor(mm, 0) >= q
+        dvIsTrailingZeros = multiplePowOf5(mv, q)
+        dpIsTrailingZeros = multiplePowOf5(mp, q)
+        dmIsTrailingZeros = multiplePowOf5(mm, q)
       } else {
         val ss = f64Pow5Split
         val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
@@ -1414,7 +1414,7 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, i, j, ss)
         dm = fullMulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
-        dvIsTrailingZeros = (q < 52) && (mv & ((1L << (q - 1)) - 1)) == 0
+        dvIsTrailingZeros = (q < 52) && multiplePowOf2(mv, q - 1)
         dpIsTrailingZeros = 1 >= q
         dmIsTrailingZeros = (~mm & 1) >= q
       }
@@ -1502,13 +1502,17 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
+  private[this] def multiplePowOf2(q0: Long, q: Int): Boolean = (q0 & ((1L << q) - 1)) == 0
+
   @tailrec
-  private[this] def pow5Factor(q0: Long, count: Int): Int =  {
-    val q1 = q0 / 5
-    if ((q1 << 2) + q1 != q0) count
-    else if (q1.toInt == q1) pow5Factor(q1.toInt, count + 1)
-    else pow5Factor(q1, count + 1)
-  }
+  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean =
+    q == 0 || {
+      val q1 = q0 / 5
+      (q1 << 2) + q1 == q0 && {
+        if (q1.toInt == q1) multiplePowOf5(q1.toInt, q - 1)
+        else multiplePowOf5(q1, q - 1)
+      }
+    }
 
   private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
     val mHigh = m >>> 31
@@ -1581,12 +1585,14 @@ final class JsonWriter private[jsoniter_scala](
       writeNDigits(q1, n - 2, pos - 2, buf, ds)
     }
 
+  private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
+
   @tailrec
-  private[this] def pow5Factor(q0: Int, count: Int): Int =  {
-    val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
-    if ((q1 << 2) + q1 != q0) count
-    else pow5Factor(q1, count + 1)
-  }
+  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean =
+    q == 0 || {
+      val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
+      (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
+    }
 
   private[this] def pow5Bits(e: Int): Int =
     if (e == 0) 1
