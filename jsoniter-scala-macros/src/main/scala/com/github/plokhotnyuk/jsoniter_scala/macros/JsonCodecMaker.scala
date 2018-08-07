@@ -749,7 +749,7 @@ object JsonCodecMaker {
             if (discriminator.isEmpty) classInfo.fields
             else classInfo.fields :+ FieldInfo(null, codecConfig.discriminatorFieldName, null, null, null, null, true)
 
-          def genReadCollisions(fs: Seq[FieldInfo]): Tree =
+          def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
             fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
               val readValue =
                 if (discriminator.nonEmpty && f.mappedName == codecConfig.discriminatorFieldName) discriminator
@@ -801,7 +801,7 @@ object JsonCodecMaker {
           checkDiscriminatorValueCollisions(discrName, leafClasses.map(discriminatorValue))
           val discriminatorValueError = q"in.discriminatorValueError($discrName)"
 
-          def readCollisions(subTpes: Seq[Type]): Tree =
+          def readCollisions(subTpes: collection.Seq[Type]): Tree =
             subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
               q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
                     in.rollbackToMark()
