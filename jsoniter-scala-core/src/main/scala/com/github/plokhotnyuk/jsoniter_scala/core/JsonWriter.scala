@@ -1242,11 +1242,13 @@ final class JsonWriter private[jsoniter_scala](
       val m2 =
         if (ieeeExponent == 0) ieeeMantissa
         else ieeeMantissa | 8388608
+      val even = (m2 & 1) == 0
       val mv = m2 << 2
       val mp = mv + 2
-      val mm = mv - (if (ieeeMantissa != 0 || ieeeExponent <= 1) 2 else 1)
+      val mmShift = if (ieeeMantissa != 0 || ieeeExponent <= 1) 1 else 0
+      val mm = mv - 1 - mmShift
       var dv, dp, dm, exp, lastRemovedDigit = 0
-      var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
+      var dvIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
@@ -1256,9 +1258,12 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, q, i, ss)
         dm = mulPow5DivPow2(mm, q, i, ss)
         exp = q
-        dvIsTrailingZeros = multiplePowOf5(mv, q)
-        dpIsTrailingZeros = multiplePowOf5(mp, q)
-        dmIsTrailingZeros = multiplePowOf5(mm, q)
+        if (q <= 9) {
+          val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
+          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv, q)
+          else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
+          else if (multiplePowOf5(mp, q)) dp -= 1
+        }
       } else {
         val ss = f32Pow5Split
         val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
@@ -1269,45 +1274,62 @@ final class JsonWriter private[jsoniter_scala](
         dp = mulPow5DivPow2(mp, i, j, ss)
         dm = mulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
-        dvIsTrailingZeros = (q < 23) && multiplePowOf2(mv, q - 1)
-        dpIsTrailingZeros = 1 >= q
-        dmIsTrailingZeros = (~mm & 1) >= q
+        if (q <= 1) {
+          dvIsTrailingZeros = true
+          if (even) dmIsTrailingZeros = mmShift == 1
+          else dp -= 1
+        } else if (q < 23) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
       }
-      val even = (m2 & 1) == 0
-      if (dpIsTrailingZeros && !even) dp -= 1
       var olength = offset(dp)
       exp += olength
       olength += 1
       val decimalNotation = exp >= -3 && exp < 7
-      var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-      var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-      while (newDp > newDm && (dp >= 100 || decimalNotation)) {
-        dmIsTrailingZeros &= newDm * 10 == dm
-        dvIsTrailingZeros &= lastRemovedDigit == 0
-        val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-        lastRemovedDigit = dv - newDv * 10
-        dv = newDv
-        dp = newDp
-        dm = newDm
-        newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-        newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-        olength -= 1
-      }
-      if (dmIsTrailingZeros && even) {
-        newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-        while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
-          dp = (dp * 3435973837L >> 35).toInt
-          dvIsTrailingZeros &= lastRemovedDigit == 0
-          val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-          lastRemovedDigit = dv - newDv * 10
-          dv = newDv
-          dm = newDm
-          newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-          olength -= 1
+      val output =
+        if (dmIsTrailingZeros || dvIsTrailingZeros) {
+          var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+          var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+          while (newDp > newDm && (dp >= 100 || decimalNotation)) {
+            dmIsTrailingZeros &= newDm * 10 == dm
+            dvIsTrailingZeros &= lastRemovedDigit == 0
+            val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+            lastRemovedDigit = dv - newDv * 10
+            dv = newDv
+            dp = newDp
+            dm = newDm
+            newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+            newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+            olength -= 1
+          }
+          if (dmIsTrailingZeros && even) {
+            newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+            while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
+              dvIsTrailingZeros &= lastRemovedDigit == 0
+              val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+              lastRemovedDigit = dv - newDv * 10
+              dv = newDv
+              dp = (dp * 3435973837L >> 35).toInt
+              dm = newDm
+              newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+              olength -= 1
+            }
+          }
+          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
+        } else {
+          var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+          var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+          while (newDp > newDm && (dp >= 100 || decimalNotation)) {
+            val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+            lastRemovedDigit = dv - newDv * 10
+            dv = newDv
+            dp = newDp
+            dm = newDm
+            newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+            newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+            olength -= 1
+          }
+          if (lastRemovedDigit < 5 && dv != dm) dv else dv + 1
         }
-      }
-      val output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
-        (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
       var pos = ensureBufCapacity(15)
       val buf = this.buf
       if (bits < 0) {
@@ -1386,12 +1408,14 @@ final class JsonWriter private[jsoniter_scala](
       val m2 =
         if (ieeeExponent == 0) ieeeMantissa
         else ieeeMantissa | 4503599627370496L
+      val even = (m2 & 1) == 0
       val mv = m2 << 2L
       val mp = mv + 2
-      val mm = mv - (if (ieeeMantissa != 0 || ieeeExponent <= 1) 2 else 1)
+      val mmShift = if (ieeeMantissa != 0 || ieeeExponent <= 1) 1 else 0
+      val mm = mv - 1 - mmShift
       var dv, dp, dm = 0L
       var exp, lastRemovedDigit = 0
-      var dvIsTrailingZeros, dpIsTrailingZeros, dmIsTrailingZeros = false
+      var dvIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
         val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
@@ -1401,9 +1425,11 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, q, i, ss)
         dm = fullMulPow5DivPow2(mm, q, i, ss)
         exp = q
-        dvIsTrailingZeros = multiplePowOf5(mv, q)
-        dpIsTrailingZeros = multiplePowOf5(mp, q)
-        dmIsTrailingZeros = multiplePowOf5(mm, q)
+        if (q <= 21) {
+          if (mv % 5 == 0) dvIsTrailingZeros = multiplePowOf5(mv, q)
+          else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
+          else if (multiplePowOf5(mp, q)) dp -= 1
+        }
       } else {
         val ss = f64Pow5Split
         val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
@@ -1414,45 +1440,62 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, i, j, ss)
         dm = fullMulPow5DivPow2(mm, i, j, ss)
         exp = q + e2
-        dvIsTrailingZeros = (q < 52) && multiplePowOf2(mv, q - 1)
-        dpIsTrailingZeros = 1 >= q
-        dmIsTrailingZeros = (~mm & 1) >= q
+        if (q <= 1) {
+          dvIsTrailingZeros = true
+          if (even) dmIsTrailingZeros = mmShift == 1
+          else dp -= 1
+        } else if (q < 52) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
       }
-      val even = (m2 & 1) == 0
-      if (dpIsTrailingZeros && !even) dp -= 1
       var olength = offset(dp)
       exp += olength
       olength += 1
       val decimalNotation = exp >= -3 && exp < 7
-      var newDp = dp / 10
-      var newDm = dm / 10
-      while (newDp > newDm && (dp >= 100 || decimalNotation)) {
-        dmIsTrailingZeros &= newDm * 10 == dm
-        dvIsTrailingZeros &= lastRemovedDigit == 0
-        val newDv = dv / 10
-        lastRemovedDigit = (dv - newDv * 10).toInt
-        dv = newDv
-        dp = newDp
-        dm = newDm
-        newDp = dp / 10
-        newDm = dm / 10
-        olength -= 1
-      }
-      if (dmIsTrailingZeros && even) {
-        newDm = dm / 10
-        while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
-          dp /= 10
-          dvIsTrailingZeros &= lastRemovedDigit == 0
-          val newDv = dv / 10
-          lastRemovedDigit = (dv - newDv * 10).toInt
-          dv = newDv
-          dm = newDm
-          newDm = dm / 10
-          olength -= 1
+      val output =
+        if (dmIsTrailingZeros || dvIsTrailingZeros) {
+          var newDp = dp / 10
+          var newDm = dm / 10
+          while (newDp > newDm && (dp >= 100 || decimalNotation)) {
+            dmIsTrailingZeros &= newDm * 10 == dm
+            dvIsTrailingZeros &= lastRemovedDigit == 0
+            val newDv = dv / 10
+            lastRemovedDigit = (dv - newDv * 10).toInt
+            dv = newDv
+            dp = newDp
+            dm = newDm
+            newDp = dp / 10
+            newDm = dm / 10
+            olength -= 1
+          }
+          if (dmIsTrailingZeros && even) {
+            newDm = dm / 10
+            while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
+              dvIsTrailingZeros &= lastRemovedDigit == 0
+              val newDv = dv / 10
+              lastRemovedDigit = (dv - newDv * 10).toInt
+              dv = newDv
+              dp /= 10
+              dm = newDm
+              newDm = dm / 10
+              olength -= 1
+            }
+          }
+          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
+        } else {
+          var newDp = dp / 10
+          var newDm = dm / 10
+          while (newDp > newDm && (dp >= 100 || decimalNotation)) {
+            val newDv = dv / 10
+            lastRemovedDigit = (dv - newDv * 10).toInt
+            dv = newDv
+            dp = newDp
+            dm = newDm
+            newDp = dp / 10
+            newDm = dm / 10
+            olength -= 1
+          }
+          if (lastRemovedDigit < 5 && dv != dm) dv else dv + 1
         }
-      }
-      val output = if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
-        (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
       var pos = ensureBufCapacity(24)
       val buf = this.buf
       if (bits < 0) {

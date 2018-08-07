@@ -617,8 +617,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       check(1.8557466319180092E15)
-      check(2.0273048448871122E15)
       check(2.1454965803968662E14)
+      check(5.724294694832342E14)
     }
     "throw i/o exception on non-finite numbers" in {
       forAll(Gen.oneOf(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) { (n: Double) =>
