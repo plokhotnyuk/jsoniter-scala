@@ -1343,10 +1343,10 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNZeros(-1 - exp, pos + 2, buf)
-          writeNDigits(output, olength, pos + olength - 1, buf, ds)
+          writeIntFirst(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
-          writeNDigits(output, olength, pos + olength - 1, buf, ds)
+          writeIntFirst(output, pos + olength - 1, buf, ds)
           pos = writeNZeros(exp - olength + 1, pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
@@ -1354,7 +1354,7 @@ final class JsonWriter private[jsoniter_scala](
         } else {
           val lastPos = pos + olength
           val dotPos = pos + exp + 1
-          writeNDigits(output, olength, lastPos, buf, ds)
+          writeIntFirst(output, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1363,7 +1363,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writeNDigits(output, olength, pos + olength, buf, ds)
+        writeIntFirst(output, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
@@ -1512,10 +1512,10 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNZeros(-1 - exp, pos + 2, buf)
-          writeNDigits(output, olength, pos + olength - 1, buf, ds)
+          writeLongFirst(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
-          writeNDigits(output, olength, pos + olength - 1, buf, ds)
+          writeLongFirst(output, pos + olength - 1, buf, ds)
           pos = writeNZeros(exp - olength + 1, pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
@@ -1523,7 +1523,7 @@ final class JsonWriter private[jsoniter_scala](
         } else {
           val lastPos = pos + olength
           val dotPos = pos + exp + 1
-          writeNDigits(output, olength, lastPos, buf, ds)
+          writeLongFirst(output, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1532,7 +1532,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writeNDigits(output, olength, pos + olength, buf, ds)
+        writeLongFirst(output, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
@@ -1576,7 +1576,7 @@ final class JsonWriter private[jsoniter_scala](
       mHigh * s2) >>> 31) + mLow * s0 + mHigh * s1) >>> 21) + (mHigh * s0 << 10)) >>> (j - 114)
   }
 
-  private[this] def offset(q0: Long) = {
+  private[this] def offset(q0: Long): Int = {
     if (q0 < 100) (9 - q0) >>> 63
     else if (q0 < 10000) ((999 - q0) >>> 63) + 2
     else if (q0 < 1000000) ((99999 - q0) >>> 63) + 4
@@ -1589,36 +1589,20 @@ final class JsonWriter private[jsoniter_scala](
     else 18
   }.toInt
 
-  private[this] def writeNDigits(q0: Long, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
-    if (n < 10) writeNDigits(q0.toInt, n, pos, buf, ds)
+  private[this] def writeLongFirst(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
+    if (q0.toInt == q0) writeIntFirst(q0.toInt, pos, buf, ds)
     else {
       val q1 = q0 / 100000000
       val r1 = (q0 - 100000000 * q1).toInt
-      if (n < 18) {
-        writeNDigits(q1.toInt, n - 8, pos - 8, buf, ds)
+      if (q1.toInt == q1) {
+        writeIntFirst(q1.toInt, pos - 8, buf, ds)
         write8Digits(r1, pos - 7, buf, ds)
       } else {
         val q2 = q1 / 100000000
         val r2 = (q1 - 100000000 * q2).toInt
-        writeNDigits(q2.toInt, n - 16, pos - 16, buf, ds)
+        writeIntFirst(q2.toInt, pos - 16, buf, ds)
         write8Digits(r1, write8Digits(r2, pos - 15, buf, ds), buf, ds)
       }
-    }
-
-  @tailrec
-  private[this] def writeNDigits(q0: Int, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
-    if (n <= 1) {
-      if (n == 1) buf(pos) = (q0 + '0').toByte
-    } else if (q0 < 100) {
-      val d = ds(q0)
-      buf(pos - 1) = (d >> 8).toByte
-      buf(pos) = d.toByte
-    } else {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-      val d = ds(q0 - 100 * q1)
-      buf(pos - 1) = (d >> 8).toByte
-      buf(pos) = d.toByte
-      writeNDigits(q1, n - 2, pos - 2, buf, ds)
     }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
