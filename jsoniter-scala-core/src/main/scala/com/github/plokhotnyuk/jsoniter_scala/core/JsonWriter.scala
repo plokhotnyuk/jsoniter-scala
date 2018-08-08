@@ -1360,7 +1360,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        pos = writeNDigits(output, olength, pos + olength, buf, ds)
+        writeNDigits(output, olength, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
@@ -1526,7 +1526,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        pos = writeNDigits(output, olength, pos + olength, buf, ds)
+        writeNDigits(output, olength, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
