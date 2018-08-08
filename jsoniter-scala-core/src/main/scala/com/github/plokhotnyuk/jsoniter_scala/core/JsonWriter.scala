@@ -1589,17 +1589,20 @@ final class JsonWriter private[jsoniter_scala](
     else 18
   }.toInt
 
-  @tailrec
   private[this] def writeNDigits(q0: Long, n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
-    if (n <= 1) {
-      if (n == 1) buf(pos) = (q0 + '0').toByte
-    } else {
-      val q1 = q0 / 100
-      val d = ds((q0 - 100 * q1).toInt)
-      buf(pos - 1) = (d >> 8).toByte
-      buf(pos) = d.toByte
-      if (q1.toInt == q1) writeNDigits(q1.toInt, n - 2, pos - 2, buf, ds)
-      else writeNDigits(q1, n - 2, pos - 2, buf, ds)
+    if (n < 10) writeNDigits(q0.toInt, n, pos, buf, ds)
+    else {
+      val q1 = q0 / 100000000
+      val r1 = (q0 - 100000000 * q1).toInt
+      if (n < 18) {
+        writeNDigits(q1.toInt, n - 8, pos - 8, buf, ds)
+        write8Digits(r1, pos - 7, buf, ds)
+      } else {
+        val q2 = q1 / 100000000
+        val r2 = (q1 - 100000000 * q2).toInt
+        writeNDigits(q2.toInt, n - 16, pos - 16, buf, ds)
+        write8Digits(r1, write8Digits(r2, pos - 15, buf, ds), buf, ds)
+      }
     }
 
   @tailrec
