@@ -1708,43 +1708,33 @@ object JsonWriter {
   private final val f64Pow5InvSplit = new Array[Int](1164)
 
   {
+    val mask = BigInteger.valueOf((1L << 31) - 1)
     var i = 0
-    while (i < (Math.max(f32Pow5Split.length, f32Pow5InvSplit.length) >> 1)) {
+    while (i < 326) {
       val pow5 = BigInteger.valueOf(5).pow(i)
       val pow5len = pow5.bitLength
-      if (i < (f32Pow5Split.length >> 1)) {
-        val s = pow5.shiftRight(pow5len - 61).longValue
-        f32Pow5Split(i * 2) = (s & 2147483647).toInt
-        f32Pow5Split(i * 2 + 1) = (s >> 31).toInt
-      }
-      if (i < (f32Pow5InvSplit.length >> 1)) {
+      if (i < 31) {
         val s = BigInteger.ONE.shiftLeft(pow5len + 58).divide(pow5).longValue + 1
         f32Pow5InvSplit(i * 2) = (s & 2147483647).toInt
         f32Pow5InvSplit(i * 2 + 1) = (s >> 31).toInt
       }
-      i += 1
-    }
-    val mask = BigInteger.ONE.shiftLeft(31).subtract(BigInteger.ONE)
-    i = 0
-    while (i < (Math.max(f64Pow5Split.length, f64Pow5InvSplit.length) >> 2)) {
-      val pow5 = BigInteger.valueOf(5).pow(i)
-      val pow5len = pow5.bitLength
-      if (i < (f64Pow5Split.length >> 2)) {
-        var j = 0
-        while (j < 4) {
-          f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).and(mask).intValue
-          j += 1
-        }
+      if (i < 47) {
+        val s = pow5.shiftRight(pow5len - 61).longValue
+        f32Pow5Split(i * 2) = (s & 2147483647).toInt
+        f32Pow5Split(i * 2 + 1) = (s >> 31).toInt
       }
-      if (i < (f64Pow5InvSplit.length >> 2)) {
+      if (i < 291) {
         val inv = BigInteger.ONE.shiftLeft(pow5len + 121).divide(pow5).add(BigInteger.ONE)
         var j = 0
         while (j < 4) {
-          f64Pow5InvSplit(i * 4 + j) =
-            if (j == 0) inv.shiftRight((3 - j) * 31).intValue
-            else inv.shiftRight((3 - j) * 31).and(mask).intValue
+          f64Pow5InvSplit(i * 4 + j) = inv.shiftRight((3 - j) * 31).and(mask).intValue
           j += 1
         }
+      }
+      var j = 0
+      while (j < 4) {
+        f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).and(mask).intValue
+        j += 1
       }
       i += 1
     }
