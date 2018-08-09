@@ -1708,7 +1708,6 @@ object JsonWriter {
   private final val f64Pow5InvSplit = new Array[Int](1164)
 
   {
-    val mask = BigInteger.valueOf((1L << 31) - 1)
     var i = 0
     while (i < 326) {
       val pow5 = BigInteger.valueOf(5).pow(i)
@@ -1727,13 +1726,13 @@ object JsonWriter {
         val inv = BigInteger.ONE.shiftLeft(pow5len + 121).divide(pow5).add(BigInteger.ONE)
         var j = 0
         while (j < 4) {
-          f64Pow5InvSplit(i * 4 + j) = inv.shiftRight((3 - j) * 31).and(mask).intValue
+          f64Pow5InvSplit(i * 4 + j) = inv.shiftRight((3 - j) * 31).intValue & 2147483647
           j += 1
         }
       }
       var j = 0
       while (j < 4) {
-        f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).and(mask).intValue
+        f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).intValue & 2147483647
         j += 1
       }
       i += 1
