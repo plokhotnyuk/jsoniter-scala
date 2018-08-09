@@ -840,7 +840,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def to400YearCycle(day: Long): Int = {
     if (day.toInt != day) day / 146097 // 146097 == number of days in a 400 year cycle
-    else (day * 3853261556L >> 49) - (day >> 63) // divide signed int by 146097
+    else (day * 3853261556L >> 49) - (day >> 31) // divide signed int by 146097
   }.toInt
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
@@ -1577,10 +1577,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def offset(q0: Long): Int = {
-    if (q0 < 100) (9 - q0) >>> 63
-    else if (q0 < 10000) ((999 - q0) >>> 63) + 2
-    else if (q0 < 1000000) ((99999 - q0) >>> 63) + 4
-    else if (q0 < 100000000) ((9999999 - q0) >>> 63) + 6
+    if (q0.toInt == q0) offset(q0.toInt)
     else if (q0 < 10000000000L) ((999999999 - q0) >>> 63) + 8
     else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63) + 10
     else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63) + 12
