@@ -1708,7 +1708,6 @@ object JsonWriter {
   private final val f64Pow5InvSplit = new Array[Int](1164)
 
   {
-    val five = BigInteger.valueOf(5)
     var pow5 = BigInteger.ONE
     var i = 0
     while (i < 326) {
@@ -1736,7 +1735,7 @@ object JsonWriter {
         f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).intValue & 2147483647
         j += 1
       }
-      pow5 = pow5.multiply(five)
+      pow5 = pow5.shiftLeft(2).add(pow5)
       i += 1
     }
   }
