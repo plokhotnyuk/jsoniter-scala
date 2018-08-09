@@ -1781,6 +1781,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(100000)) { (n: Float) =>
         checkFloat(n.toString)
       }
+      forAll(minSuccessful(100000)) { (n: Double) =>
+        checkFloat(n.toString)
+      }
       //(1 to Int.MaxValue).par.foreach { n =>
       forAll(minSuccessful(100000)) { (n: Int) =>
         val x = java.lang.Float.floatToRawIntBits(n)
@@ -1873,6 +1876,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
     "parse valid double values" in {
       forAll(minSuccessful(100000)) { (n: Double) =>
+        checkDouble(n.toString)
+      }
+      forAll(minSuccessful(100000)) { (n: Float) =>
         checkDouble(n.toString)
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
