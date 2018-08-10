@@ -97,6 +97,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make(CodecMakerConfig())
 
+  case class ImmutableMapsWithDefaultValues(im: Map[String, Int] = Map(),
+                                           lm: Map[String, Long] = Map.empty[String, Long],
+                                           dm: Map[String, Double])
+
+  val codecOfImmutableMapsWithDefaultValues: JsonValueCodec[ImmutableMapsWithDefaultValues] = make(CodecMakerConfig())
+
   case class CamelSnakeKebabCases(camelCase: Int, snake_case: Int, `kebab-case`: Int,
                                   `camel1`: Int, `snake_1`: Int, `kebab-1`: Int)
 
@@ -630,6 +636,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           MutableMaps(null, collection.mutable.Map(1.1f -> collection.mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
           """{"m":{"1.1":{"null":"2"}}""".getBytes("UTF-8"))
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
+    }
+    "serialize and deserialize case classes with default values maps" in {
+      verifySerDeser(
+        codecOfImmutableMapsWithDefaultValues,
+        ImmutableMapsWithDefaultValues(im = Map("a" -> 1), dm = Map("c" -> 1.2)),
+        """{"im":{"a":1},"dm":{"c":1.2}}""".getBytes("UTF-8")
+      )
     }
     "serialize and deserialize case classes with mutable long maps" in {
       case class MutableLongMaps(lm1: collection.mutable.LongMap[Double], lm2: collection.mutable.LongMap[String])
