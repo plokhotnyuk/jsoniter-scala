@@ -33,8 +33,8 @@ Other Scala macros features were peeped in
 
 Initially, this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
 - do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but 
-  do it crazily fast without runtime-reflection, intermediate AST-trees, strings or hash maps, with minimum allocations 
-  and copying
+  do it crazily fast without runtime-reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
+  copying
 - do validation of UTF-8 encoding, JSON format and mapped values efficiently (fail fast approach) with clear reporting, 
   do not replace illegally encoded characters of string values by placeholder characters
 - define classes, that will be instantiated during parsing, in _compile-time_ to minimize a probability of runtime issues, 
@@ -300,6 +300,12 @@ Publish to local Maven repo:
 ```sh
 sbt publishM2
 ```
+
+Other benchmarks with results for jsoniter-scala:
+- [comparison with best binary parsers and serializer for Scala](https://github.com/dkomanov/scala-serialization/pull/8)
+- [comparison with the state of art filter that during "building structural indices converts control flow into data
+   flow, thereby largely eliminating inherently unpredictable branches in the program and exploiting the parallelism
+   available in modern processors"](https://github.com/guillaumebort/mison/pull/1)
 
 ### Release
 
