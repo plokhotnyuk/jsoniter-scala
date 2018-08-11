@@ -1566,8 +1566,8 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
+    val mLow = m & 0x7FFFFFFF
     val mHigh = m >>> 31
-    val mLow = m & 0x7fffffff
     val idx = i << 2
     val s3 = ss(idx + 3)
     val s2 = ss(idx + 2)
@@ -1603,18 +1603,22 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def div5(x: Long): Long = umulh(x, -3689348814741910323L) >> 2
+  private[this] def div5(x: Long): Long = {
+    val l = (x & 0xFFFFFFFFL) * 3435973836L
+    val h = (x >>> 32) * 3435973836L
+    (((x + l >>> 32) + l + h) >>> 32) + h >> 2
+  }
 
-  private[this] def div10(x: Long): Long = umulh(x, -3689348814741910323L) >> 3
+  private[this] def div10(x: Long): Long = {
+    val l = (x & 0xFFFFFFFFL) * 3435973836L
+    val h = (x >>> 32) * 3435973836L
+    (((x + l >>> 32) + l + h) >>> 32) + h >> 3
+  }
 
-  private[this] def div100000000(x: Long): Long = umulh(x, -6067343680855748867L) >> 26
-
-  private[this] def umulh(x: Long, y: Long): Long = {
+  private[this] def div100000000(x: Long): Long = {
     val xLow = x & 0xFFFFFFFFL
     val xHigh = x >>> 32
-    val yLow = y & 0xFFFFFFFFL
-    val yHigh = y >>> 32
-    xHigh * yHigh + ((xHigh * yLow + xLow * yHigh + ((xLow * yLow) >>> 32)) >>> 32)
+    (((xLow * 2221002493L >>> 32) + xLow * 2882303761L + xHigh * 2221002493L) >>> 32) + xHigh * 2882303761L >> 26
   }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
