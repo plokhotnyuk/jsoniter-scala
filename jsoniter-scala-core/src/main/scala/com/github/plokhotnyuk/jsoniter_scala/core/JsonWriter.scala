@@ -1182,11 +1182,11 @@ final class JsonWriter private[jsoniter_scala](
         }
       if (q0.toInt == q0) writeInt(q0.toInt, pos, buf, ds)
       else {
-        val q1 = q0 / 100000000
+        val q1 = div100000000(q0)
         val r1 = (q0 - 100000000 * q1).toInt
         if (q1.toInt == q1) write8Digits(r1, writeInt(q1.toInt, pos, buf, ds), buf, ds)
         else {
-          val q2 = q1 / 100000000
+          val q2 = div100000000(q1)
           val r2 = (q1 - 100000000 * q2).toInt
           write8Digits(r1, write8Digits(r2, writeInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
         }
@@ -1430,7 +1430,8 @@ final class JsonWriter private[jsoniter_scala](
         dm = fullMulPow5DivPow2(mm, q, i, ss)
         exp = q
         if (q <= 21) {
-          if (mv % 5 == 0) dvIsTrailingZeros = multiplePowOf5(mv, q)
+          val mv5 = div5(mv)
+          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv, q)
           else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
           else if (multiplePowOf5(mp, q)) dp -= 1
         }
@@ -1456,46 +1457,46 @@ final class JsonWriter private[jsoniter_scala](
       val decimalNotation = exp >= -3 && exp < 7
       val output =
         if (dmIsTrailingZeros || dvIsTrailingZeros) {
-          var newDp = dp / 10
-          var newDm = dm / 10
+          var newDp = div10(dp)
+          var newDm = div10(dm)
           while (newDp > newDm && (dp >= 100 || decimalNotation)) {
             dmIsTrailingZeros &= newDm * 10 == dm
             dvIsTrailingZeros &= lastRemovedDigit == 0
-            val newDv = dv / 10
+            val newDv = div10(dv)
             lastRemovedDigit = (dv - newDv * 10).toInt
             dv = newDv
             dp = newDp
+            newDp = div10(dp)
             dm = newDm
-            newDp = dp / 10
-            newDm = dm / 10
+            newDm = div10(dm)
             olength -= 1
           }
           if (dmIsTrailingZeros && even) {
-            newDm = dm / 10
+            newDm = div10(dm)
             while (newDm * 10 == dm && (dp >= 100 || decimalNotation)) {
               dvIsTrailingZeros &= lastRemovedDigit == 0
-              val newDv = dv / 10
+              val newDv = div10(dv)
               lastRemovedDigit = (dv - newDv * 10).toInt
               dv = newDv
-              dp /= 10
+              dp = div10(dp)
               dm = newDm
-              newDm = dm / 10
+              newDm = div10(dm)
               olength -= 1
             }
           }
           if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
         } else {
-          var newDp = dp / 10
-          var newDm = dm / 10
+          var newDp = div10(dp)
+          var newDm = div10(dm)
           while (newDp > newDm && (dp >= 100 || decimalNotation)) {
-            val newDv = dv / 10
+            val newDv = div10(dv)
             lastRemovedDigit = (dv - newDv * 10).toInt
             dv = newDv
             dp = newDp
+            newDp = div10(dp)
             dm = newDm
-            newDp = dp / 10
-            newDm = dm / 10
+            newDm = div10(dm)
             olength -= 1
           }
           if (lastRemovedDigit < 5 && dv != dm) dv else dv + 1
@@ -1557,7 +1558,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def multiplePowOf5(q0: Long, q: Int): Boolean =
     q == 0 || {
-      val q1 = q0 / 5
+      val q1 = div5(q0)
       (q1 << 2) + q1 == q0 && {
         if (q1.toInt == q1) multiplePowOf5(q1.toInt, q - 1)
         else multiplePowOf5(q1, q - 1)
@@ -1589,18 +1590,33 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeLongFirst(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
     if (q0.toInt == q0) writeIntFirst(q0.toInt, pos, buf, ds)
     else {
-      val q1 = q0 / 100000000
+      val q1 = div100000000(q0)
       val r1 = (q0 - 100000000 * q1).toInt
       if (q1.toInt == q1) {
         writeIntFirst(q1.toInt, pos - 8, buf, ds)
         write8Digits(r1, pos - 7, buf, ds)
       } else {
-        val q2 = q1 / 100000000
+        val q2 = div100000000(q1)
         val r2 = (q1 - 100000000 * q2).toInt
         writeIntFirst(q2.toInt, pos - 16, buf, ds)
         write8Digits(r1, write8Digits(r2, pos - 15, buf, ds), buf, ds)
       }
     }
+
+  private[this] def div5(x: Long): Long = umulh(x, -3689348814741910323L) >> 2
+
+  private[this] def div10(x: Long): Long = umulh(x, -3689348814741910323L) >> 3
+
+  private[this] def div100000000(x: Long): Long = umulh(x, -6067343680855748867L) >> 26
+
+  private[this] def umulh(x: Long, y: Long): Long = {
+    val xLow = x & 0xFFFFFFFFL
+    val xHigh = x >>> 32
+    val yLow = y & 0xFFFFFFFFL
+    val yHigh = y >>> 32
+    val mid = xHigh * yLow + ((xLow * yLow) >>> 32)
+    xHigh * yHigh + (mid >>> 32) + ((xLow * yHigh + (mid & 0xFFFFFFFFL)) >>> 32)
+  }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
 
