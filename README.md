@@ -302,10 +302,10 @@ sbt publishM2
 ```
 
 Other benchmarks with results for jsoniter-scala:
-- [comparison with best binary parsers and serializer for Scala](https://github.com/dkomanov/scala-serialization/pull/8)
-- [comparison with the state of art filter that during "building structural indices converts control flow into data
-   flow, thereby largely eliminating inherently unpredictable branches in the program and exploiting the parallelism
-   available in modern processors"](https://github.com/guillaumebort/mison/pull/1)
+- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializer for Scala
+- [comparison](https://github.com/guillaumebort/mison/pull/1) with a state of the art filter that during "building
+  structural indices converts control flow into data flow, thereby largely eliminating inherently unpredictable branches
+  in the program and exploiting the parallelism available in modern processors"
 
 ### Release
 
