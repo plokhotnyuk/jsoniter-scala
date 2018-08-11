@@ -1618,7 +1618,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def div100000000(x: Long): Long = { // divide positive long by 100000000
     val xLow = x & 0xFFFFFFFFL
     val xHigh = x >>> 32
-    ((xLow * 2221002493L >>> 32) + xLow * 2882303761L + xHigh * 2221002493L >>> 32) + xHigh * 2882303761L >> 26
+    (xLow * 2882303763L + xHigh * 2221002493L >>> 32) + xHigh * 2882303761L >> 26
   }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
