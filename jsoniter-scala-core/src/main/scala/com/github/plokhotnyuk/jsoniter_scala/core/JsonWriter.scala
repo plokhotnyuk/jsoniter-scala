@@ -1614,8 +1614,7 @@ final class JsonWriter private[jsoniter_scala](
     val xHigh = x >>> 32
     val yLow = y & 0xFFFFFFFFL
     val yHigh = y >>> 32
-    val mid = xHigh * yLow + ((xLow * yLow) >>> 32)
-    xHigh * yHigh + (mid >>> 32) + ((xLow * yHigh + (mid & 0xFFFFFFFFL)) >>> 32)
+    xHigh * yHigh + ((xHigh * yLow + xLow * yHigh + ((xLow * yLow) >>> 32)) >>> 32)
   }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
