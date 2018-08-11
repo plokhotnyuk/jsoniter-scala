@@ -1602,7 +1602,7 @@ final class JsonWriter private[jsoniter_scala](
         write8Digits(r1, write8Digits(r2, pos - 15, buf, ds), buf, ds)
       }
     }
-
+  // FIXME: remove all these div* after fix of the performance regression in GraalVM CE, check: https://github.com/oracle/graal/issues/593
   private[this] def div5(x: Long): Long = { // divide positive long by 5
     val l = (x & 0xFFFFFFFFL) * 3435973836L
     val h = (x >>> 32) * 3435973836L
