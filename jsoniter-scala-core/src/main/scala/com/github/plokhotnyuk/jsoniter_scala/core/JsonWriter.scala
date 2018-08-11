@@ -1603,22 +1603,22 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def div5(x: Long): Long = {
+  private[this] def div5(x: Long): Long = { // divide positive long by 5
     val l = (x & 0xFFFFFFFFL) * 3435973836L
     val h = (x >>> 32) * 3435973836L
-    (((x + l >>> 32) + l + h) >>> 32) + h >> 2
+    ((x + l >>> 32) + l + h >>> 32) + h >> 2
   }
 
-  private[this] def div10(x: Long): Long = {
+  private[this] def div10(x: Long): Long = { // divide positive long by 10
     val l = (x & 0xFFFFFFFFL) * 3435973836L
     val h = (x >>> 32) * 3435973836L
-    (((x + l >>> 32) + l + h) >>> 32) + h >> 3
+    ((x + l >>> 32) + l + h >>> 32) + h >> 3
   }
 
-  private[this] def div100000000(x: Long): Long = {
+  private[this] def div100000000(x: Long): Long = { // divide positive long by 100000000
     val xLow = x & 0xFFFFFFFFL
     val xHigh = x >>> 32
-    (((xLow * 2221002493L >>> 32) + xLow * 2882303761L + xHigh * 2221002493L) >>> 32) + xHigh * 2882303761L >> 26
+    ((xLow * 2221002493L >>> 32) + xLow * 2882303761L + xHigh * 2221002493L >>> 32) + xHigh * 2882303761L >> 26
   }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
