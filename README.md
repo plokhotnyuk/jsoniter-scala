@@ -287,6 +287,12 @@ sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*re
 
 More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
+Other benchmarks with results for jsoniter-scala:
+- [comparison with best binary parsers and serializer for Scala](https://github.com/dkomanov/scala-serialization/pull/8)
+- [comparison with the state of art filter that during "building structural indices converts control flow into data
+   flow, thereby largely eliminating inherently unpredictable branches in the program and exploiting the parallelism
+   available in modern processors"](https://github.com/guillaumebort/mison/pull/1)
+
 ### Publish locally
 
 Publish to local Ivy repo:
@@ -300,12 +306,6 @@ Publish to local Maven repo:
 ```sh
 sbt publishM2
 ```
-
-Other benchmarks with results for jsoniter-scala:
-- [comparison with best binary parsers and serializer for Scala](https://github.com/dkomanov/scala-serialization/pull/8)
-- [comparison with the state of art filter that during "building structural indices converts control flow into data
-   flow, thereby largely eliminating inherently unpredictable branches in the program and exploiting the parallelism
-   available in modern processors"](https://github.com/guillaumebort/mison/pull/1)
 
 ### Release
 
