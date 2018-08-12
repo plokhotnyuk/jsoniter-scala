@@ -1609,11 +1609,13 @@ final class JsonWriter private[jsoniter_scala](
     ((x + l >>> 32) + l + h >>> 32) + h >> 2
   }
 
-  private[this] def div10(x: Long): Long = { // divide positive long by 10
-    val l = (x & 0xFFFFFFFFL) * 3435973836L
-    val h = (x >>> 32) * 3435973836L
-    ((x + l >>> 32) + l + h >>> 32) + h >> 3
-  }
+  private[this] def div10(x: Long): Long =
+    if (x.toInt == x) x * 3435973837L >> 35 // divide positive int by 10
+    else { // divide positive long by 10
+      val l = (x & 0xFFFFFFFFL) * 3435973836L
+      val h = (x >>> 32) * 3435973836L
+      ((x + l >>> 32) + l + h >>> 32) + h >> 3
+    }
 
   private[this] def div100000000(x: Long): Long = { // divide positive long by 100000000
     val xLow = x & 0xFFFFFFFFL
