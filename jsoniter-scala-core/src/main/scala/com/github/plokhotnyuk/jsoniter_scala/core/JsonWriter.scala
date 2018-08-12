@@ -1253,7 +1253,7 @@ final class JsonWriter private[jsoniter_scala](
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
-        val k = Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == Math.max(0, Math.ceil(q * Math.log(5) / Math.log(2))) + 59
+        val k = Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 59
         val i = -e2 + q + k
         dv = mulPow5DivPow2(mv, q, i, ss)
         dp = mulPow5DivPow2(mp, q, i, ss)
@@ -1269,7 +1269,7 @@ final class JsonWriter private[jsoniter_scala](
         val ss = f32Pow5Split
         val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
         val i = -e2 - q
-        val k = Math.max(0, (i * 9972605231L >> 32).toInt) - 60 // == Math.max(0, Math.ceil(i * Math.log(5) / Math.log(2))) - 60
+        val k = Math.max(0, (i * 9972605231L >> 32).toInt) - 60 // == Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) - 60
         val j = q - k
         dv = mulPow5DivPow2(mv, i, j, ss)
         dp = mulPow5DivPow2(mp, i, j, ss)
@@ -1423,7 +1423,7 @@ final class JsonWriter private[jsoniter_scala](
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
         val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
-        val k = Math.max(0, (q * 9972605231L >> 32).toInt) + 122 // == Math.max(0, Math.ceil(q * Math.log(5) / Math.log(2))) + 122
+        val k = Math.max(0, (q * 9972605231L >> 32).toInt) + 122 // == Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 122
         val i = -e2 + q + k
         dv = fullMulPow5DivPow2(mv, q, i, ss)
         dp = fullMulPow5DivPow2(mp, q, i, ss)
@@ -1439,7 +1439,7 @@ final class JsonWriter private[jsoniter_scala](
         val ss = f64Pow5Split
         val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
         val i = -e2 - q
-        val k = Math.max(0, (i * 9972605231L >> 32).toInt) - 120 // == Math.max(0, Math.ceil(i * Math.log(5) / Math.log(2))) - 120
+        val k = Math.max(0, (i * 9972605231L >> 32).toInt) - 120 // == Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) - 120
         val j = q - k
         dv = fullMulPow5DivPow2(mv, i, j, ss)
         dp = fullMulPow5DivPow2(mp, i, j, ss)
