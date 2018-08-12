@@ -1253,7 +1253,7 @@ final class JsonWriter private[jsoniter_scala](
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
         val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
-        val k = pow5Bits(q) + 58
+        val k = Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == Math.max(0, Math.ceil(q * Math.log(5) / Math.log(2))) + 59
         val i = -e2 + q + k
         dv = mulPow5DivPow2(mv, q, i, ss)
         dp = mulPow5DivPow2(mp, q, i, ss)
@@ -1269,7 +1269,7 @@ final class JsonWriter private[jsoniter_scala](
         val ss = f32Pow5Split
         val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
         val i = -e2 - q
-        val k = pow5Bits(i) - 61
+        val k = Math.max(0, (i * 9972605231L >> 32).toInt) - 60 // == Math.max(0, Math.ceil(i * Math.log(5) / Math.log(2))) - 60
         val j = q - k
         dv = mulPow5DivPow2(mv, i, j, ss)
         dp = mulPow5DivPow2(mp, i, j, ss)
@@ -1423,7 +1423,7 @@ final class JsonWriter private[jsoniter_scala](
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
         val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
-        val k = pow5Bits(q) + 121
+        val k = Math.max(0, (q * 9972605231L >> 32).toInt) + 122 // == Math.max(0, Math.ceil(q * Math.log(5) / Math.log(2))) + 122
         val i = -e2 + q + k
         dv = fullMulPow5DivPow2(mv, q, i, ss)
         dp = fullMulPow5DivPow2(mp, q, i, ss)
@@ -1439,7 +1439,7 @@ final class JsonWriter private[jsoniter_scala](
         val ss = f64Pow5Split
         val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
         val i = -e2 - q
-        val k = pow5Bits(i) - 121
+        val k = Math.max(0, (i * 9972605231L >> 32).toInt) - 120 // == Math.max(0, Math.ceil(i * Math.log(5) / Math.log(2))) - 120
         val j = q - k
         dv = fullMulPow5DivPow2(mv, i, j, ss)
         dp = fullMulPow5DivPow2(mp, i, j, ss)
@@ -1631,10 +1631,6 @@ final class JsonWriter private[jsoniter_scala](
       val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
       (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
     }
-
-  private[this] def pow5Bits(e: Int): Int =
-    if (e == 0) 1
-    else ((e * 9972605231L + 4294967295L) >> 32).toInt // == Math.ceil(e * Math.log(5) / Math.log(2))
 
   @tailrec
   private[this] def writeNZeros(n: Int, pos: Int, buf: Array[Byte]): Int =
