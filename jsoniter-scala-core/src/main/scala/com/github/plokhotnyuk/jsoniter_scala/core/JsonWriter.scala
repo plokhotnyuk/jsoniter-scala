@@ -802,7 +802,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
-    val epochDay = (if (epochSecond < 0) epochSecond - 86399 else epochSecond) / 86400 // 86400 == seconds per day
+    val epochDay = toDay(epochSecond)
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
@@ -837,6 +837,10 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = '"'
     pos + 2
   }
+
+  private[this] def toDay(second: Long): Long =
+    if (second >= 0) div675(second >> 7) // (second >> 7) / 675 = second / 86400 (seconds per day)
+    else -div675(86399 - second >> 7)
 
   private[this] def to400YearCycle(day: Long): Int = {
     if (day.toInt != day) day / 146097 // 146097 == number of days in a 400 year cycle
@@ -1615,6 +1619,14 @@ final class JsonWriter private[jsoniter_scala](
       val l = (x & 0xFFFFFFFFL) * 3435973836L
       val h = (x >>> 32) * 3435973836L
       ((x + l >>> 32) + l + h >>> 32) + h >> 3
+    }
+
+  private[this] def div675(x: Long): Long =
+    if (x.toInt == x) x * 3257812231L >> 41// divide positive int by 675
+    else { // divide positive long by 675
+      val xLow = x & 0xFFFFFFFFL
+      val xHigh = x >>> 32
+      ((xLow * 1921600183 >>> 32) + xLow * 3257812230L + xHigh * 1921600183 >>> 32) + xHigh * 3257812230L >> 9
     }
 
   private[this] def div100000000(x: Long): Long = { // divide positive long by 100000000

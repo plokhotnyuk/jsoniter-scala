@@ -2202,6 +2202,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def dateTimeZoneError(ex: DateTimeException): Nothing = decodeError("illegal date/time/zone", head - 1, ex)
 
+  @tailrec
   private[this] def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
       val mostSigBits1: Int =
