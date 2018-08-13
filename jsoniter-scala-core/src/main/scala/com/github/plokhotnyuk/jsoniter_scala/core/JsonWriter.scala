@@ -753,9 +753,7 @@ final class JsonWriter private[jsoniter_scala](
       val nanos = x.getNano
       var effectiveTotalSecs = totalSecs
       if (effectiveTotalSecs < 0 && nanos > 0) effectiveTotalSecs += 1
-      val hours =
-        if (effectiveTotalSecs.toInt != effectiveTotalSecs) effectiveTotalSecs / 3600
-        else (effectiveTotalSecs * 2443359173L >> 43) - (effectiveTotalSecs >> 63) // divide signed int by 3600
+      val hours = toHours(effectiveTotalSecs)
       if (hours != 0) {
         writeLong(hours)
         writeBytes('H')
@@ -783,6 +781,10 @@ final class JsonWriter private[jsoniter_scala](
         }
       }
     }
+
+  private[this] def toHours(seconds: Long): Long =
+    if (seconds >= 0) div3600(seconds) // 3600 == seconds in a hour
+    else -div3600(-seconds)
 
   private[this] def writeNanos(x: Int, pos: Int, buf: Array[Byte]): Int =
     writeSignificantFractionDigits(x, pos + 9, pos, 0, buf)
@@ -839,13 +841,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def toDay(second: Long): Long =
-    if (second >= 0) div675(second >> 7) // (second >> 7) / 675 = second / 86400 (seconds per day)
+    if (second >= 0) div675(second >> 7) // (second >> 7) / 675 == second / 86400 (seconds per day)
     else -div675(86399 - second >> 7)
 
-  private[this] def to400YearCycle(day: Long): Int = {
-    if (day.toInt != day) day / 146097 // 146097 == number of days in a 400 year cycle
-    else (day * 3853261556L >> 49) - (day >> 31) // divide signed int by 146097
-  }.toInt
+  private[this] def to400YearCycle(day: Long): Int =
+    (if (day >= 0) div146097(day) // 146097 == number of days in a 400 year cycle
+    else -div146097(-day)).toInt
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
     val centuryEst = (yearEst * 1374389535L >> 37).toInt - (yearEst >> 31) // divide signed int by 100
@@ -1627,6 +1628,22 @@ final class JsonWriter private[jsoniter_scala](
       val xLow = x & 0xFFFFFFFFL
       val xHigh = x >>> 32
       ((xLow * 1921600183 >>> 32) + xLow * 3257812230L + xHigh * 1921600183 >>> 32) + xHigh * 3257812230L >> 9
+    }
+
+  private[this] def div3600(x: Long): Long =
+    if (x.toInt == x) x * 2443359173L >> 43 // divide positive int by 3600
+    else { // divide positive long by 3600
+      val xLow = (x >> 4) & 0xFFFFFFFFL
+      val xHigh = x >>> 36
+      ((xLow * 1298034561 >>> 32) + xLow * 152709948 + xHigh * 1298034561 >>> 32) + xHigh * 152709948 >> 3
+    }
+
+  private[this] def div146097(x: Long): Long = //4137408090565272301
+    if (x.toInt == x) x * 963315389L >> 47 // divide positive int by 146097
+    else { // divide positive long by 146097
+      val xLow = x & 0xFFFFFFFFL
+      val xHigh = x >>> 32
+      ((xLow * 3371721453L >>> 32) + xLow * 963315388 + xHigh * 3371721453L >>> 32) + xHigh * 963315388 >> 15
     }
 
   private[this] def div100000000(x: Long): Long = { // divide positive long by 100000000
