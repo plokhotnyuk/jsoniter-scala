@@ -157,12 +157,14 @@ For more use cases, please, check out tests:
 
 ## Known issues
 
-1. Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that 
-contains a character that should be encoded immediately after the prefix (like `o` and `o-o`). You will got compilation 
-or runtime error, depending of version of the compiler, see details here: https://github.com/scala/bug/issues/10825
-W/a are: move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is affected by 
-the exception (after the `o` field) or rename the `o-o` field to `oO` or some other name and use the `@named("o-o")` 
-annotation for it. 
+Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that 
+contains a character which should be encoded immediately after the prefix (like `o` and `o-o`). You will got compilation 
+or runtime error, depending on the version of the compiler, see details here: https://github.com/scala/bug/issues/10825
+
+Workarounds are: 
+1) move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is affected by the 
+exception (after the `o` field)
+2) rename the `o-o` field to `oO` or some other name and use the `@named("o-o")` annotation for it. 
 
 ## How to develop
 
@@ -248,7 +250,8 @@ flame-graph-allocation-tlab.svg         # Flame graph of heap allocations in TLA
 flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocations in TLAB
 ``` 
 
-To run benchmarks with recordings by Async profiler, clone its repository and use command like this:
+To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), clone its 
+repository and use command like this:
 
 ```sh
 sbt -no-colors 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 .*TwitterAPIBenchmark.readJsoniterScala.*'
@@ -288,8 +291,8 @@ sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 .*Adt.*re
 More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 Other benchmarks with results for jsoniter-scala:
-- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializer for Scala
-- [comparison](https://github.com/guillaumebort/mison/pull/1) with a state of the art filter that during "building
+- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializers for Scala
+- [comparison](https://github.com/guillaumebort/mison/pull/1) with a state of the art filter that by "building
   structural indices converts control flow into data flow, thereby largely eliminating inherently unpredictable branches
   in the program and exploiting the parallelism available in modern processors"
 
