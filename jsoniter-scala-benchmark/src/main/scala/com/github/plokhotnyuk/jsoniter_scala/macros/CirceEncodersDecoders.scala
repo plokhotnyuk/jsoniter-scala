@@ -11,6 +11,7 @@ import scala.util.control.NonFatal
 
 object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
+  val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
   implicit val aEncoder: Encoder[A] = deriveEncoder
   implicit val aDecoder: Decoder[A] = deriveDecoder

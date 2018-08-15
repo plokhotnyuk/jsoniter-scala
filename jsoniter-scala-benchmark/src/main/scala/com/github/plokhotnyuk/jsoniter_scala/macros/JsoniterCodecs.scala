@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.time._
 import java.util.UUID
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, ReaderConfig, WriterConfig}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
@@ -13,6 +13,7 @@ import scala.collection.mutable
 object JsoniterCodecs {
   val exceptionWithoutDumpConfig = ReaderConfig(appendHexDumpToParseException = false)
   val exceptionWithStacktraceConfig = ReaderConfig(throwParseExceptionWithStackTrace = true)
+  val escapingConfig = WriterConfig(escapeUnicode = true)
   val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make(CodecMakerConfig()) // don't define implicit for supported types
   val adtCodec: JsonValueCodec[AdtBase] = make(CodecMakerConfig()) // don't define implicit for recursive structures
