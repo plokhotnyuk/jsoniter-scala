@@ -1,9 +1,13 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase {
+import org.scalatest.BeforeAndAfterAll
+
+class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase with BeforeAndAfterAll {
   private val benchmark = new StringOfEscapedCharsBenchmark {
     setup()
   }
+
+  override def afterAll(): Unit = benchmark.restore()
   
   "StringOfEscapedCharsBenchmark" should {
     "deserialize properly" in {
