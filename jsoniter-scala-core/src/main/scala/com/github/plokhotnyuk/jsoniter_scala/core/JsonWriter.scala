@@ -462,52 +462,50 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeUUID(x: UUID): Unit = count = {
-    val pos = ensureBufCapacity(38)
+    var pos = ensureBufCapacity(38)
     val buf = this.buf
-    val toHexDigit = hexDigits
-    val mostSigBits1 = (x.getMostSignificantBits >>> 32).toInt
-    val mostSigBits2 = x.getMostSignificantBits.toInt
-    val leastSigBits1 = (x.getLeastSignificantBits >>> 32).toInt
-    val leastSigBits2 = x.getLeastSignificantBits.toInt
+    val ds = hexDigits
     buf(pos) = '"'
-    buf(pos + 1) = toHexDigit(mostSigBits1 >>> 28)
-    buf(pos + 2) = toHexDigit((mostSigBits1 >>> 24) & 15)
-    buf(pos + 3) = toHexDigit((mostSigBits1 >>> 20) & 15)
-    buf(pos + 4) = toHexDigit((mostSigBits1 >>> 16) & 15)
-    buf(pos + 5) = toHexDigit((mostSigBits1 >>> 12) & 15)
-    buf(pos + 6) = toHexDigit((mostSigBits1 >>> 8) & 15)
-    buf(pos + 7) = toHexDigit((mostSigBits1 >>> 4) & 15)
-    buf(pos + 8) = toHexDigit(mostSigBits1 & 15)
-    buf(pos + 9) = '-'
-    buf(pos + 10) = toHexDigit(mostSigBits2 >>> 28)
-    buf(pos + 11) = toHexDigit((mostSigBits2 >>> 24) & 15)
-    buf(pos + 12) = toHexDigit((mostSigBits2 >>> 20) & 15)
-    buf(pos + 13) = toHexDigit((mostSigBits2 >>> 16) & 15)
-    buf(pos + 14) = '-'
-    buf(pos + 15) = toHexDigit((mostSigBits2 >>> 12) & 15)
-    buf(pos + 16) = toHexDigit((mostSigBits2 >>> 8) & 15)
-    buf(pos + 17) = toHexDigit((mostSigBits2 >>> 4) & 15)
-    buf(pos + 18) = toHexDigit(mostSigBits2 & 15)
-    buf(pos + 19) = '-'
-    buf(pos + 20) = toHexDigit(leastSigBits1 >>> 28)
-    buf(pos + 21) = toHexDigit((leastSigBits1 >>> 24) & 15)
-    buf(pos + 22) = toHexDigit((leastSigBits1 >>> 20) & 15)
-    buf(pos + 23) = toHexDigit((leastSigBits1 >>> 16) & 15)
-    buf(pos + 24) = '-'
-    buf(pos + 25) = toHexDigit((leastSigBits1 >>> 12) & 15)
-    buf(pos + 26) = toHexDigit((leastSigBits1 >>> 8) & 15)
-    buf(pos + 27) = toHexDigit((leastSigBits1 >>> 4) & 15)
-    buf(pos + 28) = toHexDigit(leastSigBits1 & 15)
-    buf(pos + 29) = toHexDigit(leastSigBits2 >>> 28)
-    buf(pos + 30) = toHexDigit((leastSigBits2 >>> 24) & 15)
-    buf(pos + 31) = toHexDigit((leastSigBits2 >>> 20) & 15)
-    buf(pos + 32) = toHexDigit((leastSigBits2 >>> 16) & 15)
-    buf(pos + 33) = toHexDigit((leastSigBits2 >>> 12) & 15)
-    buf(pos + 34) = toHexDigit((leastSigBits2 >>> 8) & 15)
-    buf(pos + 35) = toHexDigit((leastSigBits2 >>> 4) & 15)
-    buf(pos + 36) = toHexDigit(leastSigBits2 & 15)
-    buf(pos + 37) = '"'
-    pos + 38
+    pos = toHex((x.getMostSignificantBits >>> 32).toInt, pos + 1, buf, ds)
+    buf(pos) = '-'
+    pos = toDashedHex(x.getMostSignificantBits.toInt, pos + 1, buf, ds)
+    buf(pos) = '-'
+    pos = toHex(x.getLeastSignificantBits.toInt, toDashedHex((x.getLeastSignificantBits >>> 32).toInt, pos + 1, buf, ds), buf, ds)
+    buf(pos) = '"'
+    pos + 1
+  }
+
+  private[this] def toHex(n: Int, pos: Int, buf: Array[Byte], toHexDigit: Array[Short]): Int = {
+    val d1 = toHexDigit((n >>> 24) & 255)
+    buf(pos) = (d1 >> 8).toByte
+    buf(pos + 1) = d1.toByte
+    val d2 = toHexDigit((n >>> 16) & 255)
+    buf(pos + 2) = (d2 >> 8).toByte
+    buf(pos + 3) = d2.toByte
+    val d3 = toHexDigit((n >>> 8) & 255)
+    buf(pos + 4) = (d3 >> 8).toByte
+    buf(pos + 5) = d3.toByte
+    val d4 = toHexDigit(n & 255)
+    buf(pos + 6) = (d4 >> 8).toByte
+    buf(pos + 7) = d4.toByte
+    pos + 8
+  }
+
+  private[this] def toDashedHex(n: Int, pos: Int, buf: Array[Byte], toHexDigit: Array[Short]): Int = {
+    val d1 = toHexDigit((n >>> 24) & 255)
+    buf(pos) = (d1 >> 8).toByte
+    buf(pos + 1) = d1.toByte
+    val d2 = toHexDigit((n >>> 16) & 255)
+    buf(pos + 2) = (d2 >> 8).toByte
+    buf(pos + 3) = d2.toByte
+    buf(pos + 4) = '-'
+    val d3 = toHexDigit((n >>> 8) & 255)
+    buf(pos + 5) = (d3 >> 8).toByte
+    buf(pos + 6) = d3.toByte
+    val d4 = toHexDigit(n & 255)
+    buf(pos + 7) = (d4 >> 8).toByte
+    buf(pos + 8) = d4.toByte
+    pos + 9
   }
 
   private[this] def writeString(s: String): Unit = count = {
@@ -689,24 +687,26 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeEscapedUnicode(ch: Char, pos: Int, buf: Array[Byte]): Int = {
-    val toHexDigit = hexDigits
+    val ds = hexDigits
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
-    buf(pos + 2) = toHexDigit(ch >>> 12)
-    buf(pos + 3) = toHexDigit((ch >>> 8) & 15)
-    buf(pos + 4) = toHexDigit((ch >>> 4) & 15)
-    buf(pos + 5) = toHexDigit(ch & 15)
+    val d1 = ds(ch >>> 8)
+    buf(pos + 2) = (d1 >> 8).toByte
+    buf(pos + 3) = d1.toByte
+    val d2 = ds(ch & 255)
+    buf(pos + 4) = (d2 >> 8).toByte
+    buf(pos + 5) = d2.toByte
     pos + 6
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val toHexDigit = hexDigits
+    val d = hexDigits(b)
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
     buf(pos + 3) = '0'
-    buf(pos + 4) = toHexDigit((b >>> 4) & 15)
-    buf(pos + 5) = toHexDigit(b & 15)
+    buf(pos + 4) = (d >> 8).toByte
+    buf(pos + 5) = d.toByte
     pos + 6
   }
 
@@ -1647,7 +1647,7 @@ final class JsonWriter private[jsoniter_scala](
       ((xLow * 1298034561 >>> 32) + xLow * 152709948 + xHigh * 1298034561 >>> 32) + xHigh * 152709948 >> 3
     }
 
-  private[this] def div146097(x: Long): Long = //4137408090565272301
+  private[this] def div146097(x: Long): Long =
     if (x.toInt == x) x * 963315389L >> 47 // divide positive int by 146097
     else { // divide positive long by 146097
       val xLow = x & 0xFFFFFFFFL
@@ -1752,8 +1752,21 @@ object JsonWriter {
     } while (j < 10)
     ds
   }
-  private final val hexDigits: Array[Byte] =
-    Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
+  private final val hexDigits: Array[Short] = {
+    val ds = new Array[Short](256)
+    var i = 0
+    var j = 0
+    do {
+      var k = 0
+      do {
+        ds(i) = (((if (j <= 9) j + '0' else j + 'a' - 10) << 8) + (if (k <= 9) k + '0' else k + 'a' - 10)).toShort
+        i += 1
+        k += 1
+      } while (k < 16)
+      j += 1
+    } while (j < 16)
+    ds
+  }
   private final val minIntBytes: Array[Byte] = Array('-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8')
   private final val minLongBytes: Array[Byte] =
     Array('-', '9', '2', '2', '3', '3', '7', '2', '0', '3', '6', '8', '5', '4', '7', '7', '5', '8', '0', '8')
