@@ -5,7 +5,7 @@ class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase {
     setup()
   }
   
-  "StringOfNonAsciiCharsBenchmark" should {
+  "StringOfEscapedCharsBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj

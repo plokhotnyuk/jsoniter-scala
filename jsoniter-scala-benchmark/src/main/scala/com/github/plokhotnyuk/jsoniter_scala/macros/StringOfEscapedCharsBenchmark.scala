@@ -12,7 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup, TearDown}
 import play.api.libs.json.Json
 import upickle.default._
 
@@ -49,6 +49,10 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
+
+  @TearDown
+  def restore(): Unit =
+    jacksonMapper.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false)
 
   @Benchmark
   def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
