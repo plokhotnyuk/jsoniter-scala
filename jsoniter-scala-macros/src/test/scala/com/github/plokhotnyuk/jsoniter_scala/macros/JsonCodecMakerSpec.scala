@@ -1280,6 +1280,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforceCamelCase("o_o") shouldBe "oO"
       JsonCodecMaker.enforceCamelCase("o_ooo_") shouldBe "oOoo"
       JsonCodecMaker.enforceCamelCase("OO_OOO_111") shouldBe "ooOoo111"
+      JsonCodecMaker.enforceCamelCase("ooo_111") shouldBe "ooo111"
     }
     "transform kebab-case names to camelCase" in {
       JsonCodecMaker.enforceCamelCase("o-o") shouldBe "oO"
@@ -1297,6 +1298,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.enforce_snake_case("oO") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("oOoo") shouldBe "o_ooo"
       JsonCodecMaker.enforce_snake_case("OOOoo111") shouldBe "oo_ooo_111"
+      JsonCodecMaker.enforce_snake_case("Ooo111") shouldBe "ooo_111"
     }
     "transform kebab-case names to snake_case" in {
       JsonCodecMaker.enforce_snake_case("o-O") shouldBe "o_o"
@@ -1314,6 +1316,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       JsonCodecMaker.`enforce-kebab-case`("oO") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case`("oOoo") shouldBe "o-ooo"
       JsonCodecMaker.`enforce-kebab-case`("OOOoo111") shouldBe "oo-ooo-111"
+      JsonCodecMaker.`enforce-kebab-case`("Ooo111") shouldBe "ooo-111"
     }
     "transform snake_case names to kebab-case" in {
       JsonCodecMaker.`enforce-kebab-case`("o_O") shouldBe "o-o"
