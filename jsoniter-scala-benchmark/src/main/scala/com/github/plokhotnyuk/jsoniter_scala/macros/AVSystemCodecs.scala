@@ -19,6 +19,7 @@ object AVSystemCodecs {
   implicit val localDateGenCodec: GenCodec[LocalDate] = transformed(_.toString, LocalDate.parse)
   implicit val localDateTimeGenCodec: GenCodec[LocalDateTime] = transformed(_.toString, LocalDateTime.parse)
   implicit val localTimeGenCodec: GenCodec[LocalTime] = transformed(_.toString, LocalTime.parse)
+  implicit val monthDayGenCodec: GenCodec[MonthDay] = transformed(_.toString, MonthDay.parse)
   implicit val offsetDateTimeGenCodec: GenCodec[OffsetDateTime] = transformed(_.toString, OffsetDateTime.parse)
   implicit val offsetTimeGenCodec: GenCodec[OffsetTime] = transformed(_.toString, OffsetTime.parse)
   implicit val periodGenCodec: GenCodec[Period] = transformed(_.toString, Period.parse)

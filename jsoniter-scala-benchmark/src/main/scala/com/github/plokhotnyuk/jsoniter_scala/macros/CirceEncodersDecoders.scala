@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.time.ZoneOffset
+import java.time.{MonthDay, ZoneOffset}
 
 import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 import io.circe._
@@ -27,6 +27,12 @@ object CirceEncodersDecoders {
   implicit val suitDecoder: Decoder[Suit] = Decoder.decodeString.emap { str =>
     try Right(Suit.valueOf(str)) catch {
       case NonFatal(_) => Left("Suit")
+    }
+  }
+  implicit val monthDayEncoder: Encoder[MonthDay] = Encoder.encodeString.contramap(_.toString)
+  implicit val monthDayDecoder: Decoder[MonthDay] = Decoder.decodeString.emap { str =>
+    try Right(MonthDay.parse(str)) catch {
+      case NonFatal(_) => Left("MonthDay")
     }
   }
   implicit val zoneOffsetEncoder: Encoder[ZoneOffset] = Encoder.encodeString.contramap(_.toString)

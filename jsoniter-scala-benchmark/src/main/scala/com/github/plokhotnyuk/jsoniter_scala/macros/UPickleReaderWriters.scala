@@ -35,6 +35,7 @@ object UPickleReaderWriters {
   implicit val localTimeReaderWriter: ReadWriter[LocalTime] = readwriter[String].bimap(_.toString, LocalTime.parse)
   implicit val nestedStructsReaderWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingReqFieldsReaderWriter: ReadWriter[MissingReqFields] = macroRW
+  implicit val monthDayReaderWriter: ReadWriter[MonthDay] = readwriter[String].bimap(_.toString, MonthDay.parse)
   implicit val offsetDateTimeReaderWriter: ReadWriter[OffsetDateTime] = readwriter[String].bimap(_.toString, OffsetDateTime.parse)
   implicit val offsetTimeReaderWriter: ReadWriter[OffsetTime] = readwriter[String].bimap(_.toString, OffsetTime.parse)
   implicit val periodReaderWriter: ReadWriter[Period] = readwriter[String].bimap(_.toString, Period.parse)
