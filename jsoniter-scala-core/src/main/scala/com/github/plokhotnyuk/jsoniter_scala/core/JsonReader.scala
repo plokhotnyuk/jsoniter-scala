@@ -2467,6 +2467,7 @@ final class JsonReader private[jsoniter_scala](
     val bufOffset = alignedAbsFrom - offset
     var i = appendChars(dumpHeader, from)
     i = appendChars(dumpBorder, i)
+    val ds = hexDigits
     var charBuf = this.charBuf
     var lim = charBuf.length
     var j = 0
@@ -2480,7 +2481,7 @@ final class JsonReader private[jsoniter_scala](
         charBuf(i) = '\n'
         charBuf(i + 1) = '|'
         charBuf(i + 2) = ' '
-        putHex(alignedAbsFrom + j, i + 3, charBuf)
+        putHex(alignedAbsFrom + j, i + 3, charBuf, ds)
         charBuf(i + 11) = ' '
         charBuf(i + 12) = '|'
         charBuf(i + 13) = ' '
@@ -2490,7 +2491,7 @@ final class JsonReader private[jsoniter_scala](
       charBuf(i + 50 - (linePos << 1)) =
         if (pos >= start && pos < end) {
           val b = buf(pos)
-          putHex(b, i, charBuf)
+          putHex(b, i, charBuf, ds)
           charBuf(i + 2) = ' '
           if (b <= 31 || b >= 127) '.' else b.toChar
         } else {
@@ -2514,44 +2515,42 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def appendHex(d: Long, i: Int): Int = {
     if (i + 16 >= charBuf.length) growCharBuf(i + 16)
+    val ds = hexDigits
     var j = i
     val hd = (d >>> 32).toInt
     if (hd != 0) {
       var shift = 4
       while (shift < 32 && (hd >>> shift) != 0) shift += 4
-      val toHexDigit = hexDigits
       while (shift > 0) {
         shift -= 4
-        charBuf(j) = toHexDigit((hd >>> shift) & 15)
+        charBuf(j) = ds((hd >>> shift) & 15)
         j += 1
       }
     }
-    putHex(d.toInt, j, charBuf)
+    putHex(d.toInt, j, charBuf, ds)
     j + 8
   }
 
-  private[this] def putHex(d: Int, i: Int, charBuf: Array[Char]): Unit = {
-    val toHexDigit = hexDigits
-    charBuf(i) = toHexDigit(d >>> 28)
-    charBuf(i + 1) = toHexDigit((d >>> 24) & 15)
-    charBuf(i + 2) = toHexDigit((d >>> 20) & 15)
-    charBuf(i + 3) = toHexDigit((d >>> 16) & 15)
-    charBuf(i + 4) = toHexDigit((d >>> 12) & 15)
-    charBuf(i + 5) = toHexDigit((d >>> 8) & 15)
-    charBuf(i + 6) = toHexDigit((d >>> 4) & 15)
-    charBuf(i + 7) = toHexDigit(d & 15)
+  private[this] def putHex(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
+    charBuf(i) = ds(d >>> 28)
+    charBuf(i + 1) = ds((d >>> 24) & 15)
+    charBuf(i + 2) = ds((d >>> 20) & 15)
+    charBuf(i + 3) = ds((d >>> 16) & 15)
+    charBuf(i + 4) = ds((d >>> 12) & 15)
+    charBuf(i + 5) = ds((d >>> 8) & 15)
+    charBuf(i + 6) = ds((d >>> 4) & 15)
+    charBuf(i + 7) = ds(d & 15)
   }
 
   private[this] def appendHex(b: Byte, i: Int): Int = {
     if (i + 2 >= charBuf.length) growCharBuf(i + 2)
-    putHex(b, i, charBuf)
+    putHex(b, i, charBuf, hexDigits)
     i + 2
   }
 
-  private[this] def putHex(b: Byte, i: Int, charBuf: Array[Char]): Unit = {
-    val toHexDigit = hexDigits
-    charBuf(i) = toHexDigit((b >>> 4) & 15)
-    charBuf(i + 1) = toHexDigit(b & 15)
+  private[this] def putHex(b: Byte, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
+    charBuf(i) = ds((b >>> 4) & 15)
+    charBuf(i + 1) = ds(b & 15)
   }
 
   private[this] def copyAsciiToCharBuf(buf: Array[Byte], from: Int, to: Int): Int = {

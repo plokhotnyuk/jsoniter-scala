@@ -475,34 +475,34 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private[this] def toHex(n: Int, pos: Int, buf: Array[Byte], toHexDigit: Array[Short]): Int = {
-    val d1 = toHexDigit(n >>> 24)
+  private[this] def toHex(n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val d1 = ds(n >>> 24)
     buf(pos) = (d1 >> 8).toByte
     buf(pos + 1) = d1.toByte
-    val d2 = toHexDigit((n >>> 16) & 255)
+    val d2 = ds((n >>> 16) & 255)
     buf(pos + 2) = (d2 >> 8).toByte
     buf(pos + 3) = d2.toByte
-    val d3 = toHexDigit((n >>> 8) & 255)
+    val d3 = ds((n >>> 8) & 255)
     buf(pos + 4) = (d3 >> 8).toByte
     buf(pos + 5) = d3.toByte
-    val d4 = toHexDigit(n & 255)
+    val d4 = ds(n & 255)
     buf(pos + 6) = (d4 >> 8).toByte
     buf(pos + 7) = d4.toByte
     pos + 8
   }
 
-  private[this] def toDashedHex(n: Int, pos: Int, buf: Array[Byte], toHexDigit: Array[Short]): Int = {
-    val d1 = toHexDigit(n >>> 24)
+  private[this] def toDashedHex(n: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val d1 = ds(n >>> 24)
     buf(pos) = (d1 >> 8).toByte
     buf(pos + 1) = d1.toByte
-    val d2 = toHexDigit((n >>> 16) & 255)
+    val d2 = ds((n >>> 16) & 255)
     buf(pos + 2) = (d2 >> 8).toByte
     buf(pos + 3) = d2.toByte
     buf(pos + 4) = '-'
-    val d3 = toHexDigit((n >>> 8) & 255)
+    val d3 = ds((n >>> 8) & 255)
     buf(pos + 5) = (d3 >> 8).toByte
     buf(pos + 6) = d3.toByte
-    val d4 = toHexDigit(n & 255)
+    val d4 = ds(n & 255)
     buf(pos + 7) = (d4 >> 8).toByte
     buf(pos + 8) = d4.toByte
     pos + 9
