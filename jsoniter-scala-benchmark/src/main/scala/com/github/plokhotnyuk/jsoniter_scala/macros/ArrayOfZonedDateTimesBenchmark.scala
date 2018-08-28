@@ -30,8 +30,14 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map { i =>
+      val n = Math.abs(i * 1498724053)
       ZonedDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(i),
-        LocalTime.ofSecondOfDay((Math.abs(i * 1498724053) % 86000) | 1)),
+        LocalTime.ofNanoOfDay(((n % 86000) | 1) * 1000000000L + ((i % 4 match {
+          case 0 => 0
+          case 1 => (n % 1000) * 1000000
+          case 2 => (n % 1000000) * 1000
+          case 3 => n % 1000000000
+        }) | 1))),
         zoneIds(i % zoneIds.length))
     }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
