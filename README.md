@@ -157,14 +157,31 @@ For more use cases, please, check out tests:
 
 ## Known issues
 
-Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that 
+1. Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that
 contains a character which should be encoded immediately after the prefix (like `o` and `o-o`). You will got compilation 
 or runtime error, depending on the version of the compiler, see details here: https://github.com/scala/bug/issues/10825
 
 Workarounds are: 
-1) move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is affected by the 
+- move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is affected by the
 exception (after the `o` field)
-2) rename the `o-o` field to `oO` or some other name and use the `@named("o-o")` annotation for it. 
+- rename the `o-o` field to `oO` or some other name and use the `@named("o-o")` annotation for it.
+
+2. Scalac can fail to compile the `make` macro call with a stacktrace like this (for more details see: https://github.com/scala/bug/issues/11119):
+
+```
+[error] java.lang.AssertionError: assertion failed: List(package com, package com)
+[error] 	at scala.reflect.internal.SymbolTable.throwAssertionError(SymbolTable.scala:163)
+[error] 	at scala.reflect.internal.Symbols$Symbol.suchThat(Symbols.scala:1974)
+...
+[error] 	at scala.reflect.macros.contexts.Evals.eval(Evals.scala:19)
+[error] 	at scala.reflect.macros.contexts.Evals.eval$(Evals.scala:14)
+[error] 	at scala.reflect.macros.contexts.Context.eval(Context.scala:6)
+[error] 	at com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$eval$1(JsonCodecMaker.scala:227)
+[error] 	at com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$.make(JsonCodecMaker.scala:229)
+```
+
+Workaround is to isolate the `make` macro call(s) in the separated object, like in the following PR:
+https://github.com/plokhotnyuk/play/pull/5/files
 
 ## How to develop
 
