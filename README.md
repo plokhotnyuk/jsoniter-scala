@@ -180,8 +180,10 @@ exception (after the `o` field)
 [error] 	at com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$.make(JsonCodecMaker.scala:229)
 ```
 
-Workaround is to isolate the `make` macro call(s) in the separated object, like in the following PR:
-https://github.com/plokhotnyuk/play/pull/5/files
+Workarounds are: 
+- isolate the `make` macro call(s) in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
+- move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
+and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
 
 ## How to develop
 
