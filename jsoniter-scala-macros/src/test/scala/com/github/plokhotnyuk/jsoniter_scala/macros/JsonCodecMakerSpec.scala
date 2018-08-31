@@ -535,6 +535,25 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3,]],"a":[]}""".getBytes("UTF-8"))
       }.getMessage.contains("illegal number, offset: 0x0000000e"))
     }
+    "serialize and deserialize case classes with generic Iterables" in {
+      case class GenericIterables(s: collection.Set[collection.SortedSet[String]],
+                                  is: collection.IndexedSeq[collection.Seq[Float]],
+                                  i: collection.Iterable[Int])
+
+      val codecOfGenericIterables = make[GenericIterables](CodecMakerConfig())
+      verifySerDeser(codecOfGenericIterables,
+        GenericIterables(collection.Set(collection.SortedSet("1", "2", "3")),
+          collection.IndexedSeq(collection.Seq(1.1f, 2.2f, 3.3f)), collection.Iterable(4, 5, 6)),
+        """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""".getBytes("UTF-8"))
+      verifySer(codecOfGenericIterables,
+        GenericIterables(collection.immutable.Set(collection.immutable.SortedSet("1", "2", "3")),
+          collection.immutable.IndexedSeq(collection.immutable.Seq(1.1f, 2.2f, 3.3f)), collection.immutable.Iterable(4, 5, 6)),
+        """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""".getBytes("UTF-8"))
+      verifySer(codecOfGenericIterables,
+        GenericIterables(collection.mutable.Set(collection.mutable.SortedSet("1", "2", "3")),
+          collection.mutable.IndexedSeq(collection.mutable.Seq(1.1f, 2.2f, 3.3f)), collection.mutable.Iterable(4, 5, 6)),
+        """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""".getBytes("UTF-8"))
+    }
     "serialize and deserialize case classes with mutable Iterables" in {
       case class MutableIterables(ml: collection.mutable.Seq[collection.mutable.SortedSet[String]],
                                      ab: collection.mutable.ArrayBuffer[collection.mutable.Set[BigInt]],
@@ -579,6 +598,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[["3.3"],["1.1","2.2"]]""".getBytes("UTF-8"))
     }
+    "serialize and deserialize case classes with generic maps" in {
+      case class GenericMaps(m: collection.Map[Int, Boolean])
+
+      val codecOfGenericMaps = make[GenericMaps](CodecMakerConfig())
+      verifySerDeser(codecOfGenericMaps, GenericMaps(collection.Map(1 -> true)),
+        """{"m":{"1":true}}""".getBytes("UTF-8"))
+      verifySer(codecOfGenericMaps, GenericMaps(collection.mutable.Map(1 -> true)),
+        """{"m":{"1":true}}""".getBytes("UTF-8"))
+      verifySer(codecOfGenericMaps, GenericMaps(collection.immutable.Map(1 -> true)),
+        """{"m":{"1":true}}""".getBytes("UTF-8"))
+    }
     "serialize and deserialize case classes with mutable maps" in {
       verifySerDeser(codecOfMutableMaps,
         MutableMaps(collection.mutable.HashMap(true -> collection.mutable.AnyRefMap(BigDecimal(1.1) -> 1)),
@@ -587,7 +617,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"hm":{"true":{"1.1":1}},"m":{"1.1":{"2":"2"}},"ohm":{"1.1":{"3":3.3},"2.2":{}}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable maps" in {
-      verifySerDeser(make[ImmutableMaps](CodecMakerConfig()),
+      verifySerDeser(codecOfImmutableMaps,
         ImmutableMaps(Map(1 -> 1.1), collection.immutable.HashMap("2" -> collection.immutable.ListMap('V' -> 2),
           "3" -> collection.immutable.ListMap('X' -> 3)),
           collection.immutable.SortedMap(4L -> collection.immutable.TreeMap(4.toByte -> 4.4f),

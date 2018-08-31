@@ -630,11 +630,12 @@ object JsonCodecMaker {
           val tpe2 = typeArg2(tpe)
           genReadMap(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1, $tpe2]",
             q"x.update(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
-        } else if (tpe <:< typeOf[Map[_, _]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1,$tpe2]")}",
-            q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
+            if (tpe <:< typeOf[Map[_, _]]) q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})"
+            else q"x = x + ((${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)}))")
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
             if (isStringified) q"in.readStringAsInt()"
@@ -649,7 +650,7 @@ object JsonCodecMaker {
             else q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = new scala.collection.mutable.ListBuffer[$tpe1]",
+          genReadArray(q"val x = new collection.mutable.ListBuffer[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
@@ -868,9 +869,9 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", q"out.writeKey(kv._1)", genWriteVal(q"kv._2", typeArg1(tpe), isStringified))
-        } else if (tpe <:< typeOf[scala.collection.Map[_, _]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[collection.Map[_, _]]) withEncoderFor(methodKey, m) {
           genWriteMap(q"x", genWriteKey(q"kv._1", typeArg1(tpe)), genWriteVal(q"kv._2", typeArg2(tpe), isStringified))
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x",
             if (isStringified) q"out.writeValAsString(x)"
             else q"out.writeVal(x)")
