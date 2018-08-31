@@ -447,7 +447,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(2L)),
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(new java.lang.Long(2L))),
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""".getBytes("UTF-8"))
       verifySerDeser(codecOfOptions, Options(None, None, None, None, None), """{}""".getBytes("UTF-8"))
     }
@@ -646,11 +646,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with mutable & immutable bitsets" in {
-      case class BitSets(bs: collection.immutable.BitSet, mbs: collection.mutable.BitSet)
+      case class BitSets(bs: collection.BitSet, ibs: collection.immutable.BitSet, mbs: collection.mutable.BitSet)
 
       verifySerDeser(make[BitSets](CodecMakerConfig()),
-        BitSets(collection.immutable.BitSet(1, 2, 3), collection.mutable.BitSet(4, 5, 6)),
-        """{"bs":[1,2,3],"mbs":[4,5,6]}""".getBytes("UTF-8"))
+        BitSets(collection.BitSet(0), collection.immutable.BitSet(1, 2, 3), collection.mutable.BitSet(4, 5, 6)),
+        """{"bs":[0],"ibs":[1,2,3],"mbs":[4,5,6]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level int/long maps & bitsets" in {
       val codecOfIntLongMapsAndBitSets =

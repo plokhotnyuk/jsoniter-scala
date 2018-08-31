@@ -635,7 +635,7 @@ object JsonCodecMaker {
           val tpe2 = typeArg2(tpe)
           genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1,$tpe2]")}",
             q"x = x.updated(${genReadKey(tpe1)}, ${genReadVal(tpe2, nullValue(tpe2), isStringified)})")
-        } else if (tpe <:< typeOf[mutable.BitSet] || tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
             if (isStringified) q"in.readStringAsInt()"
             else q"in.readInt()"
@@ -645,7 +645,8 @@ object JsonCodecMaker {
                 val i = v >>> 6
                 if (i >= x.length) x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(i) << 1)
                 x(i) |= 1L << v""",
-            q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
+            if (tpe =:= typeOf[BitSet]) q"collection.immutable.BitSet.fromBitMaskNoCopy(x)"
+            else q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = new scala.collection.mutable.ListBuffer[$tpe1]",
