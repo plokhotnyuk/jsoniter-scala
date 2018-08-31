@@ -77,14 +77,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
   val codecOfArrays: JsonValueCodec[Arrays] = make(CodecMakerConfig())
 
-  case class ImmutableIterables(l: List[collection.immutable.ListSet[String]],
-                                q: collection.immutable.Queue[Set[BigInt]],
-                                is: IndexedSeq[collection.immutable.SortedSet[Int]],
-                                s: Stream[collection.immutable.TreeSet[Double]],
-                                v: Vector[Iterable[Long]])
-
-  val codecOfImmutableIterables: JsonValueCodec[ImmutableIterables] = make(CodecMakerConfig())
-
   case class MutableMaps(hm: collection.mutable.HashMap[Boolean, collection.mutable.AnyRefMap[BigDecimal, Int]],
                          m: collection.mutable.Map[Float, collection.mutable.ListMap[BigInt, String]],
                          ohm: collection.mutable.OpenHashMap[Double, collection.mutable.LinkedHashMap[Short, Double]])
@@ -563,21 +555,27 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize case classes with immutable Iterables" in {
-      verifySerDeser(codecOfImmutableIterables,
+      case class ImmutableIterables(l: List[collection.immutable.ListSet[String]],
+                                    q: collection.immutable.Queue[Set[BigInt]],
+                                    is: IndexedSeq[collection.immutable.SortedSet[Int]],
+                                    s: Stream[collection.immutable.TreeSet[Double]],
+                                    v: Vector[Iterable[Long]])
+
+      verifySerDeser(make[ImmutableIterables](CodecMakerConfig()),
         ImmutableIterables(List(collection.immutable.ListSet("1")), collection.immutable.Queue(Set[BigInt](4)),
           IndexedSeq(collection.immutable.SortedSet(5, 6, 7), collection.immutable.SortedSet()),
           Stream(collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
         """{"l":[["1"]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""".getBytes("UTF-8"))
     }
     "serialize and deserialize top-level Iterables" in {
-      val codecOfImmutableIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig())
-      verifySerDeser(codecOfImmutableIterables,
+      val codecOfTopLevelIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig())
+      verifySerDeser(codecOfTopLevelIterables,
         collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[[3.3],[1.1,2.2]]""".getBytes("UTF-8"))
     }
     "serialize and deserialize stringified top-level Iterables" in {
-      val codecOfImmutableIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfImmutableIterables,
+      val codecOfStringifiedIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
+      verifySerDeser(codecOfStringifiedIterables,
         collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[["3.3"],["1.1","2.2"]]""".getBytes("UTF-8"))
     }
