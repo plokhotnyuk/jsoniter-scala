@@ -254,7 +254,9 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: ZoneOffset): Unit = writeZoneOffset(x)
 
-  def writeVal(x: Boolean): Unit = if (x) writeBytes('t', 'r', 'u', 'e') else writeBytes('f', 'a', 'l', 's', 'e')
+  def writeVal(x: Boolean): Unit =
+    if (x) writeBytes('t', 'r', 'u', 'e')
+    else writeBytes('f', 'a', 'l', 's', 'e')
 
   def writeVal(x: Byte): Unit = writeByte(x)
 
@@ -276,7 +278,8 @@ final class JsonWriter private[jsoniter_scala](
     writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
 
   def writeValAsString(x: Boolean): Unit =
-    if (x) writeBytes('"', 't', 'r', 'u', 'e', '"') else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')
+    if (x) writeBytes('"', 't', 'r', 'u', 'e', '"')
+    else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')
 
   def writeValAsString(x: Byte): Unit = {
     writeBytes('"')
@@ -1209,29 +1212,10 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val off = offset(q0)
-    writeIntFirst(q0, pos + off, buf, ds) + off
+    val lastPos = offset(q0) + pos
+    writeIntFirst(q0, lastPos, buf, ds)
+    lastPos + 1
   }
-
-  @tailrec
-  private[this] def writeIntFirst(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (q0 < 100) {
-      if (q0 < 10) {
-        buf(pos) = (q0 + '0').toByte
-        pos + 1
-      } else {
-        val d = ds(q0)
-        buf(pos - 1) = (d >> 8).toByte
-        buf(pos) = d.toByte
-        pos
-      }
-    } else {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-      val d = ds(q0 - 100 * q1)
-      buf(pos - 1) = (d >> 8).toByte
-      buf(pos) = d.toByte
-      writeIntFirst(q1, pos - 2, buf, ds)
-    }
 
   private[this] def writeByteArray(bs: Array[Byte], pos: Int): Int = {
     val len = bs.length
@@ -1260,7 +1244,9 @@ final class JsonWriter private[jsoniter_scala](
       val even = (m2 & 1) == 0
       val mv = m2 << 2
       val mp = mv + 2
-      val mmShift = if (ieeeMantissa != 0 || ieeeExponent <= 1) 1 else 0
+      val mmShift =
+        if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
+        else 0
       val mm = mv - 1 - mmShift
       var dv, dp, dm, exp, lastRemovedDigit = 0
       var dvIsTrailingZeros, dmIsTrailingZeros = false
@@ -1329,7 +1315,8 @@ final class JsonWriter private[jsoniter_scala](
             }
           }
           if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv
+          else dv + 1
         } else {
           var newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
           var newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
@@ -1343,7 +1330,8 @@ final class JsonWriter private[jsoniter_scala](
             newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
             olength -= 1
           }
-          if (lastRemovedDigit < 5 && dv != dm) dv else dv + 1
+          if (lastRemovedDigit < 5 && dv != dm) dv
+          else dv + 1
         }
       var pos = ensureBufCapacity(15)
       val buf = this.buf
@@ -1401,13 +1389,6 @@ final class JsonWriter private[jsoniter_scala](
     ((m * ss(idx + 1) + (m * ss(idx) >> 31)) >> (j - 31)).toInt
   }
 
-  private[this] def offset(q0: Int): Int =
-    if (q0 < 100) (9 - q0) >>> 31
-    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
-    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
-    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
-    else ((999999999 - q0) >>> 31) + 8
-
   // Based on a great work of Ulf Adams:
   // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
   // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuDouble.java
@@ -1429,7 +1410,9 @@ final class JsonWriter private[jsoniter_scala](
       val even = (m2 & 1) == 0
       val mv = m2 << 2L
       val mp = mv + 2
-      val mmShift = if (ieeeMantissa != 0 || ieeeExponent <= 1) 1 else 0
+      val mmShift =
+        if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
+        else 0
       val mm = mv - 1 - mmShift
       var dv, dp, dm = 0L
       var exp, lastRemovedDigit = 0
@@ -1499,7 +1482,8 @@ final class JsonWriter private[jsoniter_scala](
             }
           }
           if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv else dv + 1
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv
+          else dv + 1
         } else {
           var newDp = div10(dp)
           var newDm = div10(dm)
@@ -1513,7 +1497,8 @@ final class JsonWriter private[jsoniter_scala](
             newDm = div10(dm)
             olength -= 1
           }
-          if (lastRemovedDigit < 5 && dv != dm) dv else dv + 1
+          if (lastRemovedDigit < 5 && dv != dm) dv
+          else dv + 1
         }
       var pos = ensureBufCapacity(24)
       val buf = this.buf
@@ -1601,6 +1586,13 @@ final class JsonWriter private[jsoniter_scala](
     else 18
   }.toInt
 
+  private[this] def offset(q0: Int): Int =
+    if (q0 < 100) (9 - q0) >>> 31
+    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
+    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
+    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
+    else ((999999999 - q0) >>> 31) + 8
+
   private[this] def writeLongFirst(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
     if (q0.toInt == q0) writeIntFirst(q0.toInt, pos, buf, ds)
     else {
@@ -1616,6 +1608,24 @@ final class JsonWriter private[jsoniter_scala](
         write8Digits(r1, write8Digits(r2, pos - 15, buf, ds), buf, ds)
       }
     }
+
+  @tailrec
+  private[this] def writeIntFirst(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
+    if (q0 < 100) {
+      if (q0 < 10) buf(pos) = (q0 + '0').toByte
+      else {
+        val d = ds(q0)
+        buf(pos - 1) = (d >> 8).toByte
+        buf(pos) = d.toByte
+      }
+    } else {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+      val d = ds(q0 - 100 * q1)
+      buf(pos - 1) = (d >> 8).toByte
+      buf(pos) = d.toByte
+      writeIntFirst(q1, pos - 2, buf, ds)
+    }
+
   // FIXME: remove all these div* after fix of the performance regression in GraalVM CE, check: https://github.com/oracle/graal/issues/593
   private[this] def div5(x: Long): Long = { // divide positive long by 5
     val l = (x & 0xFFFFFFFFL) * 3435973836L
@@ -1757,9 +1767,15 @@ object JsonWriter {
     var i = 0
     var j = 0
     do {
+      val d1 =
+        if (j <= 9) j + '0'
+        else j + 'a' - 10
       var k = 0
       do {
-        ds(i) = (((if (j <= 9) j + '0' else j + 'a' - 10) << 8) + (if (k <= 9) k + '0' else k + 'a' - 10)).toShort
+        val d2 =
+          if (k <= 9) k + '0'
+          else k + 'a' - 10
+        ds(i) = ((d1 << 8) + d2).toShort
         i += 1
         k += 1
       } while (k < 16)
