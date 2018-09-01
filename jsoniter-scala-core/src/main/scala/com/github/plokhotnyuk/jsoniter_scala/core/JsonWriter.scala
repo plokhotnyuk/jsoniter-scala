@@ -1512,10 +1512,10 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNZeros(-1 - exp, pos + 2, buf)
-          writeLongFirst(output, pos + olength - 1, buf, ds)
+          writeSmallLongFirst(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
-          writeLongFirst(output, pos + olength - 1, buf, ds)
+          writeSmallLongFirst(output, pos + olength - 1, buf, ds)
           pos = writeNZeros(exp - olength + 1, pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
@@ -1523,7 +1523,7 @@ final class JsonWriter private[jsoniter_scala](
         } else {
           val lastPos = pos + olength
           val dotPos = pos + exp + 1
-          writeLongFirst(output, lastPos, buf, ds)
+          writeSmallLongFirst(output, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1532,7 +1532,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writeLongFirst(output, pos + olength, buf, ds)
+        writeSmallLongFirst(output, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
@@ -1593,20 +1593,12 @@ final class JsonWriter private[jsoniter_scala](
     else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
     else ((999999999 - q0) >>> 31) + 8
 
-  private[this] def writeLongFirst(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
+  private[this] def writeSmallLongFirst(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
     if (q0.toInt == q0) writeIntFirst(q0.toInt, pos, buf, ds)
     else {
       val q1 = div100000000(q0)
-      val r1 = (q0 - 100000000 * q1).toInt
-      if (q1.toInt == q1) {
-        writeIntFirst(q1.toInt, pos - 8, buf, ds)
-        write8Digits(r1, pos - 7, buf, ds)
-      } else {
-        val q2 = div100000000(q1)
-        val r2 = (q1 - 100000000 * q2).toInt
-        writeIntFirst(q2.toInt, pos - 16, buf, ds)
-        write8Digits(r1, write8Digits(r2, pos - 15, buf, ds), buf, ds)
-      }
+      writeIntFirst(q1.toInt, pos - 8, buf, ds)
+      write8Digits((q0 - 100000000 * q1).toInt, pos - 7, buf, ds)
     }
 
   @tailrec
