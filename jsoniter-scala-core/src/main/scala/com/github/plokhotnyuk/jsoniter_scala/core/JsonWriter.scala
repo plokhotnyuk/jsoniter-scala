@@ -802,15 +802,16 @@ final class JsonWriter private[jsoniter_scala](
     else -div3600(-seconds)
 
   @tailrec
-  private[this] def writeSignificantFractionDigits(q0: Int, pos: Int, posLim: Int, posMax: Int, buf: Array[Byte]): Int =
-    if (pos == posLim) posMax
+  private[this] def writeSignificantFractionDigits(q0: Int, pos: Int, posLim: Int, lastPos: Int, buf: Array[Byte]): Int =
+    if (pos == posLim) lastPos
     else {
       val q1 = (q0 * 3435973837L >> 35).toInt // divide positive int by 10
       val r1 = q0 - q1 * 10
-      if (posMax == 0 && r1 == 0) writeSignificantFractionDigits(q1, pos - 1, posLim, 0, buf)
+      if (lastPos == 0 && r1 == 0) writeSignificantFractionDigits(q1, pos - 1, posLim, lastPos, buf)
       else {
         buf(pos) = (r1 + '0').toByte
-        writeSignificantFractionDigits(q1, pos - 1, posLim, if (posMax == 0) pos + 1 else posMax, buf)
+        if (lastPos == 0) writeSignificantFractionDigits(q1, pos - 1, posLim, pos + 1, buf)
+        else writeSignificantFractionDigits(q1, pos - 1, posLim, lastPos, buf)
       }
     }
 
@@ -833,7 +834,9 @@ final class JsonWriter private[jsoniter_scala](
     yearEst += adjustYear // reset any negative year
     val marchMonth = ((marchDayOfYear * 17965876275L + 7186350510L) >> 39).toInt // == (marchDayOfYear * 5 + 2) / 153
     val year = yearEst + (marchMonth * 3435973837L >> 35).toInt // == yearEst + marchMonth / 10 (convert march-based values back to january-based)
-    val month = marchMonth + (if (marchMonth < 10) 3 else -9)
+    val month = marchMonth +
+      (if (marchMonth < 10) 3
+      else -9)
     val day = marchDayOfYear - ((marchMonth * 1051407994122L - 17179869183L) >> 35).toInt // == marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
     val hour = (secsOfDay * 2443359173L >> 43).toInt // divide positive int by 3600
@@ -1024,7 +1027,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeYear(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var pos = p
-    val posYear =
+    val q0 =
       if (year >= 0) {
         if (year >= 10000) {
           buf(pos) = '+'
@@ -1036,8 +1039,8 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
         -year
       }
-    if (posYear >= 10000) writePositiveInt(posYear, pos, buf, ds)
-    else write4Digits(posYear, pos, buf, ds)
+    if (q0 >= 10000) writePositiveInt(q0, pos, buf, ds)
+    else write4Digits(q0, pos, buf, ds)
   }
 
   private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
@@ -1073,7 +1076,7 @@ final class JsonWriter private[jsoniter_scala](
       buf(p) = 'Z'
       p + 1
     } else {
-      val posOffsetTotalSeconds =
+      val q0 =
         if (offsetTotalSeconds >= 0) {
           buf(p) = '+'
           offsetTotalSeconds
@@ -1081,8 +1084,8 @@ final class JsonWriter private[jsoniter_scala](
           buf(p) = '-'
           -offsetTotalSeconds
         }
-      val q1 = (posOffsetTotalSeconds * 2443359173L >> 43).toInt // divide positive int by 3600
-      val r1 = posOffsetTotalSeconds - q1 * 3600
+      val q1 = (q0 * 2443359173L >> 43).toInt // divide positive int by 3600
+      val r1 = q0 - q1 * 3600
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'
       val q2 = (r1 * 2290649225L >> 37).toInt // divide positive int by 60
