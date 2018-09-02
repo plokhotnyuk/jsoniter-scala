@@ -1036,7 +1036,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
         -year
       }
-    if (posYear >= 10000) writeInt(posYear, pos, buf, ds)
+    if (posYear >= 10000) writePositiveInt(posYear, pos, buf, ds)
     else write4Digits(posYear, pos, buf, ds)
   }
 
@@ -1180,7 +1180,7 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      writeInt(q0, pos, buf, digits)
+      writePositiveInt(q0, pos, buf, digits)
     }
   }
 
@@ -1197,23 +1197,23 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -x
         }
-      if (q0.toInt == q0) writeInt(q0.toInt, pos, buf, ds)
+      if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
       else {
         val q1 = div100000000(q0)
         val r1 = (q0 - 100000000 * q1).toInt
-        if (q1.toInt == q1) write8Digits(r1, writeInt(q1.toInt, pos, buf, ds), buf, ds)
+        if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
         else {
           val q2 = div100000000(q1)
           val r2 = (q1 - 100000000 * q2).toInt
-          write8Digits(r1, write8Digits(r2, writeInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
+          write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
         }
       }
     }
   }
 
-  private[this] def writeInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+  private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val lastPos = offset(q0) + pos
-    writeIntFirst(q0, lastPos, buf, ds)
+    writePositiveIntStaringFromLastPosition(q0, lastPos, buf, ds)
     lastPos + 1
   }
 
@@ -1345,10 +1345,10 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNZeros(-1 - exp, pos + 2, buf)
-          writeIntFirst(output, pos + olength - 1, buf, ds)
+          writePositiveIntStaringFromLastPosition(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
-          writeIntFirst(output, pos + olength - 1, buf, ds)
+          writePositiveIntStaringFromLastPosition(output, pos + olength - 1, buf, ds)
           pos = writeNZeros(exp - olength + 1, pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
@@ -1356,7 +1356,7 @@ final class JsonWriter private[jsoniter_scala](
         } else {
           val lastPos = pos + olength
           val dotPos = pos + exp + 1
-          writeIntFirst(output, lastPos, buf, ds)
+          writePositiveIntStaringFromLastPosition(output, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1365,7 +1365,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writeIntFirst(output, pos + olength, buf, ds)
+        writePositiveIntStaringFromLastPosition(output, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
@@ -1512,10 +1512,10 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNZeros(-1 - exp, pos + 2, buf)
-          writeSmallLongFirst(output, pos + olength - 1, buf, ds)
+          writeSmallPositiveLongStartingFromLastPosition(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
-          writeSmallLongFirst(output, pos + olength - 1, buf, ds)
+          writeSmallPositiveLongStartingFromLastPosition(output, pos + olength - 1, buf, ds)
           pos = writeNZeros(exp - olength + 1, pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
@@ -1523,7 +1523,7 @@ final class JsonWriter private[jsoniter_scala](
         } else {
           val lastPos = pos + olength
           val dotPos = pos + exp + 1
-          writeSmallLongFirst(output, lastPos, buf, ds)
+          writeSmallPositiveLongStartingFromLastPosition(output, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1532,7 +1532,7 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writeSmallLongFirst(output, pos + olength, buf, ds)
+        writeSmallPositiveLongStartingFromLastPosition(output, pos + olength, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos += olength + 1
@@ -1593,16 +1593,16 @@ final class JsonWriter private[jsoniter_scala](
     else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
     else ((999999999 - q0) >>> 31) + 8
 
-  private[this] def writeSmallLongFirst(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
-    if (q0.toInt == q0) writeIntFirst(q0.toInt, pos, buf, ds)
+  private[this] def writeSmallPositiveLongStartingFromLastPosition(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
+    if (q0.toInt == q0) writePositiveIntStaringFromLastPosition(q0.toInt, pos, buf, ds)
     else {
       val q1 = div100000000(q0)
-      writeIntFirst(q1.toInt, pos - 8, buf, ds)
+      writePositiveIntStaringFromLastPosition(q1.toInt, pos - 8, buf, ds)
       write8Digits((q0 - 100000000 * q1).toInt, pos - 7, buf, ds)
     }
 
   @tailrec
-  private[this] def writeIntFirst(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
+  private[this] def writePositiveIntStaringFromLastPosition(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
     if (q0 < 100) {
       if (q0 < 10) buf(pos) = (q0 + '0').toByte
       else {
@@ -1615,7 +1615,7 @@ final class JsonWriter private[jsoniter_scala](
       val d = ds(q0 - 100 * q1)
       buf(pos - 1) = (d >> 8).toByte
       buf(pos) = d.toByte
-      writeIntFirst(q1, pos - 2, buf, ds)
+      writePositiveIntStaringFromLastPosition(q1, pos - 2, buf, ds)
     }
 
   // FIXME: remove all these div* after fix of the performance regression in GraalVM CE, check: https://github.com/oracle/graal/issues/593
