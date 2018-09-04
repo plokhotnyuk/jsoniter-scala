@@ -2142,7 +2142,7 @@ final class JsonReader private[jsoniter_scala](
     val ld = toLocalDate(yearNeg, year, month, day)
     val lt = toLocalTime(hour, minute, second, nano)
     val zo = toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
-    if (zone == null) ZonedDateTime.of(ld, lt, zo)
+    if (zone eq null) ZonedDateTime.of(ld, lt, zo)
     else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), toZoneId(zone), zo)
   }
 
@@ -2739,7 +2739,11 @@ final class JsonReader private[jsoniter_scala](
     if (minPos > 0) {
       val remaining = tail - minPos
       if (remaining > 0) {
-        System.arraycopy(buf, minPos, buf, 0, remaining)
+        var i = 0
+        while (i < remaining) {
+          buf(i) = buf(i + minPos)
+          i += 1
+        }
         if (mark != 2147483647) mark -= minPos
       }
       tail = remaining

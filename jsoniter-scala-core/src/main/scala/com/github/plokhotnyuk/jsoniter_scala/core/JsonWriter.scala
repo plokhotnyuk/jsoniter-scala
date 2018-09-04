@@ -1637,7 +1637,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def div675(x: Long): Long =
-    if (x.toInt == x) x * 3257812231L >> 41// divide positive int by 675
+    if (x.toInt == x) x * 3257812231L >> 41 // divide positive int by 675
     else { // divide positive long by 675
       val xLow = x & 0xFFFFFFFFL
       val xHigh = x >>> 32
