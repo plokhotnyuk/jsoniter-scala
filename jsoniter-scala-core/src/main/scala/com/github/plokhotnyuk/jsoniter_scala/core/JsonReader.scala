@@ -2290,7 +2290,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
-      val mostSigBits1: Int =
+      val mostSigBits1 =
         (fromHexDigit(pos) << 28) |
           (fromHexDigit(pos + 1) << 24) |
           (fromHexDigit(pos + 2) << 20) |
@@ -2301,7 +2301,7 @@ final class JsonReader private[jsoniter_scala](
           fromHexDigit(pos + 7)
       checkByte('-', pos + 8)
       checkByte('-', pos + 13)
-      val mostSigBits2: Int =
+      val mostSigBits2 =
         (fromHexDigit(pos + 9) << 28) |
           (fromHexDigit(pos + 10) << 24) |
           (fromHexDigit(pos + 11) << 20) |
@@ -2311,7 +2311,7 @@ final class JsonReader private[jsoniter_scala](
           (fromHexDigit(pos + 16) << 4) |
           fromHexDigit(pos + 17)
       checkByte('-', pos + 18)
-      val leastSigBits1: Long =
+      val leastSigBits1 =
         (fromHexDigit(pos + 19) << 28) |
           (fromHexDigit(pos + 20) << 24) |
           (fromHexDigit(pos + 21) << 20) |
@@ -2321,7 +2321,7 @@ final class JsonReader private[jsoniter_scala](
           (fromHexDigit(pos + 26) << 4) |
           fromHexDigit(pos + 27)
       checkByte('-', pos + 23)
-      val leastSigBits2: Long =
+      val leastSigBits2 =
         (fromHexDigit(pos + 28) << 28) |
           (fromHexDigit(pos + 29) << 24) |
           (fromHexDigit(pos + 30) << 20) |
