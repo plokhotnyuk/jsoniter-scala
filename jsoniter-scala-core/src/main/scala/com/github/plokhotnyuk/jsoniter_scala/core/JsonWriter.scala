@@ -1685,23 +1685,16 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeIndention(): Unit = count = {
-    var pos = ensureBufCapacity(indention + 1)
+    val required = indention + 1
+    var pos = ensureBufCapacity(required)
+    val to = pos + required
     buf(pos) = '\n'
     pos += 1
-    val to = pos + indention
-    val toMinus4 = to - 4
-    while (pos < toMinus4) pos = {
+    while (pos < to) {
       buf(pos) = ' '
-      buf(pos + 1) = ' '
-      buf(pos + 2) = ' '
-      buf(pos + 3) = ' '
-      pos + 4
+      pos += 1
     }
-    while (pos < to) pos = {
-      buf(pos) = ' '
-      pos + 1
-    }
-    pos
+    to
   }
 
   private[this] def ensureBufCapacity(required: Int): Int = {
