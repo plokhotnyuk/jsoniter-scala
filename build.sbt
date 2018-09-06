@@ -116,7 +116,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.12.6", "2.11.12"),
+    crossScalaVersions := Seq("2.12.6"),
     libraryDependencies ++= Seq(
       "com.avsystem.commons" %% "commons-core" % "1.29.1",
       "com.lihaoyi" %% "upickle" % "0.6.6",
@@ -127,20 +127,13 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.fasterxml.jackson.core" % "jackson-core" % "2.9.6",
       "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.6",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.6",
-      "io.circe" %% "circe-generic" % "0.10.0-M1",
-      "io.circe" %% "circe-generic-extras" % "0.10.0-M1",
-      "io.circe" %% "circe-parser" % "0.10.0-M1",
-      "io.circe" %% "circe-java8" % "0.10.0-M1",
+      "io.circe" %% "circe-generic" % "0.10.0-M2",
+      "io.circe" %% "circe-generic-extras" % "0.10.0-M2",
+      "io.circe" %% "circe-parser" % "0.10.0-M2",
       "com.typesafe.play" %% "play-json" % "2.7.0-M1",
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.1",
+      "ai.x" %% "play-json-extensions" % "0.14.0",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
       "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
-    ),
-    libraryDependencies ++= {
-      val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v >= 12 => Seq("ai.x" %% "play-json-extensions" % "0.14.0")
-        case _ => Seq("ai.x" %% "play-json-extensions" % "0.10.0")
-      }
-    }
+    )
   )
