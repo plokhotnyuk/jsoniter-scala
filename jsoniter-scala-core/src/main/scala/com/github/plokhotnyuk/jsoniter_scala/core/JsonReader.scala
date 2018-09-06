@@ -2290,51 +2290,179 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseUUID(pos: Int): UUID =
     if (pos + 36 < tail) {
+      val ns = nibbles
+      val buf = this.buf
       val mostSigBits1 =
-        (fromHexDigit(pos) << 28) |
-          (fromHexDigit(pos + 1) << 24) |
-          (fromHexDigit(pos + 2) << 20) |
-          (fromHexDigit(pos + 3) << 16) |
-          (fromHexDigit(pos + 4) << 12) |
-          (fromHexDigit(pos + 5) << 8) |
-          (fromHexDigit(pos + 6) << 4) |
-          fromHexDigit(pos + 7)
+        ({
+          val n = ns(buf(pos))
+          if (n < 0) hexDigitError(pos)
+          n
+        } << 28) |
+          ({
+            val n = ns(buf(pos + 1))
+            if (n < 0) hexDigitError(pos + 1)
+            n
+          } << 24) |
+          ({
+            val n = ns(buf(pos + 2))
+            if (n < 0) hexDigitError(pos + 2)
+            n
+          } << 20) |
+          ({
+            val n = ns(buf(pos + 3))
+            if (n < 0) hexDigitError(pos + 3)
+            n
+          } << 16) |
+          ({
+            val n = ns(buf(pos + 4))
+            if (n < 0) hexDigitError(pos + 4)
+            n
+          } << 12) |
+          ({
+            val n = ns(buf(pos + 5))
+            if (n < 0) hexDigitError(pos + 5)
+            n
+          } << 8) |
+          ({
+            val n = ns(buf(pos + 6))
+            if (n < 0) hexDigitError(pos + 6)
+            n
+          } << 4) | {
+          val n = ns(buf(pos + 7))
+          if (n < 0) hexDigitError(pos + 7)
+          n
+        }
       checkByte('-', pos + 8)
-      checkByte('-', pos + 13)
       val mostSigBits2 =
-        (fromHexDigit(pos + 9) << 28) |
-          (fromHexDigit(pos + 10) << 24) |
-          (fromHexDigit(pos + 11) << 20) |
-          (fromHexDigit(pos + 12) << 16) |
-          (fromHexDigit(pos + 14) << 12) |
-          (fromHexDigit(pos + 15) << 8) |
-          (fromHexDigit(pos + 16) << 4) |
-          fromHexDigit(pos + 17)
+        ({
+          val n = ns(buf(pos + 9))
+          if (n < 0) hexDigitError(pos + 9)
+          n
+        } << 28) |
+          ({
+            val n = ns(buf(pos + 10))
+            if (n < 0) hexDigitError(pos + 10)
+            n
+          } << 24) |
+          ({
+            val n = ns(buf(pos + 11))
+            if (n < 0) hexDigitError(pos + 11)
+            n
+          } << 20) |
+          ({
+            val n = ns(buf(pos + 12))
+            if (n < 0) hexDigitError(pos + 12)
+            n
+          } << 16) |
+          ({
+            checkByte('-', pos + 13)
+            val n = ns(buf(pos + 14))
+            if (n < 0) hexDigitError(pos + 14)
+            n
+          } << 12) |
+          ({
+            val n = ns(buf(pos + 15))
+            if (n < 0) hexDigitError(pos + 15)
+            n
+          } << 8) |
+          ({
+            val n = ns(buf(pos + 16))
+            if (n < 0) hexDigitError(pos + 16)
+            n
+          } << 4) | {
+          val n = ns(buf(pos + 17))
+          if (n < 0) hexDigitError(pos + 17)
+          n
+        }
       checkByte('-', pos + 18)
       val leastSigBits1 =
-        (fromHexDigit(pos + 19) << 28) |
-          (fromHexDigit(pos + 20) << 24) |
-          (fromHexDigit(pos + 21) << 20) |
-          (fromHexDigit(pos + 22) << 16) |
-          (fromHexDigit(pos + 24) << 12) |
-          (fromHexDigit(pos + 25) << 8) |
-          (fromHexDigit(pos + 26) << 4) |
-          fromHexDigit(pos + 27)
-      checkByte('-', pos + 23)
+        ({
+          val n = ns(buf(pos + 19))
+          if (n < 0) hexDigitError(pos + 19)
+          n
+        } << 28) |
+          ({
+            val n = ns(buf(pos + 20))
+            if (n < 0) hexDigitError(pos + 20)
+            n
+          } << 24) |
+          ({
+            val n = ns(buf(pos + 21))
+            if (n < 0) hexDigitError(pos + 21)
+            n
+          } << 20) |
+          ({
+            val n = ns(buf(pos + 22))
+            if (n < 0) hexDigitError(pos + 22)
+            n
+          } << 16) |
+          ({
+            checkByte('-', pos + 23)
+            val n = ns(buf(pos + 24))
+            if (n < 0) hexDigitError(pos + 24)
+            n
+          } << 12) |
+          ({
+            val n = ns(buf(pos + 25))
+            if (n < 0) hexDigitError(pos + 25)
+            n
+          } << 8) |
+          ({
+            val n = ns(buf(pos + 26))
+            if (n < 0) hexDigitError(pos + 26)
+            n
+          } << 4) | {
+          val n = ns(buf(pos + 27))
+          if (n < 0) hexDigitError(pos + 27)
+          n
+        }
       val leastSigBits2 =
-        (fromHexDigit(pos + 28) << 28) |
-          (fromHexDigit(pos + 29) << 24) |
-          (fromHexDigit(pos + 30) << 20) |
-          (fromHexDigit(pos + 31) << 16) |
-          (fromHexDigit(pos + 32) << 12) |
-          (fromHexDigit(pos + 33) << 8) |
-          (fromHexDigit(pos + 34) << 4) |
-          fromHexDigit(pos + 35)
+        ({
+          val n = ns(buf(pos + 28))
+          if (n < 0) hexDigitError(pos + 28)
+          n
+        } << 28) |
+          ({
+            val n = ns(buf(pos + 29))
+            if (n < 0) hexDigitError(pos + 29)
+            n
+          } << 24) |
+          ({
+            val n = ns(buf(pos + 30))
+            if (n < 0) hexDigitError(pos + 30)
+            n
+          } << 20) |
+          ({
+            val n = ns(buf(pos + 31))
+            if (n < 0) hexDigitError(pos + 31)
+            n
+          } << 16) |
+          ({
+            val n = ns(buf(pos + 32))
+            if (n < 0) hexDigitError(pos + 32)
+            n
+          } << 12) |
+          ({
+            val n = ns(buf(pos + 33))
+            if (n < 0) hexDigitError(pos + 33)
+            n
+          } << 8) |
+          ({
+            val n = ns(buf(pos + 34))
+            if (n < 0) hexDigitError(pos + 34)
+            n
+          } << 4) | {
+          val n = ns(buf(pos + 35))
+          if (n < 0) hexDigitError(pos + 35)
+          n
+        }
       checkByte('"', pos + 36)
       head = pos + 37
       new UUID((mostSigBits1.toLong << 32) | (mostSigBits2 & 0xffffffffL),
         (leastSigBits1.toLong << 32) | (leastSigBits2 & 0xffffffffL))
     } else parseUUID(loadMoreOrError(pos))
+
+  private[this] def hexDigitError(pos: Int): Nothing = decodeError("expected hex digit", pos)
 
   private[this] def checkByte(b: Byte, pos: Int): Unit = if (buf(pos) != b) tokenError(b, pos)
 
@@ -2375,14 +2503,14 @@ final class JsonReader private[jsoniter_scala](
             val b2 = buf(pos + 1)
             if (b2 == 'u') {
               if (remaining > 5) {
-                val ch1 = readEscapedUnicode(pos + 2)
+                val ch1 = readEscapedUnicode(pos + 2, buf)
                 if (ch1 < 0xD800 || ch1 > 0xDFFF) {
                   charBuf(i) = ch1
                   parseEncodedString(i + 1, lim, charBuf, pos + 6)
                 } else if (remaining > 11) {
                   if (buf(pos + 6) == '\\') {
                     if (buf(pos + 7) == 'u') {
-                      val ch2 = readEscapedUnicode(pos + 8)
+                      val ch2 = readEscapedUnicode(pos + 8, buf)
                       if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
                       charBuf(i) = ch1
                       charBuf(i + 1) = ch2
@@ -2454,7 +2582,7 @@ final class JsonReader private[jsoniter_scala](
           val b2 = buf(pos + 1)
           if (b2 == 'u') {
             if (remaining > 5) {
-              val ch = readEscapedUnicode(pos + 2)
+              val ch = readEscapedUnicode(pos + 2, buf)
               if (ch >= 0xD800 && ch <= 0xDFFF) decodeError("illegal surrogate character", pos + 5)
               head = pos + 6
               ch
@@ -2496,13 +2624,25 @@ final class JsonReader private[jsoniter_scala](
     } else parseChar(loadMoreOrError(pos))
   }
 
-  private[this] def readEscapedUnicode(pos: Int): Char =
-    ((fromHexDigit(pos) << 12) + (fromHexDigit(pos + 1) << 8) + (fromHexDigit(pos + 2) << 4) + fromHexDigit(pos + 3)).toChar
-
-  private[this] def fromHexDigit(pos: Int): Int = {
-    val n = nibbles(buf(pos))
-    if (n < 0) decodeError("expected hex digit", pos)
-    n
+  private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
+    val ns = nibbles
+    (({
+      val n = ns(buf(pos))
+      if (n < 0) hexDigitError(pos)
+      n
+    } << 12) + ({
+      val n = ns(buf(pos + 1))
+      if (n < 0) hexDigitError(pos + 1)
+      n
+    } << 8) + ({
+      val n = ns(buf(pos + 2))
+      if (n < 0) hexDigitError(pos + 2)
+      n
+    } << 4) + {
+      val n = ns(buf(pos + 3))
+      if (n < 0) hexDigitError(pos + 3)
+      n
+    }).toChar
   }
 
   private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
