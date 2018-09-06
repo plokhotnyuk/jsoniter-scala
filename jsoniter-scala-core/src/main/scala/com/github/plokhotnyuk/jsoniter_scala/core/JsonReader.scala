@@ -2332,7 +2332,7 @@ final class JsonReader private[jsoniter_scala](
           if (n < 0) hexDigitError(pos + 7)
           n
         }
-      checkByte('-', pos + 8)
+      if (buf(pos + 8) != '-') tokenError('-', pos + 8)
       val mostSigBits2 =
         ({
           val n = ns(buf(pos + 9))
@@ -2355,7 +2355,7 @@ final class JsonReader private[jsoniter_scala](
             n
           } << 16) |
           ({
-            checkByte('-', pos + 13)
+            if (buf(pos + 13) != '-') tokenError('-', pos + 13)
             val n = ns(buf(pos + 14))
             if (n < 0) hexDigitError(pos + 14)
             n
@@ -2374,7 +2374,7 @@ final class JsonReader private[jsoniter_scala](
           if (n < 0) hexDigitError(pos + 17)
           n
         }
-      checkByte('-', pos + 18)
+      if (buf(pos + 18) != '-') tokenError('-', pos + 18)
       val leastSigBits1 =
         ({
           val n = ns(buf(pos + 19))
@@ -2397,7 +2397,7 @@ final class JsonReader private[jsoniter_scala](
             n
           } << 16) |
           ({
-            checkByte('-', pos + 23)
+            if (buf(pos + 23) != '-') tokenError('-', pos + 23)
             val n = ns(buf(pos + 24))
             if (n < 0) hexDigitError(pos + 24)
             n
@@ -2456,15 +2456,13 @@ final class JsonReader private[jsoniter_scala](
           if (n < 0) hexDigitError(pos + 35)
           n
         }
-      checkByte('"', pos + 36)
+      if (buf(pos + 36) != '"') tokenError('"', pos + 36)
       head = pos + 37
       new UUID((mostSigBits1.toLong << 32) | (mostSigBits2 & 0xffffffffL),
         (leastSigBits1.toLong << 32) | (leastSigBits2 & 0xffffffffL))
     } else parseUUID(loadMoreOrError(pos))
 
   private[this] def hexDigitError(pos: Int): Nothing = decodeError("expected hex digit", pos)
-
-  private[this] def checkByte(b: Byte, pos: Int): Unit = if (buf(pos) != b) tokenError(b, pos)
 
   private[this] def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
 
