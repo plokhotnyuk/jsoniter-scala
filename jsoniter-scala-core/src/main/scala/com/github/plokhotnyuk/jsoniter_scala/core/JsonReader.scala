@@ -2292,177 +2292,57 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 36 < tail) {
       val ns = nibbles
       val buf = this.buf
-      val mostSigBits1 =
-        ({
-          val n = ns(buf(pos))
-          if (n < 0) hexDigitError(pos)
-          n
-        } << 28) |
-          ({
-            val n = ns(buf(pos + 1))
-            if (n < 0) hexDigitError(pos + 1)
-            n
-          } << 24) |
-          ({
-            val n = ns(buf(pos + 2))
-            if (n < 0) hexDigitError(pos + 2)
-            n
-          } << 20) |
-          ({
-            val n = ns(buf(pos + 3))
-            if (n < 0) hexDigitError(pos + 3)
-            n
-          } << 16) |
-          ({
-            val n = ns(buf(pos + 4))
-            if (n < 0) hexDigitError(pos + 4)
-            n
-          } << 12) |
-          ({
-            val n = ns(buf(pos + 5))
-            if (n < 0) hexDigitError(pos + 5)
-            n
-          } << 8) |
-          ({
-            val n = ns(buf(pos + 6))
-            if (n < 0) hexDigitError(pos + 6)
-            n
-          } << 4) | {
-          val n = ns(buf(pos + 7))
-          if (n < 0) hexDigitError(pos + 7)
-          n
-        }
+      val mostSigBits1: Long =
+        (ns(buf(pos)).toLong << 28) |
+        (ns(buf(pos + 1)) << 24) |
+        (ns(buf(pos + 2)) << 20) |
+        (ns(buf(pos + 3)) << 16) |
+        (ns(buf(pos + 4)) << 12) |
+        (ns(buf(pos + 5)) << 8) |
+        (ns(buf(pos + 6)) << 4) |
+        ns(buf(pos + 7))
+      val mostSigBits2: Int =
+        (ns(buf(pos + 9)) << 12) |
+        (ns(buf(pos + 10)) << 8) |
+        (ns(buf(pos + 11)) << 4) |
+        ns(buf(pos + 12))
+      val mostSigBits3: Int =
+        (ns(buf(pos + 14)) << 12) |
+        (ns(buf(pos + 15)) << 8) |
+        (ns(buf(pos + 16)) << 4) |
+        ns(buf(pos + 17))
+      val leastSigBits1: Int =
+        (ns(buf(pos + 19)) << 12) |
+        (ns(buf(pos + 20)) << 8) |
+        (ns(buf(pos + 21)) << 4) |
+        ns(buf(pos + 22))
+      val leastSigBits2: Long =
+        (ns(buf(pos + 24)).toLong << 44) |
+        (ns(buf(pos + 25)).toLong << 40) |
+        (ns(buf(pos + 26)).toLong << 36) |
+        (ns(buf(pos + 27)).toLong << 32) |
+        (ns(buf(pos + 28)).toLong << 28) |
+        (ns(buf(pos + 29)) << 24) |
+        (ns(buf(pos + 30)) << 20) |
+        (ns(buf(pos + 31)) << 16) |
+        (ns(buf(pos + 32)) << 12) |
+        (ns(buf(pos + 33)) << 8) |
+        (ns(buf(pos + 34)) << 4) |
+        ns(buf(pos + 35))
+      if (mostSigBits1 < 0) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
-      val mostSigBits2 =
-        ({
-          val n = ns(buf(pos + 9))
-          if (n < 0) hexDigitError(pos + 9)
-          n
-        } << 28) |
-          ({
-            val n = ns(buf(pos + 10))
-            if (n < 0) hexDigitError(pos + 10)
-            n
-          } << 24) |
-          ({
-            val n = ns(buf(pos + 11))
-            if (n < 0) hexDigitError(pos + 11)
-            n
-          } << 20) |
-          ({
-            val n = ns(buf(pos + 12))
-            if (n < 0) hexDigitError(pos + 12)
-            n
-          } << 16) |
-          ({
-            if (buf(pos + 13) != '-') tokenError('-', pos + 13)
-            val n = ns(buf(pos + 14))
-            if (n < 0) hexDigitError(pos + 14)
-            n
-          } << 12) |
-          ({
-            val n = ns(buf(pos + 15))
-            if (n < 0) hexDigitError(pos + 15)
-            n
-          } << 8) |
-          ({
-            val n = ns(buf(pos + 16))
-            if (n < 0) hexDigitError(pos + 16)
-            n
-          } << 4) | {
-          val n = ns(buf(pos + 17))
-          if (n < 0) hexDigitError(pos + 17)
-          n
-        }
+      if (mostSigBits2 < 0) hexDigitError(pos + 9)
+      if (buf(pos + 13) != '-') tokenError('-', pos + 13)
+      if (mostSigBits3 < 0) hexDigitError(pos + 14)
       if (buf(pos + 18) != '-') tokenError('-', pos + 18)
-      val leastSigBits1 =
-        ({
-          val n = ns(buf(pos + 19))
-          if (n < 0) hexDigitError(pos + 19)
-          n
-        } << 28) |
-          ({
-            val n = ns(buf(pos + 20))
-            if (n < 0) hexDigitError(pos + 20)
-            n
-          } << 24) |
-          ({
-            val n = ns(buf(pos + 21))
-            if (n < 0) hexDigitError(pos + 21)
-            n
-          } << 20) |
-          ({
-            val n = ns(buf(pos + 22))
-            if (n < 0) hexDigitError(pos + 22)
-            n
-          } << 16) |
-          ({
-            if (buf(pos + 23) != '-') tokenError('-', pos + 23)
-            val n = ns(buf(pos + 24))
-            if (n < 0) hexDigitError(pos + 24)
-            n
-          } << 12) |
-          ({
-            val n = ns(buf(pos + 25))
-            if (n < 0) hexDigitError(pos + 25)
-            n
-          } << 8) |
-          ({
-            val n = ns(buf(pos + 26))
-            if (n < 0) hexDigitError(pos + 26)
-            n
-          } << 4) | {
-          val n = ns(buf(pos + 27))
-          if (n < 0) hexDigitError(pos + 27)
-          n
-        }
-      val leastSigBits2 =
-        ({
-          val n = ns(buf(pos + 28))
-          if (n < 0) hexDigitError(pos + 28)
-          n
-        } << 28) |
-          ({
-            val n = ns(buf(pos + 29))
-            if (n < 0) hexDigitError(pos + 29)
-            n
-          } << 24) |
-          ({
-            val n = ns(buf(pos + 30))
-            if (n < 0) hexDigitError(pos + 30)
-            n
-          } << 20) |
-          ({
-            val n = ns(buf(pos + 31))
-            if (n < 0) hexDigitError(pos + 31)
-            n
-          } << 16) |
-          ({
-            val n = ns(buf(pos + 32))
-            if (n < 0) hexDigitError(pos + 32)
-            n
-          } << 12) |
-          ({
-            val n = ns(buf(pos + 33))
-            if (n < 0) hexDigitError(pos + 33)
-            n
-          } << 8) |
-          ({
-            val n = ns(buf(pos + 34))
-            if (n < 0) hexDigitError(pos + 34)
-            n
-          } << 4) | {
-          val n = ns(buf(pos + 35))
-          if (n < 0) hexDigitError(pos + 35)
-          n
-        }
+      if (leastSigBits1 < 0) hexDigitError(pos + 19)
+      if (buf(pos + 23) != '-') tokenError('-', pos + 23)
+      if (leastSigBits2 < 0) hexDigitError(pos + 24)
       if (buf(pos + 36) != '"') tokenError('"', pos + 36)
       head = pos + 37
-      new UUID((mostSigBits1.toLong << 32) | (mostSigBits2 & 0xffffffffL),
-        (leastSigBits1.toLong << 32) | (leastSigBits2 & 0xffffffffL))
+      new UUID((mostSigBits1 << 32) | (mostSigBits2.toLong << 16) | mostSigBits3,
+        (leastSigBits1.toLong << 48) | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
-
-  private[this] def hexDigitError(pos: Int): Nothing = decodeError("expected hex digit", pos)
 
   private[this] def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
 
@@ -2624,24 +2504,15 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
     val ns = nibbles
-    (({
-      val n = ns(buf(pos))
-      if (n < 0) hexDigitError(pos)
-      n
-    } << 12) + ({
-      val n = ns(buf(pos + 1))
-      if (n < 0) hexDigitError(pos + 1)
-      n
-    } << 8) + ({
-      val n = ns(buf(pos + 2))
-      if (n < 0) hexDigitError(pos + 2)
-      n
-    } << 4) + {
-      val n = ns(buf(pos + 3))
-      if (n < 0) hexDigitError(pos + 3)
-      n
-    }).toChar
+    val x = (ns(buf(pos)) << 12) | (ns(buf(pos + 1)) << 8) | (ns(buf(pos + 2)) << 4) | ns(buf(pos + 3))
+    if (x < 0) hexDigitError(pos)
+    x.toChar
   }
+
+  @tailrec
+  private[this] def hexDigitError(pos: Int): Nothing =
+    if (nibbles(buf(pos)) >= 0) hexDigitError(pos + 1)
+    else decodeError("expected hex digit", pos)
 
   private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
 
