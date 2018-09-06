@@ -94,9 +94,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make(CodecMakerConfig())
 
-  case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Double])
+  case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Indented])
 
-  val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> -90.0))
+  val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> Indented("WWW", 2.2, List(4, 5, 6), Map())))
   val codecOfIndented: JsonValueCodec[Indented] = make(CodecMakerConfig())
 
   case class UTF8KeysAndValues(გასაღები: String)
@@ -817,7 +817,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""".getBytes("UTF-8"))
       }.getMessage.contains("expected '\"', offset: 0x0000000e"))
     }
-    "serialize and deserialize indented JSON" in {
+    "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfIndented, indented,
         """{
           |  "s": "VVV",
@@ -828,14 +828,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |    3
           |  ],
           |  "m": {
-          |    "S": -90.0
+          |    "S": {
+          |      "s": "WWW",
+          |      "bd": 2.2,
+          |      "l": [
+          |        4,
+          |        5,
+          |        6
+          |      ]
+          |    }
           |  }
           |}""".stripMargin.getBytes("UTF-8"),
         WriterConfig(indentionStep = 2))
     }
-    "deserialize JSON with tabs & line returns" in {
+    "deserialize JSON with whitespaces, tabs, new lines, and line returns" in {
       verifyDeser(codecOfIndented, indented,
-        "{\r\t\"s\":\t\"VVV\",\r\t\"bd\":\t1.1,\r\t\"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\r\t\t\"S\":\t-90.0}\r}".getBytes("UTF-8"))
+        "{\r \"s\":\t\"VVV\",\n\t\"bd\":\t1.1,\r  \"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\n\t\t\"S\":\t{\r  \t\t\"s\":\t\t \t\"WWW\",\n\t\"bd\":\t2.2,\"l\":\t[\r\t\t4,\n\n\n5,\r\t\t6\r\t]\n}\r}\r}".getBytes("UTF-8"))
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"),

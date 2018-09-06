@@ -48,7 +48,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeComma(): Unit = {
     if (comma) writeBytes(',')
     else comma = true
-    writeIndention(0)
+    if (indention != 0) writeIndention()
   }
 
   def writeKey(x: Boolean): Unit = {
@@ -371,9 +371,10 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeNestedEnd(b: Byte): Unit = {
-    val indentionStep = config.indentionStep
-    writeIndention(indentionStep)
-    indention -= indentionStep
+    if (indention != 0) {
+      indention -= config.indentionStep
+      writeIndention()
+    }
     comma = true
     writeBytes(b)
   }
@@ -718,7 +719,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeCommaWithParentheses(): Unit = {
     if (comma) writeBytes(',')
     else comma = true
-    writeIndention(0)
+    if (indention != 0) writeIndention()
     writeBytes('"')
   }
 
@@ -1683,14 +1684,19 @@ final class JsonWriter private[jsoniter_scala](
       writeNZeros(n - 1, pos + 1, buf)
     }
 
-  private[this] def writeIndention(delta: Int): Unit = if (indention != 0) writeNewLineAndSpaces(delta)
-
-  private[this] def writeNewLineAndSpaces(delta: Int): Unit = count = {
-    val toWrite = indention - delta
-    var pos = ensureBufCapacity(toWrite + 1)
+  private[this] def writeIndention(): Unit = count = {
+    var pos = ensureBufCapacity(indention + 1)
     buf(pos) = '\n'
     pos += 1
-    val to = pos + toWrite
+    val to = pos + indention
+    val toMinus4 = to - 4
+    while (pos < toMinus4) pos = {
+      buf(pos) = ' '
+      buf(pos + 1) = ' '
+      buf(pos + 2) = ' '
+      buf(pos + 3) = ' '
+      pos + 4
+    }
     while (pos < to) pos = {
       buf(pos) = ' '
       pos + 1
