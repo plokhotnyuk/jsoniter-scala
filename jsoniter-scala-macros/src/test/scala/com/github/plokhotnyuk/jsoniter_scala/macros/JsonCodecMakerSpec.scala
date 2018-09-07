@@ -338,7 +338,24 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize Java enumerations as key in maps" in {
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"HIGH":0}""".getBytes("UTF-8"))
     }
-    "serialize and deserialize outer types using custom codecs for inner types" in {
+    "serialize and deserialize outer types using custom value codecs for primitive types" in {
+      implicit val customCodecForInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+        val nullValue: Int = 0
+
+        def decodeValue(in: JsonReader, default: Int): Int = {
+          val t = in.nextToken()
+          in.rollbackToken()
+          if (t == '"') in.readStringAsInt() // or in.readString().toInt - less efficient and safe but more universal because can accepts escaped characters
+          else in.readInt()
+        }
+
+        def encodeValue(x: Int, out: JsonWriter): Unit = out.writeVal(x)
+      }
+      val codecOfIntList = make[List[Int]](CodecMakerConfig())
+      verifyDeser(codecOfIntList, List(1, 2, 3), "[1,\"2\",3]".getBytes("UTF-8"))
+      verifySer(codecOfIntList, List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
+    }
+    "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecForEither1: JsonValueCodec[Either[String, Int]] =
         new JsonValueCodec[Either[String, Int]] {
           val nullValue: Either[String, Int] = null
