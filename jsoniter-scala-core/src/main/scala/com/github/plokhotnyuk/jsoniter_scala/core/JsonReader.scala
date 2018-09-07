@@ -2293,42 +2293,42 @@ final class JsonReader private[jsoniter_scala](
       val ns = nibbles
       val buf = this.buf
       val mostSigBits1: Long =
-        (ns(buf(pos)).toLong << 28) |
-        (ns(buf(pos + 1)) << 24) |
-        (ns(buf(pos + 2)) << 20) |
-        (ns(buf(pos + 3)) << 16) |
-        (ns(buf(pos + 4)) << 12) |
-        (ns(buf(pos + 5)) << 8) |
-        (ns(buf(pos + 6)) << 4) |
-        ns(buf(pos + 7))
+        (ns(buf(pos) & 255).toLong << 28) |
+        (ns(buf(pos + 1) & 255) << 24) |
+        (ns(buf(pos + 2) & 255) << 20) |
+        (ns(buf(pos + 3) & 255) << 16) |
+        (ns(buf(pos + 4) & 255) << 12) |
+        (ns(buf(pos + 5) & 255) << 8) |
+        (ns(buf(pos + 6) & 255) << 4) |
+        ns(buf(pos + 7) & 255)
       val mostSigBits2: Int =
-        (ns(buf(pos + 9)) << 12) |
-        (ns(buf(pos + 10)) << 8) |
-        (ns(buf(pos + 11)) << 4) |
-        ns(buf(pos + 12))
+        (ns(buf(pos + 9) & 255) << 12) |
+        (ns(buf(pos + 10) & 255) << 8) |
+        (ns(buf(pos + 11) & 255) << 4) |
+        ns(buf(pos + 12) & 255)
       val mostSigBits3: Int =
-        (ns(buf(pos + 14)) << 12) |
-        (ns(buf(pos + 15)) << 8) |
-        (ns(buf(pos + 16)) << 4) |
-        ns(buf(pos + 17))
+        (ns(buf(pos + 14) & 255) << 12) |
+        (ns(buf(pos + 15) & 255) << 8) |
+        (ns(buf(pos + 16) & 255) << 4) |
+        ns(buf(pos + 17) & 255)
       val leastSigBits1: Int =
-        (ns(buf(pos + 19)) << 12) |
-        (ns(buf(pos + 20)) << 8) |
-        (ns(buf(pos + 21)) << 4) |
-        ns(buf(pos + 22))
+        (ns(buf(pos + 19) & 255) << 12) |
+        (ns(buf(pos + 20) & 255) << 8) |
+        (ns(buf(pos + 21) & 255) << 4) |
+        ns(buf(pos + 22) & 255)
       val leastSigBits2: Long =
-        (ns(buf(pos + 24)).toLong << 44) |
-        (ns(buf(pos + 25)).toLong << 40) |
-        (ns(buf(pos + 26)).toLong << 36) |
-        (ns(buf(pos + 27)).toLong << 32) |
-        (ns(buf(pos + 28)).toLong << 28) |
-        (ns(buf(pos + 29)) << 24) |
-        (ns(buf(pos + 30)) << 20) |
-        (ns(buf(pos + 31)) << 16) |
-        (ns(buf(pos + 32)) << 12) |
-        (ns(buf(pos + 33)) << 8) |
-        (ns(buf(pos + 34)) << 4) |
-        ns(buf(pos + 35))
+        (ns(buf(pos + 24) & 255).toLong << 44) |
+        (ns(buf(pos + 25) & 255).toLong << 40) |
+        (ns(buf(pos + 26) & 255).toLong << 36) |
+        (ns(buf(pos + 27) & 255).toLong << 32) |
+        (ns(buf(pos + 28) & 255).toLong << 28) |
+        (ns(buf(pos + 29) & 255) << 24) |
+        (ns(buf(pos + 30) & 255) << 20) |
+        (ns(buf(pos + 31) & 255) << 16) |
+        (ns(buf(pos + 32) & 255) << 12) |
+        (ns(buf(pos + 33) & 255) << 8) |
+        (ns(buf(pos + 34) & 255) << 4) |
+        ns(buf(pos + 35) & 255)
       if (mostSigBits1 < 0) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
       if (mostSigBits2 < 0) hexDigitError(pos + 9)
@@ -2504,14 +2504,18 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def readEscapedUnicode(pos: Int, buf: Array[Byte]): Char = {
     val ns = nibbles
-    val x = (ns(buf(pos)) << 12) | (ns(buf(pos + 1)) << 8) | (ns(buf(pos + 2)) << 4) | ns(buf(pos + 3))
+    val x =
+      (ns(buf(pos) & 255) << 12) |
+      (ns(buf(pos + 1) & 255) << 8) |
+      (ns(buf(pos + 2) & 255) << 4) |
+      ns(buf(pos + 3) & 255)
     if (x < 0) hexDigitError(pos)
     x.toChar
   }
 
   @tailrec
   private[this] def hexDigitError(pos: Int): Nothing =
-    if (nibbles(buf(pos)) >= 0) hexDigitError(pos + 1)
+    if (nibbles(buf(pos) & 255) >= 0) hexDigitError(pos + 1)
     else decodeError("expected hex digit", pos)
 
   private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
