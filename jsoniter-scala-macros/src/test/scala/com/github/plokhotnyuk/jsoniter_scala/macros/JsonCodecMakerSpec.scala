@@ -354,6 +354,37 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfIntList = make[List[Int]](CodecMakerConfig())
       verifyDeser(codecOfIntList, List(1, 2, 3), "[1,\"2\",3]".getBytes("UTF-8"))
       verifySer(codecOfIntList, List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
+      implicit val customCodecForBoolean: JsonValueCodec[Boolean] = new JsonValueCodec[Boolean] {
+        val nullValue: Boolean = false
+
+        def decodeValue(in: JsonReader, default: Boolean): Boolean = {
+          in.setMark()
+          if (in.isNextToken('"')) {
+            in.rollbackToMark()
+            val v = in.readString(null)
+            if ("true".equalsIgnoreCase(v)) true
+            else if ("false".equalsIgnoreCase(v)) false
+            else in.decodeError("illegal boolean")
+          } else {
+            in.rollbackToMark()
+            in.readBoolean()
+          }
+        }
+
+        def encodeValue(x: Boolean, out: JsonWriter): Unit = out.writeNonEscapedAsciiVal(if (x) "TRUE" else "FALSE")
+      }
+
+      case class Flags(f1: Boolean, f2: Boolean)
+
+      val codecOfFlags = make[Flags](CodecMakerConfig())
+      verifyDeser(codecOfFlags, Flags(f1 = true, f2 = false), "{\"f1\":true,\"f2\":\"False\"}".getBytes("UTF-8"))
+      verifySer(codecOfFlags, Flags(f1 = true, f2 = false), "{\"f1\":\"TRUE\",\"f2\":\"FALSE\"}".getBytes("UTF-8"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":\"XALSE\",\"f2\":true}".getBytes("UTF-8"))
+      }.getMessage.contains("illegal boolean, offset: 0x0000000c"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":xalse,\"f2\":true}".getBytes("UTF-8"))
+      }.getMessage.contains("illegal boolean, offset: 0x00000006"))
     }
     "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecForEither1: JsonValueCodec[Either[String, Int]] =
