@@ -1237,7 +1237,7 @@ final class JsonReader private[jsoniter_scala](
     var minutesAsSecs = 0L
     var seconds = 0L
     var nanos = 0
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     var x = 0L
     var isNegX = false
     var state = 0
@@ -1395,9 +1395,9 @@ final class JsonReader private[jsoniter_scala](
           } else decodeError("expected 'S or '.' or digit", pos)
         case 15 => // 'S' or nano digit
           if (b >= '0' && b <= '9') {
-            nanos += nanoMultiplier(nanoDigits) * (b - '0')
-            nanoDigits += 1
-            if (nanoDigits == 9) {
+            nanos += (b - '0') * nanoDigitWeight
+            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
+            if (nanoDigitWeight == 0) {
               if (isNeg ^ isNegX) nanos = -nanos
               state = 16
             }
@@ -1464,7 +1464,7 @@ final class JsonReader private[jsoniter_scala](
     var hasSecond = false
     var nano = 0
     var hasNano = false
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1472,20 +1472,19 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && b >= '0' && b <= '9'
+          nanoDigitWeight != 0 && b >= '0' && b <= '9'
         }) {
-          nano += (b - '0') * nanoMul(nanoDigits)
-          nanoDigits += 1
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         }
       }
     }
     if (b != 'Z') {
       if (hasSecond) {
         if (hasNano) {
-          if (nanoDigits == 9) tokenError('Z')
+          if (nanoDigitWeight == 0) tokenError('Z')
           else tokenOrDigitError('Z')
         } else tokensError('.', 'Z')
       } else tokensError(':', 'Z')
@@ -1566,7 +1565,7 @@ final class JsonReader private[jsoniter_scala](
     var hasSecond = false
     var nano = 0
     var hasNano = false
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1574,20 +1573,19 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && b >= '0' && b <= '9'
+          nanoDigitWeight != 0 && b >= '0' && b <= '9'
         }) {
-          nano += (b - '0') * nanoMul(nanoDigits)
-          nanoDigits += 1
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         }
       }
     }
     if (b != '"') {
       if (hasSecond) {
         if (hasNano) {
-          if (nanoDigits == 9) tokenError('"')
+          if (nanoDigitWeight == 0) tokenError('"')
           else tokenOrDigitError('"')
         } else tokensError('.', '"')
       } else tokensError(':', '"')
@@ -1603,7 +1601,7 @@ final class JsonReader private[jsoniter_scala](
     var hasSecond = false
     var nano = 0
     var hasNano = false
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     var b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1611,20 +1609,19 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && b >= '0' && b <= '9'
+          nanoDigitWeight != 0 && b >= '0' && b <= '9'
         }) {
-          nano += (b - '0') * nanoMul(nanoDigits)
-          nanoDigits += 1
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         }
       }
     }
     if (b != '"') {
       if (hasSecond) {
         if (hasNano) {
-          if (nanoDigits == 9) tokenError('"')
+          if (nanoDigitWeight == 0) tokenError('"')
           else tokenOrDigitError('"')
         } else tokensError('.', '"')
       } else tokensError(':', '"')
@@ -1680,7 +1677,7 @@ final class JsonReader private[jsoniter_scala](
     var second = 0
     var hasNano = false
     var nano = 0
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     var offsetNeg = false
     var offsetHour = 0
     var offsetMinute = 0
@@ -1692,13 +1689,12 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && b >= '0' && b <= '9'
+          nanoDigitWeight != 0 && b >= '0' && b <= '9'
         }) {
-          nano += (b - '0') * nanoMul(nanoDigits)
-          nanoDigits += 1
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         }
       }
     }
@@ -1707,7 +1703,7 @@ final class JsonReader private[jsoniter_scala](
       else if (b != '+') decodeError {
         if (hasSecond) {
           if (hasNano) {
-            if (nanoDigits == 9) "expected '+' or '-' or 'Z'"
+            if (nanoDigitWeight == 0) "expected '+' or '-' or 'Z'"
             else "expected '+' or '-' or 'Z' or digit"
           } else "expected '.' or '+' or '-' or 'Z'"
         } else "expected ':' or '+' or '-' or 'Z'"
@@ -1735,7 +1731,7 @@ final class JsonReader private[jsoniter_scala](
     var second = 0
     var hasNano = false
     var nano = 0
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     var offsetNeg = false
     var offsetHour = 0
     var offsetMinute = 0
@@ -1747,13 +1743,12 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && b >= '0' && b <= '9'
+          nanoDigitWeight != 0 && b >= '0' && b <= '9'
         }) {
-          nano += (b - '0') * nanoMul(nanoDigits)
-          nanoDigits += 1
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         }
       }
     }
@@ -1762,7 +1757,7 @@ final class JsonReader private[jsoniter_scala](
       else if (b != '+') decodeError {
         if (hasSecond) {
           if (hasNano) {
-            if (nanoDigits == 9) "expected '+' or '-' or 'Z'"
+            if (nanoDigitWeight == 0) "expected '+' or '-' or 'Z'"
             else "expected '+' or '-' or 'Z' or digit"
           } else "expected '.' or '+' or '-' or 'Z'"
         } else "expected ':' or '+' or '-' or 'Z'"
@@ -2075,7 +2070,7 @@ final class JsonReader private[jsoniter_scala](
     var second = 0
     var hasNano = false
     var nano = 0
-    var nanoDigits = 0
+    var nanoDigitWeight = 100000000
     var offsetNeg = false
     var hasOffsetHour = false
     var offsetHour = 0
@@ -2089,13 +2084,12 @@ final class JsonReader private[jsoniter_scala](
       b = nextByte(head)
       if (b == '.') {
         hasNano = true
-        val nanoMul = nanoMultiplier
         while ({
           b = nextByte(head)
-          nanoDigits < 9 && b >= '0' && b <= '9'
+          nanoDigitWeight != 0 && b >= '0' && b <= '9'
         }) {
-          nano += (b - '0') * nanoMul(nanoDigits)
-          nanoDigits += 1
+          nano += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         }
       }
     }
@@ -2104,7 +2098,7 @@ final class JsonReader private[jsoniter_scala](
       else if (b != '+') decodeError {
         if (hasSecond) {
           if (hasNano) {
-            if (nanoDigits == 9) "expected '+' or '-' or 'Z'"
+            if (nanoDigitWeight == 0) "expected '+' or '-' or 'Z'"
             else "expected '+' or '-' or 'Z' or digit"
           } else "expected '.' or '+' or '-' or 'Z'"
         } else "expected ':' or '+' or '-' or 'Z'"
@@ -2785,8 +2779,6 @@ object JsonReader {
       1e+23, 1e+24, 1e+25, 1e+26, 1e+27, 1e+28, 1e+29, 1e+30, 1e+31, 1e+32, 1e+33,
       1e+34, 1e+35, 1e+36, 1e+37, 1e+38, 1e+39, 1e+40, 1e+41, 1e+42, 1e+43, 1e+44,
       1e+45, 1e+46, 1e+47, 1e+48, 1e+49)
-  private final val nanoMultiplier: Array[Int] =
-    Array(100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
   private final val nibbles: Array[Byte] = {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
