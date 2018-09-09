@@ -60,6 +60,7 @@ object JsoniterCodecs {
   implicit val mutableLongMapOfBooleansCodec: JsonValueCodec[mutable.LongMap[Boolean]] = make(CodecMakerConfig())
   implicit val mutableMapOfIntsToBooleansCodec: JsonValueCodec[mutable.Map[Int, Boolean]] = make(CodecMakerConfig())
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] = make(CodecMakerConfig())
+  implicit val openHashMapOfIntsToBooleansCodec: JsonValueCodec[mutable.OpenHashMap[Int, Boolean]] = make(CodecMakerConfig())
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig())
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make(CodecMakerConfig())
   implicit val twitterAPICodec: JsonValueCodec[Seq[Tweet]] = make(CodecMakerConfig())

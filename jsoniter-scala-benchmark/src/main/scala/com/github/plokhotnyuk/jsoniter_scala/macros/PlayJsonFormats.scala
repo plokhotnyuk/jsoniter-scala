@@ -47,6 +47,9 @@ object PlayJsonFormats {
   val mutableMapOfIntsToBooleansFormat: OFormat[mutable.Map[Int, Boolean]] = OFormat(
     Reads[mutable.Map[Int, Boolean]](js => JsSuccess(mutable.Map(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
     OWrites[mutable.Map[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
+  val openHashMapOfIntsToBooleansFormat: OFormat[mutable.OpenHashMap[Int, Boolean]] = OFormat(
+    Reads[mutable.OpenHashMap[Int, Boolean]](js => JsSuccess(mutable.OpenHashMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
+    OWrites[mutable.OpenHashMap[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
   val primitivesFormat: OFormat[Primitives] = {
     implicit val v1: Format[Char] = Format(
       Reads(js => JsSuccess(js.as[String].charAt(0))),
