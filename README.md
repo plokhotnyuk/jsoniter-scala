@@ -344,3 +344,11 @@ sbt -J-XX:MaxMetaspaceSize=512m release
 Do not push changes to github until promoted artifacts for the new version are not available for download on 
 [Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds. 
+
+Create PRs with updated version of jsoniter-scala for OSS projects which depends on it in case of binary incompatible or 
+security release:
+1. [akka-http-json](https://github.com/hseeberger/akka-http-json/blob/master/build.sbt)
+2. [kafka-serialization](https://github.com/ovotech/kafka-serialization/blob/master/build.sbt)
+3. [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala/blob/master/build.sbt)
+4. [flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
+5. [tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
