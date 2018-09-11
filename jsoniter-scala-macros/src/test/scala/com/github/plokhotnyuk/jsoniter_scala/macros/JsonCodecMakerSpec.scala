@@ -339,7 +339,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"HIGH":0}""".getBytes("UTF-8"))
     }
     "serialize and deserialize outer types using custom value codecs for primitive types" in {
-      implicit val customCodecForInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+      implicit val customCodecOfInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
         val nullValue: Int = 0
 
         def decodeValue(in: JsonReader, default: Int): Int = {
@@ -354,7 +354,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfIntList = make[List[Int]](CodecMakerConfig())
       verifyDeser(codecOfIntList, List(1, 2, 3), "[1,\"2\",3]".getBytes("UTF-8"))
       verifySer(codecOfIntList, List(1, 2, 3), "[1,2,3]".getBytes("UTF-8"))
-      implicit val customCodecForBoolean: JsonValueCodec[Boolean] = new JsonValueCodec[Boolean] {
+      implicit val customCodecOfBoolean: JsonValueCodec[Boolean] = new JsonValueCodec[Boolean] {
         val nullValue: Boolean = false
 
         def decodeValue(in: JsonReader, default: Boolean): Boolean = {
@@ -399,7 +399,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       case class Baz(bar: Bar)
 
-      implicit val barCodec: JsonValueCodec[Bar] = new JsonValueCodec[Bar] {
+      implicit val customCodecOfBar: JsonValueCodec[Bar] = new JsonValueCodec[Bar] {
         val nullValue: Bar = null.asInstanceOf[Bar]
 
         def encodeValue(x: Bar, out: JsonWriter): Unit = out.writeVal(x.asInstanceOf[Int])
@@ -410,7 +410,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         "{\"bar\":42}".getBytes("UTF-8"))
     }
     "serialize and deserialize outer types using custom value codecs for nested types" in {
-      implicit val customCodecForEither1: JsonValueCodec[Either[String, Int]] =
+      implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
         new JsonValueCodec[Either[String, Int]] {
           val nullValue: Either[String, Int] = null
 
@@ -428,7 +428,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         }
       val codecOfEitherList = make[List[Either[String, Int]]](CodecMakerConfig())
       verifySerDeser(codecOfEitherList, List(Right(1), Left("VVV")), "[1,\"VVV\"]".getBytes("UTF-8"))
-      implicit val customCodecForEither2: JsonValueCodec[Either[String, StandardTypes]] =
+      implicit val customCodecOfEither2: JsonValueCodec[Either[String, StandardTypes]] =
         new JsonValueCodec[Either[String, StandardTypes]] {
           val nullValue: Either[String, StandardTypes] = null
 
@@ -478,7 +478,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }.getMessage.contains("illegal number, offset: 0x00000006"))
     }
     "serialize and deserialize outer types using custom key codecs for map keys" in {
-      implicit val codecForLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
+      implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
         override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
           case 0 => Level.LOW
           case 1 => Level.HIGH
