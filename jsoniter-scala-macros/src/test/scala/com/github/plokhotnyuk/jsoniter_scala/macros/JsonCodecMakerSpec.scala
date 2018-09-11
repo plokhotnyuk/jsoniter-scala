@@ -386,6 +386,29 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         verifyDeser(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":xalse,\"f2\":true}".getBytes("UTF-8"))
       }.getMessage.contains("illegal boolean, offset: 0x00000006"))
     }
+    "serialize and deserialize outer types using custom value codecs for opaque types" in {
+      abstract class Foo {
+        type Bar
+      }
+
+      val foo: Foo = new Foo {
+        type Bar = Int
+      }
+
+      type Bar = foo.Bar
+
+      case class Baz(bar: Bar)
+
+      implicit val barCodec: JsonValueCodec[Bar] = new JsonValueCodec[Bar] {
+        val nullValue: Bar = null.asInstanceOf[Bar]
+
+        def encodeValue(x: Bar, out: JsonWriter): Unit = out.writeVal(x.asInstanceOf[Int])
+
+        def decodeValue(in: JsonReader, default: Bar): Bar = in.readInt().asInstanceOf[Bar]
+      }
+      verifySerDeser(make[Baz](CodecMakerConfig()), Baz(42.asInstanceOf[Bar]),
+        "{\"bar\":42}".getBytes("UTF-8"))
+    }
     "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecForEither1: JsonValueCodec[Either[String, Int]] =
         new JsonValueCodec[Either[String, Int]] {

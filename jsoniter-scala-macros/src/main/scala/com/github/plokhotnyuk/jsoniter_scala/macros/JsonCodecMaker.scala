@@ -533,7 +533,6 @@ object JsonCodecMaker {
         else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"0L"
         else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"0f"
         else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"0.0"
-        else if (isValueClass(tpe)) q"null.asInstanceOf[$tpe]"
         else if (tpe <:< typeOf[Option[_]]) q"None"
         else if (tpe <:< typeOf[mutable.BitSet]) q"${collectionCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty")
@@ -548,7 +547,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Iterable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
-        else q"null"
+        else q"null.asInstanceOf[$tpe]"
 
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree,
                      isRoot: Boolean = false): Tree = {
