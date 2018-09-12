@@ -21,6 +21,8 @@ import upickle.default._
 
 class GoogleMapsAPIBenchmark extends CommonParams {
   var obj: DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes)
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
   def readAVSystemGenCodec(): DistanceMatrix = JsonStringInput.read[DistanceMatrix](new String(jsonBytes, UTF_8))

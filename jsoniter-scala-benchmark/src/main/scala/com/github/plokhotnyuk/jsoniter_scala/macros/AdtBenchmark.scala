@@ -38,6 +38,8 @@ class AdtBenchmark extends CommonParams {
   var jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
   var jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
   def readAVSystemGenCodec(): AdtBase = JsonStringInput.read[AdtBase](new String(jsonBytes, UTF_8))

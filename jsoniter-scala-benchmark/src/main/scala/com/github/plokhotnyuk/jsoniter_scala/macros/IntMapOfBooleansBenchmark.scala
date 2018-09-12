@@ -23,6 +23,8 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   var obj: IntMap[Boolean] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {

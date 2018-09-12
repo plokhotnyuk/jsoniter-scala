@@ -22,6 +22,8 @@ class MutableMapOfIntsToBooleansBenchmark extends CommonParams {
   var obj: mutable.Map[Int, Boolean] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {

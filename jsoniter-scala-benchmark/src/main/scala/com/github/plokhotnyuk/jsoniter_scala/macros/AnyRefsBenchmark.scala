@@ -24,6 +24,8 @@ class AnyRefsBenchmark extends CommonParams {
   var obj: AnyRefs = AnyRefs("s", 1, Some("os"))
   var jsonString: String = """{"s":"s","bd":1,"os":"os"}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
   def readAVSystemGenCodec(): AnyRefs = JsonStringInput.read[AnyRefs](new String(jsonBytes, UTF_8))

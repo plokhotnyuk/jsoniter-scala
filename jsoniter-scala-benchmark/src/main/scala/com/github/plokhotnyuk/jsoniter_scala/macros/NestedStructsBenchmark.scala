@@ -25,6 +25,8 @@ class NestedStructsBenchmark extends CommonParams {
   var obj: NestedStructs = _
   var jsonBytes: Array[Byte] = _
   var jsonString: String = _
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {

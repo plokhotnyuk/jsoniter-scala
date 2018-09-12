@@ -21,7 +21,4 @@ import org.openjdk.jmh.annotations._
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-abstract class CommonParams {
-  var preallocatedOff: Int = 128
-  var preallocatedBuf: Array[Byte] = new Array(32768)
-}
+abstract class CommonParams

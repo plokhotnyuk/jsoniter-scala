@@ -20,6 +20,8 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   var obj: String = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
+  var preallocatedOff: Int = 128
+  var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {
