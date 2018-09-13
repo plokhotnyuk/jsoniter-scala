@@ -2677,13 +2677,17 @@ final class JsonReader private[jsoniter_scala](
       else skipString(b != '\\' || !evenBackSlashes, pos + 1)
     } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
-  @tailrec
-  private[this] def skipNumber(pos: Int): Int =
-    if (pos < tail) {
+  private[this] def skipNumber(p: Int): Int = {
+    var pos = p
+    while ((pos < tail || {
+      pos = loadMore(pos)
+      pos < tail
+    }) && {
       val b = buf(pos)
-      if ((b >= '0' && b <= '9') || b == '.' || (b | 0x20) == 'e' || b == '-' || b == '+') skipNumber(pos + 1)
-      else pos
-    } else skipNumber(loadMoreOrError(pos))
+      (b >= '0' && b <= '9') || b == '.' || (b | 0x20) == 'e' || b == '-' || b == '+'
+    }) pos += 1
+    pos
+  }
 
   @tailrec
   private[this] def skipObject(level: Int, pos: Int): Int =

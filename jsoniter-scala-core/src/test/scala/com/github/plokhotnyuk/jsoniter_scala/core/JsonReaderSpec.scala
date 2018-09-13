@@ -2323,9 +2323,22 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
 
   def validateSkip(s: String): Unit = {
-    val r = reader((s + ",").getBytes("UTF-8"))
-    r.skip()
-    r.nextToken().toChar shouldBe ','
+    def checkWithSuffix(s: String, suffix: Char): Unit = {
+      val r = reader((s + suffix).getBytes("UTF-8"))
+      r.skip()
+      r.nextToken().toChar shouldBe suffix
+    }
+
+    def check(s: String): Unit = {
+      val r = reader(s.getBytes("UTF-8"))
+      r.skip()
+      assert(intercept[JsonParseException](r.nextToken()).getMessage.contains("unexpected end of input"))
+    }
+
+    checkWithSuffix(s, ',')
+    checkWithSuffix(s, '}')
+    checkWithSuffix(s, ']')
+    check(s)
   }
 
   def readInstant(s: String): Instant = readInstant(s.getBytes("UTF-8"))
