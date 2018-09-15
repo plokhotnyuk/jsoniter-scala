@@ -37,7 +37,7 @@ class ArrayOfEnumADTsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(_ & 3 match {
+    obj = (1 to size).map(i => (i * 1498724053) & 3 match {
       case 0 => Hearts
       case 1 => Spades
       case 2 => Diamonds
