@@ -1032,7 +1032,7 @@ object JsonCodecMaker {
                          out.writeKey(${discriminatorValue(subTpe)})
                          ${genWriteVal(q"x", subTpe, isStringified, EmptyTree)}
                          out.writeObjectEnd()"""
-              } ++ leafModuleClasses.map(subTpe => cq"x: $subTpe => out.writeVal(${discriminatorValue(subTpe)})")
+              } ++ leafModuleClasses.map(subTpe => cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}")
             case Some(discrFieldName) =>
               leafClasses.map { subTpe =>
                 val writeDiscriminatorField =
