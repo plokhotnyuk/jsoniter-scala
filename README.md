@@ -63,8 +63,9 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, and value classes for any of them
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
 - Support of first-order and higher-kinded types
-- Support of ADTs with sealed trait or sealed abstract class base and non-abstract Scala classes or objects as leaf 
-  classes, using discriminator field with string type of value
+- Support 2 representations of ADTs with sealed trait or sealed abstract class base and non-abstract Scala classes or 
+  objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one uses string
+  values for objects and a wrapper JSON object with a discriminator key for case class instances
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
   supported classes
@@ -90,7 +91,7 @@ There are configurable options that can be set in compile-time:
 - Skipping of unexpected fields or throwing of parse exceptions
 - Mapping function for names between classes and JSON, including predefined functions which enforce snake_case, 
   kebab-case or camelCase names for all fields
-- Name of a discriminator field for ADTs
+- An optional name of the discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
 
 List of options that change parsing and serialization in runtime:
@@ -184,6 +185,23 @@ Workarounds are:
 - isolate the `make` macro call(s) in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
+
+3. Scalac can throw the following stack overflow exception on `make` call for ADTs with objects if the call and the ADT 
+definition are enclosed in the definition of some outer class (for more details see: https://github.com/scala/bug/issues/11157):
+
+```
+java.lang.StackOverflowError
+    ...
+	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
+	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
+	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
+	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
+	...
+``` 
+
+Workarounds are:
+- don't enclose ADTs with object into outer classes
+- use outer object (not a class) instead 
 
 ## How to develop
 
