@@ -3,17 +3,15 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type
-import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
-//import io.circe.parser._
-//import io.circe.syntax._
+import io.circe.parser._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import upickle.default._
@@ -53,10 +51,8 @@ class ArrayOfEnumADTsBenchmark extends CommonParams {
   @Benchmark
   def readAVSystemGenCodec(): Array[SuitADT] = JsonStringInput.read[Array[SuitADT]](new String(jsonBytes, UTF_8))
 
-/* FIXME: Circe doesn't support enum ADT
   @Benchmark
   def readCirce(): Array[SuitADT] = decode[Array[SuitADT]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-*/
 
   @Benchmark
   def readJacksonScala(): Array[SuitADT] = jacksonMapper.readValue[Array[SuitADT]](jsonBytes)
@@ -72,10 +68,10 @@ class ArrayOfEnumADTsBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Circe doesn't support enum ADT
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
