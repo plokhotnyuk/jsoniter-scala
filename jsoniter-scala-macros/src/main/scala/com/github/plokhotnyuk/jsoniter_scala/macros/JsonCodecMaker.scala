@@ -862,12 +862,12 @@ object JsonCodecMaker {
               }
             case Some(discrFieldName) =>
               q"""in.setMark()
-              if (in.isNextToken('{')) {
-                if (in.skipToKey($discrFieldName)) {
-                  val l = in.readStringAsCharBuf()
-                  ..${readSubclassesBlock(leafClasses)}
-                } else in.requiredFieldError($discrFieldName)
-              } else in.readNullOrTokenError(default, '{')"""
+                  if (in.isNextToken('{')) {
+                    if (in.skipToKey($discrFieldName)) {
+                      val l = in.readStringAsCharBuf()
+                      ..${readSubclassesBlock(leafClasses)}
+                    } else in.requiredFieldError($discrFieldName)
+                  } else in.readNullOrTokenError(default, '{')"""
           }
         } else cannotFindCodecError(tpe)
       }

@@ -18,10 +18,10 @@ case class OrderId(value: Int) extends AnyVal
 
 case class Id[A](id: A) extends AnyVal
 
-sealed trait X
-object X {
-  final case object Foo extends X
-  final case object Bar extends X
+sealed trait Weapon
+object Weapon {
+  final case object Axe extends Weapon
+  final case object Sword extends Weapon
 }
 
 class JsonCodecMakerSpec extends WordSpec with Matchers {
@@ -1075,8 +1075,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")),
         """[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
-      verifySerDeser(make[List[X]](CodecMakerConfig(discriminatorFieldName = None)),
-        List(X.Foo, X.Bar), """["Foo","Bar"]""".getBytes("UTF-8"))
+      verifySerDeser(make[List[Weapon]](CodecMakerConfig(discriminatorFieldName = None)),
+        List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs with leaf types that are not case classes or case objects" in {
       sealed trait X
