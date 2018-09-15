@@ -57,11 +57,11 @@ object PlayJsonFormats {
     Json.format[Primitives]
   }
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format
-  val adtFormat: OFormat[AdtBase] = {
+  val adtFormat: OFormat[ADTBase] = {
     implicit lazy val v1: OFormat[A] = Json.format
     implicit lazy val v2: OFormat[B] = Json.format
     implicit lazy val v3: OFormat[C] = Json.format
-    implicit lazy val v4: OFormat[AdtBase] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v4: OFormat[ADTBase] = flat.oformat((__ \ "type").format[String])
     v4
   }
   val geoJSONFormat: OFormat[GeoJSON] = {
@@ -104,6 +104,15 @@ object PlayJsonFormats {
       Reads(js => JsSuccess(js.as[Array[JsString]].map(_.as[SuitEnum]))),
       Writes(es => JsArray(es.map(t => Json.toJson(t)))))
   }
+  val enumADTArrayFormat: Format[Array[SuitADT]] = Format(
+    Reads(js => JsSuccess(js.as[Array[JsString]].map(_.value match {
+      case "Hearts" => Hearts
+      case "Spades" => Spades
+      case "Diamonds" => Diamonds
+      case "Clubs" => Clubs
+      case _ => throw new IllegalArgumentException("illegal SuitADT value")
+    }))),
+    Writes(es => JsArray(es.map(v => JsString(v.toString)))))
   val javaEnumArrayFormat: Format[Array[Suit]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.name)))))

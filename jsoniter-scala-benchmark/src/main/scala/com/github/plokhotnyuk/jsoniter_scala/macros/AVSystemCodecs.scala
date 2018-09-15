@@ -11,7 +11,7 @@ import scala.collection.immutable.{BitSet, IntMap}
 import scala.collection.mutable
 
 object AVSystemCodecs {
-  implicit val adtGenCodec: GenCodec[AdtBase] = materializeRecursively
+  implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materialize
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
@@ -23,6 +23,13 @@ object AVSystemCodecs {
   implicit val offsetDateTimeGenCodec: GenCodec[OffsetDateTime] = transformed(_.toString, OffsetDateTime.parse)
   implicit val offsetTimeGenCodec: GenCodec[OffsetTime] = transformed(_.toString, OffsetTime.parse)
   implicit val periodGenCodec: GenCodec[Period] = transformed(_.toString, Period.parse)
+  implicit val suitADTGenCodec: GenCodec[SuitADT] = transformed[SuitADT, String](_.toString, {
+    case "Hearts" => Hearts
+    case "Spades" => Spades
+    case "Diamonds" => Diamonds
+    case "Clubs" => Clubs
+    case _ => throw new IllegalArgumentException("SuitADT")
+  })
   implicit val uuidGenCodec: GenCodec[UUID] = transformed(_.toString, UUID.fromString)
   implicit val yearGenCodec: GenCodec[Year] = transformed(_.toString, Year.parse)
   implicit val yearMonthGenCodec: GenCodec[YearMonth] = transformed(_.toString, YearMonth.parse)

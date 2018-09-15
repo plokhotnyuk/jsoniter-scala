@@ -6,7 +6,14 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 import upickle.default._
 
 object UPickleReaderWriters {
-  implicit val adtReaderWriter: ReadWriter[AdtBase] = ReadWriter.merge(macroRW[A], macroRW[B], macroRW[C])
+  implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[A], macroRW[B], macroRW[C])
+  implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = readwriter[String].bimap(_.toString, {
+    case "Hearts" => Hearts
+    case "Spades" => Spades
+    case "Diamonds" => Diamonds
+    case "Clubs" => Clubs
+    case _ => throw new IllegalArgumentException("SuitADT")
+  })
   implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW
   implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW
   implicit val durationReaderWriter: ReadWriter[Duration] = readwriter[String].bimap(_.toString, Duration.parse)

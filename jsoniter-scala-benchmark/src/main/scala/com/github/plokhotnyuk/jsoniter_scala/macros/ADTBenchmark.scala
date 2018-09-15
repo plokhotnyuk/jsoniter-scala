@@ -25,16 +25,16 @@ import play.api.libs.json.Json
   new Type(value = classOf[A], name = "A"),
   new Type(value = classOf[B], name = "B"),
   new Type(value = classOf[C], name = "C")))
-sealed trait AdtBase extends Product with Serializable
+sealed trait ADTBase extends Product with Serializable
 
-case class A(a: Int) extends AdtBase
+case class A(a: Int) extends ADTBase
 
-case class B(b: String) extends AdtBase
+case class B(b: String) extends ADTBase
 
-case class C(l: AdtBase, r: AdtBase) extends AdtBase
+case class C(l: ADTBase, r: ADTBase) extends ADTBase
 
-class AdtBenchmark extends CommonParams {
-  var obj: AdtBase = C(A(1), B("VVV"))
+class ADTBenchmark extends CommonParams {
+  var obj: ADTBase = C(A(1), B("VVV"))
   var jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
   var jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
@@ -42,23 +42,23 @@ class AdtBenchmark extends CommonParams {
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
-  def readAVSystemGenCodec(): AdtBase = JsonStringInput.read[AdtBase](new String(jsonBytes, UTF_8))
+  def readAVSystemGenCodec(): ADTBase = JsonStringInput.read[ADTBase](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): AdtBase = decode[AdtBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): ADTBase = decode[ADTBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJacksonScala(): AdtBase = jacksonMapper.readValue[AdtBase](jsonBytes)
+  def readJacksonScala(): ADTBase = jacksonMapper.readValue[ADTBase](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): AdtBase = readFromArray[AdtBase](jsonBytes)(adtCodec)
+  def readJsoniterScala(): ADTBase = readFromArray[ADTBase](jsonBytes)(adtCodec)
 
   @Benchmark
-  def readPlayJson(): AdtBase = Json.parse(jsonBytes).as[AdtBase](adtFormat)
+  def readPlayJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)
 
 /* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
-  def readUPickle(): AdtBase = read[AdtBase](jsonBytes)
+  def readUPickle(): ADTBase = read[ADTBase](jsonBytes)
 */
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)

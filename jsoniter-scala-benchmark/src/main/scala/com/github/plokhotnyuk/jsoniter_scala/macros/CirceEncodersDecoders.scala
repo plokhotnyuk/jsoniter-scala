@@ -19,8 +19,8 @@ object CirceEncodersDecoders {
   implicit val bDecoder: Decoder[B] = deriveDecoder
   implicit val cEncoder: Encoder[C] = deriveEncoder
   implicit val cDecoder: Decoder[C] = deriveDecoder
-  implicit val adtEncoder: Encoder[AdtBase] = deriveEncoder
-  implicit val adtDecoder: Decoder[AdtBase] = deriveDecoder
+  implicit val adtEncoder: Encoder[ADTBase] = deriveEncoder
+  implicit val adtDecoder: Decoder[ADTBase] = deriveDecoder
   implicit val enumEncoder: Encoder[SuitEnum] = Encoder.enumEncoder(SuitEnum)
   implicit val enumDecoder: Decoder[SuitEnum] = Decoder.enumDecoder(SuitEnum)
   implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap(_.name)

@@ -23,7 +23,9 @@ object JacksonSerDesers {
       .addSerializer(classOf[BitSet], new BitSetSerializer)
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
       .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
+      .addSerializer(classOf[SuitADT], new SuitADTSerializer)
       .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
+      .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
       .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
     registerModule(new JavaTimeModule)
     registerModule(new AfterburnerModule)
@@ -84,5 +86,24 @@ class SuitEnumDeserializer extends JsonDeserializer[SuitEnum] {
     jp.getCurrentToken match {
       case JsonToken.VALUE_STRING => SuitEnum.withName(jp.getValueAsString)
       case _ => ctxt.handleUnexpectedToken(classOf[SuitEnum], jp).asInstanceOf[SuitEnum]
+    }
+}
+
+class SuitADTSerializer extends JsonSerializer[SuitADT] {
+  override def serialize(value: SuitADT, jgen: JsonGenerator, provider: SerializerProvider): Unit =
+    jgen.writeString(value.toString)
+}
+
+class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
+  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
+    jp.getCurrentToken match {
+      case JsonToken.VALUE_STRING => jp.getValueAsString match {
+        case "Hearts" => Hearts
+        case "Spades" => Spades
+        case "Diamonds" => Diamonds
+        case "Clubs" => Clubs
+        case s => ctxt.handleWeirdStringValue(classOf[SuitADT], s, "illegal value").asInstanceOf[SuitADT]
+      }
+      case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
     }
 }
