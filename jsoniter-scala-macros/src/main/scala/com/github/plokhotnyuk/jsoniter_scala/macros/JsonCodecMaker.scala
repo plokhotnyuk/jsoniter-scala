@@ -31,7 +31,8 @@ final class stringified extends StaticAnnotation
   *                        function by default)
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
   *                               discriminator field (a function that truncate to simple class name by default)
-  * @param discriminatorFieldName a name of discriminator field ("type" value by default)
+  * @param discriminatorFieldName an optional name of discriminator field, where None can be used for alternative
+  *                               representation of ADTs without the discriminator field (Some("type") value by default)
   * @param isStringified a flag that turn on stringification of number or boolean values of collections, options and
   *                      value classes (turned off by default)
   * @param skipUnexpectedFields a flag that turn on skipping of unexpected fields or in other case a parse exception
@@ -42,7 +43,7 @@ final class stringified extends StaticAnnotation
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
   adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
-  discriminatorFieldName: String = "type",
+  discriminatorFieldName: Option[String] = Some("type"),
   isStringified: Boolean = false,
   skipUnexpectedFields: Boolean = true,
   bitSetValueLimit: Int = 1024, // ~128 bytes
@@ -443,11 +444,11 @@ object JsonCodecMaker {
         }
       }
 
-      def checkDiscriminatorValueCollisions(discriminatorFieldName: String, names: Seq[String]): Unit = {
+      def checkDiscriminatorValueCollisions(tpe: Type, names: Seq[String]): Unit = {
         val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          fail(s"Duplicated values defined for '$discriminatorFieldName': $formattedCollisions. " +
+          fail(s"Duplicated discriminator defined for ADT base '$tpe': $formattedCollisions. " +
             "Values returned by 'config.adtLeafClassNameMapper' should not match.")
         }
       }
@@ -711,9 +712,10 @@ object JsonCodecMaker {
               } else in.readNullOrTokenError(default, '[')"""
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
           val classInfo = getClassInfo(tpe)
-          checkFieldNameCollisions(tpe,
+          checkFieldNameCollisions(tpe, codecConfig.discriminatorFieldName.fold(Seq.empty[String]) { n =>
             (if (discriminator.isEmpty) Seq.empty
-            else Seq(codecConfig.discriminatorFieldName)) ++ classInfo.fields.map(_.mappedName))
+            else Seq(n)) ++ classInfo.fields.map(_.mappedName)
+          })
           val required = classInfo.fields.collect {
             case f if !f.symbol.isParamWithDefault && !isContainer(f.resolvedTpe) => f.mappedName
           }
@@ -746,14 +748,15 @@ object JsonCodecMaker {
             .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
           val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
           val length: FieldInfo => Int = _.mappedName.length
-          val readFields =
+          val readFields = codecConfig.discriminatorFieldName.fold(classInfo.fields) { n =>
             if (discriminator.isEmpty) classInfo.fields
-            else classInfo.fields :+ FieldInfo(null, codecConfig.discriminatorFieldName, null, null, null, null, true)
+            else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, true)
+          }
 
           def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
             fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
               val readValue =
-                if (discriminator.nonEmpty && f.mappedName == codecConfig.discriminatorFieldName) discriminator
+                if (discriminator.nonEmpty && codecConfig.discriminatorFieldName.contains(f.mappedName)) discriminator
                 else {
                   q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
                       ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
@@ -798,19 +801,23 @@ object JsonCodecMaker {
           }
           val length: Type => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
-          val discrName = codecConfig.discriminatorFieldName
-          checkDiscriminatorValueCollisions(discrName, leafClasses.map(discriminatorValue))
-          val discriminatorValueError = q"in.discriminatorValueError($discrName)"
+          val discriminatorError = codecConfig.discriminatorFieldName
+            .fold(q"""in.discriminatorError()""")(n => q"in.discriminatorValueError($n)")
 
           def readCollisions(subTpes: collection.Seq[Type]): Tree =
-            subTpes.foldRight(discriminatorValueError) { case (subTpe, acc) =>
+            subTpes.foldRight(discriminatorError) { case (subTpe, acc) =>
+              val readVal =
+                if (codecConfig.discriminatorFieldName.isDefined) {
+                  q"""in.rollbackToMark()
+                      ..${genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)}"""
+                } else if (subTpe.typeSymbol.isModuleClass) q"${subTpe.typeSymbol.asClass.module}"
+                else genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)
               q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
-                    in.rollbackToMark()
-                    ..${genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)}
+                    ..$readVal
                   } else $acc"""
             }
 
-          val readSubclassesBlock =
+          def readSubclassesBlock(leafClasses: collection.Seq[Type]) =
             if (leafClasses.size <= 4 && leafClasses.size == leafClasses.map(length).distinct.size) {
               readCollisions(leafClasses)
             } else {
@@ -820,16 +827,48 @@ object JsonCodecMaker {
               }.toSeq
               q"""(in.charBufToHashCode(l): @switch) match {
                     case ..$cases
-                    case _ => $discriminatorValueError
+                    case _ => $discriminatorError
                   }"""
             }
-          q"""in.setMark()
-              if (in.isNextToken('{')) {
-                if (in.skipToKey($discrName)) {
-                  val l = in.readStringAsCharBuf()
-                  ..$readSubclassesBlock
-                } else in.requiredFieldError($discrName)
-              } else in.readNullOrTokenError(default, '{')"""
+
+          checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
+          codecConfig.discriminatorFieldName match {
+            case None =>
+              val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.isModuleClass)
+              if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
+                q"""if (in.isNextToken('"')) {
+                      in.rollbackToken()
+                      val l = in.readStringAsCharBuf()
+                      ${readSubclassesBlock(leafModuleClasses)}
+                    } else if (in.isCurrentToken('{')) {
+                      val l = in.readKeyAsCharBuf()
+                      val r = ${readSubclassesBlock(leafCaseClasses)}
+                      if (in.isNextToken('}')) r
+                      else in.objectEndOrCommaError()
+                    } else in.readNullOrError(default, "expected '\"' or '{' or null")"""
+              } else if (leafCaseClasses.nonEmpty) {
+                q"""if (in.isNextToken('{')) {
+                      val l = in.readKeyAsCharBuf()
+                      val r = ${readSubclassesBlock(leafCaseClasses)}
+                      if (in.isNextToken('}')) r
+                      else in.objectEndOrCommaError()
+                    } else in.readNullOrTokenError(default, '{')"""
+              } else {
+                q"""if (in.isNextToken('"')) {
+                      in.rollbackToken()
+                      val l = in.readStringAsCharBuf()
+                      ${readSubclassesBlock(leafModuleClasses)}
+                    } else in.readNullOrTokenError(default, '"')"""
+              }
+            case Some(discrFieldName) =>
+              q"""in.setMark()
+                  if (in.isNextToken('{')) {
+                    if (in.skipToKey($discrFieldName)) {
+                      val l = in.readStringAsCharBuf()
+                      ..${readSubclassesBlock(leafClasses)}
+                    } else in.requiredFieldError($discrFieldName)
+                  } else in.readNullOrTokenError(default, '{')"""
+          }
         } else cannotFindCodecError(tpe)
       }
 
@@ -984,12 +1023,24 @@ object JsonCodecMaker {
               out.writeObjectEnd()"""
         } else if (isSealedAdtBase(tpe)) withEncoderFor(methodKey, m) {
           val leafClasses = adtLeafClasses(tpe)
-          val writeSubclasses = leafClasses.map { subTpe =>
-            val writeDiscriminatorField =
-              q"""..${genWriteConstantKey(codecConfig.discriminatorFieldName)}
-                  ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
-            cq"x: $subTpe => ${genWriteVal(q"x", subTpe, isStringified, writeDiscriminatorField)}"
-          }
+          val writeSubclasses = (codecConfig.discriminatorFieldName match {
+            case None =>
+              val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.isModuleClass)
+              leafCaseClasses.map { subTpe =>
+                cq"""x: $subTpe =>
+                         out.writeObjectStart()
+                         out.writeKey(${discriminatorValue(subTpe)})
+                         ${genWriteVal(q"x", subTpe, isStringified, EmptyTree)}
+                         out.writeObjectEnd()"""
+              } ++ leafModuleClasses.map(subTpe => cq"x: $subTpe => out.writeVal(${discriminatorValue(subTpe)})")
+            case Some(discrFieldName) =>
+              leafClasses.map { subTpe =>
+                val writeDiscriminatorField =
+                  q"""..${genWriteConstantKey(discrFieldName)}
+                      ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
+                cq"x: $subTpe => ${genWriteVal(q"x", subTpe, isStringified, writeDiscriminatorField)}"
+              }
+          }) ++ Seq(cq"null => out.writeNull()")
           q"""x match {
                 case ..$writeSubclasses
               }"""

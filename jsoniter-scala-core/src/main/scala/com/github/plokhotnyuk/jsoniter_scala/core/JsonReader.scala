@@ -78,6 +78,8 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
+  def discriminatorError(): Nothing = decodeError("illegal discriminator")
+
   def discriminatorValueError(discriminatorFieldName: String): Nothing = {
     var i = appendString("illegal value of discriminator field \"", 0)
     i = appendString(discriminatorFieldName, i)

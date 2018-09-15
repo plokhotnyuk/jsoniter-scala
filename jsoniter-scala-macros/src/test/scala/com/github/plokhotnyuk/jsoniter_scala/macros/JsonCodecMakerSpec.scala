@@ -18,6 +18,12 @@ case class OrderId(value: Int) extends AnyVal
 
 case class Id[A](id: A) extends AnyVal
 
+sealed trait Weapon
+object Weapon {
+  final case object Axe extends Weapon
+  final case object Sword extends Weapon
+}
+
 class JsonCodecMakerSpec extends WordSpec with Matchers {
   case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
@@ -134,6 +140,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   case object DDD extends AdtBase
 
   val codecOfADTList: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig())
+  val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig(discriminatorFieldName = None))
 
   "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize case classes with primitives" in {
@@ -1062,9 +1069,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifyDeser(codecOfADTList,
         List(CCC(2, longStr), CCC(1, "VVV")),
         s"""[{"a":2,"b":"$longStr","type":"CCC"},{"a":1,"type":"CCC","b":"VVV"}]""".getBytes("UTF-8"))
-      verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = "t")),
+      verifySerDeser(codecOfADTList2,
+        List(AAA(1), BBB("VVV"), CCC(1, "VVV"), DDD),
+        """[{"AAA":{"a":1}},{"BBB":{"a":"VVV"}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""".getBytes("UTF-8"))
+      verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")),
-        s"""[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
+        """[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
+      verifySerDeser(make[List[Weapon]](CodecMakerConfig(discriminatorFieldName = None)),
+        List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs with leaf types that are not case classes or case objects" in {
       sealed trait X
@@ -1091,7 +1103,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       case class Б(с: String) extends База
 
-      verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = "тип", skipUnexpectedFields = false)),
+      verifySerDeser(make[List[База]](CodecMakerConfig(discriminatorFieldName = Some("тип"), skipUnexpectedFields = false)),
         List(А(Б("x")), Б("x")),
         """[{"тип":"А","б":{"с":"x"}},{"тип":"Б","с":"x"}]""".getBytes("UTF-8"))
     }
@@ -1102,7 +1114,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       case object `Europe/Paris` extends TimeZone
 
-      verifySerDeser(make[List[TimeZone]](CodecMakerConfig(discriminatorFieldName = "zoneId")),
+      verifySerDeser(make[List[TimeZone]](CodecMakerConfig(discriminatorFieldName = Some("zoneId"))),
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""".getBytes("UTF-8"))
     }
@@ -1121,6 +1133,15 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[JsonParseException] {
         verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1,"type":123}]""".getBytes("UTF-8"))
       }.getMessage.contains("""expected '"', offset: 0x0000000f"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList2, List(AAA(1)), """[true]""".getBytes("UTF-8"))
+      }.getMessage.contains("""expected '"' or '{' or null, offset: 0x00000001"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList2, List(AAA(1)), """[{{"a":1}}]""".getBytes("UTF-8"))
+      }.getMessage.contains("""expected '"', offset: 0x00000002"""))
+      assert(intercept[JsonParseException] {
+        verifyDeser(codecOfADTList2, List(AAA(1)), """[{"aaa":{"a":1}}]""".getBytes("UTF-8"))
+      }.getMessage.contains("""illegal discriminator, offset: 0x00000007"""))
     }
     "don't generate codec for non sealed traits or abstract classes as an ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -1167,7 +1188,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |case object B extends X
           |JsonCodecMaker.make[X](CodecMakerConfig(adtLeafClassNameMapper = _ => "Z"))""".stripMargin
       }).getMessage.contains {
-        """Duplicated values defined for 'type': 'Z'. Values returned by 'config.adtLeafClassNameMapper'
+        """Duplicated discriminator defined for ADT base 'X': 'Z'. Values returned by 'config.adtLeafClassNameMapper'
           |should not match.""".stripMargin.replace('\n', ' ')
       })
     }
@@ -1175,7 +1196,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait DuplicatedJsonName extends Product with Serializable
           |case class A(x: Int) extends DuplicatedJsonName
-          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(discriminatorFieldName = "x"))""".stripMargin
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(discriminatorFieldName = Some("x")))""".stripMargin
       }).getMessage.contains {
         """Duplicated JSON name(s) defined for 'A': 'x'. Names(s) defined by
           |'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s), name of discriminator field specified by
