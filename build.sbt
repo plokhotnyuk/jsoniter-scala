@@ -118,6 +118,9 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     crossScalaVersions := Seq("2.12.6"),
     libraryDependencies ++= Seq(
+      "com.beachape" %% "enumeratum" % "1.5.13",
+      "com.beachape" %% "enumeratum-circe" % "1.5.13",
+      "com.beachape" %% "enumeratum-play-json" % "1.5.13",
       "com.avsystem.commons" %% "commons-core" % "1.30.0",
       "com.lihaoyi" %% "upickle" % "0.6.6",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.0",
