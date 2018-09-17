@@ -32,6 +32,7 @@ object JsoniterCodecs {
   implicit val durationArrayCodec: JsonValueCodec[Array[Duration]] = make(CodecMakerConfig())
   implicit val enumArrayCodec: JsonValueCodec[Array[SuitEnum]] = make(CodecMakerConfig())
   implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] = make(CodecMakerConfig(discriminatorFieldName = None))
+  implicit val enumeratumADTArrayCodec: JsonValueCodec[Array[EnumeratumSuit]] = make(CodecMakerConfig(discriminatorFieldName = None))
   implicit val floatArrayCodec: JsonValueCodec[Array[Float]] = make(CodecMakerConfig())
   implicit val instantArrayCodec: JsonValueCodec[Array[Instant]] = make(CodecMakerConfig())
   implicit val intArrayCodec: JsonValueCodec[Array[Int]] = make(CodecMakerConfig())
