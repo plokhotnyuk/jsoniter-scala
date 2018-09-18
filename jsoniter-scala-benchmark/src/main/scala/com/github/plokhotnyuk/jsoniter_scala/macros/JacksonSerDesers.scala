@@ -1,5 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import java.time.ZonedDateTime
+import java.time.format.DateTimeParseException
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonToken}
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -13,21 +16,24 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
+import scala.util.Try
 
 object JacksonSerDesers {
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
     disable(JsonFactory.Feature.INTERN_FIELD_NAMES)
   }) with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
+    registerModule(new JavaTimeModule)
     registerModule(new SimpleModule()
       .addSerializer(classOf[BitSet], new BitSetSerializer)
       .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
       .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
       .addSerializer(classOf[SuitADT], new SuitADTSerializer)
       .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
+      .addSerializer(classOf[ZonedDateTime], new ZonedDateTimeSerializer)
       .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
+      .addDeserializer(classOf[ZonedDateTime], new ZonedDateTimeDeserializer)
       .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
-    registerModule(new JavaTimeModule)
     registerModule(new AfterburnerModule)
     configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -74,6 +80,26 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
   }
 
   override def isEmpty(provider: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
+}
+
+class ZonedDateTimeSerializer extends JsonSerializer[ZonedDateTime] {
+  override def serialize(value: ZonedDateTime, jgen: JsonGenerator, provider: SerializerProvider): Unit =
+    jgen.writeString(value.toString)
+}
+
+class ZonedDateTimeDeserializer extends JsonDeserializer[ZonedDateTime] {
+  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): ZonedDateTime =
+    jp.getCurrentToken match {
+      case JsonToken.VALUE_STRING =>
+        try {
+        ZonedDateTime.parse(jp.getValueAsString)
+        } catch {
+          case ex: DateTimeParseException =>
+            ctxt.handleWeirdStringValue(classOf[ZonedDateTime], jp.getValueAsString, ex.getMessage).asInstanceOf[ZonedDateTime]
+        }
+      case _ =>
+        ctxt.handleUnexpectedToken(classOf[ZonedDateTime], jp).asInstanceOf[ZonedDateTime]
+    }
 }
 
 class SuitEnumSerializer extends JsonSerializer[SuitEnum] {
