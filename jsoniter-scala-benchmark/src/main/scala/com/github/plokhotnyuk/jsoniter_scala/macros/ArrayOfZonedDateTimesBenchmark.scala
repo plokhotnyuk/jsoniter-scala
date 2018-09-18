@@ -41,7 +41,7 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
         }) | 1))),
         zoneIds(i % zoneIds.length))
     }.toArray
-    jsonString = obj.mkString("[\"", "\",\"", "\"]")
+    jsonString = "[1000000000e1000000000]"
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
