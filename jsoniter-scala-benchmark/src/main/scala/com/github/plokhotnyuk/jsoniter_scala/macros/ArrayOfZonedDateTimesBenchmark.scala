@@ -13,10 +13,11 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
-import play.api.libs.json.Json
+import play.api.libs.json._
 import upickle.default._
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 class ArrayOfZonedDateTimesBenchmark extends CommonParams {
   val zoneIds: Array[ZoneId] = ZoneId.getAvailableZoneIds.asScala.map(ZoneId.of).toArray
@@ -45,6 +46,10 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
+
+  implicit val zonedDateTimeArrayFormat: Format[ZonedDateTime] = Format(
+    Reads(js => Try(JsSuccess(ZonedDateTime.parse(js.as[JsString].value))).getOrElse(JsError.apply)),
+    Writes(v => JsString(v.toString)))
 
   @Benchmark
   def readAVSystemGenCodec(): Array[ZonedDateTime] = JsonStringInput.read[Array[ZonedDateTime]](new String(jsonBytes, UTF_8))
