@@ -30,12 +30,12 @@ class ArrayOfOffsetDateTimesBenchmark extends CommonParams {
     obj = (1 to size).map { i =>
       val n = Math.abs(i * 1498724053)
       OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(i),
-        LocalTime.ofNanoOfDay(((n % 86000) | 1) * 1000000000L + ((i % 4 match {
+        LocalTime.ofNanoOfDay(((n % 86000) | 1) * 1000000000L + (i % 4 match {
           case 0 => 0
-          case 1 => (n % 1000) * 1000000
-          case 2 => (n % 1000000) * 1000
-          case 3 => n % 1000000000
-        }) | 1))),
+          case 1 => ((n % 1000) | 1) * 1000000
+          case 2 => ((n % 1000000) | 1) * 1000
+          case 3 => (n | 1) % 1000000000
+        }))),
         ZoneOffset.ofHours(i % 17))
     }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
