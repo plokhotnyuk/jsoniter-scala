@@ -120,7 +120,7 @@ lazy val `jsoniter-scala-benchmark` = project
     libraryDependencies ++= Seq(
       "com.avsystem.commons" %% "commons-core" % "1.31.0",
       "com.lihaoyi" %% "upickle" % "0.6.6",
-      "com.dslplatform" %% "dsl-json-scala" % "1.8.0",
+      "com.dslplatform" %% "dsl-json-scala" % "1.8.2",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.6",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.7",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.7",
