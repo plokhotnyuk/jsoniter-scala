@@ -42,7 +42,7 @@ lazy val commonSettings = Seq(
     )
   ),
   resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
-  scalaVersion := "2.12.6",
+  scalaVersion := "2.12.7",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -88,7 +88,7 @@ lazy val `jsoniter-scala-core` = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.12.6", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M4", "2.12.7", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % Test
@@ -101,7 +101,7 @@ lazy val `jsoniter-scala-macros` = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M4", "2.12.6", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M4", "2.12.7", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -116,7 +116,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.12.6"),
+    crossScalaVersions := Seq("2.12.7"),
     libraryDependencies ++= Seq(
       "com.avsystem.commons" %% "commons-core" % "1.31.0",
       "com.lihaoyi" %% "upickle" % "0.6.6",
