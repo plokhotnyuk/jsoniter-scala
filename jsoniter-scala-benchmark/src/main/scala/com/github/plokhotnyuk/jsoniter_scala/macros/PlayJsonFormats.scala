@@ -58,9 +58,9 @@ object PlayJsonFormats {
   }
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {
-    implicit lazy val v1: OFormat[A] = Json.format
-    implicit lazy val v2: OFormat[B] = Json.format
-    implicit lazy val v3: OFormat[C] = Json.format
+    implicit lazy val v1: OFormat[X] = Json.format
+    implicit lazy val v2: OFormat[Y] = Json.format
+    implicit lazy val v3: OFormat[Z] = Json.format
     implicit lazy val v4: OFormat[ADTBase] = flat.oformat((__ \ "type").format[String])
     v4
   }

@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 import upickle.default._
 
 object UPickleReaderWriters {
-  implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[A], macroRW[B], macroRW[C])
+  implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
   implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = readwriter[String].bimap(_.toString, {
     case "Hearts" => Hearts
     case "Spades" => Spades

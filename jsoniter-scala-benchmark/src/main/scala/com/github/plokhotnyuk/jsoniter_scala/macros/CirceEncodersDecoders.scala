@@ -13,12 +13,12 @@ object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
-  implicit val aEncoder: Encoder[A] = deriveEncoder
-  implicit val aDecoder: Decoder[A] = deriveDecoder
-  implicit val bEncoder: Encoder[B] = deriveEncoder
-  implicit val bDecoder: Decoder[B] = deriveDecoder
-  implicit val cEncoder: Encoder[C] = deriveEncoder
-  implicit val cDecoder: Decoder[C] = deriveDecoder
+  implicit val aEncoder: Encoder[X] = deriveEncoder
+  implicit val aDecoder: Decoder[X] = deriveDecoder
+  implicit val bEncoder: Encoder[Y] = deriveEncoder
+  implicit val bDecoder: Decoder[Y] = deriveDecoder
+  implicit val cEncoder: Encoder[Z] = deriveEncoder
+  implicit val cDecoder: Decoder[Z] = deriveDecoder
   implicit val adtEncoder: Encoder[ADTBase] = deriveEncoder
   implicit val adtDecoder: Decoder[ADTBase] = deriveDecoder
   implicit val enumEncoder: Encoder[SuitEnum] = Encoder.enumEncoder(SuitEnum)
@@ -90,7 +90,6 @@ object CirceEncodersDecoders {
 
     implicit def cconsIsEnum[K <: Symbol, H <: Product, T <: Coproduct](implicit witK: Witness.Aux[K],
                                                                         witH: Witness.Aux[H],
-                                                                        gen: Generic.Aux[H, HNil],
                                                                         tie: IsEnum[T]): IsEnum[FieldType[K, H] :+: T] =
       new IsEnum[FieldType[K, H] :+: T] {
         def to(c: FieldType[K, H] :+: T): String = c match {
@@ -108,5 +107,5 @@ object CirceEncodersDecoders {
     Encoder[String].contramap[A](a => rie.to(gen.to(a)))
 
   implicit def decodeEnum[A, C <: Coproduct](implicit gen: LabelledGeneric.Aux[A, C], rie: IsEnum[C]): Decoder[A] =
-    Decoder[String].emap(s => rie.from(s).map(gen.from).fold[Either[String, A]](Left("enum"))(Right.apply))
+    Decoder[String].emap(s => rie.from(s).fold[Either[String, A]](Left("enum"))(c => Right(gen.from(c))))
 }

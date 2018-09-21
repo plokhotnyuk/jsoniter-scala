@@ -22,21 +22,21 @@ import play.api.libs.json.Json
 @flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(Array(
-  new Type(value = classOf[A], name = "A"),
-  new Type(value = classOf[B], name = "B"),
-  new Type(value = classOf[C], name = "C")))
+  new Type(value = classOf[X], name = "X"),
+  new Type(value = classOf[Y], name = "Y"),
+  new Type(value = classOf[Z], name = "Z")))
 sealed trait ADTBase extends Product with Serializable
 
-case class A(a: Int) extends ADTBase
+case class X(a: Int) extends ADTBase
 
-case class B(b: String) extends ADTBase
+case class Y(b: String) extends ADTBase
 
-case class C(l: ADTBase, r: ADTBase) extends ADTBase
+case class Z(l: ADTBase, r: ADTBase) extends ADTBase
 
 class ADTBenchmark extends CommonParams {
-  var obj: ADTBase = C(A(1), B("VVV"))
-  var jsonString: String = """{"type":"C","l":{"type":"A","a":1},"r":{"type":"B","b":"VVV"}}"""
-  var jsonString2: String = """{"l":{"a":1,"type":"A"},"r":{"b":"VVV","type":"B"},"type":"C"}"""
+  var obj: ADTBase = Z(X(1), Y("VVV"))
+  var jsonString: String = """{"type":"Z","l":{"type":"X","a":1},"r":{"type":"Y","b":"VVV"}}"""
+  var jsonString2: String = """{"l":{"a":1,"type":"X"},"r":{"b":"VVV","type":"Y"},"type":"Z"}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
   var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
