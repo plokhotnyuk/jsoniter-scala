@@ -329,6 +329,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeKey(s)) shouldBe '"' + s + "\":"
       }
 
+      check("абвгдabcde")
       forAll(minSuccessful(100000)) { (s: String) =>
         whenever(s.forall(ch => !Character.isSurrogate(ch) && !isEscapedAscii(ch))) {
           check(s)

@@ -7,8 +7,6 @@ class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase with BeforeAnd
     setup()
   }
 
-  override def afterAll(): Unit = benchmark.restore()
-  
   "StringOfEscapedCharsBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj

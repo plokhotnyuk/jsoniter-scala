@@ -15,7 +15,7 @@ import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object JacksonSerDesers {
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
+  def createJacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
     disable(JsonFactory.Feature.INTERN_FIELD_NAMES)
   }) with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
@@ -37,6 +37,8 @@ object JacksonSerDesers {
     configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
     setSerializationInclusion(Include.NON_EMPTY)
   }
+
+  val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
 }
 
 class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {

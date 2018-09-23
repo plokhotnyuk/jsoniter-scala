@@ -5,10 +5,12 @@ import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers.createJacksonMapper
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
 import io.circe.parser._
 import io.circe.syntax._
@@ -25,10 +27,14 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   var jsonBytes: Array[Byte] = _
   var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = _
+  val jacksonMapper: ObjectMapper with ScalaObjectMapper = {
+    val jm = createJacksonMapper
+    jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
+    jm
+  }
 
   @Setup
   def setup(): Unit = {
-    jacksonMapper.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
     obj = {
       val cs = new Array[Char](size)
       var i = 0
@@ -51,10 +57,6 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
-
-  @TearDown
-  def restore(): Unit =
-    jacksonMapper.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, false)
 
   @Benchmark
   def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
