@@ -15,6 +15,7 @@ object GenUtils {
   val genControlChar: Gen[Char] = Gen.choose('\u0000', '\u001f')
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
+  val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
   val genZoneOffset: Gen[ZoneOffset] = Gen.choose(-18 * 60 * 60, 18 * 60 * 60).map(ZoneOffset.ofTotalSeconds)
   val genDuration: Gen[Duration] = Gen.oneOf(
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
