@@ -2,9 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
-//import com.avsystem.commons.serialization.json._
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
@@ -17,7 +17,7 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 //import upickle.default._
 
-case class NestedStructs(n: Option[NestedStructs])
+case class NestedStructs(n: Option[NestedStructs] = None)
 
 class NestedStructsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -35,10 +35,10 @@ class NestedStructsBenchmark extends CommonParams {
     jsonString = new String(jsonBytes, UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
   }
-/* FIXME: AVSystem GenCodec cannot parse option values when field is missing
+
   @Benchmark
   def readAVSystemGenCodec(): NestedStructs = JsonStringInput.read[NestedStructs](new String(jsonBytes, UTF_8))
-*/
+
   @Benchmark
   def readCirce(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
