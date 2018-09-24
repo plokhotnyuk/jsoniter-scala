@@ -81,14 +81,14 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       bbuf.position(66)
       bbuf.limit(httpMessage.length)
       readFromByteBuffer(bbuf)(codec) shouldBe user
-      bbuf.position shouldBe 151
+      bbuf.position() shouldBe 151
     }
     "parse JSON from the current position of the provided array based byte buffer" in {
       val bbuf = ByteBuffer.wrap(httpMessage)
       bbuf.position(66)
       bbuf.limit(httpMessage.length)
       readFromByteBuffer(bbuf)(codec) shouldBe user
-      bbuf.position shouldBe 151
+      bbuf.position() shouldBe 151
     }
     "throw an exception if cannot parse input with message containing input offset & hex dump of affected part of the direct byte buffer" in {
       val bbuf = ByteBuffer.allocateDirect(httpMessage.length)
@@ -103,7 +103,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000010 | 70 65 3a 20 61 70 70 6c 69 63 61 74 69 6f 6e 2f | pe: application/ |
           || 00000020 | 6a 73 6f 6e 0a 43 6f 6e 74 65 6e 74 2d 4c 65 6e | json.Content-Len |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
-      bbuf.position shouldBe 11
+      bbuf.position() shouldBe 11
     }
     "throw an exception if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
       val bbuf = ByteBuffer.wrap(httpMessage)
@@ -117,7 +117,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
-      bbuf.position shouldBe 11
+      bbuf.position() shouldBe 11
     }
     "throw an exception in case of the provided params are null" in {
       intercept[NullPointerException](readFromByteBuffer(null.asInstanceOf[ByteBuffer])(codec))
@@ -259,7 +259,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       val from1 = 10
       bbuf.position(from1)
       writeToByteBuffer(user, bbuf)(codec)
-      val to1 = bbuf.limit
+      val to1 = bbuf.limit()
       bbuf.position(from1)
       bbuf.get(buf, from1, to1 - from1)
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
@@ -267,7 +267,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       bbuf.position(from2)
       bbuf.limit(150)
       writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
-      val to2 = bbuf.limit
+      val to2 = bbuf.limit()
       bbuf.position(from2)
       bbuf.get(buf, from2, to2 - from2)
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
@@ -277,23 +277,23 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       val from1 = 10
       bbuf.position(from1)
       writeToByteBuffer(user, bbuf)(codec)
-      val to1 = bbuf.limit
+      val to1 = bbuf.limit()
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
       val from2 = 0
       bbuf.position(from2)
       writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
-      val to2 = bbuf.limit
+      val to2 = bbuf.limit()
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
     }
     "throw an exception in case of the provided byte buffer is overflown during serialization" in {
       val bbuf1 = ByteBuffer.allocateDirect(150)
       bbuf1.position(100)
       intercept[BufferOverflowException](writeToByteBuffer(user, bbuf1)(codec))
-      bbuf1.position shouldBe 100
+      bbuf1.position() shouldBe 100
       val bbuf2 = ByteBuffer.wrap(new Array[Byte](150))
       bbuf2.position(100)
       intercept[BufferOverflowException](writeToByteBuffer(user, bbuf2)(codec))
-      bbuf2.position shouldBe 100
+      bbuf2.position() shouldBe 100
     }
     "throw i/o exception in case of the provided params are invalid or null" in {
       intercept[NullPointerException](writeToByteBuffer(user, null)(codec))

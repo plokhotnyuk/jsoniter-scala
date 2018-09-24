@@ -147,10 +147,10 @@ package object core {
                                      (implicit codec: JsonValueCodec[A]): A = {
     val reader = readerPool.get
     if (bbuf.hasArray) {
-      try reader.read(codec, bbuf.array, bbuf.arrayOffset + bbuf.position, bbuf.limit, config)
-      finally bbuf.position(bbuf.arrayOffset + reader.absoluteHead.toInt)
+      try reader.read(codec, bbuf.array, bbuf.arrayOffset() + bbuf.position(), bbuf.limit(), config)
+      finally bbuf.position(bbuf.arrayOffset() + reader.absoluteHead.toInt)
     } else {
-      val initPosition = bbuf.position
+      val initPosition = bbuf.position()
       try reader.read(codec, new InputStream {
         override def read: Int = throw new UnsupportedOperationException // should not be called
 
@@ -237,12 +237,12 @@ package object core {
                                     (implicit codec: JsonValueCodec[A]): Unit = {
     val writer = writerPool.get
     if (bbuf.hasArray) {
-      try writer.write(codec, x, bbuf.array, bbuf.arrayOffset + bbuf.position, config)
+      try writer.write(codec, x, bbuf.array, bbuf.arrayOffset() + bbuf.position(), config)
       catch {
         case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
       } finally bbuf.limit(writer.absoluteCount.toInt - bbuf.arrayOffset)
     } else {
-      val initPosition = bbuf.position
+      val initPosition = bbuf.position()
       try {
         writer.write(codec, x, new OutputStream {
           override def write(b: Int): Unit = throw new UnsupportedOperationException // should not be called
@@ -250,7 +250,7 @@ package object core {
           override def write(bytes: Array[Byte], off: Int, len: Int): Unit = bbuf.put(bytes, off, len)
         }, config)
       } finally {
-        val lim = bbuf.position
+        val lim = bbuf.position()
         bbuf.position(initPosition)
         bbuf.limit(lim)
       }
