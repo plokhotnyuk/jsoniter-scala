@@ -44,6 +44,7 @@ final class JsonWriter private[jsoniter_scala](
     private[this] var comma: Boolean = false,
     private[this] var isBufGrowingAllowed: Boolean = true,
     private[this] var out: OutputStream = null,
+    private[this] var totalWritten: Long = 0,
     private[this] var config: WriterConfig = null) {
   def writeComma(): Unit = {
     if (comma) writeBytes(',')
@@ -333,6 +334,7 @@ final class JsonWriter private[jsoniter_scala](
       this.config = config
       count = 0
       indention = 0
+      totalWritten = 0
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
@@ -346,6 +348,7 @@ final class JsonWriter private[jsoniter_scala](
       this.config = config
       this.count = 0
       this.indention = 0
+      totalWritten = 0
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       java.util.Arrays.copyOf(buf, count)
@@ -358,11 +361,14 @@ final class JsonWriter private[jsoniter_scala](
       this.config = config
       count = from
       indention = 0
+      totalWritten = 0
       isBufGrowingAllowed = false
       codec.encodeValue(x, this)
       count
     } finally this.buf = currBuf
   }
+
+  private[jsoniter_scala] def absoluteCount: Long = totalWritten + count
 
   private[this] def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
@@ -1710,6 +1716,7 @@ final class JsonWriter private[jsoniter_scala](
       pos
     } else {
       out.write(buf, 0, pos)
+      totalWritten += pos
       if (required > buf.length) growBuf(required)
       0
     }
@@ -1717,6 +1724,7 @@ final class JsonWriter private[jsoniter_scala](
   private[jsoniter_scala] def flushBuf(): Unit =
     if (out ne null) {
       out.write(buf, 0, count)
+      totalWritten += count
       count = 0
     }
 
