@@ -42,10 +42,8 @@ class TwitterAPIBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec serializes empty collections
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-*/
 /* FIXME: circe serializes empty collections
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

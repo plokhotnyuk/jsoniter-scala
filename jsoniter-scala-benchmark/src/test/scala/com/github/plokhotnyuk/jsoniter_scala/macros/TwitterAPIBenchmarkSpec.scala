@@ -14,8 +14,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec serializes empty collections
-      //toString(benchmark.writeAVSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
       //FIXME: circe serializes empty collections
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe TwitterAPI.compactJsonString

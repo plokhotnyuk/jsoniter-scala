@@ -2,14 +2,16 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets._
 
+import com.avsystem.commons.serialization.{transientDefault, whenAbsent}
+
 import scala.collection.immutable.Seq
 import scala.reflect.io.Streamable
 
 case class Entities(
-  hashtags: Seq[String],
-  symbols: Seq[String],
-  user_mentions: Seq[UserMentions],
-  urls: Seq[Urls])
+  @transientDefault @whenAbsent(Seq.empty) hashtags: Seq[String],
+  @transientDefault @whenAbsent(Seq.empty) symbols: Seq[String],
+  @transientDefault @whenAbsent(Seq.empty) user_mentions: Seq[UserMentions],
+  @transientDefault @whenAbsent(Seq.empty) urls: Seq[Urls])
 
 case class UserEntities(
   url: Url,
@@ -23,16 +25,16 @@ case class RetweetedStatus(
   truncated: Boolean,
   entities: Entities,
   source: String,
-  in_reply_to_status_id: Option[String],
-  in_reply_to_status_id_str: Option[String],
-  in_reply_to_user_id: Option[String],
-  in_reply_to_user_id_str: Option[String],
-  in_reply_to_screen_name: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_status_id: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_status_id_str: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_user_id: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_user_id_str: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_screen_name: Option[String],
   user: User,
-  geo: Option[String],
-  coordinates: Option[String],
-  place: Option[String],
-  contributors: Option[String],
+  @transientDefault @whenAbsent(None) geo: Option[String],
+  @transientDefault @whenAbsent(None) coordinates: Option[String],
+  @transientDefault @whenAbsent(None) place: Option[String],
+  @transientDefault @whenAbsent(None) contributors: Option[String],
   is_quote_status: Boolean,
   retweet_count: Int,
   favorite_count: Int,
@@ -49,16 +51,16 @@ case class Tweet(
   truncated: Boolean,
   entities: Entities,
   source: String,
-  in_reply_to_status_id: Option[String],
-  in_reply_to_status_id_str: Option[String],
-  in_reply_to_user_id: Option[String],
-  in_reply_to_user_id_str: Option[String],
-  in_reply_to_screen_name: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_status_id: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_status_id_str: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_user_id: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_user_id_str: Option[String],
+  @transientDefault @whenAbsent(None) in_reply_to_screen_name: Option[String],
   user: User,
-  geo: Option[String],
-  coordinates: Option[String],
-  place: Option[String],
-  contributors: Option[String],
+  @transientDefault @whenAbsent(None) geo: Option[String],
+  @transientDefault @whenAbsent(None) coordinates: Option[String],
+  @transientDefault @whenAbsent(None) place: Option[String],
+  @transientDefault @whenAbsent(None) contributors: Option[String],
   retweeted_status: RetweetedStatus,
   is_quote_status: Boolean,
   retweet_count: Int,
@@ -68,13 +70,13 @@ case class Tweet(
   possibly_sensitive: Boolean,
   lang: String)
 
-case class Url(urls: Seq[Urls])
+case class Url(@transientDefault @whenAbsent(Seq.empty) urls: Seq[Urls])
 
 case class Urls(
   url: String,
   expanded_url: String,
   display_url: String,
-  indices: Seq[Int])
+  @transientDefault @whenAbsent(Seq.empty) indices: Seq[Int])
 
 case class User(
   id: Long,
@@ -125,7 +127,7 @@ case class UserMentions(
   name: String,
   id: Long,
   id_str: String,
-  indices: Seq[Int])
+  @transientDefault @whenAbsent(Seq.empty) indices: Seq[Int])
 
 object TwitterAPI {
   var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
