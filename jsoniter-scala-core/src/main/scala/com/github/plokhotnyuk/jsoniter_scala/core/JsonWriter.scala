@@ -1734,16 +1734,16 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def growBuf(required: Int): Unit =
-    if (isBufGrowingAllowed) {
-      buf = java.util.Arrays.copyOf(buf, Integer.highestOneBit(buf.length | required) << 1)
-      limit = buf.length
-    } else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
+    if (isBufGrowingAllowed) setBuf(java.util.Arrays.copyOf(buf, Integer.highestOneBit(buf.length | required) << 1))
+    else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
 
   private[this] def freeTooLongBuf(): Unit =
-    if (limit > config.preferredBufSize) {
-      buf = new Array[Byte](config.preferredBufSize)
-      limit = config.preferredBufSize
-    }
+    if (limit > config.preferredBufSize) setBuf(new Array[Byte](config.preferredBufSize))
+
+  private[this] def setBuf(buf: Array[Byte]): Unit = {
+    this.buf = buf
+    limit = buf.length
+  }
 }
 
 object JsonWriter {

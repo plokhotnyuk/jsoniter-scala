@@ -681,6 +681,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }
 
+      forAll(minSuccessful(100000)) { (n: Double) =>
+        check(BigDecimal(n))
+      }
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         check(n)
       }
