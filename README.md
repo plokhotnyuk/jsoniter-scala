@@ -215,6 +215,9 @@ sbt clean coverage test coverageReport
 sbt -J-XX:MaxMetaspaceSize=512m clean +test +mimaReportBinaryIssues
 ```
 
+BEWARE that jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
+ for 2.11.x, 2.12.x, and 2.13.x versions of Scala. 
+
 ### Run benchmarks
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check 
@@ -370,3 +373,6 @@ security release:
 3. [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala/blob/master/build.sbt)
 4. [flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
 5. [tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
+
+Also half of [Scala web frameworks which take part in TechEmpower benchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/tree/master/frameworks/Scala)
+have used jsoniter-scala for serialization of JSON responses.
