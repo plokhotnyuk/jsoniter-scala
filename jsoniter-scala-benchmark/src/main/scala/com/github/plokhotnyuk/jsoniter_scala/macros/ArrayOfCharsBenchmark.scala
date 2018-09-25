@@ -20,7 +20,6 @@ class ArrayOfCharsBenchmark extends CommonParams {
   var obj: Array[Char] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
-  var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
@@ -28,7 +27,7 @@ class ArrayOfCharsBenchmark extends CommonParams {
     obj = (1 to size).map(i => (((i * 1498724053) % 10) + 48).toChar).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
   @Benchmark
@@ -62,7 +61,7 @@ class ArrayOfCharsBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(charArrayFormat))

@@ -107,7 +107,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000010 | 70 65 3a 20 61 70 70 6c 69 63 61 74 69 6f 6e 2f | pe: application/ |
           || 00000020 | 6a 73 6f 6e 0a 43 6f 6e 74 65 6e 74 2d 4c 65 6e | json.Content-Len |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
-      bbuf.position() shouldBe 11
+      bbuf.position() shouldBe 151
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
       val bbuf = ByteBuffer.wrap(httpMessage)
@@ -237,22 +237,24 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
 
     "serialize an object to the provided byte array from specified position" in {
       val from1 = 10
-      val to1 = writeToPreallocatedArray(user, buf, from1)(codec)
+      val to1 = writeToSubArray(user, buf, from1, buf.length - 10)(codec)
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
       val from2 = 0
-      val to2 = writeToPreallocatedArray(user, buf, from2, WriterConfig(indentionStep = 2))(codec)
+      val to2 = writeToSubArray(user, buf, from2, buf.length, WriterConfig(indentionStep = 2))(codec)
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
     }
     "throw ArrayIndexOutOfBoundsException in case of the provided byte array is overflown during serialization" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](writeToPreallocatedArray(user, buf, 100)(codec))
+      assert(intercept[ArrayIndexOutOfBoundsException](writeToSubArray(user, buf, 100, buf.length)(codec))
         .getMessage.contains("`buf` length exceeded"))
     }
     "throw ArrayIndexOutOfBoundsException or NullPointerException in case of the provided params are invalid or null" in {
-      intercept[NullPointerException](writeToPreallocatedArray(user, buf, 0)(null))
-      intercept[NullPointerException](writeToPreallocatedArray(user, null, 50)(codec))
-      intercept[NullPointerException](writeToPreallocatedArray(user, buf, 0, null)(codec))
-      assert(intercept[ArrayIndexOutOfBoundsException](writeToPreallocatedArray(user, new Array[Byte](10), 50)(codec))
-        .getMessage.contains("`from` should be positive and not greater than `buf` length"))
+      intercept[NullPointerException](writeToSubArray(user, buf, 0, buf.length)(null))
+      intercept[NullPointerException](writeToSubArray(user, null, 50, buf.length)(codec))
+      intercept[NullPointerException](writeToSubArray(user, buf, 0, buf.length, null)(codec))
+      assert(intercept[ArrayIndexOutOfBoundsException](writeToSubArray(user, new Array[Byte](10), 50, 10)(codec))
+        .getMessage.contains("`from` should be positive and not greater than `to`"))
+      assert(intercept[ArrayIndexOutOfBoundsException](writeToSubArray(user, new Array[Byte](10), 50, 100)(codec))
+        .getMessage.contains("`to` should be positive and not greater than `buf` length"))
     }
   }
   "writeToByteBuffer" should {
@@ -263,7 +265,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       val from1 = 10
       bbuf.position(from1)
       writeToByteBuffer(user, bbuf)(codec)
-      val to1 = bbuf.limit()
+      val to1 = bbuf.position()
       bbuf.position(from1)
       bbuf.get(buf, from1, to1 - from1)
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
@@ -271,7 +273,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       bbuf.position(from2)
       bbuf.limit(150)
       writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
-      val to2 = bbuf.limit()
+      val to2 = bbuf.position()
       bbuf.position(from2)
       bbuf.get(buf, from2, to2 - from2)
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
@@ -281,12 +283,12 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       val from1 = 10
       bbuf.position(from1)
       writeToByteBuffer(user, bbuf)(codec)
-      val to1 = bbuf.limit()
+      val to1 = bbuf.position()
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
       val from2 = 0
       bbuf.position(from2)
       writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
-      val to2 = bbuf.limit()
+      val to2 = bbuf.position()
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
     }
     "throw BufferOverflowException in case of the provided byte buffer is overflown during serialization" in {
@@ -297,7 +299,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       val bbuf2 = ByteBuffer.wrap(new Array[Byte](150))
       bbuf2.position(100)
       intercept[BufferOverflowException](writeToByteBuffer(user, bbuf2)(codec))
-      bbuf2.position() shouldBe 100
+      bbuf2.position() shouldBe 142
     }
     "throw ReadOnlyBufferException in case of the provided byte buffer is read-only" in {
       val bbuf1 = ByteBuffer.allocateDirect(150).asReadOnlyBuffer()

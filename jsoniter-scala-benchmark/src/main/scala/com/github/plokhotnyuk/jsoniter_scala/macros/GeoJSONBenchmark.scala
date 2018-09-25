@@ -19,8 +19,7 @@ import play.api.libs.json.Json
 
 class GeoJSONBenchmark extends CommonParams {
   var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
-  var preallocatedOff: Int = 128
-  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
   def readAVSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes, UTF_8))
@@ -53,7 +52,7 @@ class GeoJSONBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(geoJSONCodec)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)(geoJSONCodec)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(geoJSONCodec)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(geoJSONFormat))

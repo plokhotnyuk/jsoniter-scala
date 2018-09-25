@@ -22,7 +22,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.writeDslJsonJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJacksonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJsoniterScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()),
+      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()),
         benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
       //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)

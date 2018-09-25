@@ -24,7 +24,7 @@ class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase with BeforeAnd
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString2
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }

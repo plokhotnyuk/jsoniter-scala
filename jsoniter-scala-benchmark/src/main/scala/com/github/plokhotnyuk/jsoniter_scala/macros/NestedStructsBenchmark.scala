@@ -25,7 +25,6 @@ class NestedStructsBenchmark extends CommonParams {
   var obj: NestedStructs = _
   var jsonBytes: Array[Byte] = _
   var jsonString: String = _
-  var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
@@ -33,7 +32,7 @@ class NestedStructsBenchmark extends CommonParams {
     obj = (1 to size).foldLeft(NestedStructs(None))((n, _) => NestedStructs(Some(n)))
     jsonBytes = writeToArray(obj)(nestedStructsCodec)
     jsonString = new String(jsonBytes, UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 /* FIXME: AVSystem GenCodec cannot parse option values when field is missing
   @Benchmark
@@ -70,7 +69,7 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int =
-    writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)(nestedStructsCodec)
+    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(nestedStructsCodec)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
