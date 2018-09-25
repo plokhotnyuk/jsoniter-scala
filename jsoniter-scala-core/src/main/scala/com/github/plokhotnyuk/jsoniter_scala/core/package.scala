@@ -133,11 +133,12 @@ package object core {
     * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type with
     * specified parsing options or with defaults that maximize description of error.
     *
-    * The provided byte buffer should has position set to the beginning of bytes to parse and a limit set to next
-    * position after the last byte to parse.
+    * Parsing will start from the current position and will continue until the limit of the provided byte buffer or the
+    * value will be parsed before reaching of the limit. In any case the buffer position will be set to the next
+    * position after the last read byte.
     *
     * @tparam A type of the value to parse
-    * @param bbuf the byte buffer which will be parsed from the current position to the specified limit
+    * @param bbuf the byte buffer which will be parsed
     * @param config a parsing configuration
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
@@ -151,7 +152,7 @@ package object core {
     val reader = readerPool.get
     if (bbuf.hasArray) {
       try reader.read(codec, bbuf.array, bbuf.arrayOffset() + bbuf.position(), bbuf.limit(), config)
-      finally bbuf.position(bbuf.arrayOffset() + reader.absoluteHead.toInt)
+      finally bbuf.position(bbuf.arrayOffset() + reader.position.toInt)
     } else reader.read(codec, new InputStream {
       override def read: Int = throw new UnsupportedOperationException // should not be called
 
@@ -227,12 +228,12 @@ package object core {
     * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format
     * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
     *
-    * On return the provided byte buffer will has position set to next position after the last serialized byte.
+    * Serialization will start from the current position up to the provided byte buffer limit.
+    * On return the byte buffer will has position set to the next position after the last written byte.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
-    * @param bbuf a byte buffer where the value should be serialized, starting from the current position up to the
-    *             buffer limit
+    * @param bbuf a byte buffer where the value should be serialized
     * @param config a serialization configuration
     * @param codec a codec for the given value
     * @throws NullPointerException    if the `codec`, `bbuf` or `config` is null
@@ -243,11 +244,10 @@ package object core {
                                     (implicit codec: JsonValueCodec[A]): Unit = {
     val writer = writerPool.get
     if (bbuf.hasArray) {
-      val offset = bbuf.arrayOffset()
-      try writer.write(codec, x, bbuf.array, bbuf.position() + offset, bbuf.limit() + offset, config)
+      try writer.write(codec, x, bbuf.array, bbuf.arrayOffset() + bbuf.position(), bbuf.arrayOffset() + bbuf.limit(), config)
       catch {
         case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
-      } finally bbuf.position(writer.absoluteCount.toInt - bbuf.arrayOffset)
+      } finally bbuf.position(writer.position.toInt - bbuf.arrayOffset)
     } else writer.write(codec, x, new OutputStream {
       override def write(b: Int): Unit = throw new UnsupportedOperationException // should not be called
 

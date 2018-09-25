@@ -587,8 +587,8 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongCharBuf()
     }
 
-  private[jsoniter_scala] def absoluteHead: Long =
-    if (totalRead == 0) head
+  private[jsoniter_scala] def position: Long =
+    if (in eq null) head
     else (totalRead - tail) + head
 
   private[this] def skipWhitespaces(): Boolean = {
@@ -640,7 +640,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def decodeError(from: Int, pos: Int, cause: Throwable) = {
     var i = appendString(", offset: 0x", from)
     val offset =
-      if (in eq null) totalRead
+      if (in eq null) 0
       else totalRead - tail
     i = appendHex(offset + pos, i)
     if (config.appendHexDumpToParseException) {

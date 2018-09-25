@@ -373,7 +373,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[jsoniter_scala] def absoluteCount: Long = totalWritten + count
+  private[jsoniter_scala] def position: Long = totalWritten + count
 
   private[this] def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
