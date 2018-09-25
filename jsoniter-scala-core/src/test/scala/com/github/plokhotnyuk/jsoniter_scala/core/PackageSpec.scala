@@ -76,19 +76,23 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "readFromByteBuffer" should {
     "parse JSON from the current position of the provided direct byte buffer" in {
-      val bbuf = ByteBuffer.allocateDirect(httpMessage.length)
+      val bbuf = ByteBuffer.allocateDirect(100000)
+      bbuf.position(50000)
       bbuf.put(httpMessage)
-      bbuf.position(66)
-      bbuf.limit(httpMessage.length)
+      bbuf.position(50066)
+      bbuf.limit(50000 + httpMessage.length)
       readFromByteBuffer(bbuf)(codec) shouldBe user
-      bbuf.position() shouldBe httpMessage.length
+      bbuf.position() shouldBe 50000 + httpMessage.length
     }
     "parse JSON from the current position of the provided array based byte buffer" in {
-      val bbuf = ByteBuffer.wrap(httpMessage)
-      bbuf.position(66)
-      bbuf.limit(httpMessage.length)
+      val bufToWrap = new Array[Byte](100000)
+      val bbuf = ByteBuffer.wrap(bufToWrap, 10000, 80000)
+      bbuf.position(50000)
+      bbuf.put(httpMessage)
+      bbuf.position(50066)
+      bbuf.limit(50000 + httpMessage.length)
       readFromByteBuffer(bbuf)(codec) shouldBe user
-      bbuf.position() shouldBe httpMessage.length
+      bbuf.position() shouldBe 50000 + httpMessage.length
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part of the direct byte buffer" in {
       val bbuf = ByteBuffer.allocateDirect(httpMessage.length)

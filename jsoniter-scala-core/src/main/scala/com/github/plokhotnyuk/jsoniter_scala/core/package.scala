@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{InputStream, OutputStream}
-import java.nio.{BufferOverflowException, ByteBuffer, ReadOnlyBufferException}
+import java.nio.{BufferOverflowException, ByteBuffer}
 
 import scala.{specialized => sp}
 
@@ -158,7 +158,7 @@ package object core {
         override def read: Int = throw new UnsupportedOperationException // should not be called
 
         override def read(buf: Array[Byte], from: Int, to: Int): Int = {
-          val len = Math.min(bbuf.remaining, to)
+          val len = Math.min(bbuf.remaining, to - from)
           if (len <= 0) -1
           else {
             bbuf.get(buf, from, len)
