@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
+import com.avsystem.commons.serialization.{transientDefault, whenAbsent}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
@@ -17,7 +18,7 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 //import upickle.default._
 
-case class NestedStructs(n: Option[NestedStructs] = None)
+case class NestedStructs(@transientDefault @whenAbsent(None) n: Option[NestedStructs])
 
 class NestedStructsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -55,10 +56,9 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec serializes option values field with null value
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 

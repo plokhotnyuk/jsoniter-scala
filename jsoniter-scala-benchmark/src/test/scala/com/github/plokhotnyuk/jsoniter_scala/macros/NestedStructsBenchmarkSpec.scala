@@ -16,8 +16,7 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec serializes empty option value as null
-      //toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
