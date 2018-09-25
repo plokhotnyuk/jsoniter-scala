@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{InputStream, OutputStream}
-import java.nio.{BufferOverflowException, ByteBuffer}
+import java.nio.{BufferOverflowException, ByteBuffer, ReadOnlyBufferException}
 
 import scala.{specialized => sp}
 
@@ -133,6 +133,9 @@ package object core {
     * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type with
     * specified parsing options or with defaults that maximize description of error.
     *
+    * The provided byte buffer should has position set to the beginning of bytes to parse and a limit set to next
+    * position after the last byte to parse.
+    *
     * @tparam A type of the value to parse
     * @param bbuf the byte buffer which will be parsed from the current position to the specified limit
     * @param config a parsing configuration
@@ -224,6 +227,9 @@ package object core {
     * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format
     * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
     *
+    * On return the provided byte buffer will has position set to the beginning of successfully serialized bytes and
+    * a limit set to next position after the last serialized byte.
+    *
     * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param bbuf a byte buffer where the value should be serialized, starting from the current position up to the
@@ -231,6 +237,7 @@ package object core {
     * @param config a serialization configuration
     * @param codec a codec for the given value
     * @throws NullPointerException    if the `codec`, `bbuf` or `config` is null
+    * @throws ReadOnlyBufferException if the `bbuf` is read-only
     * @throws BufferOverflowException if the `bbuf` capacity was exceeded during serialization
     */
   final def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = writerConfig)
