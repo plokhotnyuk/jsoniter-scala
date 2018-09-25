@@ -1,6 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{InputStream, OutputStream}
+import java.nio.{BufferOverflowException, ByteBuffer}
+
 import scala.{specialized => sp}
 
 // FIXME: revise method naming when the following scalac bug will be fixed: https://github.com/scala/bug/issues/10754
@@ -128,6 +130,43 @@ package object core {
   }
 
   /**
+    * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type with
+    * specified parsing options or with defaults that maximize description of error.
+    *
+    * The provided byte buffer should has position set to the beginning of bytes to parse and a limit set to next
+    * position after the last byte to parse.
+    *
+    * @tparam A type of the value to parse
+    * @param bbuf the byte buffer which will be parsed from the current position to the specified limit
+    * @param config a parsing configuration
+    * @param codec a codec for the given `A` type
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for result type,
+    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `bbuf` or `config` is null
+    */
+  final def readFromByteBuffer[@sp A](bbuf: ByteBuffer, config: ReaderConfig = readerConfig)
+                                     (implicit codec: JsonValueCodec[A]): A = {
+    val reader = readerPool.get
+    if (bbuf.hasArray) {
+      try reader.read(codec, bbuf.array, bbuf.arrayOffset() + bbuf.position(), bbuf.limit(), config)
+      finally bbuf.position(bbuf.arrayOffset() + reader.absoluteHead.toInt)
+    } else reader.read(codec, new InputStream {
+      override def read: Int = throw new UnsupportedOperationException // should not be called
+
+      override def read(buf: Array[Byte], from: Int, to: Int): Int = {
+        val len = Math.min(bbuf.remaining, to - from)
+        if (len <= 0) -1
+        else {
+          bbuf.get(buf, from, len)
+          len
+        }
+      }
+    }, config)
+  }
+
+  /**
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
     * that specified by provided configuration options.
     *
@@ -167,17 +206,52 @@ package object core {
     * @param x the value to serialize
     * @param buf a byte array where the value should be serialized
     * @param from a position in the byte array from which serialization of the value should start
+    * @param to an exclusive position in the byte array that limits where serialization of the value should stop
     * @param config a serialization configuration
     * @param codec a codec for the given value
     * @return number of next position after last byte serialized to `buf`
     * @throws NullPointerException if the `codec`, `buf` or `config` is null
-    * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `buf` length or negative,
-    *                                        or `buf` length was exceeded during serialization
+    * @throws ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if 'to' is greater than
+    *                                        `buf` length or `to` limit was exceeded during serialization
     */
-  final def writeToPreallocatedArray[@sp A](x: A, buf: Array[Byte], from: Int, config: WriterConfig = writerConfig)
-                                           (implicit codec: JsonValueCodec[A]): Int = {
-    if (from > buf.length || from < 0) // also checks that `buf` is not null before any serialization
-      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `buf` length")
-    writerPool.get.write(codec, x, buf, from, config)
+  final def writeToSubArray[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = writerConfig)
+                                  (implicit codec: JsonValueCodec[A]): Int = {
+    if (to > buf.length) // also checks that `buf` is not null before any serialization
+      throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
+    if (from > to || from < 0)
+      throw new ArrayIndexOutOfBoundsException("`from` should be positive and not greater than `to`")
+    writerPool.get.write(codec, x, buf, from, to, config)
+  }
+
+  /**
+    * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format
+    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
+    *
+    * On return the provided byte buffer will has position set to next position after the last serialized byte.
+    *
+    * @tparam A type of value to serialize
+    * @param x the value to serialize
+    * @param bbuf a byte buffer where the value should be serialized, starting from the current position up to the
+    *             buffer limit
+    * @param config a serialization configuration
+    * @param codec a codec for the given value
+    * @throws NullPointerException    if the `codec`, `bbuf` or `config` is null
+    * @throws ReadOnlyBufferException if the `bbuf` is read-only
+    * @throws BufferOverflowException if the `bbuf` capacity was exceeded during serialization
+    */
+  final def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = writerConfig)
+                                    (implicit codec: JsonValueCodec[A]): Unit = {
+    val writer = writerPool.get
+    if (bbuf.hasArray) {
+      val offset = bbuf.arrayOffset()
+      try writer.write(codec, x, bbuf.array, bbuf.position() + offset, bbuf.limit() + offset, config)
+      catch {
+        case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
+      } finally bbuf.position(writer.absoluteCount.toInt - bbuf.arrayOffset)
+    } else writer.write(codec, x, new OutputStream {
+      override def write(b: Int): Unit = throw new UnsupportedOperationException // should not be called
+
+      override def write(bytes: Array[Byte], off: Int, len: Int): Unit = bbuf.put(bytes, off, len)
+    }, config)
   }
 }

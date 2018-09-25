@@ -24,8 +24,7 @@ class PrimitivesBenchmark extends CommonParams {
   var obj: Primitives = Primitives(1, 2, 3, 4, bl = true, ch = 'x', 1.1, 2.5f)
   var jsonString: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
-  var preallocatedOff: Int = 128
-  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
   def readAVSystemGenCodec(): Primitives = JsonStringInput.read[Primitives](new String(jsonBytes, UTF_8))
@@ -58,7 +57,7 @@ class PrimitivesBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))

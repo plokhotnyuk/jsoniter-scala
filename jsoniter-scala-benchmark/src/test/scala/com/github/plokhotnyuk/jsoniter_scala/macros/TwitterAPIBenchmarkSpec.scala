@@ -20,7 +20,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJsoniterScala()) shouldBe TwitterAPI.compactJsonString
-      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
       //FIXME: Play-JSON serializes empty collections
       //toString(benchmark.writePlayJson()) shouldBe TwitterAPI.compactJsonString
       //FIXME: cannot alter uPickle to store Long as JSON number

@@ -40,10 +40,12 @@ case class WriterConfig(
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](1024),
     private[this] var count: Int = 0,
+    private[this] var limit: Int = 1024,
     private[this] var indention: Int = 0,
     private[this] var comma: Boolean = false,
     private[this] var isBufGrowingAllowed: Boolean = true,
     private[this] var out: OutputStream = null,
+    private[this] var totalWritten: Long = 0,
     private[this] var config: WriterConfig = null) {
   def writeComma(): Unit = {
     if (comma) writeBytes(',')
@@ -333,6 +335,7 @@ final class JsonWriter private[jsoniter_scala](
       this.config = config
       count = 0
       indention = 0
+      totalWritten = 0
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
@@ -346,23 +349,31 @@ final class JsonWriter private[jsoniter_scala](
       this.config = config
       this.count = 0
       this.indention = 0
+      totalWritten = 0
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       java.util.Arrays.copyOf(buf, count)
     } finally freeTooLongBuf()
 
-  private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, config: WriterConfig): Int = {
+  private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
     try {
       this.buf = buf
       this.config = config
       count = from
+      limit = to
       indention = 0
+      totalWritten = 0
       isBufGrowingAllowed = false
       codec.encodeValue(x, this)
       count
-    } finally this.buf = currBuf
+    } finally {
+      this.buf = currBuf
+      this.limit = currBuf.length
+    }
   }
+
+  private[jsoniter_scala] def absoluteCount: Long = totalWritten + count
 
   private[this] def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
@@ -517,8 +528,8 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos = {
       val bs = UnsafeUtils.getLatin1Array(s)
-      if (bs eq null) writeString(s, 0, s.length, pos + 1, buf.length - 1, escapedChars)
-      else writeString(bs, 0, s.length, pos + 1, buf.length - 1, escapedChars)
+      if (bs eq null) writeString(s, 0, s.length, pos + 1, limit - 1, escapedChars)
+      else writeString(bs, 0, s.length, pos + 1, limit - 1, escapedChars)
     }
     buf(pos) = '"'
     pos + 1
@@ -527,7 +538,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), buf.length - 1, escapedChars)
+    else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
     else {
       val ch = s.charAt(from)
       if (ch < 128 && escapedChars(ch) == 0) {
@@ -540,7 +551,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEncodedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEncodedString(s, from, to, flushAndGrowBuf(7, pos), buf.length - 6, escapedChars)
+    else if (pos >= posLim) writeEncodedString(s, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
@@ -578,7 +589,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEscapedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), buf.length - 12, escapedChars)
+    else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars)
     else {
       val ch1 = s.charAt(from)
       if (ch1 < 128) {
@@ -604,7 +615,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeString(bs, from, to, flushAndGrowBuf(2, pos), buf.length - 1, escapedChars)
+    else if (pos >= posLim) writeString(bs, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0 && escapedChars(b) == 0) {
@@ -617,7 +628,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEncodedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEncodedString(bs, from, to, flushAndGrowBuf(7, pos), buf.length - 6, escapedChars)
+    else if (pos >= posLim) writeEncodedString(bs, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) { // 1 byte, 7 bits: 0xxxxxxx
@@ -640,7 +651,7 @@ final class JsonWriter private[jsoniter_scala](
   @tailrec
   private[this] def writeEscapedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
     if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(bs, from, to, flushAndGrowBuf(7, pos), buf.length - 6, escapedChars)
+    else if (pos >= posLim) writeEscapedString(bs, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val b = bs(from)
       if (b >= 0) {
@@ -987,7 +998,7 @@ final class JsonWriter private[jsoniter_scala](
       val zoneId = zone.getId
       val len = zoneId.length
       val required = len + 3
-      if (buf.length < pos + required) {
+      if (pos + required > limit) {
         pos = flushAndGrowBuf(required, pos)
         buf = this.buf
       }
@@ -1700,7 +1711,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
-    if (pos + required > buf.length) flushAndGrowBuf(required, pos)
+    if (pos + required > limit) flushAndGrowBuf(required, pos)
     else pos
   }
 
@@ -1710,22 +1721,29 @@ final class JsonWriter private[jsoniter_scala](
       pos
     } else {
       out.write(buf, 0, pos)
-      if (required > buf.length) growBuf(required)
+      totalWritten += pos
+      if (required > limit) growBuf(required)
       0
     }
 
   private[jsoniter_scala] def flushBuf(): Unit =
     if (out ne null) {
       out.write(buf, 0, count)
+      totalWritten += count
       count = 0
     }
 
   private[this] def growBuf(required: Int): Unit =
-    if (isBufGrowingAllowed) buf = java.util.Arrays.copyOf(buf, Integer.highestOneBit(buf.length | required) << 1)
-    else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
+    if (isBufGrowingAllowed) {
+      buf = java.util.Arrays.copyOf(buf, Integer.highestOneBit(buf.length | required) << 1)
+      limit = buf.length
+    } else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
 
   private[this] def freeTooLongBuf(): Unit =
-    if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)
+    if (limit > config.preferredBufSize) {
+      buf = new Array[Byte](config.preferredBufSize)
+      limit = config.preferredBufSize
+    }
 }
 
 object JsonWriter {

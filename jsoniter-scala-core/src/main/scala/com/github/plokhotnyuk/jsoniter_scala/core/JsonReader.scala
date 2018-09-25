@@ -12,9 +12,6 @@ import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 import scala.util.control.NonFatal
 
-class JsonParseException(msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause, true, withStackTrace)
-
 /**
   * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonReader]] that contains flags for tuning of
   * parsing exceptions and preferred sizes for internal buffers that created on the reader instantiation and reused in
@@ -49,6 +46,9 @@ case class ReaderConfig(
   if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
   if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
 }
+
+class JsonParseException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+  extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](1024),
@@ -586,6 +586,10 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
+
+  private[jsoniter_scala] def absoluteHead: Long =
+    if (totalRead == 0) head
+    else (totalRead - tail) + head
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head

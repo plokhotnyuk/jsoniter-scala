@@ -20,7 +20,6 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   var obj: Array[Double] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
-  var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
@@ -29,7 +28,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
       .map(i => ((i * 372036854775807L) / Math.pow(10, i % 17)).toLong * Math.pow(10, (i % 38) - 19)).toArray
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
   @Benchmark
@@ -70,7 +69,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play serializes doubles in BigDecimal format: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

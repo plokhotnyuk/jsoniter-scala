@@ -22,8 +22,7 @@ import scala.collection.immutable.Seq
 
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
-  var preallocatedOff: Int = 128
-  var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+  var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
   def readAVSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
@@ -58,7 +57,7 @@ class TwitterAPIBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))

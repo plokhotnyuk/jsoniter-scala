@@ -25,7 +25,7 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, benchmark.preallocatedOff, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
       //FIXME: uPickle serializes BigInt to JSON string

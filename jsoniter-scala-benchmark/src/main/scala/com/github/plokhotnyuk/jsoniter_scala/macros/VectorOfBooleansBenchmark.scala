@@ -19,7 +19,6 @@ class VectorOfBooleansBenchmark extends CommonParams {
   var obj: Vector[Boolean] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
-  var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
@@ -27,7 +26,7 @@ class VectorOfBooleansBenchmark extends CommonParams {
     obj = (1 to size).map(i => ((i * 1498724053) & 1) == 0).toVector
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
   @Benchmark
@@ -61,7 +60,7 @@ class VectorOfBooleansBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

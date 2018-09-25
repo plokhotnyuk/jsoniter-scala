@@ -21,7 +21,6 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   var obj: Array[BigInt] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
-  var preallocatedOff: Int = 128
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
@@ -29,7 +28,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
     obj = (1 to size).map(i => BigInt(Array.fill((i & 15) + 1)(i.toByte))).toArray // up to 128-bit numbers
     jsonString = obj.map(x => new java.math.BigDecimal(x.bigInteger).toPlainString).mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
-    preallocatedBuf = new Array[Byte](jsonBytes.length + preallocatedOff + 100/*to avoid possible out of bounds error*/)
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
   @Benchmark
@@ -70,7 +69,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToPreallocatedArray(obj, preallocatedBuf, preallocatedOff)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bigIntArrayFormat))
