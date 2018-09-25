@@ -45,13 +45,12 @@ It targets JDK 8+ without any platform restrictions.
 Support of Scala.js and Scala Native is not a goal for the moment. 
 
 ## Features and limitations
-- JSON parsing from `Array[Byte]` or `java.io.InputStream`
-- JSON serialization to `Array[Byte]` or `java.io.OutputStream`
+- JSON parsing from `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
+- JSON serialization to `Array[Byte]`, `java.io.OutputStream` or `java.nio.ByteBuffer`
+- Support parsing from or writing to part of `Array[Byte]` or `java.nio.ByteBuffer` by specifying of position and limit
 - Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all parsed 
   values in the memory
-- Support reading part of `Array[Byte]` by specifying of position and limit of reading from/to
-- Support writing to pre-allocated `Array[Byte]` by specifying of a position of writing from
-- Support of UTF-8 encoding only
+- Support of UTF-8 encoding only 
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`, 
   `Either`, `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes 
