@@ -367,10 +367,7 @@ final class JsonWriter private[jsoniter_scala](
       isBufGrowingAllowed = false
       codec.encodeValue(x, this)
       count
-    } finally {
-      this.buf = currBuf
-      this.limit = currBuf.length
-    }
+    } finally setBuf(currBuf)
   }
 
   private[jsoniter_scala] def position: Long = totalWritten + count
