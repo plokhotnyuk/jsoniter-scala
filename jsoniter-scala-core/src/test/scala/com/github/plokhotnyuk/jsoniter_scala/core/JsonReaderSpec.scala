@@ -354,6 +354,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"00000000-0000-0000-0000-000000000×00\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000022")
       checkError("\"00000000-0000-0000-0000-0000000000×0\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000023")
       checkError("\"00000000-0000-0000-0000-00000000000×\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000024")
+      checkError("\"00000000-0000-0000-0000-000000000000x".getBytes("ISO-8859-1"), "expected '\"', offset: 0x00000025")
     }
   }
   "JsonReader.readKeyAsInstant" should {
@@ -1385,6 +1386,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "throw parsing exception for empty input and illegal or broken string" in {
       checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
       checkError("\"\\".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000002")
+      checkError(Array[Byte](0x22.toByte, 0xF0.toByte, 0x80.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000004")
     }
     "throw parsing exception for boolean values & numbers" in {
       checkError("true".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
@@ -1419,6 +1421,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         "unexpected end of input, offset: 0x0000000a")
       checkError("\\ud834\\x", "unexpected end of input, offset: 0x0000000a",
         "unexpected end of input, offset: 0x0000000b")
+      checkError("\\ud834\\d834", "illegal escape sequence, offset: 0x00000008",
+        "illegal escape sequence, offset: 0x00000008")
       checkError("\\ud834\\ud834", "illegal surrogate character pair, offset: 0x0000000c",
         "illegal surrogate character pair, offset: 0x0000000c")
     }
@@ -1523,6 +1527,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
       checkError("\"\\".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000002")
       checkError("\"\"".getBytes("UTF-8"), "illegal value for char, offset: 0x00000001")
+      checkError(Array[Byte](0x22.toByte, 0xC0.toByte), "unexpected end of input, offset: 0x00000002")
+      checkError(Array[Byte](0x22.toByte, 0xE0.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000003")
     }
     "throw parsing exception for null, boolean values & numbers" in {
       checkError("null".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
