@@ -10,7 +10,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
-import scala.util.control.NonFatal
 
 /**
   * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonReader]] that contains flags for tuning of
@@ -587,9 +586,7 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongCharBuf()
     }
 
-  private[jsoniter_scala] def position: Long =
-    if (in eq null) head
-    else (totalRead - tail) + head
+  private[jsoniter_scala] def position: Long = offset + head
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
@@ -639,16 +636,18 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def decodeError(from: Int, pos: Int, cause: Throwable) = {
     var i = appendString(", offset: 0x", from)
-    val offset =
-      if (in eq null) 0
-      else totalRead - tail
-    i = appendHex(offset + pos, i)
+    val off = offset
+    i = appendHex(off + pos, i)
     if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
-      i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), offset.toInt, i)
+      i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), off.toInt, i)
     }
     throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwParseExceptionWithStackTrace)
   }
+
+  private[this] def offset: Long =
+    if (in eq null) 0
+    else totalRead - tail
 
   @tailrec
   private[this] def nextByte(pos: Int): Byte =
@@ -2731,7 +2730,7 @@ final class JsonReader private[jsoniter_scala](
     if (in eq null) endOfInputError()
     else {
       val minPos = ensureBufCapacity(pos)
-      val n = externalRead(tail, buf.length - tail)
+      val n = in.read(buf, tail, buf.length - tail)
       if (n > 0) {
         tail += n
         totalRead += n
@@ -2743,7 +2742,7 @@ final class JsonReader private[jsoniter_scala](
     if (in eq null) pos
     else {
       val minPos = ensureBufCapacity(pos)
-      val n = externalRead(tail, buf.length - tail)
+      val n = in.read(buf, tail, buf.length - tail)
       if (n > 0) {
         tail += n
         totalRead += n
@@ -2766,10 +2765,6 @@ final class JsonReader private[jsoniter_scala](
       tail = remaining
     } else if (tail > 0) buf = java.util.Arrays.copyOf(buf, buf.length << 1)
     minPos
-  }
-
-  private[this] def externalRead(from: Int, len: Int): Int = try in.read(buf, from, len) catch {
-    case NonFatal(ex) => endOfInputError(ex)
   }
 
   private[this] def endOfInputError(cause: Throwable = null): Nothing =
