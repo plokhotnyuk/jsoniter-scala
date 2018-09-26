@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
@@ -1478,13 +1479,33 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   }
 
   def verifySer[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
+    val expectedStr = toString(json)
+    var buf = new Array[Byte](json.length)
+    val directBuf = ByteBuffer.allocateDirect(json.length + 100)
+    directBuf.position(0)
+    writeToByteBuffer(obj, directBuf, cfg)(codec)
+    directBuf.position(0)
+    directBuf.get(buf)
+    toString(buf) shouldBe expectedStr
+    val heapBuf = ByteBuffer.wrap(new Array[Byte](json.length + 100))
+    heapBuf.position(0)
+    writeToByteBuffer(obj, heapBuf, cfg)(codec)
+    buf = new Array[Byte](json.length)
+    heapBuf.position(0)
+    heapBuf.get(buf)
+    toString(buf) shouldBe expectedStr
     val baos = new ByteArrayOutputStream
     writeToStream(obj, baos, cfg)(codec)
-    toString(baos.toByteArray) shouldBe toString(json)
-    toString(writeToArray(obj, cfg)(codec)) shouldBe toString(json)
+    toString(baos.toByteArray) shouldBe expectedStr
+    toString(writeToArray(obj, cfg)(codec)) shouldBe expectedStr
   }
 
   def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
+    val directBuf = ByteBuffer.allocateDirect(json.length)
+    directBuf.put(json)
+    directBuf.position(0)
+    readFromByteBuffer(directBuf)(codec) shouldBe obj
+    readFromByteBuffer(ByteBuffer.wrap(json))(codec) shouldBe obj
     readFromStream(new ByteArrayInputStream(json))(codec) shouldBe obj
     readFromArray(json)(codec) shouldBe obj
   }

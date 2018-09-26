@@ -156,12 +156,12 @@ package object core {
     } else reader.read(codec, new InputStream {
       override def read: Int = throw new UnsupportedOperationException // should not be called
 
-      override def read(buf: Array[Byte], from: Int, to: Int): Int = {
-        val len = Math.min(bbuf.remaining, to - from)
-        if (len <= 0) -1
+      override def read(buf: Array[Byte], off: Int, len: Int): Int = {
+        val n = Math.min(bbuf.remaining, len)
+        if (n == 0) -1
         else {
-          bbuf.get(buf, from, len)
-          len
+          bbuf.get(buf, off, n)
+          n
         }
       }
     }, config)
