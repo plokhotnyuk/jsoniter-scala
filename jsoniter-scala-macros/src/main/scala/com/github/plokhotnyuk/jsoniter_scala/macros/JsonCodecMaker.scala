@@ -27,6 +27,15 @@ final class stringified extends StaticAnnotation
 /**
   * Configuration parameter for `JsonCodecMaker.make()` call.
   *
+  * BEWARE: `fieldNameMapper` and  `adtLeafClassNameMapper` functions should not depend on code from the same
+  * compilation module where the `make` macro is called. Use a separated submodule of the project to compile all such
+  * dependencies before their usage for generation of codecs.
+  *
+  * Examples of functions that have no dependencies in the same compilation module are:
+  * `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`, `JsonCodecMaker.enforce-kebab-case`, and
+  * `JsonCodecMaker.simpleClassName`. Or their composition like:
+  * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
+  *
   * @param fieldNameMapper the function of mapping from string of case class field name to JSON key (an identity
   *                        function by default)
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
@@ -50,6 +59,12 @@ case class CodecMakerConfig(
   bigDecimalScaleLimit: Int = 300) // ~128 bytes, (BigDecimal("1e300") + 1).underlying.unscaledValue.toByteArray.length
 
 object JsonCodecMaker {
+  /**
+    * Mapping function for field or class names that should be in camelCase format.
+    *
+    * @param s the name to transform
+    * @return a transformed name or the same name if no transformation is required
+    */
   def enforceCamelCase(s: String): String =
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) s
     else {
@@ -71,8 +86,20 @@ object JsonCodecMaker {
       sb.toString
     }
 
+  /**
+    * Mapping function for field or class names that should be in snake_case format.
+    *
+    * @param s the name to transform
+    * @return a transformed name or the same name if no transformation is required
+    */
   def enforce_snake_case(s: String): String = enforceSnakeOrKebabCase(s, '_')
 
+  /**
+    * Mapping function for field or class names that should be in kebab-case.
+    *
+    * @param s the name to transform
+    * @return a transformed name or the same name if no transformation is required
+    */
   def `enforce-kebab-case`(s: String): String = enforceSnakeOrKebabCase(s, '-')
 
   private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
@@ -98,6 +125,12 @@ object JsonCodecMaker {
     sb.toString
   }
 
+  /**
+    * Mapping function for class names that should be trimmed to the simple class name without package prefix.
+    *
+    * @param fullClassName the name to transform
+    * @return a transformed name or the same name if no transformation is required
+    */
   def simpleClassName(fullClassName: String): String =
     fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
 
