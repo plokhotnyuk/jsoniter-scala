@@ -143,7 +143,7 @@ package object core {
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
     * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
+    *                            the input JSON structure does not match structure that expected for the result type,
     *                            also in case if end of input is detected while some input bytes are expected
     * @throws NullPointerException if the `codec`, `bbuf` or `config` is null
     */
@@ -151,8 +151,9 @@ package object core {
                                      (implicit codec: JsonValueCodec[A]): A = {
     val reader = readerPool.get
     if (bbuf.hasArray) {
-      try reader.read(codec, bbuf.array, bbuf.arrayOffset() + bbuf.position(), bbuf.limit(), config)
-      finally bbuf.position(bbuf.arrayOffset() + reader.position.toInt)
+      val offset = bbuf.arrayOffset()
+      try reader.read(codec, bbuf.array, offset + bbuf.position(), offset + bbuf.limit(), config)
+      finally bbuf.position(reader.position.toInt - offset)
     } else reader.read(codec, new InputStream {
       override def read: Int = throw new UnsupportedOperationException // should not be called
 
@@ -238,16 +239,17 @@ package object core {
     * @param codec a codec for the given value
     * @throws NullPointerException    if the `codec`, `bbuf` or `config` is null
     * @throws ReadOnlyBufferException if the `bbuf` is read-only
-    * @throws BufferOverflowException if the `bbuf` capacity was exceeded during serialization
+    * @throws BufferOverflowException if the `bbuf` limit was exceeded during serialization
     */
   final def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = writerConfig)
                                     (implicit codec: JsonValueCodec[A]): Unit = {
     val writer = writerPool.get
     if (bbuf.hasArray) {
-      try writer.write(codec, x, bbuf.array, bbuf.arrayOffset() + bbuf.position(), bbuf.arrayOffset() + bbuf.limit(), config)
+      val offset = bbuf.arrayOffset()
+      try writer.write(codec, x, bbuf.array, offset + bbuf.position(), offset + bbuf.limit(), config)
       catch {
         case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
-      } finally bbuf.position(writer.position.toInt - bbuf.arrayOffset)
+      } finally bbuf.position(writer.position.toInt - offset)
     } else writer.write(codec, x, new OutputStream {
       override def write(b: Int): Unit = throw new UnsupportedOperationException // should not be called
 

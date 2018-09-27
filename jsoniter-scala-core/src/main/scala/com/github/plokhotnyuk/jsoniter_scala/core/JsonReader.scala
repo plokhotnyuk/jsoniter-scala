@@ -50,11 +50,11 @@ class JsonParseException private[jsoniter_scala](msg: String, cause: Throwable, 
   extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonReader private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](1024),
+    private[this] var buf: Array[Byte] = new Array[Byte](2048),
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
     private[this] var mark: Int = 2147483647,
-    private[this] var charBuf: Array[Char] = new Array[Char](128),
+    private[this] var charBuf: Array[Char] = new Array[Char](256),
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {

@@ -83,16 +83,20 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       bbuf.limit(50000 + httpMessage.length)
       readFromByteBuffer(bbuf)(codec) shouldBe user
       bbuf.position() shouldBe 50000 + httpMessage.length
+      bbuf.limit() shouldBe 50000 + httpMessage.length
     }
     "parse JSON from the current position of the provided array based byte buffer" in {
-      val bufToWrap = new Array[Byte](100000)
-      val bbuf = ByteBuffer.wrap(bufToWrap, 10000, 80000)
+      var bbuf = ByteBuffer.wrap(new Array[Byte](100000))
+      bbuf.position(10000)
+      bbuf = bbuf.slice()
       bbuf.position(50000)
       bbuf.put(httpMessage)
       bbuf.position(50066)
       bbuf.limit(50000 + httpMessage.length)
       readFromByteBuffer(bbuf)(codec) shouldBe user
       bbuf.position() shouldBe 50000 + httpMessage.length
+      bbuf.limit() shouldBe 50000 + httpMessage.length
+      bbuf.arrayOffset() shouldBe 10000
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part of the direct byte buffer" in {
       val bbuf = ByteBuffer.allocateDirect(httpMessage.length)
@@ -258,9 +262,9 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "writeToByteBuffer" should {
-    val buf = new Array[Byte](150)
 
     "serialize an object to the provided direct byte buffer from the current position" in {
+      val buf = new Array[Byte](150)
       val bbuf = ByteBuffer.allocateDirect(150)
       val from1 = 10
       bbuf.position(from1)
@@ -269,27 +273,36 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
       bbuf.position(from1)
       bbuf.get(buf, from1, to1 - from1)
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
+      bbuf.limit() shouldBe 150
       val from2 = 0
       bbuf.position(from2)
-      bbuf.limit(150)
       writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
       val to2 = bbuf.position()
       bbuf.position(from2)
       bbuf.get(buf, from2, to2 - from2)
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
+      bbuf.limit() shouldBe 150
     }
     "serialize an object to the provided array-based byte buffer from the current position" in {
-      val bbuf = ByteBuffer.wrap(buf)
-      val from1 = 10
+      val buf = new Array[Byte](160)
+      var bbuf = ByteBuffer.wrap(buf)
+      val offset = 10
+      bbuf.position(offset)
+      bbuf = bbuf.slice()
+      val from1 = 5
       bbuf.position(from1)
       writeToByteBuffer(user, bbuf)(codec)
       val to1 = bbuf.position()
-      new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
+      new String(buf, from1 + offset, to1 - from1, UTF_8) shouldBe toString(compactJson)
+      bbuf.limit() shouldBe buf.length - offset
+      bbuf.arrayOffset() shouldBe offset
       val from2 = 0
       bbuf.position(from2)
       writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
       val to2 = bbuf.position()
-      new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
+      new String(buf, from2 + offset, to2 - from2, UTF_8) shouldBe toString(prettyJson)
+      bbuf.limit() shouldBe buf.length - offset
+      bbuf.arrayOffset() shouldBe offset
     }
     "throw BufferOverflowException in case of the provided byte buffer is overflown during serialization" in {
       val bbuf1 = ByteBuffer.allocateDirect(150)
