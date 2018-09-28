@@ -1392,6 +1392,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
       })
     }
+    "don't generate codecs for classes without a primary constructor" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """JsonCodecMaker.make[scala.concurrent.duration.Duration](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Cannot find a primary constructor for 'Infinite.this.<local child>'"""
+      })
+    }
     "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class MultiListOfArgs(i: Int)(l: Long)

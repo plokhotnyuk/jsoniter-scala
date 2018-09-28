@@ -403,8 +403,8 @@ object JsonCodecMaker {
         def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
-          case m: MethodSymbol if m.isPrimaryConstructor => m
-        }.get // FIXME: while in Scala, every class has a primary constructor, but sometime it cannot be accessed
+          case m: MethodSymbol if m.isPrimaryConstructor => m  // FIXME: sometime it cannot be accessed from the place of the `make` call
+        }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'"))
 
         lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
         val getters = tpe.members.collect { case m: MethodSymbol if m.isParamAccessor && m.isGetter => m }
