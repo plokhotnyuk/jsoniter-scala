@@ -76,6 +76,8 @@ lazy val publishSettings = Seq(
     )
   ),
   publishMavenStyle := true,
+  publishConfiguration := publishConfiguration.value.withOverwrite(true),
+  publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
   pomIncludeRepository := { _ => false }
 )
 
