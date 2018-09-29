@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{InputStream, OutputStream}
-import java.nio.{BufferOverflowException, ByteBuffer}
+import java.nio.ByteBuffer
 
 import scala.{specialized => sp}
 
@@ -148,25 +148,8 @@ package object core {
     * @throws NullPointerException if the `codec`, `bbuf` or `config` is null
     */
   final def readFromByteBuffer[@sp A](bbuf: ByteBuffer, config: ReaderConfig = readerConfig)
-                                     (implicit codec: JsonValueCodec[A]): A = {
-    val reader = readerPool.get
-    if (bbuf.hasArray) {
-      val offset = bbuf.arrayOffset()
-      try reader.read(codec, bbuf.array, offset + bbuf.position(), offset + bbuf.limit(), config)
-      finally bbuf.position(reader.position.toInt - offset)
-    } else reader.read(codec, new InputStream {
-      override def read: Int = throw new UnsupportedOperationException // should not be called
-
-      override def read(buf: Array[Byte], off: Int, len: Int): Int = {
-        val n = Math.min(bbuf.remaining, len)
-        if (n == 0) -1
-        else {
-          bbuf.get(buf, off, n)
-          n
-        }
-      }
-    }, config)
-  }
+                                     (implicit codec: JsonValueCodec[A]): A =
+    readerPool.get.read(codec, bbuf, config)
 
   /**
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
@@ -242,18 +225,6 @@ package object core {
     * @throws BufferOverflowException if the `bbuf` limit was exceeded during serialization
     */
   final def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = writerConfig)
-                                    (implicit codec: JsonValueCodec[A]): Unit = {
-    val writer = writerPool.get
-    if (bbuf.hasArray) {
-      val offset = bbuf.arrayOffset()
-      try writer.write(codec, x, bbuf.array, offset + bbuf.position(), offset + bbuf.limit(), config)
-      catch {
-        case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
-      } finally bbuf.position(writer.position.toInt - offset)
-    } else writer.write(codec, x, new OutputStream {
-      override def write(b: Int): Unit = throw new UnsupportedOperationException // should not be called
-
-      override def write(bytes: Array[Byte], off: Int, len: Int): Unit = bbuf.put(bytes, off, len)
-    }, config)
-  }
+                                    (implicit codec: JsonValueCodec[A]): Unit =
+    writerPool.get.write(codec, x, bbuf, config)
 }

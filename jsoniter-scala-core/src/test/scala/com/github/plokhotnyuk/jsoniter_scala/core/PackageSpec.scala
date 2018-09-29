@@ -111,7 +111,7 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
           || 00000010 | 70 65 3a 20 61 70 70 6c 69 63 61 74 69 6f 6e 2f | pe: application/ |
           || 00000020 | 6a 73 6f 6e 0a 43 6f 6e 74 65 6e 74 2d 4c 65 6e | json.Content-Len |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
-      bbuf.position() shouldBe 151
+      bbuf.position() shouldBe 11
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
       val bbuf = ByteBuffer.wrap(httpMessage)

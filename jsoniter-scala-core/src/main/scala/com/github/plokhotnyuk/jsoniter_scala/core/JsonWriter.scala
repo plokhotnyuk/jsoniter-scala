@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
 import java.math.BigInteger
+import java.nio.{BufferOverflowException, ByteBuffer}
 import java.time._
 import java.util.UUID
 
@@ -44,6 +45,7 @@ final class JsonWriter private[jsoniter_scala](
     private[this] var indention: Int = 0,
     private[this] var comma: Boolean = false,
     private[this] var isBufGrowingAllowed: Boolean = true,
+    private[this] var bbuf: ByteBuffer = null,
     private[this] var out: OutputStream = null,
     private[this] var totalWritten: Long = 0,
     private[this] var config: WriterConfig = null) {
@@ -370,7 +372,40 @@ final class JsonWriter private[jsoniter_scala](
     } finally setBuf(currBuf)
   }
 
-  private[jsoniter_scala] def position: Long = totalWritten + count
+  private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, bbuf: ByteBuffer, config: WriterConfig): Unit =
+    if (bbuf.hasArray) {
+      val offset = bbuf.arrayOffset
+      val currBuf = this.buf
+      try {
+        this.buf = bbuf.array
+        this.config = config
+        count = offset + bbuf.position()
+        limit = offset + bbuf.limit()
+        indention = 0
+        totalWritten = 0
+        isBufGrowingAllowed = false
+        codec.encodeValue(x, this)
+      } catch {
+        case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
+      } finally {
+        setBuf(currBuf)
+        bbuf.position(count - offset)
+      }
+    } else {
+      try {
+        this.bbuf = bbuf
+        this.config = config
+        count = 0
+        indention = 0
+        totalWritten = 0
+        isBufGrowingAllowed = true
+        codec.encodeValue(x, this)
+        flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
+      } finally {
+        this.bbuf = null // help GC
+        freeTooLongBuf()
+      }
+    }
 
   private[this] def writeNestedStart(b: Byte): Unit = {
     indention += config.indentionStep
@@ -1182,9 +1217,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInt(x: Int): Unit = count = {
     var pos = ensureBufCapacity(11) // minIntBytes.length
-    if (x == -2147483648) writeByteArray(minIntBytes, pos)
+    val buf = this.buf
+    if (x == -2147483648) writeByteArray(minIntBytes, pos, buf)
     else {
-      val buf = this.buf
       val q0 =
         if (x >= 0) x
         else {
@@ -1198,9 +1233,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeLong(x: Long): Unit = count = {
     var pos = ensureBufCapacity(20) // minLongBytes.length
-    if (x == -9223372036854775808L) writeByteArray(minLongBytes, pos)
+    val buf = this.buf
+    if (x == -9223372036854775808L) writeByteArray(minLongBytes, pos, buf)
     else {
-      val buf = this.buf
       val ds = digits
       val q0 =
         if (x >= 0) x
@@ -1229,9 +1264,13 @@ final class JsonWriter private[jsoniter_scala](
     lastPos + 1
   }
 
-  private[this] def writeByteArray(bs: Array[Byte], pos: Int): Int = {
+  private[this] def writeByteArray(bs: Array[Byte], pos: Int, buf: Array[Byte]): Int = {
     val len = bs.length
-    System.arraycopy(bs, 0, buf, pos, len)
+    var i = 0
+    while (i < len) {
+      buf(pos + i) = bs(i)
+      i += 1
+    }
     pos + len
   }
 
@@ -1706,6 +1745,7 @@ final class JsonWriter private[jsoniter_scala](
     to
   }
 
+  @inline
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
     if (pos + required > limit) flushAndGrowBuf(required, pos)
@@ -1713,30 +1753,33 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def flushAndGrowBuf(required: Int, pos: Int): Int =
-    if (out eq null) {
-      growBuf(pos + required)
-      pos
-    } else {
+    if (bbuf ne null) {
+      bbuf.put(buf, 0, pos)
+      totalWritten += pos
+      if (required > limit) growBuf(required)
+      0
+    } else if (out ne null) {
       out.write(buf, 0, pos)
       totalWritten += pos
       if (required > limit) growBuf(required)
       0
+    } else {
+      growBuf(pos + required)
+      pos
     }
 
-  private[jsoniter_scala] def flushBuf(): Unit =
-    if (out ne null) {
-      out.write(buf, 0, count)
-      totalWritten += count
-      count = 0
-    }
+  @inline
+  private[jsoniter_scala] def flushBuf(): Unit = count = flushAndGrowBuf(0, count)
 
   private[this] def growBuf(required: Int): Unit =
     if (isBufGrowingAllowed) setBuf(java.util.Arrays.copyOf(buf, Integer.highestOneBit(limit | required) << 1))
     else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
 
+  @inline
   private[this] def freeTooLongBuf(): Unit =
     if (limit > config.preferredBufSize) setBuf(new Array[Byte](config.preferredBufSize))
 
+  @inline
   private[this] def setBuf(buf: Array[Byte]): Unit = {
     this.buf = buf
     limit = buf.length

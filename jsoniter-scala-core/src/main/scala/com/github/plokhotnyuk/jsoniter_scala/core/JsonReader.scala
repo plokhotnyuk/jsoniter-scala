@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
 import java.math.{BigInteger, MathContext}
+import java.nio.ByteBuffer
 import java.time._
 import java.time.zone.ZoneRulesException
 import java.util.UUID
@@ -55,6 +56,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var tail: Int = 0,
     private[this] var mark: Int = 2147483647,
     private[this] var charBuf: Array[Char] = new Array[Char](256),
+    private[this] var bbuf: ByteBuffer = null,
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
@@ -545,6 +547,41 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongCharBuf()
     }
 
+  private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], bbuf: ByteBuffer, config: ReaderConfig): A =
+    if (bbuf.hasArray) {
+      val offset = bbuf.arrayOffset
+      val currBuf = this.buf
+      try {
+        this.buf = bbuf.array
+        this.config = config
+        head = offset + bbuf.position()
+        tail = offset + bbuf.limit()
+        totalRead = 0
+        mark = 2147483647
+        codec.decodeValue(this, codec.nullValue)
+      } finally {
+        this.buf = currBuf
+        freeTooLongCharBuf()
+        bbuf.position(head - offset)
+      }
+    } else {
+      val position = bbuf.position()
+      try {
+        this.config = config
+        this.bbuf = bbuf
+        head = 0
+        tail = 0
+        totalRead = 0
+        mark = 2147483647
+        codec.decodeValue(this, codec.nullValue)
+      } finally {
+        this.bbuf = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+        freeTooLongBuf()
+        freeTooLongCharBuf()
+        bbuf.position(totalRead.toInt - tail + head + position)
+      }
+    }
+
   private[jsoniter_scala] def scanValueStream[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
                                                     (f: A => Boolean): Unit =
     try {
@@ -585,8 +622,6 @@ final class JsonReader private[jsoniter_scala](
       freeTooLongBuf()
       freeTooLongCharBuf()
     }
-
-  private[jsoniter_scala] def position: Long = offset + head
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
@@ -636,7 +671,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def decodeError(from: Int, pos: Int, cause: Throwable) = {
     var i = appendString(", offset: 0x", from)
-    val off = offset
+    val off =
+      if ((bbuf eq null) && (in eq null)) 0
+      else totalRead - tail
     i = appendHex(off + pos, i)
     if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
@@ -644,10 +681,6 @@ final class JsonReader private[jsoniter_scala](
     }
     throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwParseExceptionWithStackTrace)
   }
-
-  private[this] def offset: Long =
-    if (in eq null) 0
-    else totalRead - tail
 
   @tailrec
   private[this] def nextByte(pos: Int): Byte =
@@ -2727,28 +2760,47 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def loadMoreOrError(pos: Int): Int =
-    if (in eq null) endOfInputError()
-    else {
+    if (bbuf ne null) {
       val minPos = ensureBufCapacity(pos)
-      val n = in.read(buf, tail, buf.length - tail)
+      val tail = this.tail
+      val n = Math.min(bbuf.remaining, buf.length - tail)
       if (n > 0) {
-        tail += n
+        bbuf.get(buf, tail, n)
+        this.tail = tail + n
         totalRead += n
         pos - minPos
       } else endOfInputError()
-    }
-
-  private[this] def loadMore(pos: Int): Int =
-    if (in eq null) pos
-    else {
+    } else if (in ne null) {
       val minPos = ensureBufCapacity(pos)
+      val tail = this.tail
       val n = in.read(buf, tail, buf.length - tail)
       if (n > 0) {
-        tail += n
+        this.tail = tail + n
+        totalRead += n
+        pos - minPos
+      } else endOfInputError()
+    } else endOfInputError()
+
+  private[this] def loadMore(pos: Int): Int =
+    if (bbuf ne null) {
+      val minPos = ensureBufCapacity(pos)
+      val n = Math.min(bbuf.remaining, buf.length - tail)
+      if (n > 0) {
+        bbuf.get(buf, tail, n)
+        this.tail = tail + n
         totalRead += n
       }
       pos - minPos
-    }
+    } else if (in ne null) {
+      val minPos = ensureBufCapacity(pos)
+      val tail = this.tail
+      val n = in.read(buf, tail, buf.length - tail)
+      if (n > 0) {
+        this.tail = tail + n
+        totalRead += n
+      }
+      pos - minPos
+    } else pos
 
   private[this] def ensureBufCapacity(pos: Int): Int = {
     val minPos = Math.min(mark, pos)

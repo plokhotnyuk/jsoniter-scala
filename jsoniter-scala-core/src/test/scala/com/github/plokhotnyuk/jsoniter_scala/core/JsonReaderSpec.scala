@@ -2592,7 +2592,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def reader(buf: Array[Byte], totalRead: Long = 0): JsonReader =
     new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
-      0, 0, 2147483647, new Array[Char](0), new ByteArrayInputStream(buf), totalRead, ReaderConfig())
+      0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(buf), totalRead, ReaderConfig())
 
   def stringify(buf: Array[Byte]): Array[Byte] = '"'.toByte +: buf :+ '"'.toByte
 }
