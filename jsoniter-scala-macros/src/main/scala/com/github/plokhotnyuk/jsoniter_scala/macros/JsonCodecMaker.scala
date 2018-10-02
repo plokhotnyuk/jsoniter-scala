@@ -581,6 +581,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Iterable[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
+        else if (tpe <:< typeOf[AnyRef]) q"null"
         else q"null.asInstanceOf[$tpe]"
 
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree,
