@@ -88,8 +88,7 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: uPickle serializes escaped chars instead of UTF-8
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }

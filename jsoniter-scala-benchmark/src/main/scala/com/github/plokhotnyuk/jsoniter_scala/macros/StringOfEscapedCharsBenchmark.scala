@@ -101,5 +101,5 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   def writePlayJson(): Array[Byte] = Json.asciiStringify(Json.toJson(obj)).getBytes
 
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def writeUPickle(): Array[Byte] = write(obj, escapeUnicode = true).getBytes(UTF_8)
 }
