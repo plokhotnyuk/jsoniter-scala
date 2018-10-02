@@ -483,7 +483,7 @@ final class JsonReader private[jsoniter_scala](
 
   def rollbackToken(): Unit = {
     val pos = head
-    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
+    if (pos == 0) illegalTokenOperation()
     head = pos - 1
   }
 
@@ -717,8 +717,11 @@ final class JsonReader private[jsoniter_scala](
     } else isNextToken(t, loadMoreOrError(pos))
 
   private[this] def isCurrentToken(b: Byte, pos: Int): Boolean =
-    if (pos == 0) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
+    if (pos == 0) illegalTokenOperation()
     else buf(pos - 1) == b
+
+  private[this] def illegalTokenOperation(): Nothing =
+    throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
 
   private[this] def nextDigit(): Int = {
     val b = nextByte(head)
@@ -789,15 +792,19 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
+  @inline
   private[this] def readParenthesesToken(): Unit = if (!isNextToken('"', head)) tokenError('"')
 
+  @inline
   private[this] def readParenthesesByteWithColonToken(): Unit = {
     readParenthesesByte()
     readColonToken()
   }
 
+  @inline
   private[this] def readParenthesesByte(): Unit = if (nextByte(head) != '"') tokenError('"')
 
+  @inline
   private[this] def readColonToken(): Unit = if (!isNextToken(':', head)) tokenError(':')
 
   private[this] def parseBoolean(isToken: Boolean): Boolean =
@@ -2822,9 +2829,11 @@ final class JsonReader private[jsoniter_scala](
   private[this] def endOfInputError(cause: Throwable = null): Nothing =
     decodeError("unexpected end of input", tail, cause)
 
+  @inline
   private[this] def freeTooLongBuf(): Unit =
     if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)
 
+  @inline
   private[this] def freeTooLongCharBuf(): Unit =
     if (charBuf.length > config.preferredCharBufSize) charBuf = new Array[Char](config.preferredCharBufSize)
 }

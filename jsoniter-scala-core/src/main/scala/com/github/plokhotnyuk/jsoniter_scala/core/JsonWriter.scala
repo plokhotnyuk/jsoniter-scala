@@ -111,7 +111,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeKey(x: BigDecimal): Unit = {
     writeCommaWithParentheses()
-    writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+    writeNonEscapedAsciiStringWithoutParentheses(x.bigDecimal.toString)
     writeParenthesesWithColon()
   }
 
@@ -219,7 +219,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
-  def writeVal(x: BigDecimal): Unit = writeNonEscapedAsciiStringWithoutParentheses(x.toString)
+  def writeVal(x: BigDecimal): Unit = writeNonEscapedAsciiStringWithoutParentheses(x.bigDecimal.toString)
 
   def writeVal(x: BigInt): Unit =
     writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
@@ -759,6 +759,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
+  @inline
   private[this] def writeCommaWithParentheses(): Unit = {
     if (comma) writeBytes(',')
     else comma = true
@@ -766,10 +767,12 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  @inline
   private[this] def writeParenthesesWithColon(): Unit =
     if (config.indentionStep > 0) writeBytes('"', ':', ' ')
     else writeBytes('"', ':')
 
+  @inline
   private[this] def writeColon(): Unit =
     if (config.indentionStep > 0) writeBytes(':', ' ')
     else writeBytes(':')
