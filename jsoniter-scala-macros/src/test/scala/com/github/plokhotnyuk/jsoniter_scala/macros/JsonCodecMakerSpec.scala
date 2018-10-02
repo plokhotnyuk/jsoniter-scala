@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
@@ -134,7 +135,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class AAA(a: Int) extends Inner
 
-  case class BBB(a: String) extends AdtBase
+  case class BBB(a: BigInt) extends AdtBase
 
   case class CCC(a: Int, b: String) extends Inner
 
@@ -1063,21 +1064,27 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList,
-        List(AAA(1), BBB("VVV"), CCC(1, "VVV"), DDD),
-        """[{"type":"AAA","a":1},{"type":"BBB","a":"VVV"},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]"""
+        List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
+        """[{"type":"AAA","a":1},{"type":"BBB","a":1},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]"""
           .getBytes("UTF-8"))
-      val longStr = new String(Array.fill(100000)('W'))
-      verifyDeser(codecOfADTList,
-        List(CCC(2, longStr), CCC(1, "VVV")),
-        s"""[{"a":2,"b":"$longStr","type":"CCC"},{"a":1,"type":"CCC","b":"VVV"}]""".getBytes("UTF-8"))
       verifySerDeser(codecOfADTList2,
-        List(AAA(1), BBB("VVV"), CCC(1, "VVV"), DDD),
-        """[{"AAA":{"a":1}},{"BBB":{"a":"VVV"}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""".getBytes("UTF-8"))
+        List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
+        """[{"AAA":{"a":1}},{"BBB":{"a":1}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""".getBytes("UTF-8"))
       verifySerDeser(make[List[AdtBase]](CodecMakerConfig(discriminatorFieldName = Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")),
         """[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""".getBytes("UTF-8"))
       verifySerDeser(make[List[Weapon]](CodecMakerConfig(discriminatorFieldName = None)),
         List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""".getBytes("UTF-8"))
+    }
+    "deserialize ADTs when discriminator field was serialized in far away last position" in {
+      val longStr = new String(Array.fill(100000)('W'))
+      verifyDeser(codecOfADTList,
+        List(CCC(2, longStr), CCC(1, "VVV")),
+        s"""[{"a":2,"b":"$longStr","type":"CCC"},{"a":1,"type":"CCC","b":"VVV"}]""".getBytes("UTF-8"))
+      val longBigInt = new BigInt(new BigInteger(Array.fill(20000)(123: Byte)))
+      verifyDeser(codecOfADTList,
+        List(BBB(longBigInt), BBB(BigInt(1))),
+        s"""[{"a":$longBigInt,"type":"BBB"},{"a":1,"type":"BBB"}]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs with leaf types that are not case classes or case objects" in {
       sealed trait X
@@ -1495,7 +1502,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   }
 
   def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
-    verifyDiractByteBufferDeser(codec, obj, json)
+    verifyDirectByteBufferDeser(codec, obj, json)
     verifyHeapByteBufferDeser(codec, obj, json)
     verifyInputStreamDeser(codec, obj, json)
     verifyByteArrayDeser(codec, obj, json)
@@ -1530,7 +1537,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   def verifyArraySer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expectedStr: String): Unit =
     toString(writeToArray(obj, cfg)(codec)) shouldBe expectedStr
 
-  def verifyDiractByteBufferDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
+  def verifyDirectByteBufferDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
     val directBuf = ByteBuffer.allocateDirect(json.length)
     directBuf.put(json)
     directBuf.position(0)
