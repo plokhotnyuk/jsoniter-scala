@@ -1487,35 +1487,64 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   def verifySer[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte], cfg: WriterConfig = WriterConfig()): Unit = {
     val expectedStr = toString(json)
-    var buf = new Array[Byte](json.length)
-    val directBuf = ByteBuffer.allocateDirect(json.length + 100)
-    directBuf.position(0)
-    writeToByteBuffer(obj, directBuf, cfg)(codec)
-    directBuf.position(0)
-    directBuf.get(buf)
-    toString(buf) shouldBe expectedStr
-    val heapBuf = ByteBuffer.wrap(new Array[Byte](json.length + 100))
-    heapBuf.position(0)
-    writeToByteBuffer(obj, heapBuf, cfg)(codec)
-    buf = new Array[Byte](json.length)
-    heapBuf.position(0)
-    heapBuf.get(buf)
-    toString(buf) shouldBe expectedStr
-    val baos = new ByteArrayOutputStream
-    writeToStream(obj, baos, cfg)(codec)
-    toString(baos.toByteArray) shouldBe expectedStr
-    toString(writeToArray(obj, cfg)(codec)) shouldBe expectedStr
+    val len = json.length
+    verifyDirectByteBufferSer(codec, obj, len, cfg, expectedStr)
+    verifyHeapByteBufferSer(codec, obj, len, cfg, expectedStr)
+    verifyOutputStreamSer(codec, obj, cfg, expectedStr)
+    verifyArraySer(codec, obj, cfg, expectedStr)
   }
 
   def verifyDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
+    verifyDiractByteBufferDeser(codec, obj, json)
+    verifyHeapByteBufferDeser(codec, obj, json)
+    verifyInputStreamDeser(codec, obj, json)
+    verifyByteArrayDeser(codec, obj, json)
+  }
+
+  def verifyDirectByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expectedStr: String): Unit = {
+    val directBuf = ByteBuffer.allocateDirect(len + 100)
+    directBuf.position(0)
+    writeToByteBuffer(obj, directBuf, cfg)(codec)
+    directBuf.position(0)
+    val buf = new Array[Byte](len)
+    directBuf.get(buf)
+    toString(buf) shouldBe expectedStr
+  }
+
+  def verifyHeapByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expectedStr: String): Unit = {
+    val heapBuf = ByteBuffer.wrap(new Array[Byte](len + 100))
+    heapBuf.position(0)
+    writeToByteBuffer(obj, heapBuf, cfg)(codec)
+    heapBuf.position(0)
+    val buf = new Array[Byte](len)
+    heapBuf.get(buf)
+    toString(buf) shouldBe expectedStr
+  }
+
+  def verifyOutputStreamSer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expectedStr: String): Unit = {
+    val baos = new ByteArrayOutputStream
+    writeToStream(obj, baos, cfg)(codec)
+    toString(baos.toByteArray) shouldBe expectedStr
+  }
+
+  def verifyArraySer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expectedStr: String): Unit =
+    toString(writeToArray(obj, cfg)(codec)) shouldBe expectedStr
+
+  def verifyDiractByteBufferDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit = {
     val directBuf = ByteBuffer.allocateDirect(json.length)
     directBuf.put(json)
     directBuf.position(0)
     readFromByteBuffer(directBuf)(codec) shouldBe obj
-    readFromByteBuffer(ByteBuffer.wrap(json))(codec) shouldBe obj
-    readFromStream(new ByteArrayInputStream(json))(codec) shouldBe obj
-    readFromArray(json)(codec) shouldBe obj
   }
+
+  def verifyHeapByteBufferDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit =
+    readFromByteBuffer(ByteBuffer.wrap(json))(codec) shouldBe obj
+
+  def verifyInputStreamDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit =
+    readFromStream(new ByteArrayInputStream(json))(codec) shouldBe obj
+
+  def verifyByteArrayDeser[T](codec: JsonValueCodec[T], obj: T, json: Array[Byte]): Unit =
+    readFromArray(json)(codec) shouldBe obj
 
   def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)
 }
