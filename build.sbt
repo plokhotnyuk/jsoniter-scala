@@ -120,15 +120,12 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     crossScalaVersions := Seq("2.12.7"),
     libraryDependencies ++= Seq(
-      "com.avsystem.commons" %% "commons-core" % "1.31.0",
+      "com.avsystem.commons" %% "commons-core" % "1.32.0",
       "com.lihaoyi" %% "upickle" % "0.6.6",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.2",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.7",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.7",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.7",
-      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.7",
-      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.7",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.7",
       "io.circe" %% "circe-generic" % "0.10.0",
       "io.circe" %% "circe-generic-extras" % "0.10.0",
       "io.circe" %% "circe-parser" % "0.10.0",
