@@ -177,32 +177,28 @@ object JsonCodecMaker {
         classSymbol.isCaseClass || (!classSymbol.isJava && !classSymbol.isAbstract)
       }
 
-      def isSealedAdtBase(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
-        val classSymbol = tpe.typeSymbol.asClass
-        (classSymbol.isAbstract || classSymbol.isTrait) &&
-          (if (classSymbol.isSealed) true
-          else fail("Only sealed traits & abstract classes are supported for an ADT base. Please consider adding " +
-            s"of a sealed definition for '$tpe' or using a custom implicitly accessible codec for the ADT base."))
-      }
+      def isSealedClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
       def adtLeafClasses(tpe: Type): Seq[Type] = {
-        def collectRecursively(tpe: Type): Set[Type] =
+        def collectRecursively(tpe: Type): Seq[Type] =
           if (tpe.typeSymbol.isClass) {
-            tpe.typeSymbol.asClass.knownDirectSubclasses.flatMap { s =>
+            val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.flatMap { s =>
               val classSymbol = s.asClass
               val subTpe =
                 if (classSymbol.typeParams.isEmpty) classSymbol.toType
                 else classSymbol.toType.substituteTypes(classSymbol.typeParams, tpe.typeArgs)
-              if (isSealedAdtBase(subTpe)) collectRecursively(subTpe)
-              else if (isNonAbstractScalaClass(subTpe)) Set(subTpe)
+              if (isSealedClass(subTpe)) collectRecursively(subTpe)
+              else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
               else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
-                s"them for ADT with base '$tpe' or using a custom implicitly accessible codec for the ADT base.")
+                s"them for ADT with base '$tpe' or provide a custom implicitly accessible codec for the ADT base.")
             }
-          } else Set.empty
+            if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
+            else leafTpes
+          } else Seq.empty
 
-        val classes = collectRecursively(tpe).toSeq
-        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. Please consider adding them or " +
-          "using a custom implicitly accessible codec for the ADT base.")
+        val classes = collectRecursively(tpe)
+        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. Please add them or " +
+          "provide a custom implicitly accessible codec for the ADT base.")
         classes
       }
 
@@ -584,6 +580,92 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[AnyRef]) q"null"
         else q"null.asInstanceOf[$tpe]"
 
+      def genReadNonAbstractScalaClass(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
+        val classInfo = getClassInfo(tpe)
+        checkFieldNameCollisions(tpe, codecConfig.discriminatorFieldName.fold(Seq.empty[String]) { n =>
+          (if (discriminator.isEmpty) Seq.empty
+          else Seq(n)) ++ classInfo.fields.map(_.mappedName)
+        })
+        val required = classInfo.fields.collect {
+          case f if !f.symbol.isParamWithDefault && !isContainer(f.resolvedTpe) => f.mappedName
+        }
+        val paramVarNum = classInfo.fields.size
+        val lastParamVarIndex = paramVarNum >> 5
+        val lastParamVarBits = (1 << paramVarNum) - 1
+        val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
+        val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (f, i) =>
+          val (n, m) = (paramVarNames(i >> 5), 1 << i)
+          (f.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
+        }.toMap
+        val paramVars =
+          paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
+        val checkReqVars =
+          if (required.isEmpty) Nil
+          else {
+            val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
+            val reqSet = required.toSet
+            val reqMasks = classInfo.fields.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
+              acc | (if (reqSet(f.mappedName)) 1 << i else 0)
+            }).toSeq
+            paramVarNames.zipWithIndex.map { case (n, i) =>
+              val m = reqMasks(i)
+              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m)))"
+              else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m) + ${i << 5}))"
+            }
+          }
+        val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
+        val readVars = classInfo.fields
+          .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
+        val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
+        val length: FieldInfo => Int = _.mappedName.length
+        val readFields = codecConfig.discriminatorFieldName.fold(classInfo.fields) { n =>
+          if (discriminator.isEmpty) classInfo.fields
+          else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, true)
+        }
+
+        def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
+          fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
+            val readValue =
+              if (discriminator.nonEmpty && codecConfig.discriminatorFieldName.contains(f.mappedName)) discriminator
+              else {
+                q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
+                      ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
+              }
+            q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
+                  else $acc"""
+          }
+
+        val readFieldsBlock =
+          if (readFields.size <= 4 && readFields.size == readFields.map(length).distinct.size) {
+            genReadCollisions(readFields)
+          } else {
+            val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
+              cq"$hash => ${genReadCollisions(fs)}"
+            }.toSeq :+ cq"_ => $unexpectedFieldHandler"
+            q"""(in.charBufToHashCode(l): @switch) match {
+                    case ..$cases
+                  }"""
+          }
+        val discriminatorVar =
+          if (discriminator.isEmpty) EmptyTree
+          else q"var pd = true"
+        q"""if (in.isNextToken('{')) {
+                ..$readVars
+                ..$paramVars
+                ..$discriminatorVar
+                if (!in.isNextToken('}')) {
+                  in.rollbackToken()
+                  do {
+                    val l = in.readKeyAsCharBuf()
+                    ..$readFieldsBlock
+                  } while (in.isNextToken(','))
+                  if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+                }
+                ..$checkReqVars
+                $construct
+              } else in.readNullOrTokenError(default, '{')"""
+      }
+
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree,
                      isRoot: Boolean = false): Tree = {
         val implCodec =
@@ -744,91 +826,7 @@ object JsonCodecMaker {
                 if (in.isNextToken(']')) new $tpe(..$vals)
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
-        } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
-          val classInfo = getClassInfo(tpe)
-          checkFieldNameCollisions(tpe, codecConfig.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-            (if (discriminator.isEmpty) Seq.empty
-            else Seq(n)) ++ classInfo.fields.map(_.mappedName)
-          })
-          val required = classInfo.fields.collect {
-            case f if !f.symbol.isParamWithDefault && !isContainer(f.resolvedTpe) => f.mappedName
-          }
-          val paramVarNum = classInfo.fields.size
-          val lastParamVarIndex = paramVarNum >> 5
-          val lastParamVarBits = (1 << paramVarNum) - 1
-          val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
-          val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (f, i) =>
-            val (n, m) = (paramVarNames(i >> 5), 1 << i)
-            (f.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
-          }.toMap
-          val paramVars =
-            paramVarNames.init.map(n => q"var $n = -1") :+ q"var ${paramVarNames.last} = $lastParamVarBits"
-          val checkReqVars =
-            if (required.isEmpty) Nil
-            else {
-              val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
-              val reqSet = required.toSet
-              val reqMasks = classInfo.fields.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
-                acc | (if (reqSet(f.mappedName)) 1 << i else 0)
-              }).toSeq
-              paramVarNames.zipWithIndex.map { case (n, i) =>
-                val m = reqMasks(i)
-                if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m)))"
-                else q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m) + ${i << 5}))"
-              }
-            }
-          val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
-          val readVars = classInfo.fields
-            .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
-          val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
-          val length: FieldInfo => Int = _.mappedName.length
-          val readFields = codecConfig.discriminatorFieldName.fold(classInfo.fields) { n =>
-            if (discriminator.isEmpty) classInfo.fields
-            else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, true)
-          }
-
-          def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
-            fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
-              val readValue =
-                if (discriminator.nonEmpty && codecConfig.discriminatorFieldName.contains(f.mappedName)) discriminator
-                else {
-                  q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
-                      ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
-                }
-              q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
-                  else $acc"""
-            }
-
-          val readFieldsBlock =
-            if (readFields.size <= 4 && readFields.size == readFields.map(length).distinct.size) {
-              genReadCollisions(readFields)
-            } else {
-              val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
-                cq"$hash => ${genReadCollisions(fs)}"
-              }.toSeq :+ cq"_ => $unexpectedFieldHandler"
-              q"""(in.charBufToHashCode(l): @switch) match {
-                    case ..$cases
-                  }"""
-            }
-          val discriminatorVar =
-            if (discriminator.isEmpty) EmptyTree
-            else q"var pd = true"
-          q"""if (in.isNextToken('{')) {
-                ..$readVars
-                ..$paramVars
-                ..$discriminatorVar
-                if (!in.isNextToken('}')) {
-                  in.rollbackToken()
-                  do {
-                    val l = in.readKeyAsCharBuf()
-                    ..$readFieldsBlock
-                  } while (in.isNextToken(','))
-                  if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
-                }
-                ..$checkReqVars
-                $construct
-              } else in.readNullOrTokenError(default, '{')"""
-        } else if (isSealedAdtBase(tpe)) withDecoderFor(methodKey, default) {
+        } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {
           val hashCode: Type => Int = t => {
             val cs = discriminatorValue(t).toCharArray
             JsonReader.toHashCode(cs, cs.length)
@@ -838,25 +836,30 @@ object JsonCodecMaker {
           val discriminatorError = codecConfig.discriminatorFieldName
             .fold(q"""in.discriminatorError()""")(n => q"in.discriminatorValueError($n)")
 
-          def readCollisions(subTpes: collection.Seq[Type]): Tree =
+          def genReadLeafClass(subTpe: Type): Tree = {
+            if (subTpe != tpe) genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)
+            else genReadNonAbstractScalaClass(tpe, default, isStringified, skipDiscriminatorField)
+          }
+
+          def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
             subTpes.foldRight(discriminatorError) { case (subTpe, acc) =>
               val readVal =
                 if (codecConfig.discriminatorFieldName.isDefined) {
                   q"""in.rollbackToMark()
-                      ..${genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)}"""
+                      ..${genReadLeafClass(subTpe)}"""
                 } else if (subTpe.typeSymbol.isModuleClass) q"${subTpe.typeSymbol.asClass.module}"
-                else genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)
+                else genReadLeafClass(subTpe)
               q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
                     ..$readVal
                   } else $acc"""
             }
 
-          def readSubclassesBlock(leafClasses: collection.Seq[Type]) =
+          def genReadSubclassesBlock(leafClasses: collection.Seq[Type]) =
             if (leafClasses.size <= 4 && leafClasses.size == leafClasses.map(length).distinct.size) {
-              readCollisions(leafClasses)
+              genReadCollisions(leafClasses)
             } else {
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
-                val checkNameAndReadValue = readCollisions(ts)
+                val checkNameAndReadValue = genReadCollisions(ts)
                 cq"$hash => $checkNameAndReadValue"
               }.toSeq
               q"""(in.charBufToHashCode(l): @switch) match {
@@ -873,17 +876,17 @@ object JsonCodecMaker {
                 q"""if (in.isNextToken('"')) {
                       in.rollbackToken()
                       val l = in.readStringAsCharBuf()
-                      ${readSubclassesBlock(leafModuleClasses)}
+                      ${genReadSubclassesBlock(leafModuleClasses)}
                     } else if (in.isCurrentToken('{')) {
                       val l = in.readKeyAsCharBuf()
-                      val r = ${readSubclassesBlock(leafCaseClasses)}
+                      val r = ${genReadSubclassesBlock(leafCaseClasses)}
                       if (in.isNextToken('}')) r
                       else in.objectEndOrCommaError()
                     } else in.readNullOrError(default, "expected '\"' or '{' or null")"""
               } else if (leafCaseClasses.nonEmpty) {
                 q"""if (in.isNextToken('{')) {
                       val l = in.readKeyAsCharBuf()
-                      val r = ${readSubclassesBlock(leafCaseClasses)}
+                      val r = ${genReadSubclassesBlock(leafCaseClasses)}
                       if (in.isNextToken('}')) r
                       else in.objectEndOrCommaError()
                     } else in.readNullOrTokenError(default, '{')"""
@@ -891,7 +894,7 @@ object JsonCodecMaker {
                 q"""if (in.isNextToken('"')) {
                       in.rollbackToken()
                       val l = in.readStringAsCharBuf()
-                      ${readSubclassesBlock(leafModuleClasses)}
+                      ${genReadSubclassesBlock(leafModuleClasses)}
                     } else in.readNullOrTokenError(default, '"')"""
               }
             case Some(discrFieldName) =>
@@ -899,11 +902,76 @@ object JsonCodecMaker {
                   if (in.isNextToken('{')) {
                     if (in.skipToKey($discrFieldName)) {
                       val l = in.readStringAsCharBuf()
-                      ..${readSubclassesBlock(leafClasses)}
+                      ..${genReadSubclassesBlock(leafClasses)}
                     } else in.requiredFieldError($discrFieldName)
                   } else in.readNullOrTokenError(default, '{')"""
           }
+        } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
+          genReadNonAbstractScalaClass(tpe, default, isStringified, discriminator)
         } else cannotFindCodecError(tpe)
+      }
+
+      def genWriteNonAbstractScalaClass(tpe: Type, isStringified: Boolean, discriminator: Tree): Tree = {
+        val classInfo = getClassInfo(tpe)
+        val writeFields = classInfo.fields.map { f =>
+          f.defaultValue match {
+            case Some(d) =>
+              if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
+                q"""val v = x.${f.getter}
+                    if (!v.isEmpty && v != $d) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
+                    }"""
+              } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
+                q"""val v = x.${f.getter}
+                    if (!v.isEmpty && v != $d) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
+                    }"""
+              } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
+                q"""val v = x.${f.getter}
+                    if (v.length > 0 && !${withEqualsFor(f.resolvedTpe, q"v", d)(genArrayEquals(f.resolvedTpe))}) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
+                    }"""
+              } else {
+                q"""val v = x.${f.getter}
+                    if (v != $d) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
+                    }"""
+              }
+            case None =>
+              if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
+                q"""val v = x.${f.getter}
+                    if (!v.isEmpty) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
+                    }"""
+              } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
+                q"""val v = x.${f.getter}
+                      if (!v.isEmpty) {
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
+                      }"""
+              } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
+                q"""val v = x.${f.getter}
+                      if (v.length > 0) {
+                        ..${genWriteConstantKey(f.mappedName)}
+                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
+                      }"""
+              } else {
+                q"""..${genWriteConstantKey(f.mappedName)}
+                    ..${genWriteVal(q"x.${f.getter}", f.resolvedTpe, f.isStringified)}"""
+              }
+          }
+        }
+        val allWriteFields =
+          if (discriminator.isEmpty) writeFields
+          else discriminator +: writeFields
+        q"""out.writeObjectStart()
+              ..$allWriteFields
+              out.writeObjectEnd()"""
       }
 
       def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree,
@@ -994,90 +1062,36 @@ object JsonCodecMaker {
           q"""out.writeArrayStart()
               ..$writeFields
               out.writeArrayEnd()"""
-        } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
-          val classInfo = getClassInfo(tpe)
-          val writeFields = classInfo.fields.map { f =>
-            f.defaultValue match {
-              case Some(d) =>
-                if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
-                  q"""val v = x.${f.getter}
-                      if (!v.isEmpty && v != $d) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
-                      }"""
-                } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
-                  q"""val v = x.${f.getter}
-                      if (!v.isEmpty && v != $d) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
-                      }"""
-                } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
-                  q"""val v = x.${f.getter}
-                      if (v.length > 0 && !${withEqualsFor(f.resolvedTpe, q"v", d)(genArrayEquals(f.resolvedTpe))}) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
-                      }"""
-                } else {
-                  q"""val v = x.${f.getter}
-                      if (v != $d) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
-                      }"""
-                }
-              case None =>
-                if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
-                  q"""val v = x.${f.getter}
-                      if (!v.isEmpty) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
-                      }"""
-                } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
-                  q"""val v = x.${f.getter}
-                      if (!v.isEmpty) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
-                      }"""
-                } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
-                  q"""val v = x.${f.getter}
-                      if (v.length > 0) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
-                      }"""
-                } else {
-                  q"""..${genWriteConstantKey(f.mappedName)}
-                      ..${genWriteVal(q"x.${f.getter}", f.resolvedTpe, f.isStringified)}"""
-                }
-            }
+        } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m) {
+          def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree = {
+            if (subTpe != tpe) genWriteVal(q"x", subTpe, isStringified, discriminator)
+            else genWriteNonAbstractScalaClass(tpe, isStringified, discriminator)
           }
-          val allWriteFields =
-            if (discriminator.isEmpty) writeFields
-            else discriminator +: writeFields
-          q"""out.writeObjectStart()
-              ..$allWriteFields
-              out.writeObjectEnd()"""
-        } else if (isSealedAdtBase(tpe)) withEncoderFor(methodKey, m) {
+
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = (codecConfig.discriminatorFieldName match {
             case None =>
               val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.isModuleClass)
               leafCaseClasses.map { subTpe =>
                 cq"""x: $subTpe =>
-                         out.writeObjectStart()
-                         out.writeKey(${discriminatorValue(subTpe)})
-                         ${genWriteVal(q"x", subTpe, isStringified, EmptyTree)}
-                         out.writeObjectEnd()"""
+                       out.writeObjectStart()
+                       out.writeKey(${discriminatorValue(subTpe)})
+                       ${genWriteLeafClass(subTpe, EmptyTree)}
+                       out.writeObjectEnd()"""
               } ++ leafModuleClasses.map(subTpe => cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}")
             case Some(discrFieldName) =>
               leafClasses.map { subTpe =>
                 val writeDiscriminatorField =
                   q"""..${genWriteConstantKey(discrFieldName)}
                       ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
-                cq"x: $subTpe => ${genWriteVal(q"x", subTpe, isStringified, writeDiscriminatorField)}"
+                cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
               }
           }) ++ Seq(cq"null => out.writeNull()")
           q"""x match {
                 case ..$writeSubclasses
               }"""
+        } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
+          genWriteNonAbstractScalaClass(tpe, isStringified, discriminator)
         } else cannotFindCodecError(tpe)
       }
 

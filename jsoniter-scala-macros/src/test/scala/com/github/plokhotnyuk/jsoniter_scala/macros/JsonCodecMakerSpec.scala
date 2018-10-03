@@ -1090,7 +1090,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       sealed trait X
 
       class A() extends X {
-        override def hashCode(): Int = 0
+        override def hashCode(): Int = 1
 
         override def equals(obj: scala.Any): Boolean = obj.isInstanceOf[A]
 
@@ -1103,6 +1103,23 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       verifySerDeser(make[List[X]](CodecMakerConfig()),
         List(new A(), B), """[{"type":"A"},{"type":"B"}]""".getBytes("UTF-8"))
+    }
+    "serialize and deserialize ADTs with non abstract sealed base" in {
+      sealed class A {
+        override def hashCode(): Int = 1
+
+        override def equals(obj: scala.Any): Boolean = obj.isInstanceOf[A]
+
+        override def toString: String = "A()"
+      }
+
+      case class B(n: Int) extends A
+
+      case class C(s: String) extends A
+
+      verifySerDeser(make[List[A]](CodecMakerConfig()),
+        List(new A(), B(1), C("VVV")),
+        """[{"type":"A"},{"type":"B","n":1},{"type":"C","s":"VVV"}]""".getBytes("UTF-8"))
     }
     "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
       sealed abstract class База extends Product with Serializable
@@ -1158,9 +1175,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |case object B extends X
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
-        """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
-          |definition for 'X' or using a custom implicitly accessible codec for the ADT base."""
-          .stripMargin.replace('\n', ' ')
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'X'."""
       })
       assert(intercept[TestFailedException](assertCompiles {
         """abstract class X
@@ -1168,9 +1183,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |case object B extends X
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
-        """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
-          |definition for 'X' or using a custom implicitly accessible codec for the ADT base."""
-          .stripMargin.replace('\n', ' ')
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'X'."""
       })
     }
     "don't generate codec for ADT base without leaf classes" in {
@@ -1178,14 +1191,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """sealed trait X extends Product with Serializable
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
-        """Cannot find leaf classes for ADT base 'X'. Please consider adding them or using a custom implicitly
+        """Cannot find leaf classes for ADT base 'X'. Please add them or provide a custom implicitly
           |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
         """sealed abstract class X extends Product with Serializable
           |JsonCodecMaker.make[X](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
-        """Cannot find leaf classes for ADT base 'X'. Please consider adding them or using a custom implicitly
+        """Cannot find leaf classes for ADT base 'X'. Please add them or provide a custom implicitly
           |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
     }
@@ -1351,9 +1364,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """case class FirstOrder[A](a: A)
           |JsonCodecMaker.make[FirstOrder[_]](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
-        """Only sealed traits & abstract classes are supported for an ADT base. Please consider adding of a sealed
-          |definition for 'Any' or using a custom implicitly accessible codec for the ADT base."""
-          .stripMargin.replace('\n', ' ')
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'Any'."""
       })
     }
     "serialize and deserialize higher-kinded types" in {

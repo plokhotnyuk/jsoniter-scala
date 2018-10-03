@@ -62,8 +62,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, and value classes for any of them
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
 - Support of first-order and higher-kinded types
-- Support 2 representations of ADTs with sealed trait or sealed abstract class base and non-abstract Scala classes or 
-  objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one uses string
+- Support of 2 representations of ADTs with a sealed trait or a Scala class as base type and non-abstract Scala classes 
+  or objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one uses string 
   values for objects and a wrapper JSON object with a discriminator key for case class instances
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
