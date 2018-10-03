@@ -118,7 +118,6 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.12.7"),
     libraryDependencies ++= Seq(
       "com.avsystem.commons" %% "commons-core" % "1.32.0",
       "com.lihaoyi" %% "upickle" % "0.6.7",
