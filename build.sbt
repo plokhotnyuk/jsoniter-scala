@@ -76,14 +76,13 @@ lazy val publishSettings = Seq(
     )
   ),
   publishMavenStyle := true,
-  publishConfiguration := publishConfiguration.value.withOverwrite(true),
-  publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
   pomIncludeRepository := { _ => false }
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
-  .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
+  .settings(commonSettings: _*)
   .settings(noPublishSettings: _*)
+  .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
 
 lazy val `jsoniter-scala-core` = project
   .settings(commonSettings: _*)
