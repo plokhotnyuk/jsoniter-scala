@@ -88,6 +88,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers of containers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
+- Skipping of serialization of field values that matched with defaults which is defined in the primary constructor can
+  be turned off to force serialization of that values
 - Mapping function for names between classes and JSON, including predefined functions which enforce snake_case, 
   kebab-case or camelCase names for all fields
 - An optional name of the discriminator field for ADTs

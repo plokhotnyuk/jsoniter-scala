@@ -116,6 +116,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
   val stringified = Stringified(1, 2, List(1), List(2))
   val codecOfStringified: JsonValueCodec[Stringified] = make(CodecMakerConfig())
 
+  case class Defaults(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
+                      l: List[Int] = List(0), e: Level = Level.HIGH,
+                      a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)),
+                      ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
+                      m: Map[Int, Boolean] = Map(1 -> true),
+                      mm: collection.mutable.Map[String, Int] = collection.mutable.Map("VVV" -> 1),
+                      im: collection.immutable.IntMap[String] = collection.immutable.IntMap(1 -> "VVV"),
+                      lm: collection.mutable.LongMap[Int] = collection.mutable.LongMap(1L -> 2),
+                      s: Set[String] = Set("VVV"),
+                      ms: collection.mutable.Set[Int] = collection.mutable.Set(1),
+                      bs: collection.immutable.BitSet = collection.immutable.BitSet(1),
+                      mbs: collection.mutable.BitSet = collection.mutable.BitSet(1))
+
   case class Required(r00: Int = 0, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
                       r10: Int = 10, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
                       r20: Int = 20, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
@@ -941,23 +954,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""".getBytes("UTF-8"))
     }
-    "don't serialize default values of case classes that defined for fields" in {
-      case class Defaults1(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                           l: List[Int] = List(0), e: Level = Level.HIGH,
-                           a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)),
-                           ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
-                           m: Map[Int, Boolean] = Map(1 -> true),
-                           mm: collection.mutable.Map[String, Int] = collection.mutable.Map("VVV" -> 1),
-                           im: collection.immutable.IntMap[String] = collection.immutable.IntMap(1 -> "VVV"),
-                           lm: collection.mutable.LongMap[Int] = collection.mutable.LongMap(1L -> 2),
-                           s: Set[String] = Set("VVV"),
-                           ms: collection.mutable.Set[Int] = collection.mutable.Set(1),
-                           bs: collection.immutable.BitSet = collection.immutable.BitSet(1),
-                           mbs: collection.mutable.BitSet = collection.mutable.BitSet(1))
-
-      val codecOfDefaults: JsonValueCodec[Defaults1] = make[Defaults1](CodecMakerConfig())
-      verifySer(codecOfDefaults, Defaults1(), "{}".getBytes("UTF-8"))
-      verifySer(codecOfDefaults, Defaults1(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
+    "don't serialize default values of case classes that defined for fields when the transientDefault flag is on (by default)" in {
+      val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
+      verifySer(codecOfDefaults, Defaults(), "{}".getBytes("UTF-8"))
+      verifySer(codecOfDefaults, Defaults(oc = None, l = Nil), """{}""".getBytes("UTF-8"))
+    }
+    "serialize default values of case classes that defined for fields when the transientDefault flag is off" in {
+      verifySer(make[Defaults](CodecMakerConfig(transientDefault = false)), Defaults(),
+        """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"e":"HIGH","a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""".getBytes("UTF-8"))
     }
     "deserialize default values of case classes that defined for fields" in {
       case class Defaults2(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),

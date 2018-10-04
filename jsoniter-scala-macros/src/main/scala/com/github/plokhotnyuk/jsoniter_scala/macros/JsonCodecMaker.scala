@@ -36,18 +36,20 @@ final class stringified extends StaticAnnotation
   * `JsonCodecMaker.simpleClassName`. Or their composition like:
   * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
   *
-  * @param fieldNameMapper the function of mapping from string of case class field name to JSON key (an identity
-  *                        function by default)
+  * @param fieldNameMapper        the function of mapping from string of case class field name to JSON key (an identity
+  *                               function by default)
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
   *                               discriminator field (a function that truncate to simple class name by default)
   * @param discriminatorFieldName an optional name of discriminator field, where None can be used for alternative
   *                               representation of ADTs without the discriminator field (Some("type") value by default)
-  * @param isStringified a flag that turn on stringification of number or boolean values of collections, options and
-  *                      value classes (turned off by default)
-  * @param skipUnexpectedFields a flag that turn on skipping of unexpected fields or in other case a parse exception
-  *                             will be thrown (turned on by default)
-  * @param bitSetValueLimit an exclusive limit for accepted numeric values in bit sets (1024 by default)
-  * @param bigDecimalScaleLimit an exclusive limit for accepted scale of 'BigDecimal' values (300 by default)
+  * @param isStringified          a flag that turn on stringification of number or boolean values of collections,
+  *                               options and value classes (turned off by default)
+  * @param skipUnexpectedFields   a flag that turn on skipping of unexpected fields or in other case a parse exception
+  *                               will be thrown (turned on by default)
+  * @param transientDefault       a flag that turn on skipping serialization of fields that have same values as default
+  *                               values defined for them in the primary constructor (turned on by default)
+  * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default)
+  * @param bigDecimalScaleLimit   an exclusive limit for accepted scale of 'BigDecimal' values (300 by default)
   */
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
@@ -55,6 +57,7 @@ case class CodecMakerConfig(
   discriminatorFieldName: Option[String] = Some("type"),
   isStringified: Boolean = false,
   skipUnexpectedFields: Boolean = true,
+  transientDefault: Boolean = true,
   bitSetValueLimit: Int = 1024, // ~128 bytes
   bigDecimalScaleLimit: Int = 300) // ~128 bytes, (BigDecimal("1e300") + 1).underlying.unscaledValue.toByteArray.length
 
@@ -914,7 +917,8 @@ object JsonCodecMaker {
       def genWriteNonAbstractScalaClass(tpe: Type, isStringified: Boolean, discriminator: Tree): Tree = {
         val classInfo = getClassInfo(tpe)
         val writeFields = classInfo.fields.map { f =>
-          f.defaultValue match {
+          (if (codecConfig.transientDefault) f.defaultValue
+          else None) match {
             case Some(d) =>
               if (f.resolvedTpe <:< typeOf[Iterable[_]]) {
                 q"""val v = x.${f.getter}
