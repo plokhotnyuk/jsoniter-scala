@@ -347,11 +347,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         (s: String, escapeUnicode: Boolean) =>
           check(s, escapeUnicode)
       }
-      forAll(Gen.listOf(genNonAsciiChar).map(_.mkString), minSuccessful(10000)) { (s: String) =>
-        whenever(s.forall(ch => !Character.isSurrogate(ch))) {
-          check(s, true)
-        }
-      }
     }
     "write strings with escaped Unicode chars if it is specified by provided writer config" in {
       def check(s: String): Unit = {
@@ -367,8 +362,8 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "write strings with valid character surrogate pair" in {
       def check(s: String): Unit = {
-        withWriter(WriterConfig(escapeUnicode = false))(_.writeVal(s)) shouldBe "\"" + s + "\""
-        withWriter(WriterConfig(escapeUnicode = false))(_.writeKey(s)) shouldBe "\"" + s + "\":"
+        withWriter(_.writeVal(s)) shouldBe "\"" + s + "\""
+        withWriter(_.writeKey(s)) shouldBe "\"" + s + "\":"
         withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\""
         withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\":"
       }
@@ -376,6 +371,14 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (ch1: Char, ch2: Char) =>
         check(ch1.toString + ch2.toString)
       }
+    }
+    "write string with mixed Latin-1 characters when escaping of Unicode chars is turned on" in {
+      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("a\bc")) shouldBe "\"a\\bc\""
+      withWriter(WriterConfig(escapeUnicode = true))(_.writeKey("a\bc")) shouldBe "\"a\\bc\":"
+    }
+    "write string with mixed UTF-8 characters when escaping of Unicode chars is turned off" in {
+      withWriter(_.writeVal("ї\bc\u0000")) shouldBe "\"ї\\bc\\u0000\""
+      withWriter(_.writeKey("ї\bc\u0000")) shouldBe "\"ї\\bc\\u0000\":"
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
       def check(s: String, escapeUnicode: Boolean): Unit = {
