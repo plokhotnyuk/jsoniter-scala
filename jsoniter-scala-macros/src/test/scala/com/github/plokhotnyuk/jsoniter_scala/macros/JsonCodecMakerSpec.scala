@@ -154,7 +154,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case object DDD extends AdtBase
 
-  val codecOfADTList: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig())
+  val codecOfADTList: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig(bigIntDigitsLimit = 20001))
   val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig(discriminatorFieldName = None))
 
   "JsonCodecMaker.make generate codes which" should {
@@ -1090,11 +1090,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""")
     }
     "deserialize ADTs when discriminator field was serialized in far away last position" in {
-      val longStr = new String(Array.fill(100000)('W'))
+      val longStr = "W" * 100000
       verifyDeser(codecOfADTList,
         List(CCC(2, longStr), CCC(1, "VVV")),
         s"""[{"a":2,"b":"$longStr","type":"CCC"},{"a":1,"type":"CCC","b":"VVV"}]""")
-      val longBigInt = new BigInt(new BigInteger(Array.fill(20000)(123: Byte)))
+      val longBigInt = BigInt("9" * 20000)
       verifyDeser(codecOfADTList,
         List(BBB(longBigInt), BBB(BigInt(1))),
         s"""[{"a":$longBigInt,"type":"BBB"},{"a":1,"type":"BBB"}]""")
