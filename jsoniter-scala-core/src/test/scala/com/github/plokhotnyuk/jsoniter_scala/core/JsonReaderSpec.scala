@@ -2105,16 +2105,16 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readBigDecimal" should {
     "parse valid number values with skipping of JSON space characters" in {
-      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null, bigDecimalScaleLimit, bigDecimalMathContext) shouldBe
+      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe
         BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null, bigDecimalScaleLimit, bigDecimalMathContext) shouldBe
+      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe
         BigDecimal("-1234567890123456789.0123456789")
     }
     "parse valid number values and stops on not numeric chars" in {
-      readBigDecimal("0$", null, bigDecimalScaleLimit, bigDecimalMathContext) shouldBe BigDecimal("0")
-      readBigDecimal("1234567890123456789$", null, bigDecimalScaleLimit, bigDecimalMathContext) shouldBe BigDecimal("1234567890123456789")
-      readBigDecimal("1234567890123456789.0123456789$", null, bigDecimalScaleLimit, bigDecimalMathContext) shouldBe BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal("1234567890123456789.0123456789e10$", null, bigDecimalScaleLimit, bigDecimalMathContext) shouldBe BigDecimal("12345678901234567890123456789")
+      readBigDecimal("0$", null) shouldBe BigDecimal("0")
+      readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
+      readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
+      readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
     }
   }
   "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
@@ -2125,51 +2125,52 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      readBigDecimal("null", BigDecimal("12345"), bigDecimalScaleLimit, bigDecimalMathContext) shouldBe BigDecimal("12345")
+      readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
       reader("null".getBytes("UTF-8")).readStringAsBigDecimal(BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
   }
   "JsonReader.readBigDecimal, JsonReader.readKeyAsBigDecimal and JsonReader.readStringAsBigDecimal" should {
-    def check(s: String, maxScale: Int = bigDecimalScaleLimit, mc: MathContext = bigDecimalMathContext): Unit = {
+    def check(s: String, mc: MathContext = bigDecimalMathContext, scaleLimit: Int = bigDecimalScaleLimit,
+              digitsLimit: Int = bigDecimalDigitsLimit): Unit = {
       val n = BigDecimal(s)
-      readBigDecimal(s, null, maxScale, mc) shouldBe n
-      readKeyAsBigDecimal(s, maxScale, mc) shouldBe n
-      readStringAsBigDecimal(s, null, maxScale, mc) shouldBe n
+      readBigDecimal(s, null, mc, scaleLimit, digitsLimit) shouldBe n
+      readKeyAsBigDecimal(s, mc, scaleLimit, digitsLimit) shouldBe n
+      readStringAsBigDecimal(s, null, mc, scaleLimit, digitsLimit) shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readBigDecimal(s, null, bigDecimalScaleLimit, bigDecimalMathContext))
+      assert(intercept[JsonParseException](readBigDecimal(s, null))
         .getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsBigDecimal(s, bigDecimalScaleLimit, bigDecimalMathContext))
+      assert(intercept[JsonParseException](readKeyAsBigDecimal(s))
         .getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsBigDecimal(s, null, bigDecimalScaleLimit, bigDecimalMathContext))
+      assert(intercept[JsonParseException](readStringAsBigDecimal(s, null))
         .getMessage.contains(error2))
     }
 
     "parse valid number values with scale less than specified maximum" in {
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
-        check(n.toString, Int.MaxValue, MathContext.UNLIMITED)
+        check(n.toString, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
       }
     }
     "parse big number values without overflow up to limits" in {
       check("1234567890123456789012345678901234")
       check("12345e67")
       check("-12345e67")
-      check("1234567890123456789012345678901234567890e-123456789", Int.MaxValue, MathContext.UNLIMITED)
-      check("-1234567890123456789012345678901234567890e-123456789", Int.MaxValue, MathContext.UNLIMITED)
+      check("1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      check("-1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
     }
     "parse small number values without underflow up to limits" in {
       check("0." + "0" * 100 + "1234567890123456789012345678901234")
       check("12345e-67")
       check("-12345e-67")
-      check("1234567890123456789012345678901234567890e-123456789", Int.MaxValue, MathContext.UNLIMITED)
-      check("-1234567890123456789012345678901234567890e-123456789", Int.MaxValue, MathContext.UNLIMITED)
+      check("1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      check("-1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
     }
     "throw number format exception for too big mantissa" in {
-      checkError("12345678901234567890123456789012345",
-        "illegal number, offset: 0x00000022", "illegal number, offset: 0x00000023")
-      checkError("0.000012345678901234567890123456789012345",
-        "illegal number, offset: 0x00000028", "illegal number, offset: 0x00000029")
+      checkError("9" * 308,
+        "illegal number, offset: 0x00000133", "illegal number, offset: 0x00000134")
+      checkError("0.0000" + "9" * 308,
+        "illegal number, offset: 0x00000139", "illegal number, offset: 0x0000013a")
     }
     "throw number format exception for too big scale" in {
       checkError("1e6200", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
@@ -2193,7 +2194,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigDecimal(s, null, bigDecimalScaleLimit, bigDecimalMathContext))
+        assert(intercept[JsonParseException](readBigDecimal(s, null))
           .getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
@@ -2449,11 +2450,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readBigInt(buf: Array[Byte], default: BigInt, maxDigits: Int): BigInt =
     reader(buf).readBigInt(default, maxDigits)
 
-  def readBigDecimal(s: String, default: BigDecimal, maxScale: Int, mc: MathContext): BigDecimal =
-    readBigDecimal(s.getBytes("UTF-8"), default, maxScale, mc)
+  def readBigDecimal(s: String, default: BigDecimal, mc: MathContext = bigDecimalMathContext,
+                     scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
+    readBigDecimal(s.getBytes("UTF-8"), default, mc, scaleLimit, digitsLimit)
 
-  def readBigDecimal(buf: Array[Byte], default: BigDecimal, maxScale: Int, mc: MathContext): BigDecimal =
-    reader(buf).readBigDecimal(default, maxScale, mc)
+  def readBigDecimal(buf: Array[Byte], default: BigDecimal, mc: MathContext,
+                     scaleLimit: Int, digitsLimit: Int): BigDecimal =
+    reader(buf).readBigDecimal(default, mc, scaleLimit, digitsLimit)
 
   def readKeyAsInstant(s: String): Instant = readKeyAsInstant(s.getBytes("UTF-8"))
 
@@ -2558,11 +2561,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readKeyAsBigInt(buf: Array[Byte], maxDigits: Int): BigInt =
     reader(stringify(buf) :+ ':'.toByte).readKeyAsBigInt(maxDigits)
 
-  def readKeyAsBigDecimal(s: String, maxScale: Int, mc: MathContext): BigDecimal =
-    readKeyAsBigDecimal(s.getBytes("UTF-8"), maxScale, mc)
+  def readKeyAsBigDecimal(s: String, mc: MathContext = bigDecimalMathContext,
+                          scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
+    readKeyAsBigDecimal(s.getBytes("UTF-8"), mc, scaleLimit, digitsLimit)
 
-  def readKeyAsBigDecimal(buf: Array[Byte], maxScale: Int, mc: MathContext): BigDecimal =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsBigDecimal(maxScale, mc)
+  def readKeyAsBigDecimal(buf: Array[Byte], mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
+    reader(stringify(buf) :+ ':'.toByte).readKeyAsBigDecimal(mc, scaleLimit, digitsLimit)
 
   def readStringAsByte(s: String): Byte = readStringAsByte(s.getBytes("UTF-8"))
 
@@ -2594,11 +2598,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   def readStringAsBigInt(buf: Array[Byte], default: BigInt, maxDigits: Int): BigInt =
     reader(stringify(buf)).readStringAsBigInt(default, maxDigits)
 
-  def readStringAsBigDecimal(s: String, default: BigDecimal, maxScale: Int, mc: MathContext): BigDecimal =
-    readStringAsBigDecimal(s.getBytes("UTF-8"), default, maxScale, mc)
+  def readStringAsBigDecimal(s: String, default: BigDecimal, mc: MathContext = bigDecimalMathContext,
+                             scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
+    readStringAsBigDecimal(s.getBytes("UTF-8"), default, mc, scaleLimit, digitsLimit)
 
-  def readStringAsBigDecimal(buf: Array[Byte], default: BigDecimal, maxScale: Int, mc: MathContext): BigDecimal =
-    reader(stringify(buf)).readStringAsBigDecimal(default, maxScale, mc)
+  def readStringAsBigDecimal(buf: Array[Byte], default: BigDecimal, mc: MathContext,
+                             scaleLimit: Int, digitsLimit: Int): BigDecimal =
+    reader(stringify(buf)).readStringAsBigDecimal(default, mc, scaleLimit, digitsLimit)
 
   def reader(buf: Array[Byte], totalRead: Long = 0): JsonReader =
     new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`

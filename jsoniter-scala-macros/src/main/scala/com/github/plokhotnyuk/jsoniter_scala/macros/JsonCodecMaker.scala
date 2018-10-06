@@ -49,9 +49,10 @@ final class stringified extends StaticAnnotation
   * @param transientDefault       a flag that turn on skipping serialization of fields that have same values as default
   *                               values defined for them in the primary constructor (turned on by default)
   * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default)
-  * @param bigDecimalScaleLimit   an exclusive limit for accepted scale of 'BigDecimal' values (6176 by default)
   * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default)
-  * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values (307 by default)
+  * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default)
+  * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of decimal digits in 'BigDecimal' values (308 by default)
+  * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values (308 by default)
   */
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
@@ -60,10 +61,11 @@ case class CodecMakerConfig(
   isStringified: Boolean = false,
   skipUnexpectedFields: Boolean = true,
   transientDefault: Boolean = true,
-  bitSetValueLimit: Int = 1024, // 128 bytes of internal representation
-  bigDecimalScaleLimit: Int = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
+  bitSetValueLimit: Int = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
   bigDecimalPrecision: Int = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
-  bigIntDigitsLimit: Int = 308) // 128 bytes of internal representation: (BigInt("9" * 307)).underlying.toByteArray.length
+  bigDecimalScaleLimit: Int = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
+  bigDecimalDigitsLimit: Int = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
+  bigIntDigitsLimit: Int = 308) // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
 
 object JsonCodecMaker {
   /**
@@ -300,7 +302,7 @@ object JsonCodecMaker {
           val mc = withMathContextFor(codecConfig.bigDecimalPrecision) {
             q"new java.math.MathContext(${codecConfig.bigDecimalPrecision}, java.math.RoundingMode.HALF_EVEN)"
           }
-          q"in.readKeyAsBigDecimal(${codecConfig.bigDecimalScaleLimit}, $mc)"
+          q"in.readKeyAsBigDecimal($mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
         }
         else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
         else if (tpe =:= typeOf[Duration]) q"in.readKeyAsDuration()"
@@ -741,8 +743,11 @@ object JsonCodecMaker {
           val mc = withMathContextFor(codecConfig.bigDecimalPrecision) {
             q"new java.math.MathContext(${codecConfig.bigDecimalPrecision}, java.math.RoundingMode.HALF_EVEN)"
           }
-          if (isStringified) q"in.readStringAsBigDecimal($default, ${codecConfig.bigDecimalScaleLimit}, $mc)"
-          else q"in.readBigDecimal($default, ${codecConfig.bigDecimalScaleLimit}, $mc)"
+          if (isStringified) {
+            q"in.readStringAsBigDecimal($default, $mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
+          } else {
+            q"in.readBigDecimal($default, $mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
+          }
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1, nullValue(tpe1), isStringified)})"
