@@ -17,7 +17,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       ReaderConfig().throwParseExceptionWithStackTrace shouldBe false
       ReaderConfig().appendHexDumpToParseException shouldBe true
       ReaderConfig().preferredBufSize shouldBe 16384
-      ReaderConfig().preferredCharBufSize shouldBe 2048
+      ReaderConfig().preferredCharBufSize shouldBe 1024
     }
     "throw exception in case for unsupported values of params" in {
       assert(intercept[IllegalArgumentException](ReaderConfig(preferredBufSize = 11))

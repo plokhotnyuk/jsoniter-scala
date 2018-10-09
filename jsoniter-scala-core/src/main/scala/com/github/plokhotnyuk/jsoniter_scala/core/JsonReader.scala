@@ -25,10 +25,11 @@ import scala.{specialized => sp}
   * [[https://shipilev.net/blog/2014/exceptional-performance/]]</li>
   * <li>turn off appending of hex dump to minimize length of exception message</li>
   * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
-  * buffers when lot of large strings with length greater than 2K need to be parsed</li>
-  * <li>increase preferred size of an internal byte buffer for parsing from [[java.io.InputStream]] to reduce allocation
-  * rate of grown and then reduced buffers when during parsing of large ADT instances (>16Kb) the discriminator field does
-  * not appear in the beginning of the JSON object</li>
+  * buffers when large (>1Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or string instances need to be parsed</li>
+  * <li>increase preferred size of an internal byte buffer for parsing from [[java.io.InputStream]] or
+  * [[java.nio.DirectByteBuffer]] and, also, to reduce allocation rate of grown and then reduced buffers during parsing
+  * of large (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or ADT instances with the discriminator field
+  * doesn't appear in the beginning of the JSON object</li>
   * </ul>
   * @param throwParseExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
   *                                          development
@@ -42,7 +43,7 @@ case class ReaderConfig(
     throwParseExceptionWithStackTrace: Boolean = false,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
-    preferredCharBufSize: Int = 2048) {
+    preferredCharBufSize: Int = 1024) {
   if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
   if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
 }
@@ -51,11 +52,11 @@ class JsonParseException private[jsoniter_scala](msg: String, cause: Throwable, 
   extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonReader private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](2048),
+    private[this] var buf: Array[Byte] = new Array[Byte](16384),
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
     private[this] var mark: Int = 2147483647,
-    private[this] var charBuf: Array[Char] = new Array[Char](256),
+    private[this] var charBuf: Array[Char] = new Array[Char](1024),
     private[this] var bbuf: ByteBuffer = null,
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,

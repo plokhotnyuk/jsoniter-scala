@@ -21,9 +21,9 @@ import scala.{specialized => sp}
   * <li>turn on pretty printing by specifying of indention step that is greater than 0</li>
   * <li>turn on escaping of Unicode characters to serialize with only ASCII characters</li>
   * <li>increase preferred size of an internal byte buffer to reduce allocation rate of grown and then reduced buffers
-  * when writing to [[java.io.OutputStream]] lot of large (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or
-  * others non escaped ASCII strings written using `JsonWriter.writeNonEscapedAsciiKey` or
-  * `JsonWriter.writeNonEscapedAsciiVal` </li>
+  * when writing to [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]] lot of large (>16Kb)
+  * [[scala.math.BigDecimal]], [[scala.math.BigInt]] or other non escaped ASCII strings written using
+  * `JsonWriter.writeNonEscapedAsciiKey` or `JsonWriter.writeNonEscapedAsciiVal` </li>
   * </ul>
   * @param indentionStep a size of indention for pretty-printed formatting or 0 for compact output
   * @param escapeUnicode a flag to turn on hexadecimal escaping of all non-ASCII chars
@@ -39,9 +39,9 @@ case class WriterConfig(
 }
 
 final class JsonWriter private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](2048),
+    private[this] var buf: Array[Byte] = new Array[Byte](16384),
     private[this] var count: Int = 0,
-    private[this] var limit: Int = 2048,
+    private[this] var limit: Int = 16384,
     private[this] var indention: Int = 0,
     private[this] var comma: Boolean = false,
     private[this] var isBufGrowingAllowed: Boolean = true,
