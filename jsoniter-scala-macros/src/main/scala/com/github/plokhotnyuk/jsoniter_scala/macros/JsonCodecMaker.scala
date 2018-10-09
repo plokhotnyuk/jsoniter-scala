@@ -27,13 +27,12 @@ final class stringified extends StaticAnnotation
 /**
   * Configuration parameter for `JsonCodecMaker.make()` call.
   *
-  * BEWARE: `fieldNameMapper` and  `adtLeafClassNameMapper` functions should not depend on code from the same
-  * compilation module where the `make` macro is called. Use a separated submodule of the project to compile all such
-  * dependencies before their usage for generation of codecs.
+  * BEWARE: a parameter of the `make` macro should not depend on code from the same compilation module where it is called.
+  * Use a separated submodule of the project to compile all such dependencies before their usage for generation of codecs.
   *
-  * Examples of functions that have no dependencies in the same compilation module are:
-  * `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`, `JsonCodecMaker.enforce-kebab-case`, and
-  * `JsonCodecMaker.simpleClassName`. Or their composition like:
+  * Examples of `fieldNameMapper` and  `adtLeafClassNameMapper` functions that have no dependencies in the same
+  * compilation module are:  `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`,
+  * `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`. Or their composition like:
   * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
   *
   * @param fieldNameMapper        the function of mapping from string of case class field name to JSON key (an identity
@@ -153,8 +152,6 @@ object JsonCodecMaker {
 
       def warn(msg: String): Unit = c.warning(c.enclosingPosition, msg)
 
-      def info(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
-
       def typeArg1(tpe: Type): Type = tpe.typeArgs.head.dealias
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs(1).dealias
@@ -265,7 +262,15 @@ object JsonCodecMaker {
 
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
-      val codecConfig = eval[CodecMakerConfig](config.tree)
+      val rootTpe = weakTypeOf[A].dealias
+      val codecConfig =
+        try eval[CodecMakerConfig](config.tree) catch {
+          // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+          case _: Throwable => fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
+            "It should not depend on code from the same compilation module where the 'make' macro is called. " +
+            "Use a separated submodule of the project to compile all such dependencies before their usage for " +
+            s"generation of codecs.")
+        }
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
@@ -444,7 +449,15 @@ object JsonCodecMaker {
               warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
-            val partiallyMappedName = named.headOption.flatMap(a => Option(eval[named](a.tree).name)).getOrElse(name)
+            val partiallyMappedName = named.headOption.flatMap(a => Option {
+              try eval[named](a.tree).name catch {
+                // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+                case _: Throwable => fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
+                  "It should not depend on code from the same compilation module where the 'make' macro is called. " +
+                  "Use a separated submodule of the project to compile all such dependencies before their usage " +
+                  s"for generation of codecs.")
+              }
+            }).getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
         ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
@@ -472,7 +485,6 @@ object JsonCodecMaker {
         })
       })
 
-      val rootTpe = weakTypeOf[A].dealias
       val unexpectedFieldHandler =
         if (codecConfig.skipUnexpectedFields) q"in.skip()"
         else q"in.unexpectedKeyError(l)"
@@ -1141,7 +1153,9 @@ object JsonCodecMaker {
               ..${nullValueTrees.values}
               ..${mathContextTrees.values}
             }"""
-      if (c.settings.contains("print-codecs")) info(s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}")
+      if (c.settings.contains("print-codecs")) {
+        c.info(c.enclosingPosition, s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}", force = true)
+      }
       c.Expr[JsonValueCodec[A]](codec)
     }
   }

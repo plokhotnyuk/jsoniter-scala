@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
@@ -1445,6 +1444,36 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |JsonCodecMaker.make[ParamHasNoAccessor](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
         """'a' parameter of 'ParamHasNoAccessor' should be defined as 'val' or 'var' in the primary constructor."""
+      })
+    }
+    "don't generate codecs when a parameter of the 'make' call depends on not yet compiled code" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """object A {
+          |  def f(fullClassName: String): String = fullClassName.split('.').head.charAt(0).toString
+          |  case class B(i: Int)
+          |  implicit val c = JsonCodecMaker.make[B](CodecMakerConfig(adtLeafClassNameMapper = f))
+          |}""".stripMargin
+      }).getMessage.contains {
+        """Cannot evaluate a parameter of the 'make' macro call for type
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.A.B'.
+          |It should not depend on code from the same compilation module where the 'make' macro is called.
+          |Use a separated submodule of the project to compile all such dependencies before their usage for
+          |generation of codecs.""".stripMargin.replace('\n', ' ')
+      })
+    }
+    "don't generate codecs when a parameter of the '@named' annotation depends on not yet compiled code" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """object A {
+          |  def f(x: String): String = x
+          |  case class B(@named(f("XXX")) i: Int)
+          |  implicit val c = JsonCodecMaker.make[B](CodecMakerConfig())
+          |}""".stripMargin
+      }).getMessage.contains {
+        """Cannot evaluate a parameter of the '@named' annotation in type
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.A.B'.
+          |It should not depend on code from the same compilation module where the 'make' macro is called.
+          |Use a separated submodule of the project to compile all such dependencies before their usage for
+          |generation of codecs.""".stripMargin.replace('\n', ' ')
       })
     }
   }
