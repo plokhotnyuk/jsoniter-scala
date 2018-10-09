@@ -339,11 +339,12 @@ final class JsonWriter private[jsoniter_scala](
       indention = 0
       totalWritten = 0
       isBufGrowingAllowed = true
+      if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
       codec.encodeValue(x, this)
       flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
     } finally {
       this.out = null // do not close output stream, just help GC instead
-      freeTooLongBuf()
+      if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] =
@@ -355,7 +356,9 @@ final class JsonWriter private[jsoniter_scala](
       isBufGrowingAllowed = true
       codec.encodeValue(x, this)
       java.util.Arrays.copyOf(buf, count)
-    } finally freeTooLongBuf()
+    } finally {
+      if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
+    }
 
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig): Int = {
     val currBuf = this.buf
@@ -399,11 +402,12 @@ final class JsonWriter private[jsoniter_scala](
         indention = 0
         totalWritten = 0
         isBufGrowingAllowed = true
+        if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
         codec.encodeValue(x, this)
         flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
       } finally {
         this.bbuf = null // help GC
-        freeTooLongBuf()
+        if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
       }
     }
 
@@ -1778,9 +1782,7 @@ final class JsonWriter private[jsoniter_scala](
     if (isBufGrowingAllowed) setBuf(java.util.Arrays.copyOf(buf, Integer.highestOneBit(limit | required) << 1))
     else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
 
-  @inline
-  private[this] def freeTooLongBuf(): Unit =
-    if (limit > config.preferredBufSize) setBuf(new Array[Byte](config.preferredBufSize))
+  private[this] def reallocateBufToPreferredSize(): Unit = setBuf(new Array[Byte](config.preferredBufSize))
 
   @inline
   private[this] def setBuf(buf: Array[Byte]): Unit = {

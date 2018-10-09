@@ -532,7 +532,7 @@ final class JsonReader private[jsoniter_scala](
       codec.decodeValue(this, codec.nullValue)
     } finally {
       this.buf = currBuf
-      freeTooLongCharBuf()
+      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
   }
 
@@ -544,11 +544,12 @@ final class JsonReader private[jsoniter_scala](
       tail = 0
       totalRead = 0
       mark = 2147483647
+      if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       codec.decodeValue(this, codec.nullValue)
     } finally {
       this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-      freeTooLongBuf()
-      freeTooLongCharBuf()
+      if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
+      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], bbuf: ByteBuffer, config: ReaderConfig): A =
@@ -565,7 +566,7 @@ final class JsonReader private[jsoniter_scala](
         codec.decodeValue(this, codec.nullValue)
       } finally {
         this.buf = currBuf
-        freeTooLongCharBuf()
+        if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
         bbuf.position(head - offset)
       }
     } else {
@@ -577,11 +578,12 @@ final class JsonReader private[jsoniter_scala](
         tail = 0
         totalRead = 0
         mark = 2147483647
+        if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
         codec.decodeValue(this, codec.nullValue)
       } finally {
         this.bbuf = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-        freeTooLongBuf()
-        freeTooLongCharBuf()
+        if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
+        if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
         bbuf.position(totalRead.toInt - tail + head + position)
       }
     }
@@ -595,11 +597,12 @@ final class JsonReader private[jsoniter_scala](
       tail = 0
       totalRead = 0
       mark = 2147483647
+      if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-      freeTooLongBuf()
-      freeTooLongCharBuf()
+      if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
+      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
   private[jsoniter_scala] def scanArray[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
@@ -611,6 +614,7 @@ final class JsonReader private[jsoniter_scala](
       tail = 0
       totalRead = 0
       mark = 2147483647
+      if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       if (isNextToken('[')) {
         if (!isNextToken(']')) {
           rollbackToken()
@@ -623,8 +627,8 @@ final class JsonReader private[jsoniter_scala](
       } else readNullOrTokenError((), '[')
     } finally {
       this.in = null  // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
-      freeTooLongBuf()
-      freeTooLongCharBuf()
+      if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
+      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
   private[this] def skipWhitespaces(): Boolean = {
@@ -2850,13 +2854,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def endOfInputError(cause: Throwable = null): Nothing =
     decodeError("unexpected end of input", tail, cause)
 
-  @inline
-  private[this] def freeTooLongBuf(): Unit =
-    if (buf.length > config.preferredBufSize) buf = new Array[Byte](config.preferredBufSize)
+  private[this] def reallocateBufToPreferredSize(): Unit = buf = new Array[Byte](config.preferredBufSize)
 
-  @inline
-  private[this] def freeTooLongCharBuf(): Unit =
-    if (charBuf.length > config.preferredCharBufSize) charBuf = new Array[Char](config.preferredCharBufSize)
+  private[this] def reallocateCharBufToPreferredSize(): Unit = charBuf = new Array[Char](config.preferredCharBufSize)
 }
 
 object JsonReader {
