@@ -100,14 +100,10 @@ lazy val `jsoniter-scala-core` = project
     ),
     libraryDependencies ++= {
       val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v == 12 || scalaV == "2.13.0-M5" => Seq(
-          "org.scalatest" %% "scalatest" % "3.0.6-SNAP3" % Test
-        )
-        case _ => Seq(
-          "org.scalatest" %% "scalatest" % "3.0.6-SNAP2" % Test
-        )
-      }
+      val scalatestV =
+        if (scalaV == "2.13.0-M4") "3.0.6-SNAP2"
+        else "3.0.6-SNAP3"
+      Seq("org.scalatest" %% "scalatest" % scalatestV % Test)
     }
   )
 
@@ -125,14 +121,10 @@ lazy val `jsoniter-scala-macros` = project
     ),
     libraryDependencies ++= {
       val scalaV = scalaVersion.value
-      CrossVersion.partialVersion(scalaV) match {
-        case Some((2, v)) if v == 12 || scalaV == "2.13.0-M5" => Seq(
-          "org.scalatest" %% "scalatest" % "3.0.6-SNAP3" % Test
-        )
-        case _ => Seq(
-          "org.scalatest" %% "scalatest" % "3.0.6-SNAP2" % Test
-        )
-      }
+      val scalatestV =
+        if (scalaV == "2.13.0-M4") "3.0.6-SNAP2" 
+        else "3.0.6-SNAP3"
+      Seq("org.scalatest" %% "scalatest" % scalatestV % Test)
     }
   )
 

@@ -22,7 +22,7 @@ releaseProcess := Seq[ReleaseStep](
   runClean,
   releaseStepCommandAndRemaining("+test"),
   setReleaseVersion,
-  //FIXME: revert mima checks after 1st release for Scala 2.13.0-M5: releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
+  releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
   updateVersionInReadme,
   commitReleaseVersion,
   tagRelease,
