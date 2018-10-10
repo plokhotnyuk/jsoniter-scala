@@ -95,15 +95,14 @@ lazy val `jsoniter-scala-core` = project
   .settings(publishSettings: _*)
   .settings(
     crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.7", "2.11.12"),
-    libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test
-    ),
     libraryDependencies ++= {
-      val scalaV = scalaVersion.value
       val scalatestV =
-        if (scalaV == "2.13.0-M4") "3.0.6-SNAP2"
+        if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
         else "3.0.6-SNAP3"
-      Seq("org.scalatest" %% "scalatest" % scalatestV % Test)
+      Seq(
+        "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+        "org.scalatest" %% "scalatest" % scalatestV % Test
+      )
     }
   )
 
@@ -114,17 +113,16 @@ lazy val `jsoniter-scala-macros` = project
   .settings(publishSettings: _*)
   .settings(
     crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.7", "2.11.12"),
-    libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test
-    ),
     libraryDependencies ++= {
-      val scalaV = scalaVersion.value
       val scalatestV =
-        if (scalaV == "2.13.0-M4") "3.0.6-SNAP2" 
+        if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
         else "3.0.6-SNAP3"
-      Seq("org.scalatest" %% "scalatest" % scalatestV % Test)
+      Seq(
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+        "org.scalatest" %% "scalatest" % scalatestV % Test
+      )
     }
   )
 
