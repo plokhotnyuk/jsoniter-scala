@@ -26,6 +26,26 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("'preferredCharBufSize' should be not less than 0"))
     }
   }
+  "JsonReader.toHashCode" should {
+    "produce the same hash value for strings as JDK by default" in {
+      forAll(minSuccessful(100000)) { (x: String) =>
+        assert(JsonReader.toHashCode(x.toCharArray, x.length) == x.hashCode)
+      }
+    }
+    "produce 0 hash value when the provided 'len' isn't greater than 0" in {
+      forAll(minSuccessful(100000)) { (x: Int) =>
+        whenever(x <= 0) {
+          assert(JsonReader.toHashCode("VVV".toCharArray, x) == 0)
+        }
+      }
+    }
+    "throw exception in case null value for the char array is provided" in {
+      intercept[NullPointerException](JsonReader.toHashCode(null, 1))
+    }
+    "throw exception in case the char array length is less than the provided 'len'" in {
+      intercept[ArrayIndexOutOfBoundsException](JsonReader.toHashCode("XXX".toCharArray, 4))
+    }
+  }
   "JsonReader.skip" should {
     "skip string values" in {
       validateSkip("\"\"")

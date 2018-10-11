@@ -2906,6 +2906,16 @@ object JsonReader {
   final val bigDecimalScaleLimit: Int = 6178
   final val bigIntDigitsLimit: Int = 308
 
+  /**
+    * Calculates hash code value string represented by sequence of characters from begining of the provided char array
+    * up to limit position.
+    *
+    * @param cs a char array
+    * @param len an exclusive limit
+    * @return a hash code value
+    * @throws NullPointerException if the `cs` is null
+    * @throws ArrayIndexOutOfBoundsException if the length of `cs` is less than the provided `len`
+    */
   final def toHashCode(cs: Array[Char], len: Int): Int = {
     var h = 0
     var i = 0
