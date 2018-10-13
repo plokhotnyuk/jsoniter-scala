@@ -23,6 +23,7 @@ class BigIntBenchmark extends CommonParams {
   var jsonString: String = _
   var obj: BigInt = _
   var preallocatedBuf: Array[Byte] = _
+  var jsoniterScalaReaderConfig: ReaderConfig = _
 
   @Setup
   def setup(): Unit = {
@@ -30,6 +31,7 @@ class BigIntBenchmark extends CommonParams {
     jsonString = new String(jsonBytes)
     obj = BigInt(jsonString)
     preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    jsoniterScalaReaderConfig = ReaderConfig(preferredCharBufSize = jsonBytes.length + 100)
   }
 
   @Benchmark
@@ -45,7 +47,7 @@ class BigIntBenchmark extends CommonParams {
   def readJacksonScala(): BigInt = jacksonMapper.readValue[BigInt](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes)(bigIntCodec)
+  def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes, jsoniterScalaReaderConfig)(bigIntCodec)
 
   @Benchmark
   def readNaiveScala(): BigInt = BigInt(new String(jsonBytes, UTF_8))
