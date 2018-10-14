@@ -372,8 +372,9 @@ security release:
 1. [akka-http-json](https://github.com/hseeberger/akka-http-json/blob/master/build.sbt)
 2. [kafka-serialization](https://github.com/ovotech/kafka-serialization/blob/master/build.sbt)
 3. [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala/blob/master/build.sbt)
-4. [flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
-5. [tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
+4. [loco](https://github.com/yarhrn/loco/blob/master/project/Dependencies.scala)
+5. [flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
+6. [tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
 
 Also half of [Scala web frameworks which take part in TechEmpower benchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/tree/master/frameworks/Scala)
 have used jsoniter-scala for serialization of JSON responses.
