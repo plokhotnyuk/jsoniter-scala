@@ -25,11 +25,11 @@ import scala.{specialized => sp}
   * [[https://shipilev.net/blog/2014/exceptional-performance/]]</li>
   * <li>turn off appending of hex dump to minimize length of exception message</li>
   * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
-  * buffers when large (>1Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or string instances need to be parsed</li>
+  * buffers when large (>1Kb) string instances need to be parsed</li>
   * <li>increase preferred size of an internal byte buffer for parsing from [[java.io.InputStream]] or
-  * [[java.nio.DirectByteBuffer]] and, also, to reduce allocation rate of grown and then reduced buffers during parsing
-  * of large (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or ADT instances with the discriminator field
-  * doesn't appear in the beginning of the JSON object</li>
+  * [[java.nio.DirectByteBuffer]] to reduce allocation rate of grown and then reduced buffers during parsing of large
+  * (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or ADT instances with the discriminator field doesn't
+  * appear in the beginning of the JSON object</li>
   * </ul>
   * @param throwParseExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
   *                                          development
@@ -1198,8 +1198,7 @@ final class JsonReader private[jsoniter_scala](
       }
       new BigInt(BigInteger.valueOf(toSignedLong(isNeg, x)))
     } else {
-      val len = copyAsciiToCharBuf(buf, startPos, pos)
-      try new BigInt(new java.math.BigDecimal(charBuf, 0, len).toBigIntegerExact) catch {
+      try new BigInt(new java.math.BigInteger(new String(buf, 0, startPos, pos - startPos), 10)) catch {
         case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
       }
     }
@@ -1277,12 +1276,10 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal = {
-    val len = copyAsciiToCharBuf(buf, this.mark, pos)
-    try new BigDecimal(new java.math.BigDecimal(charBuf, 0, len, mc)) catch {
+  private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal =
+    try new BigDecimal(new java.math.BigDecimal(new String(buf, 0, mark, pos - mark))) catch {
       case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
     }
-  }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
     if (default == null) numberError(pos - 1)
@@ -2714,23 +2711,6 @@ final class JsonReader private[jsoniter_scala](
   private[this] def putHex(b: Byte, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
     charBuf(i) = ds((b >>> 4) & 15)
     charBuf(i + 1) = ds(b & 15)
-  }
-
-  private[this] def copyAsciiToCharBuf(buf: Array[Byte], from: Int, to: Int): Int = {
-    val required = to - from
-    var pos = from
-    var charBuf = this.charBuf
-    var i = 0
-    if (required > charBuf.length) {
-      growCharBuf(required)
-      charBuf = this.charBuf
-    }
-    while (pos < to) {
-      charBuf(i) = buf(pos).toChar
-      i += 1
-      pos += 1
-    }
-    required
   }
 
   private[this] def growCharBuf(required: Int): Int = {
