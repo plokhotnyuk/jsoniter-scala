@@ -9,7 +9,7 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: dsl-json cannot find parser for array of BigInt
+      //FIXME: dsl-json cannot find decoder for array of BigInt
       //benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -21,7 +21,7 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe uses an engineering decimal notation to serialize BigInt
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      //FIXME: dsl-json cannot find serializer for array of BigInt
+      //FIXME: dsl-json cannot find encoder for array of BigInt
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
