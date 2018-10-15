@@ -763,7 +763,6 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  @inline
   private[this] def writeCommaWithParentheses(): Unit = {
     if (comma) writeBytes(',')
     else comma = true
@@ -771,12 +770,10 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
-  @inline
   private[this] def writeParenthesesWithColon(): Unit =
     if (config.indentionStep > 0) writeBytes('"', ':', ' ')
     else writeBytes('"', ':')
 
-  @inline
   private[this] def writeColon(): Unit =
     if (config.indentionStep > 0) writeBytes(':', ' ')
     else writeBytes(':')
@@ -1752,7 +1749,6 @@ final class JsonWriter private[jsoniter_scala](
     to
   }
 
-  @inline
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
     if (pos + required > limit) flushAndGrowBuf(required, pos)
@@ -1775,7 +1771,6 @@ final class JsonWriter private[jsoniter_scala](
       pos
     }
 
-  @inline
   private[jsoniter_scala] def flushBuf(): Unit = count = flushAndGrowBuf(0, count)
 
   private[this] def growBuf(required: Int): Unit =
@@ -1784,7 +1779,6 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def reallocateBufToPreferredSize(): Unit = setBuf(new Array[Byte](config.preferredBufSize))
 
-  @inline
   private[this] def setBuf(buf: Array[Byte]): Unit = {
     this.buf = buf
     limit = buf.length

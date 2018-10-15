@@ -800,19 +800,15 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
-  @inline
   private[this] def readParenthesesToken(): Unit = if (!isNextToken('"', head)) tokenError('"')
 
-  @inline
   private[this] def readParenthesesByteWithColonToken(): Unit = {
     readParenthesesByte()
     readColonToken()
   }
 
-  @inline
   private[this] def readParenthesesByte(): Unit = if (nextByte(head) != '"') tokenError('"')
 
-  @inline
   private[this] def readColonToken(): Unit = if (!isNextToken(':', head)) tokenError(':')
 
   private[this] def parseBoolean(isToken: Boolean): Boolean =
