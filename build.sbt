@@ -133,6 +133,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(noPublishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
+      "io.spray" %%  "spray-json" % "1.3.4",
       "com.avsystem.commons" %% "commons-core" % "1.32.1",
       "com.lihaoyi" %% "upickle" % "0.6.7",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.3",
