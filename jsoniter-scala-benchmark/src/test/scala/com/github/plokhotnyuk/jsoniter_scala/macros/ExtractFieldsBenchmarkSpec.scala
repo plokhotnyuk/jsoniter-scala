@@ -11,6 +11,8 @@ class ExtractFieldsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJson4sJackson() shouldBe benchmark.obj
+      benchmark.readJson4sNative() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
