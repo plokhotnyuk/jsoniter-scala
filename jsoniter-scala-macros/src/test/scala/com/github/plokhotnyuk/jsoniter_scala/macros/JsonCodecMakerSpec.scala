@@ -699,6 +699,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)),
         """[["3.3"],["1.1","2.2"]]""")
     }
+    "throw parse exception when too many inserts into set was completed" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[collection.immutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
+          (1 to 11).toSet,
+          """[1,2,3,4,5,6,7,8,9,10,11]""")
+      }.getMessage.contains("too many set inserts, offset: 0x00000017"))
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[collection.mutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
+          collection.mutable.Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+          """[1,2,3,4,5,6,7,8,9,10,11]""")
+      }.getMessage.contains("too many set inserts, offset: 0x00000017"))
+    }
     "serialize and deserialize case classes with generic maps" in {
       case class GenericMaps(m: collection.Map[Int, Boolean])
 
@@ -736,6 +748,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfMaps,
         collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":"true"},"2":{}}""")
+    }
+    "throw parse exception when too many inserts into map was completed" in {
+      assert(intercept[JsonParseException] {
+        verifyDeser(make[collection.immutable.Map[Int, Int]](CodecMakerConfig(mapMaxInsertNumber = 10)),
+          (1 to 11).map(x => (x, x)).toMap,
+          """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""")
+      }.getMessage.contains("too many map inserts, offset: 0x00000045"))
     }
     "throw parse exception in case of JSON object is not properly started/closed or with leading/trailing comma" in {
       val immutableMaps = ImmutableMaps(Map(1 -> 1.1), collection.immutable.HashMap.empty,

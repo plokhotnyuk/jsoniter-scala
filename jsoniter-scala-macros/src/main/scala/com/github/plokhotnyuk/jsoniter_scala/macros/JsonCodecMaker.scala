@@ -47,11 +47,13 @@ final class stringified extends StaticAnnotation
   *                               will be thrown (turned on by default)
   * @param transientDefault       a flag that turn on skipping serialization of fields that have same values as default
   *                               values defined for them in the primary constructor (turned on by default)
-  * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default)
   * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default)
   * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default)
   * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of decimal digits in 'BigDecimal' values (308 by default)
   * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values (308 by default)
+  * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default)
+  * @param mapMaxInsertNumber     a max number of inserts into maps (1024 by default)
+  * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default)
   */
 case class CodecMakerConfig(
   fieldNameMapper: String => String = identity,
@@ -60,11 +62,13 @@ case class CodecMakerConfig(
   isStringified: Boolean = false,
   skipUnexpectedFields: Boolean = true,
   transientDefault: Boolean = true,
-  bitSetValueLimit: Int = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
   bigDecimalPrecision: Int = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
   bigDecimalScaleLimit: Int = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
   bigDecimalDigitsLimit: Int = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
-  bigIntDigitsLimit: Int = 308) // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
+  bigIntDigitsLimit: Int = 308, // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
+  bitSetValueLimit: Int = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
+  mapMaxInsertNumber: Int = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
+  setMaxInsertNumber: Int = 1024) // to limit attacks from untrusted input that exploit worst complexity for inserts
 
 object JsonCodecMaker {
   /**
@@ -350,14 +354,34 @@ object JsonCodecMaker {
               }
             } else in.readNullOrTokenError(default, '[')"""
 
+      def genReadSet(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
+        q"""if (in.isNextToken('[')) {
+              if (in.isNextToken(']')) default
+              else {
+                in.rollbackToken()
+                ..$newBuilder
+                var i = 0
+                do {
+                  ..$readVal
+                  i += 1
+                  if (i > ${codecConfig.setMaxInsertNumber}) in.decodeError("too many set inserts")
+                } while (in.isNextToken(','))
+                if (in.isCurrentToken(']')) $result
+                else in.arrayEndOrCommaError()
+              }
+            } else in.readNullOrTokenError(default, '[')"""
+
       def genReadMap(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
         q"""if (in.isNextToken('{')) {
               if (in.isNextToken('}')) default
               else {
                 in.rollbackToken()
                 ..$newBuilder
+                var i = 0
                 do {
                   ..$readKV
+                  i += 1
+                  if (i > ${codecConfig.mapMaxInsertNumber}) in.decodeError("too many map inserts")
                 } while (in.isNextToken(','))
                 if (in.isCurrentToken('}')) $result
                 else in.objectEndOrCommaError()
@@ -805,6 +829,14 @@ object JsonCodecMaker {
                 x(i) |= 1L << v""",
             if (tpe =:= typeOf[BitSet]) q"collection.immutable.BitSet.fromBitMaskNoCopy(x)"
             else q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
+        } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          genReadSet(q"val x = default; if (x.nonEmpty) x.clear(); ",
+            q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
+        } else if (tpe <:< typeOf[collection.Set[_]]) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          genReadSet(q"val x = ${collectionCompanion(tpe)}.newBuilder[$tpe1]",
+            q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = new collection.mutable.ListBuffer[$tpe1]",
