@@ -13,6 +13,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.macros.HashCodeCollider.zeroHashCodeStrings
 import io.circe.generic.auto._
 import io.circe.parser._
+import org.json4s._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import upickle.default._
@@ -27,6 +28,7 @@ class ExtractFieldsBenchmark extends CommonParams {
   var obj: ExtractFields = ExtractFields("s", 1)
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
+  implicit val formats: DefaultFormats.type = DefaultFormats
 
   @Setup
   def setup(): Unit = {
@@ -45,6 +47,12 @@ class ExtractFieldsBenchmark extends CommonParams {
 
   @Benchmark
   def readJacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
+
+  @Benchmark
+  def readJson4sJackson(): ExtractFields = jackson.JsonMethods.parse(new String(jsonBytes, UTF_8)).extract[ExtractFields]
+
+  @Benchmark
+  def readJson4sNative(): ExtractFields = native.JsonMethods.parse(new String(jsonBytes, UTF_8)).extract[ExtractFields]
 
   @Benchmark
   def readJsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
