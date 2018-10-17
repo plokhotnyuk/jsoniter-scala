@@ -2769,45 +2769,42 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def loadMoreOrError(pos: Int): Int =
     if (bbuf ne null) {
-      val minPos = ensureBufCapacity(pos)
-      val tail = this.tail
+      val newPos = ensureBufCapacity(pos)
       val n = Math.min(bbuf.remaining, buf.length - tail)
       if (n > 0) {
         bbuf.get(buf, tail, n)
-        this.tail = tail + n
+        tail += n
         totalRead += n
-        pos - minPos
+        newPos
       } else endOfInputError()
     } else if (in ne null) {
-      val minPos = ensureBufCapacity(pos)
-      val tail = this.tail
+      val newPos = ensureBufCapacity(pos)
       val n = in.read(buf, tail, buf.length - tail)
       if (n > 0) {
-        this.tail = tail + n
+        tail += n
         totalRead += n
-        pos - minPos
+        newPos
       } else endOfInputError()
     } else endOfInputError()
 
   private[this] def loadMore(pos: Int): Int =
     if (bbuf ne null) {
-      val minPos = ensureBufCapacity(pos)
+      val newPos = ensureBufCapacity(pos)
       val n = Math.min(bbuf.remaining, buf.length - tail)
       if (n > 0) {
         bbuf.get(buf, tail, n)
         this.tail = tail + n
         totalRead += n
       }
-      pos - minPos
+      newPos
     } else if (in ne null) {
-      val minPos = ensureBufCapacity(pos)
-      val tail = this.tail
+      val newPos = ensureBufCapacity(pos)
       val n = in.read(buf, tail, buf.length - tail)
       if (n > 0) {
-        this.tail = tail + n
+        tail += n
         totalRead += n
       }
-      pos - minPos
+      newPos
     } else pos
 
   private[this] def ensureBufCapacity(pos: Int): Int = {
@@ -2824,7 +2821,7 @@ final class JsonReader private[jsoniter_scala](
       }
       tail = remaining
     } else if (tail > 0) buf = java.util.Arrays.copyOf(buf, buf.length << 1)
-    minPos
+    pos - minPos
   }
 
   private[this] def endOfInputError(cause: Throwable = null): Nothing =
