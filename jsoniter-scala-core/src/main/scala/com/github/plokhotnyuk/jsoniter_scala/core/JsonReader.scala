@@ -1170,7 +1170,7 @@ final class JsonReader private[jsoniter_scala](
           }) {
             if (isZeroFirst) leadingZeroError(pos - 1)
             significandDigits += 1
-            if (significandDigits >= digitsLimit) numberError(pos)
+            if (significandDigits >= digitsLimit) digitsLimitError(pos)
             pos += 1
           }
           head = pos
@@ -1227,7 +1227,7 @@ final class JsonReader private[jsoniter_scala](
           }) {
             if (isZeroFirst) leadingZeroError(pos - 1)
             significandDigits += 1
-            if (significandDigits >= digitsLimit) numberError(pos)
+            if (significandDigits >= digitsLimit) digitsLimitError(pos)
             pos += 1
           }
           if (b == '.') {
@@ -1243,7 +1243,7 @@ final class JsonReader private[jsoniter_scala](
               }) {
                 if (significandDigits > 0 || b != '0') {
                   significandDigits += 1
-                  if (significandDigits >= digitsLimit) numberError(pos)
+                  if (significandDigits >= digitsLimit) digitsLimitError(pos)
                 }
                 pos += 1
               }
@@ -1265,7 +1265,7 @@ final class JsonReader private[jsoniter_scala](
           }
           head = pos
           val x = toBigDecimal(pos, mc)
-          if (Math.abs(x.scale) >= scaleLimit) numberError(pos - 1)
+          if (Math.abs(x.scale) >= scaleLimit) scaleLimitError(pos - 1)
           x
         } else numberError(pos - 1)
       } finally this.mark = mark
@@ -1282,6 +1282,12 @@ final class JsonReader private[jsoniter_scala](
     else parseNullOrError(default, "expected number or null", pos)
 
   private[this] def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
+
+  private[this] def digitsLimitError(pos: Int): Nothing =
+    decodeError("value exceeds limit for number of significant digits", pos)
+
+  private[this] def scaleLimitError(pos: Int): Nothing =
+    decodeError("value exceeds limit for scale", pos)
 
   private[this] def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
 

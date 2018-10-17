@@ -2094,8 +2094,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for values with more than max allowed digits" in {
       val bigNumber = "9" * 308
-      checkError(bigNumber, "illegal number, offset: 0x00000133", "illegal number, offset: 0x00000134")
-      checkError("-" + bigNumber, "illegal number, offset: 0x00000134", "illegal number, offset: 0x00000135")
+      checkError(bigNumber,
+        "value exceeds limit for number of significant digits, offset: 0x00000133",
+        "value exceeds limit for number of significant digits, offset: 0x00000134")
+      checkError("-" + bigNumber,
+        "value exceeds limit for number of significant digits, offset: 0x00000134",
+        "value exceeds limit for number of significant digits, offset: 0x00000135")
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("1234567890123456789.0", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
@@ -2188,13 +2192,19 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw number format exception for too big mantissa" in {
       checkError("9" * 308,
-        "illegal number, offset: 0x00000133", "illegal number, offset: 0x00000134")
+        "value exceeds limit for number of significant digits, offset: 0x00000133",
+        "value exceeds limit for number of significant digits, offset: 0x00000134")
       checkError("0.0000" + "9" * 308,
-        "illegal number, offset: 0x00000139", "illegal number, offset: 0x0000013a")
+        "value exceeds limit for number of significant digits, offset: 0x00000139",
+        "value exceeds limit for number of significant digits, offset: 0x0000013a")
     }
     "throw number format exception for too big scale" in {
-      checkError("1e6200", "illegal number, offset: 0x00000005", "illegal number, offset: 0x00000006")
-      checkError("1e-6200", "illegal number, offset: 0x00000006", "illegal number, offset: 0x00000007")
+      checkError("1e6200",
+        "value exceeds limit for scale, offset: 0x00000005",
+        "value exceeds limit for scale, offset: 0x00000006")
+      checkError("1e-6200",
+        "value exceeds limit for scale, offset: 0x00000006",
+        "value exceeds limit for scale, offset: 0x00000007")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
