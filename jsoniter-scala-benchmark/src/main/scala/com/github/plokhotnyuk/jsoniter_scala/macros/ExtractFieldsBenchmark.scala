@@ -65,6 +65,8 @@ class ExtractFieldsBenchmark extends CommonParams {
     finally fis.close()
   }
 
+  //FIXME: lot of warnings like: [warning][os,thread] Failed to start thread - pthread_create failed (EAGAIN) for attributes: stacksize: 1024k, guardsize: 4k, detached.
+  //Read about mmap of files: http://www.mapdb.org/blog/mmap_files_alloc_and_jvm_crash/
   @Benchmark
   def readJsoniterScalaNIO(): ExtractFields = {
     val fc = FileChannel.open(tmpFilePath, READ)
