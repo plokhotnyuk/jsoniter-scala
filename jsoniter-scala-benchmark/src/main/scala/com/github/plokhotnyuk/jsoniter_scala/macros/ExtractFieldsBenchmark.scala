@@ -1,7 +1,10 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+//import java.io.{File, FileInputStream, FileOutputStream}
+//import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets._
-
+//import java.nio.file.StandardOpenOption._
+//import java.nio.file.{Path, Paths}
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
@@ -27,11 +30,17 @@ class ExtractFieldsBenchmark extends CommonParams {
   var obj: ExtractFields = ExtractFields("s", 1)
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
+//  val tmpFilePath: Path = Paths.get(File.createTempFile("extract-fields-benchmark", ".json").getAbsolutePath)
 
   @Setup
   def setup(): Unit = {
     jsonString = zeroHashCodeStrings.take(size).mkString("""{"s":"s","""", s"""":$value,"""", s"""":$value,"i":1}""")
     jsonBytes = jsonString.getBytes(UTF_8)
+/*
+    val fos = new FileOutputStream(tmpFilePath.toFile)
+    try fos.write(jsonBytes)
+    finally fos.close()
+*/
   }
 
   @Benchmark
@@ -48,7 +57,21 @@ class ExtractFieldsBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
+/*
+  @Benchmark
+  def readJsoniterScalaIO(): ExtractFields = {
+    val fis = new FileInputStream(tmpFilePath.toFile)
+    try readFromStream[ExtractFields](fis)
+    finally fis.close()
+  }
 
+  @Benchmark
+  def readJsoniterScalaNIO(): ExtractFields = {
+    val fc = FileChannel.open(tmpFilePath, READ)
+    try readFromByteBuffer[ExtractFields](fc.map(FileChannel.MapMode.READ_ONLY, 0L, fc.size))
+    finally fc.close()
+  }
+*/
   @Benchmark
   def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields](extractFieldsFormat)
 
