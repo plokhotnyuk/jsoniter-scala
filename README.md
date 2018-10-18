@@ -161,12 +161,10 @@ For more use cases, please, check out tests:
 
 1. Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that
 contains a character which should be encoded immediately after the prefix (like `o` and `o-o`). You will got compilation 
-or runtime error, depending on the version of the compiler, see details here: https://github.com/scala/bug/issues/10825
+or runtime error, depending on the version of the compiler, see details here: https://github.com/scala/bug/issues/11212
 
-Workarounds are: 
-- move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is affected by the
-exception (after the `o` field)
-- rename the `o-o` field to `oO` or some other name and use the `@named("o-o")` annotation for it.
+The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
+affected by the exception (after the `o` field)
 
 2. Scalac can fail to compile the `make` macro call with a stacktrace like this (for more details see: https://github.com/scala/bug/issues/11119):
 
