@@ -287,11 +287,17 @@ object JsonCodecMaker {
       val mathContextNames = mutable.LinkedHashMap.empty[Int, TermName]
       val mathContextTrees = mutable.LinkedHashMap.empty[Int, Tree]
 
-      def withMathContextFor(precision: Int)(f: => Tree): Tree = {
-        val mathContextName = mathContextNames.getOrElseUpdate(precision, TermName("mc" + mathContextNames.size))
-        mathContextTrees.getOrElseUpdate(precision, q"private[this] val $mathContextName: java.math.MathContext = $f")
-        Ident(mathContextName)
-      }
+      def withMathContextFor(precision: Int): Tree =
+        if (precision == java.math.MathContext.DECIMAL128.getPrecision) q"java.math.MathContext.DECIMAL128"
+        else if (precision == java.math.MathContext.DECIMAL64.getPrecision) q"java.math.MathContext.DECIMAL64"
+        else if (precision == java.math.MathContext.DECIMAL32.getPrecision) q"java.math.MathContext.DECIMAL32"
+        else if (precision == java.math.MathContext.UNLIMITED.getPrecision) q"java.math.MathContext.UNLIMITED"
+        else {
+          val mc = q"new java.math.MathContext(${codecConfig.bigDecimalPrecision}, java.math.RoundingMode.HALF_EVEN)"
+          val mathContextName = mathContextNames.getOrElseUpdate(precision, TermName("mc" + mathContextNames.size))
+          mathContextTrees.getOrElseUpdate(precision, q"private[this] val $mathContextName: java.math.MathContext = $mc")
+          Ident(mathContextName)
+        }
 
       def genReadKey(tpe: Type): Tree = {
         val implKeyCodec = findImplicitKeyCodec(tpe)
@@ -308,9 +314,7 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
         else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt(${codecConfig.bigIntDigitsLimit})"
         else if (tpe =:= typeOf[BigDecimal]) {
-          val mc = withMathContextFor(codecConfig.bigDecimalPrecision) {
-            q"new java.math.MathContext(${codecConfig.bigDecimalPrecision}, java.math.RoundingMode.HALF_EVEN)"
-          }
+          val mc = withMathContextFor(codecConfig.bigDecimalPrecision)
           q"in.readKeyAsBigDecimal($mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
         }
         else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
@@ -626,6 +630,7 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[mutable.BitSet]) q"${collectionCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[List[_]]) q"Nil"
         else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] ||
           tpe <:< typeOf[collection.immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
@@ -776,9 +781,7 @@ object JsonCodecMaker {
           if (isStringified) q"in.readStringAsBigInt($default, ${codecConfig.bigIntDigitsLimit})"
           else q"in.readBigInt($default, ${codecConfig.bigIntDigitsLimit})"
         } else if (tpe =:= typeOf[BigDecimal]) {
-          val mc = withMathContextFor(codecConfig.bigDecimalPrecision) {
-            q"new java.math.MathContext(${codecConfig.bigDecimalPrecision}, java.math.RoundingMode.HALF_EVEN)"
-          }
+          val mc = withMathContextFor(codecConfig.bigDecimalPrecision)
           if (isStringified) {
             q"in.readStringAsBigDecimal($default, $mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
           } else {
