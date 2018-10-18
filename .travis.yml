@@ -2,10 +2,10 @@ language: scala
 matrix:
   include:
     - os: linux
-      jdk: oraclejdk11
+      jdk: openjdk11
       scala: 2.12.7
     - os: linux
-      jdk: oraclejdk8
+      jdk: openjdk8
       scala: 2.12.7
 script:
   - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -J-Xms2g -J-Xmx2g -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport mimaReportBinaryIssues
