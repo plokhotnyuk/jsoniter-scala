@@ -6,7 +6,13 @@ matrix:
       scala: 2.12.7
     - os: linux
       jdk: oraclejdk8
+      scala: 2.11.12
+    - os: windows
+      jdk: oraclejdk11
       scala: 2.12.7
+    - os: windows
+      jdk: oraclejdk8
+      scala: 2.11.12
 script:
   - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -J-Xms2g -J-Xmx2g -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport mimaReportBinaryIssues
 after_success:
