@@ -181,10 +181,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Float](CodecMakerConfig(isStringified = true)), 2.2f, "\"2.2\"")
     }
     "throw parse exception with hex dump in case of illegal input" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfPrimitives, primitives,
-          """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,'bl':true,"ch":"V","dbl":-123456789.0,"f":-12345.0}""")
-      }.getMessage.contains(
+      verifyDeserError(codecOfPrimitives, primitives,
+        """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,'bl':true,"ch":"V","dbl":-123456789.0,"f":-12345.0}""",
         """expected '"', offset: 0x0000003e, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -194,7 +192,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           || 00000030 | 32 30 33 36 38 35 34 37 37 35 38 30 38 2c 27 62 | 2036854775808,'b |
           || 00000040 | 6c 27 3a 74 72 75 65 2c 22 63 68 22 3a 22 56 22 | l':true,"ch":"V" |
           || 00000050 | 2c 22 64 62 6c 22 3a 2d 31 32 33 34 35 36 37 38 | ,"dbl":-12345678 |
-          |+----------+-------------------------------------------------+------------------+""".stripMargin))
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
+    "throw parse exception in case of unexpected end of input is detected" in {
+      verifyDeserError(codecOfPrimitives, primitives,
+        """{"b":-128,"s":-32768,"i":-2147483648,"l":-9223372036854775808,"bl":true,"ch":"V","dbl":-123456789.0,"f":""",
+        """unexpected end of input, offset: 0x00000068""".stripMargin)
     }
     "serialize and deserialize case classes with boxed primitives" in {
       case class BoxedPrimitives(b: java.lang.Byte, s: java.lang.Short, i: java.lang.Integer, l: java.lang.Long,
@@ -238,9 +241,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         s"""{"s":"$text","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""")
     }
     "throw parse exception in case of illegal value for case classes" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, null, "null")
-      }.getMessage.contains("expected '{', offset: 0x00000000"))
+      verifyDeserError(codecOfStandardTypes, null, "null", "expected '{', offset: 0x00000000")
     }
     "serialize and deserialize top-level standard types" in {
       val text =
@@ -258,54 +259,35 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         BigDecimal("1234567890.12345678901234567890"), "\"1234567890.12345678901234567890\"")
     }
     "throw parse exception in case of duplicated key for case classe was detected" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
-          s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""")
-      }.getMessage.contains("duplicated field \"s\", offset: 0x0000000e"))
+      verifyDeserError(codecOfStandardTypes, StandardTypes("VVV", BigInt("1"), BigDecimal("2")),
+        s"""{"s":"XXX","s":"VVV","bi":10,"bi":1,"bd":20.0,"bd":2.0}""",
+        "duplicated field \"s\", offset: 0x0000000e")
     }
     "throw parse exception in case of illegal UTF-8 encoded field names" in {
       val jsonBytes = """{"s":"VVV","bi":1,"bd":1.1}""".getBytes(UTF_8)
       jsonBytes(2) = 0xF0.toByte
-      assert(intercept[JsonParseException] {
-        verifyDirectByteBufferDeser(codecOfStandardTypes, standardTypes, jsonBytes)
-      }.getMessage.contains("malformed byte(s): 0xf0, 0x22, 0x3a, 0x22, offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyHeapByteBufferDeser(codecOfStandardTypes, standardTypes, jsonBytes)
-      }.getMessage.contains("malformed byte(s): 0xf0, 0x22, 0x3a, 0x22, offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyInputStreamDeser(codecOfStandardTypes, standardTypes, jsonBytes)
-      }.getMessage.contains("malformed byte(s): 0xf0, 0x22, 0x3a, 0x22, offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyByteArrayDeser(codecOfStandardTypes, standardTypes, jsonBytes)
-      }.getMessage.contains("malformed byte(s): 0xf0, 0x22, 0x3a, 0x22, offset: 0x00000005"))
+      verifyDeserError(codecOfStandardTypes, standardTypes, jsonBytes,
+        "malformed byte(s): 0xf0, 0x22, 0x3a, 0x22, offset: 0x00000005")
     }
     "throw parse exception in case of illegal JSON escaped field names" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}")
-      }.getMessage.contains("illegal escape sequence, offset: 0x00000008"))
+      verifyDeserError(codecOfStandardTypes, standardTypes, "{\"\\udd1e\":\"VVV\",\"bi\":1,\"bd\":1.1}",
+        "illegal escape sequence, offset: 0x00000008")
     }
     "throw parse exception in case of missing or illegal tokens" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """"s":"VVV","bi":1,"bd":1.1}""")
-      }.getMessage.contains("expected '{', offset: 0x00000000"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """{"s""VVV","bi":1,"bd":1.1}""")
-      }.getMessage.contains("expected ':', offset: 0x00000004"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV""bi":1"bd":1.1}""")
-      }.getMessage.contains("expected '}' or ',', offset: 0x0000000a"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """["s":"VVV","bi":1,"bd":2}""")
-      }.getMessage.contains("expected '{', offset: 0x00000000"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """{,"s":"VVV","bi":1,"bd":2}""")
-      }.getMessage.contains("expected '\"', offset: 0x00000001"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2]""")
-      }.getMessage.contains("expected '}' or ',', offset: 0x00000018"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""")
-      }.getMessage.contains("expected '\"', offset: 0x00000019"))
+      verifyDeserError(codecOfStandardTypes, standardTypes, """"s":"VVV","bi":1,"bd":1.1}""",
+        "expected '{', offset: 0x00000000")
+      verifyDeserError(codecOfStandardTypes, standardTypes, """{"s""VVV","bi":1,"bd":1.1}""",
+        "expected ':', offset: 0x00000004")
+      verifyDeserError(codecOfStandardTypes, standardTypes, """{"s":"VVV""bi":1"bd":1.1}""",
+        "expected '}' or ',', offset: 0x0000000a")
+      verifyDeserError(codecOfStandardTypes, standardTypes, """["s":"VVV","bi":1,"bd":2}""",
+        "expected '{', offset: 0x00000000")
+      verifyDeserError(codecOfStandardTypes, standardTypes, """{,"s":"VVV","bi":1,"bd":2}""",
+        "expected '\"', offset: 0x00000001")
+      verifyDeserError(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2]""",
+        "expected '}' or ',', offset: 0x00000018")
+      verifyDeserError(codecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":2,}""",
+        "expected '\"', offset: 0x00000019")
     }
     "serialize and deserialize Scala classes which has a primary constructor with 'var' or 'var' parameters only" in {
       verifySerDeser(codecOfNonCaseClass, new NonCaseClass(1, "VVV"),
@@ -316,10 +298,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"uuid":"00000000-0000-0000-0000-000000000000"}""")
     }
     "throw parse exception in case of illegal value of java types" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfJavaTypes, JavaTypes(new UUID(0, 0)),
-          """{"uuid":"00000000-XXXX-0000-0000-000000000000"}""")
-      }.getMessage.contains("expected hex digit, offset: 0x00000012"))
+      verifyDeserError(codecOfJavaTypes, JavaTypes(new UUID(0, 0)),
+        """{"uuid":"00000000-XXXX-0000-0000-000000000000"}""",
+        "expected hex digit, offset: 0x00000012")
     }
     "serialize and deserialize top-level java types" in {
       verifySerDeser(make[UUID](CodecMakerConfig()), new UUID(0, 0),
@@ -333,12 +314,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""")
     }
     "throw parse exception in case of illegal value of enumeration" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":null}""")
-      }.getMessage.contains("expected '\"', offset: 0x00000006"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"Galileo"}""")
-      }.getMessage.contains("illegal enum value \"Galileo\", offset: 0x0000000e"))
+      verifyDeserError(codecOfEnums, Enums(LocationType.GPS), """{"lt":null}""", "expected '\"', offset: 0x00000006")
+      verifyDeserError(codecOfEnums, Enums(LocationType.GPS), """{"lt":"Galileo"}""",
+        "illegal enum value \"Galileo\", offset: 0x0000000e")
     }
     "serialize and deserialize top-level enumerations" in {
       verifySerDeser(make[LocationType.LocationType](CodecMakerConfig()), LocationType.GPS,
@@ -353,14 +331,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"l":"LOW","il":"HIGH"}""")
     }
     "throw parse exception in case of illegal value of Java enumeration" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
-          """{"l":null,"il":"HIGH"}""")
-      }.getMessage.contains("expected '\"', offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW),
-          """{"l":"LO","il":"HIGH"}""")
-      }.getMessage.contains("illegal enum value \"LO\", offset: 0x00000008"))
+      verifyDeserError(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW), """{"l":null,"il":"HIGH"}""",
+        "expected '\"', offset: 0x00000005")
+      verifyDeserError(codecOfJavaEnums, JavaEnums(Level.HIGH, Levels.InnerLevel.LOW), """{"l":"LO","il":"HIGH"}""",
+        "illegal enum value \"LO\", offset: 0x00000008")
     }
     "serialize and deserialize top-level Java enumerations" in {
       verifySerDeser(make[Level](CodecMakerConfig()), Level.HIGH, "\"HIGH\"")
@@ -409,12 +383,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfFlags = make[Flags](CodecMakerConfig())
       verifyDeser(codecOfFlags, Flags(f1 = true, f2 = false), "{\"f1\":true,\"f2\":\"False\"}")
       verifySer(codecOfFlags, Flags(f1 = true, f2 = false), "{\"f1\":\"TRUE\",\"f2\":\"FALSE\"}")
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":\"XALSE\",\"f2\":true}")
-      }.getMessage.contains("illegal boolean, offset: 0x0000000c"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":xalse,\"f2\":true}")
-      }.getMessage.contains("illegal boolean, offset: 0x00000006"))
+      verifyDeserError(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":\"XALSE\",\"f2\":true}",
+        "illegal boolean, offset: 0x0000000c")
+      verifyDeserError(codecOfFlags, Flags(f1 = false, f2 = true), "{\"f1\":xalse,\"f2\":true}",
+        "illegal boolean, offset: 0x00000006")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
@@ -503,9 +475,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       }
       val codecOfEnums = make[Enums](CodecMakerConfig())
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":1}""")
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""")
-      }.getMessage.contains("illegal number, offset: 0x00000006"))
+      verifyDeserError(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""", "illegal number, offset: 0x00000006")
     }
     "serialize and deserialize outer types using custom key codecs for map keys" in {
       implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
@@ -556,23 +526,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "throw parse exception in case of unexpected value for option" in {
       val codecOfStringOption = make[Option[String]](CodecMakerConfig())
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringOption, Option("VVV"), """no!!!""")
-      }.getMessage.contains("expected value or null, offset: 0x00000001"))
+      verifyDeserError(codecOfStringOption, Option("VVV"), """no!!!""", "expected value or null, offset: 0x00000001")
     }
     "serialize and deserialize case classes with tuples" in {
       verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
         """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""")
     }
     "throw parse exception in case of unexpected number of JSON array values" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
-          """{"t1":[1,2.2],"t2":["VVV",3,"GPS"]}""")
-      }.getMessage.contains("expected ',', offset: 0x0000000c"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
-          """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS","XXX"]}""")
-      }.getMessage.contains("expected ']', offset: 0x00000027"))
+      verifyDeserError(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+        """{"t1":[1,2.2],"t2":["VVV",3,"GPS"]}""", "expected ',', offset: 0x0000000c")
+      verifyDeserError(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+        """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS","XXX"]}""", "expected ']', offset: 0x00000027")
     }
     "serialize and deserialize top-level tuples" in {
       verifySerDeser(make[(String, Int)](CodecMakerConfig()), ("VVV", 1), "[\"VVV\",1]")
@@ -623,18 +587,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       parsedObj.a shouldBe arrays.a
     }
     "throw parse exception in case of JSON array is not properly started/closed or with leading/trailing comma" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfArrays, arrays, """{"aa":[{1,2,3]],"a":[]}""")
-      }.getMessage.contains("expected '[' or null, offset: 0x00000007"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfArrays, arrays, """{"aa":[[,1,2,3]],"a":[]}""")
-      }.getMessage.contains("illegal number, offset: 0x00000008"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3}],"a":[]}""")
-      }.getMessage.contains("expected ']' or ',', offset: 0x0000000d"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfArrays, arrays, """{"aa":[[1,2,3,]],"a":[]}""")
-      }.getMessage.contains("illegal number, offset: 0x0000000e"))
+      verifyDeserError(codecOfArrays, arrays, """{"aa":[{1,2,3]],"a":[]}""", "expected '[' or null, offset: 0x00000007")
+      verifyDeserError(codecOfArrays, arrays, """{"aa":[[,1,2,3]],"a":[]}""", "illegal number, offset: 0x00000008")
+      verifyDeserError(codecOfArrays, arrays, """{"aa":[[1,2,3}],"a":[]}""", "expected ']' or ',', offset: 0x0000000d")
+      verifyDeserError(codecOfArrays, arrays, """{"aa":[[1,2,3,]],"a":[]}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with generic Iterables" in {
       case class GenericIterables(s: collection.Set[collection.SortedSet[String]],
@@ -700,16 +656,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """[["3.3"],["1.1","2.2"]]""")
     }
     "throw parse exception when too many inserts into set was completed" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[collection.immutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
-          (1 to 11).toSet,
-          """[1,2,3,4,5,6,7,8,9,10,11]""")
-      }.getMessage.contains("too many set inserts, offset: 0x00000017"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[collection.mutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
-          collection.mutable.Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
-          """[1,2,3,4,5,6,7,8,9,10,11]""")
-      }.getMessage.contains("too many set inserts, offset: 0x00000017"))
+      verifyDeserError(make[collection.immutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
+        (1 to 11).toSet, """[1,2,3,4,5,6,7,8,9,10,11]""", "too many set inserts, offset: 0x00000017")
+      verifyDeserError(make[collection.mutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
+        collection.mutable.Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+        """[1,2,3,4,5,6,7,8,9,10,11]""", "too many set inserts, offset: 0x00000017")
     }
     "serialize and deserialize case classes with generic maps" in {
       case class GenericMaps(m: collection.Map[Int, Boolean])
@@ -750,34 +701,27 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"1":{"V":"true"},"2":{}}""")
     }
     "throw parse exception when too many inserts into map was completed" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[collection.immutable.Map[Int, Int]](CodecMakerConfig(mapMaxInsertNumber = 10)),
-          (1 to 11).map(x => (x, x)).toMap,
-          """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""")
-      }.getMessage.contains("too many map inserts, offset: 0x00000045"))
+      verifyDeserError(make[collection.immutable.Map[Int, Int]](CodecMakerConfig(mapMaxInsertNumber = 10)),
+        (1 to 11).map(x => (x, x)).toMap,
+        """{"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"11":11}""",
+        "too many map inserts, offset: 0x00000045")
     }
     "throw parse exception in case of JSON object is not properly started/closed or with leading/trailing comma" in {
       val immutableMaps = ImmutableMaps(Map(1 -> 1.1), collection.immutable.HashMap.empty,
         collection.immutable.SortedMap.empty)
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":["1":1.1},"hm":{},"sm":{}}""")
-      }.getMessage.contains("expected '{' or null, offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{,"1":1.1},"hm":{},"sm":{}}""")
-      }.getMessage.contains("expected '\"', offset: 0x00000006"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1],"hm":{},"sm":{}""")
-      }.getMessage.contains("expected '}' or ',', offset: 0x0000000d"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1,},"hm":{},"sm":{}""")
-      }.getMessage.contains("expected '\"', offset: 0x0000000e"))
+      verifyDeserError(codecOfImmutableMaps, immutableMaps, """{"m":["1":1.1},"hm":{},"sm":{}}""",
+        "expected '{' or null, offset: 0x00000005")
+      verifyDeserError(codecOfImmutableMaps, immutableMaps, """{"m":{,"1":1.1},"hm":{},"sm":{}}""",
+        "expected '\"', offset: 0x00000006")
+      verifyDeserError(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1],"hm":{},"sm":{}""",
+        "expected '}' or ',', offset: 0x0000000d")
+      verifyDeserError(codecOfImmutableMaps, immutableMaps, """{"m":{"1":1.1,},"hm":{},"sm":{}""",
+        "expected '\"', offset: 0x0000000e")
     }
     "throw parse exception in case of illegal keys found during deserialization of maps" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfMutableMaps,
-          MutableMaps(null, collection.mutable.Map(1.1f -> collection.mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
-          """{"m":{"1.1":{"null":"2"}}""")
-      }.getMessage.contains("illegal number, offset: 0x0000000e"))
+      verifyDeserError(codecOfMutableMaps,
+        MutableMaps(null, collection.mutable.Map(1.1f -> collection.mutable.ListMap(null.asInstanceOf[BigInt] -> "2")), null),
+        """{"m":{"1.1":{"null":"2"}}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with mutable long maps" in {
       case class MutableLongMaps(lm1: collection.mutable.LongMap[Double], lm2: collection.mutable.LongMap[String])
@@ -817,25 +761,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"1":{"2":["4","5","6"],"3":[]}}""")
     }
     "throw parse exception when too big numbers are parsed for mutable & immutable bitsets" in {
-      assert(intercept[JsonParseException] {
-        verifySerDeser(make[collection.immutable.BitSet](CodecMakerConfig(bitSetValueLimit = 1000)),
-          collection.immutable.BitSet(1, 2, 1000),
-          """[1,2,1000]""")
-      }.getMessage.contains("illegal value for bit set, offset: 0x00000008"))
-      assert(intercept[JsonParseException] {
-        verifySerDeser(make[collection.mutable.BitSet](CodecMakerConfig()), collection.mutable.BitSet(1, 2, 10000),
-          """[1,2,10000]""")
-      }.getMessage.contains("illegal value for bit set, offset: 0x00000009"))
+      verifyDeserError(make[collection.immutable.BitSet](CodecMakerConfig(bitSetValueLimit = 1000)),
+        collection.immutable.BitSet(1, 2, 1000), """[1,2,1000]""",
+        "illegal value for bit set, offset: 0x00000008")
+      verifyDeserError(make[collection.mutable.BitSet](CodecMakerConfig()),
+        collection.mutable.BitSet(1, 2, 10000), """[1,2,10000]""",
+        "illegal value for bit set, offset: 0x00000009")
     }
     "throw parse exception when negative numbers are parsed for mutable & immutable bitsets" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[collection.immutable.BitSet](CodecMakerConfig()), collection.immutable.BitSet(1, 2, 0),
-          """[1,2,-1]""")
-      }.getMessage.contains("illegal value for bit set, offset: 0x00000006"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[collection.mutable.BitSet](CodecMakerConfig()), collection.mutable.BitSet(1, 2, 0),
-          """[1,2,-1]""")
-      }.getMessage.contains("illegal value for bit set, offset: 0x00000006"))
+      verifyDeserError(make[collection.immutable.BitSet](CodecMakerConfig()), collection.immutable.BitSet(1, 2, 0),
+        """[1,2,-1]""", "illegal value for bit set, offset: 0x00000006")
+      verifyDeserError(make[collection.mutable.BitSet](CodecMakerConfig()), collection.mutable.BitSet(1, 2, 0),
+        """[1,2,-1]""", "illegal value for bit set, offset: 0x00000006")
     }
     "don't generate codec for maps with not supported types of keys" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -851,57 +788,41 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize with keys enforced to camelCase and throw parse exception when they are missing" in {
       val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.enforceCamelCase))
-      verifySerDeser(codecOfCamelAndSnakeCases,
-        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+      verifySerDeser(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
         """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""")
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfCamelAndSnakeCases,
-          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
-          """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""")
-      }.getMessage.contains("missing required field \"camelCase\", offset: 0x00000051"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfCamelAndSnakeCases,
-          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
-          """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""")
-      }.getMessage.contains("missing required field \"camelCase\", offset: 0x00000051"))
+      verifyDeserError(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""",
+        "missing required field \"camelCase\", offset: 0x00000051")
+      verifyDeserError(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""",
+        "missing required field \"camelCase\", offset: 0x00000051")
     }
     "serialize and deserialize with keys enforced to snake_case and throw parse exception when they are missing" in {
       val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.enforce_snake_case))
-      verifySerDeser(codecOfCamelAndSnakeCases,
-        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+      verifySerDeser(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
         """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""")
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfCamelAndSnakeCases,
-          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
-          """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""")
-      }.getMessage.contains("missing required field \"camel_case\", offset: 0x0000004b"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfCamelAndSnakeCases,
-          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
-          """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""")
-      }.getMessage.contains("missing required field \"camel_case\", offset: 0x00000051"))
+      verifyDeserError(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""",
+        "missing required field \"camel_case\", offset: 0x0000004b")
+      verifyDeserError(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""",
+        "missing required field \"camel_case\", offset: 0x00000051")
     }
     "serialize and deserialize with keys enforced to kebab-case and throw parse exception when they are missing" in {
       val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.`enforce-kebab-case`))
-      verifySerDeser(codecOfCamelAndSnakeCases,
-        CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+      verifySerDeser(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
         """{"camel-case":1,"snake-case":2,"kebab-case":3,"camel-1":4,"snake-1":5,"kebab-1":6}""")
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfCamelAndSnakeCases,
-          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
-          """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""")
-      }.getMessage.contains("missing required field \"camel-case\", offset: 0x0000004b"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfCamelAndSnakeCases,
-          CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
-          """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""")
-      }.getMessage.contains("missing required field \"camel-case\", offset: 0x00000051"))
+      verifyDeserError(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camelCase":1,"snakeCase":2,"kebabCase":3,"camel1":4,"snake1":5,"kebab1":6}""",
+        "missing required field \"camel-case\", offset: 0x0000004b")
+      verifyDeserError(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"camel_case":1,"snake_case":2,"kebab_case":3,"camel_1":4,"snake_1":5,"kebab_1":6}""",
+        "missing required field \"camel-case\", offset: 0x00000051")
     }
     "serialize and deserialize with keys overridden by annotation and throw parse exception when they are missing" in {
       verifySerDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"new_name":"VVV"}""")
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""")
-      }.getMessage.contains("missing required field \"new_name\", offset: 0x00000010"))
+      verifyDeserError(codecOfNameOverridden, NameOverridden(oldName = "VVV"), """{"oldName":"VVV"}""",
+        "missing required field \"new_name\", offset: 0x00000010")
     }
     "don't generate codec for case classes with field that have duplicated @named annotation" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -930,12 +851,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""")
     }
     "throw parse exception when stringified fields have non-string values" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringified, stringified, """{"i":1,"bi":"2","l1":["1"],"l2":[2]}""")
-      }.getMessage.contains("expected '\"', offset: 0x00000005"))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStringified, stringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""")
-      }.getMessage.contains("expected '\"', offset: 0x0000000e"))
+      verifyDeserError(codecOfStringified, stringified, """{"i":1,"bi":"2","l1":["1"],"l2":[2]}""",
+        "expected '\"', offset: 0x00000005")
+      verifyDeserError(codecOfStringified, stringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""",
+        "expected '\"', offset: 0x0000000e")
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfIndented, indented,
@@ -1036,38 +955,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "throw parse exception for unknown case class fields if skipping of them wasn't allowed in materialize call" in {
       case class DetectUnknown()
 
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[DetectUnknown](CodecMakerConfig(skipUnexpectedFields = false)), DetectUnknown(),
-          """{"x":1,"y":[1,2],"z":{"a",3}}""")
-      }.getMessage.contains("unexpected field \"x\", offset: 0x00000004"))
+      verifyDeserError(make[DetectUnknown](CodecMakerConfig(skipUnexpectedFields = false)), DetectUnknown(),
+        """{"x":1,"y":[1,2],"z":{"a",3}}""", "unexpected field \"x\", offset: 0x00000004")
+    }
+    "throw parse exception in case of missing values for required fields if case class detected during deserialization" in {
+      verifyDeserError(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
+        """{"s":null,"bi":0,"bd":1}""", """expected '"', offset: 0x00000005""")
+      verifyDeserError(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
+        """{"s":"VVV","bi":null,"bd":1}""", """illegal number, offset: 0x00000010""")
     }
     "throw parse exception in case of missing required case class fields detected during deserialization" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
-          """{"s":null,"bi":0,"bd":1}""".stripMargin)
-      }.getMessage.contains("""expected '"', offset: 0x00000005"""))
-
-      case class RequiredAfterOptionalFields(f1: Option[Long], f2: Long, f3: Option[Long], f4: Long)
-
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
-          RequiredAfterOptionalFields(None, 2, None, 4), """{}""")
-      }.getMessage.contains("""missing required field "f2", offset: 0x00000001"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
-          RequiredAfterOptionalFields(None, 2, None, 4), """{"f2":2}""")
-      }.getMessage.contains("""missing required field "f4", offset: 0x00000007"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(make[RequiredAfterOptionalFields](CodecMakerConfig()),
-          RequiredAfterOptionalFields(None, 2, None, 4), """{"f1":1,"f2":2}""")
-      }.getMessage.contains("""missing required field "f4", offset: 0x0000000e"""))
-
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfStandardTypes, StandardTypes("VVV", 0, 1),
-          """{"s":"VVV","bi":null,"bd":1}""".stripMargin)
-      }.getMessage.contains("""illegal number, offset: 0x00000010"""))
-      assert(intercept[JsonParseException] {
-        val obj = Required(
+      verifyDeserError(make[Required](CodecMakerConfig()),
+        Required(
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
           10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
           20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -1077,21 +976,31 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
           70, 71, 72, 78, 74, 75, 76, 77, 78, 79,
           80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
-          90, 91, 92, 93, 94, 95, 96, 97, 98, 99)
-        verifyDeser(make[Required](CodecMakerConfig()), obj,
-          """{
-            |"r00":0,"r01":1,"r02":2,"r03":3,"r04":4,"r05":5,"r06":6,"r07":7,"r08":8,"r09":9,
-            |"r10":10,"r11":11,"r12":12,"r13":13,"r14":14,"r15":15,"r16":16,"r17":17,"r18":18,"r19":19,
-            |"r20":20,"r21":21,"r22":22,"r23":23,"r24":24,"r25":25,"r26":26,"r27":27,"r28":28,"r29":29,
-            |"r30":30,"r31":31,"r32":32,"r33":33,"r34":34,"r35":35,"r36":36,"r37":37,"r38":38,"r39":39,
-            |"r40":40,"r41":41,"r42":42,"r43":43,"r44":44,"r45":45,"r46":46,"r47":47,"r48":48,"r49":49,
-            |"r50":50,"r51":51,"r52":52,"r53":53,"r54":54,"r55":55,"r56":56,"r57":57,"r58":58,"r59":59,
-            |"r60":60,"r61":61,"r62":62,"r63":63,"r64":64,"r65":65,"r66":66,"r67":67,"r68":68,"r69":69,
-            |"r70":70,"r71":71,"r72":72,"r73":73,"r74":74,"r75":75,"r76":76,"r77":77,"r78":78,"r79":79,
-            |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,"r89":89,
-            |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
-            |}""".stripMargin)
-      }.getMessage.contains("""missing required field "r99", offset: 0x0000037c"""))
+          90, 91, 92, 93, 94, 95, 96, 97, 98, 99),
+        """{
+          |"r00":0,"r01":1,"r02":2,"r03":3,"r04":4,"r05":5,"r06":6,"r07":7,"r08":8,"r09":9,
+          |"r10":10,"r11":11,"r12":12,"r13":13,"r14":14,"r15":15,"r16":16,"r17":17,"r18":18,"r19":19,
+          |"r20":20,"r21":21,"r22":22,"r23":23,"r24":24,"r25":25,"r26":26,"r27":27,"r28":28,"r29":29,
+          |"r30":30,"r31":31,"r32":32,"r33":33,"r34":34,"r35":35,"r36":36,"r37":37,"r38":38,"r39":39,
+          |"r40":40,"r41":41,"r42":42,"r43":43,"r44":44,"r45":45,"r46":46,"r47":47,"r48":48,"r49":49,
+          |"r50":50,"r51":51,"r52":52,"r53":53,"r54":54,"r55":55,"r56":56,"r57":57,"r58":58,"r59":59,
+          |"r60":60,"r61":61,"r62":62,"r63":63,"r64":64,"r65":65,"r66":66,"r67":67,"r68":68,"r69":69,
+          |"r70":70,"r71":71,"r72":72,"r73":73,"r74":74,"r75":75,"r76":76,"r77":77,"r78":78,"r79":79,
+          |"r80":80,"r81":81,"r82":82,"r83":83,"r84":84,"r85":85,"r86":86,"r87":87,"r88":88,"r89":89,
+          |"r90":90,"r91":91,"r92":92,"r93":93,"r94":94,"r95":95,"r96":96,"r97":97,"r98":98
+          |}""".stripMargin,
+        """missing required field "r99", offset: 0x0000037c""")
+    }
+    "throw parse exception in case of missing required fields that are defined after optional detected during deserialization" in {
+      case class RequiredAfterOptionalFields(f1: Option[Long], f2: Long, f3: Option[Long], f4: Long)
+
+      val codecOfRequiredAfterOptionalFields = make[RequiredAfterOptionalFields](CodecMakerConfig())
+      verifyDeserError(codecOfRequiredAfterOptionalFields, RequiredAfterOptionalFields(None, 2, None, 4),
+        """{}""", """missing required field "f2", offset: 0x00000001""")
+      verifyDeserError(codecOfRequiredAfterOptionalFields, RequiredAfterOptionalFields(None, 2, None, 4),
+        """{"f2":2}""", """missing required field "f4", offset: 0x00000007""")
+      verifyDeserError(codecOfRequiredAfterOptionalFields, RequiredAfterOptionalFields(None, 2, None, 4),
+        """{"f1":1,"f2":2}""", """missing required field "f4", offset: 0x0000000e""")
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList,
@@ -1175,29 +1084,22 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""")
     }
     "throw parse exception in case of duplicated discriminator field" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(AAA(1)), """[{"type":"AAA","a":1,"type":"AAA"}]""")
-      }.getMessage.contains("""duplicated field "type", offset: 0x0000001b"""))
+      verifyDeserError(codecOfADTList, List(AAA(1)), """[{"type":"AAA","a":1,"type":"AAA"}]""",
+        """duplicated field "type", offset: 0x0000001b""")
     }
     "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1}]""")
-      }.getMessage.contains("""missing required field "type", offset: 0x00000007"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1,"type":"aaa"}]""")
-      }.getMessage.contains("""illegal value of discriminator field "type", offset: 0x00000013"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList, List(AAA(1)), """[{"a":1,"type":123}]""")
-      }.getMessage.contains("""expected '"', offset: 0x0000000f"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList2, List(AAA(1)), """[true]""")
-      }.getMessage.contains("""expected '"' or '{' or null, offset: 0x00000001"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList2, List(AAA(1)), """[{{"a":1}}]""")
-      }.getMessage.contains("""expected '"', offset: 0x00000002"""))
-      assert(intercept[JsonParseException] {
-        verifyDeser(codecOfADTList2, List(AAA(1)), """[{"aaa":{"a":1}}]""")
-      }.getMessage.contains("""illegal discriminator, offset: 0x00000007"""))
+      verifyDeserError(codecOfADTList, List(AAA(1)), """[{"a":1}]""",
+        """missing required field "type", offset: 0x00000007""")
+      verifyDeserError(codecOfADTList, List(AAA(1)), """[{"a":1,"type":"aaa"}]""",
+        """illegal value of discriminator field "type", offset: 0x00000013""")
+      verifyDeserError(codecOfADTList, List(AAA(1)), """[{"a":1,"type":123}]""",
+        """expected '"', offset: 0x0000000f""")
+      verifyDeserError(codecOfADTList2, List(AAA(1)), """[true]""",
+        """expected '"' or '{' or null, offset: 0x00000001""")
+      verifyDeserError(codecOfADTList2, List(AAA(1)), """[{{"a":1}}]""",
+        """expected '"', offset: 0x00000002""")
+      verifyDeserError(codecOfADTList2, List(AAA(1)), """[{"aaa":{"a":1}}]""",
+        """illegal discriminator, offset: 0x00000007""")
     }
     "don't generate codec for non sealed traits or abstract classes as an ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -1578,6 +1480,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     verifyHeapByteBufferDeser(codec, obj, jsonBytes)
     verifyInputStreamDeser(codec, obj, jsonBytes)
     verifyByteArrayDeser(codec, obj, jsonBytes)
+  }
+
+  def verifyDeserError[T](codec: JsonValueCodec[T], obj: T, json: String, msg: String): Unit =
+    verifyDeserError(codec, obj, json.getBytes(UTF_8), msg)
+
+  def verifyDeserError[T](codec: JsonValueCodec[T], obj: T, jsonBytes: Array[Byte], msg: String): Unit = {
+    assert(intercept[JsonParseException](verifyDirectByteBufferDeser(codec, obj, jsonBytes)).getMessage.contains(msg))
+    assert(intercept[JsonParseException](verifyHeapByteBufferDeser(codec, obj, jsonBytes)).getMessage.contains(msg))
+    assert(intercept[JsonParseException](verifyInputStreamDeser(codec, obj, jsonBytes)).getMessage.contains(msg))
+    assert(intercept[JsonParseException](verifyByteArrayDeser(codec, obj, jsonBytes)).getMessage.contains(msg))
   }
 
   def verifyDirectByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expectedStr: String): Unit = {

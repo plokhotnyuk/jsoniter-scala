@@ -2816,18 +2816,21 @@ final class JsonReader private[jsoniter_scala](
   private[this] def ensureBufCapacity(pos: Int): Int = {
     val minPos = Math.min(mark, pos)
     if (minPos > 0) {
+      val newPos = pos - minPos
       val remaining = tail - minPos
-      if (remaining > 0) {
-        var i = 0
-        while (i < remaining) {
-          buf(i) = buf(i + minPos)
-          i += 1
-        }
-        if (mark != 2147483647) mark -= minPos
+      var i = 0
+      while (i < remaining) {
+        buf(i) = buf(i + minPos)
+        i += 1
       }
+      if (mark != 2147483647) mark = 0
       tail = remaining
-    } else if (tail > 0) buf = java.util.Arrays.copyOf(buf, buf.length << 1)
-    pos - minPos
+      head = newPos
+      newPos
+    } else {
+      if (tail > 0) buf = java.util.Arrays.copyOf(buf, buf.length << 1)
+      pos
+    }
   }
 
   private[this] def endOfInputError(cause: Throwable = null): Nothing =
