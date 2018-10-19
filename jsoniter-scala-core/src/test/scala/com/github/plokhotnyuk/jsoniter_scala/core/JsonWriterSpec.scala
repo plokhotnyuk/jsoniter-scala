@@ -381,7 +381,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       withWriter(_.writeKey("ї\bc\u0000")) shouldBe "\"ї\\bc\\u0000\":"
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
-      def check(s: String, escapeUnicode: Boolean): Unit = {
+      def checkError(s: String, escapeUnicode: Boolean): Unit = {
         assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
         assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)))
@@ -389,12 +389,12 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       forAll(genSurrogateChar, Gen.oneOf(true, false), minSuccessful(10000)) { (ch: Char, escapeUnicode: Boolean) =>
-        check(ch.toString, escapeUnicode)
-        check(ch.toString + ch.toString, escapeUnicode)
+        checkError(ch.toString, escapeUnicode)
+        checkError(ch.toString + ch.toString, escapeUnicode)
       }
       forAll(genLowSurrogateChar, genHighSurrogateChar, Gen.oneOf(true, false), minSuccessful(10000)) {
         (ch1: Char, ch2: Char, escapeUnicode: Boolean) =>
-          check(ch1.toString + ch2.toString, escapeUnicode)
+          checkError(ch1.toString + ch2.toString, escapeUnicode)
       }
     }
   }

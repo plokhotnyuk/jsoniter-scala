@@ -136,14 +136,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
           |}""".stripMargin)
     }
     "throw parsing exception when skipping not from start of JSON value" in {
-      def check(invalidInput: String): Unit =
+      def checkError(invalidInput: String): Unit =
         assert(intercept[JsonParseException](validateSkip(invalidInput))
           .getMessage.contains("expected value, offset: 0x00000000"))
 
-      check("]")
-      check("}")
-      check(",")
-      check(":")
+      checkError("]")
+      checkError("}")
+      checkError(",")
+      checkError(":")
     }
   }
   "JsonReader.nextToken" should {
@@ -2048,8 +2048,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readBigInt" should {
     "parse valid number values with skipping of JSON space characters" in {
-      readBigInt(" \n\t\r12345678901234567890123456789", null, bigIntDigitsLimit) shouldBe BigInt("12345678901234567890123456789")
-      readBigInt(" \n\t\r-12345678901234567890123456789", null, bigIntDigitsLimit) shouldBe BigInt("-12345678901234567890123456789")
+      readBigInt(" \n\t\r12345678901234567890", null, bigIntDigitsLimit) shouldBe BigInt("12345678901234567890")
+      readBigInt(" \n\t\r-12345678901234567890", null, bigIntDigitsLimit) shouldBe BigInt("-12345678901234567890")
     }
     "parse valid number values and stops on not numeric chars (except '.', 'e', 'E')" in {
       readBigInt("0$", null, bigIntDigitsLimit) shouldBe BigInt("0")
@@ -2163,12 +2163,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readBigDecimal(s, null))
-        .getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsBigDecimal(s))
-        .getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsBigDecimal(s, null))
-        .getMessage.contains(error2))
+      assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](readKeyAsBigDecimal(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](readStringAsBigDecimal(s, null)).getMessage.contains(error2))
     }
 
     "parse valid number values with scale less than specified maximum" in {
@@ -2224,8 +2221,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigDecimal(s, null))
-          .getMessage.contains(error))
+        assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")

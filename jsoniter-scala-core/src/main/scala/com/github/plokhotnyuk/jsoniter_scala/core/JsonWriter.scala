@@ -1463,7 +1463,7 @@ final class JsonWriter private[jsoniter_scala](
         if (ieeeExponent == 0) ieeeMantissa
         else ieeeMantissa | 4503599627370496L
       val even = (m2 & 1) == 0
-      val mv = m2 << 2L
+      val mv = m2 << 2
       val mp = mv + 2
       val mmShift =
         if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
