@@ -1099,7 +1099,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = write2Digits(hour, p, buf, ds)
     buf(pos) = ':'
     pos = write2Digits(minute, pos + 1, buf, ds)
-    if (full || second != 0 || nano != 0) {
+    if (full || (second | nano) != 0) {
       buf(pos) = ':'
       pos = write2Digits(second, pos + 1, buf, ds)
       if (nano > 0) {
