@@ -1104,14 +1104,20 @@ final class JsonWriter private[jsoniter_scala](
       pos = write2Digits(second, pos + 1, buf, ds)
       if (nano > 0) {
         buf(pos) = '.'
-        val q1 = (nano * 2251799814L >> 51).toInt // divide positive int by 1000000
-        val r1 = nano - q1 * 1000000
-        pos = write3Digits(q1, pos + 1, buf, ds)
-        if (r1 != 0) {
-          val q2 = (r1 * 2199023256L >> 41).toInt // divide positive int by 1000
-          val r2 = r1 - q2 * 1000
-          pos = write3Digits(q2, pos, buf, ds)
-          if (r2 != 0) pos = write3Digits(r2, pos, buf, ds)
+        val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
+        val r1 = nano - 10000000 * q1
+        pos = write2Digits(q1, pos + 1, buf, ds)
+        val q2 = (r1 * 175921861L >> 44).toInt // divide positive int by 100000
+        val r2 = r1 - 100000 * q2
+        val d = ds(q2)
+        buf(pos) = (d >> 8).toByte
+        if (r2 == 0 && d.toByte == '0') pos += 1
+        else {
+          buf(pos + 1) = d.toByte
+          val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
+          val r3 = r2 - q3 * 1000
+          pos = write2Digits(q3, pos + 2, buf, ds)
+          if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
         }
       }
     }
