@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.ByteArrayInputStream
 import java.math.MathContext
+import java.nio.charset.StandardCharsets._
 import java.time._
 import java.util.UUID
 
@@ -148,12 +149,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.nextToken" should {
     "find next non-whitespace byte of input" in {
-      val r = reader("{}".getBytes("UTF-8"))
+      val r = reader("{}")
       assert(r.nextToken() == '{')
       assert(r.nextToken() == '}')
     }
     "throw parse exception in case of end of input" in {
-      val r = reader("{}".getBytes("UTF-8"))
+      val r = reader("{}")
       r.skip()
       assert(intercept[JsonParseException](r.nextToken() == '{')
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
@@ -161,63 +162,63 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readNullOrError" should {
     "parse null value" in {
-      val r = reader("null".getBytes("UTF-8"))
+      val r = reader("null")
       r.isNextToken('n') shouldBe true
       r.readNullOrError("default", "error") shouldBe "default"
     }
     "throw parse exception in case of invalid null value" in {
       assert(intercept[JsonParseException] {
-        val r = reader("nxll".getBytes("UTF-8"))
+        val r = reader("nxll")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null") shouldBe "default"
       }.getMessage.contains("expected null, offset: 0x00000001"))
       assert(intercept[JsonParseException] {
-        val r = reader("nuxl".getBytes("UTF-8"))
+        val r = reader("nuxl")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null") shouldBe "default"
       }.getMessage.contains("expected null, offset: 0x00000002"))
       assert(intercept[JsonParseException] {
-        val r = reader("nulx".getBytes("UTF-8"))
+        val r = reader("nulx")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null") shouldBe "default"
       }.getMessage.contains("expected null, offset: 0x00000003"))
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader("null".getBytes("UTF-8")).readNullOrError("default", "error"))
+      assert(intercept[ArrayIndexOutOfBoundsException](reader("null").readNullOrError("default", "error"))
         .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
   "JsonReader.readNullOrTokenError" should {
     "parse null value" in {
-      val r = reader("null".getBytes("UTF-8"))
+      val r = reader("null")
       r.isNextToken('n') shouldBe true
       r.readNullOrTokenError("default", 'x') shouldBe "default"
     }
     "throw parse exception in case of invalid null value" in {
       assert(intercept[JsonParseException] {
-        val r = reader("nxll".getBytes("UTF-8"))
+        val r = reader("nxll")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x') shouldBe "default"
       }.getMessage.contains("expected 'x' or null, offset: 0x00000001"))
       assert(intercept[JsonParseException] {
-        val r = reader("nuxl".getBytes("UTF-8"))
+        val r = reader("nuxl")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x') shouldBe "default"
       }.getMessage.contains("expected 'x' or null, offset: 0x00000002"))
       assert(intercept[JsonParseException] {
-        val r = reader("nulx".getBytes("UTF-8"))
+        val r = reader("nulx")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x') shouldBe "default"
       }.getMessage.contains("expected 'x' or null, offset: 0x00000003"))
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader("null".getBytes("UTF-8")).readNullOrError("default", "error"))
+      assert(intercept[ArrayIndexOutOfBoundsException](reader("null").readNullOrError("default", "error"))
         .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
   "JsonReader.rollbackToken" should {
     "rollback of reading last byte of input" in {
-      val r = reader("""{"x":1}""".getBytes("UTF-8"))
+      val r = reader("""{"x":1}""")
       assert(r.nextToken() == '{')
       r.rollbackToken()
       assert(r.nextToken() == '{')
@@ -226,24 +227,21 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       assert(r.nextToken() == '"')
     }
     "throw array index out of bounds exception in case of missing preceding call of 'nextToken()' or 'isNextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader("{}".getBytes("UTF-8")).rollbackToken())
+      assert(intercept[ArrayIndexOutOfBoundsException](reader("{}").rollbackToken())
         .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
   "JsonReader.readBoolean, JsonReader.readStringAsBoolean and JsonReader.readKeyAsBoolean" should {
     def check(s: String, value: Boolean): Unit = {
-      reader(s.getBytes("UTF-8")).readBoolean() shouldBe value
-      reader(('\"' + s + '\"').getBytes("UTF-8")).readStringAsBoolean() shouldBe value
-      reader(('\"' + s + "\":").getBytes("UTF-8")).readKeyAsBoolean() shouldBe value
+      reader(s).readBoolean() shouldBe value
+      reader("\"" + s + "\"").readStringAsBoolean() shouldBe value
+      reader("\"" + s + "\":").readKeyAsBoolean() shouldBe value
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s.getBytes("UTF-8")).readBoolean())
-        .getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader(('\"' + s + '\"').getBytes("UTF-8")).readStringAsBoolean())
-        .getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader(('\"' + s + "\":").getBytes("UTF-8")).readKeyAsBoolean())
-        .getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readBoolean()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsBoolean()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsBoolean()).getMessage.contains(error2))
     }
 
     "parse valid true and false values" in {
@@ -265,144 +263,143 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readKeyAsUUID" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"".getBytes("UTF-8")).readKeyAsUUID())
+      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"").readKeyAsUUID())
         .getMessage.contains("unexpected end of input, offset: 0x00000026"))
-      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"x".getBytes("UTF-8")).readKeyAsUUID())
+      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"x").readKeyAsUUID())
         .getMessage.contains("expected ':', offset: 0x00000026"))
     }
   }
   "JsonReader.readUUID and JsonReader.readKeyAsUUID" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readUUID(null))
+      assert(intercept[JsonParseException](reader("null").readUUID(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsUUID())
+      assert(intercept[JsonParseException](reader("null").readKeyAsUUID())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = new UUID(0, 0)
-      reader("null".getBytes("UTF-8")).readUUID(default) shouldBe default
+      reader("null").readUUID(default) shouldBe default
     }
     "parse UUID from a string representation according to format that defined in IETF RFC4122 (section 3)" in {
       def check(x: UUID): Unit = {
         val s = x.toString
-        readUUID(s.toLowerCase) shouldBe x
-        readUUID(s.toUpperCase) shouldBe x
-        readKeyAsUUID(s.toLowerCase) shouldBe x
-        readKeyAsUUID(s.toUpperCase) shouldBe x
+        reader("\"" + s.toLowerCase + "\"").readUUID(null) shouldBe x
+        reader("\"" + s.toUpperCase + "\"").readUUID(null) shouldBe x
+        reader("\"" + s.toLowerCase + "\":").readKeyAsUUID() shouldBe x
+        reader("\"" + s.toUpperCase + "\":").readKeyAsUUID() shouldBe x
       }
 
       forAll(Gen.uuid, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readUUID(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsUUID()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readUUID(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsUUID()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000002")
-      checkError("\"00000000-0000-0000-0000-000000000000".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000025")
-      checkError("\"Z0000000-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000001")
-      checkError("\"0Z000000-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000002")
-      checkError("\"00Z00000-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000003")
-      checkError("\"000Z0000-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000004")
-      checkError("\"0000Z000-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000005")
-      checkError("\"00000Z00-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000006")
-      checkError("\"000000Z0-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000007")
-      checkError("\"0000000Z-0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000008")
-      checkError("\"00000000=0000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected '-', offset: 0x00000009")
-      checkError("\"00000000-Z000-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000000a")
-      checkError("\"00000000-0Z00-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000000b")
-      checkError("\"00000000-00Z0-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000000c")
-      checkError("\"00000000-000Z-0000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000000d")
-      checkError("\"00000000-0000=0000-0000-000000000000\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000e")
-      checkError("\"00000000-0000-Z000-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000000f")
-      checkError("\"00000000-0000-0Z00-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000010")
-      checkError("\"00000000-0000-00Z0-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000011")
-      checkError("\"00000000-0000-000Z-0000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000012")
-      checkError("\"00000000-0000-0000=0000-000000000000\"".getBytes("UTF-8"), "expected '-', offset: 0x00000013")
-      checkError("\"00000000-0000-0000-Z000-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000014")
-      checkError("\"00000000-0000-0000-0Z00-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000015")
-      checkError("\"00000000-0000-0000-00Z0-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000016")
-      checkError("\"00000000-0000-0000-000Z-000000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000017")
-      checkError("\"00000000-0000-0000-0000=000000000000\"".getBytes("UTF-8"), "expected '-', offset: 0x00000018")
-      checkError("\"00000000-0000-0000-0000-Z00000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000019")
-      checkError("\"00000000-0000-0000-0000-0Z0000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000001a")
-      checkError("\"00000000-0000-0000-0000-00Z000000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000001b")
-      checkError("\"00000000-0000-0000-0000-000Z00000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000001c")
-      checkError("\"00000000-0000-0000-0000-0000Z0000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000001d")
-      checkError("\"00000000-0000-0000-0000-00000Z000000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000001e")
-      checkError("\"00000000-0000-0000-0000-000000Z00000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x0000001f")
-      checkError("\"00000000-0000-0000-0000-0000000Z0000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000020")
-      checkError("\"00000000-0000-0000-0000-00000000Z000\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000021")
-      checkError("\"00000000-0000-0000-0000-000000000Z00\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000022")
-      checkError("\"00000000-0000-0000-0000-0000000000Z0\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000023")
-      checkError("\"00000000-0000-0000-0000-00000000000Z\"".getBytes("UTF-8"), "expected hex digit, offset: 0x00000024")
-      checkError("\"×0000000-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000001")
-      checkError("\"0×000000-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000002")
-      checkError("\"00×00000-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000003")
-      checkError("\"000×0000-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000004")
-      checkError("\"0000×000-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000005")
-      checkError("\"00000×00-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000006")
-      checkError("\"000000×0-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000007")
-      checkError("\"0000000×-0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000008")
-      checkError("\"00000000÷0000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected '-', offset: 0x00000009")
-      checkError("\"00000000-×000-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000000a")
-      checkError("\"00000000-0×00-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000000b")
-      checkError("\"00000000-00×0-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000000c")
-      checkError("\"00000000-000×-0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000000d")
-      checkError("\"00000000-0000÷0000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected '-', offset: 0x0000000e")
-      checkError("\"00000000-0000-×000-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000000f")
-      checkError("\"00000000-0000-0×00-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000010")
-      checkError("\"00000000-0000-00×0-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000011")
-      checkError("\"00000000-0000-000×-0000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000012")
-      checkError("\"00000000-0000-0000÷0000-000000000000\"".getBytes("ISO-8859-1"), "expected '-', offset: 0x00000013")
-      checkError("\"00000000-0000-0000-×000-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000014")
-      checkError("\"00000000-0000-0000-0×00-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000015")
-      checkError("\"00000000-0000-0000-00×0-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000016")
-      checkError("\"00000000-0000-0000-000×-000000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000017")
-      checkError("\"00000000-0000-0000-0000÷000000000000\"".getBytes("ISO-8859-1"), "expected '-', offset: 0x00000018")
-      checkError("\"00000000-0000-0000-0000-×00000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000019")
-      checkError("\"00000000-0000-0000-0000-0×0000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000001a")
-      checkError("\"00000000-0000-0000-0000-00×000000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000001b")
-      checkError("\"00000000-0000-0000-0000-000×00000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000001c")
-      checkError("\"00000000-0000-0000-0000-0000×0000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000001d")
-      checkError("\"00000000-0000-0000-0000-00000×000000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000001e")
-      checkError("\"00000000-0000-0000-0000-000000×00000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x0000001f")
-      checkError("\"00000000-0000-0000-0000-0000000×0000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000020")
-      checkError("\"00000000-0000-0000-0000-00000000×000\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000021")
-      checkError("\"00000000-0000-0000-0000-000000000×00\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000022")
-      checkError("\"00000000-0000-0000-0000-0000000000×0\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000023")
-      checkError("\"00000000-0000-0000-0000-00000000000×\"".getBytes("ISO-8859-1"), "expected hex digit, offset: 0x00000024")
-      checkError("\"00000000-0000-0000-0000-000000000000x".getBytes("ISO-8859-1"), "expected '\"', offset: 0x00000025")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "unexpected end of input, offset: 0x00000002")
+      checkError("\"00000000-0000-0000-0000-000000000000", "unexpected end of input, offset: 0x00000025")
+      checkError("\"Z0000000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000001")
+      checkError("\"0Z000000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000002")
+      checkError("\"00Z00000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000003")
+      checkError("\"000Z0000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000004")
+      checkError("\"0000Z000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000005")
+      checkError("\"00000Z00-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000006")
+      checkError("\"000000Z0-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000007")
+      checkError("\"0000000Z-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000008")
+      checkError("\"00000000=0000-0000-0000-000000000000\"", "expected '-', offset: 0x00000009")
+      checkError("\"00000000-Z000-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000a")
+      checkError("\"00000000-0Z00-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000b")
+      checkError("\"00000000-00Z0-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000c")
+      checkError("\"00000000-000Z-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000d")
+      checkError("\"00000000-0000=0000-0000-000000000000\"", "expected '-', offset: 0x0000000e")
+      checkError("\"00000000-0000-Z000-0000-000000000000\"", "expected hex digit, offset: 0x0000000f")
+      checkError("\"00000000-0000-0Z00-0000-000000000000\"", "expected hex digit, offset: 0x00000010")
+      checkError("\"00000000-0000-00Z0-0000-000000000000\"", "expected hex digit, offset: 0x00000011")
+      checkError("\"00000000-0000-000Z-0000-000000000000\"", "expected hex digit, offset: 0x00000012")
+      checkError("\"00000000-0000-0000=0000-000000000000\"", "expected '-', offset: 0x00000013")
+      checkError("\"00000000-0000-0000-Z000-000000000000\"", "expected hex digit, offset: 0x00000014")
+      checkError("\"00000000-0000-0000-0Z00-000000000000\"", "expected hex digit, offset: 0x00000015")
+      checkError("\"00000000-0000-0000-00Z0-000000000000\"", "expected hex digit, offset: 0x00000016")
+      checkError("\"00000000-0000-0000-000Z-000000000000\"", "expected hex digit, offset: 0x00000017")
+      checkError("\"00000000-0000-0000-0000=000000000000\"", "expected '-', offset: 0x00000018")
+      checkError("\"00000000-0000-0000-0000-Z00000000000\"", "expected hex digit, offset: 0x00000019")
+      checkError("\"00000000-0000-0000-0000-0Z0000000000\"", "expected hex digit, offset: 0x0000001a")
+      checkError("\"00000000-0000-0000-0000-00Z000000000\"", "expected hex digit, offset: 0x0000001b")
+      checkError("\"00000000-0000-0000-0000-000Z00000000\"", "expected hex digit, offset: 0x0000001c")
+      checkError("\"00000000-0000-0000-0000-0000Z0000000\"", "expected hex digit, offset: 0x0000001d")
+      checkError("\"00000000-0000-0000-0000-00000Z000000\"", "expected hex digit, offset: 0x0000001e")
+      checkError("\"00000000-0000-0000-0000-000000Z00000\"", "expected hex digit, offset: 0x0000001f")
+      checkError("\"00000000-0000-0000-0000-0000000Z0000\"", "expected hex digit, offset: 0x00000020")
+      checkError("\"00000000-0000-0000-0000-00000000Z000\"", "expected hex digit, offset: 0x00000021")
+      checkError("\"00000000-0000-0000-0000-000000000Z00\"", "expected hex digit, offset: 0x00000022")
+      checkError("\"00000000-0000-0000-0000-0000000000Z0\"", "expected hex digit, offset: 0x00000023")
+      checkError("\"00000000-0000-0000-0000-00000000000Z\"", "expected hex digit, offset: 0x00000024")
+      checkError("\"×0000000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000001")
+      checkError("\"0×000000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000002")
+      checkError("\"00×00000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000003")
+      checkError("\"000×0000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000004")
+      checkError("\"0000×000-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000005")
+      checkError("\"00000×00-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000006")
+      checkError("\"000000×0-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000007")
+      checkError("\"0000000×-0000-0000-0000-000000000000\"", "expected hex digit, offset: 0x00000008")
+      checkError("\"00000000÷0000-0000-0000-000000000000\"", "expected '-', offset: 0x00000009")
+      checkError("\"00000000-×000-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000a")
+      checkError("\"00000000-0×00-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000b")
+      checkError("\"00000000-00×0-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000c")
+      checkError("\"00000000-000×-0000-0000-000000000000\"", "expected hex digit, offset: 0x0000000d")
+      checkError("\"00000000-0000÷0000-0000-000000000000\"", "expected '-', offset: 0x0000000e")
+      checkError("\"00000000-0000-×000-0000-000000000000\"", "expected hex digit, offset: 0x0000000f")
+      checkError("\"00000000-0000-0×00-0000-000000000000\"", "expected hex digit, offset: 0x00000010")
+      checkError("\"00000000-0000-00×0-0000-000000000000\"", "expected hex digit, offset: 0x00000011")
+      checkError("\"00000000-0000-000×-0000-000000000000\"", "expected hex digit, offset: 0x00000012")
+      checkError("\"00000000-0000-0000÷0000-000000000000\"", "expected '-', offset: 0x00000013")
+      checkError("\"00000000-0000-0000-×000-000000000000\"", "expected hex digit, offset: 0x00000014")
+      checkError("\"00000000-0000-0000-0×00-000000000000\"", "expected hex digit, offset: 0x00000015")
+      checkError("\"00000000-0000-0000-00×0-000000000000\"", "expected hex digit, offset: 0x00000016")
+      checkError("\"00000000-0000-0000-000×-000000000000\"", "expected hex digit, offset: 0x00000017")
+      checkError("\"00000000-0000-0000-0000÷000000000000\"", "expected '-', offset: 0x00000018")
+      checkError("\"00000000-0000-0000-0000-×00000000000\"", "expected hex digit, offset: 0x00000019")
+      checkError("\"00000000-0000-0000-0000-0×0000000000\"", "expected hex digit, offset: 0x0000001a")
+      checkError("\"00000000-0000-0000-0000-00×000000000\"", "expected hex digit, offset: 0x0000001b")
+      checkError("\"00000000-0000-0000-0000-000×00000000\"", "expected hex digit, offset: 0x0000001c")
+      checkError("\"00000000-0000-0000-0000-0000×0000000\"", "expected hex digit, offset: 0x0000001d")
+      checkError("\"00000000-0000-0000-0000-00000×000000\"", "expected hex digit, offset: 0x0000001e")
+      checkError("\"00000000-0000-0000-0000-000000×00000\"", "expected hex digit, offset: 0x0000001f")
+      checkError("\"00000000-0000-0000-0000-0000000×0000\"", "expected hex digit, offset: 0x00000020")
+      checkError("\"00000000-0000-0000-0000-00000000×000\"", "expected hex digit, offset: 0x00000021")
+      checkError("\"00000000-0000-0000-0000-000000000×00\"", "expected hex digit, offset: 0x00000022")
+      checkError("\"00000000-0000-0000-0000-0000000000×0\"", "expected hex digit, offset: 0x00000023")
+      checkError("\"00000000-0000-0000-0000-00000000000×\"", "expected hex digit, offset: 0x00000024")
+      checkError("\"00000000-0000-0000-0000-000000000000x", "expected '\"', offset: 0x00000025")
     }
   }
   "JsonReader.readKeyAsInstant" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"".getBytes("UTF-8")).readKeyAsInstant())
+      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"").readKeyAsInstant())
         .getMessage.contains("unexpected end of input, offset: 0x00000016"))
-      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"x".getBytes("UTF-8")).readKeyAsInstant())
+      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"x").readKeyAsInstant())
         .getMessage.contains("expected ':', offset: 0x00000016"))
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readDuration(null))
+      assert(intercept[JsonParseException](reader("null").readDuration(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsDuration())
+      assert(intercept[JsonParseException](reader("null").readKeyAsDuration())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = Duration.parse("P2DT3H4M")
-      reader("null".getBytes("UTF-8")).readDuration(default) shouldBe default
+      reader("null").readDuration(default) shouldBe default
     }
     "parse Duration from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
       def check(s: String, x: Duration): Unit = {
-        val xx = x.negated()
-        readDuration(s) shouldBe x
-        readKeyAsDuration(s) shouldBe x
-        readDuration('-' + s) shouldBe xx
-        readKeyAsDuration('-' + s) shouldBe xx
+        reader("\"" + s + "\"").readDuration(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsDuration() shouldBe x
+        reader("\"-" + s + "\"").readDuration(null) shouldBe x.negated()
+        reader("\"-" + s + "\":").readKeyAsDuration() shouldBe x.negated()
       }
 
       check("P0D", Duration.ZERO)
@@ -410,70 +407,70 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genDuration, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readDuration(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsDuration()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readDuration(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsDuration()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected 'P' or '-', offset: 0x00000001")
-      checkError("\"-\"".getBytes("UTF-8"), "expected 'P', offset: 0x00000002")
-      checkError("\"PXD\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000002")
-      checkError("\"PT0SX".getBytes("UTF-8"), "expected '\"', offset: 0x00000005")
-      checkError("\"P-XD\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003")
-      checkError("\"P1XD\"".getBytes("UTF-8"), "expected 'D' or digit, offset: 0x00000003")
-      checkError("\"P106751991167301D\"".getBytes("UTF-8"), "llegal duration, offset: 0x00000011")
-      checkError("\"P1067519911673000D\"".getBytes("UTF-8"), "llegal duration, offset: 0x00000011")
-      checkError("\"P-106751991167301D\"".getBytes("UTF-8"), "llegal duration, offset: 0x00000012")
-      checkError("\"P1DX1H\"".getBytes("UTF-8"), "expected 'T' or '\"', offset: 0x00000004")
-      checkError("\"P1DTXH\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"P1DT-XH\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"P1DT1XH\"".getBytes("UTF-8"), "expected 'H' or 'M' or 'S or '.' or digit, offset: 0x00000006")
-      checkError("\"P0DT2562047788015216H\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000015")
-      checkError("\"P0DT-2562047788015216H\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000016")
-      checkError("\"P0DT153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000017")
-      checkError("\"P0DT-153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
-      checkError("\"P0DT9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
-      checkError("\"P0DT92233720368547758000S\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
-      checkError("\"P0DT-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000018")
-      checkError("\"P1DT1HXM\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000007")
-      checkError("\"P1DT1H-XM\"".getBytes("UTF-8"), "expected digit, offset: 0x00000008")
-      checkError("\"P1DT1H1XM\"".getBytes("UTF-8"), "expected 'M' or 'S or '.' or digit, offset: 0x00000008")
-      checkError("\"P0DT0H153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000019")
-      checkError("\"P0DT0H-153722867280912931M\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
-      checkError("\"P0DT0H9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
-      checkError("\"P0DT0H92233720368547758000S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
-      checkError("\"P0DT0H-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001a")
-      checkError("\"P1DT1H1MXS\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000009")
-      checkError("\"P1DT1H1M-XS\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"P1DT1H1M0XS\"".getBytes("UTF-8"), "expected 'S or '.' or digit, offset: 0x0000000a")
-      checkError("\"P1DT1H1M0.XS\"".getBytes("UTF-8"), "expected 'S' or digit, offset: 0x0000000b")
-      checkError("\"P1DT1H1M0.012345678XS\"".getBytes("UTF-8"), "expected 'S', offset: 0x00000014")
-      checkError("\"P1DT1H1M0.0123456789S\"".getBytes("UTF-8"), "expected 'S', offset: 0x00000014")
-      checkError("\"P0DT0H0M9223372036854775808S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
-      checkError("\"P0DT0H0M92233720368547758080S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
-      checkError("\"P0DT0H0M-9223372036854775809S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001c")
-      checkError("\"P106751991167300DT24H\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000016")
-      checkError("\"P0DT2562047788015215H60M\"".getBytes("UTF-8"), "illegal duration, offset: 0x00000019")
-      checkError("\"P0DT0H153722867280912930M60S\"".getBytes("UTF-8"), "illegal duration, offset: 0x0000001d")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected 'P' or '-', offset: 0x00000001")
+      checkError("\"-\"", "expected 'P', offset: 0x00000002")
+      checkError("\"PXD\"", "expected '-' or digit, offset: 0x00000002")
+      checkError("\"PT0SX", "expected '\"', offset: 0x00000005")
+      checkError("\"P-XD\"", "expected digit, offset: 0x00000003")
+      checkError("\"P1XD\"", "expected 'D' or digit, offset: 0x00000003")
+      checkError("\"P106751991167301D\"", "llegal duration, offset: 0x00000011")
+      checkError("\"P1067519911673000D\"", "llegal duration, offset: 0x00000011")
+      checkError("\"P-106751991167301D\"", "llegal duration, offset: 0x00000012")
+      checkError("\"P1DX1H\"", "expected 'T' or '\"', offset: 0x00000004")
+      checkError("\"P1DTXH\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"P1DT-XH\"", "expected digit, offset: 0x00000006")
+      checkError("\"P1DT1XH\"", "expected 'H' or 'M' or 'S or '.' or digit, offset: 0x00000006")
+      checkError("\"P0DT2562047788015216H\"", "illegal duration, offset: 0x00000015")
+      checkError("\"P0DT-2562047788015216H\"", "illegal duration, offset: 0x00000016")
+      checkError("\"P0DT153722867280912931M\"", "illegal duration, offset: 0x00000017")
+      checkError("\"P0DT-153722867280912931M\"", "illegal duration, offset: 0x00000018")
+      checkError("\"P0DT9223372036854775808S\"", "illegal duration, offset: 0x00000018")
+      checkError("\"P0DT92233720368547758000S\"", "illegal duration, offset: 0x00000018")
+      checkError("\"P0DT-9223372036854775809S\"", "illegal duration, offset: 0x00000018")
+      checkError("\"P1DT1HXM\"", "expected '\"' or '-' or digit, offset: 0x00000007")
+      checkError("\"P1DT1H-XM\"", "expected digit, offset: 0x00000008")
+      checkError("\"P1DT1H1XM\"", "expected 'M' or 'S or '.' or digit, offset: 0x00000008")
+      checkError("\"P0DT0H153722867280912931M\"", "illegal duration, offset: 0x00000019")
+      checkError("\"P0DT0H-153722867280912931M\"", "illegal duration, offset: 0x0000001a")
+      checkError("\"P0DT0H9223372036854775808S\"", "illegal duration, offset: 0x0000001a")
+      checkError("\"P0DT0H92233720368547758000S\"", "illegal duration, offset: 0x0000001a")
+      checkError("\"P0DT0H-9223372036854775809S\"", "illegal duration, offset: 0x0000001a")
+      checkError("\"P1DT1H1MXS\"", "expected '\"' or '-' or digit, offset: 0x00000009")
+      checkError("\"P1DT1H1M-XS\"", "expected digit, offset: 0x0000000a")
+      checkError("\"P1DT1H1M0XS\"", "expected 'S or '.' or digit, offset: 0x0000000a")
+      checkError("\"P1DT1H1M0.XS\"", "expected 'S' or digit, offset: 0x0000000b")
+      checkError("\"P1DT1H1M0.012345678XS\"", "expected 'S', offset: 0x00000014")
+      checkError("\"P1DT1H1M0.0123456789S\"", "expected 'S', offset: 0x00000014")
+      checkError("\"P0DT0H0M9223372036854775808S\"", "illegal duration, offset: 0x0000001c")
+      checkError("\"P0DT0H0M92233720368547758080S\"", "illegal duration, offset: 0x0000001c")
+      checkError("\"P0DT0H0M-9223372036854775809S\"", "illegal duration, offset: 0x0000001c")
+      checkError("\"P106751991167300DT24H\"", "illegal duration, offset: 0x00000016")
+      checkError("\"P0DT2562047788015215H60M\"", "illegal duration, offset: 0x00000019")
+      checkError("\"P0DT0H153722867280912930M60S\"", "illegal duration, offset: 0x0000001d")
     }
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readInstant(null))
+      assert(intercept[JsonParseException](reader("null").readInstant(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsInstant())
+      assert(intercept[JsonParseException](reader("null").readKeyAsInstant())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = Instant.parse("2008-01-20T07:24:33Z")
-      reader("null".getBytes("UTF-8")).readInstant(default) shouldBe default
+      reader("null").readInstant(default) shouldBe default
     }
     "parse Instant from a string representation according to ISO-8601 format" in {
       def check(x: Instant): Unit = {
         val s = x.toString
-        readInstant(s) shouldBe x
-        readKeyAsInstant(s) shouldBe x
+        reader("\"" + s + "\"").readInstant(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsInstant() shouldBe x
       }
 
       check(Instant.MAX)
@@ -481,80 +478,80 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genInstant, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readInstant(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsInstant()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readInstant(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsInstant()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008-01-20T07:24:33Z".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000015")
-      checkError("\"008-01-20T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33Z\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"+1000000000=01-20T07:24:33Z\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000c")
-      checkError("\"2008-X0-20T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"2008-0X-20T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"2008-01=20T07:24:33Z\"".getBytes("UTF-8"), "expected '-', offset: 0x00000008")
-      checkError("\"2008-01-X0T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"2008-01-2XT07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"2008-01-20X07:24:33Z\"".getBytes("UTF-8"), "expected 'T', offset: 0x0000000b")
-      checkError("\"2008-01-20TX7:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000c")
-      checkError("\"2008-01-20T0X:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000d")
-      checkError("\"2008-01-20T07=24:33Z\"".getBytes("UTF-8"), "expected ':', offset: 0x0000000e")
-      checkError("\"2008-01-20T07:X4:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000f")
-      checkError("\"2008-01-20T07:2X:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000010")
-      checkError("\"2008-01-20T07:24=33Z\"".getBytes("UTF-8"), "expected ':' or 'Z', offset: 0x00000011")
-      checkError("\"2008-01-20T07:24:X3Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"2008-01-20T07:24:3XZ\"".getBytes("UTF-8"), "expected digit, offset: 0x00000013")
-      checkError("\"2008-01-20T07:24:33X\"".getBytes("UTF-8"), "expected '.' or 'Z', offset: 0x00000014")
-      checkError("\"2008-01-20T07:24:33ZZ".getBytes("UTF-8"), "expected '\"', offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.\"".getBytes("UTF-8"), "expected 'Z' or digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.000\"".getBytes("UTF-8"), "expected 'Z' or digit, offset: 0x00000018")
-      checkError("\"2008-01-20T07:24:33.123456789X\"".getBytes("UTF-8"), "expected 'Z', offset: 0x0000001e")
-      checkError("\"-0000-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x00000016")
-      checkError("\"+1000000001-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001c")
-      checkError("\"+1000000010-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001c")
-      checkError("\"+9999999999-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001c")
-      checkError("\"-1000000001-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001c")
-      checkError("\"-1000000010-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001c")
-      checkError("\"-9999999999-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001c")
-      checkError("\"2008-00-20T07:24:33Z\"".getBytes("UTF-8"), "illegal month, offset: 0x00000015")
-      checkError("\"2008-13-20T07:24:33Z\"".getBytes("UTF-8"), "illegal month, offset: 0x00000015")
-      checkError("\"2008-01-00T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-01-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2007-02-29T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-02-30T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-03-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-04-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-05-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-06-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-07-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-08-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-09-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-10-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-11-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-12-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-01-20T24:24:33Z\"".getBytes("UTF-8"), "illegal hour, offset: 0x00000015")
-      checkError("\"2008-01-20T07:60:33Z\"".getBytes("UTF-8"), "illegal minute, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:60Z\"".getBytes("UTF-8"), "illegal second, offset: 0x00000015")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z", "unexpected end of input, offset: 0x00000015")
+      checkError("\"008-01-20T07:24:33Z\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+1000000000=01-20T07:24:33Z\"", "expected '-', offset: 0x0000000c")
+      checkError("\"2008-X0-20T07:24:33Z\"", "expected digit, offset: 0x00000006")
+      checkError("\"2008-0X-20T07:24:33Z\"", "expected digit, offset: 0x00000007")
+      checkError("\"2008-01=20T07:24:33Z\"", "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-X0T07:24:33Z\"", "expected digit, offset: 0x00000009")
+      checkError("\"2008-01-2XT07:24:33Z\"", "expected digit, offset: 0x0000000a")
+      checkError("\"2008-01-20X07:24:33Z\"", "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20TX7:24:33Z\"", "expected digit, offset: 0x0000000c")
+      checkError("\"2008-01-20T0X:24:33Z\"", "expected digit, offset: 0x0000000d")
+      checkError("\"2008-01-20T07=24:33Z\"", "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:X4:33Z\"", "expected digit, offset: 0x0000000f")
+      checkError("\"2008-01-20T07:2X:33Z\"", "expected digit, offset: 0x00000010")
+      checkError("\"2008-01-20T07:24=33Z\"", "expected ':' or 'Z', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:X3Z\"", "expected digit, offset: 0x00000012")
+      checkError("\"2008-01-20T07:24:3XZ\"", "expected digit, offset: 0x00000013")
+      checkError("\"2008-01-20T07:24:33X\"", "expected '.' or 'Z', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ", "expected '\"', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.\"", "expected 'Z' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.000\"", "expected 'Z' or digit, offset: 0x00000018")
+      checkError("\"2008-01-20T07:24:33.123456789X\"", "expected 'Z', offset: 0x0000001e")
+      checkError("\"-0000-01-20T07:24:33Z\"", "illegal year, offset: 0x00000016")
+      checkError("\"+1000000001-01-20T07:24:33Z\"", "illegal year, offset: 0x0000001c")
+      checkError("\"+1000000010-01-20T07:24:33Z\"", "illegal year, offset: 0x0000001c")
+      checkError("\"+9999999999-01-20T07:24:33Z\"", "illegal year, offset: 0x0000001c")
+      checkError("\"-1000000001-01-20T07:24:33Z\"", "illegal year, offset: 0x0000001c")
+      checkError("\"-1000000010-01-20T07:24:33Z\"", "illegal year, offset: 0x0000001c")
+      checkError("\"-9999999999-01-20T07:24:33Z\"", "illegal year, offset: 0x0000001c")
+      checkError("\"2008-00-20T07:24:33Z\"", "illegal month, offset: 0x00000015")
+      checkError("\"2008-13-20T07:24:33Z\"", "illegal month, offset: 0x00000015")
+      checkError("\"2008-01-00T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2007-02-29T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-02-30T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-03-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-04-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-05-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-06-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-07-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-08-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-09-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-10-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-11-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-12-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-20T24:24:33Z\"", "illegal hour, offset: 0x00000015")
+      checkError("\"2008-01-20T07:60:33Z\"", "illegal minute, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:60Z\"", "illegal second, offset: 0x00000015")
     }
   }
   "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readLocalDate(null))
+      assert(intercept[JsonParseException](reader("null").readLocalDate(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsLocalDate())
+      assert(intercept[JsonParseException](reader("null").readKeyAsLocalDate())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = LocalDate.parse("2008-01-20")
-      reader("null".getBytes("UTF-8")).readLocalDate(default) shouldBe default
+      reader("null").readLocalDate(default) shouldBe default
     }
     "parse LocalDate from a string representation according to ISO-8601 format" in {
       def check(x: LocalDate): Unit = {
         val s = x.toString
-        readLocalDate(s) shouldBe x
-        readKeyAsLocalDate(s) shouldBe x
+        reader("\"" + s + "\"").readLocalDate(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsLocalDate() shouldBe x
       }
 
       check(LocalDate.MAX)
@@ -562,60 +559,60 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genLocalDate, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readLocalDate(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDate()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readLocalDate(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsLocalDate()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008-01-20".getBytes("UTF-8"), "unexpected end of input, offset: 0x0000000b")
-      checkError("\"008-01-20\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"+999999999=01-20\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"+1000000000-01-20\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"-1000000000-01-20\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"2008-X1-20\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"2008-0X-20\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"2008-01=20\"".getBytes("UTF-8"), "expected '-', offset: 0x00000008")
-      checkError("\"2008-01-X0\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"2008-01-2X\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"2008-01-20X\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000000b")
-      checkError("\"-0000-01-20\"".getBytes("UTF-8"), "illegal year, offset: 0x0000000c")
-      checkError("\"2008-00-20\"".getBytes("UTF-8"), "illegal month, offset: 0x0000000b")
-      checkError("\"2008-13-20\"".getBytes("UTF-8"), "illegal month, offset: 0x0000000b")
-      checkError("\"2008-01-00\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-01-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2007-02-29\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-02-30\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-03-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-04-31\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-05-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-06-31\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-07-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-08-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-09-31\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-10-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-11-31\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
-      checkError("\"2008-12-32\"".getBytes("UTF-8"), "illegal day, offset: 0x0000000b")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20", "unexpected end of input, offset: 0x0000000b")
+      checkError("\"008-01-20\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+999999999=01-20\"", "expected '-', offset: 0x0000000b")
+      checkError("\"+1000000000-01-20\"", "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20\"", "expected '-', offset: 0x0000000b")
+      checkError("\"2008-X1-20\"", "expected digit, offset: 0x00000006")
+      checkError("\"2008-0X-20\"", "expected digit, offset: 0x00000007")
+      checkError("\"2008-01=20\"", "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-X0\"", "expected digit, offset: 0x00000009")
+      checkError("\"2008-01-2X\"", "expected digit, offset: 0x0000000a")
+      checkError("\"2008-01-20X\"", "expected '\"', offset: 0x0000000b")
+      checkError("\"-0000-01-20\"", "illegal year, offset: 0x0000000c")
+      checkError("\"2008-00-20\"", "illegal month, offset: 0x0000000b")
+      checkError("\"2008-13-20\"", "illegal month, offset: 0x0000000b")
+      checkError("\"2008-01-00\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-01-32\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2007-02-29\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-02-30\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-03-32\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-04-31\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-05-32\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-06-31\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-07-32\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-08-32\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-09-31\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-10-32\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-11-31\"", "illegal day, offset: 0x0000000b")
+      checkError("\"2008-12-32\"", "illegal day, offset: 0x0000000b")
     }
   }
   "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readLocalDateTime(null))
+      assert(intercept[JsonParseException](reader("null").readLocalDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsLocalDateTime())
+      assert(intercept[JsonParseException](reader("null").readKeyAsLocalDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = LocalDateTime.parse("2008-01-20T07:24:33")
-      reader("null".getBytes("UTF-8")).readLocalDateTime(default) shouldBe default
+      reader("null").readLocalDateTime(default) shouldBe default
     }
     "parse LocalDateTime from a string representation according to ISO-8601 format" in {
       def check(x: LocalDateTime): Unit = {
         val s = x.toString
-        readLocalDateTime(s) shouldBe x
-        readKeyAsLocalDateTime(s) shouldBe x
+        reader("\"" + s + "\"").readLocalDateTime(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsLocalDateTime() shouldBe x
       }
 
       check(LocalDateTime.MAX)
@@ -623,74 +620,74 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genLocalDateTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readLocalDateTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalDateTime()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readLocalDateTime(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsLocalDateTime()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008-01-20T07:24:33".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000014")
-      checkError("\"008-01-20T07:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"+999999999=01-20T07:24:33\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"+1000000000-01-20T07:24:33\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"-1000000000-01-20T07:24:33\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"2008-X1-20T07:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"2008-0X-20T07:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"2008-01=20T07:24:33\"".getBytes("UTF-8"), "expected '-', offset: 0x00000008")
-      checkError("\"2008-01-X0T07:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"2008-01-2XT07:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"2008-01-20X07:24:33\"".getBytes("UTF-8"), "expected 'T', offset: 0x0000000b")
-      checkError("\"2008-01-20TX7:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000c")
-      checkError("\"2008-01-20T0X:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000d")
-      checkError("\"2008-01-20T07=24:33\"".getBytes("UTF-8"), "expected ':', offset: 0x0000000e")
-      checkError("\"2008-01-20T07:X4:33\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000f")
-      checkError("\"2008-01-20T07:2X:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000010")
-      checkError("\"2008-01-20T07:24=33\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x00000011")
-      checkError("\"2008-01-20T07:24:X3\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"2008-01-20T07:24:3X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000013")
-      checkError("\"2008-01-20T07:24:33X\"".getBytes("UTF-8"), "expected '.' or '\"', offset: 0x00000014")
-      checkError("\"2008-01-20T07:24:33.X\"".getBytes("UTF-8"), "expected '\"' or digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.123456789X\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000001e")
-      checkError("\"-0000-01-20T07:24:33\"".getBytes("UTF-8"), "illegal year, offset: 0x00000015")
-      checkError("\"2008-00-20T07:24:33\"".getBytes("UTF-8"), "illegal month, offset: 0x00000014")
-      checkError("\"2008-13-20T07:24:33\"".getBytes("UTF-8"), "illegal month, offset: 0x00000014")
-      checkError("\"2008-01-00T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-01-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2007-02-29T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-02-30T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-03-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-04-31T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-05-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-06-31T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-07-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-08-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-09-31T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-10-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-11-31T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-12-32T07:24:33\"".getBytes("UTF-8"), "illegal day, offset: 0x00000014")
-      checkError("\"2008-01-20T24:24:33\"".getBytes("UTF-8"), "illegal hour, offset: 0x00000014")
-      checkError("\"2008-01-20T07:60:33\"".getBytes("UTF-8"), "illegal minute, offset: 0x00000014")
-      checkError("\"2008-01-20T07:24:60\"".getBytes("UTF-8"), "illegal second, offset: 0x00000014")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33", "unexpected end of input, offset: 0x00000014")
+      checkError("\"008-01-20T07:24:33\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+999999999=01-20T07:24:33\"", "expected '-', offset: 0x0000000b")
+      checkError("\"+1000000000-01-20T07:24:33\"", "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20T07:24:33\"", "expected '-', offset: 0x0000000b")
+      checkError("\"2008-X1-20T07:24:33\"", "expected digit, offset: 0x00000006")
+      checkError("\"2008-0X-20T07:24:33\"", "expected digit, offset: 0x00000007")
+      checkError("\"2008-01=20T07:24:33\"", "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-X0T07:24:33\"", "expected digit, offset: 0x00000009")
+      checkError("\"2008-01-2XT07:24:33\"", "expected digit, offset: 0x0000000a")
+      checkError("\"2008-01-20X07:24:33\"", "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20TX7:24:33\"", "expected digit, offset: 0x0000000c")
+      checkError("\"2008-01-20T0X:24:33\"", "expected digit, offset: 0x0000000d")
+      checkError("\"2008-01-20T07=24:33\"", "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:X4:33\"", "expected digit, offset: 0x0000000f")
+      checkError("\"2008-01-20T07:2X:33\"", "expected digit, offset: 0x00000010")
+      checkError("\"2008-01-20T07:24=33\"", "expected ':' or '\"', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:X3\"", "expected digit, offset: 0x00000012")
+      checkError("\"2008-01-20T07:24:3X\"", "expected digit, offset: 0x00000013")
+      checkError("\"2008-01-20T07:24:33X\"", "expected '.' or '\"', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33.X\"", "expected '\"' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.123456789X\"", "expected '\"', offset: 0x0000001e")
+      checkError("\"-0000-01-20T07:24:33\"", "illegal year, offset: 0x00000015")
+      checkError("\"2008-00-20T07:24:33\"", "illegal month, offset: 0x00000014")
+      checkError("\"2008-13-20T07:24:33\"", "illegal month, offset: 0x00000014")
+      checkError("\"2008-01-00T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-01-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2007-02-29T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-02-30T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-03-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-04-31T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-05-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-06-31T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-07-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-08-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-09-31T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-10-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-11-31T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-12-32T07:24:33\"", "illegal day, offset: 0x00000014")
+      checkError("\"2008-01-20T24:24:33\"", "illegal hour, offset: 0x00000014")
+      checkError("\"2008-01-20T07:60:33\"", "illegal minute, offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:60\"", "illegal second, offset: 0x00000014")
     }
   }
   "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readLocalTime(null))
+      assert(intercept[JsonParseException](reader("null").readLocalTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsLocalTime())
+      assert(intercept[JsonParseException](reader("null").readKeyAsLocalTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = LocalTime.parse("07:24:33")
-      reader("null".getBytes("UTF-8")).readLocalTime(default) shouldBe default
+      reader("null").readLocalTime(default) shouldBe default
     }
     "parse LocalTime from a string representation according to ISO-8601 format" in {
       def check(x: LocalTime): Unit = {
         val s = x.toString
-        readLocalTime(s) shouldBe x
-        readKeyAsLocalTime(s) shouldBe x
+        reader("\"" + s + "\"").readLocalTime(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsLocalTime() shouldBe x
       }
 
       check(LocalTime.MAX)
@@ -698,45 +695,45 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genLocalTime, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readLocalTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsLocalTime()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readLocalTime(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsLocalTime()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected digit, offset: 0x00000001")
-      checkError("\"07:24:33".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000009")
-      checkError("\"7:24:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000002")
-      checkError("\"07=24:33\"".getBytes("UTF-8"), "expected ':', offset: 0x00000003")
-      checkError("\"07:X4:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"07:2X:33\"".getBytes("UTF-8"), "expected digit, offset: 0x00000005")
-      checkError("\"07:24=33\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x00000006")
-      checkError("\"07:24:X3\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"07:24:3X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000008")
-      checkError("\"07:24:33X\"".getBytes("UTF-8"), "expected '.' or '\"', offset: 0x00000009")
-      checkError("\"07:24:33.X\"".getBytes("UTF-8"), "expected '\"' or digit, offset: 0x0000000a")
-      checkError("\"07:24:33.123456789X\"".getBytes("UTF-8"), "expected '\"', offset: 0x00000013")
-      checkError("\"24:24:33\"".getBytes("UTF-8"), "illegal hour, offset: 0x00000009")
-      checkError("\"07:60:33\"".getBytes("UTF-8"), "illegal minute, offset: 0x00000009")
-      checkError("\"07:24:60\"".getBytes("UTF-8"), "illegal second, offset: 0x00000009")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected digit, offset: 0x00000001")
+      checkError("\"07:24:33", "unexpected end of input, offset: 0x00000009")
+      checkError("\"7:24:33\"", "expected digit, offset: 0x00000002")
+      checkError("\"07=24:33\"", "expected ':', offset: 0x00000003")
+      checkError("\"07:X4:33\"", "expected digit, offset: 0x00000004")
+      checkError("\"07:2X:33\"", "expected digit, offset: 0x00000005")
+      checkError("\"07:24=33\"", "expected ':' or '\"', offset: 0x00000006")
+      checkError("\"07:24:X3\"", "expected digit, offset: 0x00000007")
+      checkError("\"07:24:3X\"", "expected digit, offset: 0x00000008")
+      checkError("\"07:24:33X\"", "expected '.' or '\"', offset: 0x00000009")
+      checkError("\"07:24:33.X\"", "expected '\"' or digit, offset: 0x0000000a")
+      checkError("\"07:24:33.123456789X\"", "expected '\"', offset: 0x00000013")
+      checkError("\"24:24:33\"", "illegal hour, offset: 0x00000009")
+      checkError("\"07:60:33\"", "illegal minute, offset: 0x00000009")
+      checkError("\"07:24:60\"", "illegal second, offset: 0x00000009")
     }
   }
   "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readMonthDay(null))
+      assert(intercept[JsonParseException](reader("null").readMonthDay(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsMonthDay())
+      assert(intercept[JsonParseException](reader("null").readKeyAsMonthDay())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = MonthDay.parse("--01-20")
-      reader("null".getBytes("UTF-8")).readMonthDay(default) shouldBe default
+      reader("null").readMonthDay(default) shouldBe default
     }
     "parse MonthDay from a string representation according to ISO-8601 format" in {
       def check(x: MonthDay): Unit = {
         val s = x.toString
-        readMonthDay(s) shouldBe x
-        readKeyAsMonthDay(s) shouldBe x
+        reader("\"" + s + "\"").readMonthDay(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsMonthDay() shouldBe x
       }
 
       check(MonthDay.of(12, 31))
@@ -744,53 +741,53 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genMonthDay, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readMonthDay(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsMonthDay()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readMonthDay(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsMonthDay()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-', offset: 0x00000001")
-      checkError("\"--01-20".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000008")
-      checkError("\"-01-20\"".getBytes("UTF-8"), "expected '-', offset: 0x00000002")
-      checkError("\"---01-20\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003")
-      checkError("\"--0X-20\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"--01=20\"".getBytes("UTF-8"), "expected '-', offset: 0x00000005")
-      checkError("\"--01-X0\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"--01-2X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"--01-20X\"".getBytes("UTF-8"), "expected '\"', offset: 0x00000008")
-      checkError("\"--00-20\"".getBytes("UTF-8"), "illegal month, offset: 0x00000008")
-      checkError("\"--13-20\"".getBytes("UTF-8"), "illegal month, offset: 0x00000008")
-      checkError("\"--01-00\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--01-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--02-30\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--03-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--04-31\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--05-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--06-31\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--07-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--08-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--09-31\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--10-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--11-31\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
-      checkError("\"--12-32\"".getBytes("UTF-8"), "illegal day, offset: 0x00000008")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-', offset: 0x00000001")
+      checkError("\"--01-20", "unexpected end of input, offset: 0x00000008")
+      checkError("\"-01-20\"", "expected '-', offset: 0x00000002")
+      checkError("\"---01-20\"", "expected digit, offset: 0x00000003")
+      checkError("\"--0X-20\"", "expected digit, offset: 0x00000004")
+      checkError("\"--01=20\"", "expected '-', offset: 0x00000005")
+      checkError("\"--01-X0\"", "expected digit, offset: 0x00000006")
+      checkError("\"--01-2X\"", "expected digit, offset: 0x00000007")
+      checkError("\"--01-20X\"", "expected '\"', offset: 0x00000008")
+      checkError("\"--00-20\"", "illegal month, offset: 0x00000008")
+      checkError("\"--13-20\"", "illegal month, offset: 0x00000008")
+      checkError("\"--01-00\"", "illegal day, offset: 0x00000008")
+      checkError("\"--01-32\"", "illegal day, offset: 0x00000008")
+      checkError("\"--02-30\"", "illegal day, offset: 0x00000008")
+      checkError("\"--03-32\"", "illegal day, offset: 0x00000008")
+      checkError("\"--04-31\"", "illegal day, offset: 0x00000008")
+      checkError("\"--05-32\"", "illegal day, offset: 0x00000008")
+      checkError("\"--06-31\"", "illegal day, offset: 0x00000008")
+      checkError("\"--07-32\"", "illegal day, offset: 0x00000008")
+      checkError("\"--08-32\"", "illegal day, offset: 0x00000008")
+      checkError("\"--09-31\"", "illegal day, offset: 0x00000008")
+      checkError("\"--10-32\"", "illegal day, offset: 0x00000008")
+      checkError("\"--11-31\"", "illegal day, offset: 0x00000008")
+      checkError("\"--12-32\"", "illegal day, offset: 0x00000008")
     }
   }
   "JsonReader.readOffsetDateTime and JsonReader.readKeyAsOffsetDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readOffsetDateTime(null))
+      assert(intercept[JsonParseException](reader("null").readOffsetDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsOffsetDateTime())
+      assert(intercept[JsonParseException](reader("null").readKeyAsOffsetDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = OffsetDateTime.parse("2008-01-20T07:24Z")
-      reader("null".getBytes("UTF-8")).readOffsetDateTime(default) shouldBe default
+      reader("null").readOffsetDateTime(default) shouldBe default
     }
     "parse OffsetDateTime from a string representation according to ISO-8601 format" in {
       def check(s: String, x: OffsetDateTime): Unit = {
-        readOffsetDateTime(s) shouldBe x
-        readKeyAsOffsetDateTime(s) shouldBe x
+        reader("\"" + s + "\"").readOffsetDateTime(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsOffsetDateTime() shouldBe x
       }
 
       check("+999999999-12-31T23:59:59.999999999-18:00", OffsetDateTime.MAX)
@@ -802,92 +799,92 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genOffsetDateTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readOffsetDateTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetDateTime()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readOffsetDateTime(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsOffsetDateTime()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008-01-20T07:24:33Z".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000015")
-      checkError("\"008-01-20T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33Z\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"+999999999=01-20T07:24:33Z\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"+1000000000-01-20T07:24:33Z\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"-1000000000-01-20T07:24:33Z\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"2008-X1-20T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"2008-0X-20T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"2008-01=20T07:24:33Z\"".getBytes("UTF-8"), "expected '-', offset: 0x00000008")
-      checkError("\"2008-01-X0T07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"2008-01-2XT07:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"2008-01-20X07:24:33Z\"".getBytes("UTF-8"), "expected 'T', offset: 0x0000000b")
-      checkError("\"2008-01-20TX7:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000c")
-      checkError("\"2008-01-20T0X:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000d")
-      checkError("\"2008-01-20T07=24:33Z\"".getBytes("UTF-8"), "expected ':', offset: 0x0000000e")
-      checkError("\"2008-01-20T07:X4:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000f")
-      checkError("\"2008-01-20T07:2X:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000010")
-      checkError("\"2008-01-20T07:24=33Z\"".getBytes("UTF-8"), "expected ':' or '+' or '-' or 'Z', offset: 0x00000011")
-      checkError("\"2008-01-20T07:24:X3Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"2008-01-20T07:24:3XZ\"".getBytes("UTF-8"), "expected digit, offset: 0x00000013")
-      checkError("\"2008-01-20T07:24:33X\"".getBytes("UTF-8"), "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
-      checkError("\"2008-01-20T07:24:33ZZ".getBytes("UTF-8"), "expected '\"', offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.000\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
-      checkError("\"-0000-01-20T07:24:33Z\"".getBytes("UTF-8"), "illegal year, offset: 0x00000016")
-      checkError("\"2008-00-20T07:24:33Z\"".getBytes("UTF-8"), "illegal month, offset: 0x00000015")
-      checkError("\"2008-13-20T07:24:33Z\"".getBytes("UTF-8"), "illegal month, offset: 0x00000015")
-      checkError("\"2008-01-00T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-01-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2007-02-29T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-02-30T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-03-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-04-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-05-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-06-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-07-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-08-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-09-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-10-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-11-31T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-12-32T07:24:33Z\"".getBytes("UTF-8"), "illegal day, offset: 0x00000015")
-      checkError("\"2008-12-32T07:24:33.123456789X\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z', offset: 0x0000001e")
-      checkError("\"2008-01-20T24:24:33Z\"".getBytes("UTF-8"), "illegal hour, offset: 0x00000015")
-      checkError("\"2008-01-20T07:60:33Z\"".getBytes("UTF-8"), "illegal minute, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:60Z\"".getBytes("UTF-8"), "illegal second, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24+\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"2008-01-20T07:24-\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"2008-01-20T07:24:33+\"".getBytes("UTF-8"), "expected digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33-\"".getBytes("UTF-8"), "expected digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.+\"".getBytes("UTF-8"), "expected digit, offset: 0x00000016")
-      checkError("\"2008-01-20T07:24:33.+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000017")
-      checkError("\"2008-01-20T07:24:33.+10=\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x00000018")
-      checkError("\"2008-01-20T07:24:33.+10:\"".getBytes("UTF-8"), "expected digit, offset: 0x00000019")
-      checkError("\"2008-01-20T07:24:33.+10:1\"".getBytes("UTF-8"), "expected digit, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:24:33.+10:10=10\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+10:10:X0\"".getBytes("UTF-8"), "expected digit, offset: 0x0000001c")
-      checkError("\"2008-01-20T07:24:33.+10:10:1X\"".getBytes("UTF-8"), "expected digit, offset: 0x0000001d")
-      checkError("\"2008-01-20T07:24:33.+18:10\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.-18:10\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+20:10\"".getBytes("UTF-8"), "illegal zone offset hour, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+10:90\"".getBytes("UTF-8"), "illegal zone offset minute, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+10:10:60\"".getBytes("UTF-8"), "illegal zone offset second, offset: 0x0000001e")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z", "unexpected end of input, offset: 0x00000015")
+      checkError("\"008-01-20T07:24:33Z\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+999999999=01-20T07:24:33Z\"", "expected '-', offset: 0x0000000b")
+      checkError("\"+1000000000-01-20T07:24:33Z\"", "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20T07:24:33Z\"", "expected '-', offset: 0x0000000b")
+      checkError("\"2008-X1-20T07:24:33Z\"", "expected digit, offset: 0x00000006")
+      checkError("\"2008-0X-20T07:24:33Z\"", "expected digit, offset: 0x00000007")
+      checkError("\"2008-01=20T07:24:33Z\"", "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-X0T07:24:33Z\"", "expected digit, offset: 0x00000009")
+      checkError("\"2008-01-2XT07:24:33Z\"", "expected digit, offset: 0x0000000a")
+      checkError("\"2008-01-20X07:24:33Z\"", "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20TX7:24:33Z\"", "expected digit, offset: 0x0000000c")
+      checkError("\"2008-01-20T0X:24:33Z\"", "expected digit, offset: 0x0000000d")
+      checkError("\"2008-01-20T07=24:33Z\"", "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:X4:33Z\"", "expected digit, offset: 0x0000000f")
+      checkError("\"2008-01-20T07:2X:33Z\"", "expected digit, offset: 0x00000010")
+      checkError("\"2008-01-20T07:24=33Z\"", "expected ':' or '+' or '-' or 'Z', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:X3Z\"", "expected digit, offset: 0x00000012")
+      checkError("\"2008-01-20T07:24:3XZ\"", "expected digit, offset: 0x00000013")
+      checkError("\"2008-01-20T07:24:33X\"", "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ", "expected '\"', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.\"", "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.000\"", "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
+      checkError("\"-0000-01-20T07:24:33Z\"", "illegal year, offset: 0x00000016")
+      checkError("\"2008-00-20T07:24:33Z\"", "illegal month, offset: 0x00000015")
+      checkError("\"2008-13-20T07:24:33Z\"", "illegal month, offset: 0x00000015")
+      checkError("\"2008-01-00T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-01-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2007-02-29T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-02-30T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-03-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-04-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-05-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-06-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-07-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-08-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-09-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-10-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-11-31T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-12-32T07:24:33Z\"", "illegal day, offset: 0x00000015")
+      checkError("\"2008-12-32T07:24:33.123456789X\"", "expected '+' or '-' or 'Z', offset: 0x0000001e")
+      checkError("\"2008-01-20T24:24:33Z\"", "illegal hour, offset: 0x00000015")
+      checkError("\"2008-01-20T07:60:33Z\"", "illegal minute, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:60Z\"", "illegal second, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24+\"", "expected digit, offset: 0x00000012")
+      checkError("\"2008-01-20T07:24-\"", "expected digit, offset: 0x00000012")
+      checkError("\"2008-01-20T07:24:33+\"", "expected digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33-\"", "expected digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.+\"", "expected digit, offset: 0x00000016")
+      checkError("\"2008-01-20T07:24:33.+1\"", "expected digit, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+10=\"", "expected ':' or '\"', offset: 0x00000018")
+      checkError("\"2008-01-20T07:24:33.+10:\"", "expected digit, offset: 0x00000019")
+      checkError("\"2008-01-20T07:24:33.+10:1\"", "expected digit, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33.+10:10=10\"", "expected ':' or '\"', offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:10:X0\"", "expected digit, offset: 0x0000001c")
+      checkError("\"2008-01-20T07:24:33.+10:10:1X\"", "expected digit, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+18:10\"", "illegal zone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.-18:10\"", "illegal zone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+20:10\"", "illegal zone offset hour, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:90\"", "illegal zone offset minute, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:10:60\"", "illegal zone offset second, offset: 0x0000001e")
     }
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readOffsetTime(null))
+      assert(intercept[JsonParseException](reader("null").readOffsetTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsOffsetTime())
+      assert(intercept[JsonParseException](reader("null").readKeyAsOffsetTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = OffsetTime.parse("07:24:33+01:00")
-      reader("null".getBytes("UTF-8")).readOffsetTime(default) shouldBe default
+      reader("null").readOffsetTime(default) shouldBe default
     }
     "parse OffsetTime from a string representation according to ISO-8601 format" in {
       def check(s: String, x: OffsetTime): Unit = {
-        readOffsetTime(s) shouldBe x
-        readKeyAsOffsetTime(s) shouldBe x
+        reader("\"" + s + "\"").readOffsetTime(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsOffsetTime() shouldBe x
       }
 
       check("23:59:59.999999999-18:00", OffsetTime.MAX)
@@ -899,70 +896,69 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genOffsetTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readOffsetTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsOffsetTime()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readOffsetTime(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsOffsetTime()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected digit, offset: 0x00000001")
-      checkError("\"07:24:33Z".getBytes("UTF-8"), "unexpected end of input, offset: 0x0000000a")
-      checkError("\"7:24:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000002")
-      checkError("\"07=24:33Z\"".getBytes("UTF-8"), "expected ':', offset: 0x00000003")
-      checkError("\"07:X4:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"07:2X:33Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000005")
-      checkError("\"07:24=33Z\"".getBytes("UTF-8"), "expected ':' or '+' or '-' or 'Z', offset: 0x00000006")
-      checkError("\"07:24:X3Z\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"07:24:3XZ\"".getBytes("UTF-8"), "expected digit, offset: 0x00000008")
-      checkError("\"07:24:33X\"".getBytes("UTF-8"), "expected '.' or '+' or '-' or 'Z', offset: 0x00000009")
-      checkError("\"07:24:33.\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x0000000a")
-      checkError("\"07:24:33.123456789X\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z', offset: 0x00000013")
-      checkError("\"24:24:33Z\"".getBytes("UTF-8"), "illegal hour, offset: 0x0000000a")
-      checkError("\"07:60:33Z\"".getBytes("UTF-8"), "illegal minute, offset: 0x0000000a")
-      checkError("\"07:24:60Z\"".getBytes("UTF-8"), "illegal second, offset: 0x0000000a")
-      checkError("\"07:24+\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"07:24-\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"07:24:33+\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"07:24:33-\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"07:24:33.+\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000b")
-      checkError("\"07:24:33.+1\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000c")
-      checkError("\"07:24:33.+10=\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x0000000d")
-      checkError("\"07:24:33.+10:\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000e")
-      checkError("\"07:24:33.+10:1\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000f")
-      checkError("\"07:24:33.+10:10=10\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x00000010")
-      checkError("\"07:24:33.+10:10:X0\"".getBytes("UTF-8"), "expected digit, offset: 0x00000011")
-      checkError("\"07:24:33.+10:10:1X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"07:24:33.+10:10:10X\"".getBytes("UTF-8"), "expected '\"', offset: 0x00000013")
-      checkError("\"07:24:33.+18:10\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x00000010")
-      checkError("\"07:24:33.-18:10\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x00000010")
-      checkError("\"07:24:33.+20:10\"".getBytes("UTF-8"), "illegal zone offset hour, offset: 0x00000010")
-      checkError("\"07:24:33.+10:90\"".getBytes("UTF-8"), "illegal zone offset minute, offset: 0x00000010")
-      checkError("\"07:24:33.+10:10:60\"".getBytes("UTF-8"), "illegal zone offset second, offset: 0x00000013")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected digit, offset: 0x00000001")
+      checkError("\"07:24:33Z", "unexpected end of input, offset: 0x0000000a")
+      checkError("\"7:24:33Z\"", "expected digit, offset: 0x00000002")
+      checkError("\"07=24:33Z\"", "expected ':', offset: 0x00000003")
+      checkError("\"07:X4:33Z\"", "expected digit, offset: 0x00000004")
+      checkError("\"07:2X:33Z\"", "expected digit, offset: 0x00000005")
+      checkError("\"07:24=33Z\"", "expected ':' or '+' or '-' or 'Z', offset: 0x00000006")
+      checkError("\"07:24:X3Z\"", "expected digit, offset: 0x00000007")
+      checkError("\"07:24:3XZ\"", "expected digit, offset: 0x00000008")
+      checkError("\"07:24:33X\"", "expected '.' or '+' or '-' or 'Z', offset: 0x00000009")
+      checkError("\"07:24:33.\"", "expected '+' or '-' or 'Z' or digit, offset: 0x0000000a")
+      checkError("\"07:24:33.123456789X\"", "expected '+' or '-' or 'Z', offset: 0x00000013")
+      checkError("\"24:24:33Z\"", "illegal hour, offset: 0x0000000a")
+      checkError("\"07:60:33Z\"", "illegal minute, offset: 0x0000000a")
+      checkError("\"07:24:60Z\"", "illegal second, offset: 0x0000000a")
+      checkError("\"07:24+\"", "expected digit, offset: 0x00000007")
+      checkError("\"07:24-\"", "expected digit, offset: 0x00000007")
+      checkError("\"07:24:33+\"", "expected digit, offset: 0x0000000a")
+      checkError("\"07:24:33-\"", "expected digit, offset: 0x0000000a")
+      checkError("\"07:24:33.+\"", "expected digit, offset: 0x0000000b")
+      checkError("\"07:24:33.+1\"", "expected digit, offset: 0x0000000c")
+      checkError("\"07:24:33.+10=\"", "expected ':' or '\"', offset: 0x0000000d")
+      checkError("\"07:24:33.+10:\"", "expected digit, offset: 0x0000000e")
+      checkError("\"07:24:33.+10:1\"", "expected digit, offset: 0x0000000f")
+      checkError("\"07:24:33.+10:10=10\"", "expected ':' or '\"', offset: 0x00000010")
+      checkError("\"07:24:33.+10:10:X0\"", "expected digit, offset: 0x00000011")
+      checkError("\"07:24:33.+10:10:1X\"", "expected digit, offset: 0x00000012")
+      checkError("\"07:24:33.+10:10:10X\"", "expected '\"', offset: 0x00000013")
+      checkError("\"07:24:33.+18:10\"", "illegal zone offset, offset: 0x00000010")
+      checkError("\"07:24:33.-18:10\"", "illegal zone offset, offset: 0x00000010")
+      checkError("\"07:24:33.+20:10\"", "illegal zone offset hour, offset: 0x00000010")
+      checkError("\"07:24:33.+10:90\"", "illegal zone offset minute, offset: 0x00000010")
+      checkError("\"07:24:33.+10:10:60\"", "illegal zone offset second, offset: 0x00000013")
     }
   }
   "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readPeriod(null))
+      assert(intercept[JsonParseException](reader("null").readPeriod(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsPeriod())
+      assert(intercept[JsonParseException](reader("null").readKeyAsPeriod())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = Period.parse("P1Y2M3D")
-      reader("null".getBytes("UTF-8")).readPeriod(default) shouldBe default
+      reader("null").readPeriod(default) shouldBe default
     }
     "parse Period from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
       def check(s: String, x: Period): Unit = {
-        val xx = x.negated()
-        readPeriod(s) shouldBe x
-        readKeyAsPeriod(s) shouldBe x
-        readPeriod('-' + s) shouldBe xx
-        readKeyAsPeriod('-' + s) shouldBe xx
+        reader("\"" + s + "\"").readPeriod(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsPeriod() shouldBe x
+        reader("\"-" + s + "\"").readPeriod(null) shouldBe x.negated()
+        reader("\"-" + s + "\":").readKeyAsPeriod() shouldBe x.negated()
       }
 
       check("P0D", Period.ZERO)
       forAll(genPeriod, minSuccessful(100000))(x => check(x.toString, x))
-      forAll(Gen.choose(Int.MinValue, Int.MaxValue), Gen.choose(Int.MinValue, Int.MaxValue), minSuccessful(100000)) {
+      forAll(Gen.choose(-Int.MaxValue, Int.MaxValue), Gen.choose(-Int.MaxValue, Int.MaxValue), minSuccessful(100000)) {
         (x: Int, y: Int) =>
           check(s"P${x}Y", Period.of(x, 0, 0))
           check(s"P${x}M", Period.of(0, x, 0))
@@ -971,92 +967,90 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
           check(s"P${x}M${y}D", Period.of(0, x, y))
           check(s"P${x}Y${y}D", Period.of(x, 0, y))
       }
-      forAll(Gen.choose(-1000000, 1000000), minSuccessful(100000)) {
-        (weeks: Int) =>
-          check(s"P${weeks}W", Period.of(0, 0, weeks * 7))
-          check(s"P1Y${weeks}W", Period.of(1, 0, weeks * 7))
-          check(s"P1Y1M${weeks}W", Period.of(1, 1, weeks * 7))
+      forAll(Gen.choose(-1000000, 1000000), minSuccessful(100000)) { (w: Int) =>
+        check(s"P${w}W", Period.of(0, 0, w * 7))
+        check(s"P1Y${w}W", Period.of(1, 0, w * 7))
+        check(s"P1Y1M${w}W", Period.of(1, 1, w * 7))
       }
-      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(100000)) {
-        (weeks: Int, days: Int) =>
-          check(s"P${weeks}W${days}D", Period.of(0, 0, weeks * 7 + days))
-          check(s"P1Y${weeks}W${days}D", Period.of(1, 0, weeks * 7 + days))
-          check(s"P1Y1M${weeks}W${days}D", Period.of(1, 1, weeks * 7 + days))
+      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(100000)) { (w: Int, d: Int) =>
+        check(s"P${w}W${d}D", Period.of(0, 0, w * 7 + d))
+        check(s"P1Y${w}W${d}D", Period.of(1, 0, w * 7 + d))
+        check(s"P1Y1M${w}W${d}D", Period.of(1, 1, w * 7 + d))
       }
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readPeriod(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsPeriod()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readPeriod(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsPeriod()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected 'P' or '-', offset: 0x00000001")
-      checkError("\"-\"".getBytes("UTF-8"), "expected 'P', offset: 0x00000002")
-      checkError("\"PXY\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000002")
-      checkError("\"P-XY\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003")
-      checkError("\"P1XY\"".getBytes("UTF-8"), "expected 'Y' or 'M' or 'W' or 'D' or digit, offset: 0x00000003")
-      checkError("\"P2147483648Y\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P21474836470Y\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P-2147483649Y\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P2147483648M\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P21474836470M\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P-2147483649M\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P2147483648W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P21474836470W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P-2147483649W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P21474836470D\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P-2147483649D\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000c")
-      checkError("\"P1YXM\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000004")
-      checkError("\"P1Y-XM\"".getBytes("UTF-8"), "expected digit, offset: 0x00000005")
-      checkError("\"P1Y1XM\"".getBytes("UTF-8"), "expected 'M' or 'W' or 'D' or digit, offset: 0x00000005")
-      checkError("\"P1Y2147483648M\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y21474836470M\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y-2147483649M\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y2147483648W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y21474836470W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y-2147483649W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y21474836470D\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y-2147483649D\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000e")
-      checkError("\"P1Y1MXW\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000006")
-      checkError("\"P1Y1M-XW\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"P1Y1M1XW\"".getBytes("UTF-8"), "expected 'W' or 'D' or digit, offset: 0x00000007")
-      checkError("\"P1Y1M306783379W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000f")
-      checkError("\"P1Y1M3067833790W\"".getBytes("UTF-8"), "illegal period, offset: 0x0000000f")
-      checkError("\"P1Y1M-306783379W\"".getBytes("UTF-8"), "illegal period, offset: 0x00000010")
-      checkError("\"P1Y1M2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000010")
-      checkError("\"P1Y1M21474836470D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000010")
-      checkError("\"P1Y1M-2147483649D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000010")
-      checkError("\"P1Y1M1WXD\"".getBytes("UTF-8"), "expected '\"' or '-' or digit, offset: 0x00000008")
-      checkError("\"P1Y1M1W-XD\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"P1Y1M1W1XD\"".getBytes("UTF-8"), "expected 'D' or digit, offset: 0x00000009")
-      checkError("\"P1Y1M306783378W8D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000011")
-      checkError("\"P1Y1M-306783378W-8D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000013")
-      checkError("\"P1Y1M1W2147483647D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
-      checkError("\"P1Y1M-1W-2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000014")
-      checkError("\"P1Y1M0W2147483648D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
-      checkError("\"P1Y1M0W21474836470D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
-      checkError("\"P1Y1M0W-2147483649D\"".getBytes("UTF-8"), "illegal period, offset: 0x00000012")
-      checkError("\"P1Y1M1W1DX".getBytes("UTF-8"), "expected '\"', offset: 0x0000000a")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected 'P' or '-', offset: 0x00000001")
+      checkError("\"-\"", "expected 'P', offset: 0x00000002")
+      checkError("\"PXY\"", "expected '-' or digit, offset: 0x00000002")
+      checkError("\"P-XY\"", "expected digit, offset: 0x00000003")
+      checkError("\"P1XY\"", "expected 'Y' or 'M' or 'W' or 'D' or digit, offset: 0x00000003")
+      checkError("\"P2147483648Y\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P21474836470Y\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P-2147483649Y\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P2147483648M\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P21474836470M\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P-2147483649M\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P2147483648W\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P21474836470W\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P-2147483649W\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P2147483648D\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P21474836470D\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P-2147483649D\"", "illegal period, offset: 0x0000000c")
+      checkError("\"P1YXM\"", "expected '\"' or '-' or digit, offset: 0x00000004")
+      checkError("\"P1Y-XM\"", "expected digit, offset: 0x00000005")
+      checkError("\"P1Y1XM\"", "expected 'M' or 'W' or 'D' or digit, offset: 0x00000005")
+      checkError("\"P1Y2147483648M\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y21474836470M\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y-2147483649M\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y2147483648W\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y21474836470W\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y-2147483649W\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y2147483648D\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y21474836470D\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y-2147483649D\"", "illegal period, offset: 0x0000000e")
+      checkError("\"P1Y1MXW\"", "expected '\"' or '-' or digit, offset: 0x00000006")
+      checkError("\"P1Y1M-XW\"", "expected digit, offset: 0x00000007")
+      checkError("\"P1Y1M1XW\"", "expected 'W' or 'D' or digit, offset: 0x00000007")
+      checkError("\"P1Y1M306783379W\"", "illegal period, offset: 0x0000000f")
+      checkError("\"P1Y1M3067833790W\"", "illegal period, offset: 0x0000000f")
+      checkError("\"P1Y1M-306783379W\"", "illegal period, offset: 0x00000010")
+      checkError("\"P1Y1M2147483648D\"", "illegal period, offset: 0x00000010")
+      checkError("\"P1Y1M21474836470D\"", "illegal period, offset: 0x00000010")
+      checkError("\"P1Y1M-2147483649D\"", "illegal period, offset: 0x00000010")
+      checkError("\"P1Y1M1WXD\"", "expected '\"' or '-' or digit, offset: 0x00000008")
+      checkError("\"P1Y1M1W-XD\"", "expected digit, offset: 0x00000009")
+      checkError("\"P1Y1M1W1XD\"", "expected 'D' or digit, offset: 0x00000009")
+      checkError("\"P1Y1M306783378W8D\"", "illegal period, offset: 0x00000011")
+      checkError("\"P1Y1M-306783378W-8D\"", "illegal period, offset: 0x00000013")
+      checkError("\"P1Y1M1W2147483647D\"", "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M-1W-2147483648D\"", "illegal period, offset: 0x00000014")
+      checkError("\"P1Y1M0W2147483648D\"", "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M0W21474836470D\"", "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M0W-2147483649D\"", "illegal period, offset: 0x00000012")
+      checkError("\"P1Y1M1W1DX", "expected '\"', offset: 0x0000000a")
     }
   }
   "JsonReader.readYear and JsonReader.readKeyAsYear" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readYear(null))
+      assert(intercept[JsonParseException](reader("null").readYear(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsYear())
+      assert(intercept[JsonParseException](reader("null").readKeyAsYear())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = Year.parse("2008")
-      reader("null".getBytes("UTF-8")).readYear(default) shouldBe default
+      reader("null").readYear(default) shouldBe default
     }
     "parse Year from a string representation according to ISO-8601 format" in {
       def check(s: String, x: Year): Unit = {
-        readYear(s) shouldBe x
-        readKeyAsYear(s) shouldBe x
+        reader("\"" + s + "\"").readYear(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsYear() shouldBe x
       }
 
       check("-999999999", Year.of(Year.MIN_VALUE))
@@ -1070,36 +1064,36 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readYear(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsYear()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readYear(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsYear()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000005")
-      checkError("\"200X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"-1000X\"".getBytes("UTF-8"), "expected '\"' or digit, offset: 0x00000006")
-      checkError("\"+1000000000\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000000b")
-      checkError("\"-1000000000\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000000b")
-      checkError("\"-0000\"".getBytes("UTF-8"), "illegal year, offset: 0x00000006")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008", "unexpected end of input, offset: 0x00000005")
+      checkError("\"200X\"", "expected digit, offset: 0x00000004")
+      checkError("\"-1000X\"", "expected '\"' or digit, offset: 0x00000006")
+      checkError("\"+1000000000\"", "expected '\"', offset: 0x0000000b")
+      checkError("\"-1000000000\"", "expected '\"', offset: 0x0000000b")
+      checkError("\"-0000\"", "illegal year, offset: 0x00000006")
     }
   }
   "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readYearMonth(null))
+      assert(intercept[JsonParseException](reader("null").readYearMonth(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsYearMonth())
+      assert(intercept[JsonParseException](reader("null").readKeyAsYearMonth())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = YearMonth.parse("2008-01")
-      reader("null".getBytes("UTF-8")).readYearMonth(default) shouldBe default
+      reader("null").readYearMonth(default) shouldBe default
     }
     "parse YearMonth from a string representation according to ISO-8601 format" in {
       def check(s: String, x: YearMonth): Unit = {
-        readYearMonth(s) shouldBe x
-        readKeyAsYearMonth(s) shouldBe x
+        reader("\"" + s + "\"").readYearMonth(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsYearMonth() shouldBe x
       }
 
       check("+999999999-12", YearMonth.of(Year.MAX_VALUE, 12))
@@ -1107,42 +1101,42 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genYearMonth, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readYearMonth(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsYearMonth()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readYearMonth(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsYearMonth()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008-01".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000008")
-      checkError("\"008-01\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"2008=01\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"+999999999=01\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"+1000000000-01\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"-1000000000-01\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"2008-X1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"2008-0X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"2008-01X\"".getBytes("UTF-8"), "expected '\"', offset: 0x00000008")
-      checkError("\"-0000-01\"".getBytes("UTF-8"), "illegal year, offset: 0x00000009")
-      checkError("\"2008-00\"".getBytes("UTF-8"), "illegal month, offset: 0x00000008")
-      checkError("\"2008-13\"".getBytes("UTF-8"), "illegal month, offset: 0x00000008")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01", "unexpected end of input, offset: 0x00000008")
+      checkError("\"008-01\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+999999999=01\"", "expected '-', offset: 0x0000000b")
+      checkError("\"+1000000000-01\"", "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01\"", "expected '-', offset: 0x0000000b")
+      checkError("\"2008-X1\"", "expected digit, offset: 0x00000006")
+      checkError("\"2008-0X\"", "expected digit, offset: 0x00000007")
+      checkError("\"2008-01X\"", "expected '\"', offset: 0x00000008")
+      checkError("\"-0000-01\"", "illegal year, offset: 0x00000009")
+      checkError("\"2008-00\"", "illegal month, offset: 0x00000008")
+      checkError("\"2008-13\"", "illegal month, offset: 0x00000008")
     }
   }
   "JsonReader.readZonedDateTime and JsonReader.readKeyAsZonedDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readZonedDateTime(null))
+      assert(intercept[JsonParseException](reader("null").readZonedDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsZonedDateTime())
+      assert(intercept[JsonParseException](reader("null").readKeyAsZonedDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = ZonedDateTime.parse("2008-01-20T07:24Z[UTC]")
-      reader("null".getBytes("UTF-8")).readZonedDateTime(default) shouldBe default
+      reader("null").readZonedDateTime(default) shouldBe default
     }
     "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA time zone identifier in JDK 8+ format" in {
       def check(s: String, x: ZonedDateTime): Unit = {
-        readZonedDateTime(s) shouldBe x
-        readKeyAsZonedDateTime(s) shouldBe x
+        reader("\"" + s + "\"").readZonedDateTime(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsZonedDateTime() shouldBe x
       }
 
       check("2018-01-01T00:00Z", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneOffset.UTC))
@@ -1159,93 +1153,93 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genZonedDateTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readZonedDateTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsZonedDateTime()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readZonedDateTime(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsZonedDateTime()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '-' or '+' or digit, offset: 0x00000001")
-      checkError("\"2008-01-20T07:24:33Z[UTC]".getBytes("UTF-8"), "unexpected end of input, offset: 0x0000001a")
-      checkError("\"008-01-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected '-' or digit, offset: 0x00000005")
-      checkError("\"+999999999=01-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"+1000000000-01-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"-1000000000-01-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected '-', offset: 0x0000000b")
-      checkError("\"2008-X1-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"2008-0X-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000007")
-      checkError("\"2008-01=20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected '-', offset: 0x00000008")
-      checkError("\"2008-01-X0T07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"2008-01-2XT07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000a")
-      checkError("\"2008-01-20X07:24:33Z[UTC]\"".getBytes("UTF-8"), "expected 'T', offset: 0x0000000b")
-      checkError("\"2008-01-20TX7:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000c")
-      checkError("\"2008-01-20T0X:24:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000d")
-      checkError("\"2008-01-20T07=24:33Z[UTC]\"".getBytes("UTF-8"), "expected ':', offset: 0x0000000e")
-      checkError("\"2008-01-20T07:X4:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000000f")
-      checkError("\"2008-01-20T07:2X:33Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000010")
-      checkError("\"2008-01-20T07:24=33Z[UTC]\"".getBytes("UTF-8"), "expected ':' or '+' or '-' or 'Z', offset: 0x00000011")
-      checkError("\"2008-01-20T07:24:X3Z[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000012")
-      checkError("\"2008-01-20T07:24:3XZ[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000013")
-      checkError("\"2008-01-20T07:24:33X[UTC]\"".getBytes("UTF-8"), "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
-      checkError("\"2008-01-20T07:24:33ZZ".getBytes("UTF-8"), "expected '[' or '\"', offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.[UTC]\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.000[UTC]\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
-      checkError("\"2008-01-20T07:24:33.123456789X[UTC]\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z', offset: 0x0000001e")
-      checkError("\"-0000-01-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal year, offset: 0x0000001b")
-      checkError("\"2008-00-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal month, offset: 0x0000001a")
-      checkError("\"2008-13-20T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal month, offset: 0x0000001a")
-      checkError("\"2008-01-00T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-01-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2007-02-29T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-02-30T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-03-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-04-31T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-05-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-06-31T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-07-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-08-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-09-31T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-10-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-11-31T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-12-32T07:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal day, offset: 0x0000001a")
-      checkError("\"2008-01-20T24:24:33Z[UTC]\"".getBytes("UTF-8"), "illegal hour, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:60:33Z[UTC]\"".getBytes("UTF-8"), "illegal minute, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:24:60Z[UTC]\"".getBytes("UTF-8"), "illegal second, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:24:33+[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33-[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000015")
-      checkError("\"2008-01-20T07:24:33.+[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000016")
-      checkError("\"2008-01-20T07:24:33.+1[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000017")
-      checkError("\"2008-01-20T07:24:33.+10=[UTC]\"".getBytes("UTF-8"), "expected ':' or '[' or '\"', offset: 0x00000018")
-      checkError("\"2008-01-20T07:24:33.+10:[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x00000019")
-      checkError("\"2008-01-20T07:24:33.+10:1[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:24:33.+10:10[]\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000001d")
-      checkError("\"2008-01-20T07:24:33.+10:10=10[UTC]\"".getBytes("UTF-8"), "expected ':' or '[' or '\"', offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+10:10:X0[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000001c")
-      checkError("\"2008-01-20T07:24:33.+10:10:1X[UTC]\"".getBytes("UTF-8"), "expected digit, offset: 0x0000001d")
-      checkError("\"2008-01-20T07:24:33.+10:10:10[UTC]X\"".getBytes("UTF-8"), "expected '\"', offset: 0x00000023")
-      checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"".getBytes("UTF-8"), "illegal zone offset hour, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.+10:90[UTC]\"".getBytes("UTF-8"), "illegal zone offset minute, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"".getBytes("UTF-8"), "illegal zone offset second, offset: 0x00000023")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2008-01-20T07:24:33Z[UTC]", "unexpected end of input, offset: 0x0000001a")
+      checkError("\"008-01-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z[UTC]\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"+999999999=01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x0000000b")
+      checkError("\"+1000000000-01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x0000000b")
+      checkError("\"-1000000000-01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x0000000b")
+      checkError("\"2008-X1-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000006")
+      checkError("\"2008-0X-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000007")
+      checkError("\"2008-01=20T07:24:33Z[UTC]\"", "expected '-', offset: 0x00000008")
+      checkError("\"2008-01-X0T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000009")
+      checkError("\"2008-01-2XT07:24:33Z[UTC]\"", "expected digit, offset: 0x0000000a")
+      checkError("\"2008-01-20X07:24:33Z[UTC]\"", "expected 'T', offset: 0x0000000b")
+      checkError("\"2008-01-20TX7:24:33Z[UTC]\"", "expected digit, offset: 0x0000000c")
+      checkError("\"2008-01-20T0X:24:33Z[UTC]\"", "expected digit, offset: 0x0000000d")
+      checkError("\"2008-01-20T07=24:33Z[UTC]\"", "expected ':', offset: 0x0000000e")
+      checkError("\"2008-01-20T07:X4:33Z[UTC]\"", "expected digit, offset: 0x0000000f")
+      checkError("\"2008-01-20T07:2X:33Z[UTC]\"", "expected digit, offset: 0x00000010")
+      checkError("\"2008-01-20T07:24=33Z[UTC]\"", "expected ':' or '+' or '-' or 'Z', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24:X3Z[UTC]\"", "expected digit, offset: 0x00000012")
+      checkError("\"2008-01-20T07:24:3XZ[UTC]\"", "expected digit, offset: 0x00000013")
+      checkError("\"2008-01-20T07:24:33X[UTC]\"", "expected '.' or '+' or '-' or 'Z', offset: 0x00000014")
+      checkError("\"2008-01-20T07:24:33ZZ", "expected '[' or '\"', offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.[UTC]\"", "expected '+' or '-' or 'Z' or digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.000[UTC]\"", "expected '+' or '-' or 'Z' or digit, offset: 0x00000018")
+      checkError("\"2008-01-20T07:24:33.123456789X[UTC]\"", "expected '+' or '-' or 'Z', offset: 0x0000001e")
+      checkError("\"-0000-01-20T07:24:33Z[UTC]\"", "illegal year, offset: 0x0000001b")
+      checkError("\"2008-00-20T07:24:33Z[UTC]\"", "illegal month, offset: 0x0000001a")
+      checkError("\"2008-13-20T07:24:33Z[UTC]\"", "illegal month, offset: 0x0000001a")
+      checkError("\"2008-01-00T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-01-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2007-02-29T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-02-30T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-03-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-04-31T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-05-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-06-31T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-07-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-08-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-09-31T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-10-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-11-31T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-12-32T07:24:33Z[UTC]\"", "illegal day, offset: 0x0000001a")
+      checkError("\"2008-01-20T24:24:33Z[UTC]\"", "illegal hour, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:60:33Z[UTC]\"", "illegal minute, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:60Z[UTC]\"", "illegal second, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33+[UTC]\"", "expected digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33-[UTC]\"", "expected digit, offset: 0x00000015")
+      checkError("\"2008-01-20T07:24:33.+[UTC]\"", "expected digit, offset: 0x00000016")
+      checkError("\"2008-01-20T07:24:33.+1[UTC]\"", "expected digit, offset: 0x00000017")
+      checkError("\"2008-01-20T07:24:33.+10=[UTC]\"", "expected ':' or '[' or '\"', offset: 0x00000018")
+      checkError("\"2008-01-20T07:24:33.+10:[UTC]\"", "expected digit, offset: 0x00000019")
+      checkError("\"2008-01-20T07:24:33.+10:1[UTC]\"", "expected digit, offset: 0x0000001a")
+      checkError("\"2008-01-20T07:24:33.+10:10[]\"", "illegal date/time/zone, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+10:10=10[UTC]\"", "expected ':' or '[' or '\"', offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:10:X0[UTC]\"", "expected digit, offset: 0x0000001c")
+      checkError("\"2008-01-20T07:24:33.+10:10:1X[UTC]\"", "expected digit, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+10:10:10[UTC]X\"", "expected '\"', offset: 0x00000023")
+      checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"", "illegal zone offset, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"", "illegal zone offset, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"", "illegal zone offset hour, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+10:90[UTC]\"", "illegal zone offset minute, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"", "illegal zone offset second, offset: 0x00000023")
     }
   }
   "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readZoneId(null))
+      assert(intercept[JsonParseException](reader("null").readZoneId(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsZoneId())
+      assert(intercept[JsonParseException](reader("null").readKeyAsZoneId())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = ZoneId.of("Europe/Warsaw")
-      reader("null".getBytes("UTF-8")).readZoneId(default) shouldBe default
+      reader("null").readZoneId(default) shouldBe default
     }
     "parse ZoneId from a string representation according to ISO-8601 format for zone offset or JDK 8+ format for IANA time zone identifier" in {
       def check(x: ZoneId): Unit = {
         val s = x.toString
-        readZoneId(s) shouldBe x
-        readKeyAsZoneId(s) shouldBe x
+        reader("\"" + s + "\"").readZoneId(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsZoneId() shouldBe x
       }
 
       check(ZoneOffset.MAX)
@@ -1253,67 +1247,67 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genZoneId, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readZoneId(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsZoneId()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readZoneId(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsZoneId()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000001")
-      checkError("\"+\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000002")
-      //checkError("\"+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003") FIXME: looks like a bug in ZoneId.of() parser
-      checkError("\"+10=\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"+10:\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"+10:1\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000006")
-      checkError("\"+18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"-18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"+20:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"+10:90\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"+10:10:60\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UT+\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000004")
-      checkError("\"UT+10=\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"UT+10:\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"UT+10:1\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"UT+18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT-18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT+20:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT+10:90\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT+10:10:60\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000c")
-      checkError("\"UTC+\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"UTC+10=\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"UTC+10:\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"UTC+10:1\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UTC+18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC-18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC+20:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC+10:90\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC+10:10:60\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000d")
-      checkError("\"GMT+\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"GMT+10=\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"GMT+10:\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"GMT+10:1\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"GMT+18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT-18:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT+20:10\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT+10:90\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT+10:10:60\"".getBytes("UTF-8"), "illegal date/time/zone, offset: 0x0000000d")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "illegal date/time/zone, offset: 0x00000001")
+      checkError("\"+\"", "illegal date/time/zone, offset: 0x00000002")
+      //checkError("\"+1\"", "expected digit, offset: 0x00000003") FIXME: looks like a bug in ZoneId.of() parser
+      checkError("\"+10=\"", "illegal date/time/zone, offset: 0x00000005")
+      checkError("\"+10:\"", "illegal date/time/zone, offset: 0x00000005")
+      checkError("\"+10:1\"", "illegal date/time/zone, offset: 0x00000006")
+      checkError("\"+18:10\"", "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"-18:10\"", "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"+20:10\"", "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"+10:90\"", "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"+10:10:60\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UT+\"", "illegal date/time/zone, offset: 0x00000004")
+      checkError("\"UT+10=\"", "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"UT+10:\"", "illegal date/time/zone, offset: 0x00000007")
+      checkError("\"UT+10:1\"", "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"UT+18:10\"", "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT-18:10\"", "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT+20:10\"", "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT+10:90\"", "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UT+10:10:60\"", "illegal date/time/zone, offset: 0x0000000c")
+      checkError("\"UTC+\"", "illegal date/time/zone, offset: 0x00000005")
+      checkError("\"UTC+10=\"", "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"UTC+10:\"", "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"UTC+10:1\"", "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"UTC+18:10\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC-18:10\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC+20:10\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC+10:90\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"UTC+10:10:60\"", "illegal date/time/zone, offset: 0x0000000d")
+      checkError("\"GMT+\"", "illegal date/time/zone, offset: 0x00000005")
+      checkError("\"GMT+10=\"", "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"GMT+10:\"", "illegal date/time/zone, offset: 0x00000008")
+      checkError("\"GMT+10:1\"", "illegal date/time/zone, offset: 0x00000009")
+      checkError("\"GMT+18:10\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT-18:10\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT+20:10\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT+10:90\"", "illegal date/time/zone, offset: 0x0000000a")
+      checkError("\"GMT+10:10:60\"", "illegal date/time/zone, offset: 0x0000000d")
     }
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readZoneOffset(null))
+      assert(intercept[JsonParseException](reader("null").readZoneOffset(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsZoneOffset())
+      assert(intercept[JsonParseException](reader("null").readKeyAsZoneOffset())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
       val default = ZoneOffset.of("+01:00")
-      reader("null".getBytes("UTF-8")).readZoneOffset(default) shouldBe default
+      reader("null").readZoneOffset(default) shouldBe default
     }
     "parse ZoneOffset from a string representation according to ISO-8601 format" in {
       def check(s: String, x: ZoneOffset): Unit = {
-        readZoneOffset(s) shouldBe x
-        readKeyAsZoneOffset(s) shouldBe x
+        reader("\"" + s + "\"").readZoneOffset(null) shouldBe x
+        reader("\"" + s + "\":").readKeyAsZoneOffset() shouldBe x
       }
 
       check("Z", ZoneOffset.UTC)
@@ -1324,56 +1318,61 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(genZoneOffset, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
-      def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readZoneOffset(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsZoneOffset()).getMessage.contains(error))
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonParseException](reader(json).readZoneOffset(null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(json).readKeyAsZoneOffset()).getMessage.contains(error))
       }
 
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"".getBytes("UTF-8"), "expected '+' or '-' or 'Z', offset: 0x00000001")
-      checkError("\"+\"".getBytes("UTF-8"), "expected digit, offset: 0x00000002")
-      checkError("\"+1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000003")
-      checkError("\"+10=\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x00000004")
-      checkError("\"+10:\"".getBytes("UTF-8"), "expected digit, offset: 0x00000005")
-      checkError("\"+10:1\"".getBytes("UTF-8"), "expected digit, offset: 0x00000006")
-      checkError("\"+10:10=10\"".getBytes("UTF-8"), "expected ':' or '\"', offset: 0x00000007")
-      checkError("\"+10:10:X0\"".getBytes("UTF-8"), "expected digit, offset: 0x00000008")
-      checkError("\"+10:10:1X\"".getBytes("UTF-8"), "expected digit, offset: 0x00000009")
-      checkError("\"+10:10:10X\"".getBytes("UTF-8"), "expected '\"', offset: 0x0000000a")
-      checkError("\"+18:10\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x00000007")
-      checkError("\"-18:10\"".getBytes("UTF-8"), "illegal zone offset, offset: 0x00000007")
-      checkError("\"+20:10\"".getBytes("UTF-8"), "illegal zone offset hour, offset: 0x00000007")
-      checkError("\"+10:90\"".getBytes("UTF-8"), "illegal zone offset minute, offset: 0x00000007")
-      checkError("\"+10:10:60\"".getBytes("UTF-8"), "illegal zone offset second, offset: 0x0000000a")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\"", "expected '+' or '-' or 'Z', offset: 0x00000001")
+      checkError("\"+\"", "expected digit, offset: 0x00000002")
+      checkError("\"+1\"", "expected digit, offset: 0x00000003")
+      checkError("\"+10=\"", "expected ':' or '\"', offset: 0x00000004")
+      checkError("\"+10:\"", "expected digit, offset: 0x00000005")
+      checkError("\"+10:1\"", "expected digit, offset: 0x00000006")
+      checkError("\"+10:10=10\"", "expected ':' or '\"', offset: 0x00000007")
+      checkError("\"+10:10:X0\"", "expected digit, offset: 0x00000008")
+      checkError("\"+10:10:1X\"", "expected digit, offset: 0x00000009")
+      checkError("\"+10:10:10X\"", "expected '\"', offset: 0x0000000a")
+      checkError("\"+18:10\"", "illegal zone offset, offset: 0x00000007")
+      checkError("\"-18:10\"", "illegal zone offset, offset: 0x00000007")
+      checkError("\"+20:10\"", "illegal zone offset hour, offset: 0x00000007")
+      checkError("\"+10:90\"", "illegal zone offset minute, offset: 0x00000007")
+      checkError("\"+10:10:60\"", "illegal zone offset second, offset: 0x0000000a")
     }
   }
   "JsonReader.readKeyAsString" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"\"".getBytes("UTF-8")).readKeyAsString())
+      assert(intercept[JsonParseException](reader("\"\"").readKeyAsString())
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](reader("\"\"x".getBytes("UTF-8")).readKeyAsString())
+      assert(intercept[JsonParseException](reader("\"\"x").readKeyAsString())
         .getMessage.contains("expected ':', offset: 0x00000002"))
     }
   }
   "JsonReader.readString and JsonReader.readKeyAsString" should {
     def check(s: String): Unit = {
-      readString(s) shouldBe s
-      readKeyAsString(s) shouldBe s
+      reader("\"" + s + "\"").readString(null) shouldBe s
+      reader("\"" + s + "\":").readKeyAsString() shouldBe s
     }
 
-    def checkError(bytes: Array[Byte], error: String): Unit = {
-      assert(intercept[JsonParseException](reader(bytes).readString(null)).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader(bytes).readKeyAsString()).getMessage.contains(error))
+    def checkError(json: String, error: String): Unit = {
+      assert(intercept[JsonParseException](reader(json).readString(null)).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader(json).readKeyAsString()).getMessage.contains(error))
+    }
+
+    def checkError2(jsonBytes: Array[Byte], error: String): Unit = {
+      assert(intercept[JsonParseException](reader2(jsonBytes).readString(null)).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader2(jsonBytes).readKeyAsString()).getMessage.contains(error))
     }
 
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readString(null))
+      assert(intercept[JsonParseException](reader("null").readString(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readKeyAsString())
+      assert(intercept[JsonParseException](reader("null").readKeyAsString())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      reader("null".getBytes("UTF-8")).readString("VVV") shouldBe "VVV"
+      reader("null").readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
       forAll(minSuccessful(100000)) { (s: String) =>
@@ -1391,8 +1390,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "parse escaped chars of string value" in {
       def checkEncoded(s1: String, s2: String): Unit = {
-        readString(s1) shouldBe s2
-        readKeyAsString(s1) shouldBe s2
+        reader("\"" + s1 + "\"").readString(null) shouldBe s2
+        reader("\"" + s1 + "\":").readKeyAsString() shouldBe s2
       }
 
       checkEncoded("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\")
@@ -1400,23 +1399,23 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception for control chars that must be escaped" in {
       forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
-        checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
+        checkError('"' + ch.toString + '"', "unescaped control character, offset: 0x00000001")
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\\".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000002")
-      checkError(Array[Byte](0x22.toByte, 0xF0.toByte, 0x80.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000004")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\\", "unexpected end of input, offset: 0x00000002")
+      checkError2(Array[Byte](0x22.toByte, 0xF0.toByte, 0x80.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000004")
     }
     "throw parsing exception for boolean values & numbers" in {
-      checkError("true".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
-      checkError("false".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
-      checkError("12345".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
+      checkError("true", "expected '\"', offset: 0x00000000")
+      checkError("false", "expected '\"', offset: 0x00000000")
+      checkError("12345", "expected '\"', offset: 0x00000000")
     }
     "throw parsing exception in case of illegal escape sequence" in {
       def checkError(s: String, error1: String, error2: String): Unit = {
-        assert(intercept[JsonParseException](readString(s)).getMessage.contains(error1))
-        assert(intercept[JsonParseException](readKeyAsString(s)).getMessage.contains(error2))
+        assert(intercept[JsonParseException](reader("\"" + s + "\"").readString(null)).getMessage.contains(error1))
+        assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsString()).getMessage.contains(error2))
       }
 
       checkError("\\x0008", "illegal escape sequence, offset: 0x00000002",
@@ -1448,8 +1447,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception in case of illegal byte sequence" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](readString(bytes)).getMessage.contains(error))
-        assert(intercept[JsonParseException](readKeyAsString(bytes)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readString(null))
+          .getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readString(null))
+          .getMessage.contains(error))
       }
 
       checkError(Array[Byte](0x80.toByte), "malformed byte(s): 0x80, offset: 0x00000001")
@@ -1478,26 +1479,31 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readKeyAsChar" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"x\"".getBytes("UTF-8")).readKeyAsChar())
+      assert(intercept[JsonParseException](reader("\"x\"").readKeyAsChar())
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
-      assert(intercept[JsonParseException](reader("\"x\"x".getBytes("UTF-8")).readKeyAsChar())
+      assert(intercept[JsonParseException](reader("\"x\"x").readKeyAsChar())
         .getMessage.contains("expected ':', offset: 0x00000003"))
     }
   }
   "JsonReader.readChar and JsonReader.readKeyAsChar" should {
     def check(ch: Char): Unit = {
-      readChar(ch.toString) shouldBe ch
-      readKeyAsChar(ch.toString) shouldBe ch
+      reader("\"" + ch.toString + "\"").readChar() shouldBe ch
+      reader("\"" + ch.toString + "\":").readKeyAsChar() shouldBe ch
     }
 
     def checkEscaped(escaped: String, nonEscaped: Char): Unit = {
-      readChar(escaped) shouldBe nonEscaped
-      readKeyAsChar(escaped) shouldBe nonEscaped
+      reader("\"" + escaped + "\"").readChar() shouldBe nonEscaped
+      reader("\"" + escaped + "\":").readKeyAsChar() shouldBe nonEscaped
     }
 
-    def checkError(bytes: Array[Byte], error: String): Unit = {
-      assert(intercept[JsonParseException](reader(bytes).readChar()).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
+    def checkError(json: String, error: String): Unit = {
+      assert(intercept[JsonParseException](reader(json).readChar()).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader(json).readKeyAsChar()).getMessage.contains(error))
+    }
+
+    def checkError2(jsonBytes: Array[Byte], error: String): Unit = {
+      assert(intercept[JsonParseException](reader2(jsonBytes).readChar()).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader2(jsonBytes).readKeyAsChar()).getMessage.contains(error))
     }
 
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
@@ -1528,14 +1534,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "throw parsing exception for string with length > 1" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
-          checkError(("\"" + ch + ch + "\"").getBytes("UTF-8"), "expected '\"'") // offset can differs for non-ASCII characters
+          checkError(("\"" + ch + ch + "\""), "expected '\"'") // offset can differs for non-ASCII characters
         }
       }
     }
     "throw parsing exception for control chars that must be escaped" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader(bytes).readChar()).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(bytes).readKeyAsChar()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2(bytes).readChar()).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
       forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
@@ -1543,23 +1549,23 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "throw parsing exception for empty input and illegal or broken string" in {
-      checkError("".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000000")
-      checkError("\"".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000001")
-      checkError("\"\\".getBytes("UTF-8"), "unexpected end of input, offset: 0x00000002")
-      checkError("\"\"".getBytes("UTF-8"), "illegal value for char, offset: 0x00000001")
-      checkError(Array[Byte](0x22.toByte, 0xC0.toByte), "unexpected end of input, offset: 0x00000002")
-      checkError(Array[Byte](0x22.toByte, 0xE0.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000003")
+      checkError("", "unexpected end of input, offset: 0x00000000")
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"\\", "unexpected end of input, offset: 0x00000002")
+      checkError("\"\"", "illegal value for char, offset: 0x00000001")
+      checkError2(Array[Byte](0x22.toByte, 0xC0.toByte), "unexpected end of input, offset: 0x00000002")
+      checkError2(Array[Byte](0x22.toByte, 0xE0.toByte, 0x80.toByte), "unexpected end of input, offset: 0x00000003")
     }
     "throw parsing exception for null, boolean values & numbers" in {
-      checkError("null".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
-      checkError("true".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
-      checkError("false".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
-      checkError("12345".getBytes("UTF-8"), "expected '\"', offset: 0x00000000")
+      checkError("null", "expected '\"', offset: 0x00000000")
+      checkError("true", "expected '\"', offset: 0x00000000")
+      checkError("false", "expected '\"', offset: 0x00000000")
+      checkError("12345", "expected '\"', offset: 0x00000000")
     }
     "throw parsing exception in case of illegal escape sequence" in {
       def checkError(s: String, error1: String, error2: String): Unit = {
-        assert(intercept[JsonParseException](readChar(s)).getMessage.contains(error1))
-        assert(intercept[JsonParseException](readKeyAsChar(s)).getMessage.contains(error2))
+        assert(intercept[JsonParseException](reader("\"" + s + "\"").readChar()).getMessage.contains(error1))
+        assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsChar()).getMessage.contains(error2))
       }
 
       checkError("\\x0008", "illegal escape sequence, offset: 0x00000002",
@@ -1583,8 +1589,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception in case of illegal byte sequence" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](readChar(bytes)).getMessage.contains(error))
-        assert(intercept[JsonParseException](readKeyAsChar(bytes)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readChar())
+          .getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readKeyAsChar())
+          .getMessage.contains(error))
       }
 
       checkError(Array[Byte](0x80.toByte), "malformed byte(s): 0x80, offset: 0x00000001")
@@ -1603,26 +1611,26 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readByte" should {
     "parse valid byte values with skiping of JSON space characters" in {
-      readByte(" \n\t\r123") shouldBe 123.toByte
-      readByte(" \n\t\r-123") shouldBe (-123).toByte
+      reader(" \n\t\r123").readByte() shouldBe 123.toByte
+      reader(" \n\t\r-123").readByte() shouldBe (-123).toByte
     }
     "parse valid byte values and stops on not numeric chars (except '.', 'e', 'E')" in {
-      readByte("0$") shouldBe 0
-      readByte("123$") shouldBe 123
+      reader("0$").readByte() shouldBe 0
+      reader("123$").readByte() shouldBe 123
     }
   }
   "JsonReader.readByte, JsonReader.readKeyAsByte and JsonReader.readStringAsByte" should {
     def check(n: Byte): Unit = {
       val s = n.toString
-      readByte(s) shouldBe n
-      readKeyAsByte(s) shouldBe n
-      readStringAsByte(s) shouldBe n
+      reader(s).readByte() shouldBe n
+      reader("\"" + s + "\":").readKeyAsByte() shouldBe n
+      reader("\"" + s + "\"").readStringAsByte() shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsByte(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsByte(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readByte()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsByte()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsByte()).getMessage.contains(error2))
     }
 
     "parse valid byte values" in {
@@ -1652,7 +1660,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readByte(s)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readByte()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1664,26 +1672,26 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readShort" should {
     "parse valid short values with skipping of JSON space characters" in {
-      readShort(" \n\t\r12345") shouldBe 12345.toShort
-      readShort(" \n\t\r-12345") shouldBe -12345.toShort
+      reader(" \n\t\r12345").readShort() shouldBe 12345.toShort
+      reader(" \n\t\r-12345").readShort() shouldBe -12345.toShort
     }
     "parse valid short values and stops on not numeric chars (except '.', 'e', 'E')" in {
-      readShort("0$") shouldBe 0
-      readShort("12345$") shouldBe 12345
+      reader("0$").readShort() shouldBe 0
+      reader("12345$").readShort() shouldBe 12345
     }
   }
   "JsonReader.readShort, JsonReader.readKeyAsShort and JsonReader.readStringAsShort" should {
     def check(n: Short): Unit = {
       val s = n.toString
-      readShort(s) shouldBe n
-      readKeyAsShort(s) shouldBe n
-      readStringAsShort(s) shouldBe n
+      reader(s).readShort() shouldBe n
+      reader("\"" + s + "\":").readKeyAsShort() shouldBe n
+      reader("\"" + s + "\"").readStringAsShort() shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsShort(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsShort(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readShort()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsShort()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsShort()).getMessage.contains(error2))
     }
 
     "parse valid short values" in {
@@ -1713,7 +1721,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readShort(s)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readShort()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1725,26 +1733,26 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readInt" should {
     "parse valid int values with skipping of JSON space characters" in {
-      readInt(" \n\t\r123456789") shouldBe 123456789
-      readInt(" \n\t\r-123456789") shouldBe -123456789
+      reader(" \n\t\r123456789").readInt() shouldBe 123456789
+      reader(" \n\t\r-123456789").readInt() shouldBe -123456789
     }
     "parse valid int values and stops on not numeric chars (except '.', 'e', 'E')" in {
-      readInt("0$") shouldBe 0
-      readInt("123456789$") shouldBe 123456789
+      reader("0$").readInt() shouldBe 0
+      reader("123456789$").readInt() shouldBe 123456789
     }
   }
   "JsonReader.readInt, JsonReader.readKeyAsInt and JsonReader.readStringAsInt" should {
     def check(n: Int): Unit = {
       val s = n.toString
-      readInt(s) shouldBe n
-      readKeyAsInt(s) shouldBe n
-      readStringAsInt(s) shouldBe n
+      reader(s).readInt() shouldBe n
+      reader("\"" + s + "\":").readKeyAsInt() shouldBe n
+      reader("\"" + s + "\"").readStringAsInt() shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsInt(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsInt(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readInt()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsInt()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsInt()).getMessage.contains(error2))
     }
 
     "parse valid int values" in {
@@ -1778,7 +1786,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readInt(s)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readInt()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1790,26 +1798,26 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readLong" should {
     "parse valid long values with skipping of JSON space characters" in {
-      readLong(" \n\t\r1234567890123456789") shouldBe 1234567890123456789L
-      readLong(" \n\t\r-1234567890123456789") shouldBe -1234567890123456789L
+      reader(" \n\t\r1234567890123456789").readLong() shouldBe 1234567890123456789L
+      reader(" \n\t\r-1234567890123456789").readLong() shouldBe -1234567890123456789L
     }
     "parse valid long values and stops on not numeric chars (except '.', 'e', 'E')" in {
-      readLong("0$") shouldBe 0L
-      readLong("1234567890123456789$") shouldBe 1234567890123456789L
+      reader("0$").readLong() shouldBe 0L
+      reader("1234567890123456789$").readLong() shouldBe 1234567890123456789L
     }
   }
   "JsonReader.readLong, JsonReader.readKeyAsLong and JsonReader.readStringAsLong" should {
     def check(n: Long): Unit = {
       val s = n.toString
-      readLong(s) shouldBe n
-      readKeyAsLong(s) shouldBe n
-      readStringAsLong(s) shouldBe n
+      reader(s).readLong() shouldBe n
+      reader("\"" + s + "\":").readKeyAsLong() shouldBe n
+      reader("\"" + s + "\"").readStringAsLong() shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsLong(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsLong(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readLong()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsLong()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsLong()).getMessage.contains(error2))
     }
 
     "parse valid long values" in {
@@ -1843,7 +1851,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readLong(s)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readLong()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1855,36 +1863,36 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readFloat" should {
     "parse valid float values with skipping of JSON space characters" in {
-      readFloat(" \n\t\r12345.6789") shouldBe 12345.6789f
-      readFloat(" \n\t\r-12345.6789") shouldBe -12345.6789f
+      reader(" \n\t\r12345.6789").readFloat() shouldBe 12345.6789f
+      reader(" \n\t\r-12345.6789").readFloat() shouldBe -12345.6789f
     }
     "parse valid float values and stops on not numeric chars" in {
-      readFloat("0$") shouldBe 0.0f
-      readFloat("12345$") shouldBe 12345f
-      readFloat("12345.6789$") shouldBe 12345.6789f
-      readFloat("12345.6789e10$") shouldBe 1.23456788e14f
-      readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
+      reader("0$").readFloat() shouldBe 0.0f
+      reader("12345$").readFloat() shouldBe 12345f
+      reader("12345.6789$").readFloat() shouldBe 12345.6789f
+      reader("12345.6789e10$").readFloat() shouldBe 1.23456788e14f
+      reader("12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.PositiveInfinity
     }
   }
   "JsonReader.readFloat, JsonReader.readKeyAsFloat and JsonReader.readStringAsFloat" should {
     def check(s: String, n: Float): Unit = {
-      readFloat(s) shouldBe n
-      readKeyAsFloat(s) shouldBe n
-      readStringAsFloat(s) shouldBe n
+      reader(s).readFloat() shouldBe n
+      reader("\"" + s + "\":").readKeyAsFloat() shouldBe n
+      reader("\"" + s + "\"").readStringAsFloat() shouldBe n
     }
 
     def check2(s: String): Unit = {
-      readFloat(s).toString shouldBe s
-      readKeyAsFloat(s).toString shouldBe s
-      readStringAsFloat(s).toString shouldBe s
+      reader(s).readFloat().toString shouldBe s
+      reader("\"" + s + "\":").readKeyAsFloat().toString shouldBe s
+      reader("\"" + s + "\"").readStringAsFloat().toString shouldBe s
     }
 
     def checkFloat(s: String): Unit = check(s, java.lang.Float.parseFloat(s))
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsFloat(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsFloat(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readFloat()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsFloat()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsFloat()).getMessage.contains(error2))
     }
 
     "parse valid float values" in {
@@ -1911,8 +1919,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345e6789", Float.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Float.PositiveInfinity)
       check("-12345678901234567890e12345678901234567890", Float.NegativeInfinity)
-      readFloat("12345678901234567890e12345678901234567890$") shouldBe Float.PositiveInfinity
-      readFloat("-12345678901234567890e12345678901234567890$") shouldBe Float.NegativeInfinity
+      reader("12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.PositiveInfinity
+      reader("-12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.NegativeInfinity
     }
     "parse zero on float underflow" in {
       check("12345e-6789", 0.0f)
@@ -1942,7 +1950,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readFloat(s)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readFloat()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1952,36 +1960,36 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readDouble" should {
     "parse valid double values with skipping of JSON space characters" in {
-      readDouble(" \n\t\r123456789.12345678") shouldBe 1.2345678912345678e8
-      readDouble(" \n\t\r-123456789.12345678") shouldBe -1.2345678912345678e8
+      reader(" \n\t\r123456789.12345678").readDouble() shouldBe 1.2345678912345678e8
+      reader(" \n\t\r-123456789.12345678").readDouble() shouldBe -1.2345678912345678e8
     }
     "parse valid double values and stops on not numeric chars" in {
-      readDouble("0$") shouldBe 0.0
-      readDouble("123456789$") shouldBe 123456789.0
-      readDouble("123456789.12345678$") shouldBe 1.2345678912345678e8
-      readDouble("123456789.123456789e10$") shouldBe 1.23456789123456794e18
-      readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
+      reader("0$").readDouble() shouldBe 0.0
+      reader("123456789$").readDouble() shouldBe 123456789.0
+      reader("123456789.12345678$").readDouble() shouldBe 1.2345678912345678e8
+      reader("123456789.123456789e10$").readDouble() shouldBe 1.23456789123456794e18
+      reader("12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.PositiveInfinity
     }
   }
   "JsonReader.readDouble, JsonReader.readKeyAsDouble and JsonReader.readStringAsDouble" should {
     def check(s: String, n: Double): Unit = {
-      readDouble(s) shouldBe n
-      readKeyAsDouble(s) shouldBe n
-      readStringAsDouble(s) shouldBe n
+      reader(s).readDouble() shouldBe n
+      reader("\"" + s + "\":").readKeyAsDouble() shouldBe n
+      reader("\"" + s + "\"").readStringAsDouble() shouldBe n
     }
 
     def check2(s: String): Unit = {
-      readDouble(s).toString shouldBe s
-      readKeyAsDouble(s).toString shouldBe s
-      readStringAsDouble(s).toString shouldBe s
+      reader(s).readDouble().toString shouldBe s
+      reader("\"" + s + "\":").readKeyAsDouble().toString shouldBe s
+      reader("\"" + s + "\"").readStringAsDouble().toString shouldBe s
     }
 
     def checkDouble(s: String): Unit = check(s, java.lang.Double.parseDouble(s))
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsDouble(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsDouble(s)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readDouble()).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsDouble()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsDouble()).getMessage.contains(error2))
     }
 
     "parse valid double values" in {
@@ -2007,8 +2015,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-12345e6789", Double.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Double.PositiveInfinity)
       check("-12345678901234567890e12345678901234567890", Double.NegativeInfinity)
-      readDouble("12345678901234567890e12345678901234567890$") shouldBe Double.PositiveInfinity
-      readDouble("-12345678901234567890e12345678901234567890$") shouldBe Double.NegativeInfinity
+      reader("12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.PositiveInfinity
+      reader("-12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.NegativeInfinity
     }
     "parse zero on double underflow" in {
       check("12345e-6789", 0.0)
@@ -2038,7 +2046,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readDouble(s)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readDouble()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2048,38 +2056,38 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readBigInt" should {
     "parse valid number values with skipping of JSON space characters" in {
-      readBigInt(" \n\t\r12345678901234567890", null, bigIntDigitsLimit) shouldBe BigInt("12345678901234567890")
-      readBigInt(" \n\t\r-12345678901234567890", null, bigIntDigitsLimit) shouldBe BigInt("-12345678901234567890")
+      reader(" \n\t\r12345678901234567890").readBigInt(null) shouldBe BigInt("12345678901234567890")
+      reader(" \n\t\r-12345678901234567890").readBigInt(null) shouldBe BigInt("-12345678901234567890")
     }
     "parse valid number values and stops on not numeric chars (except '.', 'e', 'E')" in {
-      readBigInt("0$", null, bigIntDigitsLimit) shouldBe BigInt("0")
-      readBigInt("1234567890123456789$", null, bigIntDigitsLimit) shouldBe BigInt("1234567890123456789")
+      reader("0$").readBigInt(null) shouldBe BigInt("0")
+      reader("1234567890123456789$").readBigInt(null) shouldBe BigInt("1234567890123456789")
     }
   }
   "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readBigInt(null))
+      assert(intercept[JsonParseException](reader("null").readBigInt(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readStringAsBigInt(null))
+      assert(intercept[JsonParseException](reader("null").readStringAsBigInt(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      readBigInt("null", BigInt("12345"), bigIntDigitsLimit) shouldBe BigInt("12345")
-      reader("null".getBytes("UTF-8")).readStringAsBigInt(BigInt("12345")) shouldBe BigInt("12345")
+      reader("null").readBigInt(BigInt("12345")) shouldBe BigInt("12345")
+      reader("null").readStringAsBigInt(BigInt("12345")) shouldBe BigInt("12345")
     }
   }
   "JsonReader.readBigInt, JsonReader.readStringAsBigInt and JsonReader.readKeyAsBigInt" should {
     def check(n: BigInt): Unit = {
       val s = n.toString
-      readBigInt(s, null, Int.MaxValue) shouldBe n
-      readKeyAsBigInt(s, Int.MaxValue) shouldBe n
-      readStringAsBigInt(s, null, Int.MaxValue) shouldBe n
+      reader(s).readBigInt(null, Int.MaxValue) shouldBe n
+      reader("\"" + s + "\":").readKeyAsBigInt(Int.MaxValue) shouldBe n
+      reader("\"" + s + "\"").readStringAsBigInt(null, Int.MaxValue) shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readBigInt(s, null, bigIntDigitsLimit)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsBigInt(s, bigIntDigitsLimit)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsBigInt(s, null, bigIntDigitsLimit)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readBigInt(null)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsBigInt()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsBigInt(null)).getMessage.contains(error2))
     }
 
     "parse valid number values" in {
@@ -2119,7 +2127,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigInt(s, null, bigIntDigitsLimit)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readBigInt(null)).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2129,43 +2137,46 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.readBigDecimal" should {
     "parse valid number values with skipping of JSON space characters" in {
-      readBigDecimal(" \n\t\r1234567890123456789.0123456789", null) shouldBe
+      reader(" \n\t\r1234567890123456789.0123456789").readBigDecimal(null) shouldBe
         BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal(" \n\t\r-1234567890123456789.0123456789", null) shouldBe
+      reader(" \n\t\r-1234567890123456789.0123456789").readBigDecimal(null) shouldBe
         BigDecimal("-1234567890123456789.0123456789")
     }
     "parse valid number values and stops on not numeric chars" in {
-      readBigDecimal("0$", null) shouldBe BigDecimal("0")
-      readBigDecimal("1234567890123456789$", null) shouldBe BigDecimal("1234567890123456789")
-      readBigDecimal("1234567890123456789.0123456789$", null) shouldBe BigDecimal("1234567890123456789.0123456789")
-      readBigDecimal("1234567890123456789.0123456789e10$", null) shouldBe BigDecimal("12345678901234567890123456789")
+      reader("0$").readBigDecimal(null) shouldBe BigDecimal("0")
+      reader("1234567890123456789$").readBigDecimal(null) shouldBe BigDecimal("1234567890123456789")
+      reader("1234567890123456789.0123456789$").readBigDecimal(null) shouldBe
+        BigDecimal("1234567890123456789.0123456789")
+      reader("1234567890123456789.0123456789e10$").readBigDecimal(null) shouldBe
+        BigDecimal("12345678901234567890123456789")
     }
   }
   "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readBigDecimal(null))
+      assert(intercept[JsonParseException](reader("null").readBigDecimal(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8")).readStringAsBigDecimal(null))
+      assert(intercept[JsonParseException](reader("null").readStringAsBigDecimal(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
-      readBigDecimal("null", BigDecimal("12345")) shouldBe BigDecimal("12345")
-      reader("null".getBytes("UTF-8")).readStringAsBigDecimal(BigDecimal("12345")) shouldBe BigDecimal("12345")
+      reader("null").readBigDecimal(BigDecimal("12345")) shouldBe BigDecimal("12345")
+      reader("null").readStringAsBigDecimal(BigDecimal("12345")) shouldBe BigDecimal("12345")
     }
   }
   "JsonReader.readBigDecimal, JsonReader.readKeyAsBigDecimal and JsonReader.readStringAsBigDecimal" should {
     def check(s: String, mc: MathContext = bigDecimalMathContext, scaleLimit: Int = bigDecimalScaleLimit,
               digitsLimit: Int = bigDecimalDigitsLimit): Unit = {
       val n = BigDecimal(s)
-      readBigDecimal(s, null, mc, scaleLimit, digitsLimit) shouldBe n
-      readKeyAsBigDecimal(s, mc, scaleLimit, digitsLimit) shouldBe n
-      readStringAsBigDecimal(s, null, mc, scaleLimit, digitsLimit) shouldBe n
+      reader(s).readBigDecimal(null, mc, scaleLimit, digitsLimit) shouldBe n
+      reader("\"" + s + "\":").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit) shouldBe n
+      reader("\"" + s + "\"").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit) shouldBe n
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](readKeyAsBigDecimal(s)).getMessage.contains(error2))
-      assert(intercept[JsonParseException](readStringAsBigDecimal(s, null)).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader(s).readBigDecimal(null)).getMessage.contains(error1))
+      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsBigDecimal()).getMessage.contains(error2))
+      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsBigDecimal(null))
+        .getMessage.contains(error2))
     }
 
     "parse valid number values with scale less than specified maximum" in {
@@ -2221,7 +2232,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](readBigDecimal(s, null)).getMessage.contains(error))
+        assert(intercept[JsonParseException](reader(s).readBigDecimal(null)).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2231,14 +2242,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.setMark and JsonReader.rollbackToMark" should {
     "store current position of parsing and return back to it" in {
-      val jsonReader = reader("{}".getBytes("UTF-8"))
+      val jsonReader = reader("{}")
       jsonReader.setMark()
       jsonReader.skip()
       jsonReader.rollbackToMark()
       jsonReader.nextToken() shouldBe '{'
     }
     "throw exception in case of rollbackToMark was called before setMark" in {
-      val jsonReader = reader("{}".getBytes("UTF-8"))
+      val jsonReader = reader("{}")
       jsonReader.skip()
       assert(intercept[ArrayIndexOutOfBoundsException](jsonReader.rollbackToMark())
         .getMessage.contains("expected preceding call of 'setMark()'"))
@@ -2246,13 +2257,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.skipToKey" should {
     "return true in case of key is found and set current position of parsing to its value" in {
-      val jsonReader = reader("""{"key1":1,"key2":2}""".getBytes("UTF-8"))
+      val jsonReader = reader("""{"key1":1,"key2":2}""")
       jsonReader.isNextToken('{') // enter to JSON object
       jsonReader.skipToKey("key2") shouldBe true
       jsonReader.readInt() shouldBe 2
     }
     "return false in case of key cannot be found and set current positing to the closing of object" in {
-      val jsonReader = reader("""{"key1":1}""".getBytes("UTF-8"))
+      val jsonReader = reader("""{"key1":1}""")
       jsonReader.isNextToken('{') // enter to JSON object
       jsonReader.skipToKey("key2")
       jsonReader.isCurrentToken('}') shouldBe true
@@ -2260,7 +2271,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.requiredFieldError" should {
     "throw parsing exception with missing required field" in {
-      val jsonReader = reader("{}".getBytes("UTF-8"))
+      val jsonReader = reader("{}")
       jsonReader.nextToken()
       assert(intercept[JsonParseException](jsonReader.requiredFieldError("name"))
         .getMessage.contains("missing required field \"name\", offset: 0x00000000"))
@@ -2268,7 +2279,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.duplicatedKeyError" should {
     "throw parsing exception with name of duplicated key" in {
-      val jsonReader = reader("\"xxx\"".getBytes("UTF-8"))
+      val jsonReader = reader("\"xxx\"")
       val len = jsonReader.readStringAsCharBuf()
       assert(intercept[JsonParseException](jsonReader.duplicatedKeyError(len))
         .getMessage.contains("duplicated field \"xxx\", offset: 0x00000004"))
@@ -2276,14 +2287,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader.unexpectedKeyError" should {
     "throw parsing exception with name of unexpected key" in {
-      val jsonReader = reader("\"xxx\"".getBytes("UTF-8"))
+      val jsonReader = reader("\"xxx\"")
       val len = jsonReader.readStringAsCharBuf()
       assert(intercept[JsonParseException](jsonReader.unexpectedKeyError(len))
         .getMessage.contains("unexpected field \"xxx\", offset: 0x00000004"))
     }
   }
   "JsonReader.discriminatorValueError" should {
-    val jsonReader = reader("\"xxx\"".getBytes("UTF-8"))
+    val jsonReader = reader("\"xxx\"")
     val value = jsonReader.readString(null)
     "throw parsing exception with unexpected discriminator value" in {
       assert(intercept[JsonParseException](jsonReader.discriminatorValueError(value))
@@ -2291,7 +2302,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.enumValueError" should {
-    val jsonReader = reader("\"xxx\"".getBytes("UTF-8"))
+    val jsonReader = reader("\"xxx\"")
     val value = jsonReader.readString(null)
     "throw parsing exception with unexpected enum value" in {
       assert(intercept[JsonParseException](jsonReader.enumValueError(value))
@@ -2299,7 +2310,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.commaError" should {
-    val jsonReader = reader("{}".getBytes("UTF-8"))
+    val jsonReader = reader("{}")
     jsonReader.isNextToken(',')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.commaError())
@@ -2307,7 +2318,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.arrayStartOrNullError" should {
-    val jsonReader = reader("{}".getBytes("UTF-8"))
+    val jsonReader = reader("{}")
     jsonReader.isNextToken('[')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.arrayStartOrNullError())
@@ -2315,7 +2326,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.arrayEndError" should {
-    val jsonReader = reader("}".getBytes("UTF-8"))
+    val jsonReader = reader("}")
     jsonReader.isNextToken(']')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.arrayEndError())
@@ -2323,7 +2334,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.arrayEndOrCommaError" should {
-    val jsonReader = reader("}".getBytes("UTF-8"))
+    val jsonReader = reader("}")
     jsonReader.isNextToken(']')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.arrayEndOrCommaError())
@@ -2331,7 +2342,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.objectStartOrNullError" should {
-    val jsonReader = reader("[]".getBytes("UTF-8"))
+    val jsonReader = reader("[]")
     jsonReader.isNextToken('{')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.objectStartOrNullError())
@@ -2339,7 +2350,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.objectEndOrCommaError" should {
-    val jsonReader = reader("]".getBytes("UTF-8"))
+    val jsonReader = reader("]")
     jsonReader.isNextToken('}')
     "throw parsing exception with expected token(s)" in {
       assert(intercept[JsonParseException](jsonReader.objectEndOrCommaError())
@@ -2348,7 +2359,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   }
   "JsonReader" should {
     "support hex dumps with offsets that greater than 4Gb" in {
-      assert(intercept[JsonParseException](reader("null".getBytes("UTF-8"), 1L << 41).readInt())
+      assert(intercept[JsonParseException](reader("null", 1L << 41).readInt())
         .getMessage.contains(
           """illegal number, offset: 0x20000000000, buf:
             |           +-------------------------------------------------+
@@ -2361,13 +2372,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
   def validateSkip(s: String): Unit = {
     def checkWithSuffix(s: String, suffix: Char): Unit = {
-      val r = reader((s + suffix).getBytes("UTF-8"))
+      val r = reader(s + suffix)
       r.skip()
       r.nextToken().toChar shouldBe suffix
     }
 
     def check(s: String): Unit = {
-      val r = reader(s.getBytes("UTF-8"))
+      val r = reader(s)
       r.skip()
       assert(intercept[JsonParseException](r.nextToken()).getMessage.contains("unexpected end of input"))
     }
@@ -2378,263 +2389,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     check(s)
   }
 
-  def readInstant(s: String): Instant = readInstant(s.getBytes("UTF-8"))
-
-  def readInstant(buf: Array[Byte]): Instant = reader(stringify(buf)).readInstant(null)
-
-  def readDuration(s: String): Duration = readDuration(s.getBytes("UTF-8"))
-
-  def readDuration(buf: Array[Byte]): Duration = reader(stringify(buf)).readDuration(null)
-
-  def readLocalDate(s: String): LocalDate = readLocalDate(s.getBytes("UTF-8"))
-
-  def readLocalDate(buf: Array[Byte]): LocalDate = reader(stringify(buf)).readLocalDate(null)
-
-  def readLocalDateTime(s: String): LocalDateTime = readLocalDateTime(s.getBytes("UTF-8"))
-
-  def readLocalDateTime(buf: Array[Byte]): LocalDateTime = reader(stringify(buf)).readLocalDateTime(null)
-
-  def readLocalTime(s: String): LocalTime = readLocalTime(s.getBytes("UTF-8"))
-
-  def readLocalTime(buf: Array[Byte]): LocalTime = reader(stringify(buf)).readLocalTime(null)
-
-  def readMonthDay(s: String): MonthDay = readMonthDay(s.getBytes("UTF-8"))
-
-  def readMonthDay(buf: Array[Byte]): MonthDay = reader(stringify(buf)).readMonthDay(null)
-
-  def readOffsetDateTime(s: String): OffsetDateTime = readOffsetDateTime(s.getBytes("UTF-8"))
-
-  def readOffsetDateTime(buf: Array[Byte]): OffsetDateTime = reader(stringify(buf)).readOffsetDateTime(null)
-
-  def readOffsetTime(s: String): OffsetTime = readOffsetTime(s.getBytes("UTF-8"))
-
-  def readOffsetTime(buf: Array[Byte]): OffsetTime = reader(stringify(buf)).readOffsetTime(null)
-
-  def readPeriod(s: String): Period = readPeriod(s.getBytes("UTF-8"))
-
-  def readPeriod(buf: Array[Byte]): Period = reader(stringify(buf)).readPeriod(null)
-
-  def readYear(s: String): Year = readYear(s.getBytes("UTF-8"))
-
-  def readYear(buf: Array[Byte]): Year = reader(stringify(buf)).readYear(null)
-
-  def readYearMonth(s: String): YearMonth = readYearMonth(s.getBytes("UTF-8"))
-
-  def readYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf)).readYearMonth(null)
-
-  def readZonedDateTime(s: String): ZonedDateTime = readZonedDateTime(s.getBytes("UTF-8"))
-
-  def readZonedDateTime(buf: Array[Byte]): ZonedDateTime = reader(stringify(buf)).readZonedDateTime(null)
-
-  def readZoneOffset(s: String): ZoneOffset = readZoneOffset(s.getBytes("UTF-8"))
-
-  def readZoneOffset(buf: Array[Byte]): ZoneOffset = reader(stringify(buf)).readZoneOffset(null)
-
-  def readZoneId(s: String): ZoneId = readZoneId(s.getBytes("UTF-8"))
-
-  def readZoneId(buf: Array[Byte]): ZoneId = reader(stringify(buf)).readZoneId(null)
-
-  def readUUID(s: String): UUID = readUUID(s.getBytes("UTF-8"))
-
-  def readUUID(buf: Array[Byte]): UUID = reader(stringify(buf)).readUUID(null)
-
-  def readString(s: String): String = readString(s.getBytes("UTF-8"))
-
-  def readString(buf: Array[Byte]): String = reader(stringify(buf)).readString(null)
-
-  def readChar(s: String): Char = readChar(s.getBytes("UTF-8"))
-
-  def readChar(buf: Array[Byte]): Char = reader(stringify(buf)).readChar()
-
-  def readByte(s: String): Byte = readByte(s.getBytes("UTF-8"))
-
-  def readByte(buf: Array[Byte]): Byte = reader(buf).readByte()
-
-  def readShort(s: String): Short = readShort(s.getBytes("UTF-8"))
-
-  def readShort(buf: Array[Byte]): Short = reader(buf).readShort()
-
-  def readInt(s: String): Int = readInt(s.getBytes("UTF-8"))
-
-  def readInt(buf: Array[Byte]): Int = reader(buf).readInt()
-
-  def readLong(s: String): Long = readLong(s.getBytes("UTF-8"))
-
-  def readLong(buf: Array[Byte]): Long = reader(buf).readLong()
-
-  def readFloat(s: String): Float = readFloat(s.getBytes("UTF-8"))
-
-  def readFloat(buf: Array[Byte]): Float = reader(buf).readFloat()
-
-  def readDouble(s: String): Double = readDouble(s.getBytes("UTF-8"))
-
-  def readDouble(buf: Array[Byte]): Double = reader(buf).readDouble()
-
-  def readBigInt(s: String, default: BigInt, maxDigits: Int): BigInt =
-    readBigInt(s.getBytes("UTF-8"), default, maxDigits)
-
-  def readBigInt(buf: Array[Byte], default: BigInt, maxDigits: Int): BigInt =
-    reader(buf).readBigInt(default, maxDigits)
-
-  def readBigDecimal(s: String, default: BigDecimal, mc: MathContext = bigDecimalMathContext,
-                     scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
-    readBigDecimal(s.getBytes("UTF-8"), default, mc, scaleLimit, digitsLimit)
-
-  def readBigDecimal(buf: Array[Byte], default: BigDecimal, mc: MathContext,
-                     scaleLimit: Int, digitsLimit: Int): BigDecimal =
-    reader(buf).readBigDecimal(default, mc, scaleLimit, digitsLimit)
-
-  def readKeyAsInstant(s: String): Instant = readKeyAsInstant(s.getBytes("UTF-8"))
-
-  def readKeyAsInstant(buf: Array[Byte]): Instant = reader(stringify(buf) :+ ':'.toByte).readKeyAsInstant()
-
-  def readKeyAsDuration(s: String): Duration = readKeyAsDuration(s.getBytes("UTF-8"))
-
-  def readKeyAsDuration(buf: Array[Byte]): Duration =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsDuration()
-
-  def readKeyAsLocalDate(s: String): LocalDate = readKeyAsLocalDate(s.getBytes("UTF-8"))
-
-  def readKeyAsLocalDate(buf: Array[Byte]): LocalDate =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDate()
-
-  def readKeyAsLocalDateTime(s: String): LocalDateTime = readKeyAsLocalDateTime(s.getBytes("UTF-8"))
-
-  def readKeyAsLocalDateTime(buf: Array[Byte]): LocalDateTime =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalDateTime()
-
-  def readKeyAsLocalTime(s: String): LocalTime = readKeyAsLocalTime(s.getBytes("UTF-8"))
-
-  def readKeyAsLocalTime(buf: Array[Byte]): LocalTime = reader(stringify(buf) :+ ':'.toByte).readKeyAsLocalTime()
-
-  def readKeyAsMonthDay(s: String): MonthDay = readKeyAsMonthDay(s.getBytes("UTF-8"))
-
-  def readKeyAsMonthDay(buf: Array[Byte]): MonthDay = reader(stringify(buf) :+ ':'.toByte).readKeyAsMonthDay()
-
-  def readKeyAsOffsetDateTime(s: String): OffsetDateTime = readKeyAsOffsetDateTime(s.getBytes("UTF-8"))
-
-  def readKeyAsOffsetDateTime(buf: Array[Byte]): OffsetDateTime =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetDateTime()
-
-  def readKeyAsOffsetTime(s: String): OffsetTime = readKeyAsOffsetTime(s.getBytes("UTF-8"))
-
-  def readKeyAsOffsetTime(buf: Array[Byte]): OffsetTime = reader(stringify(buf) :+ ':'.toByte).readKeyAsOffsetTime()
-
-  def readKeyAsPeriod(s: String): Period = readKeyAsPeriod(s.getBytes("UTF-8"))
-
-  def readKeyAsPeriod(buf: Array[Byte]): Period = reader(stringify(buf) :+ ':'.toByte).readKeyAsPeriod()
-
-  def readKeyAsYear(s: String): Year = readKeyAsYear(s.getBytes("UTF-8"))
-
-  def readKeyAsYear(buf: Array[Byte]): Year = reader(stringify(buf) :+ ':'.toByte).readKeyAsYear()
-
-  def readKeyAsYearMonth(s: String): YearMonth = readKeyAsYearMonth(s.getBytes("UTF-8"))
-
-  def readKeyAsYearMonth(buf: Array[Byte]): YearMonth = reader(stringify(buf) :+ ':'.toByte).readKeyAsYearMonth()
-
-  def readKeyAsZonedDateTime(s: String): ZonedDateTime = readKeyAsZonedDateTime(s.getBytes("UTF-8"))
-
-  def readKeyAsZonedDateTime(buf: Array[Byte]): ZonedDateTime =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsZonedDateTime()
-
-  def readKeyAsZoneOffset(s: String): ZoneOffset = readKeyAsZoneOffset(s.getBytes("UTF-8"))
-
-  def readKeyAsZoneOffset(buf: Array[Byte]): ZoneOffset = reader(stringify(buf) :+ ':'.toByte).readKeyAsZoneOffset()
-
-  def readKeyAsZoneId(s: String): ZoneId = readKeyAsZoneId(s.getBytes("UTF-8"))
-
-  def readKeyAsZoneId(buf: Array[Byte]): ZoneId = reader(stringify(buf) :+ ':'.toByte).readKeyAsZoneId()
-
-  def readKeyAsUUID(s: String): UUID = readKeyAsUUID(s.getBytes("UTF-8"))
-
-  def readKeyAsUUID(buf: Array[Byte]): UUID = reader(stringify(buf) :+ ':'.toByte).readKeyAsUUID()
-
-  def readKeyAsString(s: String): String = readKeyAsString(s.getBytes("UTF-8"))
-
-  def readKeyAsString(buf: Array[Byte]): String = reader(stringify(buf) :+ ':'.toByte).readKeyAsString()
-
-  def readKeyAsChar(s: String): Char = readKeyAsChar(s.getBytes("UTF-8"))
-
-  def readKeyAsChar(buf: Array[Byte]): Char = reader(stringify(buf) :+ ':'.toByte).readKeyAsChar()
-
-  def readKeyAsByte(s: String): Byte = readKeyAsByte(s.getBytes("UTF-8"))
-
-  def readKeyAsByte(buf: Array[Byte]): Byte = reader(stringify(buf) :+ ':'.toByte).readKeyAsByte()
-
-  def readKeyAsShort(s: String): Short = readKeyAsShort(s.getBytes("UTF-8"))
-
-  def readKeyAsShort(buf: Array[Byte]): Short = reader(stringify(buf) :+ ':'.toByte).readKeyAsShort()
-
-  def readKeyAsInt(s: String): Int = readKeyAsInt(s.getBytes("UTF-8"))
-
-  def readKeyAsInt(buf: Array[Byte]): Int = reader(stringify(buf) :+ ':'.toByte).readKeyAsInt()
-
-  def readKeyAsLong(s: String): Long = readKeyAsLong(s.getBytes("UTF-8"))
-
-  def readKeyAsLong(buf: Array[Byte]): Long = reader(stringify(buf) :+ ':'.toByte).readKeyAsLong()
-
-  def readKeyAsFloat(s: String): Float = readKeyAsFloat(s.getBytes("UTF-8"))
-
-  def readKeyAsFloat(buf: Array[Byte]): Float = reader(stringify(buf) :+ ':'.toByte).readKeyAsFloat()
-
-  def readKeyAsDouble(s: String): Double = readKeyAsDouble(s.getBytes("UTF-8"))
-
-  def readKeyAsDouble(buf: Array[Byte]): Double = reader(stringify(buf) :+ ':'.toByte).readKeyAsDouble()
-
-  def readKeyAsBigInt(s: String, maxDigits: Int): BigInt =
-    readKeyAsBigInt(s.getBytes("UTF-8"), maxDigits)
-
-  def readKeyAsBigInt(buf: Array[Byte], maxDigits: Int): BigInt =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsBigInt(maxDigits)
-
-  def readKeyAsBigDecimal(s: String, mc: MathContext = bigDecimalMathContext,
-                          scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
-    readKeyAsBigDecimal(s.getBytes("UTF-8"), mc, scaleLimit, digitsLimit)
-
-  def readKeyAsBigDecimal(buf: Array[Byte], mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
-    reader(stringify(buf) :+ ':'.toByte).readKeyAsBigDecimal(mc, scaleLimit, digitsLimit)
-
-  def readStringAsByte(s: String): Byte = readStringAsByte(s.getBytes("UTF-8"))
-
-  def readStringAsByte(buf: Array[Byte]): Byte = reader(stringify(buf)).readStringAsByte()
-
-  def readStringAsShort(s: String): Short = readStringAsShort(s.getBytes("UTF-8"))
-
-  def readStringAsShort(buf: Array[Byte]): Short = reader(stringify(buf)).readStringAsShort()
-
-  def readStringAsInt(s: String): Int = readStringAsInt(s.getBytes("UTF-8"))
-
-  def readStringAsInt(buf: Array[Byte]): Int = reader(stringify(buf)).readStringAsInt()
-
-  def readStringAsLong(s: String): Long = readStringAsLong(s.getBytes("UTF-8"))
-
-  def readStringAsLong(buf: Array[Byte]): Long = reader(stringify(buf)).readStringAsLong()
-
-  def readStringAsFloat(s: String): Float = readStringAsFloat(s.getBytes("UTF-8"))
-
-  def readStringAsFloat(buf: Array[Byte]): Float = reader(stringify(buf)).readStringAsFloat()
-
-  def readStringAsDouble(s: String): Double = readStringAsDouble(s.getBytes("UTF-8"))
-
-  def readStringAsDouble(buf: Array[Byte]): Double = reader(stringify(buf)).readStringAsDouble()
-
-  def readStringAsBigInt(s: String, default: BigInt, maxDigits: Int): BigInt =
-    readStringAsBigInt(s.getBytes("UTF-8"), default, maxDigits)
-
-  def readStringAsBigInt(buf: Array[Byte], default: BigInt, maxDigits: Int): BigInt =
-    reader(stringify(buf)).readStringAsBigInt(default, maxDigits)
-
-  def readStringAsBigDecimal(s: String, default: BigDecimal, mc: MathContext = bigDecimalMathContext,
-                             scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
-    readStringAsBigDecimal(s.getBytes("UTF-8"), default, mc, scaleLimit, digitsLimit)
-
-  def readStringAsBigDecimal(buf: Array[Byte], default: BigDecimal, mc: MathContext,
-                             scaleLimit: Int, digitsLimit: Int): BigDecimal =
-    reader(stringify(buf)).readStringAsBigDecimal(default, mc, scaleLimit, digitsLimit)
-
-  def reader(buf: Array[Byte], totalRead: Long = 0): JsonReader =
-    new JsonReader(new Array[Byte](12), // a minimal allowed length of `buf`
-      0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(buf), totalRead, ReaderConfig())
-
-  def stringify(buf: Array[Byte]): Array[Byte] = '"'.toByte +: buf :+ '"'.toByte
+  def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
+
+  def reader2(jsonBytes: Array[Byte], totalRead: Long = 0): JsonReader =
+    new JsonReader(new Array[Byte](12), // a minimal allowed length
+      0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(jsonBytes), totalRead, ReaderConfig())
 }
