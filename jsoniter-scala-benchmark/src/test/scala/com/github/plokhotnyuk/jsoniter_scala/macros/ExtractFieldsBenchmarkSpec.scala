@@ -7,6 +7,7 @@ class ExtractFieldsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ExtractFieldsBenchmark" should {
     "deserialize properly" in {
+      benchmark.readArgonaut() shouldBe benchmark.obj
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
