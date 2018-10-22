@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
+import argonaut.Argonaut._
 //import java.io.{File, FileInputStream, FileOutputStream}
 //import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets._
@@ -41,6 +42,12 @@ class ExtractFieldsBenchmark extends CommonParams {
     try fos.write(jsonBytes)
     finally fos.close()
 */
+  }
+
+  @Benchmark
+  def readArgonaut(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.macros.ArgonautCodecs._
+    new String(jsonBytes, UTF_8).decode[ExtractFields].getOrElse(throw new RuntimeException)
   }
 
   @Benchmark

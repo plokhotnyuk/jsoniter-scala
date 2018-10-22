@@ -133,6 +133,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(noPublishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
+      "io.argonaut" %% "argonaut" % "6.2.2",
       "com.avsystem.commons" %% "commons-core" % "1.33.1",
       "com.lihaoyi" %% "upickle" % "0.6.7",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.3",
