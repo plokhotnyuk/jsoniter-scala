@@ -2449,15 +2449,13 @@ final class JsonReader private[jsoniter_scala](
                   charBuf(i) = ch1
                   parseEncodedString(i + 1, lim, charBuf, pos + 6)
                 } else if (remaining > 11) {
-                  if (buf(pos + 6) == '\\') {
-                    if (buf(pos + 7) == 'u') {
-                      val ch2 = readEscapedUnicode(pos + 8, buf)
-                      if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
-                      charBuf(i) = ch1
-                      charBuf(i + 1) = ch2
-                      parseEncodedString(i + 2, lim, charBuf, pos + 12)
-                    } else illegalEscapeSequenceError(pos + 7)
-                  } else illegalEscapeSequenceError(pos + 6)
+                  if (buf(pos + 6) != '\\') illegalEscapeSequenceError(pos + 6)
+                  if (buf(pos + 7) != 'u') illegalEscapeSequenceError(pos + 7)
+                  val ch2 = readEscapedUnicode(pos + 8, buf)
+                  if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
+                  charBuf(i) = ch1
+                  charBuf(i + 1) = ch2
+                  parseEncodedString(i + 2, lim, charBuf, pos + 12)
                 } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
               } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
             } else {
@@ -2577,9 +2575,10 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def hexDigitError(pos: Int): Nothing =
-    if (nibbles(buf(pos) & 255) >= 0) hexDigitError(pos + 1)
-    else decodeError("expected hex digit", pos)
+  private[this] def hexDigitError(pos: Int): Nothing = {
+    if (nibbles(buf(pos) & 255) < 0) decodeError("expected hex digit", pos)
+    hexDigitError(pos + 1)
+  }
 
   private[this] def illegalEscapeSequenceError(pos: Int): Nothing = decodeError("illegal escape sequence", pos)
 
