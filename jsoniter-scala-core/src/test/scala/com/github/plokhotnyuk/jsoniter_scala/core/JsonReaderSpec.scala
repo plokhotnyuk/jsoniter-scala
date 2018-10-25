@@ -747,10 +747,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-', offset: 0x00000001")
-      checkError("\"--01-20", "unexpected end of input, offset: 0x00000008")
-      checkError("\"-01-20\"", "expected '-', offset: 0x00000002")
-      checkError("\"---01-20\"", "expected digit, offset: 0x00000003")
+      checkError("\"=-01-20\"", "expected '-', offset: 0x00000001")
+      checkError("\"-=01-20\"", "expected '-', offset: 0x00000002")
+      checkError("\"--X1-20\"", "expected digit, offset: 0x00000003")
       checkError("\"--0X-20\"", "expected digit, offset: 0x00000004")
       checkError("\"--01=20\"", "expected '-', offset: 0x00000005")
       checkError("\"--01-X0\"", "expected digit, offset: 0x00000006")

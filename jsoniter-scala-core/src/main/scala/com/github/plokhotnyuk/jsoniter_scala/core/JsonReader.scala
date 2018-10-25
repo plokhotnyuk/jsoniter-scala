@@ -167,7 +167,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsMonthDay(): MonthDay = {
     readParenthesesToken()
-    val x = parseMonthDay()
+    val x = parseMonthDay(head)
     readColonToken()
     x
   }
@@ -359,7 +359,7 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readMonthDay(default: MonthDay): MonthDay =
-    if (isNextToken('"', head)) parseMonthDay()
+    if (isNextToken('"', head)) parseMonthDay(head)
     else readNullOrTokenError(default, '"')
 
   def readOffsetDateTime(default: OffsetDateTime): OffsetDateTime =
@@ -1672,15 +1672,25 @@ final class JsonReader private[jsoniter_scala](
     toLocalTime(hour, minute, second, nano)
   }
 
-  private[this] def parseMonthDay(): MonthDay = {
-    nextByteOrError('-')
-    nextByteOrError('-')
-    val month = next2Digits()
-    nextByteOrError('-')
-    val day = next2Digits()
-    nextByteOrError('"')
-    toMonthDay(month, day)
-  }
+  @tailrec
+  private[this] def parseMonthDay(pos: Int): MonthDay =
+    if (pos + 7 < tail) {
+      val buf = this.buf
+      val md1 = buf(pos + 2) - '0'
+      val md2 = buf(pos + 3) - '0'
+      val dd1 = buf(pos + 5) - '0'
+      val dd2 = buf(pos + 6) - '0'
+      if (buf(pos) != '-') tokenError('-', pos)
+      if (buf(pos + 1) != '-') tokenError('-', pos + 1)
+      if (md1 < 0 || md1 > 9) digitError(pos + 2)
+      if (md2 < 0 || md2 > 9) digitError(pos + 3)
+      if (buf(pos + 4) != '-') tokenError('-', pos + 4)
+      if (dd1 < 0 || dd1 > 9) digitError(pos + 5)
+      if (dd2 < 0 || dd2 > 9) digitError(pos + 6)
+      if (buf(pos + 7) != '"') tokenError('"', pos + 7)
+      head = pos + 8
+      toMonthDay(md1 * 10 + md2, dd1 * 10 + dd2)
+    } else parseMonthDay(loadMoreOrError(pos))
 
   private[this] def parseOffsetDateTime(): OffsetDateTime = {
     var year = 0
