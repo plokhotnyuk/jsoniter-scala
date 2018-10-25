@@ -682,7 +682,7 @@ final class JsonReader private[jsoniter_scala](
     val off =
       if ((bbuf eq null) && (in eq null)) 0
       else totalRead - tail
-    i = appendHex(off + pos, i)
+    i = appendHexOffset(off + pos, i, hexDigits)
     if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & -16, 0), Math.min((pos + 48) & -16, tail), off.toInt, i)
@@ -2566,37 +2566,40 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def malformedBytesError(b1: Byte, pos: Int): Nothing = {
     var i = appendString("malformed byte(s): 0x", 0)
-    i = appendHex(b1, i)
+    i = appendHexByte(b1, i, hexDigits)
     decodeError(i, pos, null)
   }
 
   private[this] def malformedBytesError(b1: Byte, b2: Byte, pos: Int): Nothing = {
+    val ds = hexDigits
     var i = appendString("malformed byte(s): 0x", 0)
-    i = appendHex(b1, i)
+    i = appendHexByte(b1, i, ds)
     i = appendString(", 0x", i)
-    i = appendHex(b2, i)
+    i = appendHexByte(b2, i, ds)
     decodeError(i, pos + 1, null)
   }
 
   private[this] def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, pos: Int): Nothing = {
+    val ds = hexDigits
     var i = appendString("malformed byte(s): 0x", 0)
-    i = appendHex(b1, i)
+    i = appendHexByte(b1, i, ds)
     i = appendString(", 0x", i)
-    i = appendHex(b2, i)
+    i = appendHexByte(b2, i, ds)
     i = appendString(", 0x", i)
-    i = appendHex(b3, i)
+    i = appendHexByte(b3, i, ds)
     decodeError(i, pos + 2, null)
   }
 
   private[this] def malformedBytesError(b1: Byte, b2: Byte, b3: Byte, b4: Byte, pos: Int): Nothing = {
+    val ds = hexDigits
     var i = appendString("malformed byte(s): 0x", 0)
-    i = appendHex(b1, i)
+    i = appendHexByte(b1, i, ds)
     i = appendString(", 0x", i)
-    i = appendHex(b2, i)
+    i = appendHexByte(b2, i, ds)
     i = appendString(", 0x", i)
-    i = appendHex(b3, i)
+    i = appendHexByte(b3, i, ds)
     i = appendString(", 0x", i)
-    i = appendHex(b4, i)
+    i = appendHexByte(b4, i, ds)
     decodeError(i, pos + 3, null)
   }
 
@@ -2621,7 +2624,7 @@ final class JsonReader private[jsoniter_scala](
         charBuf(i) = '\n'
         charBuf(i + 1) = '|'
         charBuf(i + 2) = ' '
-        putHex(alignedAbsFrom + j, i + 3, charBuf, ds)
+        putHexInt(alignedAbsFrom + j, i + 3, charBuf, ds)
         charBuf(i + 11) = ' '
         charBuf(i + 12) = '|'
         charBuf(i + 13) = ' '
@@ -2631,7 +2634,8 @@ final class JsonReader private[jsoniter_scala](
       charBuf(i + 50 - (linePos << 1)) =
         if (pos >= start && pos < end) {
           val b = buf(pos)
-          putHex(b, i, charBuf, ds)
+          charBuf(i) = ds((b >>> 4) & 15)
+          charBuf(i + 1) = ds(b & 15)
           charBuf(i + 2) = ' '
           if (b <= 31 || b >= 127) '.'
           else b.toChar
@@ -2654,7 +2658,7 @@ final class JsonReader private[jsoniter_scala](
     appendChars(dumpBorder, i)
   }
 
-  private[this] def appendHex(d: Long, i: Int): Int = {
+  private[this] def appendHexOffset(d: Long, i: Int, ds: Array[Char]): Int = {
     if (i + 16 >= charBuf.length) growCharBuf(i + 16)
     val ds = hexDigits
     var j = i
@@ -2668,11 +2672,18 @@ final class JsonReader private[jsoniter_scala](
         j += 1
       }
     }
-    putHex(d.toInt, j, charBuf, ds)
+    putHexInt(d.toInt, j, charBuf, ds)
     j + 8
   }
 
-  private[this] def putHex(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
+  private[this] def appendHexByte(b: Byte, i: Int, ds: Array[Char]): Int = {
+    if (i + 2 >= charBuf.length) growCharBuf(i + 2)
+    charBuf(i) = ds((b >>> 4) & 15)
+    charBuf(i + 1) = ds(b & 15)
+    i + 2
+  }
+
+  private[this] def putHexInt(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
     charBuf(i) = ds(d >>> 28)
     charBuf(i + 1) = ds((d >>> 24) & 15)
     charBuf(i + 2) = ds((d >>> 20) & 15)
@@ -2681,17 +2692,6 @@ final class JsonReader private[jsoniter_scala](
     charBuf(i + 5) = ds((d >>> 8) & 15)
     charBuf(i + 6) = ds((d >>> 4) & 15)
     charBuf(i + 7) = ds(d & 15)
-  }
-
-  private[this] def appendHex(b: Byte, i: Int): Int = {
-    if (i + 2 >= charBuf.length) growCharBuf(i + 2)
-    putHex(b, i, charBuf, hexDigits)
-    i + 2
-  }
-
-  private[this] def putHex(b: Byte, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
-    charBuf(i) = ds((b >>> 4) & 15)
-    charBuf(i + 1) = ds(b & 15)
   }
 
   private[this] def growCharBuf(required: Int): Int = {
