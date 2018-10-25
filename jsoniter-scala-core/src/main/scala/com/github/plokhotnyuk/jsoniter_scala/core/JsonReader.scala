@@ -1545,14 +1545,7 @@ final class JsonReader private[jsoniter_scala](
         }
       }
     }
-    if (b != 'Z') {
-      if (hasSecond) {
-        if (hasNano) {
-          if (nanoDigitWeight == 0) tokenError('Z')
-          else tokenOrDigitError('Z')
-        } else tokensError('.', 'Z')
-      } else tokensError(':', 'Z')
-    }
+    if (b != 'Z') instantError(hasSecond, hasNano, nanoDigitWeight)
     nextByteOrError('"')
     Instant.ofEpochSecond(epochSecond(yearNeg, year, month, day, hour, minute, second), nano)
   }
@@ -1646,14 +1639,7 @@ final class JsonReader private[jsoniter_scala](
         }
       }
     }
-    if (b != '"') {
-      if (hasSecond) {
-        if (hasNano) {
-          if (nanoDigitWeight == 0) tokenError('"')
-          else tokenOrDigitError('"')
-        } else tokensError('.', '"')
-      } else tokensError(':', '"')
-    }
+    if (b != '"') localTimeError(hasSecond, hasNano, nanoDigitWeight)
     LocalDateTime.of(toLocalDate(yearNeg, year, month, day), toLocalTime(hour, minute, second, nano))
   }
 
@@ -1682,14 +1668,7 @@ final class JsonReader private[jsoniter_scala](
         }
       }
     }
-    if (b != '"') {
-      if (hasSecond) {
-        if (hasNano) {
-          if (nanoDigitWeight == 0) tokenError('"')
-          else tokenOrDigitError('"')
-        } else tokensError('.', '"')
-      } else tokensError(':', '"')
-    }
+    if (b != '"') localTimeError(hasSecond, hasNano, nanoDigitWeight)
     toLocalTime(hour, minute, second, nano)
   }
 
@@ -2321,6 +2300,22 @@ final class JsonReader private[jsoniter_scala](
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
   private[this] def durationError(pos: Int = head - 1): Nothing = decodeError("illegal duration", pos)
+
+  private[this] def instantError(hasSecond: Boolean, hasNano: Boolean, nanoDigitWeight: Int): Nothing =
+    if (hasSecond) {
+      if (hasNano) {
+        if (nanoDigitWeight == 0) tokenError('Z')
+        else tokenOrDigitError('Z')
+      } else tokensError('.', 'Z')
+    } else tokensError(':', 'Z')
+
+  private[this] def localTimeError(hasSecond: Boolean, hasNano: Boolean, nanoDigitWeight: Int): Nothing =
+    if (hasSecond) {
+      if (hasNano) {
+        if (nanoDigitWeight == 0) tokenError('"')
+        else tokenOrDigitError('"')
+      } else tokensError('.', '"')
+    } else tokensError(':', '"')
 
   private[this] def timeError(hasSecond: Boolean, hasNano: Boolean, nanoDigitWeight: Int): Nothing =
     decodeError {
