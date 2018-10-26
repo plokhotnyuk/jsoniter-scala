@@ -1603,10 +1603,7 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + (b - '0')
       yearDigits += 1
     }
-    if (b != '-') {
-      if (yearDigits == 9) tokenError('-')
-      else tokenOrDigitError('-')
-    }
+    if (b != '-') yearError(yearDigits)
     val month = next2Digits(head)
     nextByteOrError('-', head)
     val day = next2Digits(head)
@@ -1637,10 +1634,7 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + (b - '0')
       yearDigits += 1
     }
-    if (b != '-') {
-      if (yearDigits == 9) tokenError('-')
-      else tokenOrDigitError('-')
-    }
+    if (b != '-') yearError(yearDigits)
     val month = next2Digits(head)
     nextByteOrError('-', head)
     val day = next2Digits(head)
@@ -1745,10 +1739,7 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + (b - '0')
       yearDigits += 1
     }
-    if (b != '-') {
-      if (yearDigits == 9) tokenError('-')
-      else tokenOrDigitError('-')
-    }
+    if (b != '-') yearError(yearDigits)
     val month = next2Digits(head)
     nextByteOrError('-', head)
     val day = next2Digits(head)
@@ -2092,10 +2083,7 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + (b - '0')
       yearDigits += 1
     }
-    if (b != '-') {
-      if (yearDigits == 9) tokenError('-')
-      else tokenOrDigitError('-')
-    }
+    if (b != '-') yearError(yearDigits)
     val month = next2Digits(head)
     nextByteOrError('"', head)
     toYearMonth(yearNeg, year, month)
@@ -2124,10 +2112,7 @@ final class JsonReader private[jsoniter_scala](
       year = year * 10 + (b - '0')
       yearDigits += 1
     }
-    if (b != '-') {
-      if (yearDigits == 9) tokenError('-')
-      else tokenOrDigitError('-')
-    }
+    if (b != '-') yearError(yearDigits)
     val month = next2Digits(head)
     nextByteOrError('-', head)
     val day = next2Digits(head)
@@ -2342,6 +2327,10 @@ final class JsonReader private[jsoniter_scala](
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
   private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
+
+  private[this] def yearError(yearDigits: Int): Nothing =
+    if (yearDigits == 9) tokenError('-')
+    else tokenOrDigitError('-')
 
   private[this] def instantError(hasSecond: Boolean, hasNano: Boolean, nanoDigitWeight: Int): Nothing =
     if (hasSecond) {
