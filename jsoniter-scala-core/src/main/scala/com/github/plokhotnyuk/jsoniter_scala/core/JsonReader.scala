@@ -2692,8 +2692,7 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def endOfInputError(cause: Throwable = null): Nothing =
-    decodeError("unexpected end of input", tail, cause)
+  private[this] def endOfInputError(): Nothing = decodeError("unexpected end of input", tail)
 
   private[this] def reallocateBufToPreferredSize(): Unit = buf = new Array[Byte](config.preferredBufSize)
 
