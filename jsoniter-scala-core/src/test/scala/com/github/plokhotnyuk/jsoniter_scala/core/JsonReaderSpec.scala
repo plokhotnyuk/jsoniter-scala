@@ -484,11 +484,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008-01-20T07:24:33Z", "unexpected end of input, offset: 0x00000015")
-      checkError("\"008-01-20T07:24:33Z\"", "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33Z\"", "expected '-' or digit, offset: 0x00000005")
       checkError("\"+1000000000=01-20T07:24:33Z\"", "expected '-', offset: 0x0000000c")
+      checkError("\"X008-01-20T07:24:33Z\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08-01-20T07:24:33Z\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8-01-20T07:24:33Z\"", "expected digit, offset: 0x00000003")
+      checkError("\"200X-01-20T07:24:33Z\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"", "expected '-', offset: 0x00000005")
       checkError("\"2008-X0-20T07:24:33Z\"", "expected digit, offset: 0x00000006")
       checkError("\"2008-0X-20T07:24:33Z\"", "expected digit, offset: 0x00000007")
       checkError("\"2008-01=20T07:24:33Z\"", "expected '-', offset: 0x00000008")
@@ -565,10 +567,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008-01-20", "unexpected end of input, offset: 0x0000000b")
-      checkError("\"008-01-20\"", "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"X008-01-20\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08-01-20\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8-01-20\"", "expected digit, offset: 0x00000003")
+      checkError("\"200X-01-20\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20\"", "expected '-', offset: 0x00000005")
       checkError("\"+999999999=01-20\"", "expected '-', offset: 0x0000000b")
       checkError("\"+1000000000-01-20\"", "expected '-', offset: 0x0000000b")
       checkError("\"-1000000000-01-20\"", "expected '-', offset: 0x0000000b")
@@ -626,10 +630,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008-01-20T07:24:33", "unexpected end of input, offset: 0x00000014")
-      checkError("\"008-01-20T07:24:33\"", "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"X008-01-20T07:24:33\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08-01-20T07:24:33\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8-01-20T07:24:33\"", "expected digit, offset: 0x00000003")
+      checkError("\"200X-01-20T07:24:33\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33\"", "expected '-', offset: 0x00000005")
       checkError("\"+999999999=01-20T07:24:33\"", "expected '-', offset: 0x0000000b")
       checkError("\"+1000000000-01-20T07:24:33\"", "expected '-', offset: 0x0000000b")
       checkError("\"-1000000000-01-20T07:24:33\"", "expected '-', offset: 0x0000000b")
@@ -804,10 +810,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008-01-20T07:24:33Z", "unexpected end of input, offset: 0x00000015")
-      checkError("\"008-01-20T07:24:33Z\"", "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33Z\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"X008-01-20T07:24:33Z\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08-01-20T07:24:33Z\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8-01-20T07:24:33Z\"", "expected digit, offset: 0x00000003")
+      checkError("\"200X-01-20T07:24:33Z\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z\"", "expected '-', offset: 0x00000005")
       checkError("\"+999999999=01-20T07:24:33Z\"", "expected '-', offset: 0x0000000b")
       checkError("\"+1000000000-01-20T07:24:33Z\"", "expected '-', offset: 0x0000000b")
       checkError("\"-1000000000-01-20T07:24:33Z\"", "expected '-', offset: 0x0000000b")
@@ -1069,8 +1077,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008", "unexpected end of input, offset: 0x00000005")
+      checkError("\"X008\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8\"", "expected digit, offset: 0x00000003")
       checkError("\"200X\"", "expected digit, offset: 0x00000004")
       checkError("\"-1000X\"", "expected '\"' or digit, offset: 0x00000006")
       checkError("\"+1000000000\"", "expected '\"', offset: 0x0000000b")
@@ -1097,7 +1107,14 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
 
       check("+999999999-12", YearMonth.of(Year.MAX_VALUE, 12))
       check("-999999999-01", YearMonth.of(Year.MIN_VALUE, 1))
-      forAll(genYearMonth, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genYearMonth, minSuccessful(100000)) { (x: YearMonth) =>
+        val s = x.toString
+        val fixed =
+          if (x.getYear < 0 && !s.startsWith("-")) "-" + s
+          else if (x.getYear > 9999 && !s.startsWith("+")) "+" + s
+          else s
+        check(fixed, x)
+      }
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1106,10 +1123,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008-01", "unexpected end of input, offset: 0x00000008")
-      checkError("\"008-01\"", "expected digit, offset: 0x00000004")
-      checkError("\"2008=01\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"X008-01\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08-01\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8-01\"", "expected digit, offset: 0x00000003")
+      checkError("\"200X-01\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01\"", "expected '-', offset: 0x00000005")
       checkError("\"+999999999=01\"", "expected '-', offset: 0x0000000b")
       checkError("\"+1000000000-01\"", "expected '-', offset: 0x0000000b")
       checkError("\"-1000000000-01\"", "expected '-', offset: 0x0000000b")
@@ -1158,10 +1177,12 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "expected '-' or '+' or digit, offset: 0x00000001")
       checkError("\"2008-01-20T07:24:33Z[UTC]", "unexpected end of input, offset: 0x0000001a")
-      checkError("\"008-01-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000004")
-      checkError("\"2008=01-20T07:24:33Z[UTC]\"", "expected '-' or digit, offset: 0x00000005")
+      checkError("\"X008-01-20T07:24:33Z[UTC]\"", "expected '-' or '+' or digit, offset: 0x00000001")
+      checkError("\"2X08-01-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000002")
+      checkError("\"20X8-01-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000003")
+      checkError("\"200X-01-20T07:24:33Z[UTC]\"", "expected digit, offset: 0x00000004")
+      checkError("\"2008=01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x00000005")
       checkError("\"+999999999=01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x0000000b")
       checkError("\"+1000000000-01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x0000000b")
       checkError("\"-1000000000-01-20T07:24:33Z[UTC]\"", "expected '-', offset: 0x0000000b")
