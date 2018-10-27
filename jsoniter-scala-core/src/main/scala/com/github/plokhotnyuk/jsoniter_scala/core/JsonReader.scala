@@ -644,7 +644,7 @@ final class JsonReader private[jsoniter_scala](
     pos != tail
   }
 
-  private[this] def tokenOrDigitError(b: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendString("' or digit", i)
@@ -749,15 +749,6 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def illegalTokenOperation(): Nothing =
     throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
-
-  @tailrec
-  private[this] def nextDigit(pos: Int): Int =
-    if (pos < tail) {
-      val d = buf(pos) - '0'
-      if (d < 0 || d > 9) digitError(pos)
-      head = pos + 1
-      d
-    } else nextDigit(loadMoreOrError(pos))
 
   @tailrec
   private[this] def next2Digits(pos: Int): Int =
