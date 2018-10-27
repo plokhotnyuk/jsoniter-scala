@@ -216,7 +216,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsZoneId(): ZoneId = {
     readParenthesesToken()
-    val x = parseZoneId()
+    val x = toZoneId(parseZoneIdUntilToken('"'))
     readColonToken()
     x
   }
@@ -387,7 +387,7 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readZoneId(default: ZoneId): ZoneId =
-    if (isNextToken('"', head)) parseZoneId()
+    if (isNextToken('"', head)) toZoneId(parseZoneIdUntilToken('"'))
     else readNullOrTokenError(default, '"')
 
   def readZoneOffset(default: ZoneOffset): ZoneOffset =
@@ -831,6 +831,15 @@ final class JsonReader private[jsoniter_scala](
     }
     head = pos + 1
     nano
+  }
+
+  private[this] def parseZoneIdUntilToken(t: Byte): String = {
+    val mark = this.mark
+    this.mark = Math.min(mark, head)
+    try {
+      scanUntilToken(t, head)
+      new String(buf, 0, this.mark, head - this.mark - 1)
+    } finally this.mark = mark
   }
 
   @tailrec
@@ -1996,6 +2005,7 @@ final class JsonReader private[jsoniter_scala](
     var offsetMinute = 0
     var hasOffsetSecond = false
     var offsetSecond = 0
+    var zone: String = null
     var b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -2032,14 +2042,8 @@ final class JsonReader private[jsoniter_scala](
         }
       }
     } else b = nextByte(head)
-    var zone: String = null
     if (b == '[') {
-      val mark = this.mark
-      this.mark = Math.min(mark, head)
-      try {
-        scanUntilToken(']', head)
-        zone = new String(buf, 0, this.mark, head - this.mark - 1)
-      } finally this.mark = mark
+      zone = parseZoneIdUntilToken(']')
       b = nextByte(head)
     }
     if (b != '"') {
@@ -2052,15 +2056,6 @@ final class JsonReader private[jsoniter_scala](
     val zo = toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
     if (zone eq null) ZonedDateTime.of(ld, lt, zo)
     else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), toZoneId(zone), zo)
-  }
-
-  private[this] def parseZoneId(): ZoneId = {
-    val mark = this.mark
-    this.mark = Math.min(mark, head)
-    try {
-      scanUntilToken('"', head)
-      toZoneId(new String(buf, 0, this.mark, head - this.mark - 1))
-    } finally this.mark = mark
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
