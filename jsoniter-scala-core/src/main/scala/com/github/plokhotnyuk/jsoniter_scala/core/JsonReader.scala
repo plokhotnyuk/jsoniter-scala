@@ -766,51 +766,58 @@ final class JsonReader private[jsoniter_scala](
     while (pos + 4 >= tail) {
       pos = loadMoreOrError(pos)
     }
-    var d1 = buf(pos) - '0'
+    val b = buf(pos)
+    if (b >= '0' && b <= '9') {
+      val d2 = buf(pos + 1) - '0'
+      val d3 = buf(pos + 2) - '0'
+      val d4 = buf(pos + 3) - '0'
+      if (d2 < 0 || d2 > 9) digitError(pos + 1)
+      if (d3 < 0 || d3 > 9) digitError(pos + 2)
+      if (d4 < 0 || d4 > 9) digitError(pos + 3)
+      if (buf(pos + 4) != t) tokenError(t, pos + 4)
+      head = pos + 5
+      (b - '0') * 1000 + d2 * 100 + d3 * 10 + d4
+    } else parseNon4DigitYearWithToken(t, maxDigits, b, pos)
+  }
+
+  private[this] def parseNon4DigitYearWithToken(t: Byte, maxDigits: Int, b: Byte, p: Int): Int = {
+    var pos = p
+    val yearNeg =
+      if (b == '+') false
+      else if (b == '-') true
+      else decodeError("expected '-' or '+' or digit", pos)
     val d2 = buf(pos + 1) - '0'
     val d3 = buf(pos + 2) - '0'
     val d4 = buf(pos + 3) - '0'
     val d5 = buf(pos + 4) - '0'
-    if (d1 >= 0 && d1 <= 9) {
-      if (d2 < 0 || d2 > 9) digitError(pos + 1)
-      if (d3 < 0 || d3 > 9) digitError(pos + 2)
-      if (d4 < 0 || d4 > 9) digitError(pos + 3)
-      if (d5 != t - '0') tokenError(t, pos + 4)
-      head = pos + 5
-      d1 * 1000 + d2 * 100 + d3 * 10 + d4
-    } else {
-      val yearNeg =
-        if (d1 == -5) false // -5 == '-' - '0'
-        else if (d1 == -3) true // -3 == '-' - '0'
-        else decodeError("expected '-' or '+' or digit", pos)
-      if (d2 < 0 || d2 > 9) digitError(pos + 1)
-      if (d3 < 0 || d3 > 9) digitError(pos + 2)
-      if (d4 < 0 || d4 > 9) digitError(pos + 3)
-      if (d5 < 0 || d5 > 9) digitError(pos + 4)
-      var year = d2 * 1000 + d3 * 100 + d4 * 10 + d5
-      var yearDigits = 4
-      pos += 5
-      while ({
-        if (pos >= tail) pos = loadMoreOrError(pos)
-        d1 = buf(pos) - '0'
-        d1 >= 0 && d1 <= 9 && yearDigits < maxDigits
-      }) {
-        year =
-          if (year > 100000000) 2147483647
-          else year * 10 + d1
-        yearDigits += 1
-        pos += 1
-      }
-      if (d1 == t - '0') {
-        head = pos + 1
-        if (yearNeg) {
-          if (year == 0) 2147483647
-          else -year
-        } else year
-      } else if (!yearNeg && yearDigits == 4) digitError(pos)
-      else if (yearDigits == maxDigits) tokenError(t, pos)
-      else tokenOrDigitError(t, pos)
+    if (d2 < 0 || d2 > 9) digitError(pos + 1)
+    if (d3 < 0 || d3 > 9) digitError(pos + 2)
+    if (d4 < 0 || d4 > 9) digitError(pos + 3)
+    if (d5 < 0 || d5 > 9) digitError(pos + 4)
+    var year = d2 * 1000 + d3 * 100 + d4 * 10 + d5
+    var yearDigits = 4
+    pos += 5
+    var d = 0
+    while ({
+      if (pos >= tail) pos = loadMoreOrError(pos)
+      d = buf(pos) - '0'
+      d >= 0 && d <= 9 && yearDigits < maxDigits
+    }) {
+      year =
+        if (year > 100000000) 2147483647
+        else year * 10 + d
+      yearDigits += 1
+      pos += 1
     }
+    if (d == t - '0') {
+      head = pos + 1
+      if (yearNeg) {
+        if (year == 0) 2147483647
+        else -year
+      } else year
+    } else if (!yearNeg && yearDigits == 4) digitError(pos)
+    else if (yearDigits == maxDigits) tokenError(t, pos)
+    else tokenOrDigitError(t, pos)
   }
 
   private[this] def parseNanoWithToken(t: Byte): Int = {
