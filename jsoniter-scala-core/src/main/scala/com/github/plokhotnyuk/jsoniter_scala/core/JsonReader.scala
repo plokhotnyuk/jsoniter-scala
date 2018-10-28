@@ -779,16 +779,17 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 5
       d1 * 1000 + d2 * 100 + d3 * 10 + d4
     } else {
-      var yearNeg = false
-      if (d1 == -3) yearNeg = true // -3 == '-' - '0'
-      else if (d1 != -5) decodeError("expected '-' or '+' or digit", pos) // -5 == '-' - '0'
+      val yearNeg =
+        if (d1 == -5) false // -5 == '-' - '0'
+        else if (d1 == -3) true // -3 == '-' - '0'
+        else decodeError("expected '-' or '+' or digit", pos)
       if (d2 < 0 || d2 > 9) digitError(pos + 1)
       if (d3 < 0 || d3 > 9) digitError(pos + 2)
       if (d4 < 0 || d4 > 9) digitError(pos + 3)
       if (d5 < 0 || d5 > 9) digitError(pos + 4)
       var year = d2 * 1000 + d3 * 100 + d4 * 10 + d5
-      pos += 5
       var yearDigits = 4
+      pos += 5
       while ({
         if (pos >= tail) pos = loadMoreOrError(pos)
         d1 = buf(pos) - '0'
