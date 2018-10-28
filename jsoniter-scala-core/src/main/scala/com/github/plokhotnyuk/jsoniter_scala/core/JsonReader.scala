@@ -795,13 +795,14 @@ final class JsonReader private[jsoniter_scala](
         d1 >= 0 && d1 <= 9 && yearDigits < maxDigits
       }) {
         year =
-          if (year > 1000000000) 2147483647
+          if (year > 100000000) 2147483647
           else year * 10 + d1
         yearDigits += 1
         pos += 1
       }
       if (d1 != t - '0') {
-        if (yearDigits == maxDigits) tokenError(t, pos)
+        if (!yearNeg && yearDigits == 4) digitError(pos)
+        else if (yearDigits == maxDigits) tokenError(t, pos)
         else tokenOrDigitError(t, pos)
       }
       head = pos + 1
