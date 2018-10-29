@@ -35,6 +35,10 @@ class ExtractFieldsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     jsonString = zeroHashCodeStrings.take(size).mkString("""{"s":"s","""", s"""":$value,"""", s"""":$value,"i":1}""")
+    //jsonString = """{"s":"s","x":""" + "9" * size + ""","i":1}"""
+    //jsonString = """{"s":"s","x":"""" + "x" * size + """","i":1}"""
+    //jsonString = """{"s":"s","x":""" + "[" * size + "]" * size + ""","i":1}"""
+    //jsonString = """{"s":"s",""" + "\"x\":{" * size + "}" * size + ""","i":1}"""
     jsonBytes = jsonString.getBytes(UTF_8)
 /*
     val fos = new FileOutputStream(tmpFilePath.toFile)
