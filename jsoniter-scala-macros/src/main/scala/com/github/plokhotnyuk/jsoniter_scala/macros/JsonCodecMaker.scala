@@ -273,7 +273,7 @@ object JsonCodecMaker {
           case _: Throwable => fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
             "It should not depend on code from the same compilation module where the 'make' macro is called. " +
             "Use a separated submodule of the project to compile all such dependencies before their usage for " +
-            s"generation of codecs.")
+            "generation of codecs.")
         }
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
@@ -483,7 +483,7 @@ object JsonCodecMaker {
                 case _: Throwable => fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
                   "It should not depend on code from the same compilation module where the 'make' macro is called. " +
                   "Use a separated submodule of the project to compile all such dependencies before their usage " +
-                  s"for generation of codecs.")
+                  "for generation of codecs.")
               }
             }).getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
@@ -693,10 +693,10 @@ object JsonCodecMaker {
               if (discriminator.nonEmpty && codecConfig.discriminatorFieldName.contains(f.mappedName)) discriminator
               else {
                 q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
-                      ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
+                    ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
               }
             q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
-                  else $acc"""
+                else $acc"""
           }
 
         val readFieldsBlock =
@@ -708,26 +708,26 @@ object JsonCodecMaker {
             }.toSeq :+ cq"_ => $unexpectedFieldHandler"
             q"""(in.charBufToHashCode(l): @switch) match {
                     case ..$cases
-                  }"""
+                }"""
           }
         val discriminatorVar =
           if (discriminator.isEmpty) EmptyTree
           else q"var pd = true"
         q"""if (in.isNextToken('{')) {
-                ..$readVars
-                ..$paramVars
-                ..$discriminatorVar
-                if (!in.isNextToken('}')) {
-                  in.rollbackToken()
-                  do {
-                    val l = in.readKeyAsCharBuf()
-                    ..$readFieldsBlock
-                  } while (in.isNextToken(','))
-                  if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
-                }
-                ..$checkReqVars
-                $construct
-              } else in.readNullOrTokenError(default, '{')"""
+              ..$readVars
+              ..$paramVars
+              ..$discriminatorVar
+              if (!in.isNextToken('}')) {
+                in.rollbackToken()
+                do {
+                  val l = in.readKeyAsCharBuf()
+                  ..$readFieldsBlock
+                } while (in.isNextToken(','))
+                if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+              }
+              ..$checkReqVars
+              $construct
+            } else in.readNullOrTokenError(default, '{')"""
       }
 
       def genReadVal(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree,
@@ -1027,16 +1027,16 @@ object JsonCodecMaker {
                     }"""
               } else if (f.resolvedTpe <:< typeOf[Option[_]]) {
                 q"""val v = x.${f.getter}
-                      if (!v.isEmpty) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
-                      }"""
+                    if (!v.isEmpty) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe), f.isStringified)}
+                    }"""
               } else if (f.resolvedTpe <:< typeOf[Array[_]]) {
                 q"""val v = x.${f.getter}
-                      if (v.length > 0) {
-                        ..${genWriteConstantKey(f.mappedName)}
-                        ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
-                      }"""
+                    if (v.length > 0) {
+                      ..${genWriteConstantKey(f.mappedName)}
+                      ..${genWriteVal(q"v", f.resolvedTpe, f.isStringified)}
+                    }"""
               } else {
                 q"""..${genWriteConstantKey(f.mappedName)}
                     ..${genWriteVal(q"x.${f.getter}", f.resolvedTpe, f.isStringified)}"""
@@ -1047,8 +1047,8 @@ object JsonCodecMaker {
           if (discriminator.isEmpty) writeFields
           else discriminator +: writeFields
         q"""out.writeObjectStart()
-              ..$allWriteFields
-              out.writeObjectEnd()"""
+            ..$allWriteFields
+            out.writeObjectEnd()"""
       }
 
       def genWriteVal(m: Tree, tpe: Type, isStringified: Boolean, discriminator: Tree = EmptyTree,
