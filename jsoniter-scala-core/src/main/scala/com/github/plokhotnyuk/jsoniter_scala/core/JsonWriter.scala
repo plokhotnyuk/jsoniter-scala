@@ -590,7 +590,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeEncodedString(s, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
-      if (ch1 < 128) { // 1 byte, 7 bits: 0xxxxxxx
+      if (ch1 < 128) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         val esc = escapedChars(ch1)
         if (esc == 0) {
           buf(pos) = ch1.toByte
@@ -600,16 +600,16 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = esc
           writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
-      } else if (ch1 < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+      } else if (ch1 < 2048) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
-      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+      } else if (ch1 < 0xD800 || ch1 > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xE0 | (ch1 >> 12)).toByte
         buf(pos + 1) = (0x80 | ((ch1 >> 6) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | (ch1 & 0x3F)).toByte
         writeEncodedString(s, from + 1, to, pos + 3, posLim, escapedChars)
-      } else { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      } else { // 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars) -> 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes), where ddddd = uuuu + 1
         if (ch1 >= 0xDC00 || from + 1 >= to) illegalSurrogateError()
         val ch2 = s.charAt(from + 1)
         if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
@@ -667,7 +667,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeEncodedString(bs, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val b = bs(from)
-      if (b >= 0) { // 1 byte, 7 bits: 0xxxxxxx
+      if (b >= 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         val esc = escapedChars(b)
         if (esc == 0) {
           buf(pos) = b
@@ -677,7 +677,7 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = esc
           writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEncodedString(bs, from + 1, to, writeEscapedUnicode(b, pos, buf), posLim, escapedChars)
-      } else { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+      } else { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xC0 | ((b & 0xFF) >> 6)).toByte
         buf(pos + 1) = (0x80 | (b & 0x3F)).toByte
         writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
@@ -709,7 +709,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     pos = {
-      if (ch < 128) { // 1 byte, 7 bits: 0xxxxxxx
+      if (ch < 128) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         val esc = escapedChars(ch)
         if (esc == 0) {
           buf(pos) = ch.toByte
@@ -722,11 +722,11 @@ final class JsonWriter private[jsoniter_scala](
       } else if (config.escapeUnicode) {
         if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
         writeEscapedUnicode(ch, pos, buf)
-      } else if (ch < 2048) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+      } else if (ch < 2048) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xC0 | (ch >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
         pos + 2
-      } else if (ch < 0xD800 || ch > 0xDFFF) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+      } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xE0 | (ch >> 12)).toByte
         buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
         buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte

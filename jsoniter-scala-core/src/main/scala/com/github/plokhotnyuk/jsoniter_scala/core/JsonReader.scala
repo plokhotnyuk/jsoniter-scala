@@ -111,7 +111,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def rollbackToMark(): Unit = {
-    if (mark == 2147483647) throw new ArrayIndexOutOfBoundsException("expected preceding call of 'setMark()'")
+    if (mark == 2147483647) illegalMarkOperation()
     head = mark
     mark = 2147483647
   }
@@ -750,6 +750,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def illegalTokenOperation(): Nothing =
     throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
 
+  private[this] def illegalMarkOperation(): Nothing =
+    throw new ArrayIndexOutOfBoundsException("expected preceding call of 'setMark()'")
+
   @tailrec
   private[this] def next2Digits(pos: Int): Int =
     if (pos + 1 < tail) {
@@ -914,8 +917,8 @@ final class JsonReader private[jsoniter_scala](
   private[this] def readParenthesesToken(): Unit = if (!isNextToken('"', head)) tokenError('"')
 
   private[this] def readParenthesesByteWithColonToken(): Unit = {
-    readParenthesesByte()
-    readColonToken()
+    if (nextByte(head) != '"') tokenError('"')
+    if (!isNextToken(':', head)) tokenError(':')
   }
 
   private[this] def readParenthesesByte(): Unit = if (nextByte(head) != '"') tokenError('"')
@@ -2300,7 +2303,7 @@ final class JsonReader private[jsoniter_scala](
       val remaining = tail - pos
       if (remaining > 0) {
         val b1 = buf(pos)
-        if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
+        if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
           if (b1 == '"') {
             head = pos + 1
             i
@@ -2341,14 +2344,14 @@ final class JsonReader private[jsoniter_scala](
               parseEncodedString(i + 1, lim, charBuf, pos + 2)
             }
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-        } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+        } else if ((b1 >> 5) == -2) { // 110bbbbb 10aaaaaa (UTF-8 bytes) -> 00000bbbbbaaaaaa (UTF-16 char)
           if (remaining > 1) {
             val b2 = buf(pos + 1)
             if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
             charBuf(i) = ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
             parseEncodedString(i + 1, lim, charBuf, pos + 2)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-        } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+        } else if ((b1 >> 4) == -2) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
           if (remaining > 2) {
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
@@ -2358,7 +2361,7 @@ final class JsonReader private[jsoniter_scala](
             charBuf(i) = ch
             parseEncodedString(i + 1, lim, charBuf, pos + 3)
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-        } else if ((b1 >> 3) == -2) { // 4 bytes, 21 bits: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        } else if ((b1 >> 3) == -2) { // 11110ddd 10ddcccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> 110110uuuuccccbb 110111bbbbaaaaaa (UTF-16 chars), where uuuu = ddddd - 1
           if (remaining > 3) {
             val b2 = buf(pos + 1)
             val b3 = buf(pos + 2)
@@ -2379,7 +2382,7 @@ final class JsonReader private[jsoniter_scala](
     val remaining = tail - pos
     if (remaining > 0) {
       val b1 = buf(pos)
-      if (b1 >= 0) { // 1 byte, 7 bits: 0xxxxxxx
+      if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
         if (b1 == '"') decodeError("illegal value for char", pos)
         else if (b1 != '\\') {
           if (b1 < ' ') unescapedControlCharacterError(pos)
@@ -2409,14 +2412,14 @@ final class JsonReader private[jsoniter_scala](
             }
           }
         } else parseChar(loadMoreOrError(pos))
-      } else if ((b1 >> 5) == -2) { // 2 bytes, 11 bits: 110xxxxx 10xxxxxx
+      } else if ((b1 >> 5) == -2) { // 110bbbbb 10aaaaaa (UTF-8 bytes) -> 00000bbbbbaaaaaa (UTF-16 char)
         if (remaining > 1) {
           val b2 = buf(pos + 1)
           if ((b1 & 0x1E) == 0 || (b2 & 0xC0) != 0x80) malformedBytesError(b1, b2, pos)
           head = pos + 2
           ((b1 << 6) ^ (b2 ^ 0xF80)).toChar // 0xF80 == ((0xC0.toByte << 6) ^ 0x80.toByte)
         } else parseChar(loadMoreOrError(pos))
-      } else if ((b1 >> 4) == -2) { // 3 bytes, 16 bits: 1110xxxx 10xxxxxx 10xxxxxx
+      } else if ((b1 >> 4) == -2) { // 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes) -> ccccbbbbbbaaaaaa (UTF-16 char)
         if (remaining > 2) {
           val b2 = buf(pos + 1)
           val b3 = buf(pos + 2)
