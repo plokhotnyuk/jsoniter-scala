@@ -644,7 +644,7 @@ final class JsonReader private[jsoniter_scala](
     pos != tail
   }
 
-  private[this] def tokenOrDigitError(b: Byte, pos: Int): Nothing = {
+  private[this] def tokenOrDigitError(b: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
     i = appendChar(b.toChar, i)
     i = appendString("' or digit", i)
@@ -1797,195 +1797,76 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parsePeriod(): Period = {
-    var isNeg = false
     var years = 0
     var months = 0
     var days = 0
-    var x = 0
-    var isNegX = false
     var state = 0
-    var pos = head
+    var b = nextByte(head)
+    val isNeg = b == '-'
+    if (isNeg) b = nextByte(head)
+    if (b != 'P') {
+      if (isNeg) tokenError('P')
+      else tokensError('P', '-')
+    }
+    b = nextByte(head)
     do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or 'P'
-          if (b == 'P') state = 2
-          else if (b == '-') {
-            isNeg = true
-            state = 1
-          } else tokensError('P', '-', pos)
-        case 1 => // 'P'
-          if (b == 'P') state = 2
-          else tokenError('P', pos)
-        case 2 => // '-' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 4
-          } else if (b == '-') {
-            isNegX = true
-            state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 4
-          } else digitError(pos)
-        case 4 => // 'Y' or 'M' or 'W' or 'D' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -214748364) periodError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) periodError(pos)
-          } else if (b == 'Y') {
-            years =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            x = 0
-            isNegX = false
-            state = 5
-          } else if (b == 'M') {
-            months =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            x = 0
-            isNegX = false
-            state = 8
-          } else if (b == 'W') {
-            val r = 7L *
-              (if (isNeg ^ isNegX) x
-              else -x)
-            days = r.toInt
-            if (r != days) periodError(pos)
-            x = 0
-            isNegX = false
-            state = 11
-          } else if (b == 'D') {
-            days =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            state = 14
-          } else decodeError("expected 'Y' or 'M' or 'W' or 'D' or digit", pos)
-        case 5 => // '-' or '"' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 7
-          } else if (b == '-') {
-            isNegX = true
-            state = 6
-          } else if (b == '"') state = 15
-          else decodeError("expected '\"' or '-' or digit", pos)
-        case 6 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 7
-          } else digitError(pos)
-        case 7 => // 'M' or 'W' or 'D' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -214748364) periodError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) periodError(pos)
-          } else if (b == 'M') {
-            months =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            x = 0
-            isNegX = false
-            state = 8
-          } else if (b == 'W') {
-            val r = 7L *
-              (if (isNeg ^ isNegX) x
-              else -x)
-            days = r.toInt
-            if (r != days) periodError(pos)
-            x = 0
-            isNegX = false
-            state = 11
-          } else if (b == 'D') {
-            days =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            state = 14
-          } else decodeError("expected 'M' or 'W' or 'D' or digit", pos)
-        case 8 => // '-' or '"' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 10
-          } else if (b == '-') {
-            isNegX = true
-            state = 9
-          } else if (b == '"') state = 15
-          else decodeError("expected '\"' or '-' or digit", pos)
-        case 9 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 10
-          } else digitError(pos)
-        case 10 => // 'W' or 'D' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -214748364) periodError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) periodError(pos)
-          } else if (b == 'W') {
-            val r = 7L *
-              (if (isNeg ^ isNegX) x
-              else -x)
-            days = r.toInt
-            if (r != days) periodError(pos)
-            x = 0
-            isNegX = false
-            state = 11
-          } else if (b == 'D') {
-            x =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            val r = days + x.toLong
-            days = r.toInt
-            if (r != days) periodError(pos)
-            state = 14
-          } else decodeError("expected 'W' or 'D' or digit", pos)
-        case 11 => // '-' or '"' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 13
-          } else if (b == '-') {
-            isNegX = true
-            state = 12
-          } else if (b == '"') state = 15
-          else decodeError("expected '\"' or '-' or digit", pos)
-        case 12 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 13
-          } else digitError(pos)
-        case 13 => // 'D' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -214748364) periodError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) periodError(pos)
-            state = 13
-          } else if (b == 'D') {
-            x =
-              if (isNeg ^ isNegX) x
-              else if (x == -2147483648) periodError(pos)
-              else -x
-            val r = days + x.toLong
-            days = r.toInt
-            if (r != days) periodError(pos)
-            state = 14
-          } else tokenOrDigitError('D', pos)
-        case 14 => // '"'
-          if (b == '"') state = 15
-          else tokenError('"', pos)
+      if (state == 4) tokenError('"')
+      val isNegX = b == '-'
+      if (isNegX) b = nextByte(head)
+      if (b < '0' || b > '9') {
+        if (isNegX) digitError()
+        else if (state < 1) tokenOrDigitError('-')
+        else decodeError("expected '\"' or '-' or digit")
       }
-      pos += 1
-    } while (state != 15)
-    head = pos
+      var pos = head
+      var x = '0' - b
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (x < -214748364) periodError(pos)
+        x = x * 10 + ('0' - b)
+        if (x > 0) periodError(pos)
+        pos += 1
+      }
+      x =
+        if (isNeg ^ isNegX) x
+        else {
+          if (x == -2147483648) periodError(pos)
+          -x
+        }
+      if (state < 1 && b == 'Y') {
+        years = x
+        state = 1
+      } else if (state < 2 && b == 'M') {
+        months = x
+        state = 2
+      } else if (state < 3 && b == 'W') {
+        val ds = 7L * x
+        if (ds == ds.toInt) {
+          days = ds.toInt
+          state = 3
+        } else periodError(pos)
+      } else if (b == 'D') {
+        val ds = days.toLong + x
+        if (ds == ds.toInt) {
+          days = ds.toInt
+          state = 4
+        } else periodError(pos)
+      } else decodeError({
+        (state: @switch) match {
+          case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"
+          case 1 => "expected 'M' or 'W' or 'D' or digit"
+          case 2 => "expected 'W' or 'D' or digit"
+          case 3 => "expected 'D' or digit"
+        }
+      }, pos)
+      head = pos + 1
+      b = nextByte(head)
+    } while (b != '"')
     Period.of(years, months, days)
   }
 
@@ -2202,7 +2083,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def secondOfDay(hour: Int, month: Int, day: Int): Int = hour * 3600 + month * 60 + day
 
-  private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
+  private[this] def digitError(pos: Int = head - 1): Nothing = decodeError("expected digit", pos)
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
