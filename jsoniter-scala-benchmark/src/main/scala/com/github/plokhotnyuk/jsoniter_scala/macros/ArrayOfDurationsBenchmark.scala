@@ -27,9 +27,9 @@ class ArrayOfDurationsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map { i =>
-      val x = Math.abs((i * 1498724053) / Math.pow(10, i % 10)).toInt
+      val x = Math.abs((i * 372036854775807L) / Math.pow(10, i % 18).toLong)
       val y = Math.abs(i * Math.pow(10, i % 10)).toInt
-      Duration.ofSeconds(x.toLong, y)
+      Duration.ofSeconds(x, y)
     }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
