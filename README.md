@@ -60,6 +60,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   constructor
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
   `java.util.UUID`, `java.time.*`, and value classes for any of them
+- Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at 
+  the scope of the `make` macro call  
 - Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
 - Support of first-order and higher-kinded types
 - Support of 2 representations of ADTs with a sealed trait or a Scala class as base type and non-abstract Scala classes 

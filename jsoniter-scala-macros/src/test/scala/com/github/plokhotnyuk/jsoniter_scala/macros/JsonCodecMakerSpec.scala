@@ -477,7 +477,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":1}""")
       verifyDeserError(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""", "illegal number, offset: 0x00000006")
     }
-    "serialize and deserialize outer types using custom key codecs for map keys" in {
+    "serialize and deserialize types using a custom key codec and a custom ordering for map keys" in {
       implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
         override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
           case 0 => Level.LOW
@@ -491,7 +491,34 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           case _ => out.encodeError("illegal enum value")
         }
       }
-      verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"1":0}""")
+      verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 100), """{"1":100}""")
+      implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
+        override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
+      }
+      verifySerDeser(make[collection.immutable.TreeMap[Level, Int]](CodecMakerConfig()),
+        collection.immutable.TreeMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
+    }
+    "serialize and deserialize types using a custom value codec and a custom ordering for set values" in {
+      implicit val codecOfLevel: JsonValueCodec[Level] = new JsonValueCodec[Level] {
+        override def decodeValue(in: JsonReader, default: Level): Level = in.readInt() match {
+          case 0 => Level.LOW
+          case 1 => Level.HIGH
+          case x => in.enumValueError(x.toString)
+        }
+
+        override def encodeValue(x: Level, out: JsonWriter): Unit = x match {
+          case Level.LOW => out.writeVal(0)
+          case Level.HIGH => out.writeVal(1)
+          case _ => out.encodeError("illegal enum value")
+        }
+
+        override def nullValue: Level = null.asInstanceOf[Level]
+      }
+      implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
+        override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
+      }
+      verifySerDeser(make[collection.immutable.TreeSet[Level]](CodecMakerConfig()),
+        collection.immutable.TreeSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
     }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
