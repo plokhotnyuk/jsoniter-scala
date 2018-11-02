@@ -1408,196 +1408,105 @@ final class JsonReader private[jsoniter_scala](
   private[this] def longOverflowError(pos: Int): Nothing = decodeError("value is too large for long", pos)
 
   private[this] def parseDuration(): Duration = {
-    var isNeg = false
-    var daysAsSecs = 0L
-    var hoursAsSecs = 0L
-    var minutesAsSecs = 0L
     var seconds = 0L
     var nanos = 0
-    var nanoDigitWeight = 100000000
-    var x = 0L
-    var isNegX = false
     var state = 0
-    var pos = head
+    var b = nextByte(head)
+    val isNeg = b == '-'
+    if (isNeg) b = nextByte(head)
+    if (b != 'P') {
+      if (isNeg) tokenError('P')
+      else tokensError('P', '-')
+    }
+    b = nextByte(head)
     do {
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      val b = buf(pos)
-      (state: @switch) match {
-        case 0 => // '-' or 'P'
-          if (b == 'P') state = 2
-          else if (b == '-') {
-            isNeg = true
-            state = 1
-          } else tokensError('P', '-', pos)
-        case 1 => // 'P'
-          if (b == 'P') state = 2
-          else tokenError('P', pos)
-        case 2 => // 'T' or '-' or digit
-          if (b == 'T') state = 6
-          else if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 4
-          } else if (b == '-') {
-            isNegX = true
-            state = 3
-          } else tokenOrDigitError('-', pos)
-        case 3 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 4
-          } else digitError(pos)
-        case 4 => // 'D' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -10675199116730L) durationError(pos)
-            x = x * 10 + ('0' - b)
-          } else if (b == 'D') {
-            if (x < -106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
-            daysAsSecs =
-              (if (isNeg ^ isNegX) x
-              else -x) * 86400
-            x = 0
-            isNegX = false
-            state = 5
-          } else decodeError("expected 'D' or digit", pos)
-        case 5 => // 'T' or '"'
-          if (b == 'T') state = 6
-          else if (b == '"') state = 18
-          else tokensError('T', '"', pos)
-        case 6 => // '-' or '"' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 8
-          } else if (b == '-') {
-            isNegX = true
-            state = 7
-          } else decodeError("expected '-' or digit", pos)
-        case 7 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 8
-          } else digitError(pos)
-        case 8 => // 'H' or 'M' or '.' or 'S' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -922337203685477580L) durationError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) durationError(pos)
-          } else if (b == 'H') {
-            if (x < -2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
-            hoursAsSecs =
-              (if (isNeg ^ isNegX) x
-              else -x) * 3600
-            x = 0
-            isNegX = false
-            state = 9
-          } else if (b == 'M') {
-            if (x < -153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
-            minutesAsSecs =
-              (if (isNeg ^ isNegX) x
-              else -x) * 60
-            x = 0
-            isNegX = false
-            state = 12
-          } else if (b == 'S' || b == '.') {
-            seconds =
-              if (isNeg ^ isNegX) x
-              else if (x == -9223372036854775808L) durationError(pos)
-              else -x
-            state =
-              if (b == '.') 15
-              else 17
-          } else decodeError("expected 'H' or 'M' or 'S or '.' or digit", pos)
-        case 9 => // '-' or '"' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 11
-          } else if (b == '-') {
-            isNegX = true
-            state = 10
-          } else if (b == '"') state = 18
-          else decodeError("expected '\"' or '-' or digit", pos)
-        case 10 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 11
-          } else digitError(pos)
-        case 11 => // 'M' or '.' or 'S' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -922337203685477580L) durationError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) durationError(pos)
-          } else if (b == 'M') {
-            if (x < -153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
-            minutesAsSecs =
-              (if (isNeg ^ isNegX) x
-              else -x) * 60
-            x = 0
-            isNegX = false
-            state = 12
-          } else if (b == 'S' || b == '.') {
-            seconds =
-              if (isNeg ^ isNegX) x
-              else if (x == -9223372036854775808L) durationError(pos)
-              else -x
-            state =
-              if (b == '.') 15
-              else 17
-          } else decodeError("expected 'M' or 'S or '.' or digit", pos)
-        case 12 => // '-' or '"' or digit
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 14
-          } else if (b == '-') {
-            isNegX = true
-            state = 13
-          } else if (b == '"') state = 18
-          else decodeError("expected '\"' or '-' or digit", pos)
-        case 13 => // digit (after '-')
-          if (b >= '0' && b <= '9') {
-            x = '0' - b
-            state = 14
-          } else digitError(pos)
-        case 14 => // 'S' or '.' or digit
-          if (b >= '0' && b <= '9') {
-            if (x < -922337203685477580L) durationError(pos)
-            x = x * 10 + ('0' - b)
-            if (x > 0) durationError(pos)
-          } else if (b == 'S' || b == '.') {
-            seconds =
-              if (isNeg ^ isNegX) x
-              else if (x == -9223372036854775808L) durationError(pos)
-              else -x
-            state =
-              if (b == '.') 15
-              else 17
-          } else decodeError("expected 'S or '.' or digit", pos)
-        case 15 => // 'S' or nano digit
-          if (b >= '0' && b <= '9') {
-            nanos += (b - '0') * nanoDigitWeight
-            nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
-            if (nanoDigitWeight == 0) {
-              if (isNeg ^ isNegX) nanos = -nanos
-              state = 16
-            }
-          } else if (b == 'S') {
-            if (isNeg ^ isNegX) nanos = -nanos
-            state = 17
-          } else tokenOrDigitError('S', pos)
-        case 16 => // 'S'
-          if (b == 'S') state = 17
-          else tokenError('S', pos)
-        case 17 => // '"'
-          if (b == '"') state = 18
-          else tokenError('"', pos)
+      if (state == 0) {
+        if (b == 'T') {
+          b = nextByte(head)
+          state = 1
+        }
+      } else if (state == 1) {
+        if (b == 'T') b = nextByte(head)
+        else tokensError('T', '"')
+      } else if (state == 4) tokenError('"')
+      val isNegX = b == '-'
+      if (isNegX) b = nextByte(head)
+      if (b < '0' || b > '9') {
+        if (isNegX) digitError()
+        else if (state < 2) tokenOrDigitError('-')
+        else decodeError("expected '\"' or '-' or digit")
       }
-      pos += 1
-    } while (state != 18)
-    head = pos
-    Duration.ofSeconds(sumSeconds(sumSeconds(sumSeconds(minutesAsSecs, seconds), hoursAsSecs), daysAsSecs), nanos)
+      var pos = head
+      var x: Long = '0' - b
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (x < -922337203685477580L) durationError(pos)
+        x = x * 10 + ('0' - b)
+        if (x > 0) durationError(pos)
+        pos += 1
+      }
+      x =
+        if (isNeg ^ isNegX) x
+        else {
+          if (x == -9223372036854775808L) durationError(pos)
+          -x
+        }
+      if (state < 1 && b == 'D') {
+        if (x < -106751991167300L || x > 106751991167300L) durationError(pos) // -106751991167300L == Long.MinValue / 86400
+        seconds = x * 86400
+        state = 1
+      } else if (state < 2 && b == 'H') {
+        if (x < -2562047788015215L || x > 2562047788015215L) durationError(pos) // -2562047788015215L == Long.MinValue / 3600
+        seconds = sumSeconds(x * 3600, seconds, pos)
+        state = 2
+      } else if (state < 3 && b == 'M') {
+        if (x < -153722867280912930L || x > 153722867280912930L) durationError(pos) // -153722867280912930L == Long.MinValue / 60
+        seconds = sumSeconds(x * 60, seconds, pos)
+        state = 3
+      } else if (b == '.') {
+        pos += 1
+        seconds = sumSeconds(x, seconds, pos)
+        var nanoDigitWeight = 100000000
+        while ({
+          if (pos >= tail) pos = loadMoreOrError(pos)
+          b = buf(pos)
+          b >= '0' && b <= '9' && nanoDigitWeight != 0
+        }) {
+          nanos += (b - '0') * nanoDigitWeight
+          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
+          pos += 1
+        }
+        if (isNeg ^ isNegX) nanos = -nanos
+        if (b != 'S') {
+          if (nanoDigitWeight != 0) tokenOrDigitError('S', pos)
+          else tokenError('S', pos)
+        }
+        state = 4
+      } else if (b == 'S') {
+        seconds = sumSeconds(x, seconds, pos)
+        state = 4
+      } else decodeError({
+        (state: @switch) match {
+          case 0 => "expected 'D' or digit"
+          case 1 => "expected 'H' or 'M' or 'S or '.' or digit"
+          case 2 => "expected 'M' or 'S or '.' or digit"
+          case 3 => "expected 'S or '.' or digit"
+        }
+      }, pos)
+      head = pos + 1
+      b = nextByte(head)
+    } while (b != '"')
+    Duration.ofSeconds(seconds, nanos)
   }
 
-  private[this] def sumSeconds(s1: Long, s2: Long): Long = {
+  private[this] def sumSeconds(s1: Long, s2: Long, pos: Int): Long = {
     val s = s1 + s2
-    if (((s1 ^ s) & (s2 ^ s)) < 0) durationError(head - 1)
+    if (((s1 ^ s) & (s2 ^ s)) < 0) durationError(pos)
     s
   }
 
@@ -1845,17 +1754,15 @@ final class JsonReader private[jsoniter_scala](
         months = x
         state = 2
       } else if (state < 3 && b == 'W') {
-        val ds = 7L * x
-        if (ds == ds.toInt) {
-          days = ds.toInt
-          state = 3
-        } else periodError(pos)
+        val ds = x * 7L
+        if (ds != ds.toInt) periodError(pos)
+        days = ds.toInt
+        state = 3
       } else if (b == 'D') {
-        val ds = days.toLong + x
-        if (ds == ds.toInt) {
-          days = ds.toInt
-          state = 4
-        } else periodError(pos)
+        val ds = x + days.toLong
+        if (ds != ds.toInt) periodError(pos)
+        days = ds.toInt
+        state = 4
       } else decodeError({
         (state: @switch) match {
           case 0 => "expected 'Y' or 'M' or 'W' or 'D' or digit"

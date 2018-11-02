@@ -420,7 +420,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P-XD\"", "expected digit, offset: 0x00000003")
       checkError("\"P1XD\"", "expected 'D' or digit, offset: 0x00000003")
       checkError("\"P106751991167301D\"", "llegal duration, offset: 0x00000011")
-      checkError("\"P1067519911673000D\"", "llegal duration, offset: 0x00000011")
+      checkError("\"P1067519911673000D\"", "llegal duration, offset: 0x00000012")
       checkError("\"P-106751991167301D\"", "llegal duration, offset: 0x00000012")
       checkError("\"P1DX1H\"", "expected 'T' or '\"', offset: 0x00000004")
       checkError("\"P1DTXH\"", "expected '-' or digit, offset: 0x00000005")
@@ -450,9 +450,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"P0DT0H0M9223372036854775808S\"", "illegal duration, offset: 0x0000001c")
       checkError("\"P0DT0H0M92233720368547758080S\"", "illegal duration, offset: 0x0000001c")
       checkError("\"P0DT0H0M-9223372036854775809S\"", "illegal duration, offset: 0x0000001c")
-      checkError("\"P106751991167300DT24H\"", "illegal duration, offset: 0x00000016")
-      checkError("\"P0DT2562047788015215H60M\"", "illegal duration, offset: 0x00000019")
-      checkError("\"P0DT0H153722867280912930M60S\"", "illegal duration, offset: 0x0000001d")
+      checkError("\"P106751991167300DT24H\"", "illegal duration, offset: 0x00000015")
+      checkError("\"P0DT2562047788015215H60M\"", "illegal duration, offset: 0x00000018")
+      checkError("\"P0DT0H153722867280912930M60S\"", "illegal duration, offset: 0x0000001c")
     }
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
