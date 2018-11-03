@@ -1807,8 +1807,7 @@ object JsonWriter {
   }
   private final val digits: Array[Short] = {
     val ds = new Array[Short](100)
-    var i = 0
-    var j = 0
+    var i, j = 0
     do {
       var k = 0
       do {
@@ -1822,8 +1821,7 @@ object JsonWriter {
   }
   private final val hexDigits: Array[Short] = {
     val ds = new Array[Short](256)
-    var i = 0
-    var j = 0
+    var i, j = 0
     do {
       val d1 =
         if (j <= 9) j + '0'
