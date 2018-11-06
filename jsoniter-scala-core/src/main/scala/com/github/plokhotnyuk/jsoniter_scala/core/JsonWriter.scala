@@ -1626,15 +1626,15 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
-    val mLow = m & 0x7FFFFFFF
-    val mHigh = m >>> 31
+    val ml = m & 0x7FFFFFFF
+    val mh = m >>> 31
     val idx = i << 2
     val s3 = ss(idx + 3)
     val s2 = ss(idx + 2)
     val s1 = ss(idx + 1)
     val s0 = ss(idx)
-    ((((((((mLow * s3 >>> 31) + mLow * s2 + mHigh * s3) >>> 31) + mLow * s1 +
-      mHigh * s2) >>> 31) + mLow * s0 + mHigh * s1) >>> 21) + (mHigh * s0 << 10)) >>> (j - 114)
+    ((((((((ml * s3 >>> 31) + ml * s2 + mh * s3) >>> 31) + ml * s1 +
+      mh * s2) >>> 31) + ml * s0 + mh * s1) >>> 21) + (mh * s0 << 10)) >>> (j - 114)
   }
 
   private[this] def offset(q0: Long): Int = {
@@ -1681,9 +1681,9 @@ final class JsonWriter private[jsoniter_scala](
 
   // FIXME: remove all these div* after fix of the performance regression in GraalVM CE, check: https://github.com/oracle/graal/issues/593
   private[this] def div5(x: Long): Long = { // divide positive long by 5
-    val l = (x & 0xFFFFFFFFL) * 3435973836L
-    val h = (x >>> 32) * 3435973836L
-    ((x + l >>> 32) + l + h >>> 32) + h >> 2
+    val xlc = (x & 0xFFFFFFFFL) * 3435973836L
+    val xhc = (x >>> 32) * 3435973836L
+    ((x + xlc >>> 32) + xlc + xhc >>> 32) + xhc >> 2
   }
 
   private[this] def div10(x: Long): Long =
