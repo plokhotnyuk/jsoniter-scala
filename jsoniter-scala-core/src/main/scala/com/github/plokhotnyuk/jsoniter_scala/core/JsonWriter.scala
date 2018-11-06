@@ -1260,7 +1260,7 @@ final class JsonWriter private[jsoniter_scala](
         val r1 = (q0 - 100000000 * q1).toInt
         if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
         else {
-          val q2 = div100000000(q1)
+          val q2 = (q1 >> 8) * 1441151881 >> 49
           val r2 = (q1 - 100000000 * q2).toInt
           write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
         }
