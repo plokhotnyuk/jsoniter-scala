@@ -5,9 +5,11 @@ import java.nio.charset.StandardCharsets._
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.jsoniter.input.JsoniterJavaParser
+import com.jsoniter.output.JsoniterJavaSerializer
 //import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
@@ -43,6 +45,9 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def readJacksonScala(): Array[Byte] = jacksonMapper.readValue[Array[Byte]](jsonBytes)
 
   @Benchmark
+  def readJsoniterJava(): Array[Byte] = JsoniterJavaParser.parse[Array[Byte]](jsonBytes, classOf[Array[Byte]])
+
+  @Benchmark
   def readJsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes)
 
   @Benchmark
@@ -62,6 +67,9 @@ class ArrayOfBytesBenchmark extends CommonParams {
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+
+  @Benchmark
+  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)

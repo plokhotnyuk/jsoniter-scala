@@ -11,10 +11,13 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers.createJacksonMapper
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
+import com.jsoniter.input.JsoniterJavaParser
+import com.jsoniter.output.{EncodingMode, JsoniterJavaSerializer}
+import com.jsoniter.spi.{Config, DecodingMode}
 import io.circe.parser._
 import io.circe.syntax._
-import org.openjdk.jmh.annotations.{Benchmark, Param, Setup, TearDown}
+import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import upickle.default._
 
@@ -31,6 +34,11 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
     jm
   }
+  val jsoniterJavaConfig: Config = new Config.Builder()
+    .escapeUnicode(true)
+    .encodingMode(EncodingMode.DYNAMIC_MODE)
+    .decodingMode(DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_STRICTLY)
+    .build()
 
   @Setup
   def setup(): Unit = {
@@ -70,6 +78,9 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
 
   @Benchmark
+  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String], jsoniterJavaConfig)
+
+  @Benchmark
   def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
 
   @Benchmark
@@ -90,6 +101,9 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+
+  @Benchmark
+  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj, jsoniterJavaConfig)
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)

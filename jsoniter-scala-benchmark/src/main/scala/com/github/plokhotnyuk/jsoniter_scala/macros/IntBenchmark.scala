@@ -7,7 +7,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
+import com.jsoniter.input.JsoniterJavaParser
+import com.jsoniter.output.JsoniterJavaSerializer
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
@@ -33,6 +35,9 @@ class IntBenchmark extends CommonParams {
   def readJacksonScala(): Int = jacksonMapper.readValue[Int](jsonBytes)
 
   @Benchmark
+  def readJsoniterJava(): Int = JsoniterJavaParser.parse(jsonBytes, classOf[Int])
+
+  @Benchmark
   def readJsoniterScala(): Int = readFromArray[Int](jsonBytes)(intCodec)
 
   @Benchmark
@@ -55,6 +60,9 @@ class IntBenchmark extends CommonParams {
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+
+  @Benchmark
+  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(intCodec)

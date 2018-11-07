@@ -11,6 +11,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
+      benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
@@ -21,6 +22,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       //FIXME: dsl-json serializes doubles in a plain representation
       //sameOrBetter(toString(benchmark.writeDslJsonJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJacksonScala()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeJsoniterJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJsoniterScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500

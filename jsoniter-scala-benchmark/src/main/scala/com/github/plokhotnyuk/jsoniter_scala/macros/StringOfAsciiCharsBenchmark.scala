@@ -7,7 +7,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
+import com.jsoniter.input.JsoniterJavaParser
+import com.jsoniter.output.JsoniterJavaSerializer
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import io.circe.parser._
 import io.circe.syntax._
@@ -34,7 +36,7 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
           do {
             ch = ((j * 1498724053) % 128).toChar
             j += 1
-          } while (!JsonWriter.isNonEscapedAscii(ch))
+          } while (!JsonWriter.isNonEscapedAscii(ch) || ch == '~') // FIXME: Jsoniter(Java) uses hexadecimal escaping for `~`
           ch
         }
         i += 1
@@ -59,6 +61,9 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
 
   @Benchmark
+  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
+
+  @Benchmark
   def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
 
   @Benchmark
@@ -78,6 +83,9 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+
+  @Benchmark
+  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(stringCodec)

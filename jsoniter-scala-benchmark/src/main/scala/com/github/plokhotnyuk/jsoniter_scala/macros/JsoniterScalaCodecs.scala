@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.SuitEnum.SuitEnum
 import scala.collection.immutable.{BitSet, IntMap, Map, Seq, Set}
 import scala.collection.mutable
 
-object JsoniterCodecs {
+object JsoniterScalaCodecs {
   val exceptionWithoutDumpConfig = ReaderConfig(appendHexDumpToParseException = false)
   val exceptionWithStacktraceConfig = ReaderConfig(throwParseExceptionWithStackTrace = true)
   val escapingConfig = WriterConfig(escapeUnicode = true)
