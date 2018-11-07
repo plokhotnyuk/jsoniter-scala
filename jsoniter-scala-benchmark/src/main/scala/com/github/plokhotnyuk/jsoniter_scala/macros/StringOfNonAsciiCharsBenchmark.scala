@@ -10,8 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
 import com.jsoniter.input.JsoniterJavaParser
-import com.jsoniter.output.{EncodingMode, JsoniterJavaSerializer}
-import com.jsoniter.spi.{Config, DecodingMode}
+//import com.jsoniter.output.JsoniterJavaSerializer
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import io.circe.parser._
 import io.circe.syntax._
@@ -25,11 +24,6 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
-  val jsoniterJavaConfig: Config = new Config.Builder()
-    .escapeUnicode(false)
-    .encodingMode(EncodingMode.DYNAMIC_MODE)
-    .decodingMode(DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_STRICTLY)
-    .build()
 
   @Setup
   def setup(): Unit = {
@@ -68,7 +62,7 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
 
   @Benchmark
-  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String], jsoniterJavaConfig)
+  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
 
   @Benchmark
   def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
@@ -92,7 +86,7 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 /* FIXME: Jsoniter Java escapes non-ASCII characters
   @Benchmark
-  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj, jsoniterJavaConfig)
+  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 */
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(stringCodec)

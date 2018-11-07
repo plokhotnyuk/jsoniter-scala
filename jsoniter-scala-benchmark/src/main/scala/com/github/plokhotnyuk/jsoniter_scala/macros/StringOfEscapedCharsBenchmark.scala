@@ -13,8 +13,8 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers.createJacksonMapper
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
 import com.jsoniter.input.JsoniterJavaParser
-import com.jsoniter.output.{EncodingMode, JsoniterJavaSerializer}
-import com.jsoniter.spi.{Config, DecodingMode}
+//import com.jsoniter.output.{EncodingMode, JsoniterJavaSerializer}
+//import com.jsoniter.spi.{Config, DecodingMode}
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
@@ -34,11 +34,13 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
     jm
   }
+/*
   val jsoniterJavaConfig: Config = new Config.Builder()
     .escapeUnicode(true)
     .encodingMode(EncodingMode.DYNAMIC_MODE)
     .decodingMode(DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_STRICTLY)
     .build()
+*/
 
   @Setup
   def setup(): Unit = {
@@ -78,7 +80,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
 
   @Benchmark
-  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String], jsoniterJavaConfig)
+  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
 
   @Benchmark
   def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
@@ -102,9 +104,10 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
+/* FIXME: Jsoniter Java cannot restore config properly
   @Benchmark
   def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj, jsoniterJavaConfig)
-
+*/
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)
 

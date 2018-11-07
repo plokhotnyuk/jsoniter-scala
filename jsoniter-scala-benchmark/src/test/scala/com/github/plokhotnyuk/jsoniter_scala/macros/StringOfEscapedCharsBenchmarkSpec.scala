@@ -22,7 +22,8 @@ class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase {
       // FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString2
-      toString(benchmark.writeJsoniterJava()) shouldBe benchmark.jsonString
+      // FIXME: Jsoniter Java cannot restore config properly
+      //toString(benchmark.writeJsoniterJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString2

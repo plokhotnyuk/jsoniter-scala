@@ -1,9 +1,9 @@
 package com.jsoniter.output;
 
 import com.jsoniter.extra.PreciseFloatSupport;
-import com.jsoniter.spi.Config;
+//import com.jsoniter.spi.Config;
 import com.jsoniter.spi.JsonException;
-import com.jsoniter.spi.JsoniterSpi;
+//import com.jsoniter.spi.JsoniterSpi;
 
 import java.io.IOException;
 
@@ -26,6 +26,7 @@ public class JsoniterJavaSerializer {
         }
     }
 
+/*
     public static <T> byte[] serialize(T obj, Config config) {
         try {
             JsoniterSpi.setCurrentConfig(config);
@@ -39,4 +40,5 @@ public class JsoniterJavaSerializer {
             JsoniterSpi.clearCurrentConfig();
         }
     }
+*/
 }
