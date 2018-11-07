@@ -90,10 +90,10 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
+/* FIXME: Jsoniter Java escapes non-ASCII characters
   @Benchmark
   def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj, jsoniterJavaConfig)
-
+*/
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(stringCodec)
 
