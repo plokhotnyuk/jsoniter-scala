@@ -9,7 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
 import com.jsoniter.input.JsoniterJavaParser
-import com.jsoniter.output.JsoniterJavaSerializer
+//import com.jsoniter.output.JsoniterJavaSerializer
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
@@ -69,10 +69,10 @@ class ArrayOfDoublesBenchmark extends CommonParams {
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
+/* FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
   @Benchmark
   def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
-
+*/
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
