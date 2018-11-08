@@ -262,6 +262,11 @@ object JsonCodecMaker {
         enumSymbol
       }
 
+      def javaEnumValues(tpe: Type): Set[String] = tpe.typeSymbol.asClass.knownDirectSubclasses.map { x =>
+        val n = x.fullName
+        n.substring(n.lastIndexOf("."))
+      }
+
       def getType(typeTree: Tree): Type = c.typecheck(typeTree, c.TYPEmode).tpe
 
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
@@ -411,8 +416,10 @@ object JsonCodecMaker {
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
-        else if (tpe <:< typeOf[java.lang.Enum[_]]) q"out.writeKey($x.name)"
-        else fail(s"Unsupported type to be used as map key '$tpe'.")
+        else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+          if (javaEnumValues(tpe).exists(isEncodingRequired)) q"out.writeKey($x.name)"
+          else q"out.writeNonEscapedAsciiKey($x.name)"
+        } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
 
       def genWriteConstantKey(name: String): Tree =
@@ -1126,7 +1133,8 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"out.writeVal(x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
-          q"out.writeVal(x.name)"
+          if (javaEnumValues(tpe).exists(isEncodingRequired)) q"out.writeVal(x.name)"
+          else q"out.writeNonEscapedAsciiVal(x.name)"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""out.writeObjectStart()
               ..$discriminator
