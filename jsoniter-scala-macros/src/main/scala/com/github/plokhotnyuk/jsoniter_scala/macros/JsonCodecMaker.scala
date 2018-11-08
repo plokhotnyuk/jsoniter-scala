@@ -262,11 +262,6 @@ object JsonCodecMaker {
         enumSymbol
       }
 
-      def javaEnumValues(tpe: Type): Set[String] = tpe.typeSymbol.asClass.knownDirectSubclasses.map { x =>
-        val n = x.fullName
-        n.substring(n.lastIndexOf("."))
-      }
-
       def getType(typeTree: Tree): Type = c.typecheck(typeTree, c.TYPEmode).tpe
 
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
@@ -304,6 +299,36 @@ object JsonCodecMaker {
           Ident(mathContextName)
         }
 
+      case class EnumValueInfo(value: Tree, name: String)
+
+      def javaEnumValues(tpe: Type): Seq[EnumValueInfo] =
+        tpe.typeSymbol.asClass.knownDirectSubclasses.map { s: Symbol =>
+          val n = s.fullName
+          EnumValueInfo(q"$s", n.substring(n.lastIndexOf(".") + 1))
+        }.toSeq
+
+      def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
+        val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
+        val length: EnumValueInfo => Int = _.name.length
+
+        def genReadCollisions(es: collection.Seq[EnumValueInfo]): Tree =
+          es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
+            q"""if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value}
+                else $acc"""
+          }
+
+        if (enumValues.size <= 4 && enumValues.size == enumValues.map(length).distinct.size) {
+          genReadCollisions(enumValues)
+        } else {
+          val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
+            cq"$hash => ${genReadCollisions(fs)}"
+          }.toSeq :+ cq"_ => $unexpectedEnumValueHandler"
+          q"""(in.charBufToHashCode(l): @switch) match {
+                case ..$cases
+              }"""
+        }
+      }
+
       def genReadKey(tpe: Type): Tree = {
         val implKeyCodec = findImplicitKeyCodec(tpe)
         if (!implKeyCodec.isEmpty) q"$implKeyCodec.decodeKey(in)"
@@ -321,8 +346,7 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[BigDecimal]) {
           val mc = withMathContextFor(codecConfig.bigDecimalPrecision)
           q"in.readKeyAsBigDecimal($mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
-        }
-        else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
+        } else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
         else if (tpe =:= typeOf[Duration]) q"in.readKeyAsDuration()"
         else if (tpe =:= typeOf[Instant]) q"in.readKeyAsInstant()"
         else if (tpe =:= typeOf[LocalDate]) q"in.readKeyAsLocalDate()"
@@ -342,10 +366,8 @@ object JsonCodecMaker {
               ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
                 .getOrElse(in.enumValueError(len))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          q"""val v = in.readKeyAsString()
-              try ${companion(tpe)}.valueOf(v) catch {
-                case _: IllegalArgumentException => in.enumValueError(v)
-              }"""
+          q"""val l = in.readKeyAsCharBuf()
+              ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
 
@@ -417,7 +439,7 @@ object JsonCodecMaker {
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
         else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          if (javaEnumValues(tpe).exists(isEncodingRequired)) q"out.writeKey($x.name)"
+          if (javaEnumValues(tpe).exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
           else q"out.writeNonEscapedAsciiKey($x.name)"
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
@@ -873,17 +895,15 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
-                val len = in.readStringAsCharBuf()
-                ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
-                  .getOrElse(in.enumValueError(len))
+                val l = in.readStringAsCharBuf()
+                ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(l, e.toString))
+                  .getOrElse(in.enumValueError(l))
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
-                val v = in.readString(null)
-                try ${companion(tpe)}.valueOf(v) catch {
-                  case _: IllegalArgumentException => in.enumValueError(v)
-                }
+                val l = in.readStringAsCharBuf()
+                ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('{')) {
@@ -1133,7 +1153,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"out.writeVal(x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
-          if (javaEnumValues(tpe).exists(isEncodingRequired)) q"out.writeVal(x.name)"
+          if (javaEnumValues(tpe).exists(x => isEncodingRequired(x.name))) q"out.writeVal(x.name)"
           else q"out.writeNonEscapedAsciiVal(x.name)"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""out.writeObjectStart()
