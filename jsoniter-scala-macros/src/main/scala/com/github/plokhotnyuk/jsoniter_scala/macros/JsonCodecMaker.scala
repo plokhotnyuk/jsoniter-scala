@@ -305,7 +305,7 @@ object JsonCodecMaker {
         tpe.typeSymbol.asClass.knownDirectSubclasses.map { s: Symbol =>
           val n = s.fullName
           EnumValueInfo(q"$s", n.substring(n.lastIndexOf(".") + 1))
-        }.toSeq
+        }.toSeq // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
         val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
@@ -366,8 +366,16 @@ object JsonCodecMaker {
               ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
                 .getOrElse(in.enumValueError(len))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          q"""val l = in.readKeyAsCharBuf()
-              ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
+          val es = javaEnumValues(tpe)
+          if (es.isEmpty) {
+            q"""val v = in.readKeyAsString()
+                try ${companion(tpe)}.valueOf(v) catch {
+                  case _: IllegalArgumentException => in.enumValueError(v)
+                }"""
+          } else {
+            q"""val l = in.readKeyAsCharBuf()
+                ${genReadEnumValue(es, q"in.enumValueError(l)")}"""
+          }
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
 
@@ -439,7 +447,8 @@ object JsonCodecMaker {
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
         else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          if (javaEnumValues(tpe).exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
+          val es = javaEnumValues(tpe)
+          if (es.isEmpty || es.exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
           else q"out.writeNonEscapedAsciiKey($x.name)"
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
@@ -900,11 +909,22 @@ object JsonCodecMaker {
                   .getOrElse(in.enumValueError(l))
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
-          q"""if (in.isNextToken('"')) {
-                in.rollbackToken()
-                val l = in.readStringAsCharBuf()
-                ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
-              } else in.readNullOrTokenError(default, '"')"""
+          val es = javaEnumValues(tpe)
+          if (es.isEmpty) {
+            q"""if (in.isNextToken('"')) {
+                  in.rollbackToken()
+                  val v = in.readString(null)
+                  try ${companion(tpe)}.valueOf(v) catch {
+                    case _: IllegalArgumentException => in.enumValueError(v)
+                  }
+                } else in.readNullOrTokenError(default, '"')"""
+          } else {
+            q"""if (in.isNextToken('"')) {
+                  in.rollbackToken()
+                  val l = in.readStringAsCharBuf()
+                  ${genReadEnumValue(es, q"in.enumValueError(l)")}
+                } else in.readNullOrTokenError(default, '"')"""
+          }
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('{')) {
                 in.rollbackToken()
@@ -1153,7 +1173,8 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"out.writeVal(x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
-          if (javaEnumValues(tpe).exists(x => isEncodingRequired(x.name))) q"out.writeVal(x.name)"
+          val es = javaEnumValues(tpe)
+          if (es.isEmpty || es.exists(x => isEncodingRequired(x.name))) q"out.writeVal(x.name)"
           else q"out.writeNonEscapedAsciiVal(x.name)"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""out.writeObjectStart()
