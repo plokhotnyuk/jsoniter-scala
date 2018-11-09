@@ -10,6 +10,7 @@ import java.util.UUID
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
+import scala.collection.JavaConverters._
 import scala.{specialized => sp}
 
 /**
@@ -1482,8 +1483,7 @@ final class JsonReader private[jsoniter_scala](
         seconds = sumSeconds(x, seconds, pos)
         state = 4
       } else durationError(state, pos)
-      head = pos + 1
-      b = nextByte(head)
+      b = nextByte(pos + 1)
     } while (b != '"')
     Duration.ofSeconds(seconds, nanos)
   }
@@ -1730,8 +1730,7 @@ final class JsonReader private[jsoniter_scala](
         days = ds.toInt
         state = 4
       } else periodError(state, pos)
-      head = pos + 1
-      b = nextByte(head)
+      b = nextByte(pos + 1)
     } while (b != '"')
     Period.of(years, months, days)
   }
@@ -1900,11 +1899,14 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) -posX
     else posX
 
-  private[this] def toZoneId(zone: String): ZoneId =
-    try ZoneId.of(zone) catch {
+  private[this] def toZoneId(zone: String): ZoneId = {
+    val x = zoneIds.get(zone)
+    if (x ne null) x
+    else try ZoneId.of(zone) catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
       case ex: ZoneRulesException => dateTimeZoneError(ex)
     }
+  }
 
   private[this] def epochDayForYear(year: Int): Long =
     if (year < 0) {
@@ -2502,6 +2504,26 @@ object JsonReader {
     ns('e') = 14
     ns('f') = 15
     ns
+  }
+  private final val zoneIds: java.util.HashMap[String, ZoneId] = {
+    val zs = new java.util.HashMap[String, ZoneId](1024)
+    ZoneId.getAvailableZoneIds.asScala.foreach(z => zs.put(z, ZoneId.of(z)))
+    Array( // Currently used offsets picked from https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
+      "-12:00", "-11:00", "-10:00", "-09:30", "-09:00", "-08:00", "-07:00", "-06:00", "-05:00", "-04:00", "-03:30",
+      "-03:00", "-02:00", "-01:00", "-00:00", "+00:00", "+01:00", "+02:00", "+03:00", "+03:30", "+04:00", "+04:30",
+      "+05:00", "+05:30", "+05:45", "+06:00", "+06:30", "+07:00", "+08:00", "+08:45", "+09:00", "+09:30", "+10:00",
+      "+10:30", "+11:00", "+12:00", "+12:45", "+13:00", "+14:00"
+    ).foreach { z =>
+      val z1 = ZoneId.of(z)
+      val z2 = ZoneId.of(s"UT$z")
+      val z3 = ZoneId.of(s"UTC$z")
+      val z4 = ZoneId.of(s"GMT$z")
+      zs.put(z1.getId, z1)
+      zs.put(z2.getId, z2)
+      zs.put(z3.getId, z3)
+      zs.put(z4.getId, z4)
+    }
+    zs
   }
   private final val hexDigits: Array[Char] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
