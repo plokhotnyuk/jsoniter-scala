@@ -18,23 +18,23 @@ import play.api.libs.json.Json
 //import upickle.default._
 
 class GeoJSONBenchmark extends CommonParams {
-  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
-  var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes1)(geoJSONCodec)
+  var preallocatedBuf: Array[Byte] = new Array(jsonBytes1.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
-  def readAVSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes, UTF_8))
+  def readAVSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes1, UTF_8))
 
   @Benchmark
-  def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes1, UTF_8)).fold(throw _, x => x)
 
   @Benchmark
-  def readJacksonScala(): GeoJSON = jacksonMapper.readValue[GeoJSON](jsonBytes)
+  def readJacksonScala(): GeoJSON = jacksonMapper.readValue[GeoJSON](jsonBytes1)
 
   @Benchmark
-  def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes)(geoJSONCodec)
+  def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes1)(geoJSONCodec)
 
   @Benchmark
-  def readPlayJson(): GeoJSON = Json.parse(jsonBytes).as[GeoJSON](geoJSONFormat)
+  def readPlayJson(): GeoJSON = Json.parse(jsonBytes1).as[GeoJSON](geoJSONFormat)
 /* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def readUPickle(): GeoJSON = read[GeoJSON](jsonBytes)

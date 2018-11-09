@@ -14,12 +14,12 @@ class ADTBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString1
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString2
-      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString1
+      toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString1
+      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString1
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString3
       // FIXME: cannot alter uPickle discriminator name and value for ADT
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }

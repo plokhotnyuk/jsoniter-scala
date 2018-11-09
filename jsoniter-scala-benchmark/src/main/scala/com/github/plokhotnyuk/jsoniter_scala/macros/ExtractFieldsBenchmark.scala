@@ -23,7 +23,7 @@ import upickle.default._
 case class ExtractFields(s: String, i: Int)
 
 class ExtractFieldsBenchmark extends CommonParams {
-  @Param(Array("1", "10", "100", "1000", "10000", "100000"/*, "1000000" FIXME: uncomment when patch for this issue will be released: https://github.com/playframework/play-json/issues/186 */))
+  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 10
   @Param(Array("""[0.0,false,null]"""))
   var value = """[0.0,false,null]"""

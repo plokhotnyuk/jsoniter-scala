@@ -14,12 +14,12 @@ class GeoJSONBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      toString(benchmark.writeAVSystemGenCodec()) shouldBe GeoJSON.jsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe GeoJSON.jsonString1
       toString(benchmark.writeCirce()) shouldBe GeoJSON.jsonString2
-      toString(benchmark.writeJacksonScala()) shouldBe GeoJSON.jsonString
-      toString(benchmark.writeJsoniterScala()) shouldBe GeoJSON.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe GeoJSON.jsonString
-      toString(benchmark.writePlayJson()) shouldBe GeoJSON.jsonString
+      toString(benchmark.writeJacksonScala()) shouldBe GeoJSON.jsonString1
+      toString(benchmark.writeJsoniterScala()) shouldBe GeoJSON.jsonString1
+      toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe GeoJSON.jsonString1
+      toString(benchmark.writePlayJson()) shouldBe GeoJSON.jsonString3
       //FIXME: cannot alter uPickle discriminator name and value for ADT
       //toString(benchmark.writeUPickle()) shouldBe GeoJSON.jsonString
     }
