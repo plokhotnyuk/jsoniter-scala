@@ -17,13 +17,27 @@ import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
 //import upickle.default._
 
-case class AV[V](a: V) extends AnyVal
+case class ByteVal(a: Byte) extends AnyVal
 
-case class AnyVals(b: AV[Byte], s: AV[Short], i: AV[Int], l: AV[Long], bl: AV[Boolean], ch: AV[Char], dbl: AV[Double], f: AV[Float])
+case class ShortVal(a: Short) extends AnyVal
+
+case class IntVal(a: Int) extends AnyVal
+
+case class LongVal(a: Long) extends AnyVal
+
+case class BooleanVal(a: Boolean) extends AnyVal
+
+case class CharVal(a: Char) extends AnyVal
+
+case class DoubleVal(a: Double) extends AnyVal
+
+case class FloatVal(a: Float) extends AnyVal
+
+case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 
 class AnyValsBenchmark extends CommonParams {
   //FIXME: 2.5 is for hiding of Play-JSON bug in serialization of floats: 2.2 -> 2.200000047683716
-  var obj: AnyVals = AnyVals(AV(1), AV(2), AV(3), AV(4), bl = AV(true), ch = AV('x'), AV(1.1), AV(2.5f))
+  var obj: AnyVals = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(1.1), FloatVal(2.5f))
   var jsonString: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
