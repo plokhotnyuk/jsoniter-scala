@@ -12,6 +12,17 @@ import scala.collection.mutable
 
 object AVSystemCodecs {
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
+  implicit val anyValsGenCodec: GenCodec[AnyVals] = {
+    implicit val byteValGenCodec: GenCodec[ByteVal] = materialize
+    implicit val shortValGenCodec: GenCodec[ShortVal] = materialize
+    implicit val intValGenCodec: GenCodec[IntVal] = materialize
+    implicit val longValGenCodec: GenCodec[LongVal] = materialize
+    implicit val booleanValGenCodec: GenCodec[BooleanVal] = materialize
+    implicit val charValGenCodec: GenCodec[CharVal] = materialize
+    implicit val doubleValGenCodec: GenCodec[DoubleVal] = materialize
+    implicit val floatValGenCodec: GenCodec[FloatVal] = materialize
+    materialize
+  }
   implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materialize
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
