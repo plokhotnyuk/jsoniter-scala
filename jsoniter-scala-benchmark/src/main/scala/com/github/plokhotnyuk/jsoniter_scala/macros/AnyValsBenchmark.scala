@@ -42,10 +42,11 @@ class AnyValsBenchmark extends CommonParams {
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
 
-/*
+/* FIXME: AVSystem GenCodec wraps values of value classes by extra JSON objects, see https://github.com/AVSystem/scala-commons/issues/91
   @Benchmark
   def readAVSystemGenCodec(): AnyVals = JsonStringInput.read[AnyVals](new String(jsonBytes, UTF_8))
-
+*/
+/*
   @Benchmark
   def readCirce(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 
@@ -62,10 +63,11 @@ class AnyValsBenchmark extends CommonParams {
   @Benchmark
   def readUPickle(): AnyVals = read[AnyVals](jsonBytes)
 */
-/*
+/* FIXME: AVSystem GenCodec wraps values of value classes by extra JSON objects, see https://github.com/AVSystem/scala-commons/issues/91
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-
+*/
+/*
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
