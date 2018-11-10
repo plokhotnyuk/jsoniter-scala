@@ -4,10 +4,11 @@ import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
 import com.avsystem.commons.serialization.transparent
+import com.fasterxml.jackson.annotation.JsonValue
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
@@ -15,23 +16,24 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
+import scala.annotation.meta.getter
 //import upickle.default._
 
-@transparent case class ByteVal(a: Byte) extends AnyVal
+@transparent case class ByteVal(@(JsonValue @getter) a: Byte) extends AnyVal
 
-@transparent case class ShortVal(a: Short) extends AnyVal
+@transparent case class ShortVal(@(JsonValue @getter) a: Short) extends AnyVal
 
-@transparent case class IntVal(a: Int) extends AnyVal
+@transparent case class IntVal(@(JsonValue @getter) a: Int) extends AnyVal
 
-@transparent case class LongVal(a: Long) extends AnyVal
+@transparent case class LongVal(@(JsonValue @getter) a: Long) extends AnyVal
 
-@transparent case class BooleanVal(a: Boolean) extends AnyVal
+@transparent case class BooleanVal(@(JsonValue @getter) a: Boolean) extends AnyVal
 
-@transparent case class CharVal(a: Char) extends AnyVal
+@transparent case class CharVal(@(JsonValue @getter) a: Char) extends AnyVal
 
-@transparent case class DoubleVal(a: Double) extends AnyVal
+@transparent case class DoubleVal(@(JsonValue @getter) a: Double) extends AnyVal
 
-@transparent case class FloatVal(a: Float) extends AnyVal
+@transparent case class FloatVal(@(JsonValue @getter) a: Float) extends AnyVal
 
 case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 
@@ -47,10 +49,10 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-/*
+
   @Benchmark
   def readJacksonScala(): AnyVals = jacksonMapper.readValue[AnyVals](jsonBytes)
-*/
+
   @Benchmark
   def readJsoniterScala(): AnyVals = readFromArray[AnyVals](jsonBytes)
 /*
@@ -66,10 +68,10 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/*
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-*/
+
   @Benchmark
   def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
