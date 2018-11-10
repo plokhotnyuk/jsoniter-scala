@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
+import com.avsystem.commons.serialization.transparent
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
@@ -16,21 +17,21 @@ import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
 //import upickle.default._
 
-case class ByteVal(a: Byte) extends AnyVal
+@transparent case class ByteVal(a: Byte) extends AnyVal
 
-case class ShortVal(a: Short) extends AnyVal
+@transparent case class ShortVal(a: Short) extends AnyVal
 
-case class IntVal(a: Int) extends AnyVal
+@transparent case class IntVal(a: Int) extends AnyVal
 
-case class LongVal(a: Long) extends AnyVal
+@transparent case class LongVal(a: Long) extends AnyVal
 
-case class BooleanVal(a: Boolean) extends AnyVal
+@transparent case class BooleanVal(a: Boolean) extends AnyVal
 
-case class CharVal(a: Char) extends AnyVal
+@transparent case class CharVal(a: Char) extends AnyVal
 
-case class DoubleVal(a: Double) extends AnyVal
+@transparent case class DoubleVal(a: Double) extends AnyVal
 
-case class FloatVal(a: Float) extends AnyVal
+@transparent case class FloatVal(a: Float) extends AnyVal
 
 case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 

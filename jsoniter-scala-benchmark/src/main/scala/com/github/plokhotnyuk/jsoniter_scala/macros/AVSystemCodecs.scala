@@ -15,14 +15,14 @@ object AVSystemCodecs {
   implicit val anyValsGenCodec: GenCodec[AnyVals] = {
     // FIXME: AVSystem GenCodec wraps values of value classes by extra JSON objects
     // see https://github.com/AVSystem/scala-commons/issues/91
-    implicit val byteValGenCodec: GenCodec[ByteVal] = transformed(_.a, ByteVal.apply)
-    implicit val shortValGenCodec: GenCodec[ShortVal] = transformed(_.a, ShortVal.apply)
-    implicit val intValGenCodec: GenCodec[IntVal] = transformed(_.a, IntVal.apply)
-    implicit val longValGenCodec: GenCodec[LongVal] = transformed(_.a, LongVal.apply)
-    implicit val booleanValGenCodec: GenCodec[BooleanVal] = transformed(_.a, BooleanVal.apply)
-    implicit val charValGenCodec: GenCodec[CharVal] = transformed(_.a, CharVal.apply)
-    implicit val doubleValGenCodec: GenCodec[DoubleVal] = transformed(_.a, DoubleVal.apply)
-    implicit val floatValGenCodec: GenCodec[FloatVal] = transformed(_.a, FloatVal.apply)
+    implicit val byteValGenCodec: GenCodec[ByteVal] = materialize
+    implicit val shortValGenCodec: GenCodec[ShortVal] = materialize
+    implicit val intValGenCodec: GenCodec[IntVal] = materialize
+    implicit val longValGenCodec: GenCodec[LongVal] = materialize
+    implicit val booleanValGenCodec: GenCodec[BooleanVal] = materialize
+    implicit val charValGenCodec: GenCodec[CharVal] = materialize
+    implicit val doubleValGenCodec: GenCodec[DoubleVal] = materialize
+    implicit val floatValGenCodec: GenCodec[FloatVal] = materialize
     materialize
   }
   implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materialize
