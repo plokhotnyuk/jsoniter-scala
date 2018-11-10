@@ -26,9 +26,23 @@ object PlayJsonFormats {
     def writes(tuple: Tuple2[A, B]) = JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
   }
 
+  implicit val charFormat: Format[Char] = Format(
+    Reads(js => JsSuccess(js.as[String].charAt(0))),
+    Writes(c => JsString(c.toString)))
   val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format
   val nestedStructsFormat: OFormat[NestedStructs] = Json.format
   val anyRefsFormat: OFormat[AnyRefs] = Json.format
+  val anyValsFormat: OFormat[AnyVals] = {
+    implicit val v1: Format[ByteVal] = Jsonx.formatInline
+    implicit val v2: Format[ShortVal] = Jsonx.formatInline
+    implicit val v3: Format[IntVal] = Jsonx.formatInline
+    implicit val v4: Format[LongVal] = Jsonx.formatInline
+    implicit val v5: Format[BooleanVal] = Jsonx.formatInline
+    implicit val v6: Format[CharVal] = Jsonx.formatInline
+    implicit val v7: Format[DoubleVal] = Jsonx.formatInline
+    implicit val v8: Format[FloatVal] = Jsonx.formatInline
+    Json.format[AnyVals]
+  }
   val bitSetFormat: Format[BitSet] = Format(
     Reads(js => JsSuccess(BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-system
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
@@ -50,12 +64,7 @@ object PlayJsonFormats {
   val openHashMapOfIntsToBooleansFormat: OFormat[mutable.OpenHashMap[Int, Boolean]] = OFormat(
     Reads[mutable.OpenHashMap[Int, Boolean]](js => JsSuccess(mutable.OpenHashMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
     OWrites[mutable.OpenHashMap[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
-  val primitivesFormat: OFormat[Primitives] = {
-    implicit val v1: Format[Char] = Format(
-      Reads(js => JsSuccess(js.as[String].charAt(0))),
-      Writes(c => JsString(c.toString)))
-    Json.format[Primitives]
-  }
+  val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {
     implicit lazy val v1: OFormat[X] = Json.format
