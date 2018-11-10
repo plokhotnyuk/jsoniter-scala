@@ -13,14 +13,40 @@ object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
-  implicit val aEncoder: Encoder[X] = deriveEncoder
-  implicit val aDecoder: Decoder[X] = deriveDecoder
-  implicit val bEncoder: Encoder[Y] = deriveEncoder
-  implicit val bDecoder: Decoder[Y] = deriveDecoder
-  implicit val cEncoder: Encoder[Z] = deriveEncoder
-  implicit val cDecoder: Decoder[Z] = deriveDecoder
-  implicit val adtEncoder: Encoder[ADTBase] = deriveEncoder
-  implicit val adtDecoder: Decoder[ADTBase] = deriveDecoder
+  implicit val adtEncoder: Encoder[ADTBase] = {
+    implicit val aEncoder: Encoder[X] = deriveEncoder
+    implicit val bEncoder: Encoder[Y] = deriveEncoder
+    implicit val cEncoder: Encoder[Z] = deriveEncoder
+    deriveEncoder
+  }
+  implicit val adtDecoder: Decoder[ADTBase] = {
+    implicit val aDecoder: Decoder[X] = deriveDecoder
+    implicit val bDecoder: Decoder[Y] = deriveDecoder
+    implicit val cDecoder: Decoder[Z] = deriveDecoder
+    deriveDecoder
+  }
+  implicit val anyValsEncoder: Encoder[AnyVals] = {
+    implicit val byteValEncoder: Encoder[ByteVal] = deriveUnwrappedEncoder
+    implicit val shortValEncoder: Encoder[ShortVal] = deriveUnwrappedEncoder
+    implicit val intValEncoder: Encoder[IntVal] = deriveUnwrappedEncoder
+    implicit val longValEncoder: Encoder[LongVal] = deriveUnwrappedEncoder
+    implicit val booleanValEncoder: Encoder[BooleanVal] = deriveUnwrappedEncoder
+    implicit val charValEncoder: Encoder[CharVal] = deriveUnwrappedEncoder
+    implicit val doubleValEncoder: Encoder[DoubleVal] = deriveUnwrappedEncoder
+    implicit val floatValEncoder: Encoder[FloatVal] = deriveUnwrappedEncoder
+    deriveEncoder
+  }
+  implicit val anyValsDecoder: Decoder[AnyVals] = {
+    implicit val byteValDecoder: Decoder[ByteVal] = deriveUnwrappedDecoder
+    implicit val shortValDecoder: Decoder[ShortVal] = deriveUnwrappedDecoder
+    implicit val intValDecoder: Decoder[IntVal] = deriveUnwrappedDecoder
+    implicit val longValDecoder: Decoder[LongVal] = deriveUnwrappedDecoder
+    implicit val booleanValDecoder: Decoder[BooleanVal] = deriveUnwrappedDecoder
+    implicit val charValDecoder: Decoder[CharVal] = deriveUnwrappedDecoder
+    implicit val doubleValDecoder: Decoder[DoubleVal] = deriveUnwrappedDecoder
+    implicit val floatValDecoder: Decoder[FloatVal] = deriveUnwrappedDecoder
+    deriveDecoder
+  }
   implicit val enumEncoder: Encoder[SuitEnum] = Encoder.enumEncoder(SuitEnum)
   implicit val enumDecoder: Decoder[SuitEnum] = Decoder.enumDecoder(SuitEnum)
   implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap(_.name)

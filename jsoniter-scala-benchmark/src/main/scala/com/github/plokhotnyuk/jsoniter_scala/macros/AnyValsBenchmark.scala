@@ -5,14 +5,13 @@ import java.nio.charset.StandardCharsets._
 //import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.AVSystemCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.macros.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsoniterScalaCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.PlayJsonFormats._
 //import com.github.plokhotnyuk.jsoniter_scala.macros.UPickleReaderWriters._
-//import io.circe.generic.auto._
-//import io.circe.parser._
-//import io.circe.syntax._
+import io.circe.parser._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 //import play.api.libs.json.Json
 //import upickle.default._
@@ -46,10 +45,9 @@ class AnyValsBenchmark extends CommonParams {
   @Benchmark
   def readAVSystemGenCodec(): AnyVals = JsonStringInput.read[AnyVals](new String(jsonBytes, UTF_8))
 */
-/*
   @Benchmark
   def readCirce(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
-
+/*
   @Benchmark
   def readJacksonScala(): AnyVals = jacksonMapper.readValue[AnyVals](jsonBytes)
 */
@@ -67,10 +65,9 @@ class AnyValsBenchmark extends CommonParams {
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 */
-/*
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+/*
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 */
