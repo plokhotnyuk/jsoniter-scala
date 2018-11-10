@@ -22,6 +22,7 @@ object JsoniterScalaCodecs {
   val geoJSONCodec: JsonValueCodec[GeoJSON] = make(CodecMakerConfig()) // don't define implicit for recursive structures
   val nestedStructsCodec: JsonValueCodec[NestedStructs] = make(CodecMakerConfig()) // don't define implicit for recursive structures
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make(CodecMakerConfig())
+  implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig())
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make(CodecMakerConfig())
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make(CodecMakerConfig())
   implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make(CodecMakerConfig())
