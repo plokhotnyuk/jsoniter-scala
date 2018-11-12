@@ -1615,10 +1615,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def multiplePowOf5(q0: Long, q: Int): Boolean =
     q == 0 || {
       val q1 = div5(q0)
-      (q1 << 2) + q1 == q0 && {
-        if (q1.toInt == q1) multiplePowOf5(q1.toInt, q - 1)
-        else multiplePowOf5(q1, q - 1)
-      }
+      (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
     }
 
   private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
@@ -1676,11 +1673,13 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   // FIXME: remove all these div* after fix of the performance regression in GraalVM CE, check: https://github.com/oracle/graal/issues/593
-  private[this] def div5(x: Long): Long = { // divide positive long by 5
-    val xlc = (x & 0xFFFFFFFFL) * 3435973836L
-    val xhc = (x >>> 32) * 3435973836L
-    ((x + xlc >>> 32) + xlc + xhc >>> 32) + xhc >> 2
-  }
+  private[this] def div5(x: Long): Long =
+    if (x.toInt == x) x * 3435973837L >> 34 // divide small positive long by 5
+    else { // divide positive long by 5
+      val xlc = (x & 0xFFFFFFFFL) * 3435973836L
+      val xhc = (x >>> 32) * 3435973836L
+      ((x + xlc >>> 32) + xlc + xhc >>> 32) + xhc >> 2
+    }
 
   private[this] def div10(x: Long): Long =
     if (x.toInt == x) x * 3435973837L >> 35 // divide small positive long by 10
@@ -1711,17 +1710,21 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def div146097(x: Long): Long =
-    if (x.toInt == x) x * 963315389L >> 47 // divide positive int by 146097
+    if (x.toInt == x) x * 963315389L >> 47 // divide small positive long by 146097
     else { // divide positive long by 146097
       val xl = x & 0xFFFFFFFFL
       val xh = x >>> 32
       ((xl * 3371721453L >>> 32) + xl * 963315388 + xh * 3371721453L >>> 32) + xh * 963315388 >> 15
     }
 
-  private[this] def div100000000(x: Long): Long = { // divide positive long by 100000000
-    val xl = x & 0xFFFFFFFFL
-    val xh = x >>> 32
-    (xl * 2882303762L + xh * 2221002493L >>> 32) + xh * 2882303761L >> 26
+  private[this] def div100000000(x: Long): Long = {
+    val x8 = x >> 8
+    if (x8.toInt == x8) x8 * 1441151881 >> 49 // divide small positive long by 100000000
+    else { // divide positive long by 100000000
+      val xl = x & 0xFFFFFFFFL
+      val xh = x >>> 32
+      (xl * 2882303762L + xh * 2221002493L >>> 32) + xh * 2882303761L >> 26
+    }
   }
 
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
