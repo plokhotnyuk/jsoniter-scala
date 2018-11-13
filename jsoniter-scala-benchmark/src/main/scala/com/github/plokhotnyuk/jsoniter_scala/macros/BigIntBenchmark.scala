@@ -48,9 +48,6 @@ class BigIntBenchmark extends CommonParams {
   def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes)(bigIntCodec)
 
   @Benchmark
-  def readNaiveScala(): BigInt = BigInt(new String(jsonBytes, UTF_8))
-
-  @Benchmark
   def readPlayJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
 /* FIXME: uPickle parses BigInt from JSON strings only
   @Benchmark
@@ -74,9 +71,6 @@ class BigIntBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(bigIntCodec)
-
-  @Benchmark
-  def writeNaiveScala(): Array[Byte] = obj.toString.getBytes(UTF_8)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

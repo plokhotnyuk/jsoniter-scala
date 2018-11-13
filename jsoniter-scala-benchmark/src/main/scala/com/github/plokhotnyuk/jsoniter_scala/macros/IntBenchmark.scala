@@ -41,9 +41,6 @@ class IntBenchmark extends CommonParams {
   def readJsoniterScala(): Int = readFromArray[Int](jsonBytes)(intCodec)
 
   @Benchmark
-  def readNaiveScala(): Int = new String(jsonBytes, UTF_8).toInt
-
-  @Benchmark
   def readPlayJson(): Int = Json.parse(jsonBytes).as[Int]
 
   @Benchmark
@@ -69,9 +66,6 @@ class IntBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(intCodec)
-
-  @Benchmark
-  def writeNaiveScala(): Array[Byte] = obj.toString.getBytes(UTF_8)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

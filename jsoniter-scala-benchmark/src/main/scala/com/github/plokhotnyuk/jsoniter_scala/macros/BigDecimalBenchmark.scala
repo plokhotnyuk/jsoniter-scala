@@ -48,9 +48,6 @@ class BigDecimalBenchmark extends CommonParams {
   def readJsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
 
   @Benchmark
-  def readNaiveScala(): BigDecimal = BigDecimal(new String(jsonBytes, UTF_8))
-
-  @Benchmark
   def readPlayJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
 /* FIXME: uPickle parses BigDecimal from JSON strings only
   @Benchmark
@@ -73,9 +70,6 @@ class BigDecimalBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(bigDecimalCodec)
-
-  @Benchmark
-  def writeNaiveScala(): Array[Byte] = obj.toString.getBytes(UTF_8)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
