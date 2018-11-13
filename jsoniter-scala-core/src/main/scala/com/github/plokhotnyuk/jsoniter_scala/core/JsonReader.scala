@@ -231,7 +231,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsBoolean(): Boolean = {
     nextTokenOrError('"', head)
-    val x = parseBoolean(isToken = false)
+    val x = parseBoolean(isToken = false, head)
     nextByteOrError('"', head)
     nextTokenOrError(':', head)
     x
@@ -409,7 +409,7 @@ final class JsonReader private[jsoniter_scala](
     if (isNextToken('"', head)) parseUUID(head)
     else readNullOrTokenError(default, '"')
 
-  def readBoolean(): Boolean = parseBoolean(isToken = true)
+  def readBoolean(): Boolean = parseBoolean(isToken = true, head)
 
   def readStringAsCharBuf(): Int =
     if (isNextToken('"', head)) parseString()
@@ -475,7 +475,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readStringAsBoolean(): Boolean = {
     nextTokenOrError('"', head)
-    val x = parseBoolean(isToken = false)
+    val x = parseBoolean(isToken = false, head)
     nextByteOrError('"', head)
     x
   }
@@ -942,34 +942,28 @@ final class JsonReader private[jsoniter_scala](
     required
   }
 
-  private[this] def parseBoolean(isToken: Boolean): Boolean =
-    (if (isToken) nextToken(head)
-    else nextByte(head): @switch) match {
-      case 't' => parseTrue(head)
-      case 'f' => parseFalse(head)
-      case _ => booleanError(head - 1)
-    }
-
   @tailrec
-  private[this] def parseTrue(pos: Int): Boolean =
-    if (pos + 2 < tail) {
-      if (buf(pos) != 'r') booleanError(pos)
-      if (buf(pos + 1) != 'u') booleanError(pos + 1)
-      if (buf(pos + 2) != 'e') booleanError(pos + 2)
-      head = pos + 3
-      true
-    } else parseTrue(loadMoreOrError(pos))
-
-  @tailrec
-  private[this] def parseFalse(pos: Int): Boolean =
+  private[this] def parseBoolean(isToken: Boolean, pos: Int): Boolean =
     if (pos + 3 < tail) {
-      if (buf(pos) != 'a') booleanError(pos)
-      if (buf(pos + 1) != 'l') booleanError(pos + 1)
-      if (buf(pos + 2) != 's') booleanError(pos + 2)
-      if (buf(pos + 3) != 'e') booleanError(pos + 3)
-      head = pos + 4
-      false
-    } else parseFalse(loadMoreOrError(pos))
+      val b = buf(pos)
+      if (b == 't') {
+        if (buf(pos + 1) != 'r') booleanError(pos + 1)
+        if (buf(pos + 2) != 'u') booleanError(pos + 2)
+        if (buf(pos + 3) != 'e') booleanError(pos + 3)
+        head = pos + 4
+        true
+      } else if (b == 'f') {
+        if (buf(pos + 1) != 'a') booleanError(pos + 1)
+        if (buf(pos + 2) != 'l') booleanError(pos + 2)
+        if (buf(pos + 3) != 's') booleanError(pos + 3)
+        if (pos + 4 < tail) {
+          if (buf(pos + 4) != 'e') booleanError(pos + 4)
+          head = pos + 5
+          false
+        } else  parseBoolean(isToken, loadMoreOrError(pos))
+      } else if (isToken && (b == ' ' || b == '\n' || b == '\t' || b == '\r')) parseBoolean(isToken, pos + 1)
+      else booleanError(pos)
+    } else parseBoolean(isToken, loadMoreOrError(pos))
 
   private[this] def booleanError(pos: Int): Nothing = decodeError("illegal boolean", pos)
 

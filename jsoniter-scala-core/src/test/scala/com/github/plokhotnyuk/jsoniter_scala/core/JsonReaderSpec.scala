@@ -249,14 +249,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("false", value = false)
     }
     "throw parsing exception for empty input and illegal or broken value" in {
-      checkError("x", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+      checkError("xrue", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
       checkError("txue", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
-      checkError("trae", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
-      checkError("folse", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
+      checkError("trxe", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
+      checkError("trux", "illegal boolean, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
+      checkError("xalse", "illegal boolean, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+      checkError("fxlse", "illegal boolean, offset: 0x00000001", "illegal boolean, offset: 0x00000002")
       checkError("faxse", "illegal boolean, offset: 0x00000002", "illegal boolean, offset: 0x00000003")
       checkError("falxe", "illegal boolean, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
-      checkError("falsu", "illegal boolean, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
-      checkError("", "unexpected end of input, offset: 0x00000000", "illegal boolean, offset: 0x00000001")
+      checkError("falsx", "illegal boolean, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
       checkError("tru", "unexpected end of input, offset: 0x00000003", "illegal boolean, offset: 0x00000004")
       checkError("fals", "unexpected end of input, offset: 0x00000004", "illegal boolean, offset: 0x00000005")
     }
