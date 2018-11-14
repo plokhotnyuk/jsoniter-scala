@@ -2037,13 +2037,12 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
     if (i < minLim) {
       val b = buf(pos)
+      charBuf(i) = b.toChar
       if (b == '"') {
         head = pos + 1
         i
-      } else if (b >= ' ' && b != '\\') {
-        charBuf(i) = b.toChar
-        parseString(i + 1, minLim, charBuf, pos + 1)
-      } else parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if (((b - 32) ^ 60) > 0) parseString(i + 1, minLim, charBuf, pos + 1) // == else if (b >= ' ' && b != '\\') ...
+      else parseEncodedString(i, charBuf.length - 1, charBuf, pos)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
       parseString(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
