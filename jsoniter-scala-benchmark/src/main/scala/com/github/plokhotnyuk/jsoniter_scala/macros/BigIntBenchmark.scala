@@ -45,7 +45,7 @@ class BigIntBenchmark extends CommonParams {
   def readJacksonScala(): BigInt = jacksonMapper.readValue[BigInt](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes)(bigIntCodec)
+  def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes, longNumberConfig)(bigIntCodec)
 
   @Benchmark
   def readPlayJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
