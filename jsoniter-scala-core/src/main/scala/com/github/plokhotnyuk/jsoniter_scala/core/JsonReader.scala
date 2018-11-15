@@ -755,15 +755,15 @@ final class JsonReader private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def scanUntilToken(t: Byte, pos: Int): Unit =
+  private[this] def scanUntilToken(t: Byte, pos: Int): Int =
     if (pos + 3 < tail) {
-      if (buf(pos) == t) head = pos + 1
-      else if (buf(pos + 1) == t) head = pos + 2
-      else if (buf(pos + 2) == t) head = pos + 3
-      else if (buf(pos + 3) == t) head = pos + 4
+      if (buf(pos) == t) pos + 1
+      else if (buf(pos + 1) == t) pos + 2
+      else if (buf(pos + 2) == t) pos + 3
+      else if (buf(pos + 3) == t) pos + 4
       else scanUntilToken(t, pos + 4)
     } else if (pos < tail) {
-      if (buf(pos) == t) head = pos + 1
+      if (buf(pos) == t) pos + 1
       else scanUntilToken(t, pos + 1)
     } else scanUntilToken(t, loadMoreOrError(pos))
 
@@ -876,7 +876,7 @@ final class JsonReader private[jsoniter_scala](
     val mark = this.mark
     this.mark = Math.min(mark, head)
     try {
-      scanUntilToken(t, head)
+      head = scanUntilToken(t, head)
       new String(buf, 0, this.mark, head - this.mark - 1)
     } finally this.mark = mark
   }
