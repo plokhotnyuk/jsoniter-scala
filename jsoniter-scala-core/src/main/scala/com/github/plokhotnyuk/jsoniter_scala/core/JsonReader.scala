@@ -844,8 +844,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if (d + '0' != t) {
       if (!yearNeg && yearDigits == 4) digitError(pos)
-      else if (yearDigits == maxDigits) tokenError(t, pos)
-      else tokenOrDigitError(t, pos)
+      if (yearDigits == maxDigits) tokenError(t, pos)
+      tokenOrDigitError(t, pos)
     }
     head = pos + 1
     if (yearNeg) {
@@ -1448,8 +1448,8 @@ final class JsonReader private[jsoniter_scala](
       if (isNegX) b = nextByte(head)
       if (b < '0' || b > '9') {
         if (isNegX) digitError()
-        else if (state < 2) tokenOrDigitError('-')
-        else decodeError("expected '\"' or '-' or digit")
+        if (state < 2) tokenOrDigitError('-')
+        decodeError("expected '\"' or '-' or digit")
       }
       var pos = head
       var x: Long = '0' - b
@@ -1693,8 +1693,8 @@ final class JsonReader private[jsoniter_scala](
       if (isNegX) b = nextByte(head)
       if (b < '0' || b > '9') {
         if (isNegX) digitError()
-        else if (state < 1) tokenOrDigitError('-')
-        else decodeError("expected '\"' or '-' or digit")
+        if (state < 1) tokenOrDigitError('-')
+        decodeError("expected '\"' or '-' or digit")
       }
       var pos = head
       var x = '0' - b
@@ -1796,8 +1796,8 @@ final class JsonReader private[jsoniter_scala](
     }
     if (b != '"') {
       if (zone ne null) tokenError('"')
-      else if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
-      else decodeError("expected ':' or '[' or '\"'")
+      if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
+      decodeError("expected ':' or '[' or '\"'")
     }
     val ld = toLocalDate(year, month, day)
     val lt = toLocalTime(hour, minute, second, nano)

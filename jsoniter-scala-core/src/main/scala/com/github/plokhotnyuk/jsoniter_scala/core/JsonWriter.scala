@@ -1612,11 +1612,10 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def multiplePowOf2(q0: Long, q: Int): Boolean = (q0 & ((1L << q) - 1)) == 0
 
   @tailrec
-  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean =
-    q == 0 || {
-      val q1 = div5(q0)
-      (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
-    }
+  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q == 0 || {
+    val q1 = div5(q0)
+    (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
+  }
 
   private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
     val ml = m & 0x7FFFFFFF
@@ -1730,11 +1729,10 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
 
   @tailrec
-  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean =
-    q == 0 || {
-      val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
-      (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
-    }
+  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q == 0 || {
+    val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
+    (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
+  }
 
   @tailrec
   private[this] def writeNZeros(n: Int, pos: Int, buf: Array[Byte]): Int =
