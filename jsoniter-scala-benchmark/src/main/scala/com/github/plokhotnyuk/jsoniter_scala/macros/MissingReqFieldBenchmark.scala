@@ -92,6 +92,6 @@ class MissingReqFieldBenchmark extends CommonParams {
     try {
       read[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
-      case ex: ujson.JsonProcessingException => ex.getMessage
+      case ex: upickle.core.AbortException => ex.getMessage
     }
 }

@@ -134,7 +134,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     libraryDependencies ++= Seq(
       "com.avsystem.commons" %% "commons-core" % "1.34.2",
-      "com.lihaoyi" %% "upickle" % "0.6.7",
+      "com.lihaoyi" %% "upickle" % "0.7.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.24.0-GA",
