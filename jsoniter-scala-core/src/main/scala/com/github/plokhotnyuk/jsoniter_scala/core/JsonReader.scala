@@ -506,6 +506,8 @@ final class JsonReader private[jsoniter_scala](
 
   def isCharBufEqualsTo(len: Int, s: String): Boolean = len == s.length && isCharBufEqualsTo(len, s, 0)
 
+  def charAt(i: Int): Char = charBuf(i)
+
   def skip(): Unit = head = {
     val b = nextToken(head)
     if (b == '"') skipString(evenBackSlashes = true, head)

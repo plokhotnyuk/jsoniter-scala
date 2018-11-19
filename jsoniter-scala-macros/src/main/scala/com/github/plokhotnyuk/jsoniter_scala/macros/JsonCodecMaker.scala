@@ -308,75 +308,31 @@ object JsonCodecMaker {
         }.toSeq // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
-        val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
+        val charAt: Int => EnumValueInfo => Int = i => e => e.name.charAt(i)
         val length: EnumValueInfo => Int = _.name.length
 
-        def genReadCollisions(es: collection.Seq[EnumValueInfo]): Tree =
-          es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
-            q"""if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value}
-                else $acc"""
-          }
-
-        if (enumValues.size <= 4 && enumValues.size == enumValues.map(length).distinct.size) {
-          genReadCollisions(enumValues)
-        } else {
-          val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
-            cq"$hash => ${genReadCollisions(fs)}"
-          }.toSeq :+ cq"_ => $unexpectedEnumValueHandler"
-          q"""(in.charBufToHashCode(l): @switch) match {
+        def genReadWithCharSwitch(es: collection.Seq[EnumValueInfo], i: Int): Tree = {
+          val cases = groupByOrdered(es)(charAt(i)).map { case (ch, ges) =>
+            val expr =
+              if (ges.size == 1) {
+                val e = ges.head
+                if (i + 1 == e.name.length) q"return ${e.value}"
+                else genReadWithCharSwitch(ges, i + 1)
+              } else genReadWithCharSwitch(ges, i + 1)
+            cq"$ch => $expr"
+          }.toSeq :+ cq"_ => ()"
+          q"""(in.charAt($i): @switch) match {
                 case ..$cases
               }"""
         }
-      }
 
-      def genReadKey(tpe: Type): Tree = {
-        val implKeyCodec = findImplicitKeyCodec(tpe)
-        if (!implKeyCodec.isEmpty) q"$implKeyCodec.decodeKey(in)"
-        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
-        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readKeyAsByte()"
-        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readKeyAsChar()"
-        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readKeyAsShort()"
-        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"in.readKeyAsInt()"
-        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readKeyAsLong()"
-        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
-        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
-        else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
-        else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
-        else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt(${codecConfig.bigIntDigitsLimit})"
-        else if (tpe =:= typeOf[BigDecimal]) {
-          val mc = withMathContextFor(codecConfig.bigDecimalPrecision)
-          q"in.readKeyAsBigDecimal($mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
-        } else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
-        else if (tpe =:= typeOf[Duration]) q"in.readKeyAsDuration()"
-        else if (tpe =:= typeOf[Instant]) q"in.readKeyAsInstant()"
-        else if (tpe =:= typeOf[LocalDate]) q"in.readKeyAsLocalDate()"
-        else if (tpe =:= typeOf[LocalDateTime]) q"in.readKeyAsLocalDateTime()"
-        else if (tpe =:= typeOf[LocalTime]) q"in.readKeyAsLocalTime()"
-        else if (tpe =:= typeOf[MonthDay]) q"in.readKeyAsMonthDay()"
-        else if (tpe =:= typeOf[OffsetDateTime]) q"in.readKeyAsOffsetDateTime()"
-        else if (tpe =:= typeOf[OffsetTime]) q"in.readKeyAsOffsetTime()"
-        else if (tpe =:= typeOf[Period]) q"in.readKeyAsPeriod()"
-        else if (tpe =:= typeOf[Year]) q"in.readKeyAsYear()"
-        else if (tpe =:= typeOf[YearMonth]) q"in.readKeyAsYearMonth()"
-        else if (tpe =:= typeOf[ZonedDateTime]) q"in.readKeyAsZonedDateTime()"
-        else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
-        else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
-        else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"""val len = in.readKeyAsCharBuf()
-              ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
-                .getOrElse(in.enumValueError(len))"""
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          val es = javaEnumValues(tpe)
-          if (es.isEmpty) {
-            q"""val v = in.readKeyAsString()
-                try ${companion(tpe)}.valueOf(v) catch {
-                  case _: IllegalArgumentException => in.enumValueError(v)
-                }"""
-          } else {
-            q"""val l = in.readKeyAsCharBuf()
-                ${genReadEnumValue(es, q"in.enumValueError(l)")}"""
-          }
-        } else fail(s"Unsupported type to be used as map key '$tpe'.")
+        val cases = groupByOrdered(enumValues)(length).map { case (len, es) =>
+          cq"$len => ${genReadWithCharSwitch(es, 0)}"
+        }.toSeq :+ cq"_ => ()"
+        q"""(l: @switch) match {
+              case ..$cases
+            }
+            $unexpectedEnumValueHandler"""
       }
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
@@ -635,6 +591,16 @@ object JsonCodecMaker {
       def getMethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree): MethodKey =
         MethodKey(tpe, isStringified && isContainer(tpe), discriminator)
 
+      val keyDecodeMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val keyDecodeMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+
+      def withKeyDecoderFor(tpe: Type)(f: => Tree): Tree = {
+        val keyDecodeMethodName = keyDecodeMethodNames.getOrElseUpdate(tpe, TermName("k" + keyDecodeMethodNames.size))
+        keyDecodeMethodTrees.getOrElseUpdate(tpe,
+          q"private[this] def $keyDecodeMethodName(in: JsonReader): $tpe = $f")
+        q"$keyDecodeMethodName(in)"
+      }
+
       val decodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
       val decodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
 
@@ -681,6 +647,56 @@ object JsonCodecMaker {
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
         else if (tpe <:< typeOf[AnyRef]) q"null"
         else q"null.asInstanceOf[$tpe]"
+
+      def genReadKey(tpe: Type): Tree = {
+        val implKeyCodec = findImplicitKeyCodec(tpe)
+        if (!implKeyCodec.isEmpty) q"$implKeyCodec.decodeKey(in)"
+        else if (tpe =:= definitions.BooleanTpe || tpe =:= typeOf[java.lang.Boolean]) q"in.readKeyAsBoolean()"
+        else if (tpe =:= definitions.ByteTpe || tpe =:= typeOf[java.lang.Byte]) q"in.readKeyAsByte()"
+        else if (tpe =:= definitions.CharTpe || tpe =:= typeOf[java.lang.Character]) q"in.readKeyAsChar()"
+        else if (tpe =:= definitions.ShortTpe || tpe =:= typeOf[java.lang.Short]) q"in.readKeyAsShort()"
+        else if (tpe =:= definitions.IntTpe || tpe =:= typeOf[java.lang.Integer]) q"in.readKeyAsInt()"
+        else if (tpe =:= definitions.LongTpe || tpe =:= typeOf[java.lang.Long]) q"in.readKeyAsLong()"
+        else if (tpe =:= definitions.FloatTpe || tpe =:= typeOf[java.lang.Float]) q"in.readKeyAsFloat()"
+        else if (tpe =:= definitions.DoubleTpe || tpe =:= typeOf[java.lang.Double]) q"in.readKeyAsDouble()"
+        else if (isValueClass(tpe)) q"new $tpe(${genReadKey(valueClassValueType(tpe))})"
+        else if (tpe =:= typeOf[String]) q"in.readKeyAsString()"
+        else if (tpe =:= typeOf[BigInt]) q"in.readKeyAsBigInt(${codecConfig.bigIntDigitsLimit})"
+        else if (tpe =:= typeOf[BigDecimal]) {
+          val mc = withMathContextFor(codecConfig.bigDecimalPrecision)
+          q"in.readKeyAsBigDecimal($mc, ${codecConfig.bigDecimalScaleLimit}, ${codecConfig.bigDecimalDigitsLimit})"
+        } else if (tpe =:= typeOf[java.util.UUID]) q"in.readKeyAsUUID()"
+        else if (tpe =:= typeOf[Duration]) q"in.readKeyAsDuration()"
+        else if (tpe =:= typeOf[Instant]) q"in.readKeyAsInstant()"
+        else if (tpe =:= typeOf[LocalDate]) q"in.readKeyAsLocalDate()"
+        else if (tpe =:= typeOf[LocalDateTime]) q"in.readKeyAsLocalDateTime()"
+        else if (tpe =:= typeOf[LocalTime]) q"in.readKeyAsLocalTime()"
+        else if (tpe =:= typeOf[MonthDay]) q"in.readKeyAsMonthDay()"
+        else if (tpe =:= typeOf[OffsetDateTime]) q"in.readKeyAsOffsetDateTime()"
+        else if (tpe =:= typeOf[OffsetTime]) q"in.readKeyAsOffsetTime()"
+        else if (tpe =:= typeOf[Period]) q"in.readKeyAsPeriod()"
+        else if (tpe =:= typeOf[Year]) q"in.readKeyAsYear()"
+        else if (tpe =:= typeOf[YearMonth]) q"in.readKeyAsYearMonth()"
+        else if (tpe =:= typeOf[ZonedDateTime]) q"in.readKeyAsZonedDateTime()"
+        else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
+        else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
+        else if (tpe <:< typeOf[Enumeration#Value]) withKeyDecoderFor(tpe) {
+          q"""val len = in.readKeyAsCharBuf()
+              ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
+                .getOrElse(in.enumValueError(len))"""
+        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withKeyDecoderFor(tpe) {
+          val es = javaEnumValues(tpe)
+          if (es.isEmpty) {
+            q"""val v = in.readKeyAsString()
+                try ${companion(tpe)}.valueOf(v) catch {
+                  case _: IllegalArgumentException => in.enumValueError(v)
+                }"""
+          } else {
+            q"""val l = in.readKeyAsCharBuf()
+                ${genReadEnumValue(es, q"in.enumValueError(l)")}"""
+          }
+        } else fail(s"Unsupported type to be used as map key '$tpe'.")
+      }
 
       def genReadNonAbstractScalaClass(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
         val classInfo = getClassInfo(tpe)
@@ -1230,6 +1246,7 @@ object JsonCodecMaker {
                 ${genReadVal(rootTpe, q"default", codecConfig.isStringified, isRoot = true)}
               def encodeValue(x: $rootTpe, out: JsonWriter): Unit =
                 ${genWriteVal(q"x", rootTpe, codecConfig.isStringified, isRoot = true)}
+              ..${keyDecodeMethodTrees.values}
               ..${decodeMethodTrees.values}
               ..${encodeMethodTrees.values}
               ..${fieldTrees.values}
