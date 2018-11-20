@@ -749,36 +749,60 @@ object JsonCodecMaker {
         val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
         val readVars = classInfo.fields
           .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe))}")
-        val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
+        val charAt: Int => FieldInfo => Int = i => f => f.mappedName.charAt(i)
         val length: FieldInfo => Int = _.mappedName.length
         val readFields = codecConfig.discriminatorFieldName.fold(classInfo.fields) { n =>
           if (discriminator.isEmpty) classInfo.fields
           else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, true)
         }
 
-        def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
-          fs.foldRight(unexpectedFieldHandler) { case (f, acc) =>
-            val readValue =
-              if (discriminator.nonEmpty && codecConfig.discriminatorFieldName.contains(f.mappedName)) discriminator
-              else {
-                q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
-                    ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
-              }
-            q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
-                else $acc"""
-          }
+        def genReadWithCharSwitch(fs: collection.Seq[FieldInfo], i: Int): Tree = {
+          def genCheckAndRead(f: FieldInfo): Tree =
+            if (discriminator.nonEmpty && codecConfig.discriminatorFieldName.contains(f.mappedName)) discriminator
+            else {
+              q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
+                  ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
+            }
 
-        val readFieldsBlock =
-          if (readFields.size <= 4 && readFields.size == readFields.map(length).distinct.size) {
-            genReadCollisions(readFields)
+          val grouped = groupByOrdered(fs)(charAt(i))
+          if (grouped.size == 1) {
+            val f = fs.head
+            val name = f.mappedName
+            var j = i
+            while (fs.forall(j + 1 < name.length && _.mappedName(j + 1) == name(j + 1))) j += 1
+            val condition =
+              (i + 1 to j).foldLeft[Tree](q"in.charAt($i) == ${name.charAt(i)}") { (acc, k) =>
+                q"$acc && in.charAt($k) == ${name.charAt(k)}"
+              }
+            val expr =
+              if (j + 1 == name.length) genCheckAndRead(f)
+              else genReadWithCharSwitch(fs, j + 1)
+            q"""if ($condition) $expr
+                else $unexpectedFieldHandler"""
           } else {
-            val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
-              cq"$hash => ${genReadCollisions(fs)}"
+            val cases = grouped.map { case (ch, gfs) =>
+              val expr =
+                if (gfs.size == 1) {
+                  val f = gfs.head
+                  if (i + 1 == f.mappedName.length) genCheckAndRead(f)
+                  else genReadWithCharSwitch(gfs, i + 1)
+                } else genReadWithCharSwitch(gfs, i + 1)
+              cq"${ch.toChar} => $expr"
             }.toSeq :+ cq"_ => $unexpectedFieldHandler"
-            q"""(in.charBufToHashCode(l): @switch) match {
-                    case ..$cases
+            q"""(in.charAt($i): @switch) match {
+                  case ..$cases
                 }"""
           }
+        }
+
+        val readFieldsBlock = {
+          val cases = groupByOrdered(readFields)(length).map { case (len, fs) =>
+            cq"$len => ${genReadWithCharSwitch(fs, 0)}"
+          }.toSeq :+ cq"_ => $unexpectedFieldHandler"
+          q"""(l: @switch) match {
+                case ..$cases
+              }"""
+        }
         val discriminatorVar =
           if (discriminator.isEmpty) EmptyTree
           else q"var pd = true"
