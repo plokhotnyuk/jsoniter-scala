@@ -312,27 +312,42 @@ object JsonCodecMaker {
         val length: EnumValueInfo => Int = _.name.length
 
         def genReadWithCharSwitch(es: collection.Seq[EnumValueInfo], i: Int): Tree = {
-          val cases = groupByOrdered(es)(charAt(i)).map { case (ch, ges) =>
+          val grouped = groupByOrdered(es)(charAt(i))
+          if (grouped.size == 1) {
+            val name = es.head.name
+            var j = i
+            while (es.forall(j + 1 < name.length && _.name(j + 1) == name(j + 1))) j += 1
+            val condition =
+              (i + 1 to j).foldLeft[Tree](q"in.charAt($i) == ${name.charAt(i)}") { (acc, k) =>
+                q"$acc && in.charAt($k) == ${name.charAt(k)}"
+              }
             val expr =
-              if (ges.size == 1) {
-                val e = ges.head
-                if (i + 1 == e.name.length) q"return ${e.value}"
-                else genReadWithCharSwitch(ges, i + 1)
-              } else genReadWithCharSwitch(ges, i + 1)
-            cq"$ch => $expr"
-          }.toSeq :+ cq"_ => ()"
-          q"""(in.charAt($i): @switch) match {
-                case ..$cases
-              }"""
+              if (j + 1 == name.length) es.head.value
+              else genReadWithCharSwitch(es, j + 1)
+            q"""if ($condition) $expr
+                else $unexpectedEnumValueHandler"""
+          } else {
+            val cases = grouped.map { case (ch, ges) =>
+              val expr =
+                if (ges.size == 1) {
+                  val e = ges.head
+                  if (i + 1 == e.name.length) e.value
+                  else genReadWithCharSwitch(ges, i + 1)
+                } else genReadWithCharSwitch(ges, i + 1)
+              cq"${ch.toChar} => $expr"
+            }.toSeq :+ cq"_ => $unexpectedEnumValueHandler"
+            q"""(in.charAt($i): @switch) match {
+                  case ..$cases
+                }"""
+          }
         }
 
         val cases = groupByOrdered(enumValues)(length).map { case (len, es) =>
           cq"$len => ${genReadWithCharSwitch(es, 0)}"
-        }.toSeq :+ cq"_ => ()"
+        }.toSeq :+ cq"_ => $unexpectedEnumValueHandler"
         q"""(l: @switch) match {
               case ..$cases
-            }
-            $unexpectedEnumValueHandler"""
+            }"""
       }
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
