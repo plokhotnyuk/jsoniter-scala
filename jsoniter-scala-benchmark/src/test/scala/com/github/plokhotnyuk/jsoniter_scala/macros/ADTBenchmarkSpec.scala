@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 class ADTBenchmarkSpec extends BenchmarkSpecBase {
   private val benchmark = new ADTBenchmark
   
-  "ADTsBenchmark" should {
+  "ADTBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj

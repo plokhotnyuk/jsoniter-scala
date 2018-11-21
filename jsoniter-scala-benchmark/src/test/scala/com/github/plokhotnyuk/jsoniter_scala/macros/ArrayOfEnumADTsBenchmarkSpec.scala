@@ -5,7 +5,7 @@ class ArrayOfEnumADTsBenchmarkSpec extends BenchmarkSpecBase {
     setup()
   }
   
-  "ArrayOfEnumsBenchmark" should {
+  "ArrayOfEnumADTsBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
