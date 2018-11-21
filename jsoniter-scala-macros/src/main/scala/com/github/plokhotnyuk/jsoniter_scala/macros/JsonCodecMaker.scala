@@ -685,8 +685,9 @@ object JsonCodecMaker {
       def genReadNonAbstractScalaClass(tpe: Type, default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, codecConfig.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-          (if (discriminator.isEmpty) Seq.empty
-          else Seq(n)) ++ classInfo.fields.map(_.mappedName)
+          val names = classInfo.fields.map(_.mappedName)
+          if (discriminator.isEmpty) names
+          else names :+ n
         })
         val required = classInfo.fields.collect {
           case f if !f.symbol.isParamWithDefault && !isContainer(f.resolvedTpe) => f.mappedName
@@ -1212,7 +1213,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantVal(discriminatorValue(subTpe))}"""
                 cq"x: $subTpe => ${genWriteLeafClass(subTpe, writeDiscriminatorField)}"
               }
-          }) ++ Seq(cq"null => out.writeNull()")
+          }) :+ cq"null => out.writeNull()"
           q"""x match {
                 case ..$writeSubclasses
               }"""
