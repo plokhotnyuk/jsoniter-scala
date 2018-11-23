@@ -1910,10 +1910,10 @@ final class JsonReader private[jsoniter_scala](
         ((year + 399) * 1374389535L >> 39) // divide positive int by 400
     }
 
-  private[this] def dayOfYearForYearMonth(posYear: Int, month: Int): Int =
+  private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
     ((month * 1050835331877L - 1036518774222L) >> 35).toInt - // == (367 * month - 362) / 12
       (if (month <= 2) 0
-      else if (isLeap(posYear)) 1
+      else if (isLeap(year)) 1
       else 2)
 
   private[this] def maxDayForYearMonth(year: Int, month: Int): Int =
