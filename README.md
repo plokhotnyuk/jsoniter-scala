@@ -88,7 +88,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Support of compilation to a native image by GraalVM
   
 There are configurable options that can be set in compile-time:
-- Ability to read/write numbers of containers from/to string values
+- Ability to read/write numbers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
 - Skipping of serialization of field values that matched with defaults which is defined in the primary constructor can
   be turned off to force serialization of that values
@@ -96,6 +96,10 @@ There are configurable options that can be set in compile-time:
   kebab-case or camelCase names for all fields
 - An optional name of the discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
+- Ability to alter default of precision, scale limit, and max number of significant digits when parsing `BigDecimal` values
+- Ability to alter default of max number of digits when parsing `BigDecimal` values
+- Ability to alter default of max value when parsing bit sets
+- Ability to alter default of limit for inserts when parsing sets or maps
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
@@ -103,7 +107,8 @@ List of options that change parsing and serialization in runtime:
 - Throwing of stack-less parsing exceptions by default to greatly reduce impact on performance, while stack traces can 
   be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
-- A preferred size of internal buffers when parsing from `InputStream` or serializing to `OutputStream`
+- A preferred size of internal in/out buffers when parsing from `InputStream` or serializing to `OutputStream`
+- A preferred size of char buffers when parsing string values
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master) 
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
