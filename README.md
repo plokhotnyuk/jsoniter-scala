@@ -62,7 +62,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, and value classes for any of them
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at 
   the scope of the `make` macro call  
-- Parsing of escaped characters are not supported for strings which are mapped to numeric and data/time types 
+- Serialization and parsing of `java.time.*` types to/from ISO-8601 representation  
+- Parsing of escaped characters are not supported for strings which are mapped to numeric and `java.time.*` types 
 - Support of first-order and higher-kinded types
 - Support of 2 representations of ADTs with a sealed trait or a Scala class as base type and non-abstract Scala classes 
   or objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one uses string 
@@ -70,6 +71,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
   supported classes
+- Type aliases are also supported for all types  
 - Support only acyclic graphs of class instances
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
