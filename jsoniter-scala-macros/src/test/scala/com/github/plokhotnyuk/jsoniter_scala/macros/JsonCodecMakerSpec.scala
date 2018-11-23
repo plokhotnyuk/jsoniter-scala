@@ -1036,7 +1036,30 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[List[A]](CodecMakerConfig()), List(new A(), B(1), C("VVV")),
         """[{"type":"A"},{"type":"B","n":1},{"type":"C","s":"VVV"}]""")
     }
-    "serialize and deserialize ADTs using non-ASCII discriminator field & value w/ reusage of case classes w/o ADTs" in {
+    "serialize and deserialize ADTs using a custom name of the discriminator field" in {
+      sealed abstract class Base extends Product with Serializable
+
+      final case class A(b: B) extends Base
+
+      final case class B(c: String) extends Base
+
+      verifySerDeser(make[List[Base]](CodecMakerConfig(discriminatorFieldName = Some("t"), skipUnexpectedFields = false)),
+        List(A(B("x")), B("x")), """[{"t":"A","b":{"c":"x"}},{"t":"B","c":"x"}]""")
+    }
+    "serialize and deserialize ADTs using custom values of the discriminator field" in {
+      sealed abstract class Base extends Product with Serializable
+
+      final case class A(b: B) extends Base
+
+      final case class B(c: String) extends Base
+
+      verifySerDeser(make[List[Base]](CodecMakerConfig(adtLeafClassNameMapper = x => JsonCodecMaker.simpleClassName(x) match {
+        case "A" => "X"
+        case "B" => "Y"
+      }, skipUnexpectedFields = false)),
+      List(A(B("x")), B("x")), """[{"type":"X","b":{"c":"x"}},{"type":"Y","c":"x"}]""")
+    }
+    "serialize and deserialize ADTs using non-ASCII characters for the discriminator field name and it's values" in {
       sealed abstract class База extends Product with Serializable
 
       case class А(б: Б) extends База
