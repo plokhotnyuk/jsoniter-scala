@@ -1228,8 +1228,10 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeInt(x: Int): Unit = count = {
     var pos = ensureBufCapacity(11) // minIntBytes.length
     val buf = this.buf
-    if (x == -2147483648) writeByteArray(minIntBytes, pos, buf)
-    else {
+    if (x == -2147483648) {
+      "-2147483648".getBytes(0, 11, buf, pos)
+      pos + 11
+    } else {
       val q0 =
         if (x >= 0) x
         else {
@@ -1244,8 +1246,10 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeLong(x: Long): Unit = count = {
     var pos = ensureBufCapacity(20) // minLongBytes.length
     val buf = this.buf
-    if (x == -9223372036854775808L) writeByteArray(minLongBytes, pos, buf)
-    else {
+    if (x == -9223372036854775808L) {
+      "-9223372036854775808L".getBytes(0, 20, buf, pos)
+      pos + 20
+    } else {
       val ds = digits
       val q0 =
         if (x >= 0) x
@@ -1272,16 +1276,6 @@ final class JsonWriter private[jsoniter_scala](
     val lastPos = offset(q0) + pos
     writePositiveIntStartingFromLastPosition(q0, lastPos, buf, ds)
     lastPos + 1
-  }
-
-  private[this] def writeByteArray(bs: Array[Byte], pos: Int, buf: Array[Byte]): Int = {
-    val len = bs.length
-    var i = 0
-    while (i < len) {
-      buf(pos + i) = bs(i)
-      i += 1
-    }
-    pos + len
   }
 
   // Based on a great work of Ulf Adams:
@@ -1806,20 +1800,6 @@ object JsonWriter {
     es(127) = -1
     es
   }
-  private final val digits: Array[Short] = {
-    val ds = new Array[Short](100)
-    var i, j = 0
-    do {
-      var k = 0
-      do {
-        ds(i) = (((j + '0') << 8) + (k + '0')).toShort
-        i += 1
-        k += 1
-      } while (k < 10)
-      j += 1
-    } while (j < 10)
-    ds
-  }
   private final val hexDigits: Array[Short] = {
     val ds = new Array[Short](256)
     var i, j = 0
@@ -1840,13 +1820,24 @@ object JsonWriter {
     } while (j < 16)
     ds
   }
-  private final val minIntBytes: Array[Byte] = Array('-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8')
-  private final val minLongBytes: Array[Byte] =
-    Array('-', '9', '2', '2', '3', '3', '7', '2', '0', '3', '6', '8', '5', '4', '7', '7', '5', '8', '0', '8')
-  private final val f32Pow5Split = new Array[Int](94)
+  private final val digits: Array[Short] = {
+    val ds = new Array[Short](100)
+    var i, j = 0
+    do {
+      var k = 0
+      do {
+        ds(i) = (((j + '0') << 8) + (k + '0')).toShort
+        i += 1
+        k += 1
+      } while (k < 10)
+      j += 1
+    } while (j < 10)
+    ds
+  }
   private final val f32Pow5InvSplit = new Array[Int](62)
-  private final val f64Pow5Split = new Array[Int](1304)
+  private final val f32Pow5Split = new Array[Int](94)
   private final val f64Pow5InvSplit = new Array[Int](1164)
+  private final val f64Pow5Split = new Array[Int](1304)
 
   {
     var pow5 = BigInteger.ONE
