@@ -556,7 +556,7 @@ object JsonCodecMaker {
         else q"in.unexpectedKeyError(l)"
       val skipDiscriminatorField =
         q"""if (pd) {
-              pd = !pd
+              pd = false
               in.skip()
             } else in.duplicatedKeyError(l)"""
 

@@ -72,7 +72,9 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
   supported classes
 - Type aliases are also supported for all types  
-- Support only acyclic graphs of class instances
+- Throws a parsing exception if duplicated keys were detected for a class instance (except maps)
+- Support of only acyclic graphs of class instances
+- Order of object field is preserved during serialization 
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
@@ -87,6 +89,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
+- Releases for different Scala versions: 2.11, 2.12, 2.13.0-M4, 2.13.0-M5  
 - Support of compilation to a native image by GraalVM
   
 There are configurable options that can be set in compile-time:
