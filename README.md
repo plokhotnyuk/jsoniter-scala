@@ -47,7 +47,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 ## Features and limitations
 - JSON parsing from `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
 - JSON serialization to `Array[Byte]`, `java.io.OutputStream` or `java.nio.ByteBuffer`
-- Support parsing from or writing to part of `Array[Byte]` or `java.nio.ByteBuffer` by specifying of position and limit
+- Support of parsing from or writing to part of `Array[Byte]` or `java.nio.ByteBuffer` by specifying of position and 
+  limit
 - Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all parsed 
   values in the memory
 - Support of UTF-8 encoding only 
@@ -63,7 +64,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at 
   the scope of the `make` macro call  
 - Serialization and parsing of `java.time.*` types to/from ISO-8601 representation  
-- Parsing of escaped characters are not supported for strings which are mapped to numeric and `java.time.*` types 
+- Parsing of escaped characters is not supported for strings which are mapped to numeric and `java.time.*` types 
 - Support of first-order and higher-kinded types
 - Support of 2 representations of ADTs with a sealed trait or a Scala class as base type and non-abstract Scala classes 
   or objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one uses string 
