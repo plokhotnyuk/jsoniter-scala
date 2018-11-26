@@ -1347,6 +1347,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"\"", "illegal date/time/zone, offset: 0x00000001")
       checkError("\"+\"", "illegal date/time/zone, offset: 0x00000002")
       //checkError("\"+1\"", "expected digit, offset: 0x00000003") FIXME: looks like a bug in ZoneId.of() parser
+      checkError("\"XXX\"", "illegal date/time/zone, offset: 0x00000004")
       checkError("\"+10=\"", "illegal date/time/zone, offset: 0x00000005")
       checkError("\"+10:\"", "illegal date/time/zone, offset: 0x00000005")
       checkError("\"+10:1\"", "illegal date/time/zone, offset: 0x00000006")

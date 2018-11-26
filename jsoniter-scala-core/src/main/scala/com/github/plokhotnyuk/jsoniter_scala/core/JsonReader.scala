@@ -4,7 +4,6 @@ import java.io.InputStream
 import java.math.{BigInteger, MathContext}
 import java.nio.ByteBuffer
 import java.time._
-import java.time.zone.ZoneRulesException
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
@@ -1320,11 +1319,7 @@ final class JsonReader private[jsoniter_scala](
         if (isNeg) -x
         else x
       })
-    } else {
-      try new BigInt(new java.math.BigInteger(new String(buf, 0, startPos, pos - startPos), 10)) catch {
-        case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
-      }
-    }
+    } else new BigInt(new java.math.BigInteger(new String(buf, 0, startPos, pos - startPos), 10))
   }
 
   private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
@@ -1396,10 +1391,10 @@ final class JsonReader private[jsoniter_scala](
     }
   }
 
-  private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal =
-    try new BigDecimal(new java.math.BigDecimal(new String(buf, 0, mark, pos - mark))) catch {
-      case ex: NumberFormatException => decodeError("illegal number", pos - 1, ex)
-    }
+  private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal = {
+    val startPos = this.mark
+    new BigDecimal(new java.math.BigDecimal(new String(buf, 0, startPos, pos - startPos)))
+  }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
     if (default == null) numberError(pos - 1)
@@ -1840,41 +1835,31 @@ final class JsonReader private[jsoniter_scala](
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
     if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
-    try LocalDate.of(year, month, day) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
-    }
+    LocalDate.of(year, month, day)
   }
 
   private[this] def toYear(year: Int): Year = {
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
-    try Year.of(year) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
-    }
+    Year.of(year)
   }
 
   private[this] def toYearMonth(year: Int, month: Int): YearMonth = {
     if (year < -999999999 || year > 999999999) decodeError("illegal year")
     if (month < 1 || month > 12) decodeError("illegal month")
-    try YearMonth.of(year, month) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
-    }
+    YearMonth.of(year, month)
   }
 
   private[this] def toMonthDay(month: Int, day: Int): MonthDay = {
     if (month < 1 || month > 12) decodeError("illegal month")
-    if (day < 1 || (day > 28 && day > maxDayForYearMonth(2004, month))) decodeError("illegal day")
-    try MonthDay.of(month, day) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
-    }
+    if (day < 1 || (day > 28 && day > maxDayForMonth(month))) decodeError("illegal day")
+    MonthDay.of(month, day)
   }
 
   private[this] def toLocalTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
     if (hour > 23) decodeError("illegal hour")
     if (minute > 59) decodeError("illegal minute")
     if (second > 59) decodeError("illegal second")
-    try LocalTime.of(hour, minute, second, nano) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
-    }
+    LocalTime.of(hour, minute, second, nano)
   }
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
@@ -1883,11 +1868,9 @@ final class JsonReader private[jsoniter_scala](
     if (offsetSecond > 59) decodeError("illegal zone offset second")
     val offsetTotal = secondOfDay(offsetHour, offsetMinute, offsetSecond)
     if (offsetTotal > 64800) decodeError("illegal zone offset") // 64800 == 18 * 60 * 60
-    try ZoneOffset.ofTotalSeconds {
+    ZoneOffset.ofTotalSeconds {
       if (isNeg) -offsetTotal
       else offsetTotal
-    } catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
     }
   }
 
@@ -1896,7 +1879,6 @@ final class JsonReader private[jsoniter_scala](
     if (x ne null) x
     else try ZoneId.of(zone) catch {
       case ex: DateTimeException => dateTimeZoneError(ex)
-      case ex: ZoneRulesException => dateTimeZoneError(ex)
     }
   }
 
@@ -1920,6 +1902,10 @@ final class JsonReader private[jsoniter_scala](
     if (month != 2) ((month >> 3) ^ (month & 1)) + 30
     else if (isLeap(year)) 29
     else 28
+
+  private[this] def maxDayForMonth(month: Int): Int =
+    if (month != 2) ((month >> 3) ^ (month & 1)) + 30
+    else 29
 
   private[this] def isLeap(year: Int): Boolean = {
     val posYear =
