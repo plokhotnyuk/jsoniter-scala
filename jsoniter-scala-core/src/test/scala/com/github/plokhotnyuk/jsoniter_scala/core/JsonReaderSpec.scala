@@ -168,24 +168,29 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parse exception in case of invalid null value" in {
       assert(intercept[JsonParseException] {
+        val r = reader("nul")
+        r.isNextToken('n') shouldBe true
+        r.readNullOrError("default", "expected null")
+      }.getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonParseException] {
         val r = reader("xull")
         r.isNextToken('x') shouldBe true
-        r.readNullOrError("default", "expected null") shouldBe "default"
+        r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000000"))
       assert(intercept[JsonParseException] {
         val r = reader("nxll")
         r.isNextToken('n') shouldBe true
-        r.readNullOrError("default", "expected null") shouldBe "default"
+        r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000001"))
       assert(intercept[JsonParseException] {
         val r = reader("nuxl")
         r.isNextToken('n') shouldBe true
-        r.readNullOrError("default", "expected null") shouldBe "default"
+        r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000002"))
       assert(intercept[JsonParseException] {
         val r = reader("nulx")
         r.isNextToken('n') shouldBe true
-        r.readNullOrError("default", "expected null") shouldBe "default"
+        r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000003"))
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
@@ -201,24 +206,29 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parse exception in case of invalid null value" in {
       assert(intercept[JsonParseException] {
+        val r = reader("nul")
+        r.isNextToken('n') shouldBe true
+        r.readNullOrTokenError("default", 'x')
+      }.getMessage.contains("unexpected end of input, offset: 0x00000003"))
+      assert(intercept[JsonParseException] {
         val r = reader("yull")
         r.isNextToken('y') shouldBe true
-        r.readNullOrTokenError("default", 'x') shouldBe "default"
+        r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000000"))
       assert(intercept[JsonParseException] {
         val r = reader("nxll")
         r.isNextToken('n') shouldBe true
-        r.readNullOrTokenError("default", 'x') shouldBe "default"
+        r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000001"))
       assert(intercept[JsonParseException] {
         val r = reader("nuxl")
         r.isNextToken('n') shouldBe true
-        r.readNullOrTokenError("default", 'x') shouldBe "default"
+        r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000002"))
       assert(intercept[JsonParseException] {
         val r = reader("nulx")
         r.isNextToken('n') shouldBe true
-        r.readNullOrTokenError("default", 'x') shouldBe "default"
+        r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000003"))
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
