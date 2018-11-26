@@ -168,6 +168,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
     "throw parse exception in case of invalid null value" in {
       assert(intercept[JsonParseException] {
+        val r = reader("xull")
+        r.isNextToken('x') shouldBe true
+        r.readNullOrError("default", "expected null") shouldBe "default"
+      }.getMessage.contains("expected null, offset: 0x00000000"))
+      assert(intercept[JsonParseException] {
         val r = reader("nxll")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null") shouldBe "default"
@@ -195,6 +200,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       r.readNullOrTokenError("default", 'x') shouldBe "default"
     }
     "throw parse exception in case of invalid null value" in {
+      assert(intercept[JsonParseException] {
+        val r = reader("yull")
+        r.isNextToken('y') shouldBe true
+        r.readNullOrTokenError("default", 'x') shouldBe "default"
+      }.getMessage.contains("expected 'x' or null, offset: 0x00000000"))
       assert(intercept[JsonParseException] {
         val r = reader("nxll")
         r.isNextToken('n') shouldBe true
