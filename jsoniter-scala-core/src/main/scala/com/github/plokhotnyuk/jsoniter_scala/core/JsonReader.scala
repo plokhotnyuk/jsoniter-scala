@@ -513,7 +513,7 @@ final class JsonReader private[jsoniter_scala](
     else if (b == 'f') skipFixedBytes(4, head)
     else if (b == '[') skipArray(0, head)
     else if (b == '{') skipObject(0, head)
-    else decodeError("expected value", head - 1)
+    else decodeError("expected value")
   }
 
   def commaError(): Nothing = tokenError(',')
@@ -1821,53 +1821,53 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def epochSecond(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long = {
-    if (year < -1000000000 || year > 1000000000) decodeError("illegal year")
-    if (month < 1 || month > 12) decodeError("illegal month")
-    if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
-    if (hour > 23) decodeError("illegal hour")
-    if (minute > 59) decodeError("illegal minute")
-    if (second > 59) decodeError("illegal second")
+    if (year < -1000000000 || year > 1000000000) yearError()
+    if (month < 1 || month > 12) monthError()
+    if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError()
+    if (hour > 23) hourError()
+    if (minute > 59) minuteError()
+    if (second > 59) secondError()
     (epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529)) * 86400 + // 719528 == days 0000 to 1970
       secondOfDay(hour, minute, second)
   }
 
   private[this] def toLocalDate(year: Int, month: Int, day: Int): LocalDate = {
-    if (year < -999999999 || year > 999999999) decodeError("illegal year")
-    if (month < 1 || month > 12) decodeError("illegal month")
-    if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) decodeError("illegal day")
+    if (year < -999999999 || year > 999999999) yearError()
+    if (month < 1 || month > 12) monthError()
+    if (day < 1 || (day > 28 && day > maxDayForYearMonth(year, month))) dayError()
     LocalDate.of(year, month, day)
   }
 
   private[this] def toYear(year: Int): Year = {
-    if (year < -999999999 || year > 999999999) decodeError("illegal year")
+    if (year < -999999999 || year > 999999999) yearError()
     Year.of(year)
   }
 
   private[this] def toYearMonth(year: Int, month: Int): YearMonth = {
-    if (year < -999999999 || year > 999999999) decodeError("illegal year")
-    if (month < 1 || month > 12) decodeError("illegal month")
+    if (year < -999999999 || year > 999999999) yearError()
+    if (month < 1 || month > 12) monthError()
     YearMonth.of(year, month)
   }
 
   private[this] def toMonthDay(month: Int, day: Int): MonthDay = {
-    if (month < 1 || month > 12) decodeError("illegal month")
-    if (day < 1 || (day > 28 && day > maxDayForMonth(month))) decodeError("illegal day")
+    if (month < 1 || month > 12) monthError()
+    if (day < 1 || (day > 28 && day > maxDayForMonth(month))) dayError()
     MonthDay.of(month, day)
   }
 
   private[this] def toLocalTime(hour: Int, minute: Int, second: Int, nano: Int): LocalTime = {
-    if (hour > 23) decodeError("illegal hour")
-    if (minute > 59) decodeError("illegal minute")
-    if (second > 59) decodeError("illegal second")
+    if (hour > 23) hourError()
+    if (minute > 59) minuteError()
+    if (second > 59) secondError()
     LocalTime.of(hour, minute, second, nano)
   }
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
-    if (offsetHour > 18) decodeError("illegal zone offset hour")
-    if (offsetMinute > 59) decodeError("illegal zone offset minute")
-    if (offsetSecond > 59) decodeError("illegal zone offset second")
+    if (offsetHour > 18) decodeError("illegal timezone offset hour")
+    if (offsetMinute > 59) decodeError("illegal timezone offset minute")
+    if (offsetSecond > 59) decodeError("illegal timezone offset second")
     val offsetTotal = secondOfDay(offsetHour, offsetMinute, offsetSecond)
-    if (offsetTotal > 64800) decodeError("illegal zone offset") // 64800 == 18 * 60 * 60
+    if (offsetTotal > 64800) decodeError("illegal timezone offset") // 64800 == 18 * 60 * 60
     ZoneOffset.ofTotalSeconds {
       if (isNeg) -offsetTotal
       else offsetTotal
@@ -1934,6 +1934,18 @@ final class JsonReader private[jsoniter_scala](
     }
   }, pos)
 
+  private[this] def yearError(): NotImplementedError = decodeError("illegal year")
+
+  private[this] def monthError(): NotImplementedError = decodeError("illegal month")
+
+  private[this] def dayError(): NotImplementedError = decodeError("illegal day")
+
+  private[this] def hourError(): NotImplementedError = decodeError("illegal hour")
+
+  private[this] def minuteError(): NotImplementedError = decodeError("illegal minute")
+
+  private[this] def secondError(): NotImplementedError = decodeError("illegal second")
+
   private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
     if (nanoDigitWeight == 0) tokenError(t, pos)
     else tokenOrDigitError(t, pos)
@@ -1949,7 +1961,7 @@ final class JsonReader private[jsoniter_scala](
     }
 
   private[this] def dateTimeZoneError(ex: DateTimeException): Nothing =
-    decodeError("illegal date/time/zone", head - 1, ex)
+    decodeError("illegal timezone", head - 1, ex)
 
   @tailrec
   private[this] def parseUUID(pos: Int): UUID =

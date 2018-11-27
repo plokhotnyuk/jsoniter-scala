@@ -932,11 +932,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10:10=10\"", "expected ':' or '\"', offset: 0x0000001b")
       checkError("\"2008-01-20T07:24:33.+10:10:X0\"", "expected digit, offset: 0x0000001c")
       checkError("\"2008-01-20T07:24:33.+10:10:1X\"", "expected digit, offset: 0x0000001d")
-      checkError("\"2008-01-20T07:24:33.+18:10\"", "illegal zone offset, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.-18:10\"", "illegal zone offset, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+20:10\"", "illegal zone offset hour, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+10:90\"", "illegal zone offset minute, offset: 0x0000001b")
-      checkError("\"2008-01-20T07:24:33.+10:10:60\"", "illegal zone offset second, offset: 0x0000001e")
+      checkError("\"2008-01-20T07:24:33.+18:10\"", "illegal timezone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.-18:10\"", "illegal timezone offset, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+20:10\"", "illegal timezone offset hour, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:90\"", "illegal timezone offset minute, offset: 0x0000001b")
+      checkError("\"2008-01-20T07:24:33.+10:10:60\"", "illegal timezone offset second, offset: 0x0000001e")
     }
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
@@ -999,11 +999,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"07:24:33.+10:10:X0\"", "expected digit, offset: 0x00000011")
       checkError("\"07:24:33.+10:10:1X\"", "expected digit, offset: 0x00000012")
       checkError("\"07:24:33.+10:10:10X\"", "expected '\"', offset: 0x00000013")
-      checkError("\"07:24:33.+18:10\"", "illegal zone offset, offset: 0x00000010")
-      checkError("\"07:24:33.-18:10\"", "illegal zone offset, offset: 0x00000010")
-      checkError("\"07:24:33.+20:10\"", "illegal zone offset hour, offset: 0x00000010")
-      checkError("\"07:24:33.+10:90\"", "illegal zone offset minute, offset: 0x00000010")
-      checkError("\"07:24:33.+10:10:60\"", "illegal zone offset second, offset: 0x00000013")
+      checkError("\"07:24:33.+18:10\"", "illegal timezone offset, offset: 0x00000010")
+      checkError("\"07:24:33.-18:10\"", "illegal timezone offset, offset: 0x00000010")
+      checkError("\"07:24:33.+20:10\"", "illegal timezone offset hour, offset: 0x00000010")
+      checkError("\"07:24:33.+10:90\"", "illegal timezone offset minute, offset: 0x00000010")
+      checkError("\"07:24:33.+10:10:60\"", "illegal timezone offset second, offset: 0x00000013")
     }
   }
   "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
@@ -1232,7 +1232,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       val default = ZonedDateTime.parse("2008-01-20T07:24Z[UTC]")
       reader("null").readZonedDateTime(default) shouldBe default
     }
-    "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA time zone identifier in JDK 8+ format" in {
+    "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK 8+ format" in {
       def check(s: String, x: ZonedDateTime): Unit = {
         reader("\"" + s + "\"").readZonedDateTime(null) shouldBe x
         reader("\"" + s + "\":").readKeyAsZonedDateTime() shouldBe x
@@ -1323,16 +1323,16 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"2008-01-20T07:24:33.+10=[UTC]\"", "expected ':' or '[' or '\"', offset: 0x00000018")
       checkError("\"2008-01-20T07:24:33.+10:[UTC]\"", "expected digit, offset: 0x00000019")
       checkError("\"2008-01-20T07:24:33.+10:1[UTC]\"", "expected digit, offset: 0x0000001a")
-      checkError("\"2008-01-20T07:24:33.+10:10[]\"", "illegal date/time/zone, offset: 0x0000001d")
+      checkError("\"2008-01-20T07:24:33.+10:10[]\"", "illegal timezone, offset: 0x0000001d")
       checkError("\"2008-01-20T07:24:33.+10:10=10[UTC]\"", "expected ':' or '[' or '\"', offset: 0x0000001b")
       checkError("\"2008-01-20T07:24:33.+10:10:X0[UTC]\"", "expected digit, offset: 0x0000001c")
       checkError("\"2008-01-20T07:24:33.+10:10:1X[UTC]\"", "expected digit, offset: 0x0000001d")
       checkError("\"2008-01-20T07:24:33.+10:10:10[UTC]X\"", "expected '\"', offset: 0x00000023")
-      checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"", "illegal zone offset, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"", "illegal zone offset, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"", "illegal zone offset hour, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.+10:90[UTC]\"", "illegal zone offset minute, offset: 0x00000020")
-      checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"", "illegal zone offset second, offset: 0x00000023")
+      checkError("\"2008-01-20T07:24:33.+18:10[UTC]\"", "illegal timezone offset, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.-18:10[UTC]\"", "illegal timezone offset, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+20:10[UTC]\"", "illegal timezone offset hour, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+10:90[UTC]\"", "illegal timezone offset minute, offset: 0x00000020")
+      checkError("\"2008-01-20T07:24:33.+10:10:60[UTC]\"", "illegal timezone offset second, offset: 0x00000023")
     }
   }
   "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
@@ -1346,7 +1346,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       val default = ZoneId.of("Europe/Warsaw")
       reader("null").readZoneId(default) shouldBe default
     }
-    "parse ZoneId from a string representation according to ISO-8601 format for zone offset or JDK 8+ format for IANA time zone identifier" in {
+    "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK 8+ format for IANA timezone identifier" in {
       def check(x: ZoneId): Unit = {
         val s = x.toString
         reader("\"" + s + "\"").readZoneId(null) shouldBe x
@@ -1364,45 +1364,45 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"\"", "illegal date/time/zone, offset: 0x00000001")
-      checkError("\"+\"", "illegal date/time/zone, offset: 0x00000002")
+      checkError("\"\"", "illegal timezone, offset: 0x00000001")
+      checkError("\"+\"", "illegal timezone, offset: 0x00000002")
       //checkError("\"+1\"", "expected digit, offset: 0x00000003") FIXME: looks like a bug in ZoneId.of() parser
-      checkError("\"XXX\"", "illegal date/time/zone, offset: 0x00000004")
-      checkError("\"+10=\"", "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"+10:\"", "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"+10:1\"", "illegal date/time/zone, offset: 0x00000006")
-      checkError("\"+18:10\"", "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"-18:10\"", "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"+20:10\"", "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"+10:90\"", "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"+10:10:60\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UT+\"", "illegal date/time/zone, offset: 0x00000004")
-      checkError("\"UT+10=\"", "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"UT+10:\"", "illegal date/time/zone, offset: 0x00000007")
-      checkError("\"UT+10:1\"", "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"UT+18:10\"", "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT-18:10\"", "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT+20:10\"", "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT+10:90\"", "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UT+10:10:60\"", "illegal date/time/zone, offset: 0x0000000c")
-      checkError("\"UTC+\"", "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"UTC+10=\"", "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"UTC+10:\"", "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"UTC+10:1\"", "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"UTC+18:10\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC-18:10\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC+20:10\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC+10:90\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"UTC+10:10:60\"", "illegal date/time/zone, offset: 0x0000000d")
-      checkError("\"GMT+\"", "illegal date/time/zone, offset: 0x00000005")
-      checkError("\"GMT+10=\"", "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"GMT+10:\"", "illegal date/time/zone, offset: 0x00000008")
-      checkError("\"GMT+10:1\"", "illegal date/time/zone, offset: 0x00000009")
-      checkError("\"GMT+18:10\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT-18:10\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT+20:10\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT+10:90\"", "illegal date/time/zone, offset: 0x0000000a")
-      checkError("\"GMT+10:10:60\"", "illegal date/time/zone, offset: 0x0000000d")
+      checkError("\"XXX\"", "illegal timezone, offset: 0x00000004")
+      checkError("\"+10=\"", "illegal timezone, offset: 0x00000005")
+      checkError("\"+10:\"", "illegal timezone, offset: 0x00000005")
+      checkError("\"+10:1\"", "illegal timezone, offset: 0x00000006")
+      checkError("\"+18:10\"", "illegal timezone, offset: 0x00000007")
+      checkError("\"-18:10\"", "illegal timezone, offset: 0x00000007")
+      checkError("\"+20:10\"", "illegal timezone, offset: 0x00000007")
+      checkError("\"+10:90\"", "illegal timezone, offset: 0x00000007")
+      checkError("\"+10:10:60\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"UT+\"", "illegal timezone, offset: 0x00000004")
+      checkError("\"UT+10=\"", "illegal timezone, offset: 0x00000007")
+      checkError("\"UT+10:\"", "illegal timezone, offset: 0x00000007")
+      checkError("\"UT+10:1\"", "illegal timezone, offset: 0x00000008")
+      checkError("\"UT+18:10\"", "illegal timezone, offset: 0x00000009")
+      checkError("\"UT-18:10\"", "illegal timezone, offset: 0x00000009")
+      checkError("\"UT+20:10\"", "illegal timezone, offset: 0x00000009")
+      checkError("\"UT+10:90\"", "illegal timezone, offset: 0x00000009")
+      checkError("\"UT+10:10:60\"", "illegal timezone, offset: 0x0000000c")
+      checkError("\"UTC+\"", "illegal timezone, offset: 0x00000005")
+      checkError("\"UTC+10=\"", "illegal timezone, offset: 0x00000008")
+      checkError("\"UTC+10:\"", "illegal timezone, offset: 0x00000008")
+      checkError("\"UTC+10:1\"", "illegal timezone, offset: 0x00000009")
+      checkError("\"UTC+18:10\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"UTC-18:10\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"UTC+20:10\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"UTC+10:90\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"UTC+10:10:60\"", "illegal timezone, offset: 0x0000000d")
+      checkError("\"GMT+\"", "illegal timezone, offset: 0x00000005")
+      checkError("\"GMT+10=\"", "illegal timezone, offset: 0x00000008")
+      checkError("\"GMT+10:\"", "illegal timezone, offset: 0x00000008")
+      checkError("\"GMT+10:1\"", "illegal timezone, offset: 0x00000009")
+      checkError("\"GMT+18:10\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"GMT-18:10\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"GMT+20:10\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"GMT+10:90\"", "illegal timezone, offset: 0x0000000a")
+      checkError("\"GMT+10:10:60\"", "illegal timezone, offset: 0x0000000d")
     }
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
@@ -1446,11 +1446,11 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"+10:10:X0\"", "expected digit, offset: 0x00000008")
       checkError("\"+10:10:1X\"", "expected digit, offset: 0x00000009")
       checkError("\"+10:10:10X\"", "expected '\"', offset: 0x0000000a")
-      checkError("\"+18:10\"", "illegal zone offset, offset: 0x00000007")
-      checkError("\"-18:10\"", "illegal zone offset, offset: 0x00000007")
-      checkError("\"+20:10\"", "illegal zone offset hour, offset: 0x00000007")
-      checkError("\"+10:90\"", "illegal zone offset minute, offset: 0x00000007")
-      checkError("\"+10:10:60\"", "illegal zone offset second, offset: 0x0000000a")
+      checkError("\"+18:10\"", "illegal timezone offset, offset: 0x00000007")
+      checkError("\"-18:10\"", "illegal timezone offset, offset: 0x00000007")
+      checkError("\"+20:10\"", "illegal timezone offset hour, offset: 0x00000007")
+      checkError("\"+10:90\"", "illegal timezone offset minute, offset: 0x00000007")
+      checkError("\"+10:10:60\"", "illegal timezone offset second, offset: 0x0000000a")
     }
   }
   "JsonReader.readKeyAsString" should {
