@@ -13,8 +13,6 @@ import scala.collection.mutable
 object AVSystemCodecs {
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = {
-    // FIXME: AVSystem GenCodec wraps values of value classes by extra JSON objects
-    // see https://github.com/AVSystem/scala-commons/issues/91
     implicit val byteValGenCodec: GenCodec[ByteVal] = materialize
     implicit val shortValGenCodec: GenCodec[ShortVal] = materialize
     implicit val intValGenCodec: GenCodec[IntVal] = materialize
