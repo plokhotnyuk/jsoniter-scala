@@ -1863,11 +1863,11 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
-    if (offsetHour > 18) decodeError("illegal timezone offset hour")
-    if (offsetMinute > 59) decodeError("illegal timezone offset minute")
-    if (offsetSecond > 59) decodeError("illegal timezone offset second")
     val offsetTotal = secondOfDay(offsetHour, offsetMinute, offsetSecond)
-    if (offsetTotal > 64800) decodeError("illegal timezone offset") // 64800 == 18 * 60 * 60
+    if (offsetHour > 18) timezoneOffsetHourError()
+    if (offsetMinute > 59) timezoneOffsetMinuteError()
+    if (offsetSecond > 59) timezoneOffsetSecondError()
+    if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     ZoneOffset.ofTotalSeconds {
       if (isNeg) -offsetTotal
       else offsetTotal
@@ -1878,7 +1878,7 @@ final class JsonReader private[jsoniter_scala](
     val x = zoneIds.get(zone)
     if (x ne null) x
     else try ZoneId.of(zone) catch {
-      case ex: DateTimeException => dateTimeZoneError(ex)
+      case ex: DateTimeException => timezoneError(ex)
     }
   }
 
@@ -1960,8 +1960,16 @@ final class JsonReader private[jsoniter_scala](
       } else "expected ':' or '+' or '-' or 'Z'"
     }
 
-  private[this] def dateTimeZoneError(ex: DateTimeException): Nothing =
+  private[this] def timezoneError(ex: DateTimeException): Nothing =
     decodeError("illegal timezone", head - 1, ex)
+
+  private[this] def timezoneOffsetError(): Nothing = decodeError("illegal timezone offset")
+
+  private[this] def timezoneOffsetHourError(): Nothing = decodeError("illegal timezone offset hour")
+
+  private[this] def timezoneOffsetMinuteError(): Nothing = decodeError("illegal timezone offset minute")
+
+  private[this] def timezoneOffsetSecondError(): Nothing = decodeError("illegal timezone offset second")
 
   @tailrec
   private[this] def parseUUID(pos: Int): UUID =
