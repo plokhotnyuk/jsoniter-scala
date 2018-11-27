@@ -1907,14 +1907,9 @@ final class JsonReader private[jsoniter_scala](
     if (month != 2) ((month >> 3) ^ (month & 1)) + 30
     else 29
 
-  private[this] def isLeap(year: Int): Boolean = {
-    val posYear =
-      if (year < 0) -year
-      else year
-    (posYear & 3) == 0 && {
-      val century = (posYear * 1374389535L >> 37).toInt // divide positive int by 100
-      century * 100 != posYear || (century & 3) == 0
-    }
+  private[this] def isLeap(year: Int): Boolean = (year & 3) == 0 && {
+    val century = (year * 1374389535L >> 37).toInt - (year >> 31) // divide int by 100
+    century * 100 != year || (century & 3) == 0
   }
 
   private[this] def secondOfDay(hour: Int, month: Int, day: Int): Int = hour * 3600 + month * 60 + day
