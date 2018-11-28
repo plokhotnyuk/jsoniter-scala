@@ -557,7 +557,7 @@ final class JsonReader private[jsoniter_scala](
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       codec.decodeValue(this, codec.nullValue)
     } finally {
-      this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+      this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
@@ -591,7 +591,7 @@ final class JsonReader private[jsoniter_scala](
         if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
         codec.decodeValue(this, codec.nullValue)
       } finally {
-        this.bbuf = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+        this.bbuf = null
         if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
         if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
         bbuf.position(totalRead.toInt - tail + head + position)
@@ -610,7 +610,7 @@ final class JsonReader private[jsoniter_scala](
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
-      this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+      this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
@@ -636,7 +636,7 @@ final class JsonReader private[jsoniter_scala](
         }
       } else readNullOrTokenError((), '[')
     } finally {
-      this.in = null // to help GC, and to avoid modifying of supplied for parsing Array[Byte]
+      this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }

@@ -343,7 +343,7 @@ final class JsonWriter private[jsoniter_scala](
       codec.encodeValue(x, this)
       flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
     } finally {
-      this.out = null // do not close output stream, just help GC instead
+      this.out = null // do not close output stream
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
@@ -406,7 +406,7 @@ final class JsonWriter private[jsoniter_scala](
         codec.encodeValue(x, this)
         flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
       } finally {
-        this.bbuf = null // help GC
+        this.bbuf = null
         if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
       }
     }

@@ -2405,42 +2405,56 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("unexpected field \"xxx\", offset: 0x00000004"))
     }
   }
+  "JsonReader.discriminatorError" should {
+    "throw parsing exception with unexpected discriminator" in {
+      val jsonReader = reader("\"xxx\"")
+      jsonReader.readString(null)
+      assert(intercept[JsonParseException](jsonReader.discriminatorError())
+        .getMessage.contains("xxx"))
+    }
+  }
   "JsonReader.discriminatorValueError" should {
-    val jsonReader = reader("\"xxx\"")
-    val value = jsonReader.readString(null)
     "throw parsing exception with unexpected discriminator value" in {
+      val jsonReader = reader("\"xxx\"")
+      val value = jsonReader.readString(null)
       assert(intercept[JsonParseException](jsonReader.discriminatorValueError(value))
        .getMessage.contains("illegal value of discriminator field \"xxx\", offset: 0x00000004"))
     }
   }
   "JsonReader.enumValueError" should {
-    val jsonReader = reader("\"xxx\"")
-    val value = jsonReader.readString(null)
-    "throw parsing exception with unexpected enum value" in {
+    "throw parsing exception with unexpected enum value as string" in {
+      val jsonReader = reader("\"xxx\"")
+      val value = jsonReader.readString(null)
       assert(intercept[JsonParseException](jsonReader.enumValueError(value))
+        .getMessage.contains("illegal enum value \"xxx\", offset: 0x00000004"))
+    }
+    "throw parsing exception with unexpected enum value as length of character buffer" in {
+      val jsonReader = reader("\"xxx\"")
+      val len = jsonReader.readStringAsCharBuf()
+      assert(intercept[JsonParseException](jsonReader.enumValueError(len))
         .getMessage.contains("illegal enum value \"xxx\", offset: 0x00000004"))
     }
   }
   "JsonReader.commaError" should {
-    val jsonReader = reader("{}")
-    jsonReader.isNextToken(',')
     "throw parsing exception with expected token(s)" in {
+      val jsonReader = reader("{}")
+      jsonReader.isNextToken(',')
       assert(intercept[JsonParseException](jsonReader.commaError())
         .getMessage.contains("expected ',', offset: 0x00000000"))
     }
   }
   "JsonReader.arrayStartOrNullError" should {
-    val jsonReader = reader("{}")
-    jsonReader.isNextToken('[')
     "throw parsing exception with expected token(s)" in {
+      val jsonReader = reader("{}")
+      jsonReader.isNextToken('[')
       assert(intercept[JsonParseException](jsonReader.arrayStartOrNullError())
         .getMessage.contains("expected '[' or null, offset: 0x00000000"))
     }
   }
   "JsonReader.arrayEndError" should {
-    val jsonReader = reader("}")
-    jsonReader.isNextToken(']')
     "throw parsing exception with expected token(s)" in {
+      val jsonReader = reader("}")
+      jsonReader.isNextToken(']')
       assert(intercept[JsonParseException](jsonReader.arrayEndError())
         .getMessage.contains("expected ']', offset: 0x00000000"))
     }
@@ -2454,17 +2468,17 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonReader.objectStartOrNullError" should {
-    val jsonReader = reader("[]")
-    jsonReader.isNextToken('{')
     "throw parsing exception with expected token(s)" in {
+      val jsonReader = reader("[]")
+      jsonReader.isNextToken('{')
       assert(intercept[JsonParseException](jsonReader.objectStartOrNullError())
         .getMessage.contains("expected '{' or null, offset: 0x00000000"))
     }
   }
   "JsonReader.objectEndOrCommaError" should {
-    val jsonReader = reader("]")
-    jsonReader.isNextToken('}')
     "throw parsing exception with expected token(s)" in {
+      val jsonReader = reader("]")
+      jsonReader.isNextToken('}')
       assert(intercept[JsonParseException](jsonReader.objectEndOrCommaError())
         .getMessage.contains("expected '}' or ',', offset: 0x00000000"))
     }
