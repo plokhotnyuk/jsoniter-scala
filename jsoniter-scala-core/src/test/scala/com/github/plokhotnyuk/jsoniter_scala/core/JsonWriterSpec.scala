@@ -329,6 +329,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         withWriter(_.writeKey(s)) shouldBe '"' + s + "\":"
       }
 
+      check("Oó!")
       forAll(minSuccessful(100000)) { (s: String) =>
         whenever(s.forall(ch => !Character.isSurrogate(ch) && !isEscapedAscii(ch))) {
           check(s)
@@ -336,22 +337,22 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
     "write strings with chars that should be escaped" in {
-      def check(s: String, escapeUnicode: Boolean): Unit = {
-        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe
-          "\"" + s.flatMap(toEscaped(_)) + "\""
-        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)) shouldBe
-          "\"" + s.flatMap(toEscaped(_)) + "\":"
+      def check(s: String, escapeUnicode: Boolean, f: String => String = _.flatMap(toEscaped(_))): Unit = {
+        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe "\"" + f(s) + "\""
+        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)) shouldBe "\"" + f(s) + "\":"
       }
 
+      check("Oó!", escapeUnicode = true, _ => "O\\u00f3!")
+      check("Є!", escapeUnicode = true, _ => "\\u0404!")
       forAll(Gen.listOf(genEscapedAsciiChar).map(_.mkString), Gen.oneOf(true, false), minSuccessful(10000)) {
         (s: String, escapeUnicode: Boolean) =>
           check(s, escapeUnicode)
       }
     }
     "write strings with escaped Unicode chars if it is specified by provided writer config" in {
-      def check(s: String): Unit = {
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\":"
+      def check(s: String, f: String => String = _.flatMap(toEscaped(_))): Unit = {
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + f(s) + "\""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + f(s) + "\":"
       }
 
       forAll(minSuccessful(100000)) { (s: String) =>
