@@ -1461,24 +1461,30 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         .getMessage.contains("expected ':', offset: 0x00000002"))
     }
   }
-  "JsonReader.readString and JsonReader.readKeyAsString" should {
+  "JsonReader.readString, JsonReader.readStringAsCharBuf and JsonReader.readKeyAsString" should {
     def check(s: String): Unit = {
       reader("\"" + s + "\"").readString(null) shouldBe s
+      val r = reader("\"" + s + "\"")
+      r.isCharBufEqualsTo(r.readStringAsCharBuf(), s) shouldBe true
       reader("\"" + s + "\":").readKeyAsString() shouldBe s
     }
 
     def checkError(json: String, error: String): Unit = {
       assert(intercept[JsonParseException](reader(json).readString(null)).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader(json).readStringAsCharBuf()).getMessage.contains(error))
       assert(intercept[JsonParseException](reader(json).readKeyAsString()).getMessage.contains(error))
     }
 
     def checkError2(jsonBytes: Array[Byte], error: String): Unit = {
       assert(intercept[JsonParseException](reader2(jsonBytes).readString(null)).getMessage.contains(error))
+      assert(intercept[JsonParseException](reader2(jsonBytes).readStringAsCharBuf()).getMessage.contains(error))
       assert(intercept[JsonParseException](reader2(jsonBytes).readKeyAsString()).getMessage.contains(error))
     }
 
     "don't parse null value" in {
       assert(intercept[JsonParseException](reader("null").readString(null))
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+      assert(intercept[JsonParseException](reader("null").readStringAsCharBuf())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
       assert(intercept[JsonParseException](reader("null").readKeyAsString())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
@@ -1503,6 +1509,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "parse escaped chars of string value" in {
       def checkEncoded(s1: String, s2: String): Unit = {
         reader("\"" + s1 + "\"").readString(null) shouldBe s2
+        val r = reader("\"" + s1 + "\"")
+        r.isCharBufEqualsTo(r.readStringAsCharBuf(), s2) shouldBe true
         reader("\"" + s1 + "\":").readKeyAsString() shouldBe s2
       }
 
@@ -1527,6 +1535,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "throw parsing exception in case of illegal escape sequence" in {
       def checkError(s: String, error1: String, error2: String): Unit = {
         assert(intercept[JsonParseException](reader("\"" + s + "\"").readString(null)).getMessage.contains(error1))
+        assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsCharBuf()).getMessage.contains(error1))
         assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsString()).getMessage.contains(error2))
       }
 
@@ -1560,6 +1569,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
     "throw parsing exception in case of illegal byte sequence" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
         assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readString(null))
+          .getMessage.contains(error))
+        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readStringAsCharBuf())
           .getMessage.contains(error))
         assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readString(null))
           .getMessage.contains(error))
