@@ -30,6 +30,11 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
   }
+  "JsonWriter.writeNull" should {
+    "write null value" in {
+      withWriter(_.writeNull()) shouldBe "null"
+    }
+  }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and and JsonWriter.writeKey for boolean" should {
     "write valid true and false values" in {
       def check(value: Boolean, excpectedOut: String): Unit = {
@@ -74,7 +79,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Duration" should {
-    "write null value" in {
+    "don't write null value" in {
       intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[Duration])))
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Duration])))
     }
@@ -572,7 +577,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(0.0063476562f)
     }
     "throw i/o exception on non-finite numbers" in {
-      forAll(Gen.oneOf(Float.NaN, Float.PositiveInfinity, Float.NegativeInfinity)) { (n: Float) =>
+      forAll(genNonFiniteFloat) { (n: Float) =>
         assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
         assert(intercept[IOException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
         assert(intercept[IOException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
@@ -641,7 +646,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(5.724294694832342E14)
     }
     "throw i/o exception on non-finite numbers" in {
-      forAll(Gen.oneOf(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) { (n: Double) =>
+      forAll(genNonFiniteDouble) { (n: Double) =>
         assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
         assert(intercept[IOException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
         assert(intercept[IOException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))

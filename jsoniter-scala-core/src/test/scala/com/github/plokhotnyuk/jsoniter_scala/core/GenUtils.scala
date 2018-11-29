@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.time._
 
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 
 import scala.collection.JavaConverters._
 
@@ -113,6 +113,16 @@ object GenUtils {
       nano <- Gen.choose(0, 999999999)
       zoneId <- genZoneId
     } yield ZonedDateTime.of(year, month, day, hour, minute, second, nano, zoneId)
+  val genNonFiniteDouble: Gen[Double] = Gen.frequency(
+    (1, java.lang.Double.NaN),
+    (1, java.lang.Double.NEGATIVE_INFINITY),
+    (1, java.lang.Double.POSITIVE_INFINITY),
+    (1, Arbitrary.arbitrary[Long].map(java.lang.Double.longBitsToDouble).filter(x => !java.lang.Double.isFinite(x))))
+  val genNonFiniteFloat: Gen[Float] = Gen.frequency(
+    (1, java.lang.Float.NaN),
+    (1, java.lang.Float.NEGATIVE_INFINITY),
+    (1, java.lang.Float.POSITIVE_INFINITY),
+    (1, Arbitrary.arbitrary[Int].map(java.lang.Float.intBitsToFloat).filter(x => !java.lang.Float.isFinite(x))))
 
   private def maxDaysInMonth(year: Int, month: Int): Int = Month.of(month).length(Year.of(year).isLeap)
 }
