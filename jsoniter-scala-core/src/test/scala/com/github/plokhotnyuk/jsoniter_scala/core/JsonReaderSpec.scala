@@ -1453,6 +1453,28 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       checkError("\"+10:10:60\"", "illegal timezone offset second, offset: 0x0000000a")
     }
   }
+  "JsonReader.isCharBufEqualsTo" should {
+    "return true if content of internal char buffer for the specified length is equal to the provided string" in {
+      def check(s1: String, s2: String): Unit = {
+        val r = reader("\"" + s1 + "\"")
+        r.isCharBufEqualsTo(r.readStringAsCharBuf(), s2) shouldBe s1 == s2
+      }
+
+      check("", "")
+      check("x", "")
+      check("", "x")
+      check("x", "x")
+      forAll(minSuccessful(100000)) { (s1: String, s2: String) =>
+        whenever(s1.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
+          check(s1, s2)
+        }
+      }
+    }
+    "throw exception for null value of string to compare" in {
+      val r = reader("\"\"")
+      intercept[NullPointerException](r.isCharBufEqualsTo(r.readStringAsCharBuf(), null))
+    }
+  }
   "JsonReader.readKeyAsString" should {
     "throw parsing exception for missing ':' in the end" in {
       assert(intercept[JsonParseException](reader("\"\"").readKeyAsString())
