@@ -30,11 +30,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       }
     }
   }
-  "JsonWriter.writeNull" should {
-    "write null value" in {
-      withWriter(_.writeNull()) shouldBe "null"
-    }
-  }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and and JsonWriter.writeKey for boolean" should {
     "write valid true and false values" in {
       def check(value: Boolean, excpectedOut: String): Unit = {
@@ -695,6 +690,85 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         check(n)
       }
+    }
+  }
+  "JsonWriter.writeNull" should {
+    "write null value" in {
+      withWriter(_.writeNull()) shouldBe "null"
+    }
+  }
+  "JsonWriter.writeArrayStart and JsonWriter.writeArrayEnd" should {
+    "allow to write an empty JSON array" in {
+      withWriter { w =>
+        w.writeArrayStart()
+        w.writeArrayEnd()
+      } shouldBe "[]"
+    }
+    "allow to write a compact JSON array with values separated by comma" in {
+      withWriter { w =>
+        w.writeArrayStart()
+        w.writeComma()
+        w.writeVal(1)
+        w.writeComma()
+        w.writeVal("VVV")
+        w.writeComma()
+        w.writeValAsString(2L)
+        w.writeComma()
+        w.writeValAsString(true)
+        w.writeArrayEnd()
+      } shouldBe "[1,\"VVV\",\"2\",\"true\"]"
+    }
+    "allow to write a prettified JSON array with values separated by comma" in {
+      withWriter(WriterConfig(indentionStep = 2)) { w =>
+        w.writeArrayStart()
+        w.writeComma()
+        w.writeVal(1)
+        w.writeComma()
+        w.writeVal("VVV")
+        w.writeComma()
+        w.writeValAsString(2L)
+        w.writeComma()
+        w.writeValAsString(true)
+        w.writeArrayEnd()
+      } shouldBe
+        """[
+           |  1,
+           |  "VVV",
+           |  "2",
+           |  "true"
+           |]""".stripMargin
+    }
+  }
+  "JsonWriter.writeObjectStart and JsonWriter.writeObjectEnd" should {
+    "allow to write an empty JSON object" in {
+      withWriter { w =>
+        w.writeObjectStart()
+        w.writeObjectEnd()
+      } shouldBe "{}"
+    }
+    "allow to write a compact JSON array with key/value pairs separated by comma" in {
+      withWriter { w =>
+        w.writeObjectStart()
+        w.writeKey(1)
+        w.writeVal("VVV")
+        w.writeKey(true)
+        w.writeVal("WWW")
+        w.writeObjectEnd()
+      } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\"}"
+    }
+    "allow to write a prettified JSON array with key/value pairs separated by comma" in {
+      withWriter(WriterConfig(indentionStep = 2)) { w =>
+        w.writeObjectStart()
+        w.writeKey(1)
+        w.writeVal("VVV")
+        w.writeKey(true)
+        w.writeVal("WWW")
+        w.writeObjectEnd()
+      } shouldBe
+        """{
+          |  "1": "VVV",
+          |  "true": "WWW"
+          |}""".stripMargin
     }
   }
 
