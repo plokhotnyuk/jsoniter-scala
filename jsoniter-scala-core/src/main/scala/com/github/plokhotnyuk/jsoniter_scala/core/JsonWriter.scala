@@ -577,10 +577,9 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
     else {
       val ch = s.charAt(from)
-      if (ch < 128 && escapedChars(ch) == 0) {
-        buf(pos) = ch.toByte
-        writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      } else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
+      buf(pos) = ch.toByte
+      if (ch < 128 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
+      else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
       else writeEncodedString(s, from, to, pos, posLim - 6, escapedChars)
     }
 
@@ -654,10 +653,9 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeString(bs, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
     else {
       val b = bs(from)
-      if (b >= 0 && escapedChars(b) == 0) {
-        buf(pos) = b
-        writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
-      } else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim - 12, escapedChars)
+      buf(pos) = b
+      if (escapedChars(b & 255) == 0) writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
+      else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim - 12, escapedChars)
       else writeEncodedString(bs, from, to, pos, posLim - 6, escapedChars)
     }
 
@@ -1788,7 +1786,7 @@ final class JsonWriter private[jsoniter_scala](
 
 object JsonWriter {
   private final val escapedChars: Array[Byte] = {
-    val es = new Array[Byte](128)
+    val es = new Array[Byte](256)
     java.util.Arrays.fill(es, 0, 32, -1: Byte)
     es('\n') = 'n'
     es('\r') = 'r'
@@ -1797,7 +1795,7 @@ object JsonWriter {
     es('\f') = 'f'
     es('\\') = '\\'
     es('\"') = '"'
-    es(127) = -1
+    java.util.Arrays.fill(es, 127, 256, -1: Byte)
     es
   }
   private final val hexDigits: Array[Short] = {
