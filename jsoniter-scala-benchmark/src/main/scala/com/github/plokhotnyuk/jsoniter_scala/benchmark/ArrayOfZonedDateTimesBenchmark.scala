@@ -19,7 +19,11 @@ import upickle.default._
 import scala.collection.JavaConverters._
 
 class ArrayOfZonedDateTimesBenchmark extends CommonParams {
-  val zoneIds: Array[ZoneId] = ZoneId.getAvailableZoneIds.asScala.map(ZoneId.of).toArray
+  val zoneIds: Array[ZoneId] = (ZoneId.getAvailableZoneIds.asScala.take(100).map(ZoneId.of) ++
+    (1 to 7).map(i => ZoneId.of(s"+0$i:00")) ++
+    (1 to 7).map(i => ZoneId.of(s"UT+0$i:00")) ++
+    (1 to 7).map(i => ZoneId.of(s"UTC+0$i:00")) ++
+    (1 to 7).map(i => ZoneId.of(s"GMT+0$i:00"))).toArray
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 10
   var obj: Array[ZonedDateTime] = _
