@@ -1868,7 +1868,11 @@ final class JsonReader private[jsoniter_scala](
     if (offsetMinute > 59) timezoneOffsetMinuteError()
     if (offsetSecond > 59) timezoneOffsetSecondError()
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-    ZoneOffset.ofTotalSeconds {
+    val q1 = (offsetTotal * 2443359173L >> 41).toInt // div positive int by 900
+    if (q1 * 900 == offsetTotal) zoneOffsets {
+      if (isNeg) 72 - q1
+      else 72 + q1
+    } else ZoneOffset.ofTotalSeconds {
       if (isNeg) -offsetTotal
       else offsetTotal
     }
@@ -2493,19 +2497,16 @@ object JsonReader {
     ns('f') = 15
     ns
   }
+  private final val zoneOffsets: Array[ZoneOffset] = (-72 to 72).map(x => ZoneOffset.ofTotalSeconds(x * 900)).toArray
   private final val zoneIds: java.util.HashMap[String, ZoneId] = {
     val zs = new java.util.HashMap[String, ZoneId](1024)
-    ZoneId.getAvailableZoneIds.asScala.foreach(z => zs.put(z, ZoneId.of(z)))
-    Array( // Currently used offsets picked from https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
-      "-12:00", "-11:00", "-10:00", "-09:30", "-09:00", "-08:00", "-07:00", "-06:00", "-05:00", "-04:00", "-03:30",
-      "-03:00", "-02:00", "-01:00", "-00:00", "+00:00", "+01:00", "+02:00", "+03:00", "+03:30", "+04:00", "+04:30",
-      "+05:00", "+05:30", "+05:45", "+06:00", "+06:30", "+07:00", "+08:00", "+08:45", "+09:00", "+09:30", "+10:00",
-      "+10:30", "+11:00", "+12:00", "+12:45", "+13:00", "+14:00"
-    ).foreach { z =>
-      val z1 = ZoneId.of(z)
-      val z2 = ZoneId.of(s"UT$z")
-      val z3 = ZoneId.of(s"UTC$z")
-      val z4 = ZoneId.of(s"GMT$z")
+    ZoneId.getAvailableZoneIds.asScala.foreach(id => zs.put(id, ZoneId.of(id)))
+    zoneOffsets.foreach { zo =>
+      val id = if (zo.getId == "Z") "+00:00" else zo.getId
+      val z1 = ZoneId.of(id)
+      val z2 = ZoneId.of(s"UT$id")
+      val z3 = ZoneId.of(s"UTC$id")
+      val z4 = ZoneId.of(s"GMT$id")
       zs.put(z1.getId, z1)
       zs.put(z2.getId, z2)
       zs.put(z3.getId, z3)
