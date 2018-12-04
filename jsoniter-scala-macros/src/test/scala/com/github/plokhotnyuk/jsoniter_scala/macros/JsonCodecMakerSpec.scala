@@ -830,10 +830,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "don't generate codec for case classes with fields that have duplicated JSON names" in {
       val expectedError =
-        """Duplicated JSON name(s) defined for 'DuplicatedJsonName': 'x'. Names(s) defined by
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s), name of discriminator field specified by
-          |'config.discriminatorFieldName' and name(s) returned by 'config.fieldNameMapper' for non-annotated fields should
-          |not match.""".stripMargin.replace('\n', ' ')
+        """Duplicated JSON key(s) defined for 'DuplicatedJsonName': 'x'. Keys are derived from field names of the class
+          |that are mapped by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.fieldNameMapper'
+          |function or can be overridden by 'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s). Result
+          |keys should be unique and should not match with a key for the discriminator field that is specified by the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.discriminatorFieldName' option.""".stripMargin.replace('\n', ' ')
       assert(intercept[TestFailedException](assertCompiles {
         """case class DuplicatedJsonName(x: Int, @named("x") z: Int)
           |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig())""".stripMargin
@@ -1134,8 +1135,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |case object B extends X
           |JsonCodecMaker.make[X](CodecMakerConfig(adtLeafClassNameMapper = _ => "Z"))""".stripMargin
       }).getMessage.contains {
-        """Duplicated discriminator defined for ADT base 'X': 'Z'. Values returned by 'config.adtLeafClassNameMapper'
-          |should not match.""".stripMargin.replace('\n', ' ')
+        """Duplicated discriminator defined for ADT base 'X': 'Z'. Values for leaf classes of ADT that are returned by
+          |the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.adtLeafClassNameMapper' function
+          |should be unique.""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codec for case classes with fields that the same name as discriminator name" in {
@@ -1144,10 +1146,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |case class A(x: Int) extends DuplicatedJsonName
           |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(discriminatorFieldName = Some("x")))""".stripMargin
       }).getMessage.contains {
-        """Duplicated JSON name(s) defined for 'A': 'x'. Names(s) defined by
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s), name of discriminator field specified by
-          |'config.discriminatorFieldName' and name(s) returned by 'config.fieldNameMapper' for non-annotated fields should
-          |not match.""".stripMargin.replace('\n', ' ')
+        """Duplicated JSON key(s) defined for 'A': 'x'. Keys are derived from field names of the class that are mapped
+          |by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.fieldNameMapper' function or can be
+          |overridden by 'com.github.plokhotnyuk.jsoniter_scala.macros.named' annotation(s). Result keys should be
+          |unique and should not match with a key for the discriminator field that is specified by the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.discriminatorFieldName' option.""".stripMargin.replace('\n', ' ')
       })
     }
     "serialize and deserialize when the root codec defined as an impicit val" in {

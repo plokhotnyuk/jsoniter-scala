@@ -567,10 +567,10 @@ object JsonCodecMaker {
         val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          fail(s"Duplicated JSON name(s) defined for '$tpe': $formattedCollisions. " +
-              s"Names(s) defined by '${typeOf[named]}' annotation(s), " +
-              "name of discriminator field specified by 'config.discriminatorFieldName' " +
-              "and name(s) returned by 'config.fieldNameMapper' for non-annotated fields should not match.")
+          fail(s"Duplicated JSON key(s) defined for '$tpe': $formattedCollisions. Keys are derived from field names of " +
+            s"the class that are mapped by the '${typeOf[CodecMakerConfig]}.fieldNameMapper' function or can be overridden " +
+            s"by '${typeOf[named]}' annotation(s). Result keys should be unique and should not match with a key for the " +
+            s"discriminator field that is specified by the '${typeOf[CodecMakerConfig]}.discriminatorFieldName' option.")
         }
       }
 
@@ -578,8 +578,8 @@ object JsonCodecMaker {
         val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          fail(s"Duplicated discriminator defined for ADT base '$tpe': $formattedCollisions. " +
-            "Values returned by 'config.adtLeafClassNameMapper' should not match.")
+          fail(s"Duplicated discriminator defined for ADT base '$tpe': $formattedCollisions. Values for leaf classes of ADT " +
+            s"that are returned by the '${typeOf[CodecMakerConfig]}.adtLeafClassNameMapper' function should be unique.")
         }
       }
 
