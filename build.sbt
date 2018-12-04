@@ -42,7 +42,7 @@ lazy val commonSettings = Seq(
     )
   ),
   resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.12.8",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -94,7 +94,7 @@ lazy val `jsoniter-scala-core` = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.7", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.8", "2.11.12"),
     libraryDependencies ++= {
       val scalatestV =
         if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
@@ -112,7 +112,7 @@ lazy val `jsoniter-scala-macros` = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.7", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.8", "2.11.12"),
     libraryDependencies ++= {
       val scalatestV =
         if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
