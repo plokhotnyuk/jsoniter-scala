@@ -652,14 +652,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"l":[["1"]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
     }
     "serialize and deserialize top-level Iterables" in {
-      val codecOfTopLevelIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig())
-      verifySerDeser(codecOfTopLevelIterables,
-        collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)), """[[3.3],[1.1,2.2]]""")
+      verifySerDeser(make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig()),
+        collection.mutable.Set(List[BigDecimal](1.1, 2.2)), """[[1.1,2.2]]""")
     }
     "serialize and deserialize stringified top-level Iterables" in {
-      val codecOfStringifiedIterables = make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfStringifiedIterables,
-        collection.mutable.Set(List[BigDecimal](1.1, 2.2), List[BigDecimal](3.3)), """[["3.3"],["1.1","2.2"]]""")
+      verifySerDeser(make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig(isStringified = true)),
+        collection.mutable.Set(List[BigDecimal](1.1, 2.2)), """[["1.1","2.2"]]""")
     }
     "throw parse exception when too many inserts into set was completed" in {
       verifyDeserError(make[collection.immutable.Set[Int]](CodecMakerConfig(setMaxInsertNumber = 10)),
