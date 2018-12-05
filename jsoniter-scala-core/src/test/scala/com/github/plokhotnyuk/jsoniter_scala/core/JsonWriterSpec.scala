@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.{ByteArrayOutputStream, IOException}
+import java.io.IOException
 import java.time._
 import java.util.UUID
 
@@ -776,11 +776,14 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
   def withWriter(f: JsonWriter => Unit): String = withWriter(WriterConfig(preferredBufSize = 0))(f)
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
-    val out = new ByteArrayOutputStream(256)
-    val writer = new JsonWriter(new Array[Byte](0), 0, 0, 0, false, true, null, out, 0, cfg)
-    try f(writer)
-    finally writer.flushBuf()
-    out.toString("UTF-8")
+    val writer = new JsonWriter(new Array[Byte](0), 0, 0, 0, false, false, null, null, cfg)
+    new String(writer.write(new JsonValueCodec[String] {
+      override def decodeValue(in: JsonReader, default: String): String = ""
+
+      override def encodeValue(x: String, out: JsonWriter): Unit = f(writer)
+
+      override val nullValue: String = ""
+    }, "", cfg), "UTF-8")
   }
 
   def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'

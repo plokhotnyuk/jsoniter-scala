@@ -44,10 +44,9 @@ final class JsonWriter private[jsoniter_scala](
     private[this] var limit: Int = 16384,
     private[this] var indention: Int = 0,
     private[this] var comma: Boolean = false,
-    private[this] var isBufGrowingAllowed: Boolean = true,
+    private[this] var disableBufGrowing: Boolean = false,
     private[this] var bbuf: ByteBuffer = null,
     private[this] var out: OutputStream = null,
-    private[this] var totalWritten: Long = 0,
     private[this] var config: WriterConfig = null) {
   def writeComma(): Unit = {
     if (comma) writeBytes(',')
@@ -337,11 +336,9 @@ final class JsonWriter private[jsoniter_scala](
       this.config = config
       count = 0
       indention = 0
-      totalWritten = 0
-      isBufGrowingAllowed = true
       if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
       codec.encodeValue(x, this)
-      flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
+      out.write(buf, 0, count)
     } finally {
       this.out = null // do not close output stream
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -350,10 +347,8 @@ final class JsonWriter private[jsoniter_scala](
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): Array[Byte] =
     try {
       this.config = config
-      this.count = 0
-      this.indention = 0
-      totalWritten = 0
-      isBufGrowingAllowed = true
+      count = 0
+      indention = 0
       codec.encodeValue(x, this)
       java.util.Arrays.copyOf(buf, count)
     } finally {
@@ -368,11 +363,13 @@ final class JsonWriter private[jsoniter_scala](
       count = from
       limit = to
       indention = 0
-      totalWritten = 0
-      isBufGrowingAllowed = false
+      disableBufGrowing = true
       codec.encodeValue(x, this)
       count
-    } finally setBuf(currBuf)
+    } finally {
+      setBuf(currBuf)
+      disableBufGrowing = false
+    }
   }
 
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, bbuf: ByteBuffer, config: WriterConfig): Unit =
@@ -382,16 +379,16 @@ final class JsonWriter private[jsoniter_scala](
       try {
         this.buf = bbuf.array
         this.config = config
-        count = offset + bbuf.position()
-        limit = offset + bbuf.limit()
+        count = bbuf.position() + offset
+        limit = bbuf.limit() + offset
         indention = 0
-        totalWritten = 0
-        isBufGrowingAllowed = false
+        disableBufGrowing = true
         codec.encodeValue(x, this)
       } catch {
         case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
       } finally {
         setBuf(currBuf)
+        disableBufGrowing = false
         bbuf.position(count - offset)
       }
     } else {
@@ -400,11 +397,9 @@ final class JsonWriter private[jsoniter_scala](
         this.config = config
         count = 0
         indention = 0
-        totalWritten = 0
-        isBufGrowingAllowed = true
         if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
         codec.encodeValue(x, this)
-        flushBuf() // do not flush buffer in case of exception during encoding to avoid hiding it by possible new one
+        bbuf.put(buf, 0, count)
       } finally {
         this.bbuf = null
         if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -1757,24 +1752,20 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def flushAndGrowBuf(required: Int, pos: Int): Int =
     if (bbuf ne null) {
       bbuf.put(buf, 0, pos)
-      totalWritten += pos
       if (required > limit) growBuf(required)
       0
     } else if (out ne null) {
       out.write(buf, 0, pos)
-      totalWritten += pos
       if (required > limit) growBuf(required)
       0
-    } else {
+    } else if (disableBufGrowing) throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
+    else {
       growBuf(pos + required)
       pos
     }
 
-  private[jsoniter_scala] def flushBuf(): Unit = count = flushAndGrowBuf(0, count)
-
   private[this] def growBuf(required: Int): Unit =
-    if (isBufGrowingAllowed) setBuf(java.util.Arrays.copyOf(buf, Integer.highestOneBit(limit | required) << 1))
-    else throw new ArrayIndexOutOfBoundsException("`buf` length exceeded")
+    setBuf(java.util.Arrays.copyOf(buf, Integer.highestOneBit(limit | required) << 1))
 
   private[this] def reallocateBufToPreferredSize(): Unit = setBuf(new Array[Byte](config.preferredBufSize))
 
