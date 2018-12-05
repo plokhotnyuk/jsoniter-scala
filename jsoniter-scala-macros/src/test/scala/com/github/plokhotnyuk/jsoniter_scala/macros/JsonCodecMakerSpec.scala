@@ -234,11 +234,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         java.lang.Float.valueOf(2.2f), "\"2.2\"")
     }
     "serialize and deserialize case classes with standard types" in {
-      val text =
-        "JavaScript Object Notation (JSON) is a lightweight, text-based, language-independent data interchange format."
+      val text = "text" * 100000
+      val number = "1234567890" * 10
       verifySerDeser(codecOfStandardTypes,
-        StandardTypes(text, BigInt("123456789012345678901234567890"), BigDecimal("1234567890.12345678901234567890")),
-        s"""{"s":"$text","bi":123456789012345678901234567890,"bd":1234567890.12345678901234567890}""")
+        StandardTypes(text, BigInt(number), BigDecimal(s"$number.$number")),
+        s"""{"s":"$text","bi":$number,"bd":$number.$number}""")
     }
     "throw parse exception in case of illegal value for case classes" in {
       verifyDeserError(codecOfStandardTypes, "null", "expected '{', offset: 0x00000000")

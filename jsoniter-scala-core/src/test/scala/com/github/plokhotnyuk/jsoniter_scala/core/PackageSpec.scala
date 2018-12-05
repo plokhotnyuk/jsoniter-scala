@@ -262,7 +262,6 @@ class PackageSpec extends WordSpec with Matchers with PropertyChecks {
     }
   }
   "writeToByteBuffer" should {
-
     "serialize an object to the provided direct byte buffer from the current position" in {
       val buf = new Array[Byte](150)
       val bbuf = ByteBuffer.allocateDirect(150)
