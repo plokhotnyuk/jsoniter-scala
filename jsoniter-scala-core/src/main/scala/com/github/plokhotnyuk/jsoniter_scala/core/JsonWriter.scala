@@ -368,8 +368,9 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeValAsString(x: Boolean): Unit = {
     writeComma()
-    if (x) writeBytes('"', 't', 'r', 'u', 'e', '"')
-    else writeBytes('"', 'f', 'a', 'l', 's', 'e', '"')
+    writeBytes('"')
+    writeBoolean(x)
+    writeBytes('"')
   }
 
   def writeValAsString(x: Byte): Unit = {
@@ -534,16 +535,27 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes(b)
   }
 
-  private[this] def writeParenthesesWithColon(): Unit = {
-    if (config.indentionStep > 0) writeBytes('"', ':', ' ')
-    else writeBytes('"', ':')
+  private[this] def writeParenthesesWithColon(): Unit = count = {
     comma = false
+    val pos = ensureBufCapacity(3)
+    val buf = this.buf
+    buf(pos) = '"'
+    buf(pos + 1) = ':'
+    if (config.indentionStep > 0) {
+      buf(pos + 2) = ' '
+      pos + 3
+    } else pos + 2
   }
 
-  private[this] def writeColon(): Unit = {
-    if (config.indentionStep > 0) writeBytes(':', ' ')
-    else writeBytes(':')
+  private[this] def writeColon(): Unit = count = {
     comma = false
+    val pos = ensureBufCapacity(2)
+    val buf = this.buf
+    buf(pos) = ':'
+    if (config.indentionStep > 0) {
+      buf(pos + 1) = ' '
+      pos + 2
+    } else pos + 1
   }
 
   private[this] def writeBytes(b: Byte): Unit = count = {
@@ -881,9 +893,24 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  private[this] def writeBoolean(x: Boolean): Unit =
-    if (x) writeBytes('t', 'r', 'u', 'e')
-    else writeBytes('f', 'a', 'l', 's', 'e')
+  private[this] def writeBoolean(x: Boolean): Unit = count = {
+    val pos = ensureBufCapacity(5)
+    val buf = this.buf
+    if (x) {
+      buf(pos) = 't'
+      buf(pos + 1) = 'r'
+      buf(pos + 2) = 'u'
+      buf(pos + 3) = 'e'
+      pos + 4
+    } else {
+      buf(pos) = 'f'
+      buf(pos + 1) = 'a'
+      buf(pos + 2) = 'l'
+      buf(pos + 3) = 's'
+      buf(pos + 4) = 'e'
+      pos + 5
+    }
+  }
 
   private[this] def writeByte(x: Byte): Unit = count = {
     var pos = ensureBufCapacity(4) // Byte.MinValue.toString.length
