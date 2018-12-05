@@ -464,7 +464,6 @@ object JsonCodecMaker {
       def genWriteArray(x: Tree, writeVal: Tree): Tree =
         q"""out.writeArrayStart()
             $x.foreach { x =>
-              out.writeComma()
               ..$writeVal
             }
             out.writeArrayEnd()"""
@@ -1144,7 +1143,6 @@ object JsonCodecMaker {
           q"""out.writeArrayStart()
               var l = x
               while (!l.isEmpty) {
-                out.writeComma()
                 ..${genWriteVal(q"l.head", typeArg1(tpe), isStringified)}
                 l = l.tail
               }
@@ -1154,7 +1152,6 @@ object JsonCodecMaker {
               val l = x.size
               var i = 0
               while (i < l) {
-                out.writeComma()
                 ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
                 i += 1
               }
@@ -1166,7 +1163,6 @@ object JsonCodecMaker {
               val l = x.length
               var i = 0
               while (i < l) {
-                out.writeComma()
                 ..${genWriteVal(q"x(i)", typeArg1(tpe), isStringified)}
                 i += 1
               }
@@ -1183,17 +1179,15 @@ object JsonCodecMaker {
               out.writeObjectEnd()"""
         } else if (isTuple(tpe)) withEncoderFor(methodKey, m) {
           val writeFields = tpe.typeArgs.zipWithIndex.map { case (ta, i) =>
-            q"""out.writeComma()
-                ${genWriteVal(q"x.${TermName("_" + (i + 1))}", ta.dealias, isStringified)}"""
+            genWriteVal(q"x.${TermName("_" + (i + 1))}", ta.dealias, isStringified)
           }
           q"""out.writeArrayStart()
               ..$writeFields
               out.writeArrayEnd()"""
         } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m) {
-          def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree = {
+          def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree =
             if (subTpe != tpe) genWriteVal(q"x", subTpe, isStringified, discriminator)
             else genWriteNonAbstractScalaClass(tpe, isStringified, discriminator)
-          }
 
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = (codecConfig.discriminatorFieldName match {

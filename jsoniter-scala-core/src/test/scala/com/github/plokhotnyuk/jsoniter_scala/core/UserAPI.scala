@@ -109,7 +109,6 @@ object UserAPI {
     private[this] def e1(x: Seq[Device], out: JsonWriter): Unit = {
       out.writeArrayStart()
       x.foreach { x =>
-        out.writeComma()
         e2(x, out)
       }
       out.writeArrayEnd()
