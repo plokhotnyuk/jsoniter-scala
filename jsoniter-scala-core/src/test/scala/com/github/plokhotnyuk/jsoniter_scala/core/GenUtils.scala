@@ -16,7 +16,10 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
-  val genZoneOffset: Gen[ZoneOffset] = Gen.choose(-18 * 60 * 60, 18 * 60 * 60).map(ZoneOffset.ofTotalSeconds)
+  val genZoneOffset: Gen[ZoneOffset] = Gen.oneOf(
+    Gen.choose(-18, 18).map(ZoneOffset.ofHours),
+    Gen.choose(-18 * 60, 18 * 60).map(x => ZoneOffset.ofHoursMinutes(x / 60, x % 60)),
+    Gen.choose(-18 * 60 * 60, 18 * 60 * 60).map(ZoneOffset.ofTotalSeconds))
   val genDuration: Gen[Duration] = Gen.oneOf(
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
@@ -101,7 +104,8 @@ object GenUtils {
       genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
       genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
       genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
-      Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of))
+      Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of),
+      Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toList).map(ZoneId.of))
   val genZonedDateTime: Gen[ZonedDateTime] =
     for {
       year <- Gen.choose(-999999999, 999999999)

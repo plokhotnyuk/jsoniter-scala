@@ -1353,8 +1353,6 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         reader("\"" + s + "\":").readKeyAsZoneId() shouldBe x
       }
 
-      check(ZoneOffset.MAX)
-      check(ZoneOffset.MIN)
       forAll(genZoneId, minSuccessful(100000))(check)
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
@@ -1423,6 +1421,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       }
 
       check("Z", ZoneOffset.UTC)
+      check("+00", ZoneOffset.UTC)
+      check("+00:00", ZoneOffset.UTC)
+      check("-00", ZoneOffset.UTC)
+      check("-00:00", ZoneOffset.UTC)
       check("+18", ZoneOffset.MAX)
       check("+18:00", ZoneOffset.MAX)
       check("-18", ZoneOffset.MIN)
