@@ -614,19 +614,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 6
   }
 
-  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte, b7: Byte): Unit = count = {
-    val pos = ensureBufCapacity(7)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    buf(pos + 2) = b3
-    buf(pos + 3) = b4
-    buf(pos + 4) = b5
-    buf(pos + 5) = b6
-    buf(pos + 6) = b7
-    pos + 7
-  }
-
   private[this] def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
     val len = s.length
     val pos = ensureBufCapacity(len)
