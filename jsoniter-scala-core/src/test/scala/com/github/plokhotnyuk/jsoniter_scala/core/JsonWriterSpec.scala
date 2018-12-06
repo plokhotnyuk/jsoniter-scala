@@ -708,13 +708,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "allow to write a compact JSON array with values separated by comma" in {
       withWriter { w =>
         w.writeArrayStart()
-        w.writeComma()
         w.writeVal(1)
-        w.writeComma()
         w.writeVal("VVV")
-        w.writeComma()
         w.writeValAsString(2L)
-        w.writeComma()
         w.writeValAsString(true)
         w.writeArrayEnd()
       } shouldBe "[1,\"VVV\",\"2\",\"true\"]"
@@ -722,13 +718,9 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
     "allow to write a prettified JSON array with values separated by comma" in {
       withWriter(WriterConfig(indentionStep = 2)) { w =>
         w.writeArrayStart()
-        w.writeComma()
         w.writeVal(1)
-        w.writeComma()
         w.writeVal("VVV")
-        w.writeComma()
         w.writeValAsString(2L)
-        w.writeComma()
         w.writeValAsString(true)
         w.writeArrayEnd()
       } shouldBe
