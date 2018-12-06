@@ -435,6 +435,7 @@ final class JsonWriter private[jsoniter_scala](
       count = 0
       indention = 0
       comma = false
+      disableBufGrowing = false
       if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
       codec.encodeValue(x, this)
       out.write(buf, 0, count)
@@ -449,6 +450,7 @@ final class JsonWriter private[jsoniter_scala](
       count = 0
       indention = 0
       comma = false
+      disableBufGrowing = false
       codec.encodeValue(x, this)
       java.util.Arrays.copyOf(buf, count)
     } finally {
@@ -469,7 +471,6 @@ final class JsonWriter private[jsoniter_scala](
       count
     } finally {
       setBuf(currBuf)
-      disableBufGrowing = false
     }
   }
 
@@ -490,7 +491,6 @@ final class JsonWriter private[jsoniter_scala](
         case _: ArrayIndexOutOfBoundsException => throw new BufferOverflowException
       } finally {
         setBuf(currBuf)
-        disableBufGrowing = false
         bbuf.position(count - offset)
       }
     } else {
@@ -500,6 +500,7 @@ final class JsonWriter private[jsoniter_scala](
         count = 0
         indention = 0
         comma = false
+        disableBufGrowing = false
         if (limit < config.preferredBufSize) reallocateBufToPreferredSize()
         codec.encodeValue(x, this)
         bbuf.put(buf, 0, count)
