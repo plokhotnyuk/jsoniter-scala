@@ -380,12 +380,13 @@ to avoid binary compatibility check failures in triggered Travis CI builds.
 
 Create PRs with updated version of jsoniter-scala for OSS projects which depends on it in case of binary incompatible or 
 security release:
-1. [akka-http-json](https://github.com/hseeberger/akka-http-json/blob/master/build.sbt)
-2. [kafka-serialization](https://github.com/ovotech/kafka-serialization/blob/master/build.sbt)
-3. [kafka-serde-scala](https://github.com/azhur/kafka-serde-scala/blob/master/build.sbt)
-4. [loco](https://github.com/yarhrn/loco/blob/master/project/Dependencies.scala)
-5. [flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
-6. [tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
+1. [hseeberger/akka-http-json](https://github.com/hseeberger/akka-http-json/blob/master/build.sbt)
+2. [ovotech/kafka-serialization](https://github.com/ovotech/kafka-serialization/blob/master/build.sbt)
+3. [azhur/kafka-serde-scala](https://github.com/azhur/kafka-serde-scala/blob/master/build.sbt)
+4. [loco/loco](https://github.com/yarhrn/loco/blob/master/project/Dependencies.scala)
+5. [pityka/flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
+6. [pityka/tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
+7. [TechEmpower/FrameworkBenchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/search?q=jsoniter-scala&unscoped_q=jsoniter-scala)
 
 Also half of [Scala web frameworks which take part in TechEmpower benchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/tree/master/frameworks/Scala)
 have used jsoniter-scala for serialization of JSON responses.
