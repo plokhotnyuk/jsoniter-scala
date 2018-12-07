@@ -1,10 +1,8 @@
 package com.jsoniter.input;
 
 import com.jsoniter.JsonIterator;
-//import com.jsoniter.spi.Config;
 import com.jsoniter.spi.DecodingMode;
 import com.jsoniter.spi.JsonException;
-//import com.jsoniter.spi.JsoniterSpi;
 
 import java.io.IOException;
 
@@ -24,19 +22,4 @@ public class JsoniterJavaParser {
             throw new JsonException(e);
         }
     }
-
-/*
-    public static <T> T parse(byte[] input, Class<T> clazz, Config config) {
-        try {
-            JsoniterSpi.setCurrentConfig(config);
-            JsonIterator iterator = iterators.get();
-            iterator.reset(input, 0, input.length);
-            return iterator.read(clazz);
-        } catch (IOException e) {
-            throw new JsonException(e);
-        } finally {
-            JsoniterSpi.clearCurrentConfig();
-        }
-    }
-*/
 }

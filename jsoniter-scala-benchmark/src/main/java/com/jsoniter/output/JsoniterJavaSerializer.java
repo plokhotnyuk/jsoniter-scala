@@ -1,9 +1,7 @@
 package com.jsoniter.output;
 
 import com.jsoniter.extra.PreciseFloatSupport;
-//import com.jsoniter.spi.Config;
 import com.jsoniter.spi.JsonException;
-//import com.jsoniter.spi.JsoniterSpi;
 
 import java.io.IOException;
 
@@ -25,20 +23,4 @@ public class JsoniterJavaSerializer {
             throw new JsonException(e);
         }
     }
-
-/*
-    public static <T> byte[] serialize(T obj, Config config) {
-        try {
-            JsoniterSpi.setCurrentConfig(config);
-            JsonStream stream = streams.get();
-            stream.reset(null);
-            stream.writeVal(obj.getClass(), obj);
-            return java.util.Arrays.copyOf(stream.buf, stream.count);
-        } catch (IOException e) {
-            throw new JsonException(e);
-        } finally {
-            JsoniterSpi.clearCurrentConfig();
-        }
-    }
-*/
 }
