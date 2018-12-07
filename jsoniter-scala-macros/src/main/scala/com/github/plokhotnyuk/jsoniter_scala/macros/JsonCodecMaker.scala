@@ -313,8 +313,7 @@ object JsonCodecMaker {
 
         def genReadCollisions(es: collection.Seq[EnumValueInfo]): Tree =
           es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
-            q"""if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value}
-                else $acc"""
+            q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
         if (enumValues.size <= 4 && enumValues.size == enumValues.map(length).distinct.size) {
@@ -608,8 +607,7 @@ object JsonCodecMaker {
 
       def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
         val equalsMethodName = equalsMethodNames.getOrElseUpdate(tpe, TermName("q" + equalsMethodNames.size))
-        equalsMethodTrees.getOrElseUpdate(tpe,
-          q"""private[this] def $equalsMethodName(x1: $tpe, x2: $tpe): Boolean = $f""")
+        equalsMethodTrees.getOrElseUpdate(tpe, q"private[this] def $equalsMethodName(x1: $tpe, x2: $tpe): Boolean = $f")
         q"$equalsMethodName($arg1, $arg2)"
       }
 
@@ -733,8 +731,7 @@ object JsonCodecMaker {
                 q"""${checkAndResetFieldPresenceFlags(f.mappedName)}
                     ${f.tmpName} = ${genReadVal(f.resolvedTpe, q"${f.tmpName}", f.isStringified)}"""
               }
-            q"""if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue
-                else $acc"""
+            q"if (in.isCharBufEqualsTo(l, ${f.mappedName})) $readValue else $acc"
           }
 
         val readFieldsBlock =
@@ -872,7 +869,7 @@ object JsonCodecMaker {
             else q"${collectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadSet(q"val x = default; if (x.nonEmpty) x.clear(); ",
+          genReadSet(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
         } else if (tpe <:< typeOf[collection.Set[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -885,7 +882,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = default; if (x.nonEmpty) x.clear(); ",
+          genReadArray(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}")
         } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -957,12 +954,11 @@ object JsonCodecMaker {
           val length: Type => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
           val discriminatorError = codecConfig.discriminatorFieldName
-            .fold(q"""in.discriminatorError()""")(n => q"in.discriminatorValueError($n)")
+            .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
 
-          def genReadLeafClass(subTpe: Type): Tree = {
+          def genReadLeafClass(subTpe: Type): Tree =
             if (subTpe != tpe) genReadVal(subTpe, nullValue(subTpe), isStringified, skipDiscriminatorField)
             else genReadNonAbstractScalaClass(tpe, default, isStringified, skipDiscriminatorField)
-          }
 
           def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
             subTpes.foldRight(discriminatorError) { case (subTpe, acc) =>
@@ -972,9 +968,7 @@ object JsonCodecMaker {
                       ..${genReadLeafClass(subTpe)}"""
                 } else if (subTpe.typeSymbol.isModuleClass) q"${subTpe.typeSymbol.asClass.module}"
                 else genReadLeafClass(subTpe)
-              q"""if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) {
-                    ..$readVal
-                  } else $acc"""
+              q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
             }
 
           def genReadSubclassesBlock(leafClasses: collection.Seq[Type]) =
