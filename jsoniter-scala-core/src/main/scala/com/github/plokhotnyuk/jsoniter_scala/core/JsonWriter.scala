@@ -1181,11 +1181,18 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private[this] def writeLocalDate(x: LocalDate, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    writeLocalDate(x.getYear, x.getMonthValue, x.getDayOfMonth, pos, buf, ds)
+  private[this] def writeLocalDate(x: LocalDate, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = writeYear(x.getYear, p, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(x.getMonthValue, pos + 1, buf, ds)
+    buf(pos) = '-'
+    write2Digits(x.getDayOfMonth, pos + 1, buf, ds)
+  }
 
   private[this] def writeLocalDate(year: Int, month: Int, day: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val pos = writeYearMonth(year, month, p, buf, ds)
+    var pos = writeYear(year, p, buf, ds)
+    buf(pos) = '-'
+    pos = write2Digits(month, pos + 1, buf, ds)
     buf(pos) = '-'
     write2Digits(day, pos + 1, buf, ds)
   }
