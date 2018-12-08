@@ -49,172 +49,172 @@ final class JsonWriter private[jsoniter_scala](
     private[this] var out: OutputStream = null,
     private[this] var config: WriterConfig = null) {
   def writeKey(x: Boolean): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeBoolean(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: Byte): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeByte(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: Char): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeChar(x)
     writeColon()
   }
 
   def writeKey(x: Short): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeShort(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: Int): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeInt(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: Long): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeLong(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: Float): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeFloat(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: Double): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeDouble(x)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: BigInt): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: BigDecimal): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeNonEscapedAsciiStringWithoutParentheses(x.bigDecimal.toString)
     writeParenthesesWithColon()
   }
 
   def writeKey(x: UUID): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeUUID(x)
     writeColon()
   }
 
   def writeKey(x: String): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeString(x)
     writeColon()
   }
 
   def writeNonEscapedAsciiKey(x: String): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeNonEscapedAsciiString(x)
     writeColon()
   }
 
   def writeKey(x: Duration): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeDuration(x)
     writeColon()
   }
 
   def writeKey(x: Instant): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeInstant(x)
     writeColon()
   }
 
   def writeKey(x: LocalDate): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDate(x)
     writeColon()
   }
 
   def writeKey(x: LocalDateTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDateTime(x)
     writeColon()
   }
 
   def writeKey(x: LocalTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeLocalTime(x)
     writeColon()
   }
 
   def writeKey(x: MonthDay): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeMonthDay(x)
     writeColon()
   }
 
   def writeKey(x: OffsetDateTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetDateTime(x)
     writeColon()
   }
 
   def writeKey(x: OffsetTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetTime(x)
     writeColon()
   }
 
   def writeKey(x: Period): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writePeriod(x)
     writeColon()
   }
 
   def writeKey(x: Year): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeYear(x)
     writeColon()
   }
 
   def writeKey(x: YearMonth): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeYearMonth(x)
     writeColon()
   }
 
   def writeKey(x: ZonedDateTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeZonedDateTime(x)
     writeColon()
   }
 
   def writeKey(x: ZoneId): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeNonEscapedAsciiString(x.getId)
     writeColon()
   }
 
   def writeKey(x: ZoneOffset): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeKey()
     writeZoneOffset(x)
     writeColon()
   }
@@ -222,201 +222,201 @@ final class JsonWriter private[jsoniter_scala](
   def encodeError(msg: String): Nothing = throw new IOException(msg)
 
   def writeVal(x: BigDecimal): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeNonEscapedAsciiStringWithoutParentheses(x.bigDecimal.toString)
   }
 
   def writeVal(x: BigInt): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
   }
 
   def writeVal(x: UUID): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeUUID(x)
   }
 
   def writeVal(x: String): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeString(x)
   }
 
   def writeNonEscapedAsciiVal(x: String): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeNonEscapedAsciiString(x)
   }
 
   def writeVal(x: Duration): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeDuration(x)
   }
 
   def writeVal(x: Instant): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeInstant(x)
   }
 
   def writeVal(x: LocalDate): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDate(x)
   }
 
   def writeVal(x: LocalDateTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDateTime(x)
   }
 
   def writeVal(x: LocalTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeLocalTime(x)
   }
 
   def writeVal(x: MonthDay): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeMonthDay(x)
   }
 
   def writeVal(x: OffsetDateTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetDateTime(x)
   }
 
   def writeVal(x: OffsetTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetTime(x)
   }
 
   def writeVal(x: Period): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writePeriod(x)
   }
 
   def writeVal(x: Year): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeYear(x)
   }
 
   def writeVal(x: YearMonth): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeYearMonth(x)
   }
 
   def writeVal(x: ZonedDateTime): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeZonedDateTime(x)
   }
 
   def writeVal(x: ZoneId): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeNonEscapedAsciiString(x.getId)
   }
 
   def writeVal(x: ZoneOffset): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeZoneOffset(x)
   }
 
   def writeVal(x: Boolean): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBoolean(x)
   }
 
   def writeVal(x: Byte): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeByte(x)
   }
 
   def writeVal(x: Short): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeShort(x)
   }
 
   def writeVal(x: Char): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeChar(x)
   }
 
   def writeVal(x: Int): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeInt(x)
   }
 
   def writeVal(x: Long): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeLong(x)
   }
 
   def writeVal(x: Float): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeFloat(x)
   }
 
   def writeVal(x: Double): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeDouble(x)
   }
 
   def writeValAsString(x: BigDecimal): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeNonEscapedAsciiString(x.toString)
   }
 
   def writeValAsString(x: BigInt): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
   }
 
   def writeValAsString(x: Boolean): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeBoolean(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Byte): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeByte(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Short): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeShort(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Int): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeInt(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Long): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeLong(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Float): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeFloat(x)
     writeBytes('"')
   }
 
   def writeValAsString(x: Double): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeDouble(x)
     writeBytes('"')
   }
 
   def writeNull(): Unit = {
-    writeComma()
+    writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('n', 'u', 'l', 'l')
   }
 
@@ -510,34 +510,36 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
 
-  private[this] def writeComma(): Unit =
-    if (comma) {
-      writeBytes(',')
-      if (indention != 0) writeIndention()
-    } else comma = true
-
   private[this] def writeNestedStart(b: Byte): Unit = {
-    if (comma) {
-      writeBytes(',')
-      if (indention != 0) writeIndention()
-      comma = false
-    }
+    writeOptionalCommaAndIndentionBeforeKey()
     writeBytes(b)
     indention += config.indentionStep
     if (indention != 0) writeIndention()
   }
 
   private[this] def writeNestedEnd(b: Byte): Unit = {
+    comma = true
     if (indention != 0) {
       indention -= config.indentionStep
       writeIndention()
     }
-    comma = true
     writeBytes(b)
   }
 
+  private[this] def writeOptionalCommaAndIndentionBeforeValue(): Unit =
+    if (comma) {
+      writeBytes(',')
+      if (indention != 0) writeIndention()
+    } else comma = true
+
+  private[this] def writeOptionalCommaAndIndentionBeforeKey(): Unit =
+    if (comma) {
+      comma = false
+      writeBytes(',')
+      if (indention != 0) writeIndention()
+    }
+
   private[this] def writeParenthesesWithColon(): Unit = count = {
-    comma = false
     val pos = ensureBufCapacity(3)
     val buf = this.buf
     buf(pos) = '"'
@@ -549,7 +551,6 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeColon(): Unit = count = {
-    comma = false
     val pos = ensureBufCapacity(2)
     val buf = this.buf
     buf(pos) = ':'
