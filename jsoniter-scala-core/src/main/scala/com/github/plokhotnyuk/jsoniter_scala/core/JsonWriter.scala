@@ -1020,7 +1020,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos = writeLocalDate(year, month, day, pos + 1, buf, ds)
     buf(pos) = 'T'
-    pos = writeLocalTime(hour, minute, second, x.getNano, pos + 1, buf, ds, full = true)
+    pos = writeLocalTime(hour, minute, second, x.getNano, pos + 1, buf, ds)
     buf(pos) = 'Z'
     buf(pos + 1) = '"'
     pos + 2
@@ -1221,18 +1221,16 @@ final class JsonWriter private[jsoniter_scala](
     else write4Digits(q0, pos, buf, ds)
   }
 
-  private[this] def writeLocalTime(x: LocalTime, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    writeLocalTime(x.getHour, x.getMinute, x.getSecond, x.getNano, pos, buf, ds, full = false)
-
-  private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, p: Int, buf: Array[Byte],
-                                   ds: Array[Short], full: Boolean): Int = {
-    var pos = write2Digits(hour, p, buf, ds)
+  private[this] def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = write2Digits(x.getHour, p, buf, ds)
     buf(pos) = ':'
-    pos = write2Digits(minute, pos + 1, buf, ds)
-    if (full || (second | nano) != 0) {
+    pos = write2Digits(x.getMinute, pos + 1, buf, ds)
+    val second = x.getSecond
+    val nano = x.getNano
+    if (second != 0 || nano != 0) {
       buf(pos) = ':'
       pos = write2Digits(second, pos + 1, buf, ds)
-      if (nano > 0) {
+      if (nano != 0) {
         buf(pos) = '.'
         val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
         val r1 = nano - 10000000 * q1
@@ -1249,6 +1247,33 @@ final class JsonWriter private[jsoniter_scala](
           pos = write2Digits(q3, pos + 2, buf, ds)
           if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
         }
+      }
+    }
+    pos
+  }
+
+  private[this] def writeLocalTime(hour: Int, minute: Int, second: Int, nano: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var pos = write2Digits(hour, p, buf, ds)
+    buf(pos) = ':'
+    pos = write2Digits(minute, pos + 1, buf, ds)
+    buf(pos) = ':'
+    pos = write2Digits(second, pos + 1, buf, ds)
+    if (nano != 0) {
+      buf(pos) = '.'
+      val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
+      val r1 = nano - 10000000 * q1
+      pos = write2Digits(q1, pos + 1, buf, ds)
+      val q2 = (r1 * 175921861L >> 44).toInt // divide positive int by 100000
+      val r2 = r1 - 100000 * q2
+      val d = ds(q2)
+      buf(pos) = (d >> 8).toByte
+      if (r2 == 0 && d.toByte == '0') pos += 1
+      else {
+        buf(pos + 1) = d.toByte
+        val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
+        val r3 = r2 - q3 * 1000
+        pos = write2Digits(q3, pos + 2, buf, ds)
+        if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
       }
     }
     pos
