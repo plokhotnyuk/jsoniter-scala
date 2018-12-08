@@ -6,7 +6,7 @@ import java.nio.{BufferOverflowException, ByteBuffer}
 import java.time._
 import java.util.UUID
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter.{escapedChars, _}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
 
 import scala.annotation.tailrec
 import scala.{specialized => sp}
@@ -28,7 +28,7 @@ import scala.{specialized => sp}
   * @param indentionStep a size of indention for pretty-printed formatting or 0 for compact output
   * @param escapeUnicode a flag to turn on hexadecimal escaping of all non-ASCII chars
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when writing to
-  *                         [[java.io.OutputStream]]
+  *                         [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]]
   */
 case class WriterConfig(
     indentionStep: Int = 0,
@@ -593,29 +593,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
-  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte): Unit = count = {
-    val pos = ensureBufCapacity(5)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    buf(pos + 2) = b3
-    buf(pos + 3) = b4
-    buf(pos + 4) = b5
-    pos + 5
-  }
-
-  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte, b5: Byte, b6: Byte): Unit = count = {
-    val pos = ensureBufCapacity(6)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    buf(pos + 2) = b3
-    buf(pos + 3) = b4
-    buf(pos + 4) = b5
-    buf(pos + 5) = b6
-    pos + 6
-  }
-
   private[this] def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
     val len = s.length
     val pos = ensureBufCapacity(len)
@@ -928,15 +905,18 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeDuration(x: Duration): Unit =
-    if (x.isZero) writeBytes('"', 'P', 'T', '0', 'S', '"')
+  private[this] def writeDuration(x: Duration): Unit = {
+    writeBytes('"', 'P', 'T')
+    if (x.isZero) writeBytes('0', 'S', '"')
     else {
-      writeBytes('"', 'P', 'T')
       val totalSecs = x.getSeconds
       val nanos = x.getNano
-      var effectiveTotalSecs = totalSecs
-      if (effectiveTotalSecs < 0 && nanos > 0) effectiveTotalSecs += 1
-      val hours = toHours(effectiveTotalSecs)
+      val effectiveTotalSecs =
+        if (totalSecs < 0 && nanos > 0) totalSecs + 1
+        else totalSecs
+      val hours =
+        if (effectiveTotalSecs >= 0) div3600(effectiveTotalSecs) // 3600 == seconds in a hour
+        else -div3600(-effectiveTotalSecs)
       if (hours != 0) {
         writeLong(hours)
         writeBytes('H')
@@ -967,10 +947,7 @@ final class JsonWriter private[jsoniter_scala](
         }
       }
     }
-
-  private[this] def toHours(seconds: Long): Long =
-    if (seconds >= 0) div3600(seconds) // 3600 == seconds in a hour
-    else -div3600(-seconds)
+  }
 
   @tailrec
   private[this] def writeSignificantFractionDigits(q0: Int, pos: Int, posLim: Int, lastPos: Int, buf: Array[Byte]): Int =
@@ -988,7 +965,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
-    val epochDay = toDay(epochSecond)
+    val epochDay =
+      if (epochSecond >= 0) div86400(epochSecond) // 86400 == seconds per day
+      else -div86400(86399 - epochSecond)
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
@@ -1025,10 +1004,6 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = '"'
     pos + 2
   }
-
-  private[this] def toDay(second: Long): Long =
-    if (second >= 0) div86400(second) // 86400 == seconds per day
-    else -div86400(86399 - second)
 
   private[this] def to400YearCycle(day: Long): Int =
     (if (day >= 0) div146097(day) // 146097 == number of days in a 400 year cycle
@@ -1105,10 +1080,10 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private[this] def writePeriod(x: Period): Unit =
-    if (x.isZero) writeBytes('"', 'P', '0', 'D', '"')
+  private[this] def writePeriod(x: Period): Unit = {
+    writeBytes('"', 'P')
+    if (x.isZero) writeBytes('0', 'D', '"')
     else {
-      writeBytes('"', 'P')
       val years = x.getYears
       if (years != 0) {
         writeInt(years)
@@ -1125,6 +1100,7 @@ final class JsonWriter private[jsoniter_scala](
         writeBytes('D', '"')
       } else writeBytes('"')
     }
+  }
 
   private[this] def writeYear(x: Year): Unit = count = {
     var pos = ensureBufCapacity(12) // 12 == "+999999999".length + 2
@@ -1280,18 +1256,18 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeOffset(x: ZoneOffset, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val offsetTotalSeconds = x.getTotalSeconds
-    if (offsetTotalSeconds == 0) {
+    val totalSeconds = x.getTotalSeconds
+    if (totalSeconds == 0) {
       buf(p) = 'Z'
       p + 1
     } else {
       val q0 =
-        if (offsetTotalSeconds >= 0) {
+        if (totalSeconds > 0) {
           buf(p) = '+'
-          offsetTotalSeconds
+          totalSeconds
         } else {
           buf(p) = '-'
-          -offsetTotalSeconds
+          -totalSeconds
         }
       val q1 = (q0 * 2443359173L >> 43).toInt // divide positive int by 3600
       val r1 = q0 - q1 * 3600
