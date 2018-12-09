@@ -1527,12 +1527,12 @@ final class JsonWriter private[jsoniter_scala](
         if (exp < 0) {
           buf(pos) = '0'
           buf(pos + 1) = '.'
-          pos = writeNZeros(-1 - exp, pos + 2, buf)
+          pos = writeNBytes(-1 - exp, '0', pos + 2, buf)
           writePositiveIntStartingFromLastPosition(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
           writePositiveIntStartingFromLastPosition(output, pos + olength - 1, buf, ds)
-          pos = writeNZeros(exp - olength + 1, pos + olength, buf)
+          pos = writeNBytes(exp - olength + 1, '0', pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
           pos + 2
@@ -1691,12 +1691,12 @@ final class JsonWriter private[jsoniter_scala](
         if (exp < 0) {
           buf(pos) = '0'
           buf(pos + 1) = '.'
-          pos = writeNZeros(-1 - exp, pos + 2, buf)
+          pos = writeNBytes(-1 - exp, '0', pos + 2, buf)
           writeSmallPositiveLongStartingFromLastPosition(output, pos + olength - 1, buf, ds)
           pos + olength
         } else if (exp + 1 >= olength) {
           writeSmallPositiveLongStartingFromLastPosition(output, pos + olength - 1, buf, ds)
-          pos = writeNZeros(exp - olength + 1, pos + olength, buf)
+          pos = writeNBytes(exp - olength + 1, '0', pos + olength, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
           pos + 2
@@ -1857,27 +1857,20 @@ final class JsonWriter private[jsoniter_scala](
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
   }
 
+  private[this] def writeIndention(): Unit = count = {
+    val pos = ensureBufCapacity(indention + 1)
+    val buf = this.buf
+    buf(pos) = '\n'
+    writeNBytes(indention, ' ', pos + 1, buf)
+  }
+
   @tailrec
-  private[this] def writeNZeros(n: Int, pos: Int, buf: Array[Byte]): Int =
+  private[this] def writeNBytes(n: Int, b: Byte, pos: Int, buf: Array[Byte]): Int =
     if (n == 0) pos
     else {
-      buf(pos) = '0'
-      writeNZeros(n - 1, pos + 1, buf)
+      buf(pos) = b
+      writeNBytes(n - 1, b, pos + 1, buf)
     }
-
-  private[this] def writeIndention(): Unit = count = {
-    val required = indention + 1
-    var pos = ensureBufCapacity(required)
-    val buf = this.buf
-    val to = pos + required
-    buf(pos) = '\n'
-    pos += 1
-    while (pos < to) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    to
-  }
 
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
