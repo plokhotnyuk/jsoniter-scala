@@ -13,8 +13,8 @@ import scala.{specialized => sp}
 
 /**
   * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter]] that contains params for formatting of
-  * output JSON and for tuning of preferred size for internal byte buffer that created on the writer instantiation and
-  * reused in runtime for serialization of messages using [[java.io.OutputStream]].
+  * output JSON and for tuning of preferred size for internal byte buffer that is created on the writer instantiation
+  * and reused in runtime for serialization of messages using [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]].
   * <br/>
   * All configuration params already initialized to default values, but in some cases they should be altered:
   * <ul>
