@@ -34,8 +34,8 @@ case class WriterConfig(
     indentionStep: Int = 0,
     escapeUnicode: Boolean = false,
     preferredBufSize: Int = 16384) {
-  if (indentionStep < 0) throw new IllegalArgumentException("'indentionStep' should be not less than 0")
-  if (preferredBufSize < 0) throw new IllegalArgumentException("'preferredBufSize' should be not less than 0")
+  require(indentionStep >= 0, "'indentionStep' should be not less than 0")
+  require(preferredBufSize >= 0, "'preferredBufSize' should be not less than 0")
 }
 
 final class JsonWriter private[jsoniter_scala](
