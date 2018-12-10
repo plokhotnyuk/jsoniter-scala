@@ -44,8 +44,8 @@ case class ReaderConfig(
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
     preferredCharBufSize: Int = 1024) {
-  if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
-  if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
+  require(preferredBufSize >= 12, "'preferredBufSize' should be not less than 12")
+  require(preferredCharBufSize >= 0, "'preferredCharBufSize' should be not less than 0")
 }
 
 class JsonParseException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
