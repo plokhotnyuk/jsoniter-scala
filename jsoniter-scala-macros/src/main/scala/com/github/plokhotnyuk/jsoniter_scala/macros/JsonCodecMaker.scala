@@ -898,7 +898,7 @@ object JsonCodecMaker {
             if (tpe1.typeArgs.nonEmpty) q"x: Array[$tpe1 with Any]"
             else q"x"
           genReadArray(
-            q"""var x = new Array[$tpe1](16)
+            q"""var x = new $tpe(16)
                 var i = 0""",
             q"""if (i == x.length) x = java.util.Arrays.copyOf($copyArg, i << 1)
                 x(i) = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
