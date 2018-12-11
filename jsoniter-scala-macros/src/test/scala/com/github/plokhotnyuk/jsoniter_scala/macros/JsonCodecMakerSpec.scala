@@ -1281,9 +1281,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'Any'."""
       })
     }
-    "serialize and deserialize array of higher-kinded type" in {
-      import scala.language.higherKinds
-
+    "serialize and deserialize array of a generic type" in {
       sealed trait Bar[A]
 
       case object Baz extends Bar[Int]

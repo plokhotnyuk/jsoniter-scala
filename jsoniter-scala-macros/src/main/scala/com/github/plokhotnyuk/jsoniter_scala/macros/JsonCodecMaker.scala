@@ -891,7 +891,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val copyArg =
-            if (tpe1.typeArgs.nonEmpty && tpe1 <:< typeOf[AnyRef]) q"x: Array[$tpe1 with AnyRef]"
+            if (tpe1.typeArgs.nonEmpty) q"x: Array[$tpe1 with Any]"
             else q"x"
           genReadArray(
             q"""var x = new Array[$tpe1](16)
