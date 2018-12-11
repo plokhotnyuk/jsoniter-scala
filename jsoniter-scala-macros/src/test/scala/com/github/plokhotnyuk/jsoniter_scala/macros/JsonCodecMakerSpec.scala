@@ -1317,7 +1317,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       sealed trait Foo[F[_]]
 
-      case class FooImpl[F[_], A](fa: F[A], as: Vector[A])
+      case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
 
       sealed trait Bar[A]
 
