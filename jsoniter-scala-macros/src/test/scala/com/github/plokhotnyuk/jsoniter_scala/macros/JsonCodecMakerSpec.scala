@@ -1300,9 +1300,9 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       case class Baz[A[_]](a: A[String]) extends Foo[A]
 
-      val codecOfFooOption = make[Foo[Option]](CodecMakerConfig())
-      verifySerDeser(codecOfFooOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
-      verifySerDeser(codecOfFooOption, Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
+      val codecOfFooForOption = make[Foo[Option]](CodecMakerConfig())
+      verifySerDeser(codecOfFooForOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
+      verifySerDeser(codecOfFooForOption, Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
 
       case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
 
@@ -1385,6 +1385,23 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |It should not depend on code from the same compilation module where the 'make' macro is called.
           |Use a separated submodule of the project to compile all such dependencies before their usage for
           |generation of codecs.""".stripMargin.replace('\n', ' ')
+      })
+    }
+    "don't generate codecs when all generic type parameters cannot be resolved" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """import scala.language.higherKinds
+          |
+          |sealed trait Foo[F[_]]
+          |case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
+          |sealed trait Bar[A]
+          |
+          |case object Baz extends Bar[Int]
+          |case object Qux extends Bar[String]
+          |
+          |val v = FooImpl[Bar, String](Qux, Vector.empty[String])
+          |val c = make[Foo[Bar]](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
       })
     }
   }
