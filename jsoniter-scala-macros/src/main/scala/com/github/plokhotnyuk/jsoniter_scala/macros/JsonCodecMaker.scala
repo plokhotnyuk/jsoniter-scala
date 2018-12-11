@@ -14,6 +14,7 @@ import scala.language.experimental.macros
 import scala.reflect.NameTransformer
 import scala.reflect.macros.contexts.Context
 import scala.reflect.macros.blackbox
+import scala.util.control.NonFatal
 
 @field
 final class named(val name: String) extends StaticAnnotation
@@ -168,12 +169,17 @@ object JsonCodecMaker {
 
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
+      def substituteTypes(tpe: Type, from: List[Symbol], to: List[Type]): Type =
+        try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
+          fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
+        }
+
       def resolveConcreteType(tpe: Type, mtpe: Type): Type = {
         val tpeTypeParams =
           if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.typeParams
           else Nil
         if (tpeTypeParams.isEmpty) mtpe
-        else mtpe.substituteTypes(tpeTypeParams, tpe.typeArgs)
+        else substituteTypes(mtpe, tpeTypeParams, tpe.typeArgs)
       }
 
       def methodType(tpe: Type, m: MethodSymbol): Type = resolveConcreteType(tpe, m.returnType.dealias)
@@ -196,7 +202,7 @@ object JsonCodecMaker {
               val classSymbol = s.asClass
               val subTpe =
                 if (classSymbol.typeParams.isEmpty) classSymbol.toType
-                else classSymbol.toType.substituteTypes(classSymbol.typeParams, tpe.typeArgs)
+                else substituteTypes(classSymbol.toType, classSymbol.typeParams, tpe.typeArgs)
               if (isSealedClass(subTpe)) collectRecursively(subTpe)
               else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
               else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
@@ -268,9 +274,8 @@ object JsonCodecMaker {
 
       val rootTpe = weakTypeOf[A].dealias
       val codecConfig =
-        try eval[CodecMakerConfig](config.tree) catch {
-          // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
-          case _: Throwable => fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
+        try eval[CodecMakerConfig](config.tree) catch { case _: Throwable => // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+          fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
             "It should not depend on code from the same compilation module where the 'make' macro is called. " +
             "Use a separated submodule of the project to compile all such dependencies before their usage for " +
             "generation of codecs.")
@@ -514,9 +519,8 @@ object JsonCodecMaker {
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
             val partiallyMappedName = named.headOption.flatMap(a => Option {
-              try eval[named](a.tree).name catch {
-                // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
-                case _: Throwable => fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
+              try eval[named](a.tree).name catch { case _: Throwable => // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+                fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
                   "It should not depend on code from the same compilation module where the 'make' macro is called. " +
                   "Use a separated submodule of the project to compile all such dependencies before their usage " +
                   "for generation of codecs.")
