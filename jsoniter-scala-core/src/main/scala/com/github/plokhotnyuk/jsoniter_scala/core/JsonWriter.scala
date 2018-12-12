@@ -905,10 +905,20 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeDuration(x: Duration): Unit = {
-    writeBytes('"', 'P', 'T')
-    if (x.isZero) writeBytes('0', 'S', '"')
-    else {
+  private[this] def writeDuration(x: Duration): Unit = count = {
+    var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
+    val buf = this.buf
+    val ds = digits
+    buf(pos) = '"'
+    buf(pos + 1) = 'P'
+    buf(pos + 2) = 'T'
+    pos += 3
+    if (x.isZero) {
+      buf(pos) = '0'
+      buf(pos + 1) = 'S'
+      buf(pos + 2) = '"'
+      pos + 3
+    } else {
       val totalSecs = x.getSeconds
       val nanos = x.getNano
       val effectiveTotalSecs =
@@ -918,50 +928,108 @@ final class JsonWriter private[jsoniter_scala](
         if (effectiveTotalSecs >= 0) div3600(effectiveTotalSecs) // 3600 == seconds in a hour
         else -div3600(-effectiveTotalSecs)
       if (hours != 0) {
-        writeLong(hours)
-        writeBytes('H')
+        val q0 =
+          if (hours > 0) hours
+          else {
+            buf(pos) = '-'
+            pos += 1
+            -hours
+          }
+        pos =
+          if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
+          else {
+            val q1 = div100000000(q0)
+            val r1 = (q0 - 100000000 * q1).toInt
+            write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
+          }
+        buf(pos) = 'H'
+        pos += 1
       }
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
       val minutes = ((secsOfHour * 2290649225L >> 37) - (secsOfHour >> 31)).toInt // divide signed int by 60
       if (minutes != 0) {
-        writeInt(minutes)
-        writeBytes('M')
+        val q0 =
+          if (minutes > 0) minutes
+          else {
+            buf(pos) = '-'
+            pos += 1
+            -minutes
+          }
+        if (q0 < 10) {
+          buf(pos) = (q0 + '0').toByte
+          pos += 1
+        } else {
+          val d = ds(q0)
+          buf(pos) = (d >> 8).toByte
+          buf(pos + 1) = d.toByte
+          pos += 2
+        }
+        buf(pos) = 'M'
+        pos += 1
       }
       val seconds = secsOfHour - minutes * 60
-      if (seconds == 0 && nanos == 0) writeBytes('"')
-      else {
-        if (totalSecs < 0 && seconds == 0 && nanos != 0) writeBytes('-', '0')
-        else writeInt(seconds)
-        if (nanos == 0) writeBytes('S', '"')
-        else {
-          var pos = ensureBufCapacity(12)
-          val buf = this.buf
+      if (seconds == 0 && nanos == 0) {
+        buf(pos) = '"'
+        pos + 1
+      } else {
+        if (totalSecs < 0 && seconds == 0 && nanos != 0) {
+          buf(pos) = '-'
+          buf(pos + 1) = '0'
+          pos += 2
+        } else {
+          val q0: Int =
+            if (seconds >= 0) seconds
+            else {
+              buf(pos) = '-'
+              pos += 1
+              -seconds
+            }
+          if (q0 < 10) {
+            buf(pos) = (q0 + '0').toByte
+            pos += 1
+          } else {
+            val d = ds(q0)
+            buf(pos) = (d >> 8).toByte
+            buf(pos + 1) = d.toByte
+            pos += 2
+          }
+        }
+        if (nanos == 0) {
+          buf(pos) = 'S'
+          buf(pos + 1) = '"'
+          pos + 2
+        } else {
           val q0 =
             if (totalSecs < 0) 1000000000 - nanos
             else nanos
-          buf(pos) = '.'
-          pos = writeSignificantFractionDigits(q0, pos + 9, pos, 0, buf)
+          val dotPos = pos
+          pos = writeSignificantFractionDigits(q0, pos + 9, pos, 0, buf, ds)
+          buf(dotPos) = '.'
           buf(pos) = 'S'
           buf(pos + 1) = '"'
-          count = pos + 2
+          pos + 2
         }
       }
     }
   }
 
   @tailrec
-  private[this] def writeSignificantFractionDigits(q0: Int, pos: Int, posLim: Int, lastPos: Int, buf: Array[Byte]): Int =
-    if (pos == posLim) lastPos
-    else {
-      val q1 = (q0 * 3435973837L >> 35).toInt // divide positive int by 10
-      val r1 = q0 - q1 * 10
-      if (lastPos == 0 && r1 == 0) writeSignificantFractionDigits(q1, pos - 1, posLim, lastPos, buf)
-      else {
-        buf(pos) = (r1 + '0').toByte
-        if (lastPos == 0) writeSignificantFractionDigits(q1, pos - 1, posLim, pos + 1, buf)
-        else writeSignificantFractionDigits(q1, pos - 1, posLim, lastPos, buf)
-      }
-    }
+  private[this] def writeSignificantFractionDigits(q0: Int, pos: Int, posLim: Int, lastPos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (pos > posLim) {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+      val r1 = q0 - q1 * 100
+      if (lastPos != 0 || r1 != 0) {
+        val d = ds(r1)
+        buf(pos - 1) = (d >> 8).toByte
+        buf(pos) = d.toByte
+        if (lastPos == 0) {
+          val newLastPos =
+            if (d.toByte == '0') pos
+            else pos + 1
+          writeSignificantFractionDigits(q1, pos - 2, posLim, newLastPos, buf, ds)
+        } else writeSignificantFractionDigits(q1, pos - 2, posLim, lastPos, buf, ds)
+      } else writeSignificantFractionDigits(q1, pos - 2, posLim, lastPos, buf, ds)
+    } else lastPos
 
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
