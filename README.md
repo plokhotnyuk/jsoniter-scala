@@ -280,7 +280,7 @@ sbt clean 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*B
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
 of your file to the drop zone or using the `source` parameter with an HTTP link to your file in the URL like 
-[here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/jdk8.json).
+[here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/oraclejdk11.json).
 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
