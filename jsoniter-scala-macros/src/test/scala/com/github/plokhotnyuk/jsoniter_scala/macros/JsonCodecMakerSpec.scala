@@ -1390,14 +1390,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "don't generate codecs when all generic type parameters cannot be resolved" in {
       assert(intercept[TestFailedException](assertCompiles {
         """import scala.language.higherKinds
-          |
           |sealed trait Foo[F[_]]
           |case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
           |sealed trait Bar[A]
-          |
           |case object Baz extends Bar[Int]
           |case object Qux extends Bar[String]
-          |
           |val v = FooImpl[Bar, String](Qux, Vector.empty[String])
           |val c = make[Foo[Bar]](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
