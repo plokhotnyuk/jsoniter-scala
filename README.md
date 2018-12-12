@@ -84,11 +84,11 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   implementations of the `equals` method (it mostly concerns non-case classes or other types that have custom codecs)
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all 
 - Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
-- Parsing exception always reports a hexadecimal offset of `Array[Byte]` or `InputStream` where it occurs and 
-  an optional hex dump affected by error part of an internal byte buffer
+- Parsing exception always reports a hexadecimal offset of `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
+  where it occurs and an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
-- No extra buffering is required when parsing from `InputStream` or serializing to `OutputStream`
+- No extra buffering is required when parsing from `java.io.InputStream` or serializing to `java.io.OutputStream`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
 - Releases for different Scala versions: 2.11, 2.12, 2.13.0-M4, 2.13.0-M5  
 - Support of compilation to a native image by GraalVM
@@ -113,7 +113,8 @@ List of options that change parsing and serialization in runtime:
 - Throwing of stack-less parsing exceptions by default to greatly reduce impact on performance, while stack traces can 
   be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
-- A preferred size of internal in/out buffers when parsing from `InputStream` or serializing to `OutputStream`
+- A preferred size of internal in buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
+- A preferred size of internal out buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
 - A preferred size of char buffers when parsing string values
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master) 
