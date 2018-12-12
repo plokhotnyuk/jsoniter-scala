@@ -566,14 +566,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private[this] def writeBytes(b1: Byte, b2: Byte): Unit = count = {
-    val pos = ensureBufCapacity(2)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    pos + 2
-  }
-
   private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
     val pos = ensureBufCapacity(3)
     val buf = this.buf
@@ -908,7 +900,6 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeDuration(x: Duration): Unit = count = {
     var pos = ensureBufCapacity(40) // 40 == "PT-1111111111111111H-11M-11.111111111S".length + 2
     val buf = this.buf
-    val ds = digits
     buf(pos) = '"'
     buf(pos + 1) = 'P'
     buf(pos + 2) = 'T'
@@ -919,6 +910,7 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 2) = '"'
       pos + 3
     } else {
+      val ds = digits
       val totalSecs = x.getSeconds
       val nanos = x.getNano
       val effectiveTotalSecs =
@@ -1148,25 +1140,75 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  private[this] def writePeriod(x: Period): Unit = {
-    writeBytes('"', 'P')
-    if (x.isZero) writeBytes('0', 'D', '"')
-    else {
+  private[this] def writePeriod(x: Period): Unit = count = {
+    var pos = ensureBufCapacity(39) // 39 == "P-2147483648Y-2147483648M-2147483648D".length + 2
+    val buf = this.buf
+    buf(pos) = '"'
+    buf(pos + 1) = 'P'
+    pos += 2
+    if (x.isZero) {
+      buf(pos) = '0'
+      buf(pos + 1) = 'D'
+      buf(pos + 2) = '"'
+      pos + 3
+    } else {
+      val ds = digits
       val years = x.getYears
       if (years != 0) {
-        writeInt(years)
-        writeBytes('Y')
+        val q0 =
+          if (years >= 0) years
+          else if (years != -2147483648) {
+            buf(pos) = '-'
+            pos += 1
+            -years
+          } else {
+            buf(pos) = '-'
+            buf(pos + 1) = '2'
+            pos += 2
+            147483648
+          }
+        pos = writePositiveInt(q0, pos, buf, ds)
+        buf(pos) = 'Y'
+        pos += 1
       }
       val months = x.getMonths
       if (months != 0) {
-        writeInt(months)
-        writeBytes('M')
+        val q0 =
+          if (months >= 0) months
+          else if (months != -2147483648) {
+            buf(pos) = '-'
+            pos += 1
+            -months
+          } else {
+            buf(pos) = '-'
+            buf(pos + 1) = '2'
+            pos += 2
+            147483648
+          }
+        pos = writePositiveInt(q0, pos, buf, ds)
+        buf(pos) = 'M'
+        pos += 1
       }
       val days = x.getDays
       if (days != 0) {
-        writeInt(days)
-        writeBytes('D', '"')
-      } else writeBytes('"')
+        val q0 =
+          if (days >= 0) days
+          else if (days != -2147483648) {
+            buf(pos) = '-'
+            pos += 1
+            -days
+          } else {
+            buf(pos) = '-'
+            buf(pos + 1) = '2'
+            pos += 2
+            147483648
+          }
+        pos = writePositiveInt(q0, pos, buf, ds)
+        buf(pos) = 'D'
+        pos += 1
+      }
+      buf(pos) = '"'
+      pos + 1
     }
   }
 
@@ -1427,46 +1469,46 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeInt(x: Int): Unit = count = {
     var pos = ensureBufCapacity(11) // minIntBytes.length
     val buf = this.buf
-    if (x == -2147483648) {
-      "-2147483648".getBytes(0, 11, buf, pos)
-      pos + 11
-    } else {
-      val q0 =
-        if (x >= 0) x
-        else {
-          buf(pos) = '-'
-          pos += 1
-          -x
-        }
-      writePositiveInt(q0, pos, buf, digits)
-    }
+    val q0 =
+      if (x >= 0) x
+      else if (x != -2147483648) {
+        buf(pos) = '-'
+        pos += 1
+        -x
+      } else {
+        buf(pos) = '-'
+        buf(pos + 1) = '2'
+        pos += 2
+        147483648
+      }
+    writePositiveInt(q0, pos, buf, digits)
   }
 
   private[this] def writeLong(x: Long): Unit = count = {
     var pos = ensureBufCapacity(20) // minLongBytes.length
     val buf = this.buf
-    if (x == -9223372036854775808L) {
-      "-9223372036854775808L".getBytes(0, 20, buf, pos)
-      pos + 20
-    } else {
-      val ds = digits
-      val q0 =
-        if (x >= 0) x
-        else {
-          buf(pos) = '-'
-          pos += 1
-          -x
-        }
-      if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
+    val ds = digits
+    val q0 =
+      if (x >= 0) x
+      else if (x != -9223372036854775808L) {
+        buf(pos) = '-'
+        pos += 1
+        -x
+      } else {
+        buf(pos) = '-'
+        buf(pos + 1) = '9'
+        pos += 2
+        223372036854775808L
+      }
+    if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
+    else {
+      val q1 = div100000000(q0)
+      val r1 = (q0 - 100000000 * q1).toInt
+      if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
       else {
-        val q1 = div100000000(q0)
-        val r1 = (q0 - 100000000 * q1).toInt
-        if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
-        else {
-          val q2 = (q1 >> 8) * 1441151881 >> 49  // divide small positive long by 100000000
-          val r2 = (q1 - 100000000 * q2).toInt
-          write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
-        }
+        val q2 = (q1 >> 8) * 1441151881 >> 49  // divide small positive long by 100000000
+        val r2 = (q1 - 100000000 * q2).toInt
+        write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
       }
     }
   }
