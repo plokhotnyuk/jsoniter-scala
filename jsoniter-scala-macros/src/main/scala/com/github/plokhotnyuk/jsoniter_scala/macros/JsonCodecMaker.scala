@@ -894,17 +894,25 @@ object JsonCodecMaker {
             q"x += ${genReadVal(tpe1, nullValue(tpe1), isStringified)}", q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val copyArg =
-            if (tpe1.typeArgs.nonEmpty) q"x: Array[$tpe1 with Any]"
-            else q"x"
+          val growArray =
+            if (tpe1.typeArgs.nonEmpty && tpe1 <:< typeOf[AnyRef]) {
+              q"""val x1 = new $tpe(i << 1)
+                  System.arraycopy(x, 0, x1, 0, i)
+                  x1"""
+            } else q"java.util.Arrays.copyOf(x, i << 1)"
+          val shrinkArray =
+            if (tpe1.typeArgs.nonEmpty && tpe1 <:< typeOf[AnyRef]) {
+              q"""val x1 = new $tpe(i)
+                  System.arraycopy(x, 0, x1, 0, i)
+                  x1"""
+            } else q"java.util.Arrays.copyOf(x, i)"
           genReadArray(
             q"""var x = new $tpe(16)
                 var i = 0""",
-            q"""if (i == x.length) x = java.util.Arrays.copyOf($copyArg, i << 1)
+            q"""if (i == x.length) $growArray
                 x(i) = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
                 i += 1""",
-            q"""if (i == x.length) x
-                else java.util.Arrays.copyOf($copyArg, i)""")
+            q"if (i == x.length) x else $shrinkArray")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
