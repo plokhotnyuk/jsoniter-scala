@@ -187,21 +187,15 @@ or runtime error, depending on the version of the compiler, see details here: ht
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
 affected by the exception (after the `o` field)
 
-2. Scalac can fail to compile the `make` macro call with a stacktrace like this (for more details see: https://github.com/scala/bug/issues/11119):
+2. Scalac can fail to compile the `make` macro call with a error like this:
 
 ```
-[error] java.lang.AssertionError: assertion failed: List(package com, package com)
-[error] 	at scala.reflect.internal.SymbolTable.throwAssertionError(SymbolTable.scala:163)
-[error] 	at scala.reflect.internal.Symbols$Symbol.suchThat(Symbols.scala:1974)
-...
-[error] 	at scala.reflect.macros.contexts.Evals.eval(Evals.scala:19)
-[error] 	at scala.reflect.macros.contexts.Evals.eval$(Evals.scala:14)
-[error] 	at scala.reflect.macros.contexts.Context.eval(Context.scala:6)
-[error] 	at com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$eval$1(JsonCodecMaker.scala:227)
-[error] 	at com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker$Impl$.make(JsonCodecMaker.scala:229)
+[error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on 
+        code from the same compilation module where the 'make' macro is called. Use a separated submodule of the project
+        to compile all such dependencies before their usage for generation of codecs.
 ```
 
-Workarounds are: 
+In some cases workarounds are: 
 - isolate the `make` macro call(s) in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
