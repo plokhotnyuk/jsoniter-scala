@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.time._
 
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 
 import scala.collection.JavaConverters._
 
@@ -89,9 +89,9 @@ object GenUtils {
     } yield OffsetTime.of(hour, minute, second, nano, zoneOffset)
   val genPeriod: Gen[Period] =
     for {
-      year <- Gen.choose(Int.MinValue, Int.MaxValue)
-      month <- Gen.choose(Int.MinValue, Int.MaxValue)
-      day <- Gen.choose(Int.MinValue, Int.MaxValue)
+      year <- Arbitrary.arbitrary[Int]
+      month <- Arbitrary.arbitrary[Int]
+      day <- Arbitrary.arbitrary[Int]
     } yield Period.of(year, month, day)
   val genYear: Gen[Year] = Gen.choose(-999999999, 999999999).map(Year.of)
   val genYearMonth: Gen[YearMonth] =

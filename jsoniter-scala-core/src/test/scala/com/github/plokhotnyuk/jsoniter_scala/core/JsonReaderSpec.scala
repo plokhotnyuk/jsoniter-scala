@@ -1021,14 +1021,15 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       def check(s: String, x: Period): Unit = {
         reader("\"" + s + "\"").readPeriod(null) shouldBe x
         reader("\"" + s + "\":").readKeyAsPeriod() shouldBe x
-        reader("\"-" + s + "\"").readPeriod(null) shouldBe x.negated()
-        reader("\"-" + s + "\":").readKeyAsPeriod() shouldBe x.negated()
+        if (x.getYears != Int.MinValue && x.getMonths != Int.MinValue && x.getDays != Int.MinValue) {
+          reader("\"-" + s + "\"").readPeriod(null) shouldBe x.negated()
+          reader("\"-" + s + "\":").readKeyAsPeriod() shouldBe x.negated()
+        }
       }
 
       check("P0D", Period.ZERO)
       forAll(genPeriod, minSuccessful(100000))(x => check(x.toString, x))
-      forAll(Gen.choose(-Int.MaxValue, Int.MaxValue), Gen.choose(-Int.MaxValue, Int.MaxValue), minSuccessful(100000)) {
-        (x: Int, y: Int) =>
+      forAll(minSuccessful(100000)) { (x: Int, y: Int) =>
           check(s"P${x}Y", Period.of(x, 0, 0))
           check(s"P${x}M", Period.of(0, x, 0))
           check(s"P${x}D", Period.of(0, 0, x))

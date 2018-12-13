@@ -224,9 +224,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
 
       check(Period.ZERO)
       forAll(genPeriod, minSuccessful(100000))(check)
-      forAll(Gen.choose(Int.MinValue, Int.MaxValue), Gen.choose(Int.MinValue, Int.MaxValue), minSuccessful(100000)) {
-        (x: Int, y: Int) => check(Period.of(x, y, 0))
-      }
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Year" should {
