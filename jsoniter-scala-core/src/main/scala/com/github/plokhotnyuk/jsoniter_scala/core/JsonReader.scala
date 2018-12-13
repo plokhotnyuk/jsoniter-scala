@@ -2031,10 +2031,9 @@ final class JsonReader private[jsoniter_scala](
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
-  private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i >= lim) parseEncodedString(i, growCharBuf(i + 2) - 1, this.charBuf, pos) // 2 is length of surrogate pair
-    else {
-      val remaining = tail - pos
+  private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
+    val remaining = tail - pos
+    if (i < lim) {
       if (remaining > 0) {
         val b1 = buf(pos)
         if (b1 >= 0) { // 0aaaaaaa (UTF-8 byte) -> 000000000aaaaaaa (UTF-16 char)
@@ -2050,15 +2049,13 @@ final class JsonReader private[jsoniter_scala](
             if (b2 == 'u') {
               if (remaining > 5) {
                 val ch1 = readEscapedUnicode(pos + 2, buf)
-                if (ch1 < 0xD800 || ch1 > 0xDFFF) {
-                  charBuf(i) = ch1
-                  parseEncodedString(i + 1, lim, charBuf, pos + 6)
-                } else if (remaining > 11) {
+                charBuf(i) = ch1
+                if (ch1 < 0xD800 || ch1 > 0xDFFF) parseEncodedString(i + 1, lim, charBuf, pos + 6)
+                else if (remaining > 11) {
                   if (buf(pos + 6) != '\\') illegalEscapeSequenceError(pos + 6)
                   if (buf(pos + 7) != 'u') illegalEscapeSequenceError(pos + 7)
                   val ch2 = readEscapedUnicode(pos + 8, buf)
                   if (ch1 >= 0xDC00 || ch2 < 0xDC00 || ch2 > 0xDFFF) decodeError("illegal surrogate character pair", pos + 11)
-                  charBuf(i) = ch1
                   charBuf(i + 1) = ch2
                   parseEncodedString(i + 2, lim, charBuf, pos + 12)
                 } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
@@ -2109,7 +2106,8 @@ final class JsonReader private[jsoniter_scala](
           } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
         } else malformedBytesError(b1, pos)
       } else parseEncodedString(i, lim, charBuf, loadMoreOrError(pos))
-    }
+    } else parseEncodedString(i, growCharBuf(i + 2) - 1, this.charBuf, pos) // 2 is length of surrogate pair
+  }
 
   @tailrec
   private[this] def parseChar(pos: Int): Char = {
