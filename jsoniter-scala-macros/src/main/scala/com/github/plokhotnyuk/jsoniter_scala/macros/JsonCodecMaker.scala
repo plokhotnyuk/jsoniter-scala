@@ -909,7 +909,7 @@ object JsonCodecMaker {
           genReadArray(
             q"""var x = new $tpe(16)
                 var i = 0""",
-            q"""if (i == x.length) $growArray
+            q"""if (i == x.length) x = $growArray
                 x(i) = ${genReadVal(tpe1, nullValue(tpe1), isStringified)}
                 i += 1""",
             q"if (i == x.length) x else $shrinkArray")

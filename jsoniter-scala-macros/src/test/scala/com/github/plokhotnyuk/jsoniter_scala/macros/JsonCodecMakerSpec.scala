@@ -81,7 +81,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
 
-  val arrays = Arrays(Array(Array(1, 2, 3), Array(4, 5, 6)), Array[BigInt](7))
+  val arrays = Arrays(Array(Array(1, 2), Array(3, 4)), Array[BigInt](1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17))
   val codecOfArrays: JsonValueCodec[Arrays] = make(CodecMakerConfig())
 
   case class MutableMaps(hm: collection.mutable.HashMap[Boolean, collection.mutable.AnyRefMap[BigDecimal, Int]],
@@ -564,7 +564,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[(S, I)](CodecMakerConfig()), ("VVV", 1), "[\"VVV\",1]")
     }
     "serialize and deserialize case classes with arrays" in {
-      val json = """{"aa":[[1,2,3],[4,5,6]],"a":[7]}"""
+      val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]}"""
       verifySer(codecOfArrays, arrays, json)
       val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfArrays)
       parsedObj.aa shouldBe arrays.aa
