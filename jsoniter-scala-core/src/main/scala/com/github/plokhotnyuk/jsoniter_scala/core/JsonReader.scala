@@ -2476,20 +2476,35 @@ object JsonReader {
     ns('f') = 15
     ns
   }
-  private final val zoneOffsets: Array[ZoneOffset] = (-72 to 72).map(x => ZoneOffset.ofTotalSeconds(x * 900)).toArray
+  private final val zoneOffsets: Array[ZoneOffset] = {
+    val zos = new Array[ZoneOffset](145)
+    var i = 0
+    while (i < 145) {
+      zos(i) = ZoneOffset.ofTotalSeconds((i - 72) * 900)
+      i += 1
+    }
+    zos
+  }
   private final val zoneIds: java.util.HashMap[String, ZoneId] = {
     val zs = new java.util.HashMap[String, ZoneId](1024)
-    ZoneId.getAvailableZoneIds.asScala.foreach(id => zs.put(id, ZoneId.of(id)))
-    zoneOffsets.foreach { zo =>
-      val id = if (zo.getId == "Z") "+00:00" else zo.getId
-      val z1 = ZoneId.of(id)
-      val z2 = ZoneId.of(s"UT$id")
-      val z3 = ZoneId.of(s"UTC$id")
-      val z4 = ZoneId.of(s"GMT$id")
+    val azs = ZoneId.getAvailableZoneIds.iterator()
+    while (azs.hasNext) {
+      val id = azs.next()
+      zs.put(id, ZoneId.of(id))
+    }
+    val zos = zoneOffsets
+    val l = zos.length
+    var i = 0
+    while (i < l) {
+      val z1 = zos(i)
       zs.put(z1.getId, z1)
+      val z2 = ZoneId.ofOffset("UT", z1)
       zs.put(z2.getId, z2)
+      val z3 = ZoneId.ofOffset("UTC", z1)
       zs.put(z3.getId, z3)
+      val z4 = ZoneId.ofOffset("GMT", z1)
       zs.put(z4.getId, z4)
+      i += 1
     }
     zs
   }
