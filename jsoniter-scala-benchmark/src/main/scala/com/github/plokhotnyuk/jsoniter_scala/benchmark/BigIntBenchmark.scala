@@ -3,11 +3,12 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
-//import io.circe.syntax._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 //import upickle.default._
@@ -51,10 +52,9 @@ class BigIntBenchmark extends CommonParams {
 */
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Circe uses an engineering decimal notation to serialize BigInt
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
 /* FIXME: dsl-json cannot find encoder for array of BigInt
   @Benchmark
   def writeDslJsonJava(): Array[Byte] = encodeDslJson[BigInt](obj)

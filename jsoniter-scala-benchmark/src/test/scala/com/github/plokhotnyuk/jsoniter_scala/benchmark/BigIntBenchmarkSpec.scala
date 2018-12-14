@@ -19,8 +19,7 @@ class BigIntBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
-      //FIXME: Circe uses an engineering decimal notation to serialize BigInt
-      //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
+      toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME: dsl-json cannot find encoder for array of BigInt
       //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
