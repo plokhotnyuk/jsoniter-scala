@@ -9,7 +9,6 @@ import java.util.UUID
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
-import scala.collection.JavaConverters._
 import scala.{specialized => sp}
 
 /**
@@ -1787,7 +1786,7 @@ final class JsonReader private[jsoniter_scala](
     val lt = toLocalTime(hour, minute, second, nano)
     val zo = toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
     if (zone eq null) ZonedDateTime.of(ld, lt, zo)
-    else ZonedDateTime.ofLocal(LocalDateTime.of(ld, lt), toZoneId(zone), zo)
+    else ZonedDateTime.ofInstant(LocalDateTime.of(ld, lt), zo, toZoneId(zone))
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {

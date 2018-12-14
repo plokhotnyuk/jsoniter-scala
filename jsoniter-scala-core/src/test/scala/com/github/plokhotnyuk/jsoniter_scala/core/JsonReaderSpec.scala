@@ -1250,12 +1250,17 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("2018-01-01T00:00:00-18[UTC-18]", ZonedDateTime.of(LocalDateTime.of(2018, 1, 1, 0, 0, 0), ZoneId.of("UTC-18")))
       check("+999999999-12-31T23:59:59.999999999+18:00", ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
       check("-999999999-01-01T00:00:00-18:00", ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN))
-      check("2018-03-25T02:30+02:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+02:00[Europe/Warsaw]"))
-      check("2018-03-25T02:30+01:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+01:00[Europe/Warsaw]")) // <- auto correction of invalid values in case a gap, where clocks jump forward
-      //FIXME: Bug in JDK 8 parser which replaces valid offsets for a hour after daylight saving time ending, see https://bugs.openjdk.java.net/browse/JDK-8066982
-      if (!GenUtils.isJDK8) check("2018-10-28T02:30+01:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+01:00[Europe/Warsaw]"))
-      check("2018-03-25T02:30+00:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+00:00[Europe/Warsaw]"))
-      check("2018-10-28T02:30+00:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+00:00[Europe/Warsaw]"))
+      check("2018-03-25T02:30+01:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+01:00[Europe/Warsaw]"))
+      if (!isJDK8) {
+        //FIXME: Bug in JDK 8 at ZonedDateTime.parse, see https://bugs.openjdk.java.net/browse/JDK-8066982
+        check("2018-03-25T02:30+00:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+00:00[Europe/Warsaw]"))
+        check("2018-03-25T02:30+02:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+02:00[Europe/Warsaw]"))
+        check("2018-03-25T02:30+03:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+03:00[Europe/Warsaw]"))
+        check("2018-10-28T02:30+00:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+00:00[Europe/Warsaw]"))
+        check("2018-10-28T02:30+01:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+01:00[Europe/Warsaw]"))
+        check("2018-10-28T02:30+02:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+02:00[Europe/Warsaw]"))
+        check("2018-10-28T02:30+03:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+03:00[Europe/Warsaw]"))
+      }
       forAll(genZonedDateTime, minSuccessful(100000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
