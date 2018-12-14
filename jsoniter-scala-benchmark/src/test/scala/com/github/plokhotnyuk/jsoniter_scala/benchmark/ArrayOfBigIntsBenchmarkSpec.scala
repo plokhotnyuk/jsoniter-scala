@@ -13,7 +13,8 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
-      benchmark.readPlayJson() shouldBe benchmark.obj
+      //FIXME: PlayJson looses significant digits in big values
+      //benchmark.readPlayJson() shouldBe benchmark.obj
       //FIXME: uPickle parses BigInt from JSON strings only
       //benchmark.readUPickle() shouldBe benchmark.obj
     }

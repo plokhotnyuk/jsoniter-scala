@@ -18,7 +18,7 @@ import upickle.default._
 
 class ArrayOfDoublesBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   var obj: Array[Double] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
@@ -82,6 +82,8 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
+/* FIXME: UPickle serialize doubles to text representations that are longer than Java's Double.toString (89288845100000 instead of 8.92888451E13)
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+*/
 }

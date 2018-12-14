@@ -25,7 +25,7 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
     (1 to 7).map(i => ZoneId.of(s"UTC+0$i:00")) ++
     (1 to 7).map(i => ZoneId.of(s"GMT+0$i:00"))).toArray
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   var obj: Array[ZonedDateTime] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _

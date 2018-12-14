@@ -7,9 +7,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import play.api.libs.json.Json
+//import play.api.libs.json.Json
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
@@ -17,7 +17,7 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 
 class ArrayOfBigIntsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   var obj: Array[BigInt] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
@@ -45,9 +45,10 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): Array[BigInt] = readFromArray[Array[BigInt]](jsonBytes)
-
+/* FIXME: PlayJson looses significant digits in big values
   @Benchmark
   def readPlayJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]](bigIntArrayFormat)
+*/
 /* FIXME: uPickle parses BigInt from JSON strings only
   @Benchmark
   def readUPickle(): Array[BigInt] = read[Array[BigInt]](jsonBytes)

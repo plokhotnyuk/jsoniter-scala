@@ -25,7 +25,7 @@ case class ExtractFields(s: String, i: Int)
 
 class ExtractFieldsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   @Param(Array("""[0.0,false,null]"""))
   var value = """[0.0,false,null]"""
   var obj: ExtractFields = ExtractFields("s", 1)

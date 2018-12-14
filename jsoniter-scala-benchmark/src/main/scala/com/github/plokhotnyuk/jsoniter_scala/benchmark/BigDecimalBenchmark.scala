@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 
 class BigDecimalBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   var jsonBytes: Array[Byte] = _
   var jsonString: String = _
   var sourceObj: BigDecimal = _
@@ -70,9 +70,10 @@ class BigDecimalBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(bigDecimalCodec)
-
+/* FIXME: Play-JSON serializes BigInt in a scientific representation (as BigDecimal)
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+*/
 /* FIXME: uPickle serializes BigDecimal to JSON strings
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

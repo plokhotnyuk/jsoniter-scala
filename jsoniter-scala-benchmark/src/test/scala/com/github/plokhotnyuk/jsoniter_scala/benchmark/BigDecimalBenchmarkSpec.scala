@@ -7,13 +7,15 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
   
   "BigDecimalBenchmark" should {
     "deserialize properly" in {
-      benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
+      //FIXME: AVSystem GenCodec: don't know how to tune precision for parsing of BigDecimal values
+      //benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       //FIXME: dsl-json cannot find decoder for BigDecimal
       //benchmark.readDslJsonJava() shouldBe benchmark.sourceObj
       benchmark.readJacksonScala() shouldBe benchmark.sourceObj
       benchmark.readJsoniterScala() shouldBe benchmark.sourceObj
-      benchmark.readPlayJson() shouldBe benchmark.sourceObj
+      //FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
+      //benchmark.readPlayJson() shouldBe benchmark.sourceObj
       //FIXME: uPickle parses BigInt from JSON strings only
       //benchmark.readUPickle() shouldBe benchmark.sourceObj
     }
@@ -25,7 +27,8 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: Play-JSON serializes BigInt in a scientific representation (as BigDecimal)
+      //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
       //FIXME: uPickle serializes BigInt to JSON strings
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }

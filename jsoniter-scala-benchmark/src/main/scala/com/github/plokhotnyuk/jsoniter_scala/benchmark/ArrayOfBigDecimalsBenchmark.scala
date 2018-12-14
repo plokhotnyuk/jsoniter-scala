@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 
 class ArrayOfBigDecimalsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   var sourceObj: Array[BigDecimal] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
@@ -35,10 +35,10 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   //FIXME: it affects results but required to avoid misleading results due internal caching of the string representation
   private def obj: Array[BigDecimal] =
     sourceObj.map(x => BigDecimal(x.bigDecimal.unscaledValue(), x.bigDecimal.scale()))
-
+/* FIXME: AVSystem GenCodec: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8))
-
+*/
   @Benchmark
   def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 /* FIXME: dsl-json cannot find decoder for array of BigDecimal
@@ -50,9 +50,10 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): Array[BigDecimal] = readFromArray[Array[BigDecimal]](jsonBytes)
-
+/* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def readPlayJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
+*/
 /* FIXME: uPickle parses BigDecimal from JSON string only
   @Benchmark
   def readUPickle(): Array[BigDecimal] = read[Array[BigDecimal]](jsonBytes)

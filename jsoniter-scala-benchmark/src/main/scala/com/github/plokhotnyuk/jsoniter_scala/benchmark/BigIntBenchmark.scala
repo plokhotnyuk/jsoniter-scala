@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 
 class BigIntBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 10
+  var size: Int = 100
   var jsonBytes: Array[Byte] = _
   var jsonString: String = _
   var obj: BigInt = _
@@ -43,9 +43,10 @@ class BigIntBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes, longNumberConfig)(bigIntCodec)
-
+/* FIXME: PlayJson looses significant digits in big values
   @Benchmark
   def readPlayJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
+*/
 /* FIXME: uPickle parses BigInt from JSON strings only
   @Benchmark
   def readUPickle(): BigInt = read[BigInt](jsonBytes)
@@ -67,9 +68,10 @@ class BigIntBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(bigIntCodec)
-
+/* FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+*/
 /* FIXME: uPickle serializes BigInt to JSON strings
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

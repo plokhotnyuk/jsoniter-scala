@@ -13,7 +13,8 @@ class BigIntBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
-      benchmark.readPlayJson() shouldBe benchmark.obj
+      //FIXME: PlayJson looses significant digits in big values
+      //benchmark.readPlayJson() shouldBe benchmark.obj
       //FIXME: uPickle parses BigInt from JSON strings only
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
@@ -25,7 +26,8 @@ class BigIntBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
+      //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
       //FIXME: uPickle serializes BigInt to JSON strings
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
