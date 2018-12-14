@@ -5,6 +5,7 @@ import java.time._
 import org.scalacheck.{Arbitrary, Gen}
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 object GenUtils {
   val isJDK8: Boolean = System.getProperty("java.version").startsWith("1.8")
@@ -31,31 +32,16 @@ object GenUtils {
     Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
   val genInstant: Gen[Instant] =
     for {
-      year <- Gen.choose(-1000000000, 1000000000)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, maxDaysInMonth(year, month))
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-      nano <- Gen.choose(0, 999999999)
-      offset <- genZoneOffset
-    } yield LocalDateTime.of(year, month, day, hour, minute, second, nano).toInstant(offset)
+      epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
+      nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)
+      fallbackInstant <- Gen.oneOf(Instant.MIN, Instant.EPOCH, Instant.MAX)
+    } yield Try(Instant.ofEpochSecond(epochSecond, nanoAdjustment)).getOrElse(fallbackInstant)
   val genLocalDate: Gen[LocalDate] =
     for {
       year <- Gen.choose(-999999999, 999999999)
       month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, maxDaysInMonth(year, month))
+      day <- Gen.choose(1, Month.of(month).length(Year.of(year).isLeap))
     } yield LocalDate.of(year, month, day)
-  val genLocalDateTime: Gen[LocalDateTime] =
-    for {
-      year <- Gen.choose(-999999999, 999999999)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, maxDaysInMonth(year, month))
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-      nano <- Gen.choose(0, 999999999)
-    } yield LocalDateTime.of(year, month, day, hour, minute, second, nano)
   val genLocalTime: Gen[LocalTime] =
     for {
       hour <- Gen.choose(0, 23)
@@ -63,6 +49,11 @@ object GenUtils {
       second <- Gen.choose(0, 59)
       nano <- Gen.choose(0, 999999999)
     } yield LocalTime.of(hour, minute, second, nano)
+  val genLocalDateTime: Gen[LocalDateTime] =
+    for {
+      localDate <- genLocalDate
+      localTime <- genLocalTime
+    } yield LocalDateTime.of(localDate, localTime)
   val genMonthDay: Gen[MonthDay] =
     for {
       month <- Gen.choose(1, 12)
@@ -70,23 +61,14 @@ object GenUtils {
     } yield MonthDay.of(month, day)
   val genOffsetDateTime: Gen[OffsetDateTime] =
     for {
-      year <- Gen.choose(-999999999, 999999999)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, maxDaysInMonth(year, month))
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-      nano <- Gen.choose(0, 999999999)
-      offset <- genZoneOffset
-    } yield OffsetDateTime.of(year, month, day, hour, minute, second, nano, offset)
+      localDateTime <- genLocalDateTime
+      zoneOffset <- genZoneOffset
+    } yield OffsetDateTime.of(localDateTime, zoneOffset)
   val genOffsetTime: Gen[OffsetTime] =
     for {
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-      nano <- Gen.choose(0, 999999999)
+      localTime <- genLocalTime
       zoneOffset <- genZoneOffset
-    } yield OffsetTime.of(hour, minute, second, nano, zoneOffset)
+    } yield OffsetTime.of(localTime, zoneOffset)
   val genPeriod: Gen[Period] =
     for {
       year <- Arbitrary.arbitrary[Int]
@@ -108,21 +90,13 @@ object GenUtils {
       Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toList).map(ZoneId.of))
   val genZonedDateTime: Gen[ZonedDateTime] =
     for {
-      year <- Gen.choose(-999999999, 999999999)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, maxDaysInMonth(year, month))
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-      nano <- Gen.choose(0, 999999999)
+      localDateTime <- genLocalDateTime
       zoneId <- genZoneId
-    } yield ZonedDateTime.of(year, month, day, hour, minute, second, nano, zoneId)
+    } yield ZonedDateTime.of(localDateTime, zoneId)
   val genNonFiniteDouble: Gen[Double] = Gen.oneOf(
     Gen.oneOf(java.lang.Double.NaN, java.lang.Double.NEGATIVE_INFINITY, java.lang.Double.POSITIVE_INFINITY),
     Gen.choose(0, 0x0007FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
   val genNonFiniteFloat: Gen[Float] = Gen.oneOf(
     Gen.oneOf(java.lang.Float.NaN, java.lang.Float.NEGATIVE_INFINITY, java.lang.Float.POSITIVE_INFINITY),
     Gen.choose(0, 0x003FFFFF).map(x => java.lang.Float.intBitsToFloat(x | 0x7FC00000))) // Float.NaN with error code
-
-  private def maxDaysInMonth(year: Int, month: Int): Int = Month.of(month).length(Year.of(year).isLeap)
 }
