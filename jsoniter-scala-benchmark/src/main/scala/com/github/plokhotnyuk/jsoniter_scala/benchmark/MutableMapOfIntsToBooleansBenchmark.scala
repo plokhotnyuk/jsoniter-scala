@@ -17,7 +17,7 @@ import scala.collection.mutable
 
 class MutableMapOfIntsToBooleansBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 100
+  var size: Int = 1000
   var obj: mutable.Map[Int, Boolean] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _

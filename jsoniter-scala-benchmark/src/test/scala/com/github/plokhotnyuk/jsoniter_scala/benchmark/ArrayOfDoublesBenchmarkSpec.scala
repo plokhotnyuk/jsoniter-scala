@@ -11,7 +11,8 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
-      benchmark.readJsoniterJava() shouldBe benchmark.obj
+      //FIXME: Jsoniter Java cannot parse some numbers like 5.9823526 precisely
+      //benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
