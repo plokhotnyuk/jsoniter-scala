@@ -17,7 +17,6 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-import upickle.default._
 
 class GoogleMapsAPIBenchmark extends CommonParams {
   var obj: DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes)

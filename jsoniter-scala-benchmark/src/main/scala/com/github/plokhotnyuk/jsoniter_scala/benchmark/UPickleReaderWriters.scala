@@ -3,9 +3,9 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.time._
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import upickle.default._
+import upickle.AttributeTagged
 
-object UPickleReaderWriters {
+object UPickleReaderWriters extends AttributeTagged {
   implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
   implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = readwriter[String].bimap(_.toString, {
     case "Hearts" => Hearts
@@ -64,4 +64,13 @@ object UPickleReaderWriters {
   implicit val zonedDateTimeReaderWriter: ReadWriter[ZonedDateTime] = readwriter[String].bimap(_.toString, ZonedDateTime.parse)
   implicit val zoneIdReaderWriter: ReadWriter[ZoneId] = readwriter[String].bimap(_.toString, ZoneId.of)
   implicit val zoneOffsetReaderWriter: ReadWriter[ZoneOffset] = readwriter[String].bimap(_.toString, ZoneOffset.of)
+
+  override def tagName: String = "type"
+
+  override def objectTypeKeyReadMap(cs: CharSequence): CharSequence =
+    s"com.github.plokhotnyuk.jsoniter_scala.benchmark.$cs"
+
+  override def objectTypeKeyWriteMap(cs: CharSequence): CharSequence = simpleName(cs.toString)
+
+  private def simpleName(s: String): String = s.substring(Math.max(s.lastIndexOf('.') + 1, 0))
 }

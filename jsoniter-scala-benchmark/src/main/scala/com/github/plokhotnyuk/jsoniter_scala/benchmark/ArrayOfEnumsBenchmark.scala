@@ -15,7 +15,6 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
-import upickle.default._
 
 object SuitEnum extends Enumeration {
   type SuitEnum = Value

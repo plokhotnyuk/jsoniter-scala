@@ -19,7 +19,6 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
-import upickle.default._
 
 case class ExtractFields(s: String, i: Int)
 

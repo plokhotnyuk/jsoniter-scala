@@ -11,13 +11,12 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 @flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -56,10 +55,9 @@ class ADTBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)
 
-/* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def readUPickle(): ADTBase = read[ADTBase](jsonBytes)
-*/
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
@@ -78,8 +76,6 @@ class ADTBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(adtFormat))
 
-/* FIXME: cannot alter uPickle discriminator name and value for ADT
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }

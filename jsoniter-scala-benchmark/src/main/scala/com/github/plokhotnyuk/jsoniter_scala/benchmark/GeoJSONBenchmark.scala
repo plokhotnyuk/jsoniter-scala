@@ -9,12 +9,12 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 class GeoJSONBenchmark extends CommonParams {
   var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes1)(geoJSONCodec)
@@ -34,10 +34,10 @@ class GeoJSONBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): GeoJSON = Json.parse(jsonBytes1).as[GeoJSON](geoJSONFormat)
-/* FIXME: cannot alter uPickle discriminator name and value for ADT
+
   @Benchmark
-  def readUPickle(): GeoJSON = read[GeoJSON](jsonBytes)
-*/
+  def readUPickle(): GeoJSON = read[GeoJSON](jsonBytes1)
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
@@ -55,8 +55,7 @@ class GeoJSONBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(geoJSONFormat))
-/* FIXME: cannot alter uPickle discriminator name and value for ADT
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }

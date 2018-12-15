@@ -17,7 +17,6 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
-import upickle.default._
 
 case class MissingReqFields(
     @com.fasterxml.jackson.annotation.JsonProperty(required = true) s: String,
