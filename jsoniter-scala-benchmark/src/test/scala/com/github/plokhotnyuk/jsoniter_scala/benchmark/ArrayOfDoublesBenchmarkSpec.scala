@@ -9,8 +9,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: dsl-json cannot parse some values like 3385535.3784000003 precisely
-      //benchmark.readDslJsonJava() shouldBe benchmark.obj
+      benchmark.readDslJsonJava() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj

@@ -5,7 +5,8 @@ import com.dslplatform.json._
 import scala.reflect.ClassTag
 
 object DslPlatformJson {
-  private[this] val dslJson = new DslJson[Any]
+  private[this] val dslJson = new DslJson[Any](new DslJson.Settings[Any]()
+    .includeServiceLoader.doublePrecision(JsonReader.DoublePrecision.EXACT))
   private[this] val tlWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter()
   }
