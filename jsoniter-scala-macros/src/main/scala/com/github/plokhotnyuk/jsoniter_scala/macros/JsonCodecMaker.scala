@@ -31,8 +31,8 @@ final class stringified extends StaticAnnotation
   * BEWARE: a parameter of the `make` macro should not depend on code from the same compilation module where it is called.
   * Use a separated submodule of the project to compile all such dependencies before their usage for generation of codecs.
   *
-  * Examples of `fieldNameMapper` and  `adtLeafClassNameMapper` functions that have no dependencies in the same
-  * compilation module are:  `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`,
+  * Examples of `fieldNameMapper` and `adtLeafClassNameMapper` functions that have no dependencies in the same
+  * compilation module are: `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`,
   * `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`. Or their composition like:
   * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
   *
@@ -496,7 +496,7 @@ object JsonCodecMaker {
         def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
-          case m: MethodSymbol if m.isPrimaryConstructor => m  // FIXME: sometime it cannot be accessed from the place of the `make` call
+          case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call
         }.getOrElse(fail(s"Cannot find a primary constructor for '$tpe'"))
 
         lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params

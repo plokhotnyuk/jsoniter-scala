@@ -958,7 +958,7 @@ final class JsonReader private[jsoniter_scala](
           if (buf(pos + 4) != 'e') booleanError(pos + 4)
           head = pos + 5
           false
-        } else  parseBoolean(isToken, loadMoreOrError(pos))
+        } else parseBoolean(isToken, loadMoreOrError(pos))
       } else if (isToken && (b == ' ' || b == '\n' || b == '\t' || b == '\r')) parseBoolean(isToken, pos + 1)
       else booleanError(pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))

@@ -594,12 +594,14 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {
     val len = s.length
-    val pos = ensureBufCapacity(len + 2)
+    var pos = ensureBufCapacity(len + 2)
     val buf = this.buf
     buf(pos) = '"'
-    s.getBytes(0, len, buf, pos + 1)
-    buf(pos + len + 1) = '"'
-    pos + len + 2
+    pos += 1
+    s.getBytes(0, len, buf, pos)
+    pos += len
+    buf(pos) = '"'
+    pos + 1
   }
 
   private[this] def writeUUID(x: UUID): Unit = count = {
@@ -652,10 +654,11 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeString(s: String): Unit = count = {
     var pos = ensureBufCapacity(2)
     buf(pos) = '"'
+    pos += 1
     pos = {
       val bs = UnsafeUtils.getLatin1Array(s)
-      if (bs eq null) writeString(s, 0, s.length, pos + 1, limit - 1, escapedChars)
-      else writeString(bs, 0, s.length, pos + 1, limit - 1, escapedChars)
+      if (bs eq null) writeString(s, 0, s.length, pos, limit - 1, escapedChars)
+      else writeString(bs, 0, s.length, pos, limit - 1, escapedChars)
     }
     buf(pos) = '"'
     pos + 1
@@ -1325,12 +1328,12 @@ final class JsonWriter private[jsoniter_scala](
         val r2 = r1 - 100000 * q2
         val d = ds(q2)
         buf(pos) = (d >> 8).toByte
-        if (r2 == 0 && d.toByte == '0') pos += 1
-        else {
-          buf(pos + 1) = d.toByte
+        pos += 1
+        if (r2 != 0 || d.toByte != '0') {
+          buf(pos) = d.toByte
           val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
           val r3 = r2 - q3 * 1000
-          pos = write2Digits(q3, pos + 2, buf, ds)
+          pos = write2Digits(q3, pos + 1, buf, ds)
           if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
         }
       }
@@ -1353,12 +1356,12 @@ final class JsonWriter private[jsoniter_scala](
       val r2 = r1 - 100000 * q2
       val d = ds(q2)
       buf(pos) = (d >> 8).toByte
-      if (r2 == 0 && d.toByte == '0') pos += 1
-      else {
-        buf(pos + 1) = d.toByte
+      pos += 1
+      if (r2 != 0 || d.toByte != '0') {
+        buf(pos) = d.toByte
         val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
         val r3 = r2 - q3 * 1000
-        pos = write2Digits(q3, pos + 2, buf, ds)
+        pos = write2Digits(q3, pos + 1, buf, ds)
         if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
       }
     }
@@ -1506,7 +1509,7 @@ final class JsonWriter private[jsoniter_scala](
       val r1 = (q0 - 100000000 * q1).toInt
       if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
       else {
-        val q2 = (q1 >> 8) * 1441151881 >> 49  // divide small positive long by 100000000
+        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
         val r2 = (q1 - 100000000 * q2).toInt
         write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
       }
