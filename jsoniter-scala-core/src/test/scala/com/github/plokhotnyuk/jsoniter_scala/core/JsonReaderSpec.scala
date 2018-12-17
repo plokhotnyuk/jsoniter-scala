@@ -2165,6 +2165,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkDouble(n.toString)
       }
+      forAll(minSuccessful(100000)) { (n: BigInt) =>
+        checkDouble(n.toString)
+      }
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
         checkDouble(n.toString)
       }
