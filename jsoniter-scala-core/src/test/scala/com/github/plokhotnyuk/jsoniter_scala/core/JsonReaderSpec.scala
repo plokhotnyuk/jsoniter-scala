@@ -2069,7 +2069,10 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkFloat(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(minSuccessful(100000)) { (n: BigInt) =>
+        checkFloat(n.toString)
+      }
+      forAll(minSuccessful(1000000)) { (n: BigDecimal) =>
         checkFloat(n.toString)
       }
     }
