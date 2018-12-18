@@ -1104,7 +1104,7 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError(pos - 1)
       var posMan: Long = b - '0'
       val isZeroFirst = isToken && posMan == 0
-      var manExp, posExp, digits = 0
+      var manExp, posExp, manDigits = 0
       var isExpNeg = false
       while ((pos < tail || {
         pos = loadMore(pos)
@@ -1116,7 +1116,7 @@ final class JsonReader private[jsoniter_scala](
         if (isZeroFirst) leadingZeroError(pos - 1)
         if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          digits += 1
+          manDigits += 1
         } else manExp += 1
         pos += 1
       }
@@ -1126,7 +1126,7 @@ final class JsonReader private[jsoniter_scala](
         if (b < '0' || b > '9') numberError(pos - 1)
         if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          digits += 1
+          manDigits += 1
           manExp -= 1
         }
         while ((pos < tail || {
@@ -1138,7 +1138,7 @@ final class JsonReader private[jsoniter_scala](
         }) {
           if (posMan < 9007199254740992L) {
             posMan = posMan * 10 + (b - '0')
-            digits += 1
+            manDigits += 1
             manExp -= 1
           }
           pos += 1
@@ -1175,7 +1175,7 @@ final class JsonReader private[jsoniter_scala](
           else toDouble(pos)
         } else if (exp <= 22) toSignedDouble(isNeg, posMan * pow10(exp))
         else {
-          val slop = 15 - digits
+          val slop = 15 - manDigits
           if (exp - slop <= 22) {
             val pow10 = JsonReader.pow10
             toSignedDouble(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
@@ -1204,7 +1204,7 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError(pos - 1)
       var posMan: Long = b - '0'
       val isZeroFirst = isToken && posMan == 0
-      var manExp, posExp, digits = 0
+      var manExp, posExp = 0
       var isExpNeg = false
       while ((pos < tail || {
         pos = loadMore(pos)
@@ -1214,10 +1214,8 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
-        if (posMan < 9007199254740992L) {
-          posMan = posMan * 10 + (b - '0')
-          digits += 1
-        } else manExp += 1
+        if (posMan < 9007199254740992L) posMan = posMan * 10 + (b - '0')
+        else manExp += 1
         pos += 1
       }
       if (b == '.') {
@@ -1226,7 +1224,6 @@ final class JsonReader private[jsoniter_scala](
         if (b < '0' || b > '9') numberError(pos - 1)
         if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          digits += 1
           manExp -= 1
         }
         while ((pos < tail || {
@@ -1238,7 +1235,6 @@ final class JsonReader private[jsoniter_scala](
         }) {
           if (posMan < 9007199254740992L) {
             posMan = posMan * 10 + (b - '0')
-            digits += 1
             manExp -= 1
           }
           pos += 1
