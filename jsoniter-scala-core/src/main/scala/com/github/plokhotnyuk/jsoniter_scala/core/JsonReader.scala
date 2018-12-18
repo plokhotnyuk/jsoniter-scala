@@ -1204,7 +1204,7 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError(pos - 1)
       var posMan = b - '0'
       val isZeroFirst = isToken && posMan == 0
-      var manExp, posExp = 0
+      var manExp, posExp, manDigits = 0
       var isExpNeg = false
       while ((pos < tail || {
         pos = loadMore(pos)
@@ -1214,8 +1214,10 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
-        if (posMan < 16777216) posMan = posMan * 10 + (b - '0')
-        else manExp += 1
+        if (posMan < 16777216) {
+          posMan = posMan * 10 + (b - '0')
+          manDigits += 1
+        } else manExp += 1
         pos += 1
       }
       if (b == '.') {
@@ -1224,6 +1226,7 @@ final class JsonReader private[jsoniter_scala](
         if (b < '0' || b > '9') numberError(pos - 1)
         if (posMan < 16777216) {
           posMan = posMan * 10 + (b - '0')
+          manDigits += 1
           manExp -= 1
         }
         while ((pos < tail || {
@@ -1235,6 +1238,7 @@ final class JsonReader private[jsoniter_scala](
         }) {
           if (posMan < 16777216) {
             posMan = posMan * 10 + (b - '0')
+            manDigits += 1
             manExp -= 1
           }
           pos += 1
@@ -1270,7 +1274,13 @@ final class JsonReader private[jsoniter_scala](
           if (exp >= -10) toSignedFloat(isNeg, posMan / pow10f(-exp))
           else toFloat(pos)
         } else if (exp <= 10) toSignedFloat(isNeg, posMan * pow10f(exp))
-        else toFloat(pos)
+        else {
+          val slop = 6 - manDigits
+          if (exp - slop <= 10) {
+            val pow10 = JsonReader.pow10f
+            toSignedFloat(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
+          } else toFloat(pos)
+        }
       } else toFloat(pos)
     } finally this.mark = mark
   }
