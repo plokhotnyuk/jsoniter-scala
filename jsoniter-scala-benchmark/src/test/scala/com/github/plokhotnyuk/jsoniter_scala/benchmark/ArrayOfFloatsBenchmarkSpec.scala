@@ -4,7 +4,11 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
   private val benchmark = new ArrayOfFloatsBenchmark {
-    private val values: Array[String] = Array("1.00000017881393432617187499")
+    private val values: Array[String] = Array(
+      "1.199999988079071",
+      "3.4028235677973366e38",
+      "7.006492321624086e-46"
+    )
 
     setup()
 
@@ -18,14 +22,15 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfFloatsBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystem GenCodec cannot parse properly floats like: 1.00000017881393432617187499
+      //FIXME: AVSystem GenCodec parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Circe cannot parse properly floats like: 1.00000017881393432617187499
+      //FIXME: Circe cannot parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readCirce() shouldBe benchmark.obj
-      benchmark.readDslJsonJava() shouldBe benchmark.obj
-      //FIXME: Jackson cannot parse properly floats like: 1.00000017881393432617187499
+      //FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
+      //benchmark.readDslJsonJava() shouldBe benchmark.obj
+      //FIXME: Jackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readJacksonScala() shouldBe benchmark.obj
-      //FIXME: Jsoniter Java cannot parse properly floats like: 1.00000017881393432617187499
+      //FIXME: Jsoniter Java parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj

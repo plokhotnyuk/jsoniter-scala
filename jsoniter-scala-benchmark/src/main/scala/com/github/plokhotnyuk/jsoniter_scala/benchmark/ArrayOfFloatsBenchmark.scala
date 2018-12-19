@@ -32,21 +32,23 @@ class ArrayOfFloatsBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
-/* FIXME: AVSystem GenCodec cannot parse properly floats like: 1.00000017881393432617187499
+/* FIXME: AVSystem GenCodec parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def readAVSystemGenCodec(): Array[Float] = JsonStringInput.read[Array[Float]](new String(jsonBytes, UTF_8))
 */
-/* FIXME: circe cannot parse properly floats like: 1.00000017881393432617187499
+/* FIXME: circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
 */
+/* FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
   @Benchmark
   def readDslJsonJava(): Array[Float] = decodeDslJson[Array[Float]](jsonBytes)
-/* FIXME: Jackson Scala cannot parse properly floats like: 1.00000017881393432617187499
+*/
+/* FIXME: Jackson Scala parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def readJacksonScala(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
 */
-/* FIXME: Jsoniter Java cannot parse properly floats like: 1.00000017881393432617187499
+/* FIXME: Jsoniter Java parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def readJsoniterJava(): Array[Float] = JsoniterJavaParser.parse[Array[Float]](jsonBytes, classOf[Array[Float]])
 */
