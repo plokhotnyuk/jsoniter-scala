@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 import java.time._
 import java.util.UUID
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.{pow10d, _}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader.{pow10, _}
 
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
@@ -1104,7 +1104,7 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError(pos - 1)
       var posMan: Long = b - '0'
       val isZeroFirst = isToken && posMan == 0
-      var manExp, posExp, manDigits = 0
+      var manExp, posExp, digits = 0
       var isExpNeg = false
       while ((pos < tail || {
         pos = loadMore(pos)
@@ -1116,7 +1116,7 @@ final class JsonReader private[jsoniter_scala](
         if (isZeroFirst) leadingZeroError(pos - 1)
         if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          manDigits += 1
+          digits += 1
         } else manExp += 1
         pos += 1
       }
@@ -1126,7 +1126,7 @@ final class JsonReader private[jsoniter_scala](
         if (b < '0' || b > '9') numberError(pos - 1)
         if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          manDigits += 1
+          digits += 1
           manExp -= 1
         }
         while ((pos < tail || {
@@ -1138,7 +1138,7 @@ final class JsonReader private[jsoniter_scala](
         }) {
           if (posMan < 9007199254740992L) {
             posMan = posMan * 10 + (b - '0')
-            manDigits += 1
+            digits += 1
             manExp -= 1
           }
           pos += 1
@@ -1169,15 +1169,15 @@ final class JsonReader private[jsoniter_scala](
         val exp =
           if (isExpNeg) manExp - posExp
           else manExp + posExp
-        if (exp == 0 || posMan == 0) toSignedDouble(isNeg, posMan)
+        if (exp == 0) toSignedDouble(isNeg, posMan)
         else if (exp < 0) {
-          if (exp >= -22) toSignedDouble(isNeg, posMan / pow10d(-exp))
+          if (exp >= -22) toSignedDouble(isNeg, posMan / pow10(-exp))
           else toDouble(pos)
-        } else if (exp <= 22) toSignedDouble(isNeg, posMan * pow10d(exp))
+        } else if (exp <= 22) toSignedDouble(isNeg, posMan * pow10(exp))
         else {
-          val slop = 15 - manDigits
+          val slop = 15 - digits
           if (exp - slop <= 22) {
-            val pow10 = JsonReader.pow10d
+            val pow10 = JsonReader.pow10
             toSignedDouble(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
           } else toDouble(pos)
         }
@@ -1202,9 +1202,9 @@ final class JsonReader private[jsoniter_scala](
       if (isNeg) b = nextByte(head)
       var pos = head
       if (b < '0' || b > '9') numberError(pos - 1)
-      var posMan = b - '0'
+      var posMan: Long = b - '0'
       val isZeroFirst = isToken && posMan == 0
-      var manExp, posExp, manDigits = 0
+      var manExp, posExp = 0
       var isExpNeg = false
       while ((pos < tail || {
         pos = loadMore(pos)
@@ -1214,9 +1214,8 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
-        if (posMan < 16777216) {
+        if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          manDigits += 1
         } else manExp += 1
         pos += 1
       }
@@ -1224,9 +1223,8 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(pos + 1)
         pos = head
         if (b < '0' || b > '9') numberError(pos - 1)
-        if (posMan < 16777216) {
+        if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
-          manDigits += 1
           manExp -= 1
         }
         while ((pos < tail || {
@@ -1236,9 +1234,8 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMan < 16777216) {
+          if (posMan < 9007199254740992L) {
             posMan = posMan * 10 + (b - '0')
-            manDigits += 1
             manExp -= 1
           }
           pos += 1
@@ -1265,22 +1262,19 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      if (posMan < 16777216) { // 16777215 == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
+      if (posMan < 9007199254740992L) { // 9007199254740991L == (1L << 53) - 1, max mantissa that can be converted w/o rounding error by double mul or div
         val exp =
           if (isExpNeg) manExp - posExp
           else manExp + posExp
-        if (exp == 0 || posMan == 0) toSignedFloat(isNeg, posMan)
+        if (exp == 0) toSignedFloat(isNeg, posMan)
         else if (exp < 0) {
-          if (exp >= -10) toSignedFloat(isNeg, posMan / pow10f(-exp))
-          else toFloat(pos)
-        } else if (exp <= 10) toSignedFloat(isNeg, posMan * pow10f(exp))
-        else {
-          val slop = 6 - manDigits
-          if (exp - slop <= 10) {
-            val pow10 = JsonReader.pow10f
-            toSignedFloat(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
-          } else toFloat(pos)
-        }
+          if (exp >= -61) toSignedFloat(isNeg, (posMan / pow10(-exp)).toFloat)
+          else toSignedFloat(isNeg, 0)
+        } else if (exp <= 61) toSignedFloat(isNeg, (posMan * pow10(exp)).toFloat)
+        else toSignedFloat(isNeg, {
+          if (posMan == 0) 0.0f
+          else Float.PositiveInfinity
+        })
       } else toFloat(pos)
     } finally this.mark = mark
   }
@@ -2466,11 +2460,13 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val pow10f: Array[Float] =
-    Array(1f, 1e+1f, 1e+2f, 1e+3f, 1e+4f, 1e+5f, 1e+6f, 1e+7f, 1e+8f, 1e+9f, 1e+10f)
-  private final val pow10d: Array[Double] =
+  private final val pow10: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
-      1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
+      1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22,
+      1e+23, 1e+24, 1e+25, 1e+26, 1e+27, 1e+28, 1e+29, 1e+30, 1e+31, 1e+32, 1e+33,
+      1e+34, 1e+35, 1e+36, 1e+37, 1e+38, 1e+39, 1e+40, 1e+41, 1e+42, 1e+43, 1e+44,
+      1e+45, 1e+46, 1e+47, 1e+48, 1e+49, 1e+50, 1e+51, 1e+52, 1e+53, 1e+54, 1e+55,
+      1e+56, 1e+57, 1e+58, 1e+59, 1e+60, 1e+61)
   private final val nibbles: Array[Byte] = {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
