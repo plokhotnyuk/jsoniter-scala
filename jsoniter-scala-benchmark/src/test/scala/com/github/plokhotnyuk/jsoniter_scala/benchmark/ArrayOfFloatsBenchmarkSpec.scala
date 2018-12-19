@@ -1,17 +1,32 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
   private val benchmark = new ArrayOfFloatsBenchmark {
+    private val values: Array[String] = Array("1.00000017881393432617187499")
+
     setup()
+
+    override def setup(): Unit = {
+      jsonBytes = (1 to size).map(i => values(i % values.length)).mkString("[", ",", "]").getBytes(UTF_8)
+      obj = (1 to size).map(i => values(i % values.length).toFloat).toArray
+      jsonString = obj.mkString("[", ",", "]")
+      preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+    }
   }
   
   "ArrayOfFloatsBenchmark" should {
     "deserialize properly" in {
-      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
-      benchmark.readCirce() shouldBe benchmark.obj
+      //FIXME: AVSystem GenCodec cannot parse properly floats like: 1.00000017881393432617187499
+      //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
+      //FIXME: Circe cannot parse properly floats like: 1.00000017881393432617187499
+      //benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonJava() shouldBe benchmark.obj
-      benchmark.readJacksonScala() shouldBe benchmark.obj
-      benchmark.readJsoniterJava() shouldBe benchmark.obj
+      //FIXME: Jackson cannot parse properly floats like: 1.00000017881393432617187499
+      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      //FIXME: Jsoniter Java cannot parse properly floats like: 1.00000017881393432617187499
+      //benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
@@ -25,8 +40,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       //FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
       //sameOrBetter(toString(benchmark.writeJsoniterJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJsoniterScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()),
-        benchmark.jsonString)
+      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
       //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)
       //FIXME: uPickle serializes double values instead of float
