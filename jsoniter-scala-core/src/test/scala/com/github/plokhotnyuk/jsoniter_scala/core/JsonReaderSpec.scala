@@ -2036,8 +2036,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonReader.readFloat, JsonReader.readKeyAsFloat and JsonReader.readStringAsFloat" should {
     def check(s: String, n: Float): Unit = {
       reader(s).readFloat() shouldBe n
-//      reader("\"" + s + "\":").readKeyAsFloat() shouldBe n
-//      reader("\"" + s + "\"").readStringAsFloat() shouldBe n
+      reader("\"" + s + "\":").readKeyAsFloat() shouldBe n
+      reader("\"" + s + "\"").readStringAsFloat() shouldBe n
     }
 
     def check2(s: String): Unit = {
@@ -2429,13 +2429,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonReader.skipToKey" should {
     "return true in case of key is found and set current position of parsing to its value" in {
       val jsonReader = reader("""{"key1":1,"key2":2}""")
-      jsonReader.isNextToken('{') // enter to JSON object
+      jsonReader.isNextToken('{')
       jsonReader.skipToKey("key2") shouldBe true
       jsonReader.readInt() shouldBe 2
     }
     "return false in case of key cannot be found and set current positing to the closing of object" in {
       val jsonReader = reader("""{"key1":1}""")
-      jsonReader.isNextToken('{') // enter to JSON object
+      jsonReader.isNextToken('{')
       jsonReader.skipToKey("key2")
       jsonReader.isCurrentToken('}') shouldBe true
     }
