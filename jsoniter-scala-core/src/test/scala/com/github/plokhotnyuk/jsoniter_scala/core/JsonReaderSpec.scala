@@ -2066,7 +2066,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
         val x = java.lang.Float.floatToRawIntBits(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
+      forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-61, 61), minSuccessful(100000)) { (m: Long, e: Int) =>
+        checkFloat(m + "e" + e)
+      }
       forAll(minSuccessful(100000)) { (n: Long) =>
+        checkFloat(n.toString)
+      }
+      forAll(minSuccessful(100000)) { (n: BigInt) =>
         checkFloat(n.toString)
       }
       forAll(minSuccessful(100000)) { (n: BigDecimal) =>
@@ -2161,6 +2167,9 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       forAll(minSuccessful(100000)) { (n: Long) =>
         val x = java.lang.Double.doubleToRawLongBits(n)
         if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
+      }
+      forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 22 + 15), minSuccessful(100000)) { (m: Long, e: Int) =>
+        checkDouble(m + "e" + e)
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkDouble(n.toString)
@@ -2420,13 +2429,13 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
   "JsonReader.skipToKey" should {
     "return true in case of key is found and set current position of parsing to its value" in {
       val jsonReader = reader("""{"key1":1,"key2":2}""")
-      jsonReader.isNextToken('{') // enter to JSON object
+      jsonReader.isNextToken('{')
       jsonReader.skipToKey("key2") shouldBe true
       jsonReader.readInt() shouldBe 2
     }
     "return false in case of key cannot be found and set current positing to the closing of object" in {
       val jsonReader = reader("""{"key1":1}""")
-      jsonReader.isNextToken('{') // enter to JSON object
+      jsonReader.isNextToken('{')
       jsonReader.skipToKey("key2")
       jsonReader.isCurrentToken('}') shouldBe true
     }
