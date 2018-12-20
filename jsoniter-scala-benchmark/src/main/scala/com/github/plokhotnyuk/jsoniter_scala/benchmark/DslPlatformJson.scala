@@ -24,6 +24,7 @@ object DslPlatformJson {
   implicit val (arrayOfShortsEncoder, arrayOfShorsDecoder) = setupCodecs[Array[Short]]
   implicit val (extractFieldsEncoder, extractFieldsDecoder) = setupCodecs[ExtractFields]
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = setupCodecs[DistanceMatrix]
+  implicit val (doubleEncoder, doubleDecoder) = setupCodecs[Double]
   implicit val (intEncoder, intDecoder) = setupCodecs[Int]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = setupCodecs[MissingReqFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = setupCodecs[NestedStructs]

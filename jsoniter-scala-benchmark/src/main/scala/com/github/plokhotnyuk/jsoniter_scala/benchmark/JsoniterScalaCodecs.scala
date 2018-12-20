@@ -18,6 +18,7 @@ object JsoniterScalaCodecs {
   val longStringConfig = ReaderConfig(preferredCharBufSize = 1024 * 1024)
   val escapingConfig = WriterConfig(escapeUnicode = true)
   val bigDecimalCodec: JsonValueCodec[BigDecimal] = make(CodecMakerConfig()) // don't define implicit for supported types
+  val doubleCodec: JsonValueCodec[Double] = make(CodecMakerConfig()) // don't define implicit for supported types
   val bigIntCodec: JsonValueCodec[BigInt] = make(CodecMakerConfig()) // don't define implicit for supported types
   val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make(CodecMakerConfig()) // don't define implicit for supported types
