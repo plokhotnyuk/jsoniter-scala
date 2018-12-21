@@ -43,7 +43,7 @@ class ArrayOfInstantsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Instant] = JsonStringInput.read[Array[Instant]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Instant] = decode[Array[Instant]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Instant] = decode[Array[Instant]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[Instant] = jacksonMapper.readValue[Array[Instant]](jsonBytes)

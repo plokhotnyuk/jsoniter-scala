@@ -36,7 +36,7 @@ class ArrayOfYearsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Year] = JsonStringInput.read[Array[Year]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Year] = decode[Array[Year]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Year] = decode[Array[Year]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[Year] = jacksonMapper.readValue[Array[Year]](jsonBytes)

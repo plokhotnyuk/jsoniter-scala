@@ -40,7 +40,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8))
 */
   @Benchmark
-  def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: dsl-json cannot find decoder for array of BigDecimal
   @Benchmark
   def readDslJsonJava(): Array[BigDecimal] = decodeDslJson[Array[BigDecimal]](jsonBytes)

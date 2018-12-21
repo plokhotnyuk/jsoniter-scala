@@ -43,7 +43,7 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Suit] = JsonStringInput.read[Array[Suit]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Suit] = decode[Array[Suit]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Suit] = decode[Array[Suit]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[Suit] = jacksonMapper.readValue[Array[Suit]](jsonBytes)

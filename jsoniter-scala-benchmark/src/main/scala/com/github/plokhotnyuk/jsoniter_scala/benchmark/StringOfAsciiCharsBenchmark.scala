@@ -52,7 +52,7 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): String = decodeDslJson[String](jsonBytes)

@@ -39,7 +39,7 @@ class OpenHashMapOfIntsToBooleansBenchmark extends CommonParams {
 */
 /* FIXME: Circe doesn't support parsing of OpenHashMap
   @Benchmark
-  def readCirce(): OpenHashMap[Int, Boolean] = decode[OpenHashMap[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): OpenHashMap[Int, Boolean] = decode[OpenHashMap[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: Jackson doesn't support parsing of OpenHashMap
   @Benchmark

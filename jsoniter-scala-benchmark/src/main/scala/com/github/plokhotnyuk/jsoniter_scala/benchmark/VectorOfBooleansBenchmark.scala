@@ -33,7 +33,7 @@ class VectorOfBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Vector[Boolean] = JsonStringInput.read[Vector[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Vector[Boolean] = decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Vector[Boolean] = decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Vector[Boolean] = jacksonMapper.readValue[Vector[Boolean]](jsonBytes)

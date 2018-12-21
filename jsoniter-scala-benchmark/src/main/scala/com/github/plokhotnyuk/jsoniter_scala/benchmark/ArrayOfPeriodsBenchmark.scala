@@ -38,7 +38,7 @@ class ArrayOfPeriodsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Period] = JsonStringInput.read[Array[Period]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Period] = decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Period] = decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[Period] = jacksonMapper.readValue[Array[Period]](jsonBytes)

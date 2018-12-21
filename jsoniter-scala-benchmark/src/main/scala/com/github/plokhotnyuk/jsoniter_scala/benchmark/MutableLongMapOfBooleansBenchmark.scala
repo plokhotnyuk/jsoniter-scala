@@ -38,7 +38,7 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): mutable.LongMap[Boolean] = JsonStringInput.read[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support mutable.LongMap
   @Benchmark
-  def readCirce(): mutable.LongMap[Boolean] = decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): mutable.LongMap[Boolean] = decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: Jackson throws Need exactly 2 type parameters for map like types (scala.collection.mutable.LongMap)
   @Benchmark

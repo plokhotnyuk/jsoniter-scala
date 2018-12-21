@@ -38,7 +38,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): IntMap[Boolean] = JsonStringInput.read[IntMap[Boolean]](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support IntMap
   @Benchmark
-  def readCirce(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)
   @Benchmark

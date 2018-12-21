@@ -36,7 +36,7 @@ class ArrayOfLongsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Long] = JsonStringInput.read[Array[Long]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Long] = decode[Array[Long]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Long] = decode[Array[Long]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): Array[Long] = decodeDslJson[Array[Long]](jsonBytes)

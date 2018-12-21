@@ -48,7 +48,7 @@ class AnyValsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): AnyVals = JsonStringInput.read[AnyVals](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): AnyVals = jacksonMapper.readValue[AnyVals](jsonBytes)

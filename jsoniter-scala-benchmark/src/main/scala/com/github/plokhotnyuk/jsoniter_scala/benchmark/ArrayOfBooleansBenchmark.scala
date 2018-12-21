@@ -36,7 +36,7 @@ class ArrayOfBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Boolean] = JsonStringInput.read[Array[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Boolean] = decode[Array[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Boolean] = decode[Array[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): Array[Boolean] = decodeDslJson[Array[Boolean]](jsonBytes)

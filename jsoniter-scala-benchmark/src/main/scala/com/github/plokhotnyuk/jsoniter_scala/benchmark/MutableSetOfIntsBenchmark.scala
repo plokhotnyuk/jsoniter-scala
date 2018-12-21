@@ -35,7 +35,7 @@ class MutableSetOfIntsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): mutable.Set[Int] = JsonStringInput.read[mutable.Set[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): mutable.Set[Int] = decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): mutable.Set[Int] = decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): mutable.Set[Int] = jacksonMapper.readValue[mutable.Set[Int]](jsonBytes)

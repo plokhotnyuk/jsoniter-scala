@@ -29,7 +29,7 @@ class PrimitivesBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Primitives = JsonStringInput.read[Primitives](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)

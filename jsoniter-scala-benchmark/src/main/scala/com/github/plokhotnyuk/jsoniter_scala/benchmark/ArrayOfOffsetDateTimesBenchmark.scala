@@ -45,7 +45,7 @@ class ArrayOfOffsetDateTimesBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[OffsetDateTime] = JsonStringInput.read[Array[OffsetDateTime]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[OffsetDateTime] = decode[Array[OffsetDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[OffsetDateTime] = decode[Array[OffsetDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[OffsetDateTime] = jacksonMapper.readValue[Array[OffsetDateTime]](jsonBytes)

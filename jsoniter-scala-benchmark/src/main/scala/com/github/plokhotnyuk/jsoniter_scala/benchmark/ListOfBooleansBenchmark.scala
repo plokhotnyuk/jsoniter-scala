@@ -33,7 +33,7 @@ class ListOfBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): List[Boolean] = JsonStringInput.read[List[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): List[Boolean] = decode[List[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): List[Boolean] = decode[List[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): List[Boolean] = jacksonMapper.readValue[List[Boolean]](jsonBytes)

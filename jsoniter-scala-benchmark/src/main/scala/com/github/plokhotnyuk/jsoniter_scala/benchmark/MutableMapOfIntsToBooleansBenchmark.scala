@@ -37,7 +37,7 @@ class MutableMapOfIntsToBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): mutable.Map[Int, Boolean] = JsonStringInput.read[mutable.Map[Int, Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): mutable.Map[Int, Boolean] = decode[mutable.Map[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): mutable.Map[Int, Boolean] = decode[mutable.Map[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): mutable.Map[Int, Boolean] = jacksonMapper.readValue[mutable.Map[Int, Boolean]](jsonBytes)

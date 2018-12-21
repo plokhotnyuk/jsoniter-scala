@@ -36,7 +36,7 @@ class BigDecimalBenchmark extends CommonParams {
   def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*
   @Benchmark
   def readDslJsonJava(): BigDecimal = decodeDslJson[BigDecimal](jsonBytes)

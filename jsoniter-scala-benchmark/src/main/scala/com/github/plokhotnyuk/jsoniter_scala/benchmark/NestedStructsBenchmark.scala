@@ -41,7 +41,7 @@ class NestedStructsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): NestedStructs = JsonStringInput.read[NestedStructs](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): NestedStructs = jacksonMapper.readValue[NestedStructs](jsonBytes)

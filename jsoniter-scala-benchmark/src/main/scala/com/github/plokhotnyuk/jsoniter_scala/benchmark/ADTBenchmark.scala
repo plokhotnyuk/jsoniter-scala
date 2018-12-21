@@ -44,7 +44,7 @@ class ADTBenchmark extends CommonParams {
   def readAVSystemGenCodec(): ADTBase = JsonStringInput.read[ADTBase](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): ADTBase = decode[ADTBase](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): ADTBase = decode[ADTBase](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): ADTBase = jacksonMapper.readValue[ADTBase](jsonBytes)

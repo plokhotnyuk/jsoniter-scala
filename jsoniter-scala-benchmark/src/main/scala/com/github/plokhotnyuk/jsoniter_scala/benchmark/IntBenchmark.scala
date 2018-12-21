@@ -26,7 +26,7 @@ class IntBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Int = JsonStringInput.read[Int](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): Int = decodeDslJson[Int](jsonBytes)

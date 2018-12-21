@@ -36,7 +36,7 @@ class ArrayOfZoneOffsetsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[ZoneOffset] = JsonStringInput.read[Array[ZoneOffset]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[ZoneOffset] = decode[Array[ZoneOffset]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[ZoneOffset] = decode[Array[ZoneOffset]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[ZoneOffset] = jacksonMapper.readValue[Array[ZoneOffset]](jsonBytes)

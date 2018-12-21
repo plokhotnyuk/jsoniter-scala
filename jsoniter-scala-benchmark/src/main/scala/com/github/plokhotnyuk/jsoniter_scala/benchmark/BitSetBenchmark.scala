@@ -37,7 +37,7 @@ class BitSetBenchmark extends CommonParams {
   def readAVSystemGenCodec(): BitSet = JsonStringInput.read[BitSet](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readCirce(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
   @Benchmark

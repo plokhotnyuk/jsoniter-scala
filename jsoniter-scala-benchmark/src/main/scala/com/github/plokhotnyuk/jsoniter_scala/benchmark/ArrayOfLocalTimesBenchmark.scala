@@ -43,7 +43,7 @@ class ArrayOfLocalTimesBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[LocalTime] = JsonStringInput.read[Array[LocalTime]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[LocalTime] = decode[Array[LocalTime]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[LocalTime] = decode[Array[LocalTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[LocalTime] = jacksonMapper.readValue[Array[LocalTime]](jsonBytes)

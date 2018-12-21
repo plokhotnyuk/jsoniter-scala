@@ -37,7 +37,7 @@ class MutableBitSetBenchmark extends CommonParams {
   def readAVSystemGenCodec(): mutable.BitSet = JsonStringInput.read[mutable.BitSet](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support parsing of bitsets
   @Benchmark
-  def readCirce(): mutable.BitSet = decode[mutable.BitSet](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): mutable.BitSet = decode[mutable.BitSet](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
   @Benchmark

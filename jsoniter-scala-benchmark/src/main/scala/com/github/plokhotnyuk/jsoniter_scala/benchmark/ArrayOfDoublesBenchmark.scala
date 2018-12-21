@@ -37,7 +37,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Double] = JsonStringInput.read[Array[Double]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): Array[Double] = decodeDslJson[Array[Double]](jsonBytes)

@@ -35,7 +35,7 @@ class ArrayOfUUIDsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[UUID] = JsonStringInput.read[Array[UUID]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[UUID] = decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[UUID] = decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[UUID] = jacksonMapper.readValue[Array[UUID]](jsonBytes)

@@ -24,7 +24,7 @@ class GeoJSONBenchmark extends CommonParams {
   def readAVSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes1, UTF_8))
 
   @Benchmark
-  def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes1, UTF_8)).fold(throw _, x => x)
+  def readCirce(): GeoJSON = decode[GeoJSON](new String(jsonBytes1, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): GeoJSON = jacksonMapper.readValue[GeoJSON](jsonBytes1)

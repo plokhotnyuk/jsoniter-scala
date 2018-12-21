@@ -37,7 +37,7 @@ class ArrayBufferOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): ArrayBuffer[Boolean] =
-    decode[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+    decode[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): ArrayBuffer[Boolean] = jacksonMapper.readValue[ArrayBuffer[Boolean]](jsonBytes)

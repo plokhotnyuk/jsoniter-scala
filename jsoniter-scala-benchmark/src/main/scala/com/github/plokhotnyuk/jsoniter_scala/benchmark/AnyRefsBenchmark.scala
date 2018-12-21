@@ -30,7 +30,7 @@ class AnyRefsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): AnyRefs = JsonStringInput.read[AnyRefs](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): AnyRefs = decode[AnyRefs](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): AnyRefs = decodeDslJson[AnyRefs](jsonBytes)

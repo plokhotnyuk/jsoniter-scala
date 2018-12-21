@@ -36,7 +36,7 @@ class ArrayOfCharsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Char] = JsonStringInput.read[Array[Char]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Char] = decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Char] = decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[Char] = jacksonMapper.readValue[Array[Char]](jsonBytes)

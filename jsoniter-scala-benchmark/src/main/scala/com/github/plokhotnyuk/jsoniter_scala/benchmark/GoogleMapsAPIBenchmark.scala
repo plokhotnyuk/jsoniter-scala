@@ -26,7 +26,7 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   def readAVSystemGenCodec(): DistanceMatrix = JsonStringInput.read[DistanceMatrix](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: DSL-JSON throws java.lang.IllegalArgumentException
   @Benchmark
   def readDslJsonJava(): DistanceMatrix = decodeDslJson[DistanceMatrix](jsonBytes)

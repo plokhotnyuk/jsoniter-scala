@@ -36,7 +36,7 @@ class ArrayOfIntsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Int] = JsonStringInput.read[Array[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonJava(): Array[Int] = decodeDslJson[Array[Int]](jsonBytes)

@@ -35,7 +35,7 @@ class SetOfIntsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Set[Int] = JsonStringInput.read[Set[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Set[Int] = jacksonMapper.readValue[Set[Int]](jsonBytes)

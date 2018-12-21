@@ -42,7 +42,7 @@ class ArrayOfZoneIdsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[ZoneId] = JsonStringInput.read[Array[ZoneId]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[ZoneId] = decode[Array[ZoneId]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[ZoneId] = decode[Array[ZoneId]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readJacksonScala(): Array[ZoneId] = jacksonMapper.readValue[Array[ZoneId]](jsonBytes)

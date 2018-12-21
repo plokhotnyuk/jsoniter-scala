@@ -35,7 +35,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[BigInt] = JsonStringInput.read[Array[BigInt]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: dsl-json cannot find decoder for array of BigInt
   @Benchmark
   def readDslJsonJava(): Array[BigInt] = decodeDslJson[Array[BigInt]](jsonBytes)

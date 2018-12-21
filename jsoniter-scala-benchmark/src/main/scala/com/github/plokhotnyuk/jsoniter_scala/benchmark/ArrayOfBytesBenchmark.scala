@@ -36,7 +36,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*FIXME:dsl-json expects a base64 string for the byte array
   @Benchmark
   def readDslJsonJava(): Array[Byte] = decodeDslJson[Array[Byte]](jsonBytes)

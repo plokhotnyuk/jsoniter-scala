@@ -38,7 +38,7 @@ class ArrayOfFloatsBenchmark extends CommonParams {
 */
 /* FIXME: circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
-  def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, x => x)
+  def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
   @Benchmark
