@@ -495,7 +495,6 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
         s.toFloat shouldBe n // no data loss
         s.length should be <= n.toString.length // rounding isn't worse than in JDK
-        s.indexOf('.') should be > 0
         withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
       }

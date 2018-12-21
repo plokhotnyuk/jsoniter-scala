@@ -24,7 +24,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       //FIXME: AVSystem GenCodec parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Circe cannot parses 1.199999988079071 as 1.2f instead of 1.1999999f
+      //FIXME: Circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
       //benchmark.readDslJsonJava() shouldBe benchmark.obj
