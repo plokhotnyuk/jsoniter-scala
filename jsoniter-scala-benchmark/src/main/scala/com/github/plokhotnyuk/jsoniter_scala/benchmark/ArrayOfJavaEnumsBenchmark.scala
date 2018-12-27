@@ -27,7 +27,7 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map { i =>
-      (i * 1498724053) & 3 match {
+      (i * 1498724053) & 0x3 match {
         case 0 => Suit.Hearts
         case 1 => Suit.Spades
         case 2 => Suit.Diamonds

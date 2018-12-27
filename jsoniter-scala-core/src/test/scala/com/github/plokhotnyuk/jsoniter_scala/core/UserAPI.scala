@@ -33,7 +33,7 @@ object UserAPI {
             (in.charBufToHashCode(l): @switch) match {
               case 3355 =>
                 if (in.isCharBufEqualsTo(l, "id")) {
-                  if ((p0 & 1) != 0) p0 ^= 1
+                  if ((p0 & 0x1) != 0) p0 ^= 0x1
                   else in.duplicatedKeyError(l)
                   _id = in.readInt()
                 } else in.skip()
@@ -78,13 +78,13 @@ object UserAPI {
             (in.charBufToHashCode(l): @switch) match {
               case 3373707 =>
                 if (in.isCharBufEqualsTo(l, "name")) {
-                  if ((p0 & 1) != 0) p0 ^= 1
+                  if ((p0 & 0x1) != 0) p0 ^= 0x1
                   else in.duplicatedKeyError(l)
                   _name = in.readString(_name)
                 } else in.skip()
               case 1559801053 =>
                 if (in.isCharBufEqualsTo(l, "devices")) {
-                  if ((p0 & 2) != 0) p0 ^= 2
+                  if ((p0 & 0x2) != 0) p0 ^= 0x2
                   else in.duplicatedKeyError(l)
                   _devices = d1(in, _devices)
                 } else in.skip()
@@ -93,7 +93,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if ((p0 & 1) != 0) in.requiredFieldError(f0(Integer.numberOfTrailingZeros(p0)))
+        if ((p0 & 0x1) != 0) in.requiredFieldError(f0(Integer.numberOfTrailingZeros(p0)))
         new User(name = _name, devices = _devices)
       } else in.readNullOrTokenError(default, '{')
 

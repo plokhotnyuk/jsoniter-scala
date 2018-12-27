@@ -27,7 +27,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = IntMap((1 to size).map { i =>
-      (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 1) == 0)
+      (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 0x1) == 0)
     }:_*)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
     jsonBytes = jsonString.getBytes(UTF_8)

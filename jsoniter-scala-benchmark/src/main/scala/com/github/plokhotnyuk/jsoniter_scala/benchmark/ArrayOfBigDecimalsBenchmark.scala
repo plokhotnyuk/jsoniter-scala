@@ -25,7 +25,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def setup(): Unit = {
     sourceObj = (1 to size).map { i =>
       //FIXME: | 1 is used to hide JDK bug of serialization redundant 0 after .
-      BigDecimal(BigInt(Array.fill((i & 15) + 1)((i | 1).toByte)), i % 37)
+      BigDecimal(BigInt(Array.fill((i & 0xF) + 1)((i | 0x1).toByte)), i % 37)
     }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
     jsonString = sourceObj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)

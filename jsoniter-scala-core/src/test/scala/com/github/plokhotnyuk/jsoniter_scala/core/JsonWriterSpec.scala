@@ -545,7 +545,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(200f)
       check(3.3554432E7f)
       forAll(minSuccessful(100000)) { (n: Int) =>
-        check(n * Math.pow(10, n & 15).toFloat)
+        check(n * Math.pow(10, n & 0xF).toFloat)
       }
       //(1 to Int.MaxValue).par.foreach { n =>
       forAll(minSuccessful(100000)) { (n: Int) =>

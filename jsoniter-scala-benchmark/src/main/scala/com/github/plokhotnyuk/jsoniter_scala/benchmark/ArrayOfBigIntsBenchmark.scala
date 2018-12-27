@@ -25,7 +25,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => BigInt(Array.fill((i & 15) + 1)(i.toByte))).toArray // up to 128-bit numbers
+    obj = (1 to size).map(i => BigInt(Array.fill((i & 0xF) + 1)(i.toByte))).toArray // up to 128-bit numbers
     jsonString = obj.map(x => new java.math.BigDecimal(x.bigInteger).toPlainString).mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)

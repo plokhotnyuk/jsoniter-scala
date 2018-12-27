@@ -29,9 +29,9 @@ class ArrayOfInstantsBenchmark extends CommonParams {
       val n = Math.abs(i * 1498724053)
       Instant.ofEpochSecond(n, i % 4 match {
         case 0 => 0
-        case 1 => ((n % 1000) | 1) * 1000000
-        case 2 => ((n % 1000000) | 1) * 1000
-        case 3 => (n | 1) % 1000000000
+        case 1 => ((n % 1000) | 0x1) * 1000000
+        case 2 => ((n % 1000000) | 0x1) * 1000
+        case 3 => (n | 0x1) % 1000000000
       })
     }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")

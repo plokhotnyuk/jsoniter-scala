@@ -622,13 +622,13 @@ final class JsonWriter private[jsoniter_scala](
     val d1 = ds(n >>> 24)
     buf(pos) = (d1 >> 8).toByte
     buf(pos + 1) = d1.toByte
-    val d2 = ds((n >>> 16) & 255)
+    val d2 = ds((n >>> 16) & 0xFF)
     buf(pos + 2) = (d2 >> 8).toByte
     buf(pos + 3) = d2.toByte
-    val d3 = ds((n >>> 8) & 255)
+    val d3 = ds((n >>> 8) & 0xFF)
     buf(pos + 4) = (d3 >> 8).toByte
     buf(pos + 5) = d3.toByte
-    val d4 = ds(n & 255)
+    val d4 = ds(n & 0xFF)
     buf(pos + 6) = (d4 >> 8).toByte
     buf(pos + 7) = d4.toByte
     pos + 8
@@ -638,14 +638,14 @@ final class JsonWriter private[jsoniter_scala](
     val d1 = ds(n >>> 24)
     buf(pos) = (d1 >> 8).toByte
     buf(pos + 1) = d1.toByte
-    val d2 = ds((n >>> 16) & 255)
+    val d2 = ds((n >>> 16) & 0xFF)
     buf(pos + 2) = (d2 >> 8).toByte
     buf(pos + 3) = d2.toByte
     buf(pos + 4) = '-'
-    val d3 = ds((n >>> 8) & 255)
+    val d3 = ds((n >>> 8) & 0xFF)
     buf(pos + 5) = (d3 >> 8).toByte
     buf(pos + 6) = d3.toByte
-    val d4 = ds(n & 255)
+    val d4 = ds(n & 0xFF)
     buf(pos + 7) = (d4 >> 8).toByte
     buf(pos + 8) = d4.toByte
     pos + 9
@@ -747,7 +747,7 @@ final class JsonWriter private[jsoniter_scala](
     else {
       val b = bs(from)
       buf(pos) = b
-      if (escapedChars(b & 255) == 0) writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
+      if (escapedChars(b & 0xFF) == 0) writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
       else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim - 12, escapedChars)
       else writeEncodedString(bs, from, to, pos, posLim - 6, escapedChars)
     }
@@ -835,14 +835,14 @@ final class JsonWriter private[jsoniter_scala](
     val d1 = ds(ch >>> 8)
     buf(pos + 2) = (d1 >> 8).toByte
     buf(pos + 3) = d1.toByte
-    val d2 = ds(ch & 255)
+    val d2 = ds(ch & 0xFF)
     buf(pos + 4) = (d2 >> 8).toByte
     buf(pos + 5) = d2.toByte
     pos + 6
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val d = hexDigits(b & 255)
+    val d = hexDigits(b & 0xFF)
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
@@ -1531,16 +1531,16 @@ final class JsonWriter private[jsoniter_scala](
     if (bits == 0) writeBytes('0', '.', '0')
     else if (bits == 0x80000000) writeBytes('-', '0', '.', '0')
     else count = {
-      val ieeeExponent = (bits >> 23) & 255
+      val ieeeExponent = (bits >> 23) & 0xFF
       if (ieeeExponent == 255) encodeError("illegal number: " + x)
-      val ieeeMantissa = bits & 8388607
+      val ieeeMantissa = bits & 0x7FFFFF
       val e2 =
         if (ieeeExponent == 0) -151
         else ieeeExponent - 152
       val m2 =
         if (ieeeExponent == 0) ieeeMantissa
-        else ieeeMantissa | 8388608
-      val even = (m2 & 1) == 0
+        else ieeeMantissa | 0x800000
+      val even = (m2 & 0x1) == 0
       val mv = m2 << 2
       val mp = mv + 2
       val mmShift =
@@ -1612,7 +1612,7 @@ final class JsonWriter private[jsoniter_scala](
               olength -= 1
             }
           }
-          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv
           else dv + 1
         } else {
@@ -1694,16 +1694,16 @@ final class JsonWriter private[jsoniter_scala](
     if (bits == 0) writeBytes('0', '.', '0')
     else if (bits == 0x8000000000000000L) writeBytes('-', '0', '.', '0')
     else count = {
-      val ieeeExponent = ((bits >> 52) & 2047).toInt
+      val ieeeExponent = ((bits >> 52) & 0x7FF).toInt
       if (ieeeExponent == 2047) encodeError("illegal number: " + x)
-      val ieeeMantissa = bits & 4503599627370495L
+      val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
       val e2 =
         if (ieeeExponent == 0) -1076
         else ieeeExponent - 1077
       val m2 =
         if (ieeeExponent == 0) ieeeMantissa
-        else ieeeMantissa | 4503599627370496L
-      val even = (m2 & 1) == 0
+        else ieeeMantissa | 0x10000000000000L
+      val even = (m2 & 0x1) == 0
       val mv = m2 << 2
       val mp = mv + 2
       val mmShift =
@@ -1776,7 +1776,7 @@ final class JsonWriter private[jsoniter_scala](
               olength -= 1
             }
           }
-          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 1) == 0 ||
+          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv
           else dv + 1
         } else {
