@@ -9,7 +9,7 @@ class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      benchmark.readDslJsonJava() shouldBe benchmark.obj
+      benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -20,7 +20,7 @@ class StringOfEscapedCharsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       // FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
-      //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
+      //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString2
       // FIXME: Jsoniter Java cannot restore config properly
       //toString(benchmark.writeJsoniterJava()) shouldBe benchmark.jsonString

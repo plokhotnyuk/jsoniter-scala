@@ -39,7 +39,7 @@ class BigDecimalBenchmark extends CommonParams {
   def readCirce(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*
   @Benchmark
-  def readDslJsonJava(): BigDecimal = decodeDslJson[BigDecimal](jsonBytes)
+  def readDslJsonScala(): BigDecimal = decodeDslJson[BigDecimal](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): BigDecimal = jacksonMapper.readValue[BigDecimal](jsonBytes)
@@ -60,7 +60,7 @@ class BigDecimalBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /*
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[BigDecimal](obj)
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[BigDecimal](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

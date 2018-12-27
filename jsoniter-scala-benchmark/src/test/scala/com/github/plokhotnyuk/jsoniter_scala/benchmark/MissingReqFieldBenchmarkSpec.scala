@@ -9,7 +9,7 @@ class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
         "Cannot read com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingReqFields, field s is missing in decoded data"
       benchmark.readCirce() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"
-      benchmark.readDslJsonJava() shouldBe
+      benchmark.readDslJsonScala() shouldBe
         "Mandatory properties (s, i) not found at position: 2, following: `{}`"
       benchmark.readJacksonScala() shouldBe
         """Missing required creator property 's' (index 0)

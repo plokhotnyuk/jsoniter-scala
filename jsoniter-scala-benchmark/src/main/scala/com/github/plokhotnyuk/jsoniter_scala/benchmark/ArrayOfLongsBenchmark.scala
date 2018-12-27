@@ -39,7 +39,7 @@ class ArrayOfLongsBenchmark extends CommonParams {
   def readCirce(): Array[Long] = decode[Array[Long]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonJava(): Array[Long] = decodeDslJson[Array[Long]](jsonBytes)
+  def readDslJsonScala(): Array[Long] = decodeDslJson[Array[Long]](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): Array[Long] = jacksonMapper.readValue[Array[Long]](jsonBytes)
@@ -63,7 +63,7 @@ class ArrayOfLongsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Long]](obj)
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[Long]](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

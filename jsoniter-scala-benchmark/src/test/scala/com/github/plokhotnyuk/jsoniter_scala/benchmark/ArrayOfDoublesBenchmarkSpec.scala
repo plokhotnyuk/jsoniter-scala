@@ -9,7 +9,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      benchmark.readDslJsonJava() shouldBe benchmark.obj
+      benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       //FIXME: Jsoniter Java cannot parse some numbers like 5.9823526 precisely
       //benchmark.readJsoniterJava() shouldBe benchmark.obj
@@ -21,7 +21,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.writeAVSystemGenCodec()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeCirce()), benchmark.jsonString)
       //FIXME: dsl-json serializes doubles in a plain representation
-      //sameOrBetter(toString(benchmark.writeDslJsonJava()), benchmark.jsonString)
+      //sameOrBetter(toString(benchmark.writeDslJsonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJacksonScala()), benchmark.jsonString)
       //FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
       //sameOrBetter(toString(benchmark.writeJsoniterJava()), benchmark.jsonString)

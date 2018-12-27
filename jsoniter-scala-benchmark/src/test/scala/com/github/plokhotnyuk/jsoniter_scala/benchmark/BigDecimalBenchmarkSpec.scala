@@ -11,7 +11,7 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       //FIXME: dsl-json cannot find decoder for BigDecimal
-      //benchmark.readDslJsonJava() shouldBe benchmark.sourceObj
+      //benchmark.readDslJsonScala() shouldBe benchmark.sourceObj
       benchmark.readJacksonScala() shouldBe benchmark.sourceObj
       benchmark.readJsoniterScala() shouldBe benchmark.sourceObj
       //FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
@@ -23,7 +23,7 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME: dsl-json cannot find encoder for BigDecimal
-      //toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
+      //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString

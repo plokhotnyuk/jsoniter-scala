@@ -40,7 +40,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def readCirce(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonJava(): Array[Double] = decodeDslJson[Array[Double]](jsonBytes)
+  def readDslJsonScala(): Array[Double] = decodeDslJson[Array[Double]](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): Array[Double] = jacksonMapper.readValue[Array[Double]](jsonBytes)
@@ -65,7 +65,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
 
 /*FIXME: dsl-json serializes doubles in a plain representation
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Double]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[Double]](obj).toByteArray
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

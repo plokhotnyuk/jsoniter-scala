@@ -39,7 +39,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     decode[MissingReqFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _ => null)
 
   @Benchmark
-  def readDslJsonJava(): String =
+  def readDslJsonScala(): String =
     try {
       decodeDslJson[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {

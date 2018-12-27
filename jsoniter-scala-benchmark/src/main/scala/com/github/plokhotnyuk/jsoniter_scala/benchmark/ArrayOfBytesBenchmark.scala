@@ -39,7 +39,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def readCirce(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*FIXME:dsl-json expects a base64 string for the byte array
   @Benchmark
-  def readDslJsonJava(): Array[Byte] = decodeDslJson[Array[Byte]](jsonBytes)
+  def readDslJsonScala(): Array[Byte] = decodeDslJson[Array[Byte]](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): Array[Byte] = jacksonMapper.readValue[Array[Byte]](jsonBytes)
@@ -63,7 +63,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME:dsl-json serializes a byte array to the base64 string
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Byte]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[Byte]](obj).toByteArray
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

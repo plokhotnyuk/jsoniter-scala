@@ -9,7 +9,7 @@ class StringOfNonAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      benchmark.readDslJsonJava() shouldBe benchmark.obj
+      benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -19,7 +19,7 @@ class StringOfNonAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      toString(benchmark.writeDslJsonJava()) shouldBe benchmark.jsonString
+      toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       // FIXME: Jsoniter Java escapes non-ASCII characters
       //toString(benchmark.writeJsoniterJava()) shouldBe benchmark.jsonString

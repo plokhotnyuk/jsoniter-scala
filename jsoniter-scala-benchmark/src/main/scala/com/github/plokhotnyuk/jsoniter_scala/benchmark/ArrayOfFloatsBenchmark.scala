@@ -42,7 +42,7 @@ class ArrayOfFloatsBenchmark extends CommonParams {
 */
 /* FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
   @Benchmark
-  def readDslJsonJava(): Array[Float] = decodeDslJson[Array[Float]](jsonBytes)
+  def readDslJsonScala(): Array[Float] = decodeDslJson[Array[Float]](jsonBytes)
 */
 /* FIXME: Jackson Scala parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
@@ -68,7 +68,7 @@ class ArrayOfFloatsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Array[Float]](obj)
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[Float]](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

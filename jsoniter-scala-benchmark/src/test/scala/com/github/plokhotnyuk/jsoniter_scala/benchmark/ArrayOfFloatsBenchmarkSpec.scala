@@ -27,7 +27,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       //FIXME: Circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
-      //benchmark.readDslJsonJava() shouldBe benchmark.obj
+      //benchmark.readDslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readJacksonScala() shouldBe benchmark.obj
       //FIXME: Jsoniter Java parses 1.199999988079071 as 1.2f instead of 1.1999999f
@@ -40,7 +40,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       //FIXME: AVSystem GenCodec serializes double values instead of float
       //sameOrBetter(toString(benchmark.writeAVSystemGenCodec()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeCirce()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.writeDslJsonJava()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeDslJsonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJacksonScala()), benchmark.jsonString)
       //FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
       //sameOrBetter(toString(benchmark.writeJsoniterJava()), benchmark.jsonString)

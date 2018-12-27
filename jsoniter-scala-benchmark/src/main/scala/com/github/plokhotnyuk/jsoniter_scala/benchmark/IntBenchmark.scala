@@ -29,7 +29,7 @@ class IntBenchmark extends CommonParams {
   def readCirce(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonJava(): Int = decodeDslJson[Int](jsonBytes)
+  def readDslJsonScala(): Int = decodeDslJson[Int](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): Int = jacksonMapper.readValue[Int](jsonBytes)
@@ -53,7 +53,7 @@ class IntBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonJava(): Array[Byte] = encodeDslJson[Int](obj)
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Int](obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
