@@ -25,7 +25,7 @@ object UserAPI {
       if (in.isNextToken('{')) {
         var _id: Int = 0
         var _model: String = null
-        var p0 = 3
+        var p0 = 0x3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
           do {
@@ -39,7 +39,7 @@ object UserAPI {
                 } else in.skip()
               case 104069929 =>
                 if (in.isCharBufEqualsTo(l, "model")) {
-                  if ((p0 & 2) != 0) p0 ^= 2
+                  if ((p0 & 0x2) != 0) p0 ^= 0x2
                   else in.duplicatedKeyError(l)
                   _model = in.readString(_model)
                 } else in.skip()
@@ -49,7 +49,7 @@ object UserAPI {
           } while (in.isNextToken(','))
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
-        if ((p0 & 3) != 0) in.requiredFieldError(f1(Integer.numberOfTrailingZeros(p0)))
+        if ((p0 & 0x3) != 0) in.requiredFieldError(f1(Integer.numberOfTrailingZeros(p0)))
         new Device(id = _id, model = _model)
       } else in.readNullOrTokenError(default, '{')
 
@@ -70,7 +70,7 @@ object UserAPI {
       if (in.isNextToken('{')) {
         var _name: String = null
         var _devices: Seq[Device] = Seq.empty[Device]
-        var p0 = 3
+        var p0 = 0x3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
           do {
