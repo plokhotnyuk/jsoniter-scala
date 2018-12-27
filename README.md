@@ -54,8 +54,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Support of UTF-8 encoding only 
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`, 
-  `Either`, `java.util.UUID`, `java.time.*`, Scala collections, arrays, module classes, value classes and case classes 
-  with values/fields having any of types listed here
+  `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module 
+  classes, value classes and case classes with values/fields having any of types listed here
 - Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
 - Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary 
   constructor
@@ -63,7 +63,6 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, and value classes for any of them
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at 
   the scope of the `make` macro call  
-- Serialization and parsing of `java.time.*` types to/from ISO-8601 representation  
 - Parsing of escaped characters is not supported for strings which are mapped to numeric and `java.time.*` types 
 - Support of first-order and higher-kinded types
 - Support of 2 representations of ADTs with a sealed trait or a Scala class as base type and non-abstract Scala classes 
@@ -73,9 +72,9 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already 
   supported classes
 - Type aliases are also supported for all types  
+- Order of instance fields is preserved during serialization 
+- Only acyclic graphs of class instances are supported
 - Throws a parsing exception if duplicated keys were detected for a class instance (except maps)
-- Support of only acyclic graphs of class instances
-- Order of object field is preserved during serialization 
 - Fields with default values that defined in the constructor are optional, other fields are required (no special 
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
@@ -389,6 +388,3 @@ security release:
 5. [pityka/flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
 6. [pityka/tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
 7. [TechEmpower/FrameworkBenchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/search?q=jsoniter-scala&unscoped_q=jsoniter-scala)
-
-Also half of [Scala web frameworks which take part in TechEmpower benchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/tree/master/frameworks/Scala)
-have used jsoniter-scala for serialization of JSON responses.
