@@ -9,6 +9,8 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
+      //FIXME: DSL-JSON throws java.io.IOException: Mandatory property (n) not found at position: 1502, following: `n":{"n":{"n":{"n":{}`
+      //benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
@@ -18,6 +20,8 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
+      //FIXME: DSL-JSON serializes null value for Option.None
+      //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString

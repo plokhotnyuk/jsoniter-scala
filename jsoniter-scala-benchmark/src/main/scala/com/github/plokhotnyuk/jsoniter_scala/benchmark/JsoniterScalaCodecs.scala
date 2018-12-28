@@ -8,7 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
 
-import scala.collection.immutable.{BitSet, IntMap, Map, Seq, Set}
+import scala.collection.immutable.{BitSet, IntMap, Map, Set}
 import scala.collection.mutable
 
 object JsoniterScalaCodecs {

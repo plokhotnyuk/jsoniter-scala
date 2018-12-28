@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets._
 import com.avsystem.commons.serialization.json._
 import com.avsystem.commons.serialization.{transientDefault, whenAbsent}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -42,7 +43,10 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
+/* FIXME: DSL-JSON throws java.io.IOException: Mandatory property (n) not found at position: 1502, following: `n":{"n":{"n":{"n":{}`
+  @Benchmark
+  def readDslJsonScala(): NestedStructs = decodeDslJson[NestedStructs](jsonBytes)
+*/
   @Benchmark
   def readJacksonScala(): NestedStructs = jacksonMapper.readValue[NestedStructs](jsonBytes)
 
@@ -61,7 +65,10 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+/* FIXME: DSL-JSON serializes null value for Option.None
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[NestedStructs](obj)
+*/
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

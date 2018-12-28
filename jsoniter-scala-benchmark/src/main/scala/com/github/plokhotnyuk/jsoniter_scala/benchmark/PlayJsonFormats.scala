@@ -8,7 +8,7 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import ai.x.play.json.Jsonx
 
-import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
+import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 
 object PlayJsonFormats {

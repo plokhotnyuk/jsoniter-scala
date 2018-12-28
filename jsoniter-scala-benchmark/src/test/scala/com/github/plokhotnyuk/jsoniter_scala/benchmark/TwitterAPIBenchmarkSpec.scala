@@ -7,6 +7,8 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
+      //FIXME: DSL-JSON cannot create decoder for Seq[Tweet]
+      //benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
@@ -17,6 +19,8 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
       //FIXME: circe serializes empty collections
       //toString(benchmark.writeCirce()) shouldBe TwitterAPI.compactJsonString
+      //FIXME: DSL-JSON serializes empty collections
+      //toString(benchmark.writeDslJsonScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.writeJsoniterScala()) shouldBe TwitterAPI.compactJsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString

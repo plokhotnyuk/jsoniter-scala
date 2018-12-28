@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -16,8 +17,6 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 //import upickle.default._
 
-import scala.collection.immutable.Seq
-
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
   var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + 100/*to avoid possible out of bounds error*/)
@@ -27,7 +26,10 @@ class TwitterAPIBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
+/* FIXME: DSL-JSON cannot create decoder for Seq[Tweet]
+  @Benchmark
+  def readDslJsonScala(): Seq[Tweet] = decodeDslJson[Seq[Tweet]](jsonBytes)
+*/
   @Benchmark
   def readJacksonScala(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
 
@@ -45,6 +47,10 @@ class TwitterAPIBenchmark extends CommonParams {
 /* FIXME: circe serializes empty collections
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+*/
+/* FIXME: DSL-JSON serializes empty collections
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Seq[Tweet]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
