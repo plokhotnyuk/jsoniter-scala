@@ -813,10 +813,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b: Byte, p: Int): Int = {
     var pos = p
-    val yearNeg =
-      if (b == '+') false
-      else if (b == '-') true
-      else decodeError("expected '-' or '+' or digit", pos)
+    val yearNeg = b == '-' || (b != '+' && decodeError("expected '-' or '+' or digit", pos))
     val d2 = buf(pos + 1) - '0'
     val d3 = buf(pos + 2) - '0'
     val d4 = buf(pos + 3) - '0'
@@ -1424,8 +1421,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def digitsLimitError(pos: Int): Nothing =
     decodeError("value exceeds limit for number of significant digits", pos)
 
-  private[this] def scaleLimitError(pos: Int): Nothing =
-    decodeError("value exceeds limit for scale", pos)
+  private[this] def scaleLimitError(pos: Int): Nothing = decodeError("value exceeds limit for scale", pos)
 
   private[this] def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
 
@@ -1604,9 +1600,9 @@ final class JsonReader private[jsoniter_scala](
     val day = next2DigitsWithByte('T', head)
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
-    var second, nano, offsetHour, offsetMinute, offsetSecond = 0
+    var second, nano = 0
     var nanoDigitWeight = 100000000
-    var hasSecond, hasNano, offsetNeg = false
+    var hasSecond, hasNano = false
     var b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1627,28 +1623,32 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 1
       }
     }
-    if (b != 'Z') {
-      if (b == '-') offsetNeg = true
-      else if (b != '+') timeError(hasSecond, hasNano, nanoDigitWeight)
-      offsetHour = next2Digits(head)
-      b = nextByte(head)
-      if (b == ':') {
-        offsetMinute = next2Digits(head)
+    val zoneOffset =
+      if (b == 'Z') {
+        nextByteOrError('"', head)
+        ZoneOffset.UTC
+      } else {
+        val offsetNeg = b == '-' || (b != '+' && timeError(hasSecond, hasNano, nanoDigitWeight))
+        val offsetHour = next2Digits(head)
+        var offsetMinute, offsetSecond = 0
         b = nextByte(head)
-        if (b == ':') offsetSecond = next2DigitsWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
-      } else if (b != '"') tokensError(':', '"')
-    } else nextByteOrError('"', head)
-    OffsetDateTime.of(toLocalDate(year, month, day), toLocalTime(hour, minute, second, nano),
-      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
+        if (b == ':') {
+          offsetMinute = next2Digits(head)
+          b = nextByte(head)
+          if (b == ':') offsetSecond = next2DigitsWithByte('"', head)
+          else if (b != '"') tokensError(':', '"')
+        } else if (b != '"') tokensError(':', '"')
+        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+      }
+    OffsetDateTime.of(toLocalDate(year, month, day), toLocalTime(hour, minute, second, nano), zoneOffset)
   }
 
   private[this] def parseOffsetTime(): OffsetTime = {
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
-    var second, nano, offsetHour, offsetMinute, offsetSecond = 0
+    var second, nano = 0
     var nanoDigitWeight = 100000000
-    var hasSecond, hasNano, offsetNeg = false
+    var hasSecond, hasNano = false
     var b = nextByte(head)
     if (b == ':') {
       hasSecond = true
@@ -1669,20 +1669,24 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 1
       }
     }
-    if (b != 'Z') {
-      if (b == '-') offsetNeg = true
-      else if (b != '+') timeError(hasSecond, hasNano, nanoDigitWeight)
-      offsetHour = next2Digits(head)
-      b = nextByte(head)
-      if (b == ':') {
-        offsetMinute = next2Digits(head)
+    val zoneOffset =
+      if (b == 'Z') {
+        nextByteOrError('"', head)
+        ZoneOffset.UTC
+      } else {
+        val offsetNeg = b == '-' || (b != '+' && timeError(hasSecond, hasNano, nanoDigitWeight))
+        val offsetHour = next2Digits(head)
+        var offsetMinute, offsetSecond = 0
         b = nextByte(head)
-        if (b == ':') offsetSecond = next2DigitsWithByte('"', head)
-        else if (b != '"') tokensError(':', '"')
-      } else if (b != '"') tokensError(':', '"')
-    } else nextByteOrError('"', head)
-    OffsetTime.of(toLocalTime(hour, minute, second, nano),
-      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond))
+        if (b == ':') {
+          offsetMinute = next2Digits(head)
+          b = nextByte(head)
+          if (b == ':') offsetSecond = next2DigitsWithByte('"', head)
+          else if (b != '"') tokensError(':', '"')
+        } else if (b != '"') tokensError(':', '"')
+        toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+      }
+    OffsetTime.of(toLocalTime(hour, minute, second, nano), zoneOffset)
   }
 
   private[this] def parsePeriod(): Period = {
@@ -1778,9 +1782,8 @@ final class JsonReader private[jsoniter_scala](
       }
     }
     if (b != 'Z') {
-      if (b == '-') offsetNeg = true
-      else if (b != '+') timeError(hasSecond, hasNano, nanoDigitWeight)
       hasOffsetHour = true
+      offsetNeg = b == '-' || (b != '+' && timeError(hasSecond, hasNano, nanoDigitWeight))
       offsetHour = next2Digits(head)
       b = nextByte(head)
       if (b == ':') {
@@ -1802,21 +1805,23 @@ final class JsonReader private[jsoniter_scala](
       if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
       decodeError("expected ':' or '[' or '\"'")
     }
-    val ld = toLocalDate(year, month, day)
-    val lt = toLocalTime(hour, minute, second, nano)
-    val zo = toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
-    if (zone eq null) ZonedDateTime.of(ld, lt, zo)
-    else ZonedDateTime.ofInstant(LocalDateTime.of(ld, lt), zo, toZoneId(zone))
+    val localDateTime = LocalDateTime.of(toLocalDate(year, month, day), toLocalTime(hour, minute, second, nano))
+    val zoneOffset =
+      if (hasOffsetHour) toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+      else ZoneOffset.UTC
+    if (zone eq null) ZonedDateTime.of(localDateTime, zoneOffset)
+    else ZonedDateTime.ofInstant(localDateTime, zoneOffset, toZoneId(zone))
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
-    var offsetHour, offsetMinute, offsetSecond = 0
-    var offsetNeg = false
     var b = nextByte(head)
-    if (b != 'Z') {
-      if (b == '-') offsetNeg = true
-      else if (b != '+') decodeError("expected '+' or '-' or 'Z'")
-      offsetHour = next2Digits(head)
+    if (b == 'Z') {
+      nextByteOrError('"', head)
+      ZoneOffset.UTC
+    } else {
+      val offsetNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
+      val offsetHour = next2Digits(head)
+      var offsetMinute, offsetSecond = 0
       b = nextByte(head)
       if (b == ':') {
         offsetMinute = next2Digits(head)
@@ -1824,8 +1829,8 @@ final class JsonReader private[jsoniter_scala](
         if (b == ':') offsetSecond = next2DigitsWithByte('"', head)
         else if (b != '"') tokensError(':', '"')
       } else if (b != '"') tokensError(':', '"')
-    } else nextByteOrError('"', head)
-    toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+      toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
+    }
   }
 
   private[this] def epochSecond(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long = {
