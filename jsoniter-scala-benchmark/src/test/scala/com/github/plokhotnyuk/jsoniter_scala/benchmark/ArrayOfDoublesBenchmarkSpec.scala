@@ -38,7 +38,6 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
   private[this] def sameOrBetter(actual: String, expected: String): Unit =
     actual.substring(1, actual.length - 1).split(',')
       .zip(expected.substring(1, expected.length - 1).split(',')).foreach { case (a, e) =>
-      require(a.toDouble == e.toDouble && a.length <= e.length,
-        s"expected the same or better: $e, but got: $a")
+      require(a.toDouble == e.toDouble && a.length <= e.length, s"expected the same or better: $e, but got: $a")
     }
 }

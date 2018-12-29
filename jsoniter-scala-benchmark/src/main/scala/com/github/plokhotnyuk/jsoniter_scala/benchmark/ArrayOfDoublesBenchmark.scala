@@ -46,8 +46,8 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def readJacksonScala(): Array[Double] = jacksonMapper.readValue[Array[Double]](jsonBytes)
 /* FIXME: Jsoniter Java cannot parse some numbers like 5.9823526 precisely
   @Benchmark
-*/def readJsoniterJava(): Array[Double] = JsoniterJavaParser.parse[Array[Double]](jsonBytes, classOf[Array[Double]])
-
+  def readJsoniterJava(): Array[Double] = JsoniterJavaParser.parse[Array[Double]](jsonBytes, classOf[Array[Double]])
+*/
   @Benchmark
   def readJsoniterScala(): Array[Double] = readFromArray[Array[Double]](jsonBytes)
 
