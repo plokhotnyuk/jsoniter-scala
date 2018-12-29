@@ -57,24 +57,6 @@ object CirceEncodersDecoders {
       case NonFatal(_) => Left("Suit")
     }
   }
-  implicit val monthDayEncoder: Encoder[MonthDay] = Encoder.encodeString.contramap(_.toString)
-  implicit val monthDayDecoder: Decoder[MonthDay] = Decoder.decodeString.emap { str =>
-    try Right(MonthDay.parse(str)) catch {
-      case NonFatal(_) => Left("MonthDay")
-    }
-  }
-  implicit val yearEncoder: Encoder[Year] = Encoder.encodeString.contramap(_.toString)
-  implicit val yearDecoder: Decoder[Year] = Decoder.decodeString.emap { str =>
-    try Right(Year.parse(str)) catch {
-      case NonFatal(_) => Left("Year")
-    }
-  }
-  implicit val zoneOffsetEncoder: Encoder[ZoneOffset] = Encoder.encodeString.contramap(_.toString)
-  implicit val zoneOffsetDecoder: Decoder[ZoneOffset] = Decoder.decodeString.emap { str =>
-    try Right(ZoneOffset.of(str)) catch {
-      case NonFatal(_) => Left("ZoneOffset")
-    }
-  }
   // GeoJSON
   implicit val featureEncoder: Encoder[Feature] = deriveEncoder
   implicit val featureDecoder: Decoder[Feature] = deriveDecoder
