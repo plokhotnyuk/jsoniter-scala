@@ -1146,10 +1146,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        if (b == '-' || b == '+') {
-          isExpNeg = b == '-'
-          b = nextByte(head)
-        }
+        isExpNeg = b == '-'
+        if (isExpNeg || b == '+') b = nextByte(head)
         pos = head
         if (b < '0' || b > '9') numberError(pos - 1)
         posExp = b - '0'
@@ -1246,10 +1244,8 @@ final class JsonReader private[jsoniter_scala](
       }
       if ((b | 0x20) == 'e') {
         b = nextByte(pos + 1)
-        if (b == '-' || b == '+') {
-          isExpNeg = b == '-'
-          b = nextByte(head)
-        }
+        isExpNeg = b == '-'
+        if (isExpNeg || b == '+') b = nextByte(head)
         pos = head
         if (b < '0' || b > '9') numberError(pos - 1)
         posExp = b - '0'

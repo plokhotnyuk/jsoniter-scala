@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
