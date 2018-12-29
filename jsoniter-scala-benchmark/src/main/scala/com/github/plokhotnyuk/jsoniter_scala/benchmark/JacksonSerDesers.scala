@@ -1,7 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser, JsonToken}
+import com.fasterxml.jackson.core.JsonToken._
+import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser}
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
@@ -85,10 +86,8 @@ class SuitEnumSerializer extends JsonSerializer[SuitEnum] {
 
 class SuitEnumDeserializer extends JsonDeserializer[SuitEnum] {
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum =
-    jp.getCurrentToken match {
-      case JsonToken.VALUE_STRING => SuitEnum.withName(jp.getValueAsString)
-      case _ => ctxt.handleUnexpectedToken(classOf[SuitEnum], jp).asInstanceOf[SuitEnum]
-    }
+    if (jp.getCurrentToken != VALUE_STRING) ctxt.handleUnexpectedToken(classOf[SuitEnum], jp).asInstanceOf[SuitEnum]
+    else SuitEnum.withName(jp.getValueAsString)
 }
 
 class SuitADTSerializer extends JsonSerializer[SuitADT] {
@@ -97,15 +96,17 @@ class SuitADTSerializer extends JsonSerializer[SuitADT] {
 }
 
 class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
+  private[this] val suite = Map(
+    "Hearts" -> Hearts,
+    "Spades" -> Spades,
+    "Diamonds" -> Diamonds,
+    "Clubs" -> Clubs
+  )
+
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
-    jp.getCurrentToken match {
-      case JsonToken.VALUE_STRING => jp.getValueAsString match {
-        case "Hearts" => Hearts
-        case "Spades" => Spades
-        case "Diamonds" => Diamonds
-        case "Clubs" => Clubs
-        case s => ctxt.handleWeirdStringValue(classOf[SuitADT], s, "illegal value").asInstanceOf[SuitADT]
-      }
-      case _ => ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
+    if (jp.getCurrentToken != VALUE_STRING) ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
+    else {
+      val s = jp.getValueAsString
+      suite.getOrElse(s, ctxt.handleWeirdStringValue(classOf[SuitADT], s, "illegal value").asInstanceOf[SuitADT])
     }
 }

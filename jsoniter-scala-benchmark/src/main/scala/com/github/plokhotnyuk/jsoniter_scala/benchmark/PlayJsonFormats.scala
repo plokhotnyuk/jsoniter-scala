@@ -14,17 +14,19 @@ import scala.collection.mutable
 object PlayJsonFormats {
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
-  implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] = Reads[Tuple2[A, B]] {
-    case JsArray(arr) if arr.size == 2 => for {
-      a <- aReads.reads(arr(0))
-      b <- bReads.reads(arr(1))
-    } yield (a, b)
-    case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("Expected array of two elements"))))
-  }
+  implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
+    Reads[Tuple2[A, B]] {
+      case JsArray(arr) if arr.size == 2 => for {
+        a <- aReads.reads(arr(0))
+        b <- bReads.reads(arr(1))
+      } yield (a, b)
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("Expected array of two elements"))))
+    }
 
-  implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] = new Writes[Tuple2[A, B]] {
-    def writes(tuple: Tuple2[A, B]) = JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
-  }
+  implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] =
+    new Writes[Tuple2[A, B]] {
+      def writes(tuple: Tuple2[A, B]) = JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
+    }
 
   implicit val charFormat: Format[Char] = Format(
     Reads(js => JsSuccess(js.as[String].charAt(0))),
@@ -113,15 +115,18 @@ object PlayJsonFormats {
       Reads(js => JsSuccess(js.as[Array[JsString]].map(_.as[SuitEnum]))),
       Writes(es => JsArray(es.map(t => Json.toJson(t)))))
   }
-  val enumADTArrayFormat: Format[Array[SuitADT]] = Format(
-    Reads(js => JsSuccess(js.as[Array[JsString]].map(_.value match {
-      case "Hearts" => Hearts
-      case "Spades" => Spades
-      case "Diamonds" => Diamonds
-      case "Clubs" => Clubs
-      case _ => throw new IllegalArgumentException("illegal SuitADT value")
-    }))),
-    Writes(es => JsArray(es.map(v => JsString(v.toString)))))
+  val enumADTArrayFormat: Format[Array[SuitADT]] = {
+    val suite = Map(
+      "Hearts" -> Hearts,
+      "Spades" -> Spades,
+      "Diamonds" -> Diamonds,
+      "Clubs" -> Clubs
+    )
+    Format(
+      Reads(js => JsSuccess(js.as[Array[JsString]]
+        .map(s => suite.getOrElse(s.value, throw new IllegalArgumentException("SuitADT"))))),
+      Writes(es => JsArray(es.map(v => JsString(v.toString)))))
+  }
   val javaEnumArrayFormat: Format[Array[Suit]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.name)))))

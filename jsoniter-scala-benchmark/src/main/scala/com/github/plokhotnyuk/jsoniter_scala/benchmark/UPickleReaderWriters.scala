@@ -7,13 +7,15 @@ import upickle.AttributeTagged
 
 object UPickleReaderWriters extends AttributeTagged {
   implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
-  implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = readwriter[String].bimap(_.toString, {
-    case "Hearts" => Hearts
-    case "Spades" => Spades
-    case "Diamonds" => Diamonds
-    case "Clubs" => Clubs
-    case _ => throw new IllegalArgumentException("SuitADT")
-  })
+  implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = {
+    val suite = Map(
+      "Hearts" -> Hearts,
+      "Spades" -> Spades,
+      "Diamonds" -> Diamonds,
+      "Clubs" -> Clubs
+    )
+    readwriter[String].bimap(_.toString, s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT")))
+  }
   implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW
   implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW
   implicit val durationReaderWriter: ReadWriter[Duration] = readwriter[String].bimap(_.toString, Duration.parse)
