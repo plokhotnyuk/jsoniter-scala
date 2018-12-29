@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
-import play.api.libs.json.Json
+//import play.api.libs.json.Json
 //import upickle.default._
 
 class BigDecimalBenchmark extends CommonParams {
@@ -31,10 +31,10 @@ class BigDecimalBenchmark extends CommonParams {
 
   //FIXME: it affects results but required to avoid misleading results due internal caching of the string representation
   private def obj: BigDecimal = BigDecimal(sourceObj.bigDecimal.unscaledValue(), sourceObj.bigDecimal.scale())
-
+/* FIXME: AVSystem GenCodec: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8))
-
+*/
   @Benchmark
   def readCirce(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*
@@ -46,9 +46,10 @@ class BigDecimalBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes, longNumberConfig)(bigDecimalCodec)
-
+/* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def readPlayJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
+*/
 /* FIXME: uPickle parses BigDecimal from JSON strings only
   @Benchmark
   def readUPickle(): BigDecimal = read[BigDecimal](jsonBytes)

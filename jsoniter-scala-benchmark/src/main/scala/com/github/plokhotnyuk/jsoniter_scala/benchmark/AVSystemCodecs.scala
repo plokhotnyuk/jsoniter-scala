@@ -7,7 +7,7 @@ import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
 
-import scala.collection.immutable.{BitSet, IntMap}
+import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 
 object AVSystemCodecs {
@@ -34,13 +34,15 @@ object AVSystemCodecs {
   implicit val offsetDateTimeGenCodec: GenCodec[OffsetDateTime] = transformed(_.toString, OffsetDateTime.parse)
   implicit val offsetTimeGenCodec: GenCodec[OffsetTime] = transformed(_.toString, OffsetTime.parse)
   implicit val periodGenCodec: GenCodec[Period] = transformed(_.toString, Period.parse)
-  implicit val suitADTGenCodec: GenCodec[SuitADT] = transformed[SuitADT, String](_.toString, {
-    case "Hearts" => Hearts
-    case "Spades" => Spades
-    case "Diamonds" => Diamonds
-    case "Clubs" => Clubs
-    case _ => throw new IllegalArgumentException("SuitADT")
-  })
+  implicit val suitADTGenCodec: GenCodec[SuitADT] = {
+    val suite = Map(
+      "Hearts" -> Hearts,
+      "Spades" -> Spades,
+      "Diamonds" -> Diamonds,
+      "Clubs" -> Clubs
+    )
+    transformed[SuitADT, String](_.toString, s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT")))
+  }
   implicit val uuidGenCodec: GenCodec[UUID] = transformed(_.toString, UUID.fromString)
   implicit val yearGenCodec: GenCodec[Year] = transformed(_.toString, Year.parse)
   implicit val yearMonthGenCodec: GenCodec[YearMonth] = transformed(_.toString, YearMonth.parse)

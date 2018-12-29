@@ -11,13 +11,10 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
     )
 
     setup()
-
-    override def setup(): Unit = {
-      jsonBytes = (1 to size).map(i => values(i % values.length)).mkString("[", ",", "]").getBytes(UTF_8)
-      obj = (1 to size).map(i => values(i % values.length).toFloat).toArray
-      jsonString = obj.mkString("[", ",", "]")
-      preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
-    }
+    jsonBytes = (1 to size).map(i => values(i % values.length)).mkString("[", ",", "]").getBytes(UTF_8)
+    obj = (1 to size).map(i => values(i % values.length).toFloat).toArray
+    jsonString = obj.mkString("[", ",", "]")
+    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
   
   "ArrayOfFloatsBenchmark" should {
