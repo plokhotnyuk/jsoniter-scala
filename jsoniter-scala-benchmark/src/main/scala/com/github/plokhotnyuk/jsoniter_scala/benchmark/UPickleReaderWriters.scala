@@ -7,6 +7,47 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
+  implicit val bigDecimalReader: Reader[BigDecimal] = new SimpleReader[BigDecimal] {
+    override def expectedMsg = "expected number"
+
+    override def visitString(s: CharSequence, index: Int): BigDecimal =
+      new java.math.BigDecimal(s.toString)
+
+    override def visitInt32(d: Int, index: Int): BigDecimal = BigDecimal(d)
+
+    override def visitInt64(d: Long, index: Int): BigDecimal = BigDecimal(d)
+
+    override def visitUInt64(d: Long, index: Int): BigDecimal = BigDecimal(d)
+
+    override def visitFloat64(d: Double, index: Int): BigDecimal = BigDecimal(d)
+
+    override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigDecimal =
+      new java.math.BigDecimal(s.toString)
+  }
+  implicit val bigDecimalWriter: Writer[BigDecimal] = new Writer[BigDecimal] {
+    def write0[V](out: Visitor[_, V], v: BigDecimal): V = out.visitFloat64String(v.toString, -1)
+  }
+  implicit val bigIntReader: Reader[BigInt] = new SimpleReader[BigInt] {
+    override def expectedMsg = "expected number"
+
+    override def visitString(s: CharSequence, index: Int): BigInt =
+      new BigInt(new java.math.BigDecimal(s.toString).toBigInteger)
+
+    override def visitInt32(d: Int, index: Int): BigInt = BigInt(d)
+
+    override def visitInt64(d: Long, index: Int): BigInt = BigInt(d)
+
+    override def visitUInt64(d: Long, index: Int): BigInt = BigInt(d)
+
+    override def visitFloat64(d: Double, index: Int): BigInt = BigInt(d.toLong)
+
+    override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigInt =
+      new BigInt(new java.math.BigDecimal(s.toString).toBigInteger)
+  }
+  implicit val bigIntWriter: Writer[BigInt] = new Writer[BigInt] {
+    def write0[V](out: Visitor[_, V], v: BigInt): V =
+      out.visitFloat64String(new java.math.BigDecimal(v.bigInteger).toPlainString, -1)
+  }
   implicit val doubleWriter: Writer[Double] = new Writer[Double] {
     def write0[V](out: Visitor[_, V], v: Double): V = out.visitFloat64String(v.toString, -1)
   }
