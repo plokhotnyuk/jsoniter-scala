@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream
 import java.math.MathContext
 import java.nio.charset.StandardCharsets._
 import java.time._
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
@@ -1118,6 +1119,8 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       reader("null").readYear(default) shouldBe default
     }
     "parse Year from a string representation according to ISO-8601 format" in {
+      val yearFormatter = DateTimeFormatter.ofPattern("uuuu")
+
       def check(s: String, x: Year): Unit = {
         reader("\"" + s + "\"").readYear(null) shouldBe x
         reader("\"" + s + "\":").readKeyAsYear() shouldBe x
@@ -1126,11 +1129,7 @@ class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
       check("-999999999", Year.of(Year.MIN_VALUE))
       check("+999999999", Year.of(Year.MAX_VALUE))
       forAll(genYear, minSuccessful(100000)) { (x: Year) =>
-        // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
-        val s = // FIXME: It looks like a bug in JDK that Year.toString serialize years as integer numbers
-          if (x.getValue > 0) (if (x.getValue > 9999) "+" else "") + f"${x.getValue}%04d"
-          else f"-${-x.getValue}%04d"
-        check(s, x)
+        check(x.format(yearFormatter), x)
       }
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {
