@@ -45,8 +45,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
       //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)
-      //FIXME: uPickle serializes double values instead of float
-      //sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
     }
   }
 
