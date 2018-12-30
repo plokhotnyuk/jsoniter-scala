@@ -8,13 +8,13 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
@@ -39,10 +39,10 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Primitives = Json.parse(jsonBytes).as[Primitives](primitivesFormat)
-/* FIXME: uPickle parses Long from JSON string only
+
   @Benchmark
   def readUPickle(): Primitives = read[Primitives](jsonBytes)
-*/
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
@@ -60,8 +60,7 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))
-/* FIXME: uPickle serializes Long as JSON string
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }

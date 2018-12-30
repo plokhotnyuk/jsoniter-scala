@@ -10,14 +10,13 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import scala.annotation.meta.getter
-//import upickle.default._
 
 @transparent case class ByteVal(@(JsonValue @getter) a: Byte) extends AnyVal
 
@@ -58,10 +57,10 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): AnyVals = Json.parse(jsonBytes).as[AnyVals](anyValsFormat)
-/* FIXME: uPickle parses Long from JSON string only
+
   @Benchmark
   def readUPickle(): AnyVals = read[AnyVals](jsonBytes)
-*/
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
@@ -79,8 +78,7 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyValsFormat))
-/* FIXME: uPickle serializes Long as JSON string
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }
