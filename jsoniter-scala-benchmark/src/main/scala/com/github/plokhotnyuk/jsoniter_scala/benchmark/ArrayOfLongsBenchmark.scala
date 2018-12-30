@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.input.JsoniterJavaParser
 import com.jsoniter.output.JsoniterJavaSerializer
@@ -14,7 +15,6 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
-//import upickle.default._
 
 class ArrayOfLongsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -52,10 +52,10 @@ class ArrayOfLongsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Array[Long] = Json.parse(jsonBytes).as[Array[Long]]
-/* FIXME: uPickle parses longs from JSON strings only
+
   @Benchmark
   def readUPickle(): Array[Long] = read[Array[Long]](jsonBytes)
-*/
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
@@ -79,8 +79,7 @@ class ArrayOfLongsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: uPickle serializes longs to JSON strings
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }
