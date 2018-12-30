@@ -12,8 +12,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
-      //FIXME: cannot alter uPickle to store Long as JSON number
-      //benchmark.readUPickle() shouldBe benchmark.obj
+      benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
@@ -26,7 +25,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
       //FIXME: Play-JSON serializes empty collections
       //toString(benchmark.writePlayJson()) shouldBe TwitterAPI.compactJsonString
-      //FIXME: cannot alter uPickle to store Long as JSON number
+      //FIXME: uPickle serializes empty collections
       //toString(benchmark.writeUPickle()) shouldBe TwitterAPI.compactJsonString
     }
   }
