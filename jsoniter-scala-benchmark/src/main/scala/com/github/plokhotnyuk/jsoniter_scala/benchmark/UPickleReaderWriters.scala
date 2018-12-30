@@ -7,10 +7,9 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
-  override implicit val LongWriter: Writer[Long] = new Writer[Long] {
+  implicit val longWriter: Writer[Long] = new Writer[Long] {
     def write0[V](out: Visitor[_, V], v: Long): V = out.visitFloat64String(v.toString, -1)
   }
-
   implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
   implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = {
     val suite = Map(
@@ -89,6 +88,16 @@ object UPickleReaderWriters extends AttributeTagged {
     s"com.github.plokhotnyuk.jsoniter_scala.benchmark.$cs"
 
   override def objectTypeKeyWriteMap(cs: CharSequence): CharSequence = simpleName(cs.toString)
+
+  override implicit def OptionWriter[T: Writer]: Writer[Option[T]] = implicitly[Writer[T]].comap[Option[T]] {
+    case None => null.asInstanceOf[T]
+    case Some(x) => x
+  }
+
+  override implicit def OptionReader[T: Reader]: Reader[Option[T]] = implicitly[Reader[T]].mapNulls {
+    case null => None
+    case x => Some(x)
+  }
 
   private def simpleName(s: String): String = s.substring(Math.max(s.lastIndexOf('.') + 1, 0))
 }

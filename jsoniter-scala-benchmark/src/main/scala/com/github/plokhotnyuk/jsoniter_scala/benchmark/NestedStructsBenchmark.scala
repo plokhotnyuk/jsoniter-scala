@@ -3,24 +3,22 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets._
 
 import com.avsystem.commons.serialization.json._
-import com.avsystem.commons.serialization.{transientDefault, whenAbsent}
+import com.avsystem.commons.serialization.transientDefault
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import JacksonSerDesers._
-//import UPickleReaderWriters._
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
-//import upickle.default._
 
-case class NestedStructs(@transientDefault @whenAbsent(None) n: Option[NestedStructs])
+case class NestedStructs(@transientDefault n: Option[NestedStructs] = None)
 
 class NestedStructsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -56,10 +54,9 @@ class NestedStructsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs](nestedStructsFormat)
 
-/* FIXME: cannot alter uPickle to parse missing optional fields as None
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
-*/
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
@@ -81,8 +78,7 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
-/* FIXME: uPickle serializes empty optional values
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }
