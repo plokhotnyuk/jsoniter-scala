@@ -95,15 +95,11 @@ object UPickleReaderWriters extends AttributeTagged {
 
   override def objectTypeKeyWriteMap(cs: CharSequence): CharSequence = simpleName(cs.toString)
 
-  override implicit def OptionWriter[T: Writer]: Writer[Option[T]] = implicitly[Writer[T]].comap[Option[T]] {
-    case None => null.asInstanceOf[T]
-    case Some(x) => x
-  }
+  override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
+    implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
 
-  override implicit def OptionReader[T: Reader]: Reader[Option[T]] = implicitly[Reader[T]].mapNulls {
-    case null => None
-    case x => Some(x)
-  }
+  override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
+    implicitly[Reader[T]].mapNulls(Option.apply)
 
   private def simpleName(s: String): String = s.substring(Math.max(s.lastIndexOf('.') + 1, 0))
 }
