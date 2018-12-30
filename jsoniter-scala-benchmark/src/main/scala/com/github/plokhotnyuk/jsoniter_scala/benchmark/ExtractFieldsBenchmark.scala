@@ -25,8 +25,6 @@ case class ExtractFields(s: String, i: Int)
 class ExtractFieldsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 100
-  @Param(Array("""[0.0,false,null]"""))
-  var value = """[0.0,false,null]"""
   var obj: ExtractFields = ExtractFields("s", 1)
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
@@ -34,6 +32,7 @@ class ExtractFieldsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
+    val value = """{"number":0.0,"boolean":false,"string":null}"""
     jsonString = zeroHashCodeStrings.take(size).mkString("""{"s":"s","""", s"""":$value,"""", s"""":$value,"i":1}""")
     //jsonString = """{"s":"s","x":""" + "9" * size + ""","i":1}"""
     //jsonString = """{"s":"s","x":"""" + "x" * size + """","i":1}"""
