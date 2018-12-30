@@ -15,7 +15,7 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 
-sealed trait SuitADT
+sealed trait SuitADT extends Product with Serializable
 
 case object Hearts extends SuitADT
 

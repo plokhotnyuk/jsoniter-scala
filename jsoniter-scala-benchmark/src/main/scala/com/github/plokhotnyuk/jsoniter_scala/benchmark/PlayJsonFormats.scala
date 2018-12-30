@@ -10,6 +10,7 @@ import ai.x.play.json.Jsonx
 
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
+import scala.util.Try
 
 object PlayJsonFormats {
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
@@ -20,7 +21,7 @@ object PlayJsonFormats {
         a <- aReads.reads(arr(0))
         b <- bReads.reads(arr(1))
       } yield (a, b)
-      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("Expected array of two elements"))))
+      case _ => JsError("Expected array of two elements")
     }
 
   implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] =
@@ -123,8 +124,9 @@ object PlayJsonFormats {
       "Clubs" -> Clubs
     )
     Format(
-      Reads(js => JsSuccess(js.as[Array[JsString]]
-        .map(s => suite.getOrElse(s.value, throw new IllegalArgumentException("SuitADT"))))),
+      Reads(js => Try(js.as[Array[JsString]]
+        .map(s => suite.getOrElse(s.value, throw new IllegalArgumentException("illegal SuitADT value"))))
+        .fold[JsResult[Array[SuitADT]]](t => JsError(t.getMessage), s => JsSuccess(s))),
       Writes(es => JsArray(es.map(v => JsString(v.toString)))))
   }
   val javaEnumArrayFormat: Format[Array[Suit]] = Format(
@@ -134,8 +136,9 @@ object PlayJsonFormats {
     Reads(js => JsSuccess(js.as[Array[JsString]].map(_.value.charAt(0)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
   val bigIntArrayFormat: Format[Array[BigInt]] = Format(
-    Reads(js => JsSuccess(js.as[Array[JsNumber]]
-      .map(js => js.value.toBigIntExact().getOrElse(throw new NumberFormatException("illegal BigInt value"))))),
+    Reads(js => Try(js.as[Array[JsNumber]]
+      .map(js => js.value.toBigIntExact().getOrElse(throw new NumberFormatException("illegal BigInt value"))))
+      .fold[JsResult[Array[BigInt]]](t => JsError(t.getMessage), s => JsSuccess(s))),
     Writes(es => JsArray(es.map(v => JsNumber(BigDecimal(v))))))
   val monthDayArrayFormat: Format[Array[MonthDay]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => MonthDay.parse(js.value)))),
