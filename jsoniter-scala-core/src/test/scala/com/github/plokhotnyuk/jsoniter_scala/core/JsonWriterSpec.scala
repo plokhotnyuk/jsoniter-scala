@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.IOException
 import java.time._
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
@@ -232,11 +233,10 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Year])))
     }
     "write Year as a string representation according to ISO-8601 format" in {
+      val yearFormatter = DateTimeFormatter.ofPattern("uuuu")
+
       def check(x: Year): Unit = {
-        // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
-        val s = // FIXME: It looks like a bug in JDK that Year.toString serialize years as integer numbers
-          if (x.getValue > 0) (if (x.getValue > 9999) "+" else "") + f"${x.getValue}%04d"
-          else f"-${-x.getValue}%04d"
+        val s = x.format(yearFormatter)
         withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
         withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
       }
