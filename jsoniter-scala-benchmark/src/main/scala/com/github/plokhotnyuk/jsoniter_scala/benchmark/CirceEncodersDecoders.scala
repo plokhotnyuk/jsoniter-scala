@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.time.{MonthDay, Year, ZoneOffset}
-
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.circe._
 import io.circe.generic.extras._
@@ -57,29 +55,36 @@ object CirceEncodersDecoders {
       case NonFatal(_) => Left("Suit")
     }
   }
-  // GeoJSON
-  implicit val featureEncoder: Encoder[Feature] = deriveEncoder
-  implicit val featureDecoder: Decoder[Feature] = deriveDecoder
-  implicit val featureCollectionEncoder: Encoder[FeatureCollection] = deriveEncoder
-  implicit val featureCollectionDecoder: Decoder[FeatureCollection] = deriveDecoder
-  implicit val geoJSONEncoder: Encoder[GeoJSON] = deriveEncoder
-  implicit val geoJSONDecoder: Decoder[GeoJSON] = deriveDecoder
-  implicit val pointEncoder: Encoder[Point] = deriveEncoder
-  implicit val pointDecoder: Decoder[Point] = deriveDecoder
-  implicit val multiPointEncoder: Encoder[MultiPoint] = deriveEncoder
-  implicit val multiPointDecoder: Decoder[MultiPoint] = deriveDecoder
-  implicit val lineStringEncoder: Encoder[LineString] = deriveEncoder
-  implicit val lineStringDecoder: Decoder[LineString] = deriveDecoder
-  implicit val multiLineStringEncoder: Encoder[MultiLineString] = deriveEncoder
-  implicit val multiLineStringDecoder: Decoder[MultiLineString] = deriveDecoder
-  implicit val polygonEncoder: Encoder[Polygon] = deriveEncoder
-  implicit val polygonDecoder: Decoder[Polygon] = deriveDecoder
-  implicit val multiPolygonEncoder: Encoder[MultiPolygon] = deriveEncoder
-  implicit val multiPolygonDecoder: Decoder[MultiPolygon] = deriveDecoder
-  implicit val geometryCollectionEncoder: Encoder[GeometryCollection] = deriveEncoder
-  implicit val geometryCollectionDecoder: Decoder[GeometryCollection] = deriveDecoder
-  implicit val geometryEncoder: Encoder[Geometry] = deriveEncoder
-  implicit val geometryDecoder: Decoder[Geometry] = deriveDecoder
+  implicit val geometryEncoder: Encoder[Geometry] = {
+    implicit val pointEncoder: Encoder[Point] = deriveEncoder
+    implicit val multiPointEncoder: Encoder[MultiPoint] = deriveEncoder
+    implicit val lineStringEncoder: Encoder[LineString] = deriveEncoder
+    implicit val multiLineStringEncoder: Encoder[MultiLineString] = deriveEncoder
+    implicit val polygonEncoder: Encoder[Polygon] = deriveEncoder
+    implicit val multiPolygonEncoder: Encoder[MultiPolygon] = deriveEncoder
+    implicit val geometryCollectionEncoder: Encoder[GeometryCollection] = deriveEncoder
+    deriveEncoder
+  }
+  implicit val geometryDecoder: Decoder[Geometry] = {
+    implicit val pointDecoder: Decoder[Point] = deriveDecoder
+    implicit val multiPointDecoder: Decoder[MultiPoint] = deriveDecoder
+    implicit val lineStringDecoder: Decoder[LineString] = deriveDecoder
+    implicit val multiLineStringDecoder: Decoder[MultiLineString] = deriveDecoder
+    implicit val polygonDecoder: Decoder[Polygon] = deriveDecoder
+    implicit val multiPolygonDecoder: Decoder[MultiPolygon] = deriveDecoder
+    implicit val geometryCollectionDecoder: Decoder[GeometryCollection] = deriveDecoder
+    deriveDecoder
+  }
+  implicit val geoJSONEncoder: Encoder[GeoJSON] = {
+    implicit val featureEncoder: Encoder[Feature] = deriveEncoder
+    implicit val featureCollectionEncoder: Encoder[FeatureCollection] = deriveEncoder
+    deriveEncoder
+  }
+  implicit val geoJSONDecoder: Decoder[GeoJSON] = {
+    implicit val featureDecoder: Decoder[Feature] = deriveDecoder
+    implicit val featureCollectionDecoder: Decoder[FeatureCollection] = deriveDecoder
+    deriveDecoder
+  }
   // Derivation for Enum ADTs borrowed from:
   // https://stackoverflow.com/questions/37011894/circe-instances-for-encoding-decoding-sealed-trait-instances-of-arity-0
   import shapeless._
