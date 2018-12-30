@@ -5,7 +5,7 @@ import io.circe._
 import io.circe.generic.extras._
 import io.circe.generic.extras.semiauto._
 
-import scala.util.control.NonFatal
+import scala.util.Try
 
 object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
@@ -50,11 +50,8 @@ object CirceEncodersDecoders {
   implicit val enumEncoder: Encoder[SuitEnum] = Encoder.enumEncoder(SuitEnum)
   implicit val enumDecoder: Decoder[SuitEnum] = Decoder.enumDecoder(SuitEnum)
   implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap(_.name)
-  implicit val suitDecoder: Decoder[Suit] = Decoder.decodeString.emap { str =>
-    try Right(Suit.valueOf(str)) catch {
-      case NonFatal(_) => Left("Suit")
-    }
-  }
+  implicit val suitDecoder: Decoder[Suit] = Decoder.decodeString
+    .emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply))
   implicit val geometryEncoder: Encoder[Geometry] = {
     implicit val pointEncoder: Encoder[Point] = deriveEncoder
     implicit val multiPointEncoder: Encoder[MultiPoint] = deriveEncoder
