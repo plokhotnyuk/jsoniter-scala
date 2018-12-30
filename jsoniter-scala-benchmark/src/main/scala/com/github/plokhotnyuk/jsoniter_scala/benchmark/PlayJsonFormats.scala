@@ -124,9 +124,8 @@ object PlayJsonFormats {
       "Clubs" -> Clubs
     )
     Format(
-      Reads(js => Try(js.as[Array[JsString]]
-        .map(s => suite.getOrElse(s.value, throw new IllegalArgumentException("illegal SuitADT value"))))
-        .fold[JsResult[Array[SuitADT]]](t => JsError(t.getMessage), s => JsSuccess(s))),
+      Reads(js => Try(js.as[Array[JsString]].map(s => suite(s.value)))
+        .fold[JsResult[Array[SuitADT]]](t => JsError("illegal SuitADT value"), s => JsSuccess(s))),
       Writes(es => JsArray(es.map(v => JsString(v.toString)))))
   }
   val javaEnumArrayFormat: Format[Array[Suit]] = Format(
@@ -136,9 +135,8 @@ object PlayJsonFormats {
     Reads(js => JsSuccess(js.as[Array[JsString]].map(_.value.charAt(0)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
   val bigIntArrayFormat: Format[Array[BigInt]] = Format(
-    Reads(js => Try(js.as[Array[JsNumber]]
-      .map(js => js.value.toBigIntExact().getOrElse(throw new NumberFormatException("illegal BigInt value"))))
-      .fold[JsResult[Array[BigInt]]](t => JsError(t.getMessage), s => JsSuccess(s))),
+    Reads(js => Try(js.as[Array[JsNumber]].map(js => js.value.toBigIntExact().get))
+      .fold[JsResult[Array[BigInt]]](t => JsError("illegal BigInt value"), s => JsSuccess(s))),
     Writes(es => JsArray(es.map(v => JsNumber(BigDecimal(v))))))
   val monthDayArrayFormat: Format[Array[MonthDay]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => MonthDay.parse(js.value)))),
