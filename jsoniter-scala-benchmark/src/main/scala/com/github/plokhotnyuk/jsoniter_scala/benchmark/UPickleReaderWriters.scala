@@ -7,6 +7,9 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
+  implicit val doubleWriter: Writer[Double] = new Writer[Double] {
+    def write0[V](out: Visitor[_, V], v: Double): V = out.visitFloat64String(v.toString, -1)
+  }
   implicit val floatWriter: Writer[Float] = new Writer[Float] {
     def write0[V](out: Visitor[_, V], v: Float): V = out.visitFloat64String(v.toString, -1)
   }

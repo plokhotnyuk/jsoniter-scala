@@ -29,8 +29,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
       //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)
-      //FIXME: UPickle serialize doubles to text representations that are longer than Java's Double.toString (89288845100000 instead of 8.92888451E13)
-      //sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
     }
   }
 
