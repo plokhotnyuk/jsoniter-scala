@@ -615,7 +615,7 @@ class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
       check(-6.9741824662760956E19)
       check(4.3816050601147837E18)
       forAll(minSuccessful(100000)) { (n: Int) =>
-        check(n * Math.pow(10, n & 31))
+        check(n * Math.pow(10, n & 0x1F))
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
         val x = java.lang.Float.floatToRawIntBits(n)
