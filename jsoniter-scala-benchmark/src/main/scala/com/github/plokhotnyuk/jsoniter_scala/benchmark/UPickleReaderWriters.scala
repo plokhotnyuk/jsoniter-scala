@@ -39,7 +39,8 @@ object UPickleReaderWriters extends AttributeTagged {
 
     override def visitUInt64(d: Long, index: Int): BigInt = BigInt(d)
 
-    override def visitFloat64(d: Double, index: Int): BigInt = BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
+    override def visitFloat64(d: Double, index: Int): BigInt =
+      new BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigInt =
       new BigInt(new java.math.BigDecimal(s.toString).toBigIntegerExact)
