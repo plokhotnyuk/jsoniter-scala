@@ -48,14 +48,14 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
   implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW
   implicit val anyValsReaderWriter: ReadWriter[AnyVals] = {
-    implicit val byteValReaderWriter: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
-    implicit val shortValReaderWriter: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
-    implicit val intValReaderWriter: ReadWriter[IntVal] = readwriter[Int].bimap(_.a, IntVal.apply)
-    implicit val longValReaderWriter: ReadWriter[LongVal] = readwriter[Long].bimap(_.a, LongVal.apply)
-    implicit val booleanValReaderWriter: ReadWriter[BooleanVal] = readwriter[Boolean].bimap(_.a, BooleanVal.apply)
-    implicit val doubleValReaderWriter: ReadWriter[DoubleVal] = readwriter[Double].bimap(_.a, DoubleVal.apply)
-    implicit val charValReaderWriter: ReadWriter[CharVal] = readwriter[Char].bimap(_.a, CharVal.apply)
-    implicit val floatValReaderWriter: ReadWriter[FloatVal] = readwriter[Float].bimap(_.a, FloatVal.apply)
+    implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
+    implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
+    implicit val v3: ReadWriter[IntVal] = readwriter[Int].bimap(_.a, IntVal.apply)
+    implicit val v4: ReadWriter[LongVal] = readwriter[Long].bimap(_.a, LongVal.apply)
+    implicit val v5: ReadWriter[BooleanVal] = readwriter[Boolean].bimap(_.a, BooleanVal.apply)
+    implicit val v6: ReadWriter[DoubleVal] = readwriter[Double].bimap(_.a, DoubleVal.apply)
+    implicit val v7: ReadWriter[CharVal] = readwriter[Char].bimap(_.a, CharVal.apply)
+    implicit val v8: ReadWriter[FloatVal] = readwriter[Float].bimap(_.a, FloatVal.apply)
     macroRW
   }
   implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW
