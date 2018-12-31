@@ -8,7 +8,7 @@ import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
   implicit val bigDecimalReader: Reader[BigDecimal] = new SimpleReader[BigDecimal] {
-    override def expectedMsg = "expected number"
+    override val expectedMsg = "expected number"
 
     override def visitString(s: CharSequence, index: Int): BigDecimal =
       new java.math.BigDecimal(s.toString)
@@ -28,10 +28,10 @@ object UPickleReaderWriters extends AttributeTagged {
     def write0[V](out: Visitor[_, V], v: BigDecimal): V = out.visitFloat64String(v.toString, -1)
   }
   implicit val bigIntReader: Reader[BigInt] = new SimpleReader[BigInt] {
-    override def expectedMsg = "expected number"
+    override val expectedMsg = "expected number"
 
     override def visitString(s: CharSequence, index: Int): BigInt =
-      new BigInt(new java.math.BigDecimal(s.toString).toBigInteger)
+      new BigInt(new java.math.BigDecimal(s.toString).toBigIntegerExact)
 
     override def visitInt32(d: Int, index: Int): BigInt = BigInt(d)
 
@@ -39,10 +39,10 @@ object UPickleReaderWriters extends AttributeTagged {
 
     override def visitUInt64(d: Long, index: Int): BigInt = BigInt(d)
 
-    override def visitFloat64(d: Double, index: Int): BigInt = BigInt(d.toLong)
+    override def visitFloat64(d: Double, index: Int): BigInt = BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigInt =
-      new BigInt(new java.math.BigDecimal(s.toString).toBigInteger)
+      new BigInt(new java.math.BigDecimal(s.toString).toBigIntegerExact)
   }
   implicit val bigIntWriter: Writer[BigInt] = new Writer[BigInt] {
     def write0[V](out: Visitor[_, V], v: BigInt): V =
