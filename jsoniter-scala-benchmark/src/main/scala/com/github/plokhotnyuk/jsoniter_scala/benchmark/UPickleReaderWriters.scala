@@ -7,20 +7,7 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
-  def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
-    override val expectedMsg = "expected string"
-
-    override def visitString(s: CharSequence, index: Int) = f(s)
-  }
-
-  def strWriter[V]: Writer[V] = new Writer[V] {
-    def write0[R](out: Visitor[_, R], v: V): R = out.visitString(v.toString, -1)
-  }
-
-  def numWriter[V]: Writer[V] = new Writer[V] {
-    def write0[R](out: Visitor[_, R], v: V): R = out.visitFloat64String(v.toString, -1)
-  }
-
+  override val tagName: String = "type"
   implicit val bigDecimalReader: Reader[BigDecimal] = new SimpleReader[BigDecimal] {
     override val expectedMsg = "expected signed number"
 
@@ -130,17 +117,29 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW[Tweet]
   }
 
-  override def tagName: String = "type"
+  override def objectTypeKeyReadMap(s: CharSequence): CharSequence =
+    s"com.github.plokhotnyuk.jsoniter_scala.benchmark.$s"
 
-  override def objectTypeKeyReadMap(cs: CharSequence): CharSequence =
-    s"com.github.plokhotnyuk.jsoniter_scala.benchmark.$cs"
-
-  override def objectTypeKeyWriteMap(cs: CharSequence): CharSequence = simpleName(cs.toString)
+  override def objectTypeKeyWriteMap(s: CharSequence): CharSequence = simpleName(s.toString)
 
   override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
 
   override implicit def OptionReader[T: Reader]: Reader[Option[T]] = implicitly[Reader[T]].mapNulls(Option.apply)
 
-  private def simpleName(s: String): String = s.substring(Math.max(s.lastIndexOf('.') + 1, 0))
+  private def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
+    override val expectedMsg = "expected string"
+
+    override def visitString(s: CharSequence, index: Int) = f(s)
+  }
+
+  private def strWriter[V]: Writer[V] = new Writer[V] {
+    def write0[R](out: Visitor[_, R], v: V): R = out.visitString(v.toString, -1)
+  }
+
+  private def numWriter[V]: Writer[V] = new Writer[V] {
+    def write0[R](out: Visitor[_, R], v: V): R = out.visitFloat64String(v.toString, -1)
+  }
+
+  private def simpleName(s: String): String = s.substring(s.lastIndexOf('.') + 1)
 }
