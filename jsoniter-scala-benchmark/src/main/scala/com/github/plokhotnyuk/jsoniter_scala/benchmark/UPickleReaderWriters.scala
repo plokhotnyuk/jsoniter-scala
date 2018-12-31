@@ -7,28 +7,37 @@ import upickle.AttributeTagged
 import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
-  implicit val bigDecimalReader: Reader[BigDecimal] = new SimpleReader[BigDecimal] {
-    override val expectedMsg = "expected number"
+  def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
+    override val expectedMsg = "expected string"
 
-    override def visitString(s: CharSequence, index: Int): BigDecimal =
-      new java.math.BigDecimal(s.toString)
+    override def visitString(s: CharSequence, index: Int) = f(s)
+  }
+
+  def strWriter[V]: Writer[V] = new Writer[V] {
+    def write0[R](out: Visitor[_, R], v: V): R = out.visitString(v.toString, -1)
+  }
+
+  def numWriter[V]: Writer[V] = new Writer[V] {
+    def write0[R](out: Visitor[_, R], v: V): R = out.visitFloat64String(v.toString, -1)
+  }
+
+  implicit val bigDecimalReader: Reader[BigDecimal] = new SimpleReader[BigDecimal] {
+    override val expectedMsg = "expected signed number"
+
+    override def visitString(s: CharSequence, index: Int): BigDecimal = new java.math.BigDecimal(s.toString)
 
     override def visitInt32(d: Int, index: Int): BigDecimal = BigDecimal(d)
 
     override def visitInt64(d: Long, index: Int): BigDecimal = BigDecimal(d)
-
-    override def visitUInt64(d: Long, index: Int): BigDecimal = throw new UnsupportedOperationException
 
     override def visitFloat64(d: Double, index: Int): BigDecimal = BigDecimal(d)
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigDecimal =
       visitString(s, index)
   }
-  implicit val bigDecimalWriter: Writer[BigDecimal] = new Writer[BigDecimal] {
-    def write0[V](out: Visitor[_, V], v: BigDecimal): V = out.visitFloat64String(v.toString, -1)
-  }
+  implicit val bigDecimalWriter: Writer[BigDecimal] = numWriter[BigDecimal]
   implicit val bigIntReader: Reader[BigInt] = new SimpleReader[BigInt] {
-    override val expectedMsg = "expected number"
+    override val expectedMsg = "expected signed number"
 
     override def visitString(s: CharSequence, index: Int): BigInt =
       new BigInt(new java.math.BigDecimal(s.toString).toBigIntegerExact)
@@ -37,10 +46,7 @@ object UPickleReaderWriters extends AttributeTagged {
 
     override def visitInt64(d: Long, index: Int): BigInt = BigInt(d)
 
-    override def visitUInt64(d: Long, index: Int): BigInt = throw new UnsupportedOperationException
-
-    override def visitFloat64(d: Double, index: Int): BigInt =
-      new BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
+    override def visitFloat64(d: Double, index: Int): BigInt = new BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigInt =
       visitString(s, index)
@@ -49,25 +55,10 @@ object UPickleReaderWriters extends AttributeTagged {
     def write0[V](out: Visitor[_, V], v: BigInt): V =
       out.visitFloat64String(new java.math.BigDecimal(v.bigInteger).toPlainString, -1)
   }
-  implicit val doubleWriter: Writer[Double] = new Writer[Double] {
-    def write0[V](out: Visitor[_, V], v: Double): V = out.visitFloat64String(v.toString, -1)
-  }
-  implicit val floatWriter: Writer[Float] = new Writer[Float] {
-    def write0[V](out: Visitor[_, V], v: Float): V = out.visitFloat64String(v.toString, -1)
-  }
-  implicit val longWriter: Writer[Long] = new Writer[Long] {
-    def write0[V](out: Visitor[_, V], v: Long): V = out.visitFloat64String(v.toString, -1)
-  }
+  implicit val doubleWriter: Writer[Double] = numWriter[Double]
+  implicit val floatWriter: Writer[Float] = numWriter[Float]
+  implicit val longWriter: Writer[Long] = numWriter[Long]
   implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
-  implicit val suiteADTReaderWriter: ReadWriter[SuitADT] = {
-    val suite = Map(
-      "Hearts" -> Hearts,
-      "Spades" -> Spades,
-      "Diamonds" -> Diamonds,
-      "Clubs" -> Clubs
-    )
-    readwriter[String].bimap(_.toString, s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT")))
-  }
   implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW
   implicit val anyValsReaderWriter: ReadWriter[AnyVals] = {
     implicit val byteValReaderWriter: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
@@ -81,8 +72,6 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
   implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW
-  implicit val durationReaderWriter: ReadWriter[Duration] = readwriter[String].bimap(_.toString, Duration.parse)
-  implicit val instantReaderWriter: ReadWriter[Instant] = readwriter[String].bimap(_.toString, Instant.parse)
   implicit val geoJsonReaderWriter: ReadWriter[GeoJSON] = {
     implicit lazy val v1: ReadWriter[Point] = macroRW
     implicit lazy val v2: ReadWriter[MultiPoint] = macroRW
@@ -102,18 +91,34 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v3: ReadWriter[Rows] = macroRW
     macroRW[DistanceMatrix]
   }
-  implicit val localDateReaderWriter: ReadWriter[LocalDate] = readwriter[String].bimap(_.toString, LocalDate.parse)
-  implicit val localDateTimeReaderWriter: ReadWriter[LocalDateTime] = readwriter[String].bimap(_.toString, LocalDateTime.parse)
-  implicit val localTimeReaderWriter: ReadWriter[LocalTime] = readwriter[String].bimap(_.toString, LocalTime.parse)
   implicit val nestedStructsReaderWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingReqFieldsReaderWriter: ReadWriter[MissingReqFields] = macroRW
-  implicit val monthDayReaderWriter: ReadWriter[MonthDay] = readwriter[String].bimap(_.toString, MonthDay.parse)
-  implicit val offsetDateTimeReaderWriter: ReadWriter[OffsetDateTime] = readwriter[String].bimap(_.toString, OffsetDateTime.parse)
-  implicit val offsetTimeReaderWriter: ReadWriter[OffsetTime] = readwriter[String].bimap(_.toString, OffsetTime.parse)
-  implicit val periodReaderWriter: ReadWriter[Period] = readwriter[String].bimap(_.toString, Period.parse)
   implicit val primitivesReaderWriter: ReadWriter[Primitives] = macroRW
-  implicit val suitEnumReaderWriter: ReadWriter[SuitEnum] = readwriter[String].bimap(_.toString, SuitEnum.withName)
-  implicit val suitReaderWriter: ReadWriter[Suit] = readwriter[String].bimap(_.name, Suit.valueOf)
+  implicit val (durationReader, durationWriter) = (strReader(Duration.parse), strWriter[Duration])
+  implicit val (instantReader, instantWriter) = (strReader(Instant.parse), strWriter[Instant])
+  implicit val (localDateReader, localDateWriter) = (strReader(LocalDate.parse), strWriter[LocalDate])
+  implicit val (localDateTimeReader, localDateTimeWriter) = (strReader(LocalDateTime.parse), strWriter[LocalDateTime])
+  implicit val (localTimeReader, localTimeWriter) = (strReader(LocalTime.parse), strWriter[LocalTime])
+  implicit val (monthDayReader, monthDayWriter) = (strReader(MonthDay.parse), strWriter[MonthDay])
+  implicit val (offsetDateTimeReader, offsetDateTimeWriter) = (strReader(OffsetDateTime.parse), strWriter[OffsetDateTime])
+  implicit val (offsetTimeReader, offsetTimeWriter) = (strReader(OffsetTime.parse), strWriter[OffsetTime])
+  implicit val (periodReader, periodWriter) = (strReader(Period.parse), strWriter[Period])
+  implicit val (suiteADTReader: Reader[SuitADT], suiteADTWriter: Writer[SuitADT]) = {
+    val suite = Map(
+      "Hearts" -> Hearts,
+      "Spades" -> Spades,
+      "Diamonds" -> Diamonds,
+      "Clubs" -> Clubs
+    )
+    (strReader(s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))), strWriter[SuitADT])
+  }
+  implicit val (suitEnumReader, suitEnumWriter) = (strReader(s => SuitEnum.withName(s.toString)), strWriter[SuitEnum])
+  implicit val (suitReader, suitWriter) = (strReader(s => Suit.valueOf(s.toString)), strWriter[Suit])
+  implicit val (yearReader, yearWriter) = (strReader(Year.parse), strWriter[Year])
+  implicit val (yearMonthReader, yearMonthWriter) = (strReader(YearMonth.parse), strWriter[YearMonth])
+  implicit val (zonedDateTimeReader, zonedDateTimeWriter) = (strReader(ZonedDateTime.parse), strWriter[ZonedDateTime])
+  implicit val (zonedIdReader, zonedIdWriter) = (strReader(s => ZoneId.of(s.toString)), strWriter[ZoneId])
+  implicit val (zonedOffsetReader, zonedOffsetWriter) = (strReader(s => ZoneOffset.of(s.toString)), strWriter[ZoneOffset])
   implicit val twitterAPIReaderWriter: ReadWriter[Tweet] = {
     implicit val v1: ReadWriter[Urls] = macroRW
     implicit val v2: ReadWriter[Url] = macroRW
@@ -124,11 +129,6 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v7: ReadWriter[RetweetedStatus] = macroRW
     macroRW[Tweet]
   }
-  implicit val yearReaderWriter: ReadWriter[Year] = readwriter[String].bimap(_.toString, Year.parse)
-  implicit val yearMonthReaderWriter: ReadWriter[YearMonth] = readwriter[String].bimap(_.toString, YearMonth.parse)
-  implicit val zonedDateTimeReaderWriter: ReadWriter[ZonedDateTime] = readwriter[String].bimap(_.toString, ZonedDateTime.parse)
-  implicit val zoneIdReaderWriter: ReadWriter[ZoneId] = readwriter[String].bimap(_.toString, ZoneId.of)
-  implicit val zoneOffsetReaderWriter: ReadWriter[ZoneOffset] = readwriter[String].bimap(_.toString, ZoneOffset.of)
 
   override def tagName: String = "type"
 
@@ -140,8 +140,7 @@ object UPickleReaderWriters extends AttributeTagged {
   override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
 
-  override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    implicitly[Reader[T]].mapNulls(Option.apply)
+  override implicit def OptionReader[T: Reader]: Reader[Option[T]] = implicitly[Reader[T]].mapNulls(Option.apply)
 
   private def simpleName(s: String): String = s.substring(Math.max(s.lastIndexOf('.') + 1, 0))
 }
