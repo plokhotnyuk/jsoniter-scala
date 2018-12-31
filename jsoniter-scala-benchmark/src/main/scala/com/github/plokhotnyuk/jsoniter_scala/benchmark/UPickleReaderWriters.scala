@@ -17,12 +17,12 @@ object UPickleReaderWriters extends AttributeTagged {
 
     override def visitInt64(d: Long, index: Int): BigDecimal = BigDecimal(d)
 
-    override def visitUInt64(d: Long, index: Int): BigDecimal = BigDecimal(d)
+    override def visitUInt64(d: Long, index: Int): BigDecimal = throw new UnsupportedOperationException
 
     override def visitFloat64(d: Double, index: Int): BigDecimal = BigDecimal(d)
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigDecimal =
-      new java.math.BigDecimal(s.toString)
+      visitString(s, index)
   }
   implicit val bigDecimalWriter: Writer[BigDecimal] = new Writer[BigDecimal] {
     def write0[V](out: Visitor[_, V], v: BigDecimal): V = out.visitFloat64String(v.toString, -1)
@@ -37,13 +37,13 @@ object UPickleReaderWriters extends AttributeTagged {
 
     override def visitInt64(d: Long, index: Int): BigInt = BigInt(d)
 
-    override def visitUInt64(d: Long, index: Int): BigInt = BigInt(d)
+    override def visitUInt64(d: Long, index: Int): BigInt = throw new UnsupportedOperationException
 
     override def visitFloat64(d: Double, index: Int): BigInt =
       new BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
 
     override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigInt =
-      new BigInt(new java.math.BigDecimal(s.toString).toBigIntegerExact)
+      visitString(s, index)
   }
   implicit val bigIntWriter: Writer[BigInt] = new Writer[BigInt] {
     def write0[V](out: Visitor[_, V], v: BigInt): V =
