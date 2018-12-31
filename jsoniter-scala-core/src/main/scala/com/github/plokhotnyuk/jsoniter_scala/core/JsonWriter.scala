@@ -2077,25 +2077,25 @@ object JsonWriter {
       val pow5len = pow5.bitLength
       if (i < 31) {
         val s = BigInteger.ONE.shiftLeft(pow5len + 58).divide(pow5).longValue + 1
-        f32Pow5InvSplit(i * 2) = (s & 2147483647).toInt
+        f32Pow5InvSplit(i * 2) = (s & 0x7FFFFFFF).toInt
         f32Pow5InvSplit(i * 2 + 1) = (s >> 31).toInt
       }
       if (i < 47) {
         val s = pow5.shiftRight(pow5len - 61).longValue
-        f32Pow5Split(i * 2) = (s & 2147483647).toInt
+        f32Pow5Split(i * 2) = (s & 0x7FFFFFFF).toInt
         f32Pow5Split(i * 2 + 1) = (s >> 31).toInt
       }
       if (i < 291) {
         val inv = BigInteger.ONE.shiftLeft(pow5len + 121).divide(pow5).add(BigInteger.ONE)
         var j = 0
         while (j < 4) {
-          f64Pow5InvSplit(i * 4 + j) = inv.shiftRight((3 - j) * 31).intValue & 2147483647
+          f64Pow5InvSplit(i * 4 + j) = inv.shiftRight((3 - j) * 31).intValue & 0x7FFFFFFF
           j += 1
         }
       }
       var j = 0
       while (j < 4) {
-        f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).intValue & 2147483647
+        f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).intValue & 0x7FFFFFFF
         j += 1
       }
       pow5 = pow5.shiftLeft(2).add(pow5)
