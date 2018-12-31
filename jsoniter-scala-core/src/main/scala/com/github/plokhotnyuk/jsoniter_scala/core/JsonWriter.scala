@@ -758,7 +758,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeEncodedString(bs, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val b = bs(from)
-      if (b >= 0) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+      if (b >= 0) { // 0aaaaaaa (Latin-1 byte) -> 0aaaaaaa (UTF-8 byte)
         val esc = escapedChars(b)
         if (esc == 0) {
           buf(pos) = b
@@ -768,9 +768,9 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = esc
           writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEncodedString(bs, from + 1, to, writeEscapedUnicode(b, pos, buf), posLim, escapedChars)
-      } else { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xC0 | ((b & 0xFF) >> 6)).toByte
-        buf(pos + 1) = (0x80 | (b & 0x3F)).toByte
+      } else { // 1baaaaaa (Latin-1 byte) -> 1100001b 10aaaaaa (UTF-8 bytes)
+        buf(pos) = ((b >> 6) & 0xC3).toByte
+        buf(pos + 1) = (b & 0xBF).toByte
         writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
       }
     }
