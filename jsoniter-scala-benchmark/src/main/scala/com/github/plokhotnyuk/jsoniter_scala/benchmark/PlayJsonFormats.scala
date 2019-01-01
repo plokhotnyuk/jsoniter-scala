@@ -16,12 +16,11 @@ object PlayJsonFormats {
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
-    Reads[Tuple2[A, B]] {
-      case JsArray(arr) if arr.size == 2 => for {
-        a <- aReads.reads(arr(0))
-        b <- bReads.reads(arr(1))
-      } yield (a, b)
-      case _ => JsError("Expected array of two elements")
+    new Reads[Tuple2[A, B]] {
+      def reads(json: JsValue): JsResult[Tuple2[A, B]] = Try {
+        val JsArray(IndexedSeq(aJson, bJson)) = json
+        aReads.reads(aJson).flatMap(a => bReads.reads(bJson).map(b => (a, b)))
+      }.getOrElse(JsError("Expected array of two elements"))
     }
 
   implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] =
