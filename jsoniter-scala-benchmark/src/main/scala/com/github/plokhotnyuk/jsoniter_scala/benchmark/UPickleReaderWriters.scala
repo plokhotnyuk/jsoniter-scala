@@ -8,40 +8,8 @@ import upickle.core.Visitor
 
 object UPickleReaderWriters extends AttributeTagged {
   override val tagName: String = "type"
-  implicit val bigDecimalReader: Reader[BigDecimal] = new SimpleReader[BigDecimal] {
-    override val expectedMsg = "expected signed number"
-
-    override def visitString(s: CharSequence, index: Int): BigDecimal = new java.math.BigDecimal(s.toString)
-
-    override def visitInt32(d: Int, index: Int): BigDecimal = BigDecimal(d)
-
-    override def visitInt64(d: Long, index: Int): BigDecimal = BigDecimal(d)
-
-    override def visitFloat64(d: Double, index: Int): BigDecimal = BigDecimal(d)
-
-    override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigDecimal =
-      visitString(s, index)
-  }
-  implicit val bigDecimalWriter: Writer[BigDecimal] = numWriter[BigDecimal]
-  implicit val bigIntReader: Reader[BigInt] = new SimpleReader[BigInt] {
-    override val expectedMsg = "expected signed number"
-
-    override def visitString(s: CharSequence, index: Int): BigInt =
-      new BigInt(new java.math.BigDecimal(s.toString).toBigIntegerExact)
-
-    override def visitInt32(d: Int, index: Int): BigInt = BigInt(d)
-
-    override def visitInt64(d: Long, index: Int): BigInt = BigInt(d)
-
-    override def visitFloat64(d: Double, index: Int): BigInt = new BigInt(new java.math.BigDecimal(d).toBigIntegerExact)
-
-    override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): BigInt =
-      visitString(s, index)
-  }
-  implicit val bigIntWriter: Writer[BigInt] = new Writer[BigInt] {
-    def write0[V](out: Visitor[_, V], v: BigInt): V =
-      out.visitFloat64String(new java.math.BigDecimal(v.bigInteger).toPlainString, -1)
-  }
+  implicit val (bigDecimalReader, bigDecimalWriter) = (numReader(s => BigDecimal(s.toString)), numWriter[BigDecimal])
+  implicit val (bigIntReader, bigIntWriter) = (numReader(s => BigInt(s.toString)), numWriter[BigInt])
   implicit val doubleWriter: Writer[Double] = numWriter[Double]
   implicit val floatWriter: Writer[Float] = numWriter[Float]
   implicit val longWriter: Writer[Long] = numWriter[Long]
@@ -135,6 +103,12 @@ object UPickleReaderWriters extends AttributeTagged {
 
   private def strWriter[V]: Writer[V] = new Writer[V] {
     def write0[R](out: Visitor[_, R], v: V): R = out.visitString(v.toString, -1)
+  }
+
+  private def numReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
+    override val expectedMsg = "expected number"
+
+    override def visitFloat64StringParts(s: CharSequence, decIndex: Int, expIndex: Int, index: Int): T = f(s)
   }
 
   private def numWriter[V]: Writer[V] = new Writer[V] {
