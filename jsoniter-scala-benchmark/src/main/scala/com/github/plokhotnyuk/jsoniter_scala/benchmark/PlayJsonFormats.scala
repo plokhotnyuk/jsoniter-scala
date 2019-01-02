@@ -109,8 +109,7 @@ object PlayJsonFormats {
       Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)))))
   }
   val enumArrayFormat: Format[Array[SuitEnum]] = {
-    implicit val v1: Reads[SuitEnum] = Reads.enumNameReads(SuitEnum)
-    implicit val v2: Writes[SuitEnum] = Writes.enumNameWrites
+    implicit val v1: Format[SuitEnum] = Format(Reads.enumNameReads(SuitEnum), Writes.enumNameWrites)
     Format(
       Reads(js => JsSuccess(js.as[Array[JsString]].map(_.as[SuitEnum]))),
       Writes(es => JsArray(es.map(t => Json.toJson(t)))))
