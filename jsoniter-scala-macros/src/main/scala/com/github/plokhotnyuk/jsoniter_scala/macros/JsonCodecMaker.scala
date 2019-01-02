@@ -258,10 +258,9 @@ object JsonCodecMaker {
       def isContainer(tpe: Type): Boolean =
         tpe <:< typeOf[Option[_]] || tpe <:< typeOf[Iterable[_]] || tpe <:< typeOf[Array[_]]
 
-      def collectionCompanion(tpe: Type): Tree = {
+      def collectionCompanion(tpe: Type): Tree =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
-      }
 
       def enumSymbol(tpe: Type): Symbol = {
         val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
@@ -307,10 +306,10 @@ object JsonCodecMaker {
       case class EnumValueInfo(value: Tree, name: String)
 
       def javaEnumValues(tpe: Type): Seq[EnumValueInfo] =
-        tpe.typeSymbol.asClass.knownDirectSubclasses.map { s: Symbol =>
+        tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
           val n = s.fullName
-          EnumValueInfo(q"$s", n.substring(n.lastIndexOf(".") + 1))
-        }.toSeq // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+          EnumValueInfo(q"$s", n.substring(n.lastIndexOf('.') + 1))
+        } // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
         val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
