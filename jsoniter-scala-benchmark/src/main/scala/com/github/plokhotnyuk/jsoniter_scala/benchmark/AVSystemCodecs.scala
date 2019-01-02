@@ -29,8 +29,7 @@ object AVSystemCodecs {
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
-      "Clubs" -> Clubs
-    )
+      "Clubs" -> Clubs)
     transformed[SuitADT, String](_.toString, s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT")))
   }
   implicit val uuidGenCodec: GenCodec[UUID] = transformed(_.toString, UUID.fromString)

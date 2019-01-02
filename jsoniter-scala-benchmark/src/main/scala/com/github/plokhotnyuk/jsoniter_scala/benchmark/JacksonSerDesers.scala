@@ -100,8 +100,7 @@ class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
     "Hearts" -> Hearts,
     "Spades" -> Spades,
     "Diamonds" -> Diamonds,
-    "Clubs" -> Clubs
-  )
+    "Clubs" -> Clubs)
 
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
     if (jp.getCurrentToken != VALUE_STRING) ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]

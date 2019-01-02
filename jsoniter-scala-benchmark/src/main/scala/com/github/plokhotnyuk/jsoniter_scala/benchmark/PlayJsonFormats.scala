@@ -66,7 +66,7 @@ object PlayJsonFormats {
   val openHashMapOfIntsToBooleansFormat: OFormat[mutable.OpenHashMap[Int, Boolean]] = OFormat(
     Reads[mutable.OpenHashMap[Int, Boolean]](js => JsSuccess(mutable.OpenHashMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
     OWrites[mutable.OpenHashMap[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
-  val primitivesFormat: OFormat[Primitives] = Json.format[Primitives]
+  val primitivesFormat: OFormat[Primitives] = Json.format
   val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {
     implicit lazy val v1: OFormat[X] = Json.format
@@ -119,8 +119,7 @@ object PlayJsonFormats {
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
-      "Clubs" -> Clubs
-    )
+      "Clubs" -> Clubs)
     Format(
       Reads(js => Try(js.as[Array[JsString]].map(s => suite(s.value))).fold[JsResult[Array[SuitADT]]](_ => JsError("SuitADT"), s => JsSuccess(s))),
       Writes(es => JsArray(es.map(v => JsString(v.toString)))))

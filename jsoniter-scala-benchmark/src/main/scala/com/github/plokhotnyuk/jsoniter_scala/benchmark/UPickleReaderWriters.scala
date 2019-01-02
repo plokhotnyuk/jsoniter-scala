@@ -63,8 +63,7 @@ object UPickleReaderWriters extends AttributeTagged {
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
-      "Clubs" -> Clubs
-    )
+      "Clubs" -> Clubs)
     (strReader(s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))), strWriter[SuitADT])
   }
   implicit val (suitEnumReader, suitEnumWriter) = (strReader(s => SuitEnum.withName(s.toString)), strWriter[SuitEnum])
