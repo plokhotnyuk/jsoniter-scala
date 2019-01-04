@@ -186,7 +186,8 @@ or runtime error, depending on the version of the compiler, see details here: ht
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
 affected by the exception (after the `o` field)
 
-2. Scalac can fail to compile the `make` macro call with a error like this:
+2. A configuration parameter for the `make` macro is evaluated in compile time only that require no dependency on other 
+code that uses result of the macro's call. In that case the following compilation error will be reported: 
 
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on 
@@ -194,10 +195,14 @@ affected by the exception (after the `o` field)
         to compile all such dependencies before their usage for generation of codecs.
 ```
 
-In some cases workarounds are: 
+But sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for configuration 
+that has not clear dependencies on other code. For that cases workarounds can be simpler than recommended usage of 
+separated submodule: 
 - isolate the `make` macro call(s) in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
+- use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in 
+[this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
 
 3. Scalac can throw the following stack overflow exception on `make` call for ADTs with objects if the call and the ADT 
 definition are enclosed in the definition of some outer class (for more details see: https://github.com/scala/bug/issues/11157):
