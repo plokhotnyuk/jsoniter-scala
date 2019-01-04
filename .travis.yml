@@ -1,4 +1,6 @@
 language: scala
+git:
+  depth: 100
 matrix:
   include:
     - os: linux
@@ -8,6 +10,6 @@ matrix:
       jdk: openjdk8
       scala: 2.12.8
 script:
-  - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -J-Xms2g -J-Xmx2g -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport
+  - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -J-Xms2g -J-Xmx2g -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport mimaReportBinaryIssues
 after_success:
   - bash <(curl -s https://codecov.io/bash)
