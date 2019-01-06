@@ -671,7 +671,7 @@ final class JsonWriter private[jsoniter_scala](
     else {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch < 128 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
+      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
       else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
       else writeEncodedString(s, from, to, pos, posLim - 6, escapedChars)
     }
@@ -682,7 +682,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeEncodedString(s, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
     else {
       val ch1 = s.charAt(from)
-      if (ch1 < 128) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+      if (ch1 < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         val esc = escapedChars(ch1)
         if (esc == 0) {
           buf(pos) = ch1.toByte
@@ -692,7 +692,7 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos + 1) = esc
           writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
         } else writeEncodedString(s, from + 1, to, writeEscapedUnicode(ch1.toByte, pos, buf), posLim, escapedChars)
-      } else if (ch1 < 2048) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
+      } else if (ch1 < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xC0 | (ch1 >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch1 & 0x3F)).toByte
         writeEncodedString(s, from + 1, to, pos + 2, posLim, escapedChars)
@@ -720,7 +720,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (pos >= posLim) writeEscapedString(s, from, to, flushAndGrowBuf(13, pos), limit - 12, escapedChars)
     else {
       val ch1 = s.charAt(from)
-      if (ch1 < 128) {
+      if (ch1 < 0x80) {
         val esc = escapedChars(ch1)
         if (esc == 0) {
           buf(pos) = ch1.toByte
@@ -800,7 +800,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     pos = {
-      if (ch < 128) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+      if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
         val esc = escapedChars(ch)
         if (esc == 0) {
           buf(pos) = ch.toByte
@@ -813,7 +813,7 @@ final class JsonWriter private[jsoniter_scala](
       } else if (config.escapeUnicode) {
         if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
         writeEscapedUnicode(ch, pos, buf)
-      } else if (ch < 2048) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
+      } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
         buf(pos) = (0xC0 | (ch >> 6)).toByte
         buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
         pos + 2
@@ -1426,7 +1426,6 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = (q0 * 3518437209L >> 45).toInt // divide positive int by 10000
-    val r1 = q0 - 10000 * q1
     val q2 = (q1 * 1374389535L >> 37).toInt // divide positive int by 100
     val d1 = ds(q2)
     val d2 = ds(q1 - 100 * q2)
@@ -1434,6 +1433,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = d1.toByte
     buf(pos + 2) = (d2 >> 8).toByte
     buf(pos + 3) = d2.toByte
+    val r1 = q0 - 10000 * q1
     val q3 = (r1 * 1374389535L >> 37).toInt // divide positive int by 100
     val d3 = ds(q3)
     val d4 = ds(r1 - 100 * q3)
@@ -2103,5 +2103,5 @@ object JsonWriter {
     }
   }
 
-  final def isNonEscapedAscii(ch: Char): Boolean = ch < 128 && escapedChars(ch) == 0
+  final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
 }
