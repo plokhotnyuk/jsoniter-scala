@@ -1401,6 +1401,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
       })
     }
+    "don't generate codecs for abstract case classes" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """abstract case class AbstractCaseClass(i: Int)
+          |JsonCodecMaker.make[AbstractCaseClass](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'AbstractCaseClass'."""
+      })
+    }
   }
   "JsonCodecMaker.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {

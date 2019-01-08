@@ -188,10 +188,8 @@ object JsonCodecMaker {
 
       def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
 
-      def isNonAbstractScalaClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && {
-        val classSymbol = tpe.typeSymbol.asClass
-        classSymbol.isCaseClass || (!classSymbol.isJava && !classSymbol.isAbstract)
-      }
+      def isNonAbstractScalaClass(tpe: Type): Boolean =
+        tpe.typeSymbol.isClass && !tpe.typeSymbol.asClass.isAbstract && !tpe.typeSymbol.asClass.isJava
 
       def isSealedClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
@@ -272,8 +270,8 @@ object JsonCodecMaker {
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
       val rootTpe = weakTypeOf[A].dealias
-      val codecConfig =
-        try eval[CodecMakerConfig](config.tree) catch { case _: Throwable => // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+      val codecConfig = // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+        try eval[CodecMakerConfig](config.tree) catch { case _: Throwable =>
           fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
             "It should not depend on code from the same compilation module where the 'make' macro is called. " +
             "Use a separated submodule of the project to compile all such dependencies before their usage for " +
