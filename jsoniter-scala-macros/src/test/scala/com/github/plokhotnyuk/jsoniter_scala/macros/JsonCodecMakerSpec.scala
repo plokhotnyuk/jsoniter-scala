@@ -1326,13 +1326,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}")
     }
-    "don't generate codecs for unsupported classes" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
-      }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
-      })
-    }
     "don't generate codecs for classes without a primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[scala.concurrent.duration.Duration](CodecMakerConfig())""".stripMargin
@@ -1401,12 +1394,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
       })
     }
-    "don't generate codecs for abstract case classes" in {
+    "don't generate codecs for unsupported classes like abstract non-sealed case classes or java.util.Date" in {
       assert(intercept[TestFailedException](assertCompiles {
         """abstract case class AbstractCaseClass(i: Int)
           |JsonCodecMaker.make[AbstractCaseClass](CodecMakerConfig())""".stripMargin
       }).getMessage.contains {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'AbstractCaseClass'."""
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """JsonCodecMaker.make[java.util.Date](CodecMakerConfig())"""
+      }).getMessage.contains {
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
       })
     }
   }
