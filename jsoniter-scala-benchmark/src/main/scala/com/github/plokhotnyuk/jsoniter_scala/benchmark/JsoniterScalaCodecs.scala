@@ -21,9 +21,9 @@ object JsoniterScalaCodecs {
   val bigIntCodec: JsonValueCodec[BigInt] = make(CodecMakerConfig()) // don't define implicit for supported types
   val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make(CodecMakerConfig()) // don't define implicit for supported types
-  val adtCodec: JsonValueCodec[ADTBase] = make(CodecMakerConfig()) // don't define implicit for recursive structures
-  val geoJSONCodec: JsonValueCodec[GeoJSON] = make(CodecMakerConfig()) // don't define implicit for recursive structures
-  val nestedStructsCodec: JsonValueCodec[NestedStructs] = make(CodecMakerConfig()) // don't define implicit for recursive structures
+  implicit val adtCodec: JsonValueCodec[ADTBase] = make(CodecMakerConfig())
+  implicit val geoJSONCodec: JsonValueCodec[GeoJSON] = make(CodecMakerConfig())
+  implicit val nestedStructsCodec: JsonValueCodec[NestedStructs] = make(CodecMakerConfig())
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make(CodecMakerConfig())
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig())
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make(CodecMakerConfig())
