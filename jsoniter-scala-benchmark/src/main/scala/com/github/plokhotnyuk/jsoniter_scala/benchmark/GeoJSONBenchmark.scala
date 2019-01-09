@@ -17,7 +17,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
 class GeoJSONBenchmark extends CommonParams {
-  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes1)(geoJSONCodec)
+  var obj: GeoJSON = readFromArray[GeoJSON](jsonBytes1)
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes1.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
@@ -30,7 +30,7 @@ class GeoJSONBenchmark extends CommonParams {
   def readJacksonScala(): GeoJSON = jacksonMapper.readValue[GeoJSON](jsonBytes1)
 
   @Benchmark
-  def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes1)(geoJSONCodec)
+  def readJsoniterScala(): GeoJSON = readFromArray[GeoJSON](jsonBytes1)
 
   @Benchmark
   def readPlayJson(): GeoJSON = Json.parse(jsonBytes1).as[GeoJSON](geoJSONFormat)
@@ -48,10 +48,10 @@ class GeoJSONBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(geoJSONCodec)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(geoJSONCodec)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(geoJSONFormat))

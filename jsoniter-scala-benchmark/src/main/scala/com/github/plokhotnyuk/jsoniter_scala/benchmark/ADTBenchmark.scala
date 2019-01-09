@@ -50,7 +50,7 @@ class ADTBenchmark extends CommonParams {
   def readJacksonScala(): ADTBase = jacksonMapper.readValue[ADTBase](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): ADTBase = readFromArray[ADTBase](jsonBytes)(adtCodec)
+  def readJsoniterScala(): ADTBase = readFromArray[ADTBase](jsonBytes)
 
   @Benchmark
   def readPlayJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)
@@ -68,10 +68,10 @@ class ADTBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(adtCodec)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(adtCodec)
+  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(adtFormat))

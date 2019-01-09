@@ -31,7 +31,7 @@ class NestedStructsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = (1 to size).foldLeft(NestedStructs(None))((n, _) => NestedStructs(Some(n)))
-    jsonBytes = writeToArray(obj)(nestedStructsCodec)
+    jsonBytes = writeToArray(obj)
     jsonString = new String(jsonBytes, UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
@@ -49,7 +49,7 @@ class NestedStructsBenchmark extends CommonParams {
   def readJacksonScala(): NestedStructs = jacksonMapper.readValue[NestedStructs](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): NestedStructs = readFromArray[NestedStructs](jsonBytes)(nestedStructsCodec)
+  def readJsoniterScala(): NestedStructs = readFromArray[NestedStructs](jsonBytes)
 
   @Benchmark
   def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs](nestedStructsFormat)
@@ -70,11 +70,11 @@ class NestedStructsBenchmark extends CommonParams {
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)(nestedStructsCodec)
+  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int =
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(nestedStructsCodec)
+    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
