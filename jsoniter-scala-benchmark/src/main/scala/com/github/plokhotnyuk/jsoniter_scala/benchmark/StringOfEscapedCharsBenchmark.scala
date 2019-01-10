@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.lang.Character._
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.core.JsonGenerator

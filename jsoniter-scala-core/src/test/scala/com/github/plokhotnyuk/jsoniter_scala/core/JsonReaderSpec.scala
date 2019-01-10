@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.ByteArrayInputStream
 import java.math.MathContext
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.UUID

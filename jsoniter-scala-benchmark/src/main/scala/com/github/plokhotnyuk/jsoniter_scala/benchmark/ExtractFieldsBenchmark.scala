@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 //import java.io.{File, FileInputStream, FileOutputStream}
 //import java.nio.channels.FileChannel
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets.UTF_8
 //import java.nio.file.StandardOpenOption._
 //import java.nio.file.{Path, Paths}
 

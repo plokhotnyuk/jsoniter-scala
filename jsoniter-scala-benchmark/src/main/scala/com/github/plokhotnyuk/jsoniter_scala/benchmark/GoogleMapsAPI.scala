@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.collection.immutable.IndexedSeq
 import scala.reflect.io.Streamable

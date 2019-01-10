@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.{IOException, OutputStream}
 import java.math.BigInteger
+import java.nio.charset.StandardCharsets
 import java.nio.{BufferOverflowException, ByteBuffer}
 import java.time._
 import java.util.UUID
@@ -456,6 +457,16 @@ final class JsonWriter private[jsoniter_scala](
     } finally {
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
+
+  private[jsoniter_scala] def writeStringWithoutBufReallocation[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String = {
+    this.config = config
+    count = 0
+    indention = 0
+    comma = false
+    disableBufGrowing = false
+    codec.encodeValue(x, this)
+    new String(buf, 0, count, StandardCharsets.UTF_8)
+  } // used only once with a new allocated writer, so reallocation of `buf` is not required
 
   private[jsoniter_scala] def write[@sp A](codec: JsonValueCodec[A], x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig): Int = {
     val currBuf = this.buf

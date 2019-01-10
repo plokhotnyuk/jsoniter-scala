@@ -1,7 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala
 
 import java.io.{InputStream, OutputStream}
-import java.nio.ByteBuffer
+import java.nio.{BufferOverflowException, ByteBuffer}
+import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.{specialized => sp}
 
@@ -152,6 +153,30 @@ package object core {
     readerPool.get.read(codec, bbuf, config)
 
   /**
+    * Deserialize JSON content from a string into a value of given `A` type with
+    * specified parsing options or with defaults that maximize description of error.
+    *
+    * While it much less efficient than parsing from a byte array using pooled readers but it can be safely used
+    * internally in custom codecs.
+    *
+    * @tparam A type of the value to parse
+    * @param s a value of string which will be parsed
+    * @param config a parsing configuration
+    * @param codec a codec for the given `A` type
+    * @return a successfully parsed value
+    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                            the input JSON structure does not match structure that expected for the result type,
+    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws NullPointerException if the `codec`, `s` or `config` is null
+    */
+  final def readFromString[A](s: String, config: ReaderConfig = readerConfig)(implicit codec: JsonValueCodec[A]): A = {
+    val buf = s.getBytes(UTF_8)
+    val len = buf.length
+    val reader = new JsonReader(buf = buf, charBuf = new Array[Char](len >> 4), tail = len, config = config)
+    codec.decodeValue(reader, codec.nullValue)
+  }
+
+  /**
     * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
     * that specified by provided configuration options.
     *
@@ -227,4 +252,20 @@ package object core {
   final def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = writerConfig)
                                     (implicit codec: JsonValueCodec[A]): Unit =
     writerPool.get.write(codec, x, bbuf, config)
+
+  /**
+    * Serialize the `x` argument to a string in JSON format, that specified by provided configuration options.
+    *
+    * While it much less efficient than serialization to a byte array using pooled writers but it can be safely used
+    * internally in custom codecs.
+    *
+    * @tparam A type of value to serialize
+    * @param x the value to serialize
+    * @param config a serialization configuration
+    * @param codec a codec for the given value
+    * @return a string with `x` serialized to JSON
+    * @throws NullPointerException if the `codec` or `config` is null
+    */
+  final def writeToString[@sp A](x: A, config: WriterConfig = writerConfig)(implicit codec: JsonValueCodec[A]): String =
+    new JsonWriter(buf = new Array[Byte](16), limit = 16).writeStringWithoutBufReallocation(codec, x, config)
 }

@@ -454,6 +454,32 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":1}""")
       verifyDeserError(codecOfEnums, """{"lt":"GPS"}""", "illegal number, offset: 0x00000006")
     }
+    "serialize and deserialize types as a JSON object or a JSON string using custom value codecs" in {
+      val customCodecOfStandardTypes: JsonValueCodec[StandardTypes] =
+        new JsonValueCodec[StandardTypes] {
+          val nullValue: StandardTypes = null
+
+          def decodeValue(in: JsonReader, default: StandardTypes): StandardTypes =
+            (in.nextToken(): @switch) match {
+              case '{' =>
+                in.rollbackToken()
+                codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue)
+              case '"' =>
+                in.rollbackToken()
+                readFromString(in.readString(null))(codecOfStandardTypes)
+              case _ =>
+                in.decodeError("expected '{' or '\"'")
+            }
+
+          def encodeValue(x: StandardTypes, out: JsonWriter): Unit =
+            x.s match {
+              case "VVV" => codecOfStandardTypes.encodeValue(x, out)
+              case "XXX" => out.writeVal(writeToString(x)(codecOfStandardTypes))
+            }
+        }
+      verifySerDeser(customCodecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":1.1}""")
+      verifySerDeser(customCodecOfStandardTypes, standardTypes.copy(s = "XXX"), """"{\"s\":\"XXX\",\"bi\":1,\"bd\":1.1}"""")
+    }
     "serialize and deserialize types using a custom key codec and a custom ordering for map keys" in {
       implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
         override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
