@@ -1163,6 +1163,16 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.adtLeafClassNameMapper' function
           |should be unique.""".stripMargin.replace('\n', ' ')
       })
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait Data
+          |case class Data1(i: Int, s: String) extends Data
+          |case object Data1 extends Data
+          |val c = make[Data](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Duplicated discriminator defined for ADT base 'Data': 'Data1'. Values for leaf classes of ADT that are
+          |returned by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.adtLeafClassNameMapper'
+          |function should be unique.""".stripMargin.replace('\n', ' ')
+      })
     }
     "don't generate codec for case classes with fields that the same name as discriminator name" in {
       assert(intercept[TestFailedException](assertCompiles {
