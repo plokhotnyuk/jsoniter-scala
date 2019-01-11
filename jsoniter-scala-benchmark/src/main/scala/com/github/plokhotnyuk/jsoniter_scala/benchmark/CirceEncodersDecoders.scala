@@ -10,12 +10,8 @@ object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
-  implicit val (adtDecoder: Decoder[ADTBase], adtEncoder: Encoder[ADTBase]) = {
-    implicit val (d1, e1) = (deriveDecoder[X], deriveEncoder[X])
-    implicit val (d2, e2) = (deriveDecoder[Y], deriveEncoder[Y])
-    implicit val (d3, e3) = (deriveDecoder[Z], deriveEncoder[Z])
+  implicit val (adtDecoder: Decoder[ADTBase], adtEncoder: Encoder[ADTBase]) =
     (deriveDecoder[ADTBase], deriveEncoder[ADTBase])
-  }
   implicit val (anyValsDecoder: Decoder[AnyVals], anyValsEncoder: Encoder[AnyVals]) = {
     implicit val (d1, e1) = (deriveUnwrappedDecoder[ByteVal], deriveUnwrappedEncoder[ByteVal])
     implicit val (d2, e2) = (deriveUnwrappedDecoder[ShortVal], deriveUnwrappedEncoder[ShortVal])
@@ -34,18 +30,8 @@ object CirceEncodersDecoders {
     .emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply))
   implicit val (suitADTDecoder, suitADTEncoder) = (deriveEnumerationDecoder[SuitADT], deriveEnumerationEncoder[SuitADT])
   implicit val (suitEnumDecoder, suitEnumEncoder) = (Decoder.enumDecoder(SuitEnum), Encoder.enumEncoder(SuitEnum))
-  implicit val (geometryDecoder: Decoder[Geometry], geometryEncoder: Encoder[Geometry]) = {
-    implicit val (d1, e1) = (deriveDecoder[Point], deriveEncoder[Point])
-    implicit val (d2, e2) = (deriveDecoder[MultiPoint], deriveEncoder[MultiPoint])
-    implicit val (d3, e3) = (deriveDecoder[LineString], deriveEncoder[LineString])
-    implicit val (d4, e4) = (deriveDecoder[MultiLineString], deriveEncoder[MultiLineString])
-    implicit val (d5, e5) = (deriveDecoder[MultiPolygon], deriveEncoder[MultiPolygon])
-    implicit val (d6, e6) = (deriveDecoder[GeometryCollection], deriveEncoder[GeometryCollection])
+  implicit val (geometryDecoder: Decoder[Geometry], geometryEncoder: Encoder[Geometry]) =
     (deriveDecoder[Geometry], deriveEncoder[Geometry])
-  }
-  implicit val (geoJSONDecoder: Decoder[GeoJSON], geoJSONEncoder: Encoder[GeoJSON]) = {
-    implicit val (d1, e1) = (deriveDecoder[Feature], deriveEncoder[Feature])
-    implicit val (d2, e2) = (deriveDecoder[FeatureCollection], deriveEncoder[FeatureCollection])
+  implicit val (geoJSONDecoder: Decoder[GeoJSON], geoJSONEncoder: Encoder[GeoJSON]) =
     (deriveDecoder[GeoJSON], deriveEncoder[GeoJSON])
-  }
 }
