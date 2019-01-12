@@ -25,9 +25,9 @@ object CirceEncodersDecoders {
   }
   implicit val bigIntEncoder: Encoder[BigInt] = Encoder.encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
-  implicit val suitEncoder: Encoder[Suit] = Encoder.encodeString.contramap(_.name)
-  implicit val suitDecoder: Decoder[Suit] = Decoder.decodeString
-    .emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply))
+  implicit val (suitDecoder: Decoder[Suit], suitEncoder: Encoder[Suit]) =
+    (Decoder.decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
+      Encoder.encodeString.contramap[Suit](_.name))
   implicit val (suitADTDecoder, suitADTEncoder) = (deriveEnumerationDecoder[SuitADT], deriveEnumerationEncoder[SuitADT])
   implicit val (suitEnumDecoder, suitEnumEncoder) = (Decoder.enumDecoder(SuitEnum), Encoder.enumEncoder(SuitEnum))
   implicit val (geometryDecoder: Decoder[Geometry], geometryEncoder: Encoder[Geometry]) =
