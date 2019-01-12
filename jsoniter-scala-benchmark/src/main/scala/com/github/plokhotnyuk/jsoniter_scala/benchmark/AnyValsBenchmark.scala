@@ -37,7 +37,7 @@ import scala.annotation.meta.getter
 case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 
 class AnyValsBenchmark extends CommonParams {
-  //FIXME: 2.5 is for hiding of Play-JSON and AVSystem GenCodec bugs in serialization of floats as doubles: 2.2 -> 2.200000047683716
+  //FIXME: 2.5 is for hiding of Play-JSON bug in serialization of floats as doubles: 2.2 -> 2.200000047683716
   var obj: AnyVals = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(1.1), FloatVal(2.5f))
   var jsonString: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
