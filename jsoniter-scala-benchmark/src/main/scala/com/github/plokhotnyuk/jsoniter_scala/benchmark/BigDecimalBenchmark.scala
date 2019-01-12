@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.math.MathContext
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
@@ -31,10 +32,11 @@ class BigDecimalBenchmark extends CommonParams {
 
   //FIXME: it affects results but required to avoid misleading results due internal caching of the string representation
   private def obj: BigDecimal = BigDecimal(sourceObj.bigDecimal.unscaledValue(), sourceObj.bigDecimal.scale())
-/* FIXME: AVSystem GenCodec: don't know how to tune precision for parsing of BigDecimal values
+
   @Benchmark
-  def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8))
-*/
+  def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8),
+    JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /*WARNING: don't do this for open-system*/))
+
   @Benchmark
   def readCirce(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*

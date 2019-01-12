@@ -2,8 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-//import com.avsystem.commons.serialization.json._
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -14,50 +15,51 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 //import upickle.default._
 
-import scala.collection.mutable.OpenHashMap
+import scala.collection.mutable
 
 class OpenHashMapOfIntsToBooleansBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 1000
-  var obj: OpenHashMap[Int, Boolean] = _
+  var obj: mutable.OpenHashMap[Int, Boolean] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {
-    obj = OpenHashMap((1 to size).map { i =>
+    obj = mutable.OpenHashMap((1 to size).map { i =>
       (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 0x1) == 0)
     }:_*)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
-/* FIXME: AVSystem GenCodec doesn't support parsing of OpenHashMap
+
   @Benchmark
-  def readAVSystemGenCodec(): OpenHashMap[Int, Boolean] = JsonStringInput.read[OpenHashMap[Int, Boolean]](new String(jsonBytes, UTF_8))
-*/
+  def readAVSystemGenCodec(): mutable.OpenHashMap[Int, Boolean] =
+    JsonStringInput.read[mutable.OpenHashMap[Int, Boolean]](new String(jsonBytes, UTF_8))
 /* FIXME: Circe doesn't support parsing of OpenHashMap
   @Benchmark
-  def readCirce(): OpenHashMap[Int, Boolean] = decode[OpenHashMap[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def readCirce(): mutable.OpenHashMap[Int, Boolean] =
+    decode[mutable.OpenHashMap[Int, Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
 /* FIXME: Jackson doesn't support parsing of OpenHashMap
   @Benchmark
-  def readJacksonScala(): OpenHashMap[Int, Boolean] = jacksonMapper.readValue[OpenHashMap[Int, Boolean]](jsonBytes)
+  def readJacksonScala(): mutable.OpenHashMap[Int, Boolean] =
+    jacksonMapper.readValue[mutable.OpenHashMap[Int, Boolean]](jsonBytes)
 */
   @Benchmark
-  def readJsoniterScala(): OpenHashMap[Int, Boolean] = readFromArray[OpenHashMap[Int, Boolean]](jsonBytes)
+  def readJsoniterScala(): mutable.OpenHashMap[Int, Boolean] = readFromArray[mutable.OpenHashMap[Int, Boolean]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): OpenHashMap[Int, Boolean] = Json.parse(jsonBytes).as[OpenHashMap[Int, Boolean]](openHashMapOfIntsToBooleansFormat)
+  def readPlayJson(): mutable.OpenHashMap[Int, Boolean] =
+    Json.parse(jsonBytes).as[mutable.OpenHashMap[Int, Boolean]](openHashMapOfIntsToBooleansFormat)
 /* FIXME: uPickle doesn't support parsing of OpenHashMap
   @Benchmark
-  def readUPickle(): OpenHashMap[Int, Boolean] = read[OpenHashMap[Int, Boolean]](jsonBytes)
+  def readUPickle(): mutable.OpenHashMap[Int, Boolean] = read[mutable.OpenHashMap[Int, Boolean]](jsonBytes)
 */
-/* FIXME: AVSystem GenCodec doesn't support serialization of OpenHashMap
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-*/
 /* FIXME: Circe doesn't support serialization of OpenHashMap
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

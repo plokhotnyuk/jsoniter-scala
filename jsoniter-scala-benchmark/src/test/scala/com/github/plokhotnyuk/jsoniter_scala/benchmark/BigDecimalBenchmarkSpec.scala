@@ -7,8 +7,7 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
   
   "BigDecimalBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystem GenCodec: don't know how to tune precision for parsing of BigDecimal values
-      //benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       //FIXME: dsl-json cannot find decoder for BigDecimal
       //benchmark.readDslJsonScala() shouldBe benchmark.sourceObj

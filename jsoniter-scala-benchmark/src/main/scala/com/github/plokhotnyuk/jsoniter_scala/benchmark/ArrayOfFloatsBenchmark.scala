@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-//import com.avsystem.commons.serialization.json._
+import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -32,10 +32,9 @@ class ArrayOfFloatsBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
-/* FIXME: AVSystem GenCodec parses 1.199999988079071 as 1.2f instead of 1.1999999f
+
   @Benchmark
   def readAVSystemGenCodec(): Array[Float] = JsonStringInput.read[Array[Float]](new String(jsonBytes, UTF_8))
-*/
 /* FIXME: circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def readCirce(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
@@ -60,10 +59,10 @@ class ArrayOfFloatsBenchmark extends CommonParams {
 
   @Benchmark
   def readUPickle(): Array[Float] = read[Array[Float]](jsonBytes)
-/* FIXME: AVSystem GenCodec serializes double values instead of float
+
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 

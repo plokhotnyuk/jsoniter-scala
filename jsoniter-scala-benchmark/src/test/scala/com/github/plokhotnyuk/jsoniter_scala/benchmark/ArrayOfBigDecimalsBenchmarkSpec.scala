@@ -7,8 +7,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
   
   "ArrayOfBigDecimalsBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystem GenCodec: don't know how to tune precision for parsing of BigDecimal values
-      //benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       //FIXME: dsl-json cannot find decoder for array of BigDecimal
       //benchmark.readDslJsonScala() shouldBe benchmark.sourceObj
@@ -19,7 +18,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readUPickle() shouldBe benchmark.sourceObj
     }
     "serialize properly" in {
-      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeAVSystemGenCodec()).toUpperCase shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       //FIXME: dsl-json cannot find encoder for array of BigDecimal
       //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString

@@ -7,8 +7,7 @@ class OpenHashMapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
   
   "OpenHashMapOfIntsToBooleansBenchmark" should {
     "deserialize properly" in {
-      //FIXME: AVSystemGenCodec doesn't support parsing of OpenHashMap
-      //benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
+      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Circe doesn't support parsing of OpenHashMap
       //benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: Jackson cannot deserialize OpenHashMap and throws java.lang.ClassCastException: scala.collection.mutable.HashMap cannot be cast to scala.collection.mutable.OpenHashMap
@@ -19,8 +18,7 @@ class OpenHashMapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
-      //FIXME: AVSystem GenCodec doesn't support serialization of OpenHashMap
-      //toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe doesn't support serialization of OpenHashMap
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
