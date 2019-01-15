@@ -323,7 +323,7 @@ object JsonCodecMaker {
         } else {
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
             cq"$hash => ${genReadCollisions(fs)}"
-          }.toSeq :+ cq"_ => $unexpectedEnumValueHandler"
+          } :+ cq"_ => $unexpectedEnumValueHandler"
           q"""(in.charBufToHashCode(l): @switch) match {
                 case ..$cases
               }"""
@@ -705,9 +705,9 @@ object JsonCodecMaker {
           else {
             val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
             val reqSet = required.toSet
-            val reqMasks = classInfo.fields.grouped(32).map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
+            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
               acc | (if (reqSet(f.mappedName)) 1 << i else 0)
-            }).toSeq
+            })
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
               if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(Integer.numberOfTrailingZeros($n & $m)))"
@@ -741,7 +741,7 @@ object JsonCodecMaker {
           } else {
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
               cq"$hash => ${genReadCollisions(fs)}"
-            }.toSeq :+ cq"_ => $unexpectedFieldHandler"
+            } :+ cq"_ => $unexpectedFieldHandler"
             q"""(in.charBufToHashCode(l): @switch) match {
                     case ..$cases
                 }"""
@@ -990,7 +990,7 @@ object JsonCodecMaker {
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
                 val checkNameAndReadValue = genReadCollisions(ts)
                 cq"$hash => $checkNameAndReadValue"
-              }.toSeq
+              }
               q"""(in.charBufToHashCode(l): @switch) match {
                     case ..$cases
                     case _ => $discriminatorError
@@ -1252,13 +1252,13 @@ object JsonCodecMaker {
     i != len
   }
 
-  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): mutable.Map[K, collection.Seq[A]] = {
+  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] = {
     val m = mutable.LinkedHashMap.empty[K, collection.Seq[A]].withDefault(_ => new ArrayBuffer[A])
     xs.foreach { x =>
       val k = f(x)
       m(k) = m(k) :+ x
     }
-    m
+    m.toSeq
   }
 
   private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = {
