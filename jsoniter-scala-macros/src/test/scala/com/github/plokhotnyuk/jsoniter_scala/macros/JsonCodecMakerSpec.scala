@@ -1192,19 +1192,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(implicitRootCodec, 1, "1")
     }
     "serialize and deserialize case classes with Java time types" in {
-      case class JavaTimeTypes(d: Duration, i: Instant, ld: LocalDate,
-                               ldt: LocalDateTime, lt: LocalTime, md: MonthDay,
-                               odt: OffsetDateTime, ot: OffsetTime, p: Period,
-                               y: Year, ym: YearMonth, zdt: ZonedDateTime,
-                               zi: ZoneId, zo: ZoneOffset)
+      case class JavaTimeTypes(dow: DayOfWeek, d: Duration, i: Instant, ld: LocalDate, ldt: LocalDateTime,
+                               lt: LocalTime, m: Month, md: MonthDay, odt: OffsetDateTime, ot: OffsetTime, p: Period,
+                               y: Year, ym: YearMonth, zdt: ZonedDateTime, zi: ZoneId, zo: ZoneOffset)
 
       verifySerDeser(make[JavaTimeTypes](CodecMakerConfig()),
         obj = JavaTimeTypes(
+          dow = DayOfWeek.FRIDAY,
           d = Duration.parse("PT10H30M"),
           i = Instant.parse("2007-12-03T10:15:30.001Z"),
           ld = LocalDate.parse("2007-12-03"),
           ldt = LocalDateTime.parse("2007-12-03T10:15:30"),
           lt = LocalTime.parse("10:15:30"),
+          m = Month.APRIL,
           md = MonthDay.parse("--12-03"),
           odt = OffsetDateTime.parse("2007-12-03T10:15:30+01:00"),
           ot = OffsetTime.parse("10:15:30+01:00"),
@@ -1216,12 +1216,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           zo = ZoneOffset.of("+01:00")
         ),
         json =
-          """{"d":"PT10H30M","i":"2007-12-03T10:15:30.001Z","ld":"2007-12-03","ldt":"2007-12-03T10:15:30",""" +
-          """"lt":"10:15:30","md":"--12-03","odt":"2007-12-03T10:15:30+01:00","ot":"10:15:30+01:00",""" +
+          """{"dow":"FRIDAY","d":"PT10H30M","i":"2007-12-03T10:15:30.001Z","ld":"2007-12-03","ldt":"2007-12-03T10:15:30",""" +
+          """"lt":"10:15:30","m":"APRIL","md":"--12-03","odt":"2007-12-03T10:15:30+01:00","ot":"10:15:30+01:00",""" +
           """"p":"P1Y2M25D","y":"2007","ym":"2007-12","zdt":"2007-12-03T10:15:30+01:00[Europe/Paris]",""" +
           """"zi":"Europe/Paris","zo":"+01:00"}""")
     }
     "serialize and deserialize top-level Java time types" in {
+      verifySerDeser(make[DayOfWeek](CodecMakerConfig()), DayOfWeek.FRIDAY, "\"FRIDAY\"")
       verifySerDeser(make[Duration](CodecMakerConfig()), Duration.parse("PT10H30M"), "\"PT10H30M\"")
       verifySerDeser(make[Instant](CodecMakerConfig()),
         Instant.parse("2007-12-03T10:15:30.001Z"), "\"2007-12-03T10:15:30.001Z\"")
@@ -1229,6 +1230,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[LocalDateTime](CodecMakerConfig()),
         LocalDateTime.parse("2007-12-03T10:15:30"), "\"2007-12-03T10:15:30\"")
       verifySerDeser(make[LocalTime](CodecMakerConfig()), LocalTime.parse("10:15:30"), "\"10:15:30\"")
+      verifySerDeser(make[Month](CodecMakerConfig()), Month.APRIL, "\"APRIL\"")
       verifySerDeser(make[MonthDay](CodecMakerConfig()), MonthDay.parse("--12-03"), "\"--12-03\"")
       verifySerDeser(make[OffsetDateTime](CodecMakerConfig()),
         OffsetDateTime.parse("2007-12-03T10:15:30+01:00"), "\"2007-12-03T10:15:30+01:00\"")
@@ -1242,6 +1244,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[ZoneOffset](CodecMakerConfig()), ZoneOffset.of("+01:00"), "\"+01:00\"")
     }
     "serialize and deserialize Java time types as key in maps" in {
+      verifySerDeser(make[Map[DayOfWeek, Int]](CodecMakerConfig()),
+        Map(DayOfWeek.FRIDAY -> 0), "{\"FRIDAY\":0}")
       verifySerDeser(make[Map[Duration, Int]](CodecMakerConfig()),
         Map(Duration.parse("PT10H30M") -> 0), "{\"PT10H30M\":0}")
       verifySerDeser(make[Map[Instant, Int]](CodecMakerConfig()),
@@ -1252,6 +1256,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         Map(LocalDateTime.parse("2007-12-03T10:15:30") -> 0), "{\"2007-12-03T10:15:30\":0}")
       verifySerDeser(make[Map[LocalTime, Int]](CodecMakerConfig()),
         Map(LocalTime.parse("10:15:30") -> 0), "{\"10:15:30\":0}")
+      verifySerDeser(make[Map[Month, Int]](CodecMakerConfig()),
+        Map(Month.APRIL -> 0), "{\"APRIL\":0}")
       verifySerDeser(make[Map[MonthDay, Int]](CodecMakerConfig()),
         Map(MonthDay.parse("--12-03") -> 0), "{\"--12-03\":0}")
       verifySerDeser(make[Map[OffsetDateTime, Int]](CodecMakerConfig()),
