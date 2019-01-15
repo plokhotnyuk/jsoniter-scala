@@ -22,7 +22,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: DSL-JSON parses 7.006492321624086e-46 as Float.Infinity
+      //FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readDslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readJacksonScala() shouldBe benchmark.obj
