@@ -1276,9 +1276,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[Map[ZoneOffset, Int]](CodecMakerConfig()),
         Map(ZoneOffset.of("+01:00") -> 0), "{\"+01:00\":0}")
     }
-    "serialize and deserialize stringified top-level Java time types" in {
-      verifySerDeser(make[Year](CodecMakerConfig(isStringified = true)), Year.of(2008), "\"2008\"")
-    }
     "serialize and deserialize case class with aliased typed methods" in {
       type I = Int
       type S = String
