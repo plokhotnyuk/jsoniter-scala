@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
   private val benchmark: ArrayOfFloatsBenchmark = new ArrayOfFloatsBenchmark {
     private val values: Array[String] = Array(
+      "7.038531e-26",
       "1.199999988079071",
       "3.4028235677973366e38",
       "7.006492321624086e-46"
@@ -20,7 +21,7 @@ class ArrayOfFloatsBenchmarkSpec extends BenchmarkSpecBase {
   "ArrayOfFloatsBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
+      //FIXME: Circe parses 7.038531e-26 as 7.0385313e-26
       //benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.readDslJsonScala() shouldBe benchmark.obj
