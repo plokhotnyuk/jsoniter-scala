@@ -149,6 +149,6 @@ lazy val `jsoniter-scala-benchmark` = project
       "org.julienrf" %% "play-json-derived-codecs" % "4.0.1",
       "ai.x" %% "play-json-extensions" % "0.20.0",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
-      "org.scalatest" %% "scalatest" % "3.0.6-SNAP5" % Test
+      "org.scalatest" %% "scalatest" % "3.0.6-SNAP6" % Test
     )
   )
