@@ -10,30 +10,23 @@ public class UnsafeUtils {
     private static final long STRING_VALUE_OFFSET;
 
     static {
-        sun.misc.Unsafe u = null;
-        long sco = 0, svo = 0;
+        sun.misc.Unsafe unsafe = null;
+        long stringCoderOffset = 0, stringValueOffset = 0;
         try {
-            Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            u = (sun.misc.Unsafe) f.get(null);
+            Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            unsafe = (sun.misc.Unsafe) field.get(null);
+            stringValueOffset = unsafe.objectFieldOffset(String.class.getDeclaredField("value"));
+            stringCoderOffset = unsafe.objectFieldOffset(String.class.getDeclaredField("coder"));
         } catch (Throwable e) {
             // ignore
         }
-        if (u != null) {
-            try {
-                svo = u.objectFieldOffset(String.class.getDeclaredField("value"));
-                sco = u.objectFieldOffset(String.class.getDeclaredField("coder"));
-            } catch (Throwable e) {
-                // ignore
-            }
-        }
-        UNSAFE = u;
-        STRING_CODER_OFFSET = sco;
-        STRING_VALUE_OFFSET = svo;
+        UNSAFE = unsafe;
+        STRING_CODER_OFFSET = stringCoderOffset;
+        STRING_VALUE_OFFSET = stringValueOffset;
     }
 
     static byte[] getLatin1Array(String s) {
-        //System.out.println("\nSTRING_VALUE_OFFSET=" + STRING_VALUE_OFFSET);
         if (STRING_CODER_OFFSET == 0 || s == null || UNSAFE.getByte(s, STRING_CODER_OFFSET) != 0) {
             return null;
         }
