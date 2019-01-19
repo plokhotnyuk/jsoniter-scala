@@ -39,7 +39,7 @@ class ArrayOfIntsBenchmark extends CommonParams {
   def readCirce(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonScala(): Array[Int] = decodeDslJson[Array[Int]](jsonBytes)
+  def readDslJsonScala(): Array[Int] = dslJsonDecode[Array[Int]](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): Array[Int] = jacksonMapper.readValue[Array[Int]](jsonBytes)
@@ -63,7 +63,7 @@ class ArrayOfIntsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[Int]](obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

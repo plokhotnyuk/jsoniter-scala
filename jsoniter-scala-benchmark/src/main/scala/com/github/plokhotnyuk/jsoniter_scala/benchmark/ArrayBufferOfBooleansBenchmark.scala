@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -13,49 +14,55 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import upickle.default._
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 class ArrayBufferOfBooleansBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 1000
-  var obj: ArrayBuffer[Boolean] = _
+  var obj: mutable.ArrayBuffer[Boolean] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
   def setup(): Unit = {
-    obj = ArrayBuffer((1 to size).map(i => ((i * 1498724053) & 0x1) == 0):_*)
+    obj = mutable.ArrayBuffer((1 to size).map(i => ((i * 1498724053) & 0x1) == 0):_*)
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
   @Benchmark
-  def readAVSystemGenCodec(): ArrayBuffer[Boolean] =
-    JsonStringInput.read[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8))
+  def readAVSystemGenCodec(): mutable.ArrayBuffer[Boolean] =
+    JsonStringInput.read[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): ArrayBuffer[Boolean] =
-    decode[ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def readCirce(): mutable.ArrayBuffer[Boolean] =
+    decode[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readJacksonScala(): ArrayBuffer[Boolean] = jacksonMapper.readValue[ArrayBuffer[Boolean]](jsonBytes)
+  def readDslJsonScala(): mutable.ArrayBuffer[Boolean] = dslJsonDecode[mutable.ArrayBuffer[Boolean]](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): ArrayBuffer[Boolean] = readFromArray[ArrayBuffer[Boolean]](jsonBytes)
+  def readJacksonScala(): mutable.ArrayBuffer[Boolean] = jacksonMapper.readValue[mutable.ArrayBuffer[Boolean]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): ArrayBuffer[Boolean] = Json.parse(jsonBytes).as[ArrayBuffer[Boolean]]
+  def readJsoniterScala(): mutable.ArrayBuffer[Boolean] = readFromArray[mutable.ArrayBuffer[Boolean]](jsonBytes)
 
   @Benchmark
-  def readUPickle(): ArrayBuffer[Boolean] = read[ArrayBuffer[Boolean]](jsonBytes)
+  def readPlayJson(): mutable.ArrayBuffer[Boolean] = Json.parse(jsonBytes).as[mutable.ArrayBuffer[Boolean]]
+
+  @Benchmark
+  def readUPickle(): mutable.ArrayBuffer[Boolean] = read[mutable.ArrayBuffer[Boolean]](jsonBytes)
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

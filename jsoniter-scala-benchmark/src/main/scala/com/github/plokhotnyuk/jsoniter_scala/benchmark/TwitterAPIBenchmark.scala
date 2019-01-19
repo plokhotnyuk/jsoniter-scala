@@ -26,9 +26,9 @@ class TwitterAPIBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: DSL-JSON cannot create decoder for Seq[Tweet]
+/* FIXME: DSL_JSON throws java.lang.IllegalArgumentException: argument type mismatch
   @Benchmark
-  def readDslJsonScala(): Seq[Tweet] = decodeDslJson[Seq[Tweet]](jsonBytes)
+  def readDslJsonScala(): Seq[Tweet] = dslJsonDecode[Seq[Tweet]](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)

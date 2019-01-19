@@ -45,7 +45,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: dsl-json cannot find decoder for array of BigDecimal
   @Benchmark
-  def readDslJsonScala(): Array[BigDecimal] = decodeDslJson[Array[BigDecimal]](jsonBytes)
+  def readDslJsonScala(): Array[BigDecimal] = dslJsonDecode[Array[BigDecimal]](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): Array[BigDecimal] = jacksonMapper.readValue[Array[BigDecimal]](jsonBytes)
@@ -66,7 +66,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: dsl-json cannot find encoder for array of BigDecimal
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[BigDecimal]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigDecimal]](obj).toByteArray
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

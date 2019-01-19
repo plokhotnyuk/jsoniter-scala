@@ -38,7 +38,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: dsl-json cannot find decoder for array of BigInt
   @Benchmark
-  def readDslJsonScala(): Array[BigInt] = decodeDslJson[Array[BigInt]](jsonBytes)
+  def readDslJsonScala(): Array[BigInt] = dslJsonDecode[Array[BigInt]](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
@@ -59,7 +59,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: dsl-json cannot find encoder for array of BigInt
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Array[BigInt]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigInt]](obj).toByteArray
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

@@ -53,7 +53,7 @@ class ExtractFieldsBenchmark extends CommonParams {
   def readCirce(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonScala(): ExtractFields = decodeDslJson[ExtractFields](jsonBytes)
+  def readDslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)
 
   @Benchmark
   def readJacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)

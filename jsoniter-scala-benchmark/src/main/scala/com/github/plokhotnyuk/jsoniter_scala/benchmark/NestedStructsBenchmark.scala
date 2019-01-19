@@ -43,7 +43,7 @@ class NestedStructsBenchmark extends CommonParams {
   def readCirce(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: DSL-JSON throws java.io.IOException: Mandatory property (n) not found at position: 1502, following: `n":{"n":{"n":{"n":{}`
   @Benchmark
-  def readDslJsonScala(): NestedStructs = decodeDslJson[NestedStructs](jsonBytes)
+  def readDslJsonScala(): NestedStructs = dslJsonDecode[NestedStructs](jsonBytes)
 */
   @Benchmark
   def readJacksonScala(): NestedStructs = jacksonMapper.readValue[NestedStructs](jsonBytes)
@@ -64,7 +64,7 @@ class NestedStructsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: DSL-JSON serializes null value for Option.None
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = encodeDslJson[NestedStructs](obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[NestedStructs](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

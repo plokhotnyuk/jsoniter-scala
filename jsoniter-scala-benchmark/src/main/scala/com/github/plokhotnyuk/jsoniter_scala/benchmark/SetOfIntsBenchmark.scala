@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -38,6 +39,9 @@ class SetOfIntsBenchmark extends CommonParams {
   def readCirce(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
+  def readDslJsonScala(): Set[Int] = dslJsonDecode[Set[Int]](jsonBytes)
+
+  @Benchmark
   def readJacksonScala(): Set[Int] = jacksonMapper.readValue[Set[Int]](jsonBytes)
 
   @Benchmark
@@ -54,6 +58,9 @@ class SetOfIntsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

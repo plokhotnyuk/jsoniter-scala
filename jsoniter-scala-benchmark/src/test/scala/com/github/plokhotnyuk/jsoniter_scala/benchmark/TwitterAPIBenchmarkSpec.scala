@@ -7,7 +7,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: DSL-JSON cannot create decoder for Seq[Tweet]
+      //FIXME: DSL_JSON throws java.lang.IllegalArgumentException: argument type mismatch
       //benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj

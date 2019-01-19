@@ -41,7 +41,7 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readDslJsonScala(): String =
     try {
-      decodeDslJson[MissingReqFields](jsonBytes).toString // toString() should not be called
+      dslJsonDecode[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
       case ex: IOException => ex.getMessage
     }
