@@ -51,7 +51,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   limit
 - Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all parsed 
   values in the memory
-- Support of UTF-8 encoding only 
+- Only UTF-8 encoding is supported when working with buffered bytes directly but there is a fallback to parse and 
+  serialize JSON from/to `String` (while this is much less efficient)
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`, 
   `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module 
