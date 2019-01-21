@@ -101,10 +101,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make(CodecMakerConfig())
 
-  case class Indented(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Indented])
+  case class Recursive(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Recursive])
 
-  val indented = Indented("VVV", 1.1, List(1, 2, 3), Map('S' -> Indented("WWW", 2.2, List(4, 5, 6), Map())))
-  val codecOfIndented: JsonValueCodec[Indented] = make(CodecMakerConfig())
+  val recursive = Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map())))
+  val codecOfRecursive: JsonValueCodec[Recursive] = make(CodecMakerConfig(allowRecursiveTypes = true))
 
   case class UTF8KeysAndValues(გასაღები: String)
 
@@ -877,8 +877,44 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifyDeserError(codecOfStringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""",
         "expected '\"', offset: 0x0000000e")
     }
+    "serialize and deserialize recursive types if it was allowed" in {
+      verifySerDeser(make(CodecMakerConfig(allowRecursiveTypes = true)), recursive,
+        "{\"s\":\"VVV\",\"bd\":1.1,\"l\":[1,2,3],\"m\":{\"S\":{\"s\":\"WWW\",\"bd\":2.2,\"l\":[4,5,6]}}}")
+    }
+    "don't generate codecs for recursive types by default" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class Recursive(r: Recursive)
+          |JsonCodecMaker.make[Recursive](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Recursive type(s) detected: 'Recursive'. Please consider using a custom implicitly accessible codec for this
+          |type to control the level of recursion or turn on the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
+          |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class NonRecursive(r1: Recursive1)
+          |case class Recursive1(r2: Recursive2)
+          |case class Recursive2(r3: Recursive3)
+          |case class Recursive3(r1: Recursive1)
+          |JsonCodecMaker.make[NonRecursive](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Recursive type(s) detected: 'Recursive1', 'Recursive2', 'Recursive3'. Please consider using a custom
+          |implicitly accessible codec for this type to control the level of recursion or turn on the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
+          |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
+          |JsonCodecMaker.make[HigherKindedType[Option]](CodecMakerConfig())""".stripMargin
+      }).getMessage.contains {
+        """Recursive type(s) detected: 'HigherKindedType[Option]', 'Option[HigherKindedType[Option]]'. Please consider
+          |using a custom implicitly accessible codec for this type to control the level of recursion or turn on the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
+          |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
+      })
+    }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
-      verifySerDeser(codecOfIndented, indented,
+      verifySerDeser(codecOfRecursive, recursive,
         """{
           |  "s": "VVV",
           |  "bd": 1.1,
@@ -902,7 +938,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         WriterConfig(indentionStep = 2))
     }
     "deserialize JSON with whitespaces, tabs, new lines, and line returns" in {
-      verifyDeser(codecOfIndented, indented,
+      verifyDeser(codecOfRecursive, recursive,
         "{\r \"s\":\t\"VVV\",\n\t\"bd\":\t1.1,\r  \"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\n\t\t\"S\":\t{\r  \t\t\"s\":\t\t \t\"WWW\",\n\t\"bd\":\t2.2,\"l\":\t[\r\t\t4,\n\n\n5,\r\t\t6\r\t]\n}\r}\r}")
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
@@ -1342,14 +1378,6 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val codecOfFooForOption = make[Foo[Option]](CodecMakerConfig())
       verifySerDeser(codecOfFooForOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
       verifySerDeser(codecOfFooForOption, Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
-
-      case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
-
-      verifySerDeser(make[HigherKindedType[Option]](CodecMakerConfig()),
-        HigherKindedType[Option](Some(1), Some(HigherKindedType[Option](Some(2), None))), """{"f":1,"fs":{"f":2}}""")
-      verifySerDeser(make[HigherKindedType[List]](CodecMakerConfig()),
-        HigherKindedType[List](List(1), List(HigherKindedType[List](List(2, 3, 4), Nil))),
-        """{"f":[1],"fs":[{"f":[2,3,4]}]}""")
     }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
       object PrivatePrimaryConstructor {

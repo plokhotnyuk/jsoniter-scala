@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import scala.collection.immutable.IndexedSeq
 import scala.reflect.io.Streamable
 
+//FIXME: the GeoJSON spec require to avoid ability to create nested Geometry or Feature collections, also it can be a security issue for untrusted input
 @flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(Array(

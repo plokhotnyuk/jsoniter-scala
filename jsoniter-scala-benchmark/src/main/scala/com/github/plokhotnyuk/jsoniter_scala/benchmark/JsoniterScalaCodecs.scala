@@ -21,7 +21,7 @@ object JsoniterScalaCodecs {
   val bigIntCodec: JsonValueCodec[BigInt] = make(CodecMakerConfig()) // don't define implicit for supported types
   val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make(CodecMakerConfig()) // don't define implicit for supported types
-  implicit val adtCodec: JsonValueCodec[ADTBase] = make(CodecMakerConfig())
+  implicit val adtCodec: JsonValueCodec[ADTBase] = make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-system*/))
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make(CodecMakerConfig())
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig())
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make(CodecMakerConfig())
@@ -37,7 +37,7 @@ object JsoniterScalaCodecs {
   implicit val enumArrayCodec: JsonValueCodec[Array[SuitEnum]] = make(CodecMakerConfig())
   implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] = make(CodecMakerConfig(discriminatorFieldName = None))
   implicit val floatArrayCodec: JsonValueCodec[Array[Float]] = make(CodecMakerConfig())
-  implicit val geoJSONCodec: JsonValueCodec[GeoJSON] = make(CodecMakerConfig())
+  implicit val geoJSONCodec: JsonValueCodec[GeoJSON] = make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-system*/))
   implicit val instantArrayCodec: JsonValueCodec[Array[Instant]] = make(CodecMakerConfig())
   implicit val intArrayCodec: JsonValueCodec[Array[Int]] = make(CodecMakerConfig())
   implicit val javaEnumArrayCodec: JsonValueCodec[Array[Suit]] = make(CodecMakerConfig())
@@ -46,7 +46,7 @@ object JsoniterScalaCodecs {
   implicit val localDateTimeArrayCodec: JsonValueCodec[Array[LocalDateTime]] = make(CodecMakerConfig())
   implicit val localTimeArrayCodec: JsonValueCodec[Array[LocalTime]] = make(CodecMakerConfig())
   implicit val monthDayArrayCodec: JsonValueCodec[Array[MonthDay]] = make(CodecMakerConfig())
-  implicit val nestedStructsCodec: JsonValueCodec[NestedStructs] = make(CodecMakerConfig())
+  implicit val nestedStructsCodec: JsonValueCodec[NestedStructs] = make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-system*/))
   implicit val offsetDateTimeArrayCodec: JsonValueCodec[Array[OffsetDateTime]] = make(CodecMakerConfig())
   implicit val offsetTimeArrayCodec: JsonValueCodec[Array[OffsetTime]] = make(CodecMakerConfig())
   implicit val periodArrayCodec: JsonValueCodec[Array[Period]] = make(CodecMakerConfig())
