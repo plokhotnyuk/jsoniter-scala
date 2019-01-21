@@ -101,10 +101,11 @@ There are configurable options that can be set in compile-time:
   kebab-case or camelCase names for all fields
 - An optional name of the discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
-- Ability to alter default of precision, scale limit, and max number of significant digits when parsing `BigDecimal` values
-- Ability to alter default of max number of digits when parsing `BigDecimal` values
-- Ability to alter default of max value when parsing bit sets
-- Ability to alter default of limit for inserts when parsing sets or maps
+- Ability to set precision, scale limit, and max number of significant digits when parsing `BigDecimal` values
+- Ability to set max number of significant digits when parsing `BigInt` values
+- Ability to set max allowed value when parsing bit sets
+- Ability to set limit for number of inserts when parsing sets or maps
+- Throwing of compilation error for recursive data structures can be turned off
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
