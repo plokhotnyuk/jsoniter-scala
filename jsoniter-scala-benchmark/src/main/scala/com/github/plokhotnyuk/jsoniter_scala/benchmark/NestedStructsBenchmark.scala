@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.avsystem.commons.serialization.transientDefault
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -41,10 +41,10 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: DSL-JSON throws java.io.IOException: Mandatory property (n) not found at position: 1502, following: `n":{"n":{"n":{"n":{}`
+
   @Benchmark
   def readDslJsonScala(): NestedStructs = dslJsonDecode[NestedStructs](jsonBytes)
-*/
+
   @Benchmark
   def readJacksonScala(): NestedStructs = jacksonMapper.readValue[NestedStructs](jsonBytes)
 
