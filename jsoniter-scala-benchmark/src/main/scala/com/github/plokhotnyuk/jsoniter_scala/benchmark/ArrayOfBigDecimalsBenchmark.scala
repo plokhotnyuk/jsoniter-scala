@@ -65,7 +65,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: dsl-json cannot find encoder for array of BigDecimal
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigDecimal]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigDecimal]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

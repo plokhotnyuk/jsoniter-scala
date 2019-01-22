@@ -65,7 +65,7 @@ class ArrayOfDoublesBenchmark extends CommonParams {
 
 /*FIXME: dsl-json serializes doubles in a plain representation
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[Double]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[Double]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

@@ -59,7 +59,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: dsl-json cannot find encoder for array of BigInt
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigInt]](obj).toByteArray
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigInt]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
