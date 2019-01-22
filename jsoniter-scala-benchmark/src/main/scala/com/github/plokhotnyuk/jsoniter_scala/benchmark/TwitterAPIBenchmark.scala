@@ -50,7 +50,7 @@ class TwitterAPIBenchmark extends CommonParams {
 */
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = encodeDslJson[Seq[Tweet]](obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Seq[Tweet]](obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
