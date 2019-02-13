@@ -658,11 +658,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         MutableIterables(collection.mutable.Seq(collection.mutable.SortedSet("1", "2", "3")),
           collection.mutable.ArrayBuffer(collection.mutable.Set[BigInt](4), collection.mutable.Set.empty[BigInt]),
           collection.mutable.ArraySeq(collection.mutable.LinkedHashSet(5, 6), collection.mutable.LinkedHashSet.empty[Int]),
-          collection.mutable.Buffer(collection.mutable.HashSet(7.7, 8.8)),
+          collection.mutable.Buffer(collection.mutable.HashSet(7.7)),
           collection.mutable.ListBuffer(collection.mutable.TreeSet(9L, 10L)),
           collection.mutable.IndexedSeq(collection.mutable.ArrayStack(11.11f, 12.12f)),
           collection.mutable.UnrolledBuffer(collection.mutable.Iterable(13.toShort, 14.toShort))),
-        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[8.8,7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""")
+        """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""")
     }
     "serialize and deserialize case classes with immutable Iterables" in {
       case class ImmutableIterables(l: List[collection.immutable.ListSet[String]],
