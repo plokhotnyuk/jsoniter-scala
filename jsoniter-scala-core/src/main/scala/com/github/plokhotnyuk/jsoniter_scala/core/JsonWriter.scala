@@ -666,11 +666,7 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(2)
     buf(pos) = '"'
     pos += 1
-    pos = {
-      val bs = UnsafeUtils.getLatin1Array(s)
-      if (bs eq null) writeString(s, 0, s.length, pos, limit - 1, escapedChars)
-      else writeString(bs, 0, s.length, pos, limit - 1, escapedChars)
-    }
+    pos = writeString(s, 0, s.length, pos, limit - 1, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
@@ -749,60 +745,6 @@ final class JsonWriter private[jsoniter_scala](
         if (ch2 < 0xDC00 || ch2 > 0xDFFF) illegalSurrogateError()
         writeEscapedString(s, from + 2, to, writeEscapedUnicode(ch2, writeEscapedUnicode(ch1, pos, buf), buf), posLim, escapedChars)
       }
-    }
-
-  @tailrec
-  private[this] def writeString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
-    if (from >= to) pos
-    else if (pos >= posLim) writeString(bs, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
-    else {
-      val b = bs(from)
-      buf(pos) = b
-      if (escapedChars(b & 0xFF) == 0) writeString(bs, from + 1, to, pos + 1, posLim, escapedChars)
-      else if (config.escapeUnicode) writeEscapedString(bs, from, to, pos, posLim - 12, escapedChars)
-      else writeEncodedString(bs, from, to, pos, posLim - 6, escapedChars)
-    }
-
-  @tailrec
-  private[this] def writeEncodedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
-    if (from >= to) pos
-    else if (pos >= posLim) writeEncodedString(bs, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
-    else {
-      val b = bs(from)
-      if (b >= 0) { // 0aaaaaaa (Latin-1 byte) -> 0aaaaaaa (UTF-8 byte)
-        val esc = escapedChars(b)
-        if (esc == 0) {
-          buf(pos) = b
-          writeEncodedString(bs, from + 1, to, pos + 1, posLim, escapedChars)
-        } else if (esc > 0) {
-          buf(pos) = '\\'
-          buf(pos + 1) = esc
-          writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEncodedString(bs, from + 1, to, writeEscapedUnicode(b, pos, buf), posLim, escapedChars)
-      } else { // 1baaaaaa (Latin-1 byte) -> 1100001b 10aaaaaa (UTF-8 bytes)
-        buf(pos) = ((b >> 6) & 0xC3).toByte
-        buf(pos + 1) = (b & 0xBF).toByte
-        writeEncodedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
-      }
-    }
-
-  @tailrec
-  private[this] def writeEscapedString(bs: Array[Byte], from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
-    if (from >= to) pos
-    else if (pos >= posLim) writeEscapedString(bs, from, to, flushAndGrowBuf(7, pos), limit - 6, escapedChars)
-    else {
-      val b = bs(from)
-      if (b >= 0) {
-        val esc = escapedChars(b)
-        if (esc == 0) {
-          buf(pos) = b
-          writeEscapedString(bs, from + 1, to, pos + 1, posLim, escapedChars)
-        } else if (esc > 0) {
-          buf(pos) = '\\'
-          buf(pos + 1) = esc
-          writeEscapedString(bs, from + 1, to, pos + 2, posLim, escapedChars)
-        } else writeEscapedString(bs, from + 1, to, writeEscapedUnicode(b, pos, buf), posLim, escapedChars)
-      } else writeEscapedString(bs, from + 1, to, writeEscapedUnicode(b, pos, buf), posLim, escapedChars)
     }
 
   private[this] def writeChar(ch: Char): Unit = count = {
