@@ -1971,7 +1971,7 @@ final class JsonWriter private[jsoniter_scala](
 
 object JsonWriter {
   private final val escapedChars: Array[Byte] = {
-    val es = new Array[Byte](256)
+    val es = new Array[Byte](128)
     java.util.Arrays.fill(es, 0, 32, -1: Byte)
     es('\n') = 'n'
     es('\r') = 'r'
@@ -1980,7 +1980,7 @@ object JsonWriter {
     es('\f') = 'f'
     es('\\') = '\\'
     es('\"') = '"'
-    java.util.Arrays.fill(es, 127, 256, -1: Byte)
+    es(127) = -1
     es
   }
   private final val hexDigits: Array[Short] = {
