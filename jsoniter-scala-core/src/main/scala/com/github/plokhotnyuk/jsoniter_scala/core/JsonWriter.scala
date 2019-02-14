@@ -665,8 +665,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeString(s: String): Unit = count = {
     var pos = ensureBufCapacity(2)
     buf(pos) = '"'
-    pos += 1
-    pos = writeString(s, 0, s.length, pos, limit - 1, escapedChars)
+    pos = writeString(s, 0, s.length, pos + 1, limit - 1, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
