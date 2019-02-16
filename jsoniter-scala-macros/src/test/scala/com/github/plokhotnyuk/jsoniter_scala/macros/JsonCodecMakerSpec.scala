@@ -549,11 +549,11 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
       verifySerDeser(codecOfOptions, Options(None, None, None, None, None), """{}""")
     }
-    "serialize case classes with empty options as null when the transientEmpty flag is off" in {
-      verifySerDeser(make[Options](CodecMakerConfig(transientEmpty = false)),
+    "serialize case classes with empty options as null when the transientNone flag is off" in {
+      verifySerDeser(make[Options](CodecMakerConfig(transientNone = false)),
         Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(new java.lang.Long(2L))),
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
-      verifySerDeser(make[Options](CodecMakerConfig(transientEmpty = false)),
+      verifySerDeser(make[Options](CodecMakerConfig(transientNone = false)),
         Options(None, None, None, None, None), """{"os":null,"obi":null,"osi":null,"ol":null,"ojl":null}""")
     }
     "serialize and deserialize top-level options" in {
@@ -997,13 +997,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(make[Defaults](CodecMakerConfig(transientDefault = false)), Defaults(),
         """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"e":"HIGH","a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""")
     }
-    "serialize empty of case classes that defined for fields when the transientEmpty flag is off" in {
-      verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false)),
+    "serialize empty of case classes that defined for fields when the transientEmpty and transientNone flags are off" in {
+      verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false, transientNone = false)),
         Defaults(oc = None, l = List(), a = Array(), ab = collection.mutable.ArrayBuffer(), m = Map(),
           mm = collection.mutable.Map(), im = collection.immutable.IntMap(), lm = collection.mutable.LongMap(),
           s = Set(), ms = collection.mutable.Set(), bs = collection.immutable.BitSet(), mbs = collection.mutable.BitSet()),
         """{"oc":null,"l":[],"a":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
-      verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false)), Defaults(), """{}""")
+      verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false, transientNone = false)), Defaults(), """{}""")
     }
     "deserialize default values of case classes that defined for fields" in {
       case class Defaults2(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),

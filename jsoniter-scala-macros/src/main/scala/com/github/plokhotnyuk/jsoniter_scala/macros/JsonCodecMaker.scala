@@ -49,7 +49,9 @@ final class stringified extends StaticAnnotation
   * @param transientDefault       a flag that turns on skipping serialization of fields that have same values as default
   *                               values defined for them in the primary constructor (turned on by default)
   * @param transientEmpty         a flag that turns on skipping serialization of fields that have empty values of
-  *                               options, arrays or collections (turned on by default)
+  *                               arrays or collections (turned on by default)
+  * @param transientNone          a flag that turns on skipping serialization of fields that have empty values of
+  *                               options (turned on by default)
   * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default)
   * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default)
   * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of decimal digits in 'BigDecimal' values (308 by default)
@@ -67,6 +69,7 @@ case class CodecMakerConfig(
   skipUnexpectedFields: Boolean = true,
   transientDefault: Boolean = true,
   transientEmpty: Boolean = true,
+  transientNone: Boolean = true,
   bigDecimalPrecision: Int = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
   bigDecimalScaleLimit: Int = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
   bigDecimalDigitsLimit: Int = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
@@ -1077,7 +1080,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantKey(f.mappedName)}
                       ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified)}
                     }"""
-              } else if (f.resolvedTpe <:< typeOf[Option[_]] && codecConfig.transientEmpty) {
+              } else if (f.resolvedTpe <:< typeOf[Option[_]] && codecConfig.transientNone) {
                 q"""val v = x.${f.getter}
                     if (!v.isEmpty && v != $d) {
                       ..${genWriteConstantKey(f.mappedName)}
@@ -1107,7 +1110,7 @@ object JsonCodecMaker {
                       ..${genWriteConstantKey(f.mappedName)}
                       ..${genWriteVal(q"v", f.resolvedTpe :: types, f.isStringified)}
                     }"""
-              } else if (f.resolvedTpe <:< typeOf[Option[_]] && codecConfig.transientEmpty) {
+              } else if (f.resolvedTpe <:< typeOf[Option[_]] && codecConfig.transientNone) {
                 q"""val v = x.${f.getter}
                     if (!v.isEmpty) {
                       ..${genWriteConstantKey(f.mappedName)}
