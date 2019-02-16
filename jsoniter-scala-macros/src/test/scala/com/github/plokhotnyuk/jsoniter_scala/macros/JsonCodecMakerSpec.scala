@@ -549,6 +549,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
       verifySerDeser(codecOfOptions, Options(None, None, None, None, None), """{}""")
     }
+    "serialize case classes with empty options as null when the transientEmpty flag is off" in {
+      verifySerDeser(make[Options](CodecMakerConfig(transientEmpty = false)),
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(new java.lang.Long(2L))),
+        """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
+      verifySerDeser(make[Options](CodecMakerConfig(transientEmpty = false)),
+        Options(None, None, None, None, None), """{"os":null,"obi":null,"osi":null,"ol":null,"ojl":null}""")
+    }
     "serialize and deserialize top-level options" in {
       val codecOfStringOption = make[Option[String]](CodecMakerConfig())
       verifySerDeser(codecOfStringOption, Some("VVV"), "\"VVV\"")
@@ -592,6 +599,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize and deserialize case classes with arrays" in {
       val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]}"""
       verifySer(codecOfArrays, arrays, json)
+      verifySer(make[Arrays](CodecMakerConfig(transientEmpty = false)), arrays, json)
       val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfArrays)
       parsedObj.aa shouldBe arrays.aa
       parsedObj.a shouldBe arrays.a
@@ -616,6 +624,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val json = """{"aa":[[],[]]}"""
       val arrays = Arrays(Array(Array(), Array()), Array())
       verifySer(codecOfArrays, arrays, json)
+      val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfArrays)
+      parsedObj.aa shouldBe arrays.aa
+      parsedObj.a shouldBe arrays.a
+    }
+    "serialize fields of case classes with empty arrays when transientEmpty is off" in {
+      val json = """{"aa":[[],[]],"a":[]}"""
+      val arrays = Arrays(Array(Array(), Array()), Array())
+      verifySer(make[Arrays](CodecMakerConfig(transientEmpty = false)), arrays, json)
       val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfArrays)
       parsedObj.aa shouldBe arrays.aa
       parsedObj.a shouldBe arrays.a
@@ -677,6 +693,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           Stream(collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
         """{"l":[["1"]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
     }
+    "serialize and deserialize case class fields with empty iterables when transientEmpty is off" in {
+      case class EmptyIterables(l: List[String], a: collection.mutable.ArrayBuffer[Int])
+
+      verifySerDeser(make[EmptyIterables](CodecMakerConfig(transientEmpty = false)),
+        EmptyIterables(List(), collection.mutable.ArrayBuffer()), """{"l":[],"a":[]}""")
+      verifySerDeser(make[EmptyIterables](CodecMakerConfig(transientEmpty = false)),
+        EmptyIterables(List("VVV"), collection.mutable.ArrayBuffer(1)), """{"l":["VVV"],"a":[1]}""")
+    }
     "serialize and deserialize top-level Iterables" in {
       verifySerDeser(make[collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig()),
         collection.mutable.Set(List[BigDecimal](1.1, 2.2)), """[[1.1,2.2]]""")
@@ -717,6 +741,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           collection.immutable.SortedMap(4L -> collection.immutable.TreeMap(4.toByte -> 4.4f),
             5L -> collection.immutable.TreeMap.empty[Byte, Float])),
         """{"m":{"1":1.1},"hm":{"2":{"V":2},"3":{"X":3}},"sm":{"4":{"4":4.4},"5":{}}}""")
+    }
+    "serialize case class fields with empty maps if transientEmpty is off" in {
+      case class EmptyMaps(im: collection.immutable.Map[String, Int], mm: collection.mutable.Map[Long, Int])
+
+      verifySerDeser(make[EmptyMaps](CodecMakerConfig(transientEmpty = false)),
+        EmptyMaps(Map(), collection.mutable.Map()), """{"im":{},"mm":{}}""")
+      verifySerDeser(make[EmptyMaps](CodecMakerConfig(transientEmpty = false)),
+        EmptyMaps(Map("VVV" -> 1), collection.mutable.Map(2L -> 3)), """{"im":{"VVV":1},"mm":{"2":3}}""")
     }
     "serialize and deserialize top-level maps" in {
       val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig())
@@ -964,6 +996,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     "serialize default values of case classes that defined for fields when the transientDefault flag is off" in {
       verifySer(make[Defaults](CodecMakerConfig(transientDefault = false)), Defaults(),
         """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"e":"HIGH","a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""")
+    }
+    "serialize empty of case classes that defined for fields when the transientEmpty flag is off" in {
+      verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false)),
+        Defaults(oc = None, l = List(), a = Array(), ab = collection.mutable.ArrayBuffer(), m = Map(),
+          mm = collection.mutable.Map(), im = collection.immutable.IntMap(), lm = collection.mutable.LongMap(),
+          s = Set(), ms = collection.mutable.Set(), bs = collection.immutable.BitSet(), mbs = collection.mutable.BitSet()),
+        """{"oc":null,"l":[],"a":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
+      verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false)), Defaults(), """{}""")
     }
     "deserialize default values of case classes that defined for fields" in {
       case class Defaults2(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
