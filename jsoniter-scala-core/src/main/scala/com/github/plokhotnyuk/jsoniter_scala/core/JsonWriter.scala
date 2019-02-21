@@ -950,7 +950,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
-      val minutes = ((secsOfHour * 2290649225L >> 37) - (secsOfHour >> 31)).toInt // divide signed int by 60
+      val minutes = secsOfHour / 60
       if (minutes != 0) {
         val q0 =
           if (minutes > 0) minutes
@@ -1080,7 +1080,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def to400YearCycle(day: Long): Int = (day / 146097).toInt // 146097 == number of days in a 400 year cycle
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
-    val centuryEst = (yearEst * 1374389535L >> 37).toInt - (yearEst >> 31) // divide signed int by 100
+    val centuryEst = yearEst / 100
     (marchZeroDay - 365L * yearEst).toInt - (yearEst >> 2) + centuryEst - (centuryEst >> 2)
   }
 
