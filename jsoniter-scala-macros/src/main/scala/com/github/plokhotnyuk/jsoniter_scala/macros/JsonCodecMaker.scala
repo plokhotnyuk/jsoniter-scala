@@ -197,7 +197,7 @@ object JsonCodecMaker {
       def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
 
       def isNonAbstractScalaClass(tpe: Type): Boolean =
-        tpe.typeSymbol.isClass && !tpe.typeSymbol.asClass.isAbstract && !tpe.typeSymbol.asClass.isJava
+        tpe.typeSymbol.isClass && !tpe.typeSymbol.isAbstract && !tpe.typeSymbol.isJava
 
       def isSealedClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
