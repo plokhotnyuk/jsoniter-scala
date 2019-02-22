@@ -32,9 +32,17 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
-  //FIXME: it affects results but required to avoid misleading results due internal caching of the string representation
-  private def obj: Array[BigDecimal] =
-    sourceObj.map(x => BigDecimal(x.bigDecimal.unscaledValue(), x.bigDecimal.scale()))
+  private def obj: Array[BigDecimal] = {
+    val xs = sourceObj
+    val l = xs.length
+    var i = 0
+    while (i < l) {
+      val x = xs(i) // to avoid internal caching of the string representation
+      xs(i) = BigDecimal(x.bigDecimal.unscaledValue(), x.bigDecimal.scale(), x.mc)
+      i += 1
+    }
+    xs
+  }
 
   @Benchmark
   def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8),

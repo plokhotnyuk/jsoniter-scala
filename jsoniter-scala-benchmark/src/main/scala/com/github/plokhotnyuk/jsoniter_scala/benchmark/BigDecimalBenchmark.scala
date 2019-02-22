@@ -31,8 +31,8 @@ class BigDecimalBenchmark extends CommonParams {
     preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
-  //FIXME: it affects results but required to avoid misleading results due internal caching of the string representation
-  private def obj: BigDecimal = BigDecimal(sourceObj.bigDecimal.unscaledValue(), sourceObj.bigDecimal.scale())
+  private def obj: BigDecimal = // to avoid internal caching of the string representation
+    BigDecimal(sourceObj.bigDecimal.unscaledValue(), sourceObj.bigDecimal.scale(), sourceObj.mc)
 
   @Benchmark
   def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8),
