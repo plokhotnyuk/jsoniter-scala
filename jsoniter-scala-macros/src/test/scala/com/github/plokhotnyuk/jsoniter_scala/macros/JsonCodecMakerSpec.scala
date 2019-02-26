@@ -751,16 +751,34 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         EmptyMaps(Map("VVV" -> 1), collection.mutable.Map(2L -> 3)), """{"im":{"VVV":1},"mm":{"2":3}}""")
     }
     "serialize and deserialize top-level maps" in {
-      val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig())
-      verifySerDeser(codecOfMaps,
+      verifySerDeser(make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig()),
         collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":true},"2":{}}""")
     }
     "serialize and deserialize stringified top-level maps" in {
-      val codecOfMaps = make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true))
-      verifySerDeser(codecOfMaps,
+      verifySerDeser(make[collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true)),
         collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
         """{"1":{"V":"true"},"2":{}}""")
+    }
+    "serialize and deserialize top-level maps as arrays" in {
+      verifySerDeser(make[collection.mutable.LinkedHashMap[Int, Boolean]](CodecMakerConfig(mapAsArray = true)),
+        collection.mutable.LinkedHashMap(1 -> true), """[[1,true]]""")
+      verifySerDeser(make[collection.mutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true)),
+        collection.mutable.LongMap(1L -> true), """[[1,true]]""")
+      verifySerDeser(make[collection.immutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true)),
+        collection.immutable.LongMap(1L -> true), """[[1,true]]""")
+      verifySerDeser(make[collection.immutable.IntMap[Boolean]](CodecMakerConfig(mapAsArray = true)),
+        collection.immutable.IntMap(1 -> true), """[[1,true]]""")
+    }
+    "serialize and deserialize stringified top-level maps as arrays" in {
+      verifySerDeser(make[collection.mutable.LinkedHashMap[Int, Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+        collection.mutable.LinkedHashMap(1 -> true), """[["1","true"]]""")
+      verifySerDeser(make[collection.mutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+        collection.mutable.LongMap(1L -> true), """[["1","true"]]""")
+      verifySerDeser(make[collection.immutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+        collection.immutable.LongMap(1L -> true), """[["1","true"]]""")
+      verifySerDeser(make[collection.immutable.IntMap[Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+        collection.immutable.IntMap(1 -> true), """[["1","true"]]""")
     }
     "throw parse exception when too many inserts into map was completed" in {
       verifyDeserError(make[collection.immutable.Map[Int, Int]](CodecMakerConfig(mapMaxInsertNumber = 10)),

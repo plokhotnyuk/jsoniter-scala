@@ -44,6 +44,9 @@ final class stringified extends StaticAnnotation
   *                               representation of ADTs without the discriminator field (Some("type") value by default)
   * @param isStringified          a flag that turns on stringification of number or boolean values of collections,
   *                               options and value classes (turned off by default)
+  * @param mapAsArray             a flag that turns on serialization and parsing of maps as a JSON array (or sequences
+  *                               of tuples) instead of a JSON object, that allow to use 'JsonValueCodec' for encoding
+  *                               and decoding of keys (turned off by default)
   * @param skipUnexpectedFields   a flag that turns on skipping of unexpected fields or in other case a parse exception
   *                               will be thrown (turned on by default)
   * @param transientDefault       a flag that turns on skipping serialization of fields that have same values as default
@@ -66,6 +69,7 @@ case class CodecMakerConfig(
   adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
   discriminatorFieldName: Option[String] = Some("type"),
   isStringified: Boolean = false,
+  mapAsArray: Boolean = false,
   skipUnexpectedFields: Boolean = true,
   transientDefault: Boolean = true,
   transientEmpty: Boolean = true,
@@ -76,7 +80,7 @@ case class CodecMakerConfig(
   bigIntDigitsLimit: Int = 308, // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
   bitSetValueLimit: Int = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
   mapMaxInsertNumber: Int = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
-  setMaxInsertNumber: Int = 1024,  // to limit attacks from untrusted input that exploit worst complexity for inserts
+  setMaxInsertNumber: Int = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
   allowRecursiveTypes: Boolean = false) // to avoid stack overflow errors with untrusted input
 
 object JsonCodecMaker {
@@ -453,6 +457,26 @@ object JsonCodecMaker {
               }
             } else in.readNullOrTokenError(default, '{')"""
 
+      def genReadMapAsArray(newBuilder: Tree, readKV: Tree, result: Tree = q"x"): Tree =
+        q"""if (in.isNextToken('[')) {
+              if (in.isNextToken(']')) default
+              else {
+                in.rollbackToken()
+                ..$newBuilder
+                var i = 0
+                do {
+                  if (in.isNextToken('[')) {
+                    ..$readKV
+                    i += 1
+                    if (i > ${codecConfig.mapMaxInsertNumber}) in.decodeError("too many map inserts")
+                    if (!in.isNextToken(']')) in.arrayEndError()
+                  } else in.readNullOrTokenError(default, '[')
+                } while (in.isNextToken(','))
+                if (in.isCurrentToken(']')) $result
+                else in.objectEndOrCommaError()
+              }
+            } else in.readNullOrTokenError(default, '[')"""
+
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
         val tpe = types.head
         val implKeyCodec = findImplicitCodec(types, isValueCodec = false)
@@ -502,6 +526,16 @@ object JsonCodecMaker {
               ..$writeVal
             }
             out.writeObjectEnd()"""
+
+      def genWriteMapAsArray(x: Tree, writeKey: Tree, writeVal: Tree): Tree =
+        q"""out.writeArrayStart()
+            $x.foreach { kv =>
+              out.writeArrayStart()
+              ..$writeKey
+              ..$writeVal
+              out.writeArrayEnd()
+            }
+            out.writeArrayEnd()"""
 
       def cannotFindCodecError(tpe: Type): Nothing =
         fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
@@ -861,28 +895,63 @@ object JsonCodecMaker {
               }"""
         } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}",
-            q"x = x.updated(in.readKeyAsInt(), ${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})")
+          val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}"
+          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
+          if (codecConfig.mapAsArray) {
+            val readKey =
+              if (codecConfig.isStringified) q"in.readStringAsInt()"
+              else q"in.readInt()"
+            genReadMapAsArray(newBuilder,
+              q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
+          } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsInt(), $readVal)")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadMap(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
-            q"x.update(in.readKeyAsLong(), ${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})")
+          val newBuilder = q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]"
+          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
+          if (codecConfig.mapAsArray) {
+            val readKey =
+              if (codecConfig.isStringified) q"in.readStringAsLong()"
+              else q"in.readLong()"
+            genReadMapAsArray(newBuilder,
+              q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
+          } else genReadMap(newBuilder, q"x.update(in.readKeyAsLong(), $readVal)")
         } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}",
-            q"x = x.updated(in.readKeyAsLong(), ${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})")
+          val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}"
+          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
+          if (codecConfig.mapAsArray) {
+            val readKey =
+              if (codecConfig.isStringified) q"in.readStringAsLong()"
+              else q"in.readLong()"
+            genReadMapAsArray(newBuilder,
+              q"x = x.updated($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
+          } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsLong(), $readVal)")
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          genReadMap(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1, $tpe2]",
-            q"x.update(${genReadKey(tpe1 :: types)}, ${genReadVal(tpe2 :: types, nullValue(tpe2), isStringified)})")
+          val newBuilder = q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1, $tpe2]"
+          val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2), isStringified)
+          if (codecConfig.mapAsArray) {
+            val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
+            genReadMapAsArray(newBuilder, q"x.update($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
+          } else genReadMap(newBuilder, q"x.update(${genReadKey(tpe1 :: types)}, $readVal2)")
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          genReadMap(q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1,$tpe2]")}",
-            if (tpe <:< typeOf[Map[_, _]]) {
-              q"x = x.updated(${genReadKey(tpe1 :: types)}, ${genReadVal(tpe2 :: types, nullValue(tpe2), isStringified)})"
-            } else q"x = x + ((${genReadKey(tpe1 :: types)}, ${genReadVal(tpe2 :: types, nullValue(tpe2), isStringified)}))")
+          val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1,$tpe2]")}"
+          val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2), isStringified)
+          if (codecConfig.mapAsArray) {
+            val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
+            genReadMapAsArray(newBuilder,
+              if (tpe <:< typeOf[Map[_, _]]) {
+                q"x = x.updated($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
+              } else q"x = x + (($readVal1, $readVal2))")
+          } else {
+            val readKey = genReadKey(tpe1 :: types)
+            genReadMap(newBuilder,
+              if (tpe <:< typeOf[Map[_, _]]) q"x = x.updated($readKey, $readVal2)"
+              else q"x = x + (($readKey, $readVal2))")
+          }
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
             if (isStringified) q"in.readStringAsInt()"
@@ -1169,11 +1238,20 @@ object JsonCodecMaker {
           q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe) :: types, isStringified)}"
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
-          genWriteMap(q"x", q"out.writeKey(kv._1)", genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified))
+          val writeVal2 = genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified)
+          if (codecConfig.mapAsArray) {
+            val writeVal1 =
+              if (isStringified) q"out.writeValAsString(kv._1)"
+              else q"out.writeVal(kv._1)"
+            genWriteMapAsArray(q"x", writeVal1, writeVal2)
+          } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          genWriteMap(q"x", genWriteKey(q"kv._1", tpe1 :: types), genWriteVal(q"kv._2", tpe2 :: types, isStringified))
+          val writeVal2 = genWriteVal(q"kv._2", tpe2 :: types, isStringified)
+          if (codecConfig.mapAsArray) {
+            genWriteMapAsArray(q"x", genWriteVal(q"kv._1", tpe1 :: types, isStringified), writeVal2)
+          } else genWriteMap(q"x", genWriteKey(q"kv._1", tpe1 :: types), writeVal2)
         } else if (tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x",
             if (isStringified) q"out.writeValAsString(x)"
