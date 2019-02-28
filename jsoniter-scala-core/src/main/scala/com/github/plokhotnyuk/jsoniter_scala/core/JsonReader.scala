@@ -643,8 +643,10 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       val b = buf(pos)
@@ -756,6 +758,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def scanUntilToken(t: Byte, pos: Int): Int =
     if (pos + 3 < tail) {
+      val buf = this.buf
       if (buf(pos) == t) pos + 1
       else if (buf(pos + 1) == t) pos + 2
       else if (buf(pos + 2) == t) pos + 3
@@ -775,6 +778,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def next2Digits(pos: Int): Int =
     if (pos + 1 < tail) {
+      val buf = this.buf
       val d1 = buf(pos) - '0'
       val d2 = buf(pos + 1) - '0'
       if (d1 < 0 || d1 > 9) digitError(pos)
@@ -786,6 +790,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def next2DigitsWithByte(t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
+      val buf = this.buf
       val d1 = buf(pos) - '0'
       val d2 = buf(pos + 1) - '0'
       if (d1 < 0 || d1 > 9) digitError(pos)
@@ -798,6 +803,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseYearWithByte(t: Byte, maxDigits: Int, pos: Int): Int =
     if (pos + 4 < tail) {
+      val buf = this.buf
       val b = buf(pos)
       if (b >= '0' && b <= '9') {
         val d2 = buf(pos + 1) - '0'
@@ -814,6 +820,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b: Byte, p: Int): Int = {
     var pos = p
+    var buf = this.buf
     val yearNeg = b == '-' || (b != '+' && decodeError("expected '-' or '+' or digit", pos))
     val d2 = buf(pos + 1) - '0'
     val d3 = buf(pos + 2) - '0'
@@ -828,7 +835,10 @@ final class JsonReader private[jsoniter_scala](
     var d = 0
     pos += 5
     while ({
-      if (pos >= tail) pos = loadMoreOrError(pos)
+      if (pos >= tail) {
+        pos = loadMoreOrError(pos)
+        buf = this.buf
+      }
       d = buf(pos) - '0'
       d >= 0 && d <= 9 && yearDigits < maxDigits
     }) {
@@ -850,21 +860,28 @@ final class JsonReader private[jsoniter_scala](
     } else year
   }
 
-  private[this] def parseNanoWithByte(t: Byte): Int = {
-    var nano, d = 0
-    var nanoDigitWeight = 100000000
-    var pos = head
-    while ({
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      d = buf(pos) - '0'
-      d >= 0 && d <= 9 && nanoDigitWeight != 0
-    }) {
-      nano += d * nanoDigitWeight
-      nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
-      pos += 1
-    }
-    if (d + '0' != t) nanoError(nanoDigitWeight, t, pos)
-    head = pos + 1
+  private[this] def parseOptionalNanoWithByte(t: Byte): Int = {
+    var nano = 0
+    var b = nextByte(head)
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var pos = head
+      var buf = this.buf
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        b >= '0' && b <= '9' && nanoDigitWeight != 0
+      }) {
+        nano += (b - '0') * nanoDigitWeight
+        nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
+        pos += 1
+      }
+      if (b != t) nanoError(nanoDigitWeight, t, pos)
+      head = pos + 1
+    } else if (b != t) tokensError('.', t)
     nano
   }
 
@@ -880,6 +897,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
     if (pos + 2 < tail) {
+      val buf = this.buf
       if (buf(pos) != 'u') decodeError(error, pos)
       if (buf(pos + 1) != 'l') decodeError(error, pos + 1)
       if (buf(pos + 2) != 'l') decodeError(error, pos + 2)
@@ -890,6 +908,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
     if (pos + 2 < tail) {
+      val buf = this.buf
       if (buf(pos) != 'u') tokenOrNullError(b, pos)
       if (buf(pos + 1) != 'l') tokenOrNullError(b, pos + 1)
       if (buf(pos + 2) != 'l') tokenOrNullError(b, pos + 2)
@@ -941,6 +960,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseBoolean(isToken: Boolean, pos: Int): Boolean =
     if (pos + 3 < tail) {
+      val buf = this.buf
       val b = buf(pos)
       if (b == 't') {
         if (buf(pos + 1) != 'r') booleanError(pos + 1)
@@ -949,10 +969,10 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 4
         true
       } else if (b == 'f') {
-        if (buf(pos + 1) != 'a') booleanError(pos + 1)
-        if (buf(pos + 2) != 'l') booleanError(pos + 2)
-        if (buf(pos + 3) != 's') booleanError(pos + 3)
         if (pos + 4 < tail) {
+          if (buf(pos + 1) != 'a') booleanError(pos + 1)
+          if (buf(pos + 2) != 'l') booleanError(pos + 2)
+          if (buf(pos + 3) != 's') booleanError(pos + 3)
           if (buf(pos + 4) != 'e') booleanError(pos + 4)
           head = pos + 5
           false
@@ -973,8 +993,10 @@ final class JsonReader private[jsoniter_scala](
     var x = '0' - b
     val isZeroFirst = isToken && x == 0
     var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1004,8 +1026,10 @@ final class JsonReader private[jsoniter_scala](
     var x = '0' - b
     val isZeroFirst = isToken && x == 0
     var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1035,8 +1059,10 @@ final class JsonReader private[jsoniter_scala](
     var x = '0' - b
     val isZeroFirst = isToken && x == 0
     var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1067,8 +1093,10 @@ final class JsonReader private[jsoniter_scala](
     var x: Long = '0' - b
     val isZeroFirst = isToken && x == 0
     var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1104,8 +1132,10 @@ final class JsonReader private[jsoniter_scala](
       var manExp, posExp, digits = 0
       var isExpNeg = false
       var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1127,8 +1157,10 @@ final class JsonReader private[jsoniter_scala](
           manExp -= 1
         }
         pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1149,8 +1181,10 @@ final class JsonReader private[jsoniter_scala](
         if (b < '0' || b > '9') numberError()
         posExp = b - '0'
         pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1202,8 +1236,10 @@ final class JsonReader private[jsoniter_scala](
       var manExp, posExp, digits = 0
       var isExpNeg = false
       var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1225,8 +1261,10 @@ final class JsonReader private[jsoniter_scala](
           manExp -= 1
         }
         pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1247,8 +1285,10 @@ final class JsonReader private[jsoniter_scala](
         if (b < '0' || b > '9') numberError()
         posExp = b - '0'
         pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1302,8 +1342,10 @@ final class JsonReader private[jsoniter_scala](
           if (b == '0') 0
           else 1
         var pos = head
+        var buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1357,8 +1399,10 @@ final class JsonReader private[jsoniter_scala](
           if (b == '0') 0
           else 1
         var pos = head
+        var buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1373,8 +1417,10 @@ final class JsonReader private[jsoniter_scala](
           b = nextByte(pos + 1)
           if (b < '0' || b > '9') numberError()
           pos = head
+          buf = this.buf
           while ((pos < tail || {
             pos = loadMore(pos)
+            buf = this.buf
             pos < tail
           }) && {
             b = buf(pos)
@@ -1392,8 +1438,10 @@ final class JsonReader private[jsoniter_scala](
           if (b == '-' || b == '+') b = nextByte(head)
           if (b < '0' || b > '9') numberError()
           pos = head
+          buf = this.buf
           while ((pos < tail || {
             pos = loadMore(pos)
+            buf = this.buf
             pos < tail
           }) && {
             b = buf(pos)
@@ -1464,8 +1512,10 @@ final class JsonReader private[jsoniter_scala](
       }
       var x: Long = '0' - b
       var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1497,7 +1547,10 @@ final class JsonReader private[jsoniter_scala](
         seconds = sumSeconds(x, seconds, pos)
         var nanoDigitWeight = 100000000
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1530,12 +1583,10 @@ final class JsonReader private[jsoniter_scala](
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
     var second, nano = 0
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == ':') {
       second = next2Digits(head)
-      b = nextByte(head)
-      if (b == '.') nano = parseNanoWithByte('Z')
-      else if (b != 'Z') tokensError('.', 'Z')
+      nano = parseOptionalNanoWithByte('Z')
     } else if (b != 'Z') tokensError(':', 'Z')
     nextByteOrError('"', head)
     Instant.ofEpochSecond(epochSecond(year, month, day, hour, minute, second), nano)
@@ -1551,12 +1602,10 @@ final class JsonReader private[jsoniter_scala](
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
     var second, nano = 0
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == ':') {
       second = next2Digits(head)
-      b = nextByte(head)
-      if (b == '.') nano = parseNanoWithByte('"')
-      else if (b != '"') tokensError('.', '"')
+      nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
     LocalDateTime.of(toLocalDate(year, month, day), toLocalTime(hour, minute, second, nano))
   }
@@ -1565,12 +1614,10 @@ final class JsonReader private[jsoniter_scala](
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
     var second, nano = 0
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == ':') {
       second = next2Digits(head)
-      b = nextByte(head)
-      if (b == '.') nano = parseNanoWithByte('"')
-      else if (b != '"') tokensError('.', '"')
+      nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
     toLocalTime(hour, minute, second, nano)
   }
@@ -1612,8 +1659,12 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         hasNano = true
         var pos = head
+        var buf = this.buf
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1658,8 +1709,12 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         hasNano = true
         var pos = head
+        var buf = this.buf
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1711,8 +1766,10 @@ final class JsonReader private[jsoniter_scala](
       }
       var x = '0' - b
       var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1770,8 +1827,12 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         hasNano = true
         var pos = head
+        var buf = this.buf
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -2258,6 +2319,7 @@ final class JsonReader private[jsoniter_scala](
     val bufOffset = alignedAbsFrom - offset
     var i = appendChars(dumpHeader, from)
     i = appendChars(dumpBorder, i)
+    val buf = this.buf
     val ds = hexDigits
     var charBuf = this.charBuf
     var lim = charBuf.length
@@ -2358,8 +2420,10 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def skipNumber(p: Int): Int = {
     var pos = p
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       val b = buf(pos)
