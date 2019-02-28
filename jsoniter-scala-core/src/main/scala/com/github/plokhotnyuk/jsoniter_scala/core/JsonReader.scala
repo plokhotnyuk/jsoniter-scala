@@ -503,7 +503,15 @@ final class JsonReader private[jsoniter_scala](
 
   def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
 
-  def isCharBufEqualsTo(len: Int, s: String): Boolean = len == s.length && isCharBufEqualsTo(len, s, 0)
+  def isCharBufEqualsTo(len: Int, s: String): Boolean = s.length == len && {
+    val charBuf = this.charBuf
+    var i = 0
+    while (i < len) {
+      if (s.charAt(i) != charBuf(i)) return false
+      i += 1
+    }
+    true
+  }
 
   def skip(): Unit = head = {
     val b = nextToken(head)
@@ -915,10 +923,6 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 3
       default
     } else parseNullOrTokenError(default, b, loadMoreOrError(pos))
-
-  @tailrec
-  private[this] def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
-    i == len || (charBuf(i) == s.charAt(i) && isCharBufEqualsTo(len, s, i + 1))
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
     if (i >= charBuf.length) growCharBuf(i + 1)
