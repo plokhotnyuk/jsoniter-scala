@@ -409,9 +409,10 @@ final class JsonReader private[jsoniter_scala](
 
   def readBoolean(): Boolean = parseBoolean(isToken = true, head)
 
-  def readStringAsCharBuf(): Int =
-    if (isNextToken('"', head)) parseString()
-    else tokenError('"')
+  def readStringAsCharBuf(): Int = {
+    nextTokenOrError('"', head)
+    parseString()
+  }
 
   def readStringAsByte(): Byte = {
     nextTokenOrError('"', head)
