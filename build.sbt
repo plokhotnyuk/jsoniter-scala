@@ -1,13 +1,13 @@
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt.Keys.scalacOptions
-import sbt.url
+import sbt._
 import scala.sys.process._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
 
-def mimaSettings = mimaDefaultSettings ++ Seq(
+def mimaSettings: Seq[Setting[_]] = mimaDefaultSettings ++ Seq(
   mimaCheckDirection := {
-    def isPatch = {
+    def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
       val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
       newMajor == oldMajor && newMinor == oldMinor
@@ -16,7 +16,7 @@ def mimaSettings = mimaDefaultSettings ++ Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
-    def isCheckingRequired = {
+    def isCheckingRequired: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
       val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
       newMajor == oldMajor && (newMajor != "0" || newMinor == oldMinor)
@@ -137,7 +137,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.lihaoyi" %% "upickle" % "0.7.1",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.5",
       "com.jsoniter" % "jsoniter" % "0.9.23",
-      "org.javassist" % "javassist" % "3.24.1-GA",
+      "org.javassist" % "javassist" % "3.24.1-GA", // required for Jsoniter Java
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.8",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.8",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
