@@ -98,7 +98,7 @@ lazy val `jsoniter-scala-core` = project
     libraryDependencies ++= {
       val scalatestV =
         if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
-        else "3.0.6-SNAP5"
+        else "3.0.6"
       Seq(
         "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
         "org.scalatest" %% "scalatest" % scalatestV % Test
@@ -116,7 +116,7 @@ lazy val `jsoniter-scala-macros` = project
     libraryDependencies ++= {
       val scalatestV =
         if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
-        else "3.0.6-SNAP5"
+        else "3.0.6"
       Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -149,6 +149,6 @@ lazy val `jsoniter-scala-benchmark` = project
       "org.julienrf" %% "play-json-derived-codecs" % "5.0.0",
       "ai.x" %% "play-json-extensions" % "0.30.1",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
-      "org.scalatest" %% "scalatest" % "3.0.6-SNAP6" % Test
+      "org.scalatest" %% "scalatest" % "3.0.6" % Test
     )
   )
