@@ -1199,6 +1199,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""")
     }
+    "serialize and deserialize ADTs with leafs that have mixed traits that extends the same base" in {
+      sealed trait Base
+
+      sealed trait Base2 extends Base
+
+      final case class A(a: Int) extends Base with Base2
+
+      final case class B(b: String) extends Base with Base2
+
+      verifySerDeser(make[List[Base]](CodecMakerConfig()), List(A(1), B("VVV")),
+        """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+    }
     "throw parse exception in case of duplicated discriminator field" in {
       verifyDeserError(codecOfADTList, """[{"type":"AAA","a":1,"type":"AAA"}]""",
         """duplicated field "type", offset: 0x0000001b""")
