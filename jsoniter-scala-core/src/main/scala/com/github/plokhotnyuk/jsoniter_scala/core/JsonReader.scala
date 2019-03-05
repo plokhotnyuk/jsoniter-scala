@@ -1987,7 +1987,7 @@ final class JsonReader private[jsoniter_scala](
     else 29
 
   private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && {
-    val century = (year * 1374389535L >> 37).toInt - (year >> 31) // divide int by 100
+    val century = year / 100
     century * 100 != year || (century & 0x3) == 0
   }
 
