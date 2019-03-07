@@ -89,6 +89,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Configurable by field annotation ability to read/write numeric fields from/to string values
 - Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `java.io.InputStream` or serializing to `java.io.OutputStream`
+- Using black box macros only for codec generation ensures that your types will never be changed
+- Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs` 
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
 - Releases for different Scala versions: 2.11, 2.12, 2.13.0-M4, 2.13.0-M5  
 - Support of compilation to a native image by GraalVM
@@ -178,6 +180,9 @@ Samples for integration with different web frameworks:
 - [Play (with Netty native transport)](https://github.com/plokhotnyuk/play/tree/master/src/main/scala/microservice)
 - [akka-http](https://github.com/hseeberger/akka-http-json/blob/master/akka-http-jsoniter-scala/src/test/scala/de/heikoseeberger/akkahttpjsoniterscala/ExampleApp.scala)
 - [http4s](https://github.com/TechEmpower/FrameworkBenchmarks/blob/d1f960b2d4d6ea7b5c30a3ef2a8b47670f346f1c/frameworks/Scala/http4s/src/main/scala/WebServer.scala)
+
+For all dependent projects it is recommended to use [sbt-updates plugin](https://github.com/rtimush/sbt-updates) or 
+[Scala steward service](https://github.com/scala-steward) to keep up with using of latest releases.
 
 ## Known issues
 
@@ -394,13 +399,4 @@ Do not push changes to github until promoted artifacts for the new version are n
 [Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds. 
 
-Create PRs with updated version of jsoniter-scala for OSS projects which depends on it in case of binary incompatible or 
-security release:
-1. [hseeberger/akka-http-json](https://github.com/hseeberger/akka-http-json/blob/master/build.sbt)
-2. [ovotech/kafka-serialization](https://github.com/ovotech/kafka-serialization/blob/master/build.sbt)
-3. [azhur/kafka-serde-scala](https://github.com/azhur/kafka-serde-scala/blob/master/build.sbt)
-4. [permutive/fs2-google-pubsub](https://github.com/permutive/fs2-google-pubsub/blob/master/build.sc)
-5. [loco/loco](https://github.com/yarhrn/loco/blob/master/project/Dependencies.scala)
-6. [pityka/flatjoin](https://github.com/pityka/flatjoin/blob/master/build.sbt)
-7. [pityka/tasks](https://github.com/pityka/tasks/blob/master/build.sbt)
-8. [TechEmpower/FrameworkBenchmarks](https://github.com/TechEmpower/FrameworkBenchmarks/search?q=jsoniter-scala&unscoped_q=jsoniter-scala)
+Last step is updating of the tag info in a [release list](https://github.com/plokhotnyuk/jsoniter-scala/releases). 
