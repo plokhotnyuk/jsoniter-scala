@@ -6,9 +6,9 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalatest.{Matchers, WordSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class PackageSpec extends WordSpec with Matchers with PropertyChecks {
+class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "readFromStream" should {
     "parse JSON from the provided input stream" in {
       readFromStream(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user

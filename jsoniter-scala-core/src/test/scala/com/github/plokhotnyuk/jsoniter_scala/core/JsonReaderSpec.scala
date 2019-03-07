@@ -10,10 +10,10 @@ import java.util.UUID
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class JsonReaderSpec extends WordSpec with Matchers with PropertyChecks {
+class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "ReaderConfig.<init>" should {
     "have safe and handy defaults" in {
       ReaderConfig().throwParseExceptionWithStackTrace shouldBe false

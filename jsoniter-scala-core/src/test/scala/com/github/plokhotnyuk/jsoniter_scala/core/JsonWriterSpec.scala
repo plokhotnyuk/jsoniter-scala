@@ -7,10 +7,10 @@ import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class JsonWriterSpec extends WordSpec with Matchers with PropertyChecks {
+class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "WriterConfig.<init>" should {
     "have handy defaults" in {
       WriterConfig().indentionStep shouldBe 0
