@@ -1634,13 +1634,13 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     verifyDeserError(codec, json.getBytes(UTF_8), msg)
 
   def verifyDeserError[T](codec: JsonValueCodec[T], jsonBytes: Array[Byte], msg: String): Unit = {
-    assert(intercept[JsonParseException](verifyDirectByteBufferDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[JsonReaderException](verifyDirectByteBufferDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
-    assert(intercept[JsonParseException](verifyHeapByteBufferDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[JsonReaderException](verifyHeapByteBufferDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
-    assert(intercept[JsonParseException](verifyInputStreamDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[JsonReaderException](verifyInputStreamDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
-    assert(intercept[JsonParseException](verifyByteArrayDeser(codec, jsonBytes, (_: T) => ()))
+    assert(intercept[JsonReaderException](verifyByteArrayDeser(codec, jsonBytes, (_: T) => ()))
       .getMessage.contains(msg))
   }
 

@@ -30,8 +30,8 @@ import scala.{specialized => sp}
   * (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or ADT instances with the discriminator field doesn't
   * appear in the beginning of the JSON object</li>
   * </ul>
-  * @param throwParseExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
-  *                                          development
+  * @param throwReaderExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  *                                           development
   * @param appendHexDumpToParseException a flag that allows to turn off hex dumping of affected by error part of
   *                                      an internal byte buffer
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
@@ -39,7 +39,7 @@ import scala.{specialized => sp}
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
   */
 case class ReaderConfig(
-    throwParseExceptionWithStackTrace: Boolean = false,
+    throwReaderExceptionWithStackTrace: Boolean = false,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
     preferredCharBufSize: Int = 1024) {
@@ -47,7 +47,7 @@ case class ReaderConfig(
   if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
 }
 
-class JsonParseException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonReader private[jsoniter_scala](
@@ -707,7 +707,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & 0xFFFFFFF0, 0), Math.min((pos + 48) & 0xFFFFFFF0, tail), off.toInt, i)
     }
-    throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwParseExceptionWithStackTrace)
+    throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
   }
 
   @tailrec

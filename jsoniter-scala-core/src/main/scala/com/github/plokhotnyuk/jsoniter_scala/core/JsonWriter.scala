@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.{IOException, OutputStream}
+import java.io.OutputStream
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 import java.nio.{BufferOverflowException, ByteBuffer}
@@ -26,18 +26,24 @@ import scala.{specialized => sp}
   * [[scala.math.BigDecimal]], [[scala.math.BigInt]] or other non escaped ASCII strings written using
   * `JsonWriter.writeNonEscapedAsciiKey` or `JsonWriter.writeNonEscapedAsciiVal` </li>
   * </ul>
+  * @param throwWriterExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  *                                           development
   * @param indentionStep a size of indention for pretty-printed formatting or 0 for compact output
   * @param escapeUnicode a flag to turn on hexadecimal escaping of all non-ASCII chars
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when writing to
   *                         [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]]
   */
 case class WriterConfig(
+    throwWriterExceptionWithStackTrace: Boolean = false,
     indentionStep: Int = 0,
     escapeUnicode: Boolean = false,
     preferredBufSize: Int = 16384) {
   if (indentionStep < 0) throw new IllegalArgumentException("'indentionStep' should be not less than 0")
   if (preferredBufSize < 0) throw new IllegalArgumentException("'preferredBufSize' should be not less than 0")
 }
+
+class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+  extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
@@ -220,7 +226,8 @@ final class JsonWriter private[jsoniter_scala](
     writeColon()
   }
 
-  def encodeError(msg: String): Nothing = throw new IOException(msg)
+  def encodeError(msg: String): Nothing =
+    throw new JsonWriterException(msg, null, config.throwWriterExceptionWithStackTrace)
 
   def writeVal(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()

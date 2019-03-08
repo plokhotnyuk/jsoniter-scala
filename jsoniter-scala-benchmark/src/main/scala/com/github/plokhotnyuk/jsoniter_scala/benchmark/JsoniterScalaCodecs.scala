@@ -13,7 +13,7 @@ import scala.collection.mutable
 
 object JsoniterScalaCodecs {
   val exceptionWithoutDumpConfig = ReaderConfig(appendHexDumpToParseException = false)
-  val exceptionWithStacktraceConfig = ReaderConfig(throwParseExceptionWithStackTrace = true)
+  val exceptionWithStacktraceConfig = ReaderConfig(throwReaderExceptionWithStackTrace = true)
   val longNumberConfig = ReaderConfig(preferredBufSize = 1024 * 1024)
   val longStringConfig = ReaderConfig(preferredCharBufSize = 1024 * 1024)
   val escapingConfig = WriterConfig(escapeUnicode = true)

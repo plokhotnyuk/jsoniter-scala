@@ -1,6 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.IOException
 import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -13,6 +12,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "WriterConfig.<init>" should {
     "have handy defaults" in {
+      WriterConfig().throwWriterExceptionWithStackTrace shouldBe false
       WriterConfig().indentionStep shouldBe 0
       WriterConfig().escapeUnicode shouldBe false
       WriterConfig().preferredBufSize shouldBe 16384
@@ -380,9 +380,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
       def checkError(s: String, escapeUnicode: Boolean): Unit = {
-        assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
-        assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
       }
 
@@ -427,9 +427,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw i/o exception in case of surrogate pair character" in {
       forAll(genSurrogateChar, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
-        assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(ch)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(ch)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
-        assert(intercept[IOException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(ch)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(ch)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
       }
     }
@@ -567,9 +567,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw i/o exception on non-finite numbers" in {
       forAll(genNonFiniteFloat) { (n: Float) =>
-        assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
-        assert(intercept[IOException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
-        assert(intercept[IOException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
+        assert(intercept[JsonWriterException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
+        assert(intercept[JsonWriterException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
+        assert(intercept[JsonWriterException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
       }
     }
   }
@@ -633,9 +633,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw i/o exception on non-finite numbers" in {
       forAll(genNonFiniteDouble) { (n: Double) =>
-        assert(intercept[IOException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
-        assert(intercept[IOException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
-        assert(intercept[IOException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
+        assert(intercept[JsonWriterException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
+        assert(intercept[JsonWriterException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
+        assert(intercept[JsonWriterException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
       }
     }
   }

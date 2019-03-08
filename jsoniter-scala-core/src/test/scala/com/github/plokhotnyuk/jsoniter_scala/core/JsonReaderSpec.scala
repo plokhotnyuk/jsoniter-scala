@@ -16,7 +16,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "ReaderConfig.<init>" should {
     "have safe and handy defaults" in {
-      ReaderConfig().throwParseExceptionWithStackTrace shouldBe false
+      ReaderConfig().throwReaderExceptionWithStackTrace shouldBe false
       ReaderConfig().appendHexDumpToParseException shouldBe true
       ReaderConfig().preferredBufSize shouldBe 16384
       ReaderConfig().preferredCharBufSize shouldBe 1024
@@ -60,9 +60,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       validateSkip("\"-\"")
     }
     "throw parsing exception when skipping string that is not closed by parentheses" in {
-      assert(intercept[JsonParseException](validateSkip("\""))
+      assert(intercept[JsonReaderException](validateSkip("\""))
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](validateSkip("\"abc"))
+      assert(intercept[JsonReaderException](validateSkip("\"abc"))
         .getMessage.contains("unexpected end of input, offset: 0x00000005"))
     }
     "skip string values with escaped characters" in {
@@ -87,9 +87,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       validateSkip(" \n\t\rfalse")
     }
     "throw parsing exception when skipping truncated boolean value" in {
-      assert(intercept[JsonParseException](validateSkip("t"))
+      assert(intercept[JsonReaderException](validateSkip("t"))
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](validateSkip("f"))
+      assert(intercept[JsonReaderException](validateSkip("f"))
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "skip null values" in {
@@ -102,7 +102,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       validateSkip("{\"{\"}")
     }
     "throw parsing exception when skipping not closed object" in {
-      assert(intercept[JsonParseException](validateSkip("{{}"))
+      assert(intercept[JsonReaderException](validateSkip("{{}"))
         .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip array values" in {
@@ -111,7 +111,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       validateSkip("[\"[\"]")
     }
     "throw parsing exception when skipping not closed array" in {
-      assert(intercept[JsonParseException](validateSkip("[[]"))
+      assert(intercept[JsonReaderException](validateSkip("[[]"))
         .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip mixed values" in {
@@ -139,7 +139,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception when skipping not from start of JSON value" in {
       def checkError(invalidInput: String): Unit =
-        assert(intercept[JsonParseException](validateSkip(invalidInput))
+        assert(intercept[JsonReaderException](validateSkip(invalidInput))
           .getMessage.contains("expected value, offset: 0x00000000"))
 
       checkError("]")
@@ -157,7 +157,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parse exception in case of end of input" in {
       val r = reader("{}")
       r.skip()
-      assert(intercept[JsonParseException](r.nextToken() == '{')
+      assert(intercept[JsonReaderException](r.nextToken() == '{')
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
   }
@@ -168,27 +168,27 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       r.readNullOrError("default", "error") shouldBe "default"
     }
     "throw parse exception in case of invalid null value" in {
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nul")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null")
       }.getMessage.contains("unexpected end of input, offset: 0x00000003"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("xull")
         r.isNextToken('x') shouldBe true
         r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000000"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nxll")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000001"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nuxl")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null")
       }.getMessage.contains("expected null, offset: 0x00000002"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nulx")
         r.isNextToken('n') shouldBe true
         r.readNullOrError("default", "expected null")
@@ -206,27 +206,27 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       r.readNullOrTokenError("default", 'x') shouldBe "default"
     }
     "throw parse exception in case of invalid null value" in {
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nul")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("unexpected end of input, offset: 0x00000003"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("yull")
         r.isNextToken('y') shouldBe true
         r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000000"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nxll")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000001"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nuxl")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x')
       }.getMessage.contains("expected 'x' or null, offset: 0x00000002"))
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         val r = reader("nulx")
         r.isNextToken('n') shouldBe true
         r.readNullOrTokenError("default", 'x')
@@ -260,9 +260,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readBoolean()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsBoolean()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsBoolean()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readBoolean()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsBoolean()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsBoolean()).getMessage.contains(error2))
     }
 
     "parse valid true and false values" in {
@@ -285,17 +285,17 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readKeyAsUUID" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"").readKeyAsUUID())
+      assert(intercept[JsonReaderException](reader("\"00000000-0000-0000-0000-000000000000\"").readKeyAsUUID())
         .getMessage.contains("unexpected end of input, offset: 0x00000026"))
-      assert(intercept[JsonParseException](reader("\"00000000-0000-0000-0000-000000000000\"x").readKeyAsUUID())
+      assert(intercept[JsonReaderException](reader("\"00000000-0000-0000-0000-000000000000\"x").readKeyAsUUID())
         .getMessage.contains("expected ':', offset: 0x00000026"))
     }
   }
   "JsonReader.readUUID and JsonReader.readKeyAsUUID" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readUUID(null))
+      assert(intercept[JsonReaderException](reader("null").readUUID(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsUUID())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsUUID())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -315,8 +315,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readUUID(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsUUID()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readUUID(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsUUID()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -399,17 +399,17 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readKeyAsInstant" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"").readKeyAsInstant())
+      assert(intercept[JsonReaderException](reader("\"2008-01-20T07:24:33Z\"").readKeyAsInstant())
         .getMessage.contains("unexpected end of input, offset: 0x00000016"))
-      assert(intercept[JsonParseException](reader("\"2008-01-20T07:24:33Z\"x").readKeyAsInstant())
+      assert(intercept[JsonReaderException](reader("\"2008-01-20T07:24:33Z\"x").readKeyAsInstant())
         .getMessage.contains("expected ':', offset: 0x00000016"))
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readDuration(null))
+      assert(intercept[JsonReaderException](reader("null").readDuration(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsDuration())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsDuration())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -430,8 +430,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readDuration(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsDuration()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readDuration(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsDuration()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -479,9 +479,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readInstant and JsonReader.readKeyAsInstant" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readInstant(null))
+      assert(intercept[JsonReaderException](reader("null").readInstant(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsInstant())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsInstant())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -501,8 +501,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readInstant(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsInstant()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readInstant(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsInstant()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -573,9 +573,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readLocalDate and JsonReader.readKeyAsLocalDate" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readLocalDate(null))
+      assert(intercept[JsonReaderException](reader("null").readLocalDate(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsLocalDate())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsLocalDate())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -595,8 +595,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readLocalDate(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsLocalDate()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readLocalDate(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsLocalDate()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -646,9 +646,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readLocalDateTime and JsonReader.readKeyAsLocalDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readLocalDateTime(null))
+      assert(intercept[JsonReaderException](reader("null").readLocalDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsLocalDateTime())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsLocalDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -668,8 +668,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readLocalDateTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsLocalDateTime()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readLocalDateTime(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsLocalDateTime()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -733,9 +733,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readLocalTime and JsonReader.readKeyAsLocalTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readLocalTime(null))
+      assert(intercept[JsonReaderException](reader("null").readLocalTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsLocalTime())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsLocalTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -755,8 +755,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readLocalTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsLocalTime()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readLocalTime(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsLocalTime()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -779,9 +779,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readMonthDay and JsonReader.readKeyAsMonthDay" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readMonthDay(null))
+      assert(intercept[JsonReaderException](reader("null").readMonthDay(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsMonthDay())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsMonthDay())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -801,8 +801,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readMonthDay(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsMonthDay()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readMonthDay(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsMonthDay()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -833,9 +833,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readOffsetDateTime and JsonReader.readKeyAsOffsetDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readOffsetDateTime(null))
+      assert(intercept[JsonReaderException](reader("null").readOffsetDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsOffsetDateTime())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsOffsetDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -858,8 +858,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readOffsetDateTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsOffsetDateTime()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readOffsetDateTime(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsOffsetDateTime()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -942,9 +942,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readOffsetTime and JsonReader.readKeyAsOffsetTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readOffsetTime(null))
+      assert(intercept[JsonReaderException](reader("null").readOffsetTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsOffsetTime())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsOffsetTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -967,8 +967,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readOffsetTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsOffsetTime()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readOffsetTime(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsOffsetTime()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1009,9 +1009,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readPeriod and JsonReader.readKeyAsPeriod" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readPeriod(null))
+      assert(intercept[JsonReaderException](reader("null").readPeriod(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsPeriod())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsPeriod())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1051,8 +1051,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken Period string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readPeriod(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsPeriod()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readPeriod(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsPeriod()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1109,9 +1109,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readYear and JsonReader.readKeyAsYear" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readYear(null))
+      assert(intercept[JsonReaderException](reader("null").readYear(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsYear())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsYear())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1134,8 +1134,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readYear(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsYear()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readYear(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsYear()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1161,9 +1161,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readYearMonth and JsonReader.readKeyAsYearMonth" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readYearMonth(null))
+      assert(intercept[JsonReaderException](reader("null").readYearMonth(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsYearMonth())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsYearMonth())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1189,8 +1189,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken YearMonth string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readYearMonth(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsYearMonth()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readYearMonth(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsYearMonth()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1223,9 +1223,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readZonedDateTime and JsonReader.readKeyAsZonedDateTime" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readZonedDateTime(null))
+      assert(intercept[JsonReaderException](reader("null").readZonedDateTime(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsZonedDateTime())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsZonedDateTime())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1264,8 +1264,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readZonedDateTime(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsZonedDateTime()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readZonedDateTime(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsZonedDateTime()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1348,9 +1348,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readZoneId and JsonReader.readKeyAsZoneId" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readZoneId(null))
+      assert(intercept[JsonReaderException](reader("null").readZoneId(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsZoneId())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsZoneId())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1368,8 +1368,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readZoneId(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsZoneId()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readZoneId(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsZoneId()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1416,9 +1416,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readZoneOffset and JsonReader.readKeyAsZoneOffset" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readZoneOffset(null))
+      assert(intercept[JsonReaderException](reader("null").readZoneOffset(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsZoneOffset())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsZoneOffset())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1444,8 +1444,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
       def checkError(json: String, error: String): Unit = {
-        assert(intercept[JsonParseException](reader(json).readZoneOffset(null)).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader(json).readKeyAsZoneOffset()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readZoneOffset(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readKeyAsZoneOffset()).getMessage.contains(error))
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
@@ -1490,9 +1490,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readKeyAsString" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"\"").readKeyAsString())
+      assert(intercept[JsonReaderException](reader("\"\"").readKeyAsString())
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
-      assert(intercept[JsonParseException](reader("\"\"x").readKeyAsString())
+      assert(intercept[JsonReaderException](reader("\"\"x").readKeyAsString())
         .getMessage.contains("expected ':', offset: 0x00000002"))
     }
   }
@@ -1505,23 +1505,23 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(json: String, error: String): Unit = {
-      assert(intercept[JsonParseException](reader(json).readString(null)).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader(json).readStringAsCharBuf()).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader(json).readKeyAsString()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader(json).readString(null)).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader(json).readStringAsCharBuf()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader(json).readKeyAsString()).getMessage.contains(error))
     }
 
     def checkError2(jsonBytes: Array[Byte], error: String): Unit = {
-      assert(intercept[JsonParseException](reader2(jsonBytes).readString(null)).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader2(jsonBytes).readStringAsCharBuf()).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader2(jsonBytes).readKeyAsString()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader2(jsonBytes).readString(null)).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader2(jsonBytes).readStringAsCharBuf()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader2(jsonBytes).readKeyAsString()).getMessage.contains(error))
     }
 
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readString(null))
+      assert(intercept[JsonReaderException](reader("null").readString(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readStringAsCharBuf())
+      assert(intercept[JsonReaderException](reader("null").readStringAsCharBuf())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readKeyAsString())
+      assert(intercept[JsonReaderException](reader("null").readKeyAsString())
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -1569,9 +1569,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception in case of illegal escape sequence" in {
       def checkError(s: String, error1: String, error2: String): Unit = {
-        assert(intercept[JsonParseException](reader("\"" + s + "\"").readString(null)).getMessage.contains(error1))
-        assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsCharBuf()).getMessage.contains(error1))
-        assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsString()).getMessage.contains(error2))
+        assert(intercept[JsonReaderException](reader("\"" + s + "\"").readString(null)).getMessage.contains(error1))
+        assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsCharBuf()).getMessage.contains(error1))
+        assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsString()).getMessage.contains(error2))
       }
 
       checkError("\\x0008", "illegal escape sequence, offset: 0x00000002",
@@ -1603,11 +1603,11 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception in case of illegal byte sequence" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readString(null))
+        assert(intercept[JsonReaderException](reader2('"'.toByte +: bytes :+ '"'.toByte).readString(null))
           .getMessage.contains(error))
-        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readStringAsCharBuf())
+        assert(intercept[JsonReaderException](reader2('"'.toByte +: bytes :+ '"'.toByte).readStringAsCharBuf())
           .getMessage.contains(error))
-        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readString(null))
+        assert(intercept[JsonReaderException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readString(null))
           .getMessage.contains(error))
       }
 
@@ -1637,9 +1637,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readKeyAsChar" should {
     "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonParseException](reader("\"x\"").readKeyAsChar())
+      assert(intercept[JsonReaderException](reader("\"x\"").readKeyAsChar())
         .getMessage.contains("unexpected end of input, offset: 0x00000003"))
-      assert(intercept[JsonParseException](reader("\"x\"x").readKeyAsChar())
+      assert(intercept[JsonReaderException](reader("\"x\"x").readKeyAsChar())
         .getMessage.contains("expected ':', offset: 0x00000003"))
     }
   }
@@ -1655,13 +1655,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(json: String, error: String): Unit = {
-      assert(intercept[JsonParseException](reader(json).readChar()).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader(json).readKeyAsChar()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader(json).readChar()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader(json).readKeyAsChar()).getMessage.contains(error))
     }
 
     def checkError2(jsonBytes: Array[Byte], error: String): Unit = {
-      assert(intercept[JsonParseException](reader2(jsonBytes).readChar()).getMessage.contains(error))
-      assert(intercept[JsonParseException](reader2(jsonBytes).readKeyAsChar()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader2(jsonBytes).readChar()).getMessage.contains(error))
+      assert(intercept[JsonReaderException](reader2(jsonBytes).readKeyAsChar()).getMessage.contains(error))
     }
 
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
@@ -1698,8 +1698,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception for control chars that must be escaped" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader2(bytes).readChar()).getMessage.contains(error))
-        assert(intercept[JsonParseException](reader2(bytes).readKeyAsChar()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader2(bytes).readChar()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader2(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
       forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
@@ -1722,8 +1722,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception in case of illegal escape sequence" in {
       def checkError(s: String, error1: String, error2: String): Unit = {
-        assert(intercept[JsonParseException](reader("\"" + s + "\"").readChar()).getMessage.contains(error1))
-        assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsChar()).getMessage.contains(error2))
+        assert(intercept[JsonReaderException](reader("\"" + s + "\"").readChar()).getMessage.contains(error1))
+        assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsChar()).getMessage.contains(error2))
       }
 
       checkError("\\x0008", "illegal escape sequence, offset: 0x00000002",
@@ -1747,9 +1747,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception in case of illegal byte sequence" in {
       def checkError(bytes: Array[Byte], error: String): Unit = {
-        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte).readChar())
+        assert(intercept[JsonReaderException](reader2('"'.toByte +: bytes :+ '"'.toByte).readChar())
           .getMessage.contains(error))
-        assert(intercept[JsonParseException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readKeyAsChar())
+        assert(intercept[JsonReaderException](reader2('"'.toByte +: bytes :+ '"'.toByte :+ ':'.toByte).readKeyAsChar())
           .getMessage.contains(error))
       }
 
@@ -1786,9 +1786,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readByte()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsByte()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsByte()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readByte()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsByte()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsByte()).getMessage.contains(error2))
     }
 
     "parse valid byte values" in {
@@ -1818,7 +1818,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readByte()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readByte()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1847,9 +1847,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readShort()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsShort()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsShort()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readShort()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsShort()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsShort()).getMessage.contains(error2))
     }
 
     "parse valid short values" in {
@@ -1879,7 +1879,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readShort()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readShort()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1908,9 +1908,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readInt()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsInt()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsInt()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readInt()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsInt()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsInt()).getMessage.contains(error2))
     }
 
     "parse valid int values" in {
@@ -1944,7 +1944,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readInt()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readInt()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -1973,9 +1973,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readLong()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsLong()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsLong()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readLong()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsLong()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsLong()).getMessage.contains(error2))
     }
 
     "parse valid long values" in {
@@ -2009,7 +2009,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readLong()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readLong()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2048,9 +2048,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     def checkFloat(s: String): Unit = check(s, java.lang.Float.parseFloat(s))
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readFloat()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsFloat()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsFloat()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readFloat()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsFloat()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsFloat()).getMessage.contains(error2))
     }
 
     "parse valid float values" in {
@@ -2117,7 +2117,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readFloat()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readFloat()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2154,9 +2154,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     def checkDouble(s: String): Unit = check(s, java.lang.Double.parseDouble(s))
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readDouble()).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsDouble()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsDouble()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readDouble()).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsDouble()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsDouble()).getMessage.contains(error2))
     }
 
     "parse valid double values" in {
@@ -2219,7 +2219,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readDouble()).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readDouble()).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2239,9 +2239,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readBigInt and JsonReader.readStringAsBigInt" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readBigInt(null))
+      assert(intercept[JsonReaderException](reader("null").readBigInt(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readStringAsBigInt(null))
+      assert(intercept[JsonReaderException](reader("null").readStringAsBigInt(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -2258,9 +2258,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readBigInt(null)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsBigInt()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsBigInt(null)).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader(s).readBigInt(null)).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsBigInt()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsBigInt(null)).getMessage.contains(error2))
     }
 
     "parse valid number values" in {
@@ -2300,7 +2300,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readBigInt(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readBigInt(null)).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2326,9 +2326,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.readBigDecimal and JsonReader.readStringAsBigDecimal" should {
     "don't parse null value" in {
-      assert(intercept[JsonParseException](reader("null").readBigDecimal(null))
+      assert(intercept[JsonReaderException](reader("null").readBigDecimal(null))
         .getMessage.contains("illegal number, offset: 0x00000000"))
-      assert(intercept[JsonParseException](reader("null").readStringAsBigDecimal(null))
+      assert(intercept[JsonReaderException](reader("null").readStringAsBigDecimal(null))
         .getMessage.contains("expected '\"', offset: 0x00000000"))
     }
     "return supplied default value instead of null value" in {
@@ -2346,9 +2346,9 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
-      assert(intercept[JsonParseException](reader(s).readBigDecimal(null)).getMessage.contains(error1))
-      assert(intercept[JsonParseException](reader("\"" + s + "\":").readKeyAsBigDecimal()).getMessage.contains(error2))
-      assert(intercept[JsonParseException](reader("\"" + s + "\"").readStringAsBigDecimal(null))
+      assert(intercept[JsonReaderException](reader(s).readBigDecimal(null)).getMessage.contains(error1))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\":").readKeyAsBigDecimal()).getMessage.contains(error2))
+      assert(intercept[JsonReaderException](reader("\"" + s + "\"").readStringAsBigDecimal(null))
         .getMessage.contains(error2))
     }
 
@@ -2405,7 +2405,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw parsing exception on leading zero" in {
       def checkError(s: String, error: String): Unit =
-        assert(intercept[JsonParseException](reader(s).readBigDecimal(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(s).readBigDecimal(null)).getMessage.contains(error))
 
       checkError("00", "illegal number with leading zero, offset: 0x00000000")
       checkError("-00", "illegal number with leading zero, offset: 0x00000001")
@@ -2446,7 +2446,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with missing required field" in {
       val jsonReader = reader("{}")
       jsonReader.nextToken()
-      assert(intercept[JsonParseException](jsonReader.requiredFieldError("name"))
+      assert(intercept[JsonReaderException](jsonReader.requiredFieldError("name"))
         .getMessage.contains("missing required field \"name\", offset: 0x00000000"))
     }
   }
@@ -2454,7 +2454,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with name of duplicated key" in {
       val jsonReader = reader("\"xxx\"")
       val len = jsonReader.readStringAsCharBuf()
-      assert(intercept[JsonParseException](jsonReader.duplicatedKeyError(len))
+      assert(intercept[JsonReaderException](jsonReader.duplicatedKeyError(len))
         .getMessage.contains("duplicated field \"xxx\", offset: 0x00000004"))
     }
   }
@@ -2462,7 +2462,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with name of unexpected key" in {
       val jsonReader = reader("\"xxx\"")
       val len = jsonReader.readStringAsCharBuf()
-      assert(intercept[JsonParseException](jsonReader.unexpectedKeyError(len))
+      assert(intercept[JsonReaderException](jsonReader.unexpectedKeyError(len))
         .getMessage.contains("unexpected field \"xxx\", offset: 0x00000004"))
     }
   }
@@ -2470,7 +2470,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with unexpected discriminator" in {
       val jsonReader = reader("\"xxx\"")
       jsonReader.readString(null)
-      assert(intercept[JsonParseException](jsonReader.discriminatorError())
+      assert(intercept[JsonReaderException](jsonReader.discriminatorError())
         .getMessage.contains("xxx"))
     }
   }
@@ -2478,7 +2478,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with unexpected discriminator value" in {
       val jsonReader = reader("\"xxx\"")
       val value = jsonReader.readString(null)
-      assert(intercept[JsonParseException](jsonReader.discriminatorValueError(value))
+      assert(intercept[JsonReaderException](jsonReader.discriminatorValueError(value))
        .getMessage.contains("illegal value of discriminator field \"xxx\", offset: 0x00000004"))
     }
   }
@@ -2486,13 +2486,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with unexpected enum value as string" in {
       val jsonReader = reader("\"xxx\"")
       val value = jsonReader.readString(null)
-      assert(intercept[JsonParseException](jsonReader.enumValueError(value))
+      assert(intercept[JsonReaderException](jsonReader.enumValueError(value))
         .getMessage.contains("illegal enum value \"xxx\", offset: 0x00000004"))
     }
     "throw parsing exception with unexpected enum value as length of character buffer" in {
       val jsonReader = reader("\"xxx\"")
       val len = jsonReader.readStringAsCharBuf()
-      assert(intercept[JsonParseException](jsonReader.enumValueError(len))
+      assert(intercept[JsonReaderException](jsonReader.enumValueError(len))
         .getMessage.contains("illegal enum value \"xxx\", offset: 0x00000004"))
     }
   }
@@ -2500,7 +2500,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with expected token(s)" in {
       val jsonReader = reader("{}")
       jsonReader.isNextToken(',')
-      assert(intercept[JsonParseException](jsonReader.commaError())
+      assert(intercept[JsonReaderException](jsonReader.commaError())
         .getMessage.contains("expected ',', offset: 0x00000000"))
     }
   }
@@ -2508,7 +2508,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with expected token(s)" in {
       val jsonReader = reader("{}")
       jsonReader.isNextToken('[')
-      assert(intercept[JsonParseException](jsonReader.arrayStartOrNullError())
+      assert(intercept[JsonReaderException](jsonReader.arrayStartOrNullError())
         .getMessage.contains("expected '[' or null, offset: 0x00000000"))
     }
   }
@@ -2516,7 +2516,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with expected token(s)" in {
       val jsonReader = reader("}")
       jsonReader.isNextToken(']')
-      assert(intercept[JsonParseException](jsonReader.arrayEndError())
+      assert(intercept[JsonReaderException](jsonReader.arrayEndError())
         .getMessage.contains("expected ']', offset: 0x00000000"))
     }
   }
@@ -2524,7 +2524,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     val jsonReader = reader("}")
     jsonReader.isNextToken(']')
     "throw parsing exception with expected token(s)" in {
-      assert(intercept[JsonParseException](jsonReader.arrayEndOrCommaError())
+      assert(intercept[JsonReaderException](jsonReader.arrayEndOrCommaError())
         .getMessage.contains("expected ']' or ',', offset: 0x00000000"))
     }
   }
@@ -2532,7 +2532,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with expected token(s)" in {
       val jsonReader = reader("[]")
       jsonReader.isNextToken('{')
-      assert(intercept[JsonParseException](jsonReader.objectStartOrNullError())
+      assert(intercept[JsonReaderException](jsonReader.objectStartOrNullError())
         .getMessage.contains("expected '{' or null, offset: 0x00000000"))
     }
   }
@@ -2540,13 +2540,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception with expected token(s)" in {
       val jsonReader = reader("]")
       jsonReader.isNextToken('}')
-      assert(intercept[JsonParseException](jsonReader.objectEndOrCommaError())
+      assert(intercept[JsonReaderException](jsonReader.objectEndOrCommaError())
         .getMessage.contains("expected '}' or ',', offset: 0x00000000"))
     }
   }
   "JsonReader" should {
     "support hex dumps with offsets that greater than 4Gb" in {
-      assert(intercept[JsonParseException](reader("null", 1L << 41).readInt())
+      assert(intercept[JsonReaderException](reader("null", 1L << 41).readInt())
         .getMessage.contains(
           """illegal number, offset: 0x20000000000, buf:
             |           +-------------------------------------------------+
@@ -2567,7 +2567,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     def check(s: String): Unit = {
       val r = reader(s)
       r.skip()
-      assert(intercept[JsonParseException](r.nextToken()).getMessage.contains("unexpected end of input"))
+      assert(intercept[JsonReaderException](r.nextToken()).getMessage.contains("unexpected end of input"))
     }
 
     checkWithSuffix(s, ',')

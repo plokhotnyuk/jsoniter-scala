@@ -14,7 +14,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       readFromStream(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](readFromStream(new ByteArrayInputStream(httpMessage))(codec)).getMessage ==
+      assert(intercept[JsonReaderException](readFromStream(new ByteArrayInputStream(httpMessage))(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -34,7 +34,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       readFromArray(compactJson)(codec) shouldBe user
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](readFromArray(httpMessage)(codec)).getMessage ==
+      assert(intercept[JsonReaderException](readFromArray(httpMessage)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -54,7 +54,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       readFromSubArray(httpMessage, 66, httpMessage.length)(codec) shouldBe user
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](readFromSubArray(httpMessage, 0, httpMessage.length)(codec)).getMessage ==
+      assert(intercept[JsonReaderException](readFromSubArray(httpMessage, 0, httpMessage.length)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -102,7 +102,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       val bbuf = ByteBuffer.allocateDirect(httpMessage.length)
       bbuf.put(httpMessage)
       bbuf.position(10)
-      assert(intercept[JsonParseException](readFromByteBuffer(bbuf)(codec)).getMessage ==
+      assert(intercept[JsonReaderException](readFromByteBuffer(bbuf)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -116,7 +116,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
       val bbuf = ByteBuffer.wrap(httpMessage)
       bbuf.position(10)
-      assert(intercept[JsonParseException](readFromByteBuffer(bbuf)(codec)).getMessage ==
+      assert(intercept[JsonReaderException](readFromByteBuffer(bbuf)(codec)).getMessage ==
         """expected '{', offset: 0x0000000a, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
@@ -190,14 +190,14 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       users shouldBe Seq()
     }
     "throw a parse exception in case of JSON array is not closed properly" in {
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         scanJsonArrayFromStream(new ByteArrayInputStream("""[{"name":"x"}y""".getBytes("UTF-8"))) { (_: User) =>
           true
         }(codec)
       }.getMessage.contains("expected ']' or ',', offset: 0x0000000d"))
     }
     "throw a parse exception in case of input isn't JSON array or null" in {
-      assert(intercept[JsonParseException] {
+      assert(intercept[JsonReaderException] {
         scanJsonArrayFromStream(new ByteArrayInputStream("""{}""".getBytes("UTF-8"))) { (_: User) =>
           true
         }(codec)
@@ -216,7 +216,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       readFromString(new String(compactJson, UTF_8))(codec) shouldBe user
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
-      assert(intercept[JsonParseException](readFromString(new String(httpMessage, UTF_8))(codec)).getMessage ==
+      assert(intercept[JsonReaderException](readFromString(new String(httpMessage, UTF_8))(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |           +-------------------------------------------------+
           |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |

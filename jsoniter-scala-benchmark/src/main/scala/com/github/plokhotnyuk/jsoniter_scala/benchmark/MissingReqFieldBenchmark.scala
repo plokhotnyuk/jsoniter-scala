@@ -59,7 +59,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     try {
       readFromArray[MissingReqFields](jsonBytes).toString // toString() should not be called
     } catch {
-      case ex: JsonParseException => ex.getMessage
+      case ex: JsonReaderException => ex.getMessage
     }
 
   @Benchmark
@@ -67,7 +67,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     try {
       readFromArray[MissingReqFields](jsonBytes, exceptionWithoutDumpConfig).toString // toString() should not be called
     } catch {
-      case ex: JsonParseException => ex.getMessage
+      case ex: JsonReaderException => ex.getMessage
     }
 
   @Benchmark
@@ -75,7 +75,7 @@ class MissingReqFieldBenchmark extends CommonParams {
     try {
       readFromArray[MissingReqFields](jsonBytes, exceptionWithStacktraceConfig).toString // toString() should not be called
     } catch {
-      case ex: JsonParseException => ex.getMessage
+      case ex: JsonReaderException => ex.getMessage
     }
 
   @Benchmark
