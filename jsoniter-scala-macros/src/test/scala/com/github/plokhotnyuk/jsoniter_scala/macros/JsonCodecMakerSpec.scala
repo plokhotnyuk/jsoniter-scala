@@ -373,11 +373,19 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         def decodeValue(in: JsonReader, default: Double): Double =
           if (in.isNextToken('"')) {
             in.rollbackToken()
-            val v = in.readString(null)
-            if ("-Infinity".equals(v)) Double.NegativeInfinity
-            else if ("Infinity".equals(v)) Double.PositiveInfinity
-            else if ("NaN".equals(v)) Double.NaN
-            else in.decodeError("illegal double")
+            val len = in.readStringAsCharBuf()
+            in.charBufToHashCode(len) match {
+              case 506745205 =>
+                if (in.isCharBufEqualsTo(len, "-Infinity")) Double.NegativeInfinity
+                else in.decodeError("illegal double")
+              case 237817416 =>
+                if (in.isCharBufEqualsTo(len, "Infinity")) Double.PositiveInfinity
+                else in.decodeError("illegal double")
+              case 78043 =>
+                if (in.isCharBufEqualsTo(len, "NaN")) Double.NaN
+                else in.decodeError("illegal double")
+              case _ => in.decodeError("illegal double")
+            }
           } else {
             in.rollbackToken()
             in.readDouble()
@@ -385,7 +393,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
         def encodeValue(x: Double, out: JsonWriter): Unit =
           if (java.lang.Double.isFinite(x)) out.writeVal(x)
-          else out.writeVal {
+          else out.writeNonEscapedAsciiVal {
             if (x != x) "NaN"
             else if (x >= 0) "Infinity"
             else "-Infinity"
