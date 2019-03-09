@@ -328,12 +328,14 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       implicit val customCodecOfInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
         val nullValue: Int = 0
 
-        def decodeValue(in: JsonReader, default: Int): Int = {
-          val t = in.nextToken()
-          in.rollbackToken()
-          if (t == '"') in.readStringAsInt() // or in.readString().toInt - less efficient and safe but more universal because can accepts escaped characters
-          else in.readInt()
-        }
+        def decodeValue(in: JsonReader, default: Int): Int =
+          if (in.isNextToken('"')) {
+            in.rollbackToken()
+            in.readStringAsInt() // or in.readString().toInt - less efficient and safe but more universal because can accepts escaped characters
+          } else {
+            in.rollbackToken()
+            in.readInt()
+          }
 
         def encodeValue(x: Int, out: JsonWriter): Unit = out.writeVal(x)
       }
@@ -343,19 +345,17 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       implicit val customCodecOfBoolean: JsonValueCodec[Boolean] = new JsonValueCodec[Boolean] {
         val nullValue: Boolean = false
 
-        def decodeValue(in: JsonReader, default: Boolean): Boolean = {
-          in.setMark()
+        def decodeValue(in: JsonReader, default: Boolean): Boolean =
           if (in.isNextToken('"')) {
-            in.rollbackToMark()
+            in.rollbackToken()
             val v = in.readString(null)
             if ("true".equalsIgnoreCase(v)) true
             else if ("false".equalsIgnoreCase(v)) false
             else in.decodeError("illegal boolean")
           } else {
-            in.rollbackToMark()
+            in.rollbackToken()
             in.readBoolean()
           }
-        }
 
         def encodeValue(x: Boolean, out: JsonWriter): Unit = out.writeNonEscapedAsciiVal(if (x) "TRUE" else "FALSE")
       }
@@ -367,6 +367,34 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySer(codecOfFlags, Flags(f1 = true, f2 = false), "{\"f1\":\"TRUE\",\"f2\":\"FALSE\"}")
       verifyDeserError(codecOfFlags, "{\"f1\":\"XALSE\",\"f2\":true}", "illegal boolean, offset: 0x0000000c")
       verifyDeserError(codecOfFlags, "{\"f1\":xalse,\"f2\":true}", "illegal boolean, offset: 0x00000006")
+      implicit val customCodecOfDouble: JsonValueCodec[Double] = new JsonValueCodec[Double] {
+        val nullValue: Double = 0.0f
+
+        def decodeValue(in: JsonReader, default: Double): Double =
+          if (in.isNextToken('"')) {
+            in.rollbackToken()
+            val v = in.readString(null)
+            if ("-Infinity".equals(v)) Double.NegativeInfinity
+            else if ("Infinity".equals(v)) Double.PositiveInfinity
+            else if ("NaN".equals(v)) Double.NaN
+            else in.decodeError("illegal double")
+          } else {
+            in.rollbackToken()
+            in.readDouble()
+          }
+
+        def encodeValue(x: Double, out: JsonWriter): Unit =
+          if (java.lang.Double.isFinite(x)) out.writeVal(x)
+          else out.writeVal {
+            if (x != x) "NaN"
+            else if (x >= 0) "Infinity"
+            else "-Infinity"
+          }
+      }
+      val codecOfDoubleArray = make[Array[Double]](CodecMakerConfig())
+      verifySerDeser(codecOfDoubleArray, Array(Double.NegativeInfinity, Double.PositiveInfinity, 0.0, 1.0e10),
+        "[\"-Infinity\",\"Infinity\",0.0,1.0E10]")
+      verifyDeserError(codecOfDoubleArray, "[\"Inf\",\"-Inf\"]", "illegal double, offset: 0x00000005")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
