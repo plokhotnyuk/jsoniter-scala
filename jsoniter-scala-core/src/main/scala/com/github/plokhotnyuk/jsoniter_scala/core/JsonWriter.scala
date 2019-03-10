@@ -1764,7 +1764,7 @@ final class JsonWriter private[jsoniter_scala](
         if (dmIsTrailingZeros || dvIsTrailingZeros) {
           var newDm = 0L
           while ({
-            dp = dp / 10
+            dp /= 10
             newDm = dm / 10
             dp > newDm && (dp >= 10 || decimalNotation)
           }) {
@@ -1782,7 +1782,7 @@ final class JsonWriter private[jsoniter_scala](
               newDm * 10 == dm && (dp >= 100 || decimalNotation)
             }) {
               dm = newDm
-              dp = dp / 10
+              dp /= 10
               dvIsTrailingZeros &= lastRemovedDigit == 0
               val newDv = dv / 10
               lastRemovedDigit = (dv - newDv * 10).toInt
@@ -1795,8 +1795,8 @@ final class JsonWriter private[jsoniter_scala](
           else dv + 1
         } else {
           while ({
-            dp = dp / 10
-            dm = dm / 10
+            dp /= 10
+            dm /= 10
             dp > dm && (dp >= 10 || decimalNotation)
           }) {
             val newDv = dv / 10
