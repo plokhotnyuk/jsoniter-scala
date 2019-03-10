@@ -374,18 +374,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           if (in.isNextToken('"')) {
             in.rollbackToken()
             val len = in.readStringAsCharBuf()
-            in.charBufToHashCode(len) match {
-              case 506745205 =>
-                if (in.isCharBufEqualsTo(len, "-Infinity")) Double.NegativeInfinity
-                else in.decodeError("illegal double")
-              case 237817416 =>
-                if (in.isCharBufEqualsTo(len, "Infinity")) Double.PositiveInfinity
-                else in.decodeError("illegal double")
-              case 78043 =>
-                if (in.isCharBufEqualsTo(len, "NaN")) Double.NaN
-                else in.decodeError("illegal double")
-              case _ => in.decodeError("illegal double")
-            }
+            if (in.isCharBufEqualsTo(len, "NaN")) Double.NaN
+            else if (in.isCharBufEqualsTo(len, "Infinity")) Double.PositiveInfinity
+            else if (in.isCharBufEqualsTo(len, "-Infinity")) Double.NegativeInfinity
+            else in.decodeError("illegal double")
           } else {
             in.rollbackToken()
             in.readDouble()
