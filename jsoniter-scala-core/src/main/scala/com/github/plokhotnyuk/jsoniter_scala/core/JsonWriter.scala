@@ -366,12 +366,12 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeValAsString(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiString(x.toString)
+    writeNonEscapedAsciiString(x.bigDecimal.toString)
   }
 
   def writeValAsString(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeNonEscapedAsciiString(x.bigInteger.toString)
   }
 
   def writeValAsString(x: Boolean): Unit = {
