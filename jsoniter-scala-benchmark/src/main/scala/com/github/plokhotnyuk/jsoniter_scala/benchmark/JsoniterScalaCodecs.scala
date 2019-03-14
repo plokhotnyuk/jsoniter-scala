@@ -17,14 +17,16 @@ object JsoniterScalaCodecs {
   val longNumberConfig = ReaderConfig(preferredBufSize = 1024 * 1024)
   val longStringConfig = ReaderConfig(preferredCharBufSize = 1024 * 1024)
   val escapingConfig = WriterConfig(escapeUnicode = true)
-  val bigDecimalCodec: JsonValueCodec[BigDecimal] = make(CodecMakerConfig()) // don't define implicit for supported types
+  val bigDecimalCodec: JsonValueCodec[BigDecimal] =
+    make(CodecMakerConfig(bigDecimalDigitsLimit = Int.MaxValue, bigDecimalScaleLimit = Int.MaxValue, bigDecimalPrecision = 0)) // don't define implicit for supported types
   val bigIntCodec: JsonValueCodec[BigInt] = make(CodecMakerConfig()) // don't define implicit for supported types
   val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig()) // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make(CodecMakerConfig()) // don't define implicit for supported types
   implicit val adtCodec: JsonValueCodec[ADTBase] = make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-system*/))
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make(CodecMakerConfig())
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig())
-  implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make(CodecMakerConfig())
+  implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] =
+    make(CodecMakerConfig(bigDecimalDigitsLimit = Int.MaxValue, bigDecimalScaleLimit = Int.MaxValue, bigDecimalPrecision = 0)) /*WARNING: don't do this for open-system*/
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make(CodecMakerConfig())
   implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make(CodecMakerConfig())
   implicit val booleanArrayCodec: JsonValueCodec[Array[Boolean]] = make(CodecMakerConfig())

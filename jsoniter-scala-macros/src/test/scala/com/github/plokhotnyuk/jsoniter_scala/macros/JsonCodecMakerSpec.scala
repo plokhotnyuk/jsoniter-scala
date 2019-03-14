@@ -235,7 +235,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize case classes with standard types" in {
       val text = "text" * 100000
-      val number = "1234567890" * 10
+      val number = "1234567890"
       verifySerDeser(codecOfStandardTypes,
         StandardTypes(text, BigInt(number), BigDecimal(s"$number.$number")),
         s"""{"s":"$text","bi":$number,"bd":$number.$number}""")

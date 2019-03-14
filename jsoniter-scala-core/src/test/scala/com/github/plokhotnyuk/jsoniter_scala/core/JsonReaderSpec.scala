@@ -2363,7 +2363,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
     }
     "parse big number values without overflow up to limits" in {
-      check("1234567890123456789012345678901234")
+      check("1234567890" * 30)
       check("12345e67")
       check("-12345e67")
       check("12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
