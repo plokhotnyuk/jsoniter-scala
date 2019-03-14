@@ -19,13 +19,13 @@ object GenUtils {
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
   val genBigInt: Gen[BigInt] = Gen.frequency(
-    (1000, Arbitrary.arbBigInt.arbitrary),
+    (100, Arbitrary.arbBigInt.arbitrary),
     (1, for {
       size <- Gen.choose(1, 10000)
       digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
     } yield BigInt(digits)))
   val genBigDecimal: Gen[BigDecimal] = Gen.frequency(
-    (1000, Arbitrary.arbBigDecimal.arbitrary),
+    (100, Arbitrary.arbBigDecimal.arbitrary),
     (1, for {
       size <- Gen.choose(1, 10000)
       digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
