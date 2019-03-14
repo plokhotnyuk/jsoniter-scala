@@ -2339,10 +2339,15 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   "JsonReader.readBigDecimal, JsonReader.readKeyAsBigDecimal and JsonReader.readStringAsBigDecimal" should {
     def check(s: String, mc: MathContext = bigDecimalMathContext, scaleLimit: Int = bigDecimalScaleLimit,
               digitsLimit: Int = bigDecimalDigitsLimit): Unit = {
-      val n = BigDecimal(s)
-      reader(s).readBigDecimal(null, mc, scaleLimit, digitsLimit) shouldBe n
-      reader("\"" + s + "\":").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit) shouldBe n
-      reader("\"" + s + "\"").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit) shouldBe n
+      def compare(a: BigDecimal, b: BigDecimal): Unit = {
+        a.bigDecimal shouldBe b.bigDecimal
+        a.mc shouldBe b.mc
+      }
+
+      val n = BigDecimal(s, mc)
+      compare(reader(s).readBigDecimal(null, mc, scaleLimit, digitsLimit), n)
+      compare(reader("\"" + s + "\":").readKeyAsBigDecimal(mc, scaleLimit, digitsLimit), n)
+      compare(reader("\"" + s + "\"").readStringAsBigDecimal(null, mc, scaleLimit, digitsLimit), n)
     }
 
     def checkError(s: String, error1: String, error2: String): Unit = {
@@ -2361,15 +2366,15 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check("1234567890123456789012345678901234")
       check("12345e67")
       check("-12345e67")
-      check("1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
-      check("-1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      check("12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
     }
     "parse small number values without underflow up to limits" in {
       check("0." + "0" * 100 + "1234567890123456789012345678901234")
       check("12345e-67")
       check("-12345e-67")
-      check("1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
-      check("-1234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      check("12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
+      check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
     }
     "throw number format exception for too big mantissa" in {
       checkError("9" * 308,

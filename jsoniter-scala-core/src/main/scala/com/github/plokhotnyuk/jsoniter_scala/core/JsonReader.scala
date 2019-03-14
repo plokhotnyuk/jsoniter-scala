@@ -1462,7 +1462,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal = {
     val startPos = this.mark
-    new BigDecimal(new java.math.BigDecimal(new String(buf, 0, startPos, pos - startPos)))
+    new BigDecimal(new java.math.BigDecimal(new String(buf, 0, startPos, pos - startPos)), mc)
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
