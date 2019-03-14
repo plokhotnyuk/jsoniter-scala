@@ -2074,10 +2074,10 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkFloat(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         checkFloat(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
         checkFloat(n.toString)
       }
     }
@@ -2176,10 +2176,10 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkDouble(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         checkDouble(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
         checkDouble(n.toString)
       }
     }
@@ -2264,7 +2264,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid number values" in {
-      forAll(minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         check(n)
       }
     }
@@ -2358,7 +2358,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid number values with scale less than specified maximum" in {
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
         check(n.toString, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
       }
     }

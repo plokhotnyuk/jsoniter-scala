@@ -656,7 +656,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Long) =>
         check(BigInt(n))
       }
-      forAll(minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         check(n)
       }
     }
@@ -678,7 +678,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Double) =>
         check(BigDecimal(n))
       }
-      forAll(minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
         check(n)
       }
     }

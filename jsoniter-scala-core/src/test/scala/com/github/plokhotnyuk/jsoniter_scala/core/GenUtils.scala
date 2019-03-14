@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+import java.math.MathContext._
 import java.time._
 
 import org.scalacheck.{Arbitrary, Gen}
@@ -17,6 +18,19 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
+  val genBigInt: Gen[BigInt] = Gen.frequency(
+    (1000, Arbitrary.arbBigInt.arbitrary),
+    (1, for {
+      size <- Gen.choose(1, 10000)
+      digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
+    } yield BigInt(digits)))
+  val genBigDecimal: Gen[BigDecimal] = Gen.frequency(
+    (1000, Arbitrary.arbBigDecimal.arbitrary),
+    (1, for {
+      bigInt <- genBigInt
+      scale <- Gen.choose(-10000, 10000)
+      mc <- Gen.oneOf(DECIMAL32, DECIMAL64, DECIMAL128, UNLIMITED)
+    } yield Try(BigDecimal(bigInt, scale, mc)).getOrElse(BigDecimal(bigInt, scale, UNLIMITED))))
   val genZoneOffset: Gen[ZoneOffset] = Gen.oneOf(
     Gen.choose(-18, 18).map(ZoneOffset.ofHours),
     Gen.choose(-18 * 60, 18 * 60).map(x => ZoneOffset.ofHoursMinutes(x / 60, x % 60)),
