@@ -27,10 +27,11 @@ object GenUtils {
   val genBigDecimal: Gen[BigDecimal] = Gen.frequency(
     (1000, Arbitrary.arbBigDecimal.arbitrary),
     (1, for {
-      bigInt <- genBigInt
+      size <- Gen.choose(1, 10000)
+      digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
       scale <- Gen.choose(-10000, 10000)
       mc <- Gen.oneOf(DECIMAL32, DECIMAL64, DECIMAL128, UNLIMITED)
-    } yield Try(BigDecimal(bigInt, scale, mc)).getOrElse(BigDecimal(bigInt, scale, UNLIMITED))))
+    } yield Try(BigDecimal(BigInt(digits), scale, mc)).getOrElse(BigDecimal(BigInt(digits), scale, UNLIMITED))))
   val genZoneOffset: Gen[ZoneOffset] = Gen.oneOf(
     Gen.choose(-18, 18).map(ZoneOffset.ofHours),
     Gen.choose(-18 * 60, 18 * 60).map(x => ZoneOffset.ofHoursMinutes(x / 60, x % 60)),
