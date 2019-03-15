@@ -38,6 +38,9 @@ class ArrayOfIntsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Int] = JsonStringInput.read[Array[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): Array[Int] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Int]].value
+
+  @Benchmark
   def readCirce(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
@@ -63,6 +66,9 @@ class ArrayOfIntsBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

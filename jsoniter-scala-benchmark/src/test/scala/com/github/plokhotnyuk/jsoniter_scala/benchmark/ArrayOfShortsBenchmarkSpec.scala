@@ -8,6 +8,7 @@ class ArrayOfShortsBenchmarkSpec extends BenchmarkSpecBase {
   "ArrayOfShortsBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
+      benchmark.readBorerJson() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -19,6 +20,7 @@ class ArrayOfShortsBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeBorerJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

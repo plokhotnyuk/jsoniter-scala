@@ -54,6 +54,9 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
+
+  @Benchmark
   def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
@@ -79,6 +82,9 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

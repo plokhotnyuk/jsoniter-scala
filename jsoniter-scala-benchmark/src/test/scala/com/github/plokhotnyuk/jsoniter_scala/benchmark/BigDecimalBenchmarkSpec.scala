@@ -8,6 +8,7 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
   "BigDecimalBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.sourceObj
+      benchmark.readBorerJson() shouldBe benchmark.sourceObj
       benchmark.readCirce() shouldBe benchmark.sourceObj
       benchmark.readDslJsonScala() shouldBe benchmark.sourceObj
       benchmark.readJacksonScala() shouldBe benchmark.sourceObj
@@ -19,6 +20,7 @@ class BigDecimalBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeBorerJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

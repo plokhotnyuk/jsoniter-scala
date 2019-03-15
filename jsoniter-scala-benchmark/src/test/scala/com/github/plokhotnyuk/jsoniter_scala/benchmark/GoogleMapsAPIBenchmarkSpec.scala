@@ -6,6 +6,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
   "GoogleMapsAPIBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
+      benchmark.readBorerJson() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
@@ -16,6 +17,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeBorerJson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeCirce()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeDslJsonScala()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeJacksonScala()) shouldBe GoogleMapsAPI.compactJsonString
