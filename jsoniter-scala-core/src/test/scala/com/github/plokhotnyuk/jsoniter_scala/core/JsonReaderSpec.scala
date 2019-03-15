@@ -2385,10 +2385,11 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         "value exceeds limit for number of significant digits, offset: 0x0000013a")
     }
     "throw number format exception for too big scale" in {
-      checkError("1e6200",
+      check("1e" + (bigDecimalScaleLimit - 1))
+      checkError("1e" + bigDecimalScaleLimit,
         "value exceeds limit for scale, offset: 0x00000005",
         "value exceeds limit for scale, offset: 0x00000006")
-      checkError("1e-6200",
+      checkError("1e-" + bigDecimalScaleLimit,
         "value exceeds limit for scale, offset: 0x00000006",
         "value exceeds limit for scale, offset: 0x00000007")
     }
