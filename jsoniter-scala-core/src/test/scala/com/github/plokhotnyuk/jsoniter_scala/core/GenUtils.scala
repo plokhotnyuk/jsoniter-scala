@@ -25,13 +25,13 @@ object GenUtils {
     rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
   } yield new MathContext(precision, rounding)
   val genBigInt: Gen[BigInt] = Gen.frequency(
-    (100, Arbitrary.arbBigInt.arbitrary),
+    (100, Arbitrary.arbitrary[BigInt]),
     (1, for {
       size <- Gen.choose(1, 10000)
       digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
     } yield BigInt(digits)))
   val genBigDecimal: Gen[BigDecimal] = Gen.frequency(
-    (100, Arbitrary.arbBigDecimal.arbitrary),
+    (100, Arbitrary.arbitrary[BigDecimal]),
     (1, for {
       size <- Gen.choose(1, 10000)
       digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
@@ -51,69 +51,59 @@ object GenUtils {
     // FIXME: JDK 8 has bug in serialization of Duration with negative nanos
     Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
     Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
-  val genInstant: Gen[Instant] =
-    for {
-      epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
-      nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)
-      fallbackInstant <- Gen.oneOf(Instant.MIN, Instant.EPOCH, Instant.MAX)
-    } yield Try(Instant.ofEpochSecond(epochSecond, nanoAdjustment)).getOrElse(fallbackInstant)
-  val genLocalDate: Gen[LocalDate] =
-    for {
-      year <- Gen.choose(-999999999, 999999999)
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, Month.of(month).length(Year.of(year).isLeap))
-    } yield LocalDate.of(year, month, day)
-  val genLocalTime: Gen[LocalTime] =
-    for {
-      hour <- Gen.choose(0, 23)
-      minute <- Gen.choose(0, 59)
-      second <- Gen.choose(0, 59)
-      nano <- Gen.choose(0, 999999999)
-    } yield LocalTime.of(hour, minute, second, nano)
-  val genLocalDateTime: Gen[LocalDateTime] =
-    for {
-      localDate <- genLocalDate
-      localTime <- genLocalTime
-    } yield LocalDateTime.of(localDate, localTime)
-  val genMonthDay: Gen[MonthDay] =
-    for {
-      month <- Gen.choose(1, 12)
-      day <- Gen.choose(1, 29)
-    } yield MonthDay.of(month, day)
-  val genOffsetDateTime: Gen[OffsetDateTime] =
-    for {
-      localDateTime <- genLocalDateTime
-      zoneOffset <- genZoneOffset
-    } yield OffsetDateTime.of(localDateTime, zoneOffset)
-  val genOffsetTime: Gen[OffsetTime] =
-    for {
-      localTime <- genLocalTime
-      zoneOffset <- genZoneOffset
-    } yield OffsetTime.of(localTime, zoneOffset)
-  val genPeriod: Gen[Period] =
-    for {
-      year <- Arbitrary.arbitrary[Int]
-      month <- Arbitrary.arbitrary[Int]
-      day <- Arbitrary.arbitrary[Int]
-    } yield Period.of(year, month, day)
+  val genInstant: Gen[Instant] = for {
+    epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
+    nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)
+    fallbackInstant <- Gen.oneOf(Instant.MIN, Instant.EPOCH, Instant.MAX)
+  } yield Try(Instant.ofEpochSecond(epochSecond, nanoAdjustment)).getOrElse(fallbackInstant)
+  val genLocalDate: Gen[LocalDate] = for {
+    year <- Gen.choose(-999999999, 999999999)
+    month <- Gen.choose(1, 12)
+    day <- Gen.choose(1, Month.of(month).length(Year.of(year).isLeap))
+  } yield LocalDate.of(year, month, day)
+  val genLocalTime: Gen[LocalTime] = for {
+    hour <- Gen.choose(0, 23)
+    minute <- Gen.choose(0, 59)
+    second <- Gen.choose(0, 59)
+    nano <- Gen.choose(0, 999999999)
+  } yield LocalTime.of(hour, minute, second, nano)
+  val genLocalDateTime: Gen[LocalDateTime] = for {
+    localDate <- genLocalDate
+    localTime <- genLocalTime
+  } yield LocalDateTime.of(localDate, localTime)
+  val genMonthDay: Gen[MonthDay] = for {
+    month <- Gen.choose(1, 12)
+    day <- Gen.choose(1, 29)
+  } yield MonthDay.of(month, day)
+  val genOffsetDateTime: Gen[OffsetDateTime] = for {
+    localDateTime <- genLocalDateTime
+    zoneOffset <- genZoneOffset
+  } yield OffsetDateTime.of(localDateTime, zoneOffset)
+  val genOffsetTime: Gen[OffsetTime] = for {
+    localTime <- genLocalTime
+    zoneOffset <- genZoneOffset
+  } yield OffsetTime.of(localTime, zoneOffset)
+  val genPeriod: Gen[Period] = for {
+    year <- Arbitrary.arbitrary[Int]
+    month <- Arbitrary.arbitrary[Int]
+    day <- Arbitrary.arbitrary[Int]
+  } yield Period.of(year, month, day)
   val genYear: Gen[Year] = Gen.choose(-999999999, 999999999).map(Year.of)
-  val genYearMonth: Gen[YearMonth] =
-    for {
-      year <- Gen.choose(-999999999, 999999999)
-      month <- Gen.choose(1, 12)
-    } yield YearMonth.of(year, month)
-  val genZoneId: Gen[ZoneId] =
-    Gen.oneOf(genZoneOffset,
-      genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
-      genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
-      genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
-      Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of),
-      Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toList).map(ZoneId.of))
-  val genZonedDateTime: Gen[ZonedDateTime] =
-    for {
-      localDateTime <- genLocalDateTime
-      zoneId <- genZoneId
-    } yield ZonedDateTime.of(localDateTime, zoneId)
+  val genYearMonth: Gen[YearMonth] = for {
+    year <- Gen.choose(-999999999, 999999999)
+    month <- Gen.choose(1, 12)
+  } yield YearMonth.of(year, month)
+  val genZoneId: Gen[ZoneId] = Gen.oneOf(
+    genZoneOffset,
+    genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
+    genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
+    genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
+    Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of),
+    Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toList).map(ZoneId.of))
+  val genZonedDateTime: Gen[ZonedDateTime] = for {
+    localDateTime <- genLocalDateTime
+    zoneId <- genZoneId
+  } yield ZonedDateTime.of(localDateTime, zoneId)
   val genNonFiniteDouble: Gen[Double] = Gen.oneOf(
     Gen.oneOf(java.lang.Double.NaN, java.lang.Double.NEGATIVE_INFINITY, java.lang.Double.POSITIVE_INFINITY),
     Gen.choose(0, 0x0007FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
