@@ -1,6 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+import java.math.MathContext
 import java.math.MathContext._
+import java.math.RoundingMode._
 import java.time._
 
 import org.scalacheck.{Arbitrary, Gen}
@@ -18,6 +20,10 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
+  val genMathContext: Gen[MathContext] = for {
+    precision <- Gen.choose(0, 10000)
+    rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
+  } yield new MathContext(precision, rounding)
   val genBigInt: Gen[BigInt] = Gen.frequency(
     (100, Arbitrary.arbBigInt.arbitrary),
     (1, for {
@@ -30,7 +36,7 @@ object GenUtils {
       size <- Gen.choose(1, 10000)
       digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
       scale <- Gen.choose(-10000, 10000)
-      mc <- Gen.oneOf(DECIMAL32, DECIMAL64, DECIMAL128, UNLIMITED)
+      mc <- genMathContext
     } yield Try(BigDecimal(BigInt(digits), scale, mc)).getOrElse(BigDecimal(BigInt(digits), scale, UNLIMITED))))
   val genZoneOffset: Gen[ZoneOffset] = Gen.oneOf(
     Gen.choose(-18, 18).map(ZoneOffset.ofHours),
