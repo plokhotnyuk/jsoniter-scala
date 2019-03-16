@@ -2386,12 +2386,21 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw number format exception for too big scale" in {
       check("1e" + (bigDecimalScaleLimit - 1))
+      check("1e-" + (bigDecimalScaleLimit - 1))
+      check(("1" * 50) + "e" + (bigDecimalScaleLimit - 17), MathContext.DECIMAL128)
+      check(("1" * 50) + "e-" + (bigDecimalScaleLimit + 15), MathContext.DECIMAL128)
       checkError("1e" + bigDecimalScaleLimit,
         "value exceeds limit for scale, offset: 0x00000005",
         "value exceeds limit for scale, offset: 0x00000006")
       checkError("1e-" + bigDecimalScaleLimit,
         "value exceeds limit for scale, offset: 0x00000006",
         "value exceeds limit for scale, offset: 0x00000007")
+      checkError("1.1e" + (bigDecimalScaleLimit + 1),
+        "value exceeds limit for scale, offset: 0x00000007",
+        "value exceeds limit for scale, offset: 0x00000008")
+      checkError("1.1e-" + (bigDecimalScaleLimit + 1),
+        "value exceeds limit for scale, offset: 0x00000008",
+        "value exceeds limit for scale, offset: 0x00000009")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")

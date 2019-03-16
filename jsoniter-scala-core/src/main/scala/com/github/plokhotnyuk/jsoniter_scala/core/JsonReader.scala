@@ -1364,7 +1364,7 @@ final class JsonReader private[jsoniter_scala](
         if (b == '.' || (b | 0x20) == 'e') numberError(pos)
         var offset = this.mark
         if (isNeg) offset += 1
-        toBigDecimal(offset, pos, isNeg, 0).toBigInteger
+        new BigInt(toBigDecimal(offset, pos, isNeg, 0).toBigInteger)
       } finally this.mark = mark
     }
   }
@@ -1462,13 +1462,13 @@ final class JsonReader private[jsoniter_scala](
           else offset
         val limit = numPos + numLen
         val x =
-          if (scale == 0) toBigDecimal(numPos, limit, isNeg, -exp)
+          (if (scale == 0) toBigDecimal(numPos, limit, isNeg, -exp)
           else {
             val fracPos = limit - scale
             toBigDecimal(numPos, fracPos - 1, isNeg, -exp).add(toBigDecimal(fracPos, limit, isNeg, scale - exp))
-          }
+          }).round(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
-        new BigDecimal(x.round(mc), mc)
+        new BigDecimal(x, mc)
       } finally this.mark = mark
     }
   }
