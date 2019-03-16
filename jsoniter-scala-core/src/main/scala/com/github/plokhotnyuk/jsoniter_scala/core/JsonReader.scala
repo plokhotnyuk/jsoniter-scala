@@ -1380,58 +1380,66 @@ final class JsonReader private[jsoniter_scala](
         if (isNeg) -x
         else x
       })
-    } else toBigInt(isNeg, limit, pos)
+    } else toBigDecimal(isNeg, limit, pos, 0).toBigInteger
   }
 
-  private[this] def toBigInt(isNeg: Boolean, limit: Int, p: Int): BigInt = {
+  // Based on a great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing a really big numbers
+  // with O(n ^ 1.5) complexity instead of O(n ^ 2) when using a constructor from a string in JDK 8/11:
+  // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+  private[this] def toBigDecimal(isNeg: Boolean, limit: Int, p: Int, scale: Int): java.math.BigDecimal = {
     var pos = p
     val numDigits = limit - pos
-    val numWords = ((numDigits * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
-    if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
-    val magnitude = new Array[Int](numWords)
-    val blockNum = ((numDigits * 954437177L) >> 33).toInt // divide positive int by 9
-    val firstBlockPos = pos + numDigits - 9 * blockNum
-    var x = 0L
-    while (pos < firstBlockPos) {
-      x = x * 10 + (buf(pos) - '0')
-      pos += 1
-    }
-    magnitude(numWords - 1) = x.toInt
-    while (pos < limit) {
-      x =
-        buf(pos) * 100000000L +
-          buf(pos + 1) * 10000000L +
-          buf(pos + 2) * 1000000 +
-          buf(pos + 3) * 100000 +
-          buf(pos + 4) * 10000 +
-          buf(pos + 5) * 1000 +
-          buf(pos + 6) * 100 +
-          buf(pos + 7) * 10 +
-          buf(pos + 8) - 5333333328L // == '0' * 111111111L
-      var i = numWords - 1
-      while (i >= 0) {
-        val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magnitude(i) = p.toInt
-        x = p >>> 32
-        i -= 1
+    if (numDigits < 777) {
+      val numWords = ((numDigits * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
+      if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
+      val magnitude = new Array[Int](numWords)
+      val blockNum = ((numDigits * 954437177L) >> 33).toInt // divide positive int by 9
+      val firstBlockPos = pos + numDigits - 9 * blockNum
+      var x = 0L
+      while (pos < firstBlockPos) {
+        x = x * 10 + (buf(pos) - '0')
+        pos += 1
       }
-      pos += 9
+      magnitude(numWords - 1) = x.toInt
+      while (pos < limit) {
+        x =
+          buf(pos) * 100000000L +
+            buf(pos + 1) * 10000000L +
+            buf(pos + 2) * 1000000 +
+            buf(pos + 3) * 100000 +
+            buf(pos + 4) * 10000 +
+            buf(pos + 5) * 1000 +
+            buf(pos + 6) * 100 +
+            buf(pos + 7) * 10 +
+            buf(pos + 8) - 5333333328L // == '0' * 111111111L
+        var i = numWords - 1
+        while (i >= 0) {
+          val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
+          magnitude(i) = p.toInt
+          x = p >>> 32
+          i -= 1
+        }
+        pos += 9
+      }
+      val mag = new Array[Byte](numWords << 2)
+      var i = 0
+      while (i < numWords) {
+        val w = magnitude(i)
+        val j = i << 2
+        mag(j) = ((w >> 24) & 0xFF).toByte
+        mag(j + 1) = ((w >> 16) & 0xFF).toByte
+        mag(j + 2) = ((w >> 8) & 0xFF).toByte
+        mag(j + 3) = (w & 0xFF).toByte
+        i += 1
+      }
+      val signum =
+        if (isNeg) -1
+        else 1
+      new java.math.BigDecimal(new java.math.BigInteger(signum, mag), scale)
+    } else {
+      val mid = numDigits >> 1
+      toBigDecimal(isNeg, limit - mid, pos, scale - mid).add(toBigDecimal(isNeg, limit, pos + numDigits - mid, scale))
     }
-    val mag = new Array[Byte](numWords << 2)
-    var i = 0
-    while (i < numWords) {
-      val w = magnitude(i)
-      val j = i << 2
-      mag(j) = ((w >> 24) & 0xFF).toByte
-      mag(j + 1) = ((w >> 16) & 0xFF).toByte
-      mag(j + 2) = ((w >> 8) & 0xFF).toByte
-      mag(j + 3) = (w & 0xFF).toByte
-      i += 1
-    }
-    val signum =
-      if (isNeg) -1
-      else 1
-    new BigInt(new java.math.BigInteger(signum, mag))
   }
 
   private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
