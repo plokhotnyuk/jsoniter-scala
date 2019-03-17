@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.{IOException, OutputStream}
+import java.io.OutputStream
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 import java.nio.{BufferOverflowException, ByteBuffer}
@@ -26,18 +26,24 @@ import scala.{specialized => sp}
   * [[scala.math.BigDecimal]], [[scala.math.BigInt]] or other non escaped ASCII strings written using
   * `JsonWriter.writeNonEscapedAsciiKey` or `JsonWriter.writeNonEscapedAsciiVal` </li>
   * </ul>
+  * @param throwWriterExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  *                                           development
   * @param indentionStep a size of indention for pretty-printed formatting or 0 for compact output
   * @param escapeUnicode a flag to turn on hexadecimal escaping of all non-ASCII chars
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when writing to
   *                         [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]]
   */
 case class WriterConfig(
+    throwWriterExceptionWithStackTrace: Boolean = false,
     indentionStep: Int = 0,
     escapeUnicode: Boolean = false,
     preferredBufSize: Int = 16384) {
   if (indentionStep < 0) throw new IllegalArgumentException("'indentionStep' should be not less than 0")
   if (preferredBufSize < 0) throw new IllegalArgumentException("'preferredBufSize' should be not less than 0")
 }
+
+class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+  extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
@@ -220,7 +226,8 @@ final class JsonWriter private[jsoniter_scala](
     writeColon()
   }
 
-  def encodeError(msg: String): Nothing = throw new IOException(msg)
+  def encodeError(msg: String): Nothing =
+    throw new JsonWriterException(msg, null, config.throwWriterExceptionWithStackTrace)
 
   def writeVal(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
@@ -359,12 +366,12 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeValAsString(x: BigDecimal): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiString(x.toString)
+    writeNonEscapedAsciiString(x.bigDecimal.toString)
   }
 
   def writeValAsString(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiString(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeNonEscapedAsciiString(x.bigInteger.toString)
   }
 
   def writeValAsString(x: Boolean): Unit = {
@@ -871,9 +878,7 @@ final class JsonWriter private[jsoniter_scala](
       val effectiveTotalSecs =
         if (totalSecs < 0 && nanos > 0) totalSecs + 1
         else totalSecs
-      val hours =
-        if (effectiveTotalSecs >= 0) div3600(effectiveTotalSecs) // 3600 == seconds in a hour
-        else -div3600(-effectiveTotalSecs)
+      val hours = effectiveTotalSecs / 3600 // 3600 == seconds in a hour
       if (hours != 0) {
         val q0 =
           if (hours > 0) hours
@@ -885,7 +890,7 @@ final class JsonWriter private[jsoniter_scala](
         pos =
           if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
           else {
-            val q1 = div100000000(q0)
+            val q1 = q0 / 100000000
             val r1 = (q0 - 100000000 * q1).toInt
             write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
@@ -893,7 +898,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
-      val minutes = ((secsOfHour * 2290649225L >> 37) - (secsOfHour >> 31)).toInt // divide signed int by 60
+      val minutes = secsOfHour / 60
       if (minutes != 0) {
         val q0 =
           if (minutes > 0) minutes
@@ -981,8 +986,8 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
     val epochDay =
-      if (epochSecond >= 0) div86400(epochSecond) // 86400 == seconds per day
-      else -div86400(86399 - epochSecond)
+      (if (epochSecond >= 0) epochSecond
+      else epochSecond - 86399) / 86400 // 86400 == seconds per day
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
@@ -1020,12 +1025,10 @@ final class JsonWriter private[jsoniter_scala](
     pos + 2
   }
 
-  private[this] def to400YearCycle(day: Long): Int =
-    (if (day >= 0) div146097(day) // 146097 == number of days in a 400 year cycle
-    else -div146097(-day)).toInt
+  private[this] def to400YearCycle(day: Long): Int = (day / 146097).toInt // 146097 == number of days in a 400 year cycle
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
-    val centuryEst = (yearEst * 1374389535L >> 37).toInt - (yearEst >> 31) // divide signed int by 100
+    val centuryEst = yearEst / 100
     (marchZeroDay - 365L * yearEst).toInt - (yearEst >> 2) + centuryEst - (centuryEst >> 2)
   }
 
@@ -1457,7 +1460,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
     else {
-      val q1 = div100000000(q0)
+      val q1 = q0 / 100000000
       val r1 = (q0 - 100000000 * q1).toInt
       if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
       else {
@@ -1511,7 +1514,7 @@ final class JsonWriter private[jsoniter_scala](
         dm = mulPow5DivPow2(mm, q, i, ss)
         if (q <= 9) {
           val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
-          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv, q)
+          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
           else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
           else if (multiplePowOf5(mp, q)) dp -= 1
         }
@@ -1674,8 +1677,8 @@ final class JsonWriter private[jsoniter_scala](
         dp = fullMulPow5DivPow2(mp, q, i, ss)
         dm = fullMulPow5DivPow2(mm, q, i, ss)
         if (q <= 21) {
-          val mv5 = div5(mv)
-          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv, q)
+          val mv5 = mv / 5
+          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
           else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
           else if (multiplePowOf5(mp, q)) dp -= 1
         }
@@ -1702,27 +1705,27 @@ final class JsonWriter private[jsoniter_scala](
         if (dmIsTrailingZeros || dvIsTrailingZeros) {
           var newDm = 0L
           while ({
-            dp = div10(dp)
-            newDm = div10(dm)
+            dp /= 10
+            newDm = dm / 10
             dp > newDm && (dp >= 10 || decimalNotation)
           }) {
             dmIsTrailingZeros &= newDm * 10 == dm
             dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
-            val newDv = div10(dv)
+            val newDv = dv / 10
             lastRemovedDigit = (dv - newDv * 10).toInt
             dv = newDv
             olength -= 1
           }
           if (dmIsTrailingZeros && even) {
             while ({
-              newDm = div10(dm)
+              newDm = dm / 10
               newDm * 10 == dm && (dp >= 100 || decimalNotation)
             }) {
               dm = newDm
-              dp = div10(dp)
+              dp /= 10
               dvIsTrailingZeros &= lastRemovedDigit == 0
-              val newDv = div10(dv)
+              val newDv = dv / 10
               lastRemovedDigit = (dv - newDv * 10).toInt
               dv = newDv
               olength -= 1
@@ -1733,11 +1736,11 @@ final class JsonWriter private[jsoniter_scala](
           else dv + 1
         } else {
           while ({
-            dp = div10(dp)
-            dm = div10(dm)
+            dp /= 10
+            dm /= 10
             dp > dm && (dp >= 10 || decimalNotation)
           }) {
-            val newDv = div10(dv)
+            val newDv = dv / 10
             lastRemovedDigit = (dv - newDv * 10).toInt
             dv = newDv
             olength -= 1
@@ -1800,8 +1803,8 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def multiplePowOf2(q0: Long, q: Int): Boolean = (q0 & ((1L << q) - 1)) == 0
 
   @tailrec
-  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q == 0 || {
-    val q1 = div5(q0)
+  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q <= 0 || {
+    val q1 = q0 / 5
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
   }
 
@@ -1837,7 +1840,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeSmallPositiveLongStartingFromLastPosition(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
     if (q0.toInt == q0) writePositiveIntStartingFromLastPosition(q0.toInt, pos, buf, ds)
     else {
-      val q1 = div100000000(q0)
+      val q1 = q0 / 100000000
       writePositiveIntStartingFromLastPosition(q1.toInt, pos - 8, buf, ds)
       write8Digits((q0 - 100000000 * q1).toInt, pos - 7, buf, ds)
     }
@@ -1859,65 +1862,10 @@ final class JsonWriter private[jsoniter_scala](
       writePositiveIntStartingFromLastPosition(q1, pos - 2, buf, ds)
     }
 
-  // FIXME: remove all these div* after fix of the performance regression in GraalVM CE, check: https://github.com/oracle/graal/issues/593
-  private[this] def div5(x: Long): Long =
-    if (x.toInt == x) x * 3435973837L >> 34 // divide small positive long by 5
-    else { // divide positive long by 5
-      val xlc = (x & 0xFFFFFFFFL) * 3435973836L
-      val xhc = (x >>> 32) * 3435973836L
-      ((x + xlc >>> 32) + xlc + xhc >>> 32) + xhc >> 2
-    }
-
-  private[this] def div10(x: Long): Long =
-    if (x.toInt == x) x * 3435973837L >> 35 // divide small positive long by 10
-    else { // divide positive long by 10
-      val xlc = (x & 0xFFFFFFFFL) * 3435973836L
-      val xhc = (x >>> 32) * 3435973836L
-      ((x + xlc >>> 32) + xlc + xhc >>> 32) + xhc >> 3
-    }
-
-  private[this] def div3600(x: Long): Long = {
-    val x4 = x >> 4
-    if (x4.toInt == x4) x4 * 2443359173L >> 39 // divide small positive long by 3600
-    else { // divide positive long by 3600
-      val x4l = x4 & 0xFFFFFFFFL
-      val x4h = x4 >>> 32
-      ((x4l * 1298034561 >>> 32) + x4l * 152709948 + x4h * 1298034561 >>> 32) + x4h * 152709948 >> 3
-    }
-  }
-
-  private[this] def div86400(x: Long): Long = {
-    val x7 = x >> 7
-    if (x7.toInt == x7) x7 * 3257812231L >> 41 // divide small positive long by 86400
-    else { // divide positive long by 86400
-      val x7l = x7 & 0xFFFFFFFFL
-      val x7h = x7 >>> 32
-      ((x7l * 1921600183 >>> 32) + x7l * 3257812230L + x7h * 1921600183 >>> 32) + x7h * 3257812230L >> 9
-    }
-  }
-
-  private[this] def div146097(x: Long): Long =
-    if (x.toInt == x) x * 963315389L >> 47 // divide small positive long by 146097
-    else { // divide positive long by 146097
-      val xl = x & 0xFFFFFFFFL
-      val xh = x >>> 32
-      ((xl * 3371721453L >>> 32) + xl * 963315388 + xh * 3371721453L >>> 32) + xh * 963315388 >> 15
-    }
-
-  private[this] def div100000000(x: Long): Long = {
-    val x8 = x >> 8
-    if (x8.toInt == x8) x8 * 1441151881 >> 49 // divide small positive long by 100000000
-    else { // divide positive long by 100000000
-      val xl = x & 0xFFFFFFFFL
-      val xh = x >>> 32
-      (xl * 2882303762L + xh * 2221002493L >>> 32) + xh * 2882303761L >> 26
-    }
-  }
-
   private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
 
   @tailrec
-  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q == 0 || {
+  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q <= 0 || {
     val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
   }

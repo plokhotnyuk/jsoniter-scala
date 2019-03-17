@@ -30,8 +30,8 @@ import scala.{specialized => sp}
   * (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or ADT instances with the discriminator field doesn't
   * appear in the beginning of the JSON object</li>
   * </ul>
-  * @param throwParseExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
-  *                                          development
+  * @param throwReaderExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
+  *                                           development
   * @param appendHexDumpToParseException a flag that allows to turn off hex dumping of affected by error part of
   *                                      an internal byte buffer
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
@@ -39,7 +39,7 @@ import scala.{specialized => sp}
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
   */
 case class ReaderConfig(
-    throwParseExceptionWithStackTrace: Boolean = false,
+    throwReaderExceptionWithStackTrace: Boolean = false,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
     preferredCharBufSize: Int = 1024) {
@@ -47,7 +47,7 @@ case class ReaderConfig(
   if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
 }
 
-class JsonParseException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonReader private[jsoniter_scala](
@@ -409,9 +409,10 @@ final class JsonReader private[jsoniter_scala](
 
   def readBoolean(): Boolean = parseBoolean(isToken = true, head)
 
-  def readStringAsCharBuf(): Int =
-    if (isNextToken('"', head)) parseString()
-    else tokenError('"')
+  def readStringAsCharBuf(): Int = {
+    nextTokenOrError('"', head)
+    parseString()
+  }
 
   def readStringAsByte(): Byte = {
     nextTokenOrError('"', head)
@@ -502,7 +503,15 @@ final class JsonReader private[jsoniter_scala](
 
   def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
 
-  def isCharBufEqualsTo(len: Int, s: String): Boolean = len == s.length && isCharBufEqualsTo(len, s, 0)
+  def isCharBufEqualsTo(len: Int, s: String): Boolean = s.length == len && {
+    val charBuf = this.charBuf
+    var i = 0
+    while (i < len) {
+      if (s.charAt(i) != charBuf(i)) return false
+      i += 1
+    }
+    true
+  }
 
   def skip(): Unit = head = {
     val b = nextToken(head)
@@ -642,8 +651,10 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       val b = buf(pos)
@@ -696,7 +707,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & 0xFFFFFFF0, 0), Math.min((pos + 48) & 0xFFFFFFF0, tail), off.toInt, i)
     }
-    throw new JsonParseException(new String(charBuf, 0, i), cause, config.throwParseExceptionWithStackTrace)
+    throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
   }
 
   @tailrec
@@ -755,6 +766,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def scanUntilToken(t: Byte, pos: Int): Int =
     if (pos + 3 < tail) {
+      val buf = this.buf
       if (buf(pos) == t) pos + 1
       else if (buf(pos + 1) == t) pos + 2
       else if (buf(pos + 2) == t) pos + 3
@@ -774,6 +786,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def next2Digits(pos: Int): Int =
     if (pos + 1 < tail) {
+      val buf = this.buf
       val d1 = buf(pos) - '0'
       val d2 = buf(pos + 1) - '0'
       if (d1 < 0 || d1 > 9) digitError(pos)
@@ -785,6 +798,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def next2DigitsWithByte(t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
+      val buf = this.buf
       val d1 = buf(pos) - '0'
       val d2 = buf(pos + 1) - '0'
       if (d1 < 0 || d1 > 9) digitError(pos)
@@ -797,6 +811,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseYearWithByte(t: Byte, maxDigits: Int, pos: Int): Int =
     if (pos + 4 < tail) {
+      val buf = this.buf
       val b = buf(pos)
       if (b >= '0' && b <= '9') {
         val d2 = buf(pos + 1) - '0'
@@ -813,6 +828,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b: Byte, p: Int): Int = {
     var pos = p
+    var buf = this.buf
     val yearNeg = b == '-' || (b != '+' && decodeError("expected '-' or '+' or digit", pos))
     val d2 = buf(pos + 1) - '0'
     val d3 = buf(pos + 2) - '0'
@@ -827,7 +843,10 @@ final class JsonReader private[jsoniter_scala](
     var d = 0
     pos += 5
     while ({
-      if (pos >= tail) pos = loadMoreOrError(pos)
+      if (pos >= tail) {
+        pos = loadMoreOrError(pos)
+        buf = this.buf
+      }
       d = buf(pos) - '0'
       d >= 0 && d <= 9 && yearDigits < maxDigits
     }) {
@@ -849,21 +868,28 @@ final class JsonReader private[jsoniter_scala](
     } else year
   }
 
-  private[this] def parseNanoWithByte(t: Byte): Int = {
-    var nano, d = 0
-    var nanoDigitWeight = 100000000
-    var pos = head
-    while ({
-      if (pos >= tail) pos = loadMoreOrError(pos)
-      d = buf(pos) - '0'
-      d >= 0 && d <= 9 && nanoDigitWeight != 0
-    }) {
-      nano += d * nanoDigitWeight
-      nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
-      pos += 1
-    }
-    if (d + '0' != t) nanoError(nanoDigitWeight, t, pos)
-    head = pos + 1
+  private[this] def parseOptionalNanoWithByte(t: Byte): Int = {
+    var nano = 0
+    var b = nextByte(head)
+    if (b == '.') {
+      var nanoDigitWeight = 100000000
+      var pos = head
+      var buf = this.buf
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        b >= '0' && b <= '9' && nanoDigitWeight != 0
+      }) {
+        nano += (b - '0') * nanoDigitWeight
+        nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
+        pos += 1
+      }
+      if (b != t) nanoError(nanoDigitWeight, t, pos)
+      head = pos + 1
+    } else if (b != t) tokensError('.', t)
     nano
   }
 
@@ -879,6 +905,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
     if (pos + 2 < tail) {
+      val buf = this.buf
       if (buf(pos) != 'u') decodeError(error, pos)
       if (buf(pos + 1) != 'l') decodeError(error, pos + 1)
       if (buf(pos + 2) != 'l') decodeError(error, pos + 2)
@@ -889,16 +916,13 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
     if (pos + 2 < tail) {
+      val buf = this.buf
       if (buf(pos) != 'u') tokenOrNullError(b, pos)
       if (buf(pos + 1) != 'l') tokenOrNullError(b, pos + 1)
       if (buf(pos + 2) != 'l') tokenOrNullError(b, pos + 2)
       head = pos + 3
       default
     } else parseNullOrTokenError(default, b, loadMoreOrError(pos))
-
-  @tailrec
-  private[this] def isCharBufEqualsTo(len: Int, s: String, i: Int): Boolean =
-    i == len || (charBuf(i) == s.charAt(i) && isCharBufEqualsTo(len, s, i + 1))
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
     if (i >= charBuf.length) growCharBuf(i + 1)
@@ -940,6 +964,7 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def parseBoolean(isToken: Boolean, pos: Int): Boolean =
     if (pos + 3 < tail) {
+      val buf = this.buf
       val b = buf(pos)
       if (b == 't') {
         if (buf(pos + 1) != 'r') booleanError(pos + 1)
@@ -948,10 +973,10 @@ final class JsonReader private[jsoniter_scala](
         head = pos + 4
         true
       } else if (b == 'f') {
-        if (buf(pos + 1) != 'a') booleanError(pos + 1)
-        if (buf(pos + 2) != 'l') booleanError(pos + 2)
-        if (buf(pos + 3) != 's') booleanError(pos + 3)
         if (pos + 4 < tail) {
+          if (buf(pos + 1) != 'a') booleanError(pos + 1)
+          if (buf(pos + 2) != 'l') booleanError(pos + 2)
+          if (buf(pos + 3) != 's') booleanError(pos + 3)
           if (buf(pos + 4) != 'e') booleanError(pos + 4)
           head = pos + 5
           false
@@ -968,12 +993,14 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    var pos = head
-    if (b < '0' || b > '9') numberError(pos - 1)
+    if (b < '0' || b > '9') numberError()
     var x = '0' - b
     val isZeroFirst = isToken && x == 0
+    var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -999,12 +1026,14 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    var pos = head
-    if (b < '0' || b > '9') numberError(pos - 1)
+    if (b < '0' || b > '9') numberError()
     var x = '0' - b
     val isZeroFirst = isToken && x == 0
+    var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1030,12 +1059,14 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    var pos = head
-    if (b < '0' || b > '9') numberError(pos - 1)
+    if (b < '0' || b > '9') numberError()
     var x = '0' - b
     val isZeroFirst = isToken && x == 0
+    var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1062,12 +1093,14 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    var pos = head
-    if (b < '0' || b > '9') numberError(pos - 1)
+    if (b < '0' || b > '9') numberError()
     var x: Long = '0' - b
     val isZeroFirst = isToken && x == 0
+    var pos = head
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       b = buf(pos)
@@ -1097,14 +1130,16 @@ final class JsonReader private[jsoniter_scala](
     try {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
-      var pos = head
-      if (b < '0' || b > '9') numberError(pos - 1)
+      if (b < '0' || b > '9') numberError()
       var posMan: Long = b - '0'
       val isZeroFirst = isToken && posMan == 0
       var manExp, posExp, digits = 0
       var isExpNeg = false
+      var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1119,15 +1154,17 @@ final class JsonReader private[jsoniter_scala](
       }
       if (b == '.') {
         b = nextByte(pos + 1)
-        pos = head
-        if (b < '0' || b > '9') numberError(pos - 1)
+        if (b < '0' || b > '9') numberError()
         if (posMan < 9007199254740992L) {
           posMan = posMan * 10 + (b - '0')
           digits += 1
           manExp -= 1
         }
+        pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1145,11 +1182,13 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(pos + 1)
         isExpNeg = b == '-'
         if (isExpNeg || b == '+') b = nextByte(head)
-        pos = head
-        if (b < '0' || b > '9') numberError(pos - 1)
+        if (b < '0' || b > '9') numberError()
         posExp = b - '0'
+        pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1195,14 +1234,16 @@ final class JsonReader private[jsoniter_scala](
     try {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
-      var pos = head
-      if (b < '0' || b > '9') numberError(pos - 1)
+      if (b < '0' || b > '9') numberError()
       var posMan = b - '0'
       val isZeroFirst = isToken && posMan == 0
       var manExp, posExp, digits = 0
       var isExpNeg = false
+      var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1217,15 +1258,17 @@ final class JsonReader private[jsoniter_scala](
       }
       if (b == '.') {
         b = nextByte(pos + 1)
-        pos = head
-        if (b < '0' || b > '9') numberError(pos - 1)
+        if (b < '0' || b > '9') numberError()
         if (posMan < 16777216) {
           posMan = posMan * 10 + (b - '0')
           digits += 1
           manExp -= 1
         }
+        pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1243,11 +1286,13 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(pos + 1)
         isExpNeg = b == '-'
         if (isExpNeg || b == '+') b = nextByte(head)
-        pos = head
-        if (b < '0' || b > '9') numberError(pos - 1)
+        if (b < '0' || b > '9') numberError()
         posExp = b - '0'
+        pos = head
+        buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1295,14 +1340,16 @@ final class JsonReader private[jsoniter_scala](
       try {
         val isNeg = b == '-'
         if (isNeg) b = nextByte(head)
-        var pos = head
-        if (b < '0' || b > '9') numberError(pos - 1)
+        if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
         var significandDigits =
           if (b == '0') 0
           else 1
+        var pos = head
+        var buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1315,27 +1362,11 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-        toBigInt(isNeg, pos)
+        var offset = this.mark
+        if (isNeg) offset += 1
+        new BigInt(toBigDecimal(offset, pos, isNeg, 0).toBigInteger)
       } finally this.mark = mark
     }
-  }
-
-  private[this] def toBigInt(isNeg: Boolean, pos: Int): BigInt = {
-    val startPos = this.mark
-    var numPos =
-      if (isNeg) startPos + 1
-      else startPos
-    if (pos < 19 + numPos) { // 19 == Long.MaxValue.toString.length
-      var x = 0L
-      while (numPos < pos) {
-        x = x * 10 + (buf(numPos) - '0')
-        numPos += 1
-      }
-      new BigInt(BigInteger.valueOf {
-        if (isNeg) -x
-        else x
-      })
-    } else new BigInt(new java.math.BigInteger(new String(buf, 0, startPos, pos - startPos), 10))
   }
 
   private[this] def parseBigDecimal(isToken: Boolean, default: BigDecimal, mc: MathContext, scaleLimit: Int,
@@ -1350,14 +1381,16 @@ final class JsonReader private[jsoniter_scala](
       try {
         val isNeg = b == '-'
         if (isNeg) b = nextByte(head)
-        var pos = head
-        if (b < '0' || b > '9') numberError(pos - 1)
+        if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
         var significandDigits =
           if (b == '0') 0
           else 1
+        var pos = head
+        var buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
+          buf = this.buf
           pos < tail
         }) && {
           b = buf(pos)
@@ -1368,12 +1401,16 @@ final class JsonReader private[jsoniter_scala](
           if (significandDigits >= digitsLimit) digitsLimitError(pos)
           pos += 1
         }
+        var scale = 0
         if (b == '.') {
           b = nextByte(pos + 1)
+          if (b < '0' || b > '9') numberError()
+          scale += 1
           pos = head
-          if (b < '0' || b > '9') numberError(pos - 1)
+          buf = this.buf
           while ((pos < tail || {
             pos = loadMore(pos)
+            buf = this.buf
             pos < tail
           }) && {
             b = buf(pos)
@@ -1383,45 +1420,184 @@ final class JsonReader private[jsoniter_scala](
               significandDigits += 1
               if (significandDigits >= digitsLimit) digitsLimitError(pos)
             }
+            scale += 1
             pos += 1
           }
         }
+        val numLen = pos - this.mark - {
+          if (isNeg) 1
+          else 0
+        }
+        var exp = 0
         if ((b | 0x20) == 'e') {
           b = nextByte(pos + 1)
-          if (b == '-' || b == '+') b = nextByte(head)
+          val isExpNeg = b == '-'
+          if (isExpNeg || b == '+') b = nextByte(head)
+          if (b < '0' || b > '9') numberError()
+          exp = '0' - b
           pos = head
-          if (b < '0' || b > '9') numberError(pos - 1)
+          buf = this.buf
           while ((pos < tail || {
             pos = loadMore(pos)
+            buf = this.buf
             pos < tail
           }) && {
             b = buf(pos)
             b >= '0' && b <= '9'
-          }) pos += 1
+          }) {
+            if (exp < -214748364) numberError(pos)
+            exp = exp * 10 + ('0' - b)
+            if (exp > 0) numberError(pos)
+            pos += 1
+          }
+          if (!isExpNeg) {
+            if (exp == -2147483648) numberError(pos - 1)
+            exp = -exp
+          }
         }
         head = pos
-        val x = toBigDecimal(pos, mc)
-        if (Math.abs(x.scale) >= scaleLimit) scaleLimitError(pos - 1)
-        x
+        val offset = this.mark
+        val numPos =
+          if (isNeg) offset + 1
+          else offset
+        val limit = numPos + numLen
+        val x =
+          (if (scale == 0) toBigDecimal(numPos, limit, isNeg, -exp)
+          else {
+            val fracPos = limit - scale
+            toBigDecimal(numPos, fracPos - 1, isNeg, -exp).add(toBigDecimal(fracPos, limit, isNeg, scale - exp))
+          }).round(mc)
+        if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
+        new BigDecimal(x, mc)
       } finally this.mark = mark
     }
   }
 
-  private[this] def toBigDecimal(pos: Int, mc: MathContext): BigDecimal = {
-    val startPos = this.mark
-    new BigDecimal(new java.math.BigDecimal(new String(buf, 0, startPos, pos - startPos)))
+  // Based on a great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing a really big numbers
+  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for a decimal representation from JDK 8/11:
+  // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
+  private def toBigDecimal(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
+    var pos = offset
+    val buf = this.buf
+    val length = limit - offset
+    if (length == 1 && buf(offset) == '0') java.math.BigDecimal.ZERO.setScale(scale)
+    else if (length < 19) {
+      var x = 0L
+      while (pos < limit) {
+        x = x * 10 + (buf(pos) - '0')
+        pos += 1
+      }
+      new java.math.BigDecimal(BigInteger.valueOf {
+        if (isNeg) -x
+        else x
+      }, scale)
+    } else if (length < 37) toBigDecimal37(offset, limit, isNeg, scale)
+    else if (length < 285) toBigDecimal285(offset, limit, isNeg, scale)
+    else {
+      val mid = length >> 1
+      toBigDecimal(pos, limit - mid, isNeg, scale - mid).add(toBigDecimal(pos + length - mid, limit, isNeg, scale))
+    }
+  }
+
+  private[this] def toBigDecimal37(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
+    var pos = offset
+    val buf = this.buf
+    val x1Limit = limit - 18
+    var x1 = 0L
+    while (pos < x1Limit) {
+      x1 = x1 * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    val x2 =
+      buf(pos) * 100000000000000000L +
+        buf(pos + 1) * 10000000000000000L +
+        buf(pos + 2) * 1000000000000000L +
+        buf(pos + 3) * 100000000000000L +
+        buf(pos + 4) * 10000000000000L +
+        buf(pos + 5) * 1000000000000L +
+        buf(pos + 6) * 100000000000L +
+        buf(pos + 7) * 10000000000L +
+        buf(pos + 8) * 1000000000L +
+        buf(pos + 9) * 100000000L +
+        buf(pos + 10) * 10000000L +
+        buf(pos + 11) * 1000000 +
+        buf(pos + 12) * 100000 +
+        buf(pos + 13) * 10000 +
+        buf(pos + 14) * 1000 +
+        buf(pos + 15) * 100 +
+        buf(pos + 16) * 10 +
+        buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
+    new java.math.BigDecimal(BigInteger.valueOf {
+      if (isNeg) -x1
+      else x1
+    }, scale - 18).add(new java.math.BigDecimal(BigInteger.valueOf {
+      if (isNeg) -x2
+      else x2
+    }, scale))
+  }
+
+  private[this] def toBigDecimal285(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
+    var pos = offset
+    val buf = this.buf
+    val length = limit - pos
+    val numWords = ((length * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
+    if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
+    val magnitude = new Array[Int](numWords)
+    val blockNum = ((length * 954437177L) >> 33).toInt // divide positive int by 9
+    val firstBlockPos = pos + length - 9 * blockNum
+    var x = 0L
+    while (pos < firstBlockPos) {
+      x = x * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    magnitude(numWords - 1) = x.toInt
+    while (pos < limit) {
+      x =
+        buf(pos) * 100000000L +
+          buf(pos + 1) * 10000000L +
+          buf(pos + 2) * 1000000 +
+          buf(pos + 3) * 100000 +
+          buf(pos + 4) * 10000 +
+          buf(pos + 5) * 1000 +
+          buf(pos + 6) * 100 +
+          buf(pos + 7) * 10 +
+          buf(pos + 8) - 5333333328L // == '0' * 111111111L
+      var i = numWords - 1
+      while (i >= 0) {
+        val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
+        magnitude(i) = p.toInt
+        x = p >>> 32
+        i -= 1
+      }
+      pos += 9
+    }
+    val bytes = new Array[Byte](numWords << 2)
+    var i = 0
+    while (i < numWords) {
+      val w = magnitude(i)
+      val j = i << 2
+      bytes(j) = ((w >> 24) & 0xFF).toByte
+      bytes(j + 1) = ((w >> 16) & 0xFF).toByte
+      bytes(j + 2) = ((w >> 8) & 0xFF).toByte
+      bytes(j + 3) = (w & 0xFF).toByte
+      i += 1
+    }
+    val signum =
+      if (isNeg) -1
+      else 1
+    new java.math.BigDecimal(new java.math.BigInteger(signum, bytes), scale)
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
     if (default == null) numberError(pos - 1)
     else parseNullOrError(default, "expected number or null", pos)
 
-  private[this] def numberError(pos: Int): Nothing = decodeError("illegal number", pos)
+  private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
   private[this] def digitsLimitError(pos: Int): Nothing =
     decodeError("value exceeds limit for number of significant digits", pos)
 
-  private[this] def scaleLimitError(pos: Int): Nothing = decodeError("value exceeds limit for scale", pos)
+  private[this] def scaleLimitError(pos: Int = head - 1): Nothing = decodeError("value exceeds limit for scale", pos)
 
   private[this] def leadingZeroError(pos: Int): Nothing = decodeError("illegal number with leading zero", pos)
 
@@ -1461,10 +1637,12 @@ final class JsonReader private[jsoniter_scala](
         if (state < 2) tokenOrDigitError('-')
         decodeError("expected '\"' or '-' or digit")
       }
-      var pos = head
       var x: Long = '0' - b
+      var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1496,7 +1674,10 @@ final class JsonReader private[jsoniter_scala](
         seconds = sumSeconds(x, seconds, pos)
         var nanoDigitWeight = 100000000
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1529,12 +1710,10 @@ final class JsonReader private[jsoniter_scala](
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
     var second, nano = 0
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == ':') {
       second = next2Digits(head)
-      b = nextByte(head)
-      if (b == '.') nano = parseNanoWithByte('Z')
-      else if (b != 'Z') tokensError('.', 'Z')
+      nano = parseOptionalNanoWithByte('Z')
     } else if (b != 'Z') tokensError(':', 'Z')
     nextByteOrError('"', head)
     Instant.ofEpochSecond(epochSecond(year, month, day, hour, minute, second), nano)
@@ -1550,12 +1729,10 @@ final class JsonReader private[jsoniter_scala](
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
     var second, nano = 0
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == ':') {
       second = next2Digits(head)
-      b = nextByte(head)
-      if (b == '.') nano = parseNanoWithByte('"')
-      else if (b != '"') tokensError('.', '"')
+      nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
     LocalDateTime.of(toLocalDate(year, month, day), toLocalTime(hour, minute, second, nano))
   }
@@ -1564,12 +1741,10 @@ final class JsonReader private[jsoniter_scala](
     val hour = next2DigitsWithByte(':', head)
     val minute = next2Digits(head)
     var second, nano = 0
-    var b = nextByte(head)
+    val b = nextByte(head)
     if (b == ':') {
       second = next2Digits(head)
-      b = nextByte(head)
-      if (b == '.') nano = parseNanoWithByte('"')
-      else if (b != '"') tokensError('.', '"')
+      nano = parseOptionalNanoWithByte('"')
     } else if (b != '"') tokensError(':', '"')
     toLocalTime(hour, minute, second, nano)
   }
@@ -1611,8 +1786,12 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         hasNano = true
         var pos = head
+        var buf = this.buf
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1657,8 +1836,12 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         hasNano = true
         var pos = head
+        var buf = this.buf
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1708,10 +1891,12 @@ final class JsonReader private[jsoniter_scala](
         if (state < 1) tokenOrDigitError('-')
         decodeError("expected '\"' or '-' or digit")
       }
-      var pos = head
       var x = '0' - b
+      var pos = head
+      var buf = this.buf
       while ((pos < tail || {
         pos = loadMore(pos)
+        buf = this.buf
         pos < tail
       }) && {
         b = buf(pos)
@@ -1769,8 +1954,12 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         hasNano = true
         var pos = head
+        var buf = this.buf
         while ({
-          if (pos >= tail) pos = loadMoreOrError(pos)
+          if (pos >= tail) {
+            pos = loadMoreOrError(pos)
+            buf = this.buf
+          }
           b = buf(pos)
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
@@ -1921,7 +2110,7 @@ final class JsonReader private[jsoniter_scala](
     else 29
 
   private[this] def isLeap(year: Int): Boolean = (year & 0x3) == 0 && {
-    val century = (year * 1374389535L >> 37).toInt - (year >> 31) // divide int by 100
+    val century = year / 100
     century * 100 != year || (century & 0x3) == 0
   }
 
@@ -2257,6 +2446,7 @@ final class JsonReader private[jsoniter_scala](
     val bufOffset = alignedAbsFrom - offset
     var i = appendChars(dumpHeader, from)
     i = appendChars(dumpBorder, i)
+    val buf = this.buf
     val ds = hexDigits
     var charBuf = this.charBuf
     var lim = charBuf.length
@@ -2357,8 +2547,10 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def skipNumber(p: Int): Int = {
     var pos = p
+    var buf = this.buf
     while ((pos < tail || {
       pos = loadMore(pos)
+      buf = this.buf
       pos < tail
     }) && {
       val b = buf(pos)

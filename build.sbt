@@ -1,13 +1,13 @@
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt.Keys.scalacOptions
-import sbt.url
+import sbt._
 import scala.sys.process._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
 
-def mimaSettings = mimaDefaultSettings ++ Seq(
+def mimaSettings: Seq[Setting[_]] = mimaDefaultSettings ++ Seq(
   mimaCheckDirection := {
-    def isPatch = {
+    def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
       val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
       newMajor == oldMajor && newMinor == oldMinor
@@ -16,7 +16,7 @@ def mimaSettings = mimaDefaultSettings ++ Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
-    def isCheckingRequired = {
+    def isCheckingRequired: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
       val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
       newMajor == oldMajor && (newMajor != "0" || newMinor == oldMinor)
@@ -94,16 +94,11 @@ lazy val `jsoniter-scala-core` = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.8", "2.11.12"),
-    libraryDependencies ++= {
-      val scalatestV =
-        if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
-        else "3.0.6-SNAP5"
-      Seq(
-        "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-        "org.scalatest" %% "scalatest" % scalatestV % Test
-      )
-    }
+    crossScalaVersions := Seq("2.13.0-M5", "2.12.8", "2.11.12"),
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.6" % Test
+    )
   )
 
 lazy val `jsoniter-scala-macros` = project
@@ -112,18 +107,13 @@ lazy val `jsoniter-scala-macros` = project
   .settings(mimaSettings: _*)
   .settings(publishSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.13.0-M5", "2.13.0-M4", "2.12.8", "2.11.12"),
-    libraryDependencies ++= {
-      val scalatestV =
-        if (scalaVersion.value == "2.13.0-M4") "3.0.6-SNAP2"
-        else "3.0.6-SNAP5"
-      Seq(
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-        "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-        "org.scalatest" %% "scalatest" % scalatestV % Test
-      )
-    }
+    crossScalaVersions := Seq("2.13.0-M5", "2.12.8", "2.11.12"),
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.0.6" % Test
+    )
   )
 
 lazy val `jsoniter-scala-benchmark` = project
@@ -133,11 +123,11 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(noPublishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.avsystem.commons" %% "commons-core" % "1.34.7",
+      "com.avsystem.commons" %% "commons-core" % "1.34.10",
       "com.lihaoyi" %% "upickle" % "0.7.1",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.5",
       "com.jsoniter" % "jsoniter" % "0.9.23",
-      "org.javassist" % "javassist" % "3.24.1-GA",
+      "org.javassist" % "javassist" % "3.24.1-GA", // required for Jsoniter Java
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.8",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.8",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.8",
@@ -145,10 +135,10 @@ lazy val `jsoniter-scala-benchmark` = project
       "io.circe" %% "circe-generic-extras" % "0.11.1",
       "io.circe" %% "circe-parser" % "0.11.1",
       "io.circe" %% "circe-java8" % "0.11.1",
-      "com.typesafe.play" %% "play-json" % "2.7.0",
+      "com.typesafe.play" %% "play-json" % "2.7.2",
       "org.julienrf" %% "play-json-derived-codecs" % "5.0.0",
-      "ai.x" %% "play-json-extensions" % "0.20.0",
+      "ai.x" %% "play-json-extensions" % "0.30.1",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
-      "org.scalatest" %% "scalatest" % "3.0.6-SNAP6" % Test
+      "org.scalatest" %% "scalatest" % "3.0.6" % Test
     )
   )

@@ -25,10 +25,10 @@ package object core {
     * @param config a parsing configuration
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
-    *                            while some input bytes are expected
+    * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                             the input JSON structure does not match structure that expected for result type,
+    *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
+    *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if the `codec`, `in` or `config` is null
     */
   final def readFromStream[@sp A](in: InputStream, config: ReaderConfig = readerConfig)
@@ -48,10 +48,10 @@ package object core {
     * @param f a consumer of values, that returns `true` to continue scanning or `false` to complete it
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
-    *                            while some input bytes are expected
+    * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                             the input JSON structure does not match structure that expected for result type,
+    *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
+    *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if the `codec`, `in` or `config` is null
     * @throws java.lang.Throwable if some error was thrown by f() call
     */
@@ -72,10 +72,10 @@ package object core {
     * @param f a consumer of values, that returns `true` to continue scanning or `false` to complete it
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also if a low-level I/O problem (unexpected end-of-input, network error) occurs
-    *                            while some input bytes are expected
+    * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                             the input JSON structure does not match structure that expected for result type,
+    *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
+    *                             while some input bytes are expected
     * @throws java.lang.NullPointerException if the `codec`, `in` or `config` is null
     * @throws java.lang.Throwable if some error was thrown by f() call
     */
@@ -94,9 +94,9 @@ package object core {
     * @param config a parsing configuration
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                             the input JSON structure does not match structure that expected for result type,
+    *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
     */
   final def readFromArray[@sp A](buf: Array[Byte], config: ReaderConfig = readerConfig)
@@ -114,9 +114,9 @@ package object core {
     * @param config a parsing configuration
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for result type,
-    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                             the input JSON structure does not match structure that expected for result type,
+    *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
     *                                                  or `from` is greater than `to` or negative
@@ -143,9 +143,9 @@ package object core {
     * @param config a parsing configuration
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
-    *                            the input JSON structure does not match structure that expected for the result type,
-    *                            also in case if end of input is detected while some input bytes are expected
+    * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
+    *                             the input JSON structure does not match structure that expected for the result type,
+    *                             also in case if end of input is detected while some input bytes are expected
     * @throws java.lang.NullPointerException if the `codec`, `bbuf` or `config` is null
     */
   final def readFromByteBuffer[@sp A](bbuf: ByteBuffer, config: ReaderConfig = readerConfig)
@@ -164,9 +164,9 @@ package object core {
     * @param config a parsing configuration
     * @param codec a codec for the given `A` type
     * @return a successfully parsed value
-    * @throws JsonParseException if underlying input contains invalid JSON content or the input JSON structure does not
-    *                            match structure that expected for the result type, also in case if end of input is
-    *                            detected while some input characters are expected
+    * @throws JsonReaderException if underlying input contains invalid JSON content or the input JSON structure does not
+    *                             match structure that expected for the result type, also in case if end of input is
+    *                             detected while some input characters are expected
     * @throws java.lang.NullPointerException if the `codec`, `s` or `config` is null
     */
   final def readFromString[A](s: String, config: ReaderConfig = readerConfig)(implicit codec: JsonValueCodec[A]): A = {
@@ -185,6 +185,9 @@ package object core {
     * @param out an output stream to serialize into
     * @param config a serialization configuration
     * @param codec a codec for the given value
+    * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
+    *                             properly encoded
+    * @throws java.io.IOException if an I/O error occurs in a call to output stream
     * @throws java.lang.NullPointerException if the `codec`, `out` or `config` is null
     */
   final def writeToStream[@sp A](x: A, out: OutputStream, config: WriterConfig = writerConfig)
@@ -202,7 +205,9 @@ package object core {
     * @param config a serialization configuration
     * @param codec a codec for the given value
     * @return a byte array with `x` serialized to JSON
-    * @throws NullPointerException if the `codec` or `config` is null
+    * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
+    *                             properly encoded
+    * @throws java.lang.NullPointerException if the `codec` or `config` is null
     */
   final def writeToArray[@sp A](x: A, config: WriterConfig = writerConfig)
                                (implicit codec: JsonValueCodec[A]): Array[Byte] =
@@ -220,6 +225,8 @@ package object core {
     * @param config a serialization configuration
     * @param codec a codec for the given value
     * @return number of next position after last byte serialized to `buf`
+    * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
+    *                             properly encoded
     * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if 'to' is greater
     *                                                  than `buf` length or `to` limit was exceeded during serialization
@@ -245,6 +252,8 @@ package object core {
     * @param bbuf a byte buffer where the value should be serialized
     * @param config a serialization configuration
     * @param codec a codec for the given value
+    * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
+    *                             properly encoded
     * @throws java.lang.NullPointerException    if the `codec`, `bbuf` or `config` is null
     * @throws java.nio.ReadOnlyBufferException if the `bbuf` is read-only
     * @throws java.nio.BufferOverflowException if the `bbuf` limit was exceeded during serialization
@@ -264,7 +273,9 @@ package object core {
     * @param config a serialization configuration
     * @param codec a codec for the given value
     * @return a string with `x` serialized to JSON
-    * @throws NullPointerException if the `codec` or `config` is null
+    * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
+    *                             properly encoded
+    * @throws java.lang.NullPointerException if the `codec` or `config` is null
     */
   final def writeToString[@sp A](x: A, config: WriterConfig = writerConfig)(implicit codec: JsonValueCodec[A]): String =
     new JsonWriter(buf = new Array[Byte](16), limit = 16).writeStringWithoutBufReallocation(codec, x, config)
