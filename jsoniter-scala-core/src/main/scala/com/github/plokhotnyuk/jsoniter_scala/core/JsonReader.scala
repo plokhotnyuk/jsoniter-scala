@@ -1492,7 +1492,7 @@ final class JsonReader private[jsoniter_scala](
         else x
       }, scale)
     } else if (length < 37) toBigDecimal37(offset, limit, isNeg, scale)
-    else if (length < 450) toBigDecimal450(offset, limit, isNeg, scale)
+    else if (length < 285) toBigDecimal285(offset, limit, isNeg, scale)
     else {
       val mid = length >> 1
       toBigDecimal(pos, limit - mid, isNeg, scale - mid).add(toBigDecimal(pos + length - mid, limit, isNeg, scale))
@@ -1536,7 +1536,7 @@ final class JsonReader private[jsoniter_scala](
     }, scale))
   }
 
-  private[this] def toBigDecimal450(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
+  private[this] def toBigDecimal285(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
     var pos = offset
     val buf = this.buf
     val length = limit - pos
