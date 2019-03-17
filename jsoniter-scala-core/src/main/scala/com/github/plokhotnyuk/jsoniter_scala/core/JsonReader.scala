@@ -1474,13 +1474,14 @@ final class JsonReader private[jsoniter_scala](
   }
 
   // Based on a great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing a really big numbers
-  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for a decimal representation in JDK 8/11:
+  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for a decimal representation from JDK 8/11:
   // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
   private def toBigDecimal(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
     var pos = offset
-    val numDigits = limit - pos
-    if (numDigits == 1 && buf(pos) == '0') java.math.BigDecimal.ZERO.setScale(scale)
-    else if (numDigits < 19) {
+    val buf = this.buf
+    val length = limit - offset
+    if (length == 1 && buf(offset) == '0') java.math.BigDecimal.ZERO.setScale(scale)
+    else if (length < 19) {
       var x = 0L
       while (pos < limit) {
         x = x * 10 + (buf(pos) - '0')
@@ -1490,57 +1491,101 @@ final class JsonReader private[jsoniter_scala](
         if (isNeg) -x
         else x
       }, scale)
-    } else if (numDigits < 777) {
-      val numWords = ((numDigits * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
-      if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
-      val magnitude = new Array[Int](numWords)
-      val blockNum = ((numDigits * 954437177L) >> 33).toInt // divide positive int by 9
-      val firstBlockPos = pos + numDigits - 9 * blockNum
-      var x = 0L
-      while (pos < firstBlockPos) {
-        x = x * 10 + (buf(pos) - '0')
-        pos += 1
-      }
-      magnitude(numWords - 1) = x.toInt
-      while (pos < limit) {
-        x =
-          buf(pos) * 100000000L +
-            buf(pos + 1) * 10000000L +
-            buf(pos + 2) * 1000000 +
-            buf(pos + 3) * 100000 +
-            buf(pos + 4) * 10000 +
-            buf(pos + 5) * 1000 +
-            buf(pos + 6) * 100 +
-            buf(pos + 7) * 10 +
-            buf(pos + 8) - 5333333328L // == '0' * 111111111L
-        var i = numWords - 1
-        while (i >= 0) {
-          val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
-          magnitude(i) = p.toInt
-          x = p >>> 32
-          i -= 1
-        }
-        pos += 9
-      }
-      val bytes = new Array[Byte](numWords << 2)
-      var i = 0
-      while (i < numWords) {
-        val w = magnitude(i)
-        val j = i << 2
-        bytes(j) = ((w >> 24) & 0xFF).toByte
-        bytes(j + 1) = ((w >> 16) & 0xFF).toByte
-        bytes(j + 2) = ((w >> 8) & 0xFF).toByte
-        bytes(j + 3) = (w & 0xFF).toByte
-        i += 1
-      }
-      val signum =
-        if (isNeg) -1
-        else 1
-      new java.math.BigDecimal(new java.math.BigInteger(signum, bytes), scale)
-    } else {
-      val mid = numDigits >> 1
-      toBigDecimal(pos, limit - mid, isNeg, scale - mid).add(toBigDecimal(pos + numDigits - mid, limit, isNeg, scale))
+    } else if (length < 37) toBigDecimal37(offset, limit, isNeg, scale)
+    else if (length < 450) toBigDecimal450(offset, limit, isNeg, scale)
+    else {
+      val mid = length >> 1
+      toBigDecimal(pos, limit - mid, isNeg, scale - mid).add(toBigDecimal(pos + length - mid, limit, isNeg, scale))
     }
+  }
+
+  private[this] def toBigDecimal37(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
+    var pos = offset
+    val buf = this.buf
+    val x1Limit = limit - 18
+    var x1 = 0L
+    while (pos < x1Limit) {
+      x1 = x1 * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    val x2 =
+      buf(pos) * 100000000000000000L +
+        buf(pos + 1) * 10000000000000000L +
+        buf(pos + 2) * 1000000000000000L +
+        buf(pos + 3) * 100000000000000L +
+        buf(pos + 4) * 10000000000000L +
+        buf(pos + 5) * 1000000000000L +
+        buf(pos + 6) * 100000000000L +
+        buf(pos + 7) * 10000000000L +
+        buf(pos + 8) * 1000000000L +
+        buf(pos + 9) * 100000000L +
+        buf(pos + 10) * 10000000L +
+        buf(pos + 11) * 1000000 +
+        buf(pos + 12) * 100000 +
+        buf(pos + 13) * 10000 +
+        buf(pos + 14) * 1000 +
+        buf(pos + 15) * 100 +
+        buf(pos + 16) * 10 +
+        buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
+    new java.math.BigDecimal(BigInteger.valueOf {
+      if (isNeg) -x1
+      else x1
+    }, scale - 18).add(new java.math.BigDecimal(BigInteger.valueOf {
+      if (isNeg) -x2
+      else x2
+    }, scale))
+  }
+
+  private[this] def toBigDecimal450(offset: Int, limit: Int, isNeg: Boolean, scale: Int): java.math.BigDecimal = {
+    var pos = offset
+    val buf = this.buf
+    val length = limit - pos
+    val numWords = ((length * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
+    if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
+    val magnitude = new Array[Int](numWords)
+    val blockNum = ((length * 954437177L) >> 33).toInt // divide positive int by 9
+    val firstBlockPos = pos + length - 9 * blockNum
+    var x = 0L
+    while (pos < firstBlockPos) {
+      x = x * 10 + (buf(pos) - '0')
+      pos += 1
+    }
+    magnitude(numWords - 1) = x.toInt
+    while (pos < limit) {
+      x =
+        buf(pos) * 100000000L +
+          buf(pos + 1) * 10000000L +
+          buf(pos + 2) * 1000000 +
+          buf(pos + 3) * 100000 +
+          buf(pos + 4) * 10000 +
+          buf(pos + 5) * 1000 +
+          buf(pos + 6) * 100 +
+          buf(pos + 7) * 10 +
+          buf(pos + 8) - 5333333328L // == '0' * 111111111L
+      var i = numWords - 1
+      while (i >= 0) {
+        val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
+        magnitude(i) = p.toInt
+        x = p >>> 32
+        i -= 1
+      }
+      pos += 9
+    }
+    val bytes = new Array[Byte](numWords << 2)
+    var i = 0
+    while (i < numWords) {
+      val w = magnitude(i)
+      val j = i << 2
+      bytes(j) = ((w >> 24) & 0xFF).toByte
+      bytes(j + 1) = ((w >> 16) & 0xFF).toByte
+      bytes(j + 2) = ((w >> 8) & 0xFF).toByte
+      bytes(j + 3) = (w & 0xFF).toByte
+      i += 1
+    }
+    val signum =
+      if (isNeg) -1
+      else 1
+    new java.math.BigDecimal(new java.math.BigInteger(signum, bytes), scale)
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
