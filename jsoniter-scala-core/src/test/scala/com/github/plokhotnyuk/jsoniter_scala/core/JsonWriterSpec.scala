@@ -755,7 +755,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
 
-  def withWriter(f: JsonWriter => Unit): String = withWriter(WriterConfig(preferredBufSize = 0))(f)
+  def withWriter(f: JsonWriter => Unit): String =
+    withWriter(WriterConfig(preferredBufSize = 0, throwWriterExceptionWithStackTrace = true))(f)
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val writer = new JsonWriter(new Array[Byte](0), 0, 0, 0, false, false, null, null, cfg)
