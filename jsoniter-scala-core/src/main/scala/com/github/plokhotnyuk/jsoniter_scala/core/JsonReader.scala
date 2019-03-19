@@ -1541,12 +1541,12 @@ final class JsonReader private[jsoniter_scala](
   private[this] def toBigDecimal285(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     var pos = offset
-    val length = limit - pos
-    val numWords = ((length * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
+    val len = limit - pos
+    val numWords = ((len * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
     if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
     val magnitude = new Array[Int](numWords)
-    val blockNum = ((length * 954437177L) >> 33).toInt // divide positive int by 9
-    val firstBlockLimit = pos + length - 9 * blockNum
+    val blockNum = ((len * 954437177L) >> 33).toInt // divide positive int by 9
+    val firstBlockLimit = pos + len - 9 * blockNum
     var x = 0L
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
