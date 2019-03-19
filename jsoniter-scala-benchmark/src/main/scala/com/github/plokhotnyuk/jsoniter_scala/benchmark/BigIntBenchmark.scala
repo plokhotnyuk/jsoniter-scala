@@ -43,7 +43,7 @@ class BigIntBenchmark extends CommonParams {
   def readJacksonScala(): BigInt = jacksonMapper.readValue[BigInt](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes, longNumberConfig)(bigIntCodec)
+  def readJsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes)(bigIntCodec)
 /* FIXME: PlayJson looses significant digits in big values
   @Benchmark
   def readPlayJson(): BigInt = Json.parse(jsonBytes).as[BigInt]

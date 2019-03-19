@@ -14,8 +14,6 @@ import scala.collection.mutable
 object JsoniterScalaCodecs {
   val exceptionWithoutDumpConfig = ReaderConfig(appendHexDumpToParseException = false)
   val exceptionWithStacktraceConfig = ReaderConfig(throwReaderExceptionWithStackTrace = true)
-  val longNumberConfig = ReaderConfig(preferredBufSize = 1024 * 1024)
-  val longStringConfig = ReaderConfig(preferredCharBufSize = 1024 * 1024)
   val escapingConfig = WriterConfig(escapeUnicode = true)
   val bigDecimalCodec: JsonValueCodec[BigDecimal] =
     make(CodecMakerConfig(bigDecimalDigitsLimit = Int.MaxValue, bigDecimalScaleLimit = Int.MaxValue, bigDecimalPrecision = 0)) /*WARNING: don't do this for open-system*/

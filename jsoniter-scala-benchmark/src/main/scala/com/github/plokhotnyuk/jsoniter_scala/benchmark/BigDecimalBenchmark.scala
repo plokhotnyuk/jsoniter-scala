@@ -48,7 +48,7 @@ class BigDecimalBenchmark extends CommonParams {
   def readJacksonScala(): BigDecimal = jacksonMapper.readValue[BigDecimal](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes, longNumberConfig)(bigDecimalCodec)
+  def readJsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
 /* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def readPlayJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]

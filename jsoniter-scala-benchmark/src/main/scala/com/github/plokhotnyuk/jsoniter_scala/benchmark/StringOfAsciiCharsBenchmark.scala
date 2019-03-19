@@ -64,7 +64,7 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
 
   @Benchmark
-  def readJsoniterScala(): String = readFromArray[String](jsonBytes, longStringConfig)(stringCodec)
+  def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
 
   @Benchmark
   def readPlayJson(): String = Json.parse(jsonBytes).as[String]
