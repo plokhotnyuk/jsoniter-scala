@@ -113,7 +113,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
-    writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeBigInt(x)
     writeParenthesesWithColon()
   }
 
@@ -236,7 +236,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiStringWithoutParentheses(new java.math.BigDecimal(x.bigInteger).toPlainString)
+    writeBigInt(x)
   }
 
   def writeVal(x: UUID): Unit = {
@@ -812,6 +812,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
+
+  private[this] def writeBigInt(x: BigInt): Unit = {
+    val bigInteger = x.bigInteger
+    if (bigInteger.bitLength < 64) writeLong(bigInteger.longValue)
+    else writeNonEscapedAsciiStringWithoutParentheses(bigInteger.toString(10))
+  }
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
     val pos = ensureBufCapacity(5)
