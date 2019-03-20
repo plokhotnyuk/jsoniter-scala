@@ -113,7 +113,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
-    writeBigInt(x)
+    writeBigInteger(x.bigInteger)
     writeParenthesesWithColon()
   }
 
@@ -236,7 +236,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBigInt(x)
+    writeBigInteger(x.bigInteger)
   }
 
   def writeVal(x: UUID): Unit = {
@@ -813,11 +813,13 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  private[this] def writeBigInt(x: BigInt): Unit = {
-    val bigInteger = x.bigInteger
-    if (bigInteger.bitLength < 64) writeLong(bigInteger.longValue)
-    else writeNonEscapedAsciiStringWithoutParentheses(bigInteger.toString(10))
-  }
+  private[this] def writeBigInteger(x: BigInteger): Unit =
+    if (x.bitLength < 64) writeLong(x.longValue)
+    else if (x.bitLength < 241) {
+      val qr = x.divideAndRemainder(tenPow18)
+      writeBigInteger(qr(0))
+      count = write18Digits(Math.abs(qr(1).longValue), ensureBufCapacity(18), this.buf, digits)
+    } else writeNonEscapedAsciiStringWithoutParentheses(x.toString(10))
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
     val pos = ensureBufCapacity(5)
@@ -1405,6 +1407,14 @@ final class JsonWriter private[jsoniter_scala](
     pos + 8
   }
 
+  private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = q0 / 100000000
+    val r1 = (q0 - 100000000 * q1).toInt
+    val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
+    val r2 = (q1 - 100000000 * q2).toInt
+    write8Digits(r1, write8Digits(r2, write2Digits(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
+  }
+
   private[this] def writeShort(x: Short): Unit = count = {
     var pos = ensureBufCapacity(6) // Short.MinValue.toString.length
     val buf = this.buf
@@ -1975,6 +1985,7 @@ object JsonWriter {
   private final val f32Pow5Split = new Array[Int](94)
   private final val f64Pow5InvSplit = new Array[Int](1164)
   private final val f64Pow5Split = new Array[Int](1304)
+  private final val tenPow18 = BigInteger.valueOf(1000000000000000000L)
 
   {
     var pow5 = BigInteger.ONE
