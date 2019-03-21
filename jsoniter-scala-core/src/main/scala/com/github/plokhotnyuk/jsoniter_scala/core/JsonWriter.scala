@@ -815,11 +815,29 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeBigInteger(x: BigInteger): Unit =
     if (x.bitLength < 64) writeLong(x.longValue)
-    else if (x.bitLength < 241) {
+    else if (x.bitLength < 123) {
       val qr = x.divideAndRemainder(tenPow18)
+      writeLong(qr(0).longValue)
+      count = write18Digits(absLong(qr(1)), ensureBufCapacity(18), buf, digits)
+    } else {
+      val n = 31 - java.lang.Integer.numberOfLeadingZeros((x.bitLength * 71828554L >>> 32).toInt - 1)
+      val qr = x.divideAndRemainder(tenPows(n))
       writeBigInteger(qr(0))
-      count = write18Digits(Math.abs(qr(1).longValue), ensureBufCapacity(18), this.buf, digits)
-    } else writeNonEscapedAsciiStringWithoutParentheses(x.toString(10))
+      writeBigIntegerReminder(qr(1), n - 1)
+    }
+
+  private[this] def writeBigIntegerReminder(x: BigInteger, n: Int): Unit =
+    if (n < 0) count = write18Digits(absLong(x), ensureBufCapacity(18), buf, digits)
+    else if (n == 0) {
+      val qr = x.divideAndRemainder(tenPow18)
+      count = write18Digits(absLong(qr(1)), write18Digits(absLong(qr(0)), ensureBufCapacity(36), buf, digits), buf, digits)
+    } else {
+      val qr = x.divideAndRemainder(tenPows(n))
+      writeBigIntegerReminder(qr(0), n - 1)
+      writeBigIntegerReminder(qr(1), n - 1)
+    }
+
+  private[this] def absLong(x: BigInteger): Long = Math.abs(x.longValue)
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
     val pos = ensureBufCapacity(5)
@@ -1985,7 +2003,8 @@ object JsonWriter {
   private final val f32Pow5Split = new Array[Int](94)
   private final val f64Pow5InvSplit = new Array[Int](1164)
   private final val f64Pow5Split = new Array[Int](1304)
-  private final val tenPow18 = BigInteger.valueOf(1000000000000000000L)
+  private final val tenPow18: BigInteger = BigInteger.valueOf(1000000000000000000L)
+  private final val tenPows: Stream[BigInteger] = tenPow18 #:: tenPows.map(p => p.multiply(p))
 
   {
     var pow5 = BigInteger.ONE
