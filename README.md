@@ -92,7 +92,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Using black box macros only for codec generation ensures that your types will never be changed
 - Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs` 
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Releases for different Scala versions: 2.11, 2.12, 2.13.0-M4, 2.13.0-M5  
+- Releases for different Scala versions: 2.11, 2.12, 2.13.0-M5  
 - Support of compilation to a native image by GraalVM
   
 There are configurable options that can be set in compile-time:
