@@ -817,7 +817,7 @@ final class JsonWriter private[jsoniter_scala](
     if (x.bitLength < 64) writeLong(x.longValue)
     else {
       val n = 31 - java.lang.Integer.numberOfLeadingZeros(Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1))
-      val qr = x.divideAndRemainder(tenPows(n))
+      val qr = x.divideAndRemainder(tenPow18Squares(n))
       writeBigInteger(qr(0))
       writeBigIntegerReminder(qr(1), n - 1)
     }
@@ -825,7 +825,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigIntegerReminder(x: BigInteger, n: Int): Unit =
     if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
     else {
-      val qr = x.divideAndRemainder(tenPows(n))
+      val qr = x.divideAndRemainder(tenPow18Squares(n))
       writeBigIntegerReminder(qr(0), n - 1)
       writeBigIntegerReminder(qr(1), n - 1)
     }
@@ -1994,8 +1994,8 @@ object JsonWriter {
   private final val f32Pow5Split = new Array[Int](94)
   private final val f64Pow5InvSplit = new Array[Int](1164)
   private final val f64Pow5Split = new Array[Int](1304)
-  private final val tenPows: Stream[BigInteger] =
-    BigInteger.valueOf(1000000000000000000L) #:: tenPows.map(p => p.multiply(p))
+  private final val tenPow18Squares: Stream[BigInteger] =
+    BigInteger.valueOf(1000000000000000000L) #:: tenPow18Squares.map(p => p.multiply(p))
 
   {
     var pow5 = BigInteger.ONE
