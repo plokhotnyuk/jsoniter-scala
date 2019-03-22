@@ -815,29 +815,20 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeBigInteger(x: BigInteger): Unit =
     if (x.bitLength < 64) writeLong(x.longValue)
-    else if (x.bitLength < 123) {
-      val qr = x.divideAndRemainder(tenPow18)
-      writeLong(qr(0).longValue)
-      count = write18Digits(absLong(qr(1)), ensureBufCapacity(18), buf, digits)
-    } else {
-      val n = 31 - java.lang.Integer.numberOfLeadingZeros((x.bitLength * 71828554L >>> 32).toInt - 1)
+    else {
+      val n = 31 - java.lang.Integer.numberOfLeadingZeros(Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1))
       val qr = x.divideAndRemainder(tenPows(n))
       writeBigInteger(qr(0))
       writeBigIntegerReminder(qr(1), n - 1)
     }
 
   private[this] def writeBigIntegerReminder(x: BigInteger, n: Int): Unit =
-    if (n < 0) count = write18Digits(absLong(x), ensureBufCapacity(18), buf, digits)
-    else if (n == 0) {
-      val qr = x.divideAndRemainder(tenPow18)
-      count = write18Digits(absLong(qr(1)), write18Digits(absLong(qr(0)), ensureBufCapacity(36), buf, digits), buf, digits)
-    } else {
+    if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
+    else {
       val qr = x.divideAndRemainder(tenPows(n))
       writeBigIntegerReminder(qr(0), n - 1)
       writeBigIntegerReminder(qr(1), n - 1)
     }
-
-  private[this] def absLong(x: BigInteger): Long = Math.abs(x.longValue)
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
     val pos = ensureBufCapacity(5)
