@@ -374,13 +374,13 @@ Other benchmarks with results for jsoniter-scala:
 Publish to local Ivy repo:
 
 ```sh
-sbt -java-home /usr/lib/jvm/jdk1.8.0 clean publishLocal
+sbt clean publishLocal
 ```
 
 Publish to local Maven repo:
 
 ```sh
-sbt -java-home /usr/lib/jvm/jdk1.8.0 clean publishM2
+sbt clean publishM2
 ```
 
 ### Release
@@ -392,7 +392,7 @@ Double check binary and source compatibility, including behavior, and release us
 are required):
 
 ```sh
-sbt -java-home /usr/lib/jvm/jdk1.8.0 -J-XX:MaxMetaspaceSize=512m release
+sbt -J-XX:MaxMetaspaceSize=512m release
 ```
 
 Do not push changes to github until promoted artifacts for the new version are not available for download on 
