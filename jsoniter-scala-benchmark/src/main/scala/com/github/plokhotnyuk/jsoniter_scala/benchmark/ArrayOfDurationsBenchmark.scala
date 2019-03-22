@@ -26,7 +26,7 @@ class ArrayOfDurationsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map { i =>
-      val x = Math.abs((i * 372036854775807L) / Math.pow(10, i % 18).toLong)
+      val x = Math.abs((i * 6971258582664805397L) / Math.pow(10, i % 19).toLong)
       val y = Math.abs(i * Math.pow(10, i % 10)).toInt
       Duration.ofSeconds(x, y)
     }.toArray

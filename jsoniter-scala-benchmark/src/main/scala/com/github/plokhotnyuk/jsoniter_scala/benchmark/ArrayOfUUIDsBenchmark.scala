@@ -25,7 +25,7 @@ class ArrayOfUUIDsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => new UUID(i * 372036854775807L, i * 372036854775807L)).toArray
+    obj = (1 to size).map(i => new UUID(i * 6971258582664805397L, i * 6971258582664805397L)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
