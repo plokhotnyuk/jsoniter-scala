@@ -1,5 +1,4 @@
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import sbt.Keys.scalacOptions
 import sbt._
 import scala.sys.process._
 
@@ -43,6 +42,7 @@ lazy val commonSettings = Seq(
   ),
   resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
   scalaVersion := "2.12.8",
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
