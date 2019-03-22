@@ -1994,8 +1994,8 @@ object JsonWriter {
   private final val f32Pow5Split = new Array[Int](94)
   private final val f64Pow5InvSplit = new Array[Int](1164)
   private final val f64Pow5Split = new Array[Int](1304)
-  private final val tenPow18: BigInteger = BigInteger.valueOf(1000000000000000000L)
-  private final val tenPows: Stream[BigInteger] = tenPow18 #:: tenPows.map(p => p.multiply(p))
+  private final val tenPows: Stream[BigInteger] =
+    BigInteger.valueOf(1000000000000000000L) #:: tenPows.map(p => p.multiply(p))
 
   {
     var pow5 = BigInteger.ONE
