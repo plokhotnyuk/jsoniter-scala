@@ -816,7 +816,8 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigInteger(x: BigInteger): Unit =
     if (x.bitLength < 64) writeLong(x.longValue)
     else {
-      val n = 31 - java.lang.Integer.numberOfLeadingZeros(Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1))
+      val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+      val n = 31 - java.lang.Integer.numberOfLeadingZeros(m)
       val qr = x.divideAndRemainder(tenPow18Squares(n))
       writeBigInteger(qr(0))
       writeBigIntegerReminder(qr(1), n - 1)
