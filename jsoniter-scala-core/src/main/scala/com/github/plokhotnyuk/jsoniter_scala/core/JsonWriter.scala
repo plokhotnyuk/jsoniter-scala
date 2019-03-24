@@ -611,13 +611,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
-  private[this] def writeNonEscapedAsciiStringWithoutParentheses(s: String): Unit = count = {
-    val len = s.length
-    val pos = ensureBufCapacity(len)
-    s.getBytes(0, len, buf, pos)
-    pos + len
-  }
-
   private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {
     val len = s.length
     var pos = ensureBufCapacity(len + 2)
@@ -890,9 +883,9 @@ final class JsonWriter private[jsoniter_scala](
           }
           0
         } else {
-          pos = count
-          val dotPos = pos - len + 1
           if (len > 1 || bs > 0) {
+            pos = count
+            val dotPos = pos - len + 1
             while (pos > dotPos) {
               buf(pos) = buf(pos - 1)
               pos -= 1
