@@ -844,57 +844,53 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimal(x: BigInteger, scale: Int, bs: Int): Int =
     if (x.bitLength < 64) {
       val v = x.longValue
-      if (scale == 0) {
-        writeLong(v)
+      var pos = ensureBufCapacity(36)
+      val buf = this.buf
+      writeLong(v)
+      val len = count - pos + (v >> 63).toInt
+      val exp = len + bs - scale - 1
+      if (scale >= 0 && exp >= -6) {
+        val dotOff = scale - bs
+        val pad = dotOff - len
+        if (pad >= 0) {
+          pos = count + pad + 1
+          val numPos = pos - len
+          val off = pad + 2
+          while (pos > numPos) {
+            buf(pos) = buf(pos - off)
+            pos -= 1
+          }
+          val dotPos = pos - pad
+          while (pos > dotPos) {
+            buf(pos) = '0'
+            pos -= 1
+          }
+          buf(dotPos) = '.'
+          buf(dotPos - 1) = '0'
+          count += off
+        } else if (dotOff > 0 && dotOff <= 20) {
+          pos = count
+          val dotPos = pos - dotOff
+          while (pos > dotPos) {
+            buf(pos) = buf(pos - 1)
+            pos -= 1
+          }
+          buf(dotPos) = '.'
+          count += 1
+        }
         0
       } else {
-        var pos = ensureBufCapacity(36)
-        writeLong(v)
-        val len = count - pos + (v >> 63).toInt
-        val exp = len + bs - scale - 1
-        if (scale >= 0 && exp >= -6) {
-          val dotOff = scale - bs
-          val pad = dotOff - len
-          if (pad >= 0) {
-            pos = count + pad + 1
-            val numPos = pos - len
-            val off = pad + 2
-            while (pos > numPos) {
-              buf(pos) = buf(pos - off)
-              pos -= 1
-            }
-            val dotPos = pos - pad
-            while (pos > dotPos) {
-              buf(pos) = '0'
-              pos -= 1
-            }
-            buf(dotPos) = '.'
-            buf(dotPos - 1) = '0'
-            count += off
-          } else if (dotOff > 0 && dotOff <= 20) {
-            pos = count
-            val dotPos = pos - dotOff
-            while (pos > dotPos) {
-              buf(pos) = buf(pos - 1)
-              pos -= 1
-            }
-            buf(dotPos) = '.'
-            count += 1
+        if (len > 1 || bs > 0) {
+          pos = count
+          val dotPos = pos - len + 1
+          while (pos > dotPos) {
+            buf(pos) = buf(pos - 1)
+            pos -= 1
           }
-          0
-        } else {
-          if (len > 1 || bs > 0) {
-            pos = count
-            val dotPos = pos - len + 1
-            while (pos > dotPos) {
-              buf(pos) = buf(pos - 1)
-              pos -= 1
-            }
-            buf(dotPos) = '.'
-            count += 1
-          }
-          exp
+          buf(dotPos) = '.'
+          count += 1
         }
+        exp
       }
     } else {
       val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
@@ -910,6 +906,7 @@ final class JsonWriter private[jsoniter_scala](
       count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits)
       val dotOff = scale - bs
       if (dotOff > 0 && dotOff <= 18) {
+        val buf = this.buf
         var pos = count
         val dotPos = pos - dotOff
         while (pos > dotPos) {
