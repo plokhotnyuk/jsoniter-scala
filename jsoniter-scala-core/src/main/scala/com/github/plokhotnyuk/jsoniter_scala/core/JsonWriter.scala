@@ -844,52 +844,18 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimal(x: BigInteger, scale: Int, bs: Int): Int =
     if (x.bitLength < 64) {
       val v = x.longValue
-      var pos = ensureBufCapacity(36)
-      val buf = this.buf
+      val pos = ensureBufCapacity(36)
       writeLong(v)
       val len = count - pos + (v >> 63).toInt
       val exp = len + bs - scale - 1
       if (scale >= 0 && exp >= -6) {
         val dotOff = scale - bs
         val pad = dotOff - len
-        if (pad >= 0) {
-          pos = count + pad + 1
-          val numPos = pos - len
-          val off = pad + 2
-          while (pos > numPos) {
-            buf(pos) = buf(pos - off)
-            pos -= 1
-          }
-          val dotPos = pos - pad
-          while (pos > dotPos) {
-            buf(pos) = '0'
-            pos -= 1
-          }
-          buf(dotPos) = '.'
-          buf(dotPos - 1) = '0'
-          count += off
-        } else if (dotOff > 0 && dotOff <= 20) {
-          pos = count
-          val dotPos = pos - dotOff
-          while (pos > dotPos) {
-            buf(pos) = buf(pos - 1)
-            pos -= 1
-          }
-          buf(dotPos) = '.'
-          count += 1
-        }
+        if (pad >= 0) insertDotWithZeroes(len, pad)
+        else if (dotOff > 0 && dotOff <= 20) insertDot(count - dotOff)
         0
       } else {
-        if (len > 1 || bs > 0) {
-          pos = count
-          val dotPos = pos - len + 1
-          while (pos > dotPos) {
-            buf(pos) = buf(pos - 1)
-            pos -= 1
-          }
-          buf(dotPos) = '.'
-          count += 1
-        }
+        if (len > 1 || bs > 0) insertDot(count - len + 1)
         exp
       }
     } else {
@@ -905,17 +871,7 @@ final class JsonWriter private[jsoniter_scala](
     if (n < 0) {
       count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits)
       val dotOff = scale - bs
-      if (dotOff > 0 && dotOff <= 18) {
-        val buf = this.buf
-        var pos = count
-        val dotPos = pos - dotOff
-        while (pos > dotPos) {
-          buf(pos) = buf(pos - 1)
-          pos -= 1
-        }
-        buf(dotPos) = '.'
-        count += 1
-      }
+      if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
       0
     } else {
       val qr = x.divideAndRemainder(tenPow18Squares(n))
@@ -923,6 +879,36 @@ final class JsonWriter private[jsoniter_scala](
       writeBigDecimalReminder(qr(1), scale, bs, n - 1)
       exp
     }
+
+  private[this] def insertDotWithZeroes(len: Int, pad: Int): Unit = count = {
+    var pos = count + pad + 1
+    val buf = this.buf
+    val numPos = pos - len
+    val off = pad + 2
+    while (pos > numPos) {
+      buf(pos) = buf(pos - off)
+      pos -= 1
+    }
+    val dotPos = pos - pad
+    while (pos > dotPos) {
+      buf(pos) = '0'
+      pos -= 1
+    }
+    buf(dotPos) = '.'
+    buf(dotPos - 1) = '0'
+    count + off
+  }
+
+  private[this] def insertDot(dotPos: Int): Unit = count = {
+    val buf = this.buf
+    var pos = count
+    while (pos > dotPos) {
+      buf(pos) = buf(pos - 1)
+      pos -= 1
+    }
+    buf(dotPos) = '.'
+    count + 1
+  }
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
     val pos = ensureBufCapacity(5)
