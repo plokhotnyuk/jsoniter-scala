@@ -15,8 +15,8 @@ performance of Jsoniter Scala with [Circe](https://github.com/circe/circe),
 [uPickle](https://github.com/lihaoyi/upickle), [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons),
 [DSL-JSON](https://github.com/ngs-doo/dsl-json) and [Jsoniter Java](https://github.com/json-iterator/java) libraries 
 using different JDK and GraalVM versions on the following environment: Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz),
-RAM 16Gb DDR4-2400, Ubuntu 18.04, latest versions of Open JDK 8, Oracle JDK 8, Open JDK 11, Oracle JDK 11,
-Open JDK 11 + Graal JIT, Oracle JDK 11 + Graal JIT, and GraalVM CE/EE
+RAM 16Gb DDR4-2400, Ubuntu 18.04, latest versions of Open JDK 8/11/12, Oracle JDK 8/11/12, and GraalVM CE/EE with 
+[-XX:+UseJVMCINativeLibrary](https://www.graalvm.org/docs/release-notes/#10-rc14)
 
 ## Acknowledgments
 
