@@ -1364,7 +1364,7 @@ final class JsonReader private[jsoniter_scala](
         if (b == '.' || (b | 0x20) == 'e') numberError(pos)
         var numPos = this.mark
         if (isNeg) numPos += 1
-        new BigInt(toBigDecimal(buf, numPos, pos, isNeg, 0).toBigInteger)
+        new BigInt(toBigDecimal(buf, numPos, pos, isNeg, 0).unscaledValue)
       } finally this.mark = mark
     }
   }
