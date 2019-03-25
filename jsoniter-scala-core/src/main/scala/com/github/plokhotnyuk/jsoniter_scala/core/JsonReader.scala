@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
-import java.math.{BigInteger, MathContext}
+import java.math.MathContext
 import java.nio.ByteBuffer
 import java.time._
 import java.util.UUID
@@ -1488,7 +1488,7 @@ final class JsonReader private[jsoniter_scala](
         x = x * 10 + (buf(pos) - '0')
         pos += 1
       }
-      new java.math.BigDecimal(BigInteger.valueOf {
+      java.math.BigDecimal.valueOf({
         if (isNeg) -x
         else x
       }, scale)
@@ -1529,10 +1529,10 @@ final class JsonReader private[jsoniter_scala](
         buf(pos + 15) * 100 +
         buf(pos + 16) * 10 +
         buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
-    new java.math.BigDecimal(BigInteger.valueOf {
+    java.math.BigDecimal.valueOf({
       if (isNeg) -x1
       else x1
-    }, scale - 18).add(new java.math.BigDecimal(BigInteger.valueOf {
+    }, scale - 18).add(java.math.BigDecimal.valueOf({
       if (isNeg) -x2
       else x2
     }, scale))
