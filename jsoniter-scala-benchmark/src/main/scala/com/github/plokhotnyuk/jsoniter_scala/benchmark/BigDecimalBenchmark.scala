@@ -27,12 +27,15 @@ class BigDecimalBenchmark extends CommonParams {
   def setup(): Unit = {
     jsonBytes = (1 to size).map(i => ((i % 10) + '0').toByte).toArray
     jsonString = new String(jsonBytes)
-    sourceObj = BigDecimal(jsonString)
+    sourceObj = BigDecimal(jsonString, MathContext.UNLIMITED)
     preallocatedBuf = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 
-  private def obj: BigDecimal = // to avoid internal caching of the string representation
-    BigDecimal(sourceObj.bigDecimal.unscaledValue(), sourceObj.bigDecimal.scale(), sourceObj.mc)
+  private def obj: BigDecimal = {
+    // to avoid internal caching of the string representation
+    val x = sourceObj
+    new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale, x.mc), x.mc)
+  }
 
   @Benchmark
   def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8),

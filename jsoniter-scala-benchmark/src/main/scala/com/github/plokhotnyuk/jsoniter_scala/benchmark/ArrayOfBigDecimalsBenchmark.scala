@@ -25,7 +25,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     sourceObj = (1 to size).map { i =>
-      BigDecimal(BigInt(Array.fill((i & 0xF) + 1)((i | 0x1).toByte)), i % 37)
+      BigDecimal(BigInt(Array.fill((i & 0xF) + 1)((i | 0x1).toByte)), i % 37, MathContext.UNLIMITED)
     }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
     jsonString = sourceObj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
@@ -35,13 +35,14 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   private def obj: Array[BigDecimal] = {
     val xs = sourceObj
     val l = xs.length
+    val ys = new Array[BigDecimal](l)
     var i = 0
     while (i < l) {
       val x = xs(i) // to avoid internal caching of the string representation
-      xs(i) = BigDecimal(x.bigDecimal.unscaledValue(), x.bigDecimal.scale(), x.mc)
+      ys(i) = new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale, x.mc), x.mc)
       i += 1
     }
-    xs
+    ys
   }
 
   @Benchmark
