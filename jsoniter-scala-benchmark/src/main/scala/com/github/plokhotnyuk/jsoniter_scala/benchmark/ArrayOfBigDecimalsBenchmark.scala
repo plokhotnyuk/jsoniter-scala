@@ -39,7 +39,7 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
     var i = 0
     while (i < l) {
       val x = xs(i) // to avoid internal caching of the string representation
-      ys(i) = new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale, x.mc), x.mc)
+      ys(i) = new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale), x.mc)
       i += 1
     }
     ys

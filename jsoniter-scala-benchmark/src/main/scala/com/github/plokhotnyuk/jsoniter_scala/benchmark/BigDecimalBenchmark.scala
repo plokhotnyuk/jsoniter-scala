@@ -32,9 +32,8 @@ class BigDecimalBenchmark extends CommonParams {
   }
 
   private def obj: BigDecimal = {
-    // to avoid internal caching of the string representation
-    val x = sourceObj
-    new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale, x.mc), x.mc)
+    val x = sourceObj // to avoid internal caching of the string representation
+    new BigDecimal(new java.math.BigDecimal(x.bigDecimal.unscaledValue, x.bigDecimal.scale), x.mc)
   }
 
   @Benchmark
