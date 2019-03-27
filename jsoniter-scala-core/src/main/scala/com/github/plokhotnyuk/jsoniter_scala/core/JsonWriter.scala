@@ -848,7 +848,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int): Int =
     if (x.bitLength < 64) {
       val v = x.longValue
-      val pos = ensureBufCapacity(36)
+      val pos = ensureBufCapacity(28) // == Long.MinValue.toString.length + 8 (for a leading zero, dot and padding zeroes)
       writeLong(v)
       val blockLen = count - pos + (v >> 63).toInt
       val dotOff = scale - blockScale
