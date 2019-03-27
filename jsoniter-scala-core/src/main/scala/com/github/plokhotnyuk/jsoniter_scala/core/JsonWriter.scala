@@ -845,43 +845,41 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeBigDecimal(x: BigInteger, scale: Int, bs: Int): Int =
+  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int): Int =
     if (x.bitLength < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(36)
       writeLong(v)
-      val len = count - pos + (v >> 63).toInt
-      val exp = len + bs - scale - 1
+      val blockLen = count - pos + (v >> 63).toInt
+      val exp = blockLen + blockScale - scale - 1
       if (scale >= 0 && exp >= -6) {
-        val dotOff = scale - bs
-        val pad = dotOff - len
-        if (pad >= 0) insertDotWithZeroes(len, pad)
+        val dotOff = scale - blockScale
+        val pad = dotOff - blockLen
+        if (pad >= 0) insertDotWithZeroes(blockLen, pad)
         else if (dotOff > 0 && dotOff <= 20) insertDot(count - dotOff)
         0
       } else {
-        if (len > 1 || bs > 0) insertDot(count - len + 1)
+        if (blockLen > 1 || blockScale > 0) insertDot(count - blockLen + 1)
         exp
       }
     } else {
       val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
       val n = 31 - java.lang.Integer.numberOfLeadingZeros(m)
       val qr = x.divideAndRemainder(tenPow18Squares(n))
-      val exp = writeBigDecimal(qr(0), scale, bs + (18 << n))
-      writeBigDecimalReminder(qr(1), scale, bs, n - 1)
+      val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n))
+      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
       exp
     }
 
-  private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, bs: Int, n: Int): Int =
+  private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, bs: Int, n: Int): Unit =
     if (n < 0) {
       count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits)
       val dotOff = scale - bs
       if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
-      0
     } else {
       val qr = x.divideAndRemainder(tenPow18Squares(n))
-      val exp = writeBigDecimalReminder(qr(0), scale, bs + (18 << n), n - 1)
+      writeBigDecimalReminder(qr(0), scale, bs + (18 << n), n - 1)
       writeBigDecimalReminder(qr(1), scale, bs, n - 1)
-      exp
     }
 
   private[this] def insertDotWithZeroes(len: Int, pad: Int): Unit = count = {
