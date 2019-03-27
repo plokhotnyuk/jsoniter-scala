@@ -821,8 +821,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigInteger(x: BigInteger): Unit =
     if (x.bitLength < 64) writeLong(x.longValue)
     else {
-      val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
-      val n = 31 - java.lang.Integer.numberOfLeadingZeros(m)
+      val n = calculateTenPow18SquareNumber(x)
       val qr = x.divideAndRemainder(tenPow18Squares(n))
       writeBigInteger(qr(0))
       writeBigIntegerReminder(qr(1), n - 1)
@@ -855,15 +854,14 @@ final class JsonWriter private[jsoniter_scala](
       val exp = blockLen - dotOff - 1
       if (scale >= 0 && exp >= -6) {
         if (exp < 0) insertDotWithZeroes(blockLen, -1 - exp)
-        else if (dotOff > 0 && dotOff <= 20) insertDot(count - dotOff)
+        else if (dotOff > 0) insertDot(count - dotOff)
         0
       } else {
         if (blockLen > 1 || blockScale > 0) insertDot(count - blockLen + 1)
         exp
       }
     } else {
-      val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
-      val n = 31 - java.lang.Integer.numberOfLeadingZeros(m)
+      val n = calculateTenPow18SquareNumber(x)
       val qr = x.divideAndRemainder(tenPow18Squares(n))
       val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n))
       writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
@@ -872,7 +870,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, blockScale: Int, n: Int): Unit =
     if (n < 0) {
-      count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits)
+      count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 19 == 18 digits and a place for optional dot
       val dotOff = scale - blockScale
       if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
     } else {
@@ -880,6 +878,11 @@ final class JsonWriter private[jsoniter_scala](
       writeBigDecimalReminder(qr(0), scale, blockScale + (18 << n), n - 1)
       writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
     }
+
+  private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
+    val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+    31 - java.lang.Integer.numberOfLeadingZeros(m)
+  }
 
   private[this] def insertDotWithZeroes(len: Int, pad: Int): Unit = count = {
     var pos = count + pad + 1
