@@ -1512,23 +1512,23 @@ final class JsonReader private[jsoniter_scala](
     }
     val x2 =
       buf(pos) * 100000000000000000L +
-        buf(pos + 1) * 10000000000000000L +
-        buf(pos + 2) * 1000000000000000L +
-        buf(pos + 3) * 100000000000000L +
-        buf(pos + 4) * 10000000000000L +
-        buf(pos + 5) * 1000000000000L +
-        buf(pos + 6) * 100000000000L +
-        buf(pos + 7) * 10000000000L +
-        buf(pos + 8) * 1000000000L +
-        buf(pos + 9) * 100000000L +
-        buf(pos + 10) * 10000000L +
-        buf(pos + 11) * 1000000 +
-        buf(pos + 12) * 100000 +
-        buf(pos + 13) * 10000 +
-        buf(pos + 14) * 1000 +
-        buf(pos + 15) * 100 +
-        buf(pos + 16) * 10 +
-        buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
+      buf(pos + 1) * 10000000000000000L +
+      buf(pos + 2) * 1000000000000000L +
+      buf(pos + 3) * 100000000000000L +
+      buf(pos + 4) * 10000000000000L +
+      buf(pos + 5) * 1000000000000L +
+      buf(pos + 6) * 100000000000L +
+      buf(pos + 7) * 10000000000L +
+      buf(pos + 8) * 1000000000L +
+      buf(pos + 9) * 100000000L +
+      buf(pos + 10) * 10000000L +
+      buf(pos + 11) * 1000000 +
+      buf(pos + 12) * 100000 +
+      buf(pos + 13) * 10000 +
+      buf(pos + 14) * 1000 +
+      buf(pos + 15) * 100 +
+      buf(pos + 16) * 10 +
+      buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
     java.math.BigDecimal.valueOf({
       if (isNeg) -x1
       else x1
@@ -1544,7 +1544,7 @@ final class JsonReader private[jsoniter_scala](
     val len = limit - pos
     val numWords = ((len * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
     if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
-    val magnitude = new Array[Int](numWords)
+    val magWords = new Array[Int](numWords)
     val blockNum = ((len * 954437177L) >> 33).toInt // divide positive int by 9
     val firstBlockLimit = pos + len - 9 * blockNum
     var x = 0L
@@ -1552,42 +1552,42 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    magnitude(numWords - 1) = x.toInt
+    magWords(numWords - 1) = x.toInt
     while (pos < limit) {
       x =
         buf(pos) * 100000000L +
-          buf(pos + 1) * 10000000L +
-          buf(pos + 2) * 1000000 +
-          buf(pos + 3) * 100000 +
-          buf(pos + 4) * 10000 +
-          buf(pos + 5) * 1000 +
-          buf(pos + 6) * 100 +
-          buf(pos + 7) * 10 +
-          buf(pos + 8) - 5333333328L // == '0' * 111111111L
+        buf(pos + 1) * 10000000L +
+        buf(pos + 2) * 1000000 +
+        buf(pos + 3) * 100000 +
+        buf(pos + 4) * 10000 +
+        buf(pos + 5) * 1000 +
+        buf(pos + 6) * 100 +
+        buf(pos + 7) * 10 +
+        buf(pos + 8) - 5333333328L // == '0' * 111111111L
       var i = numWords - 1
       while (i >= 0) {
-        val p = (magnitude(i) & 0xFFFFFFFFL) * 1000000000 + x
-        magnitude(i) = p.toInt
+        val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
+        magWords(i) = p.toInt
         x = p >>> 32
         i -= 1
       }
       pos += 9
     }
-    val bytes = new Array[Byte](numWords << 2)
+    val magBytes = new Array[Byte](numWords << 2)
     var i = 0
     while (i < numWords) {
-      val w = magnitude(i)
+      val w = magWords(i)
       val j = i << 2
-      bytes(j) = ((w >> 24) & 0xFF).toByte
-      bytes(j + 1) = ((w >> 16) & 0xFF).toByte
-      bytes(j + 2) = ((w >> 8) & 0xFF).toByte
-      bytes(j + 3) = (w & 0xFF).toByte
+      magBytes(j) = ((w >> 24) & 0xFF).toByte
+      magBytes(j + 1) = ((w >> 16) & 0xFF).toByte
+      magBytes(j + 2) = ((w >> 8) & 0xFF).toByte
+      magBytes(j + 3) = (w & 0xFF).toByte
       i += 1
     }
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, bytes), scale)
+    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale)
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
