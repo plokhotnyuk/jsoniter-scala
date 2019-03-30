@@ -5,7 +5,8 @@ import java.math.MathContext._
 import java.math.RoundingMode._
 import java.time._
 
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Arbitrary._
+import org.scalacheck.Gen
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -25,16 +26,16 @@ object GenUtils {
     rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
   } yield new MathContext(precision, rounding)
   val genBigInt: Gen[BigInt] = Gen.frequency(
-    (100, Arbitrary.arbitrary[BigInt]),
+    (100, arbitrary[BigInt]),
     (1, for {
       size <- Gen.choose(1, 10000)
-      digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
+      digits <- Gen.containerOfN[Array, Byte](size, arbitrary[Byte])
     } yield BigInt(digits)))
   val genBigDecimal: Gen[BigDecimal] = Gen.frequency(
-    (100, Arbitrary.arbitrary[BigDecimal]),
+    (100, arbitrary[BigDecimal]),
     (1, for {
       size <- Gen.choose(1, 10000)
-      digits <- Gen.containerOfN[Array, Byte](size, Arbitrary.arbByte.arbitrary)
+      digits <- Gen.containerOfN[Array, Byte](size, arbitrary[Byte])
       scale <- Gen.choose(-10000, 10000)
       mc <- genMathContext
     } yield Try(BigDecimal(BigInt(digits), scale, mc)).getOrElse(BigDecimal(BigInt(digits), scale, UNLIMITED))))
@@ -84,9 +85,9 @@ object GenUtils {
     zoneOffset <- genZoneOffset
   } yield OffsetTime.of(localTime, zoneOffset)
   val genPeriod: Gen[Period] = for {
-    year <- Arbitrary.arbitrary[Int]
-    month <- Arbitrary.arbitrary[Int]
-    day <- Arbitrary.arbitrary[Int]
+    year <- arbitrary[Int]
+    month <- arbitrary[Int]
+    day <- arbitrary[Int]
   } yield Period.of(year, month, day)
   val genYear: Gen[Year] = Gen.choose(-999999999, 999999999).map(Year.of)
   val genYearMonth: Gen[YearMonth] = for {
