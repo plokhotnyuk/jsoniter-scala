@@ -1543,15 +1543,13 @@ final class JsonReader private[jsoniter_scala](
     var pos = offset
     val len = limit - pos
     val numWords = ((len * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
-    if (numWords > 67108863) numberError() // == BigInteger.MAX_MAG_LENGTH - 1
-    val magWords = new Array[Int](numWords)
-    val blockNum = ((len * 954437177L) >> 33).toInt // divide positive int by 9
-    val firstBlockLimit = pos + len - 9 * blockNum
+    val firstBlockLimit = pos + len - 9 * ((len * 954437177L) >> 33).toInt // divide positive int by 9
     var x = 0L
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
+    val magWords = new Array[Int](numWords)
     magWords(numWords - 1) = x.toInt
     while (pos < limit) {
       x =
