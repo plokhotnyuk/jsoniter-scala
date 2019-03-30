@@ -2401,6 +2401,18 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkError("1.1e-" + (bigDecimalScaleLimit + 1),
         "value exceeds limit for scale, offset: 0x00000008",
         "value exceeds limit for scale, offset: 0x00000009")
+      checkError("1e2147483648",
+        "illegal number, offset: 0x0000000b",
+        "illegal number, offset: 0x0000000c")
+      checkError("1e-2147483649",
+        "illegal number, offset: 0x0000000c",
+        "illegal number, offset: 0x0000000d")
+      checkError("1e9999999999",
+        "illegal number, offset: 0x0000000b",
+        "illegal number, offset: 0x0000000c")
+      checkError("1e-9999999999",
+        "illegal number, offset: 0x0000000c",
+        "illegal number, offset: 0x0000000d")
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
