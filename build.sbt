@@ -129,7 +129,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     libraryDependencies ++= Seq(
       "com.avsystem.commons" %% "commons-core" % "1.34.14",
-      "com.lihaoyi" %% "upickle" % "0.7.1",
+      "com.lihaoyi" %% "upickle" % "0.7.3",
       "com.dslplatform" %% "dsl-json-scala" % "1.8.5",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.24.1-GA", // required for Jsoniter Java
@@ -143,7 +143,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.typesafe.play" %% "play-json" % "2.7.2",
       "org.julienrf" %% "play-json-derived-codecs" % "5.0.0",
       "ai.x" %% "play-json-extensions" % "0.30.1",
-      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.5",
+      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.6",
       "org.scalatest" %% "scalatest" % "3.0.7" % Test
     )
   )
