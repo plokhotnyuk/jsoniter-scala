@@ -2068,7 +2068,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
-      forAll(Gen.choose(0L, (1 << 24) - 1), Gen.choose(-10, 10), minSuccessful(100000)) { (m: Long, e: Int) =>
+      forAll(Gen.choose(0, (1 << 24) - 1), Gen.choose(-10, 10), minSuccessful(100000)) { (m: Int, e: Int) =>
         checkFloat(m + "e" + e)
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
