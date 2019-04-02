@@ -4,12 +4,12 @@ import spray.json._
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
-  override def write(obj: T#Value): JsValue = JsString(obj.toString)
+  override def read(json: JsValue): T#Value =
+    e.values.iterator.find { ev =>
+      json.isInstanceOf[JsString] && json.asInstanceOf[JsString].value == ev.toString
+    }.getOrElse(throw DeserializationException(s"No value found in enum $e for $json"))
 
-  override def read(json: JsValue): T#Value = json match {
-    case JsString(s) => e.withName(s)
-    case x => throw DeserializationException(s"Expected a value from enum $e instead of $x")
-  }
+  override def write(ev: T#Value): JsValue = JsString(ev.toString)
 }
 
 object SprayFormats extends DefaultJsonProtocol {
