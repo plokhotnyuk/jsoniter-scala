@@ -1,6 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import spray.json._
+import java.util.UUID
+
+import spray.json.{RootJsonFormat, _}
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -62,6 +64,12 @@ object SprayFormats extends DefaultJsonProtocol {
       .getOrElse(deserializationError(s"No value found in Suit enum for $json"))
 
     override def write(ev: Suit): JsValue = JsString(ev.name)
+  }
+  implicit val uuidJsonFormat: RootJsonFormat[UUID] = new RootJsonFormat[UUID] {
+    def write(uuid: UUID) = JsString(uuid.toString)
+
+    def read(json: JsValue): UUID = Try(UUID.fromString(json.asInstanceOf[JsString].value))
+      .getOrElse(deserializationError("Expected hexadecimal UUID string"))
   }
 
   implicit def arrayBufferFormat[T :JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
