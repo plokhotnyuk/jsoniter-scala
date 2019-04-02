@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.jsoniter.input.JsoniterJavaParser
@@ -15,6 +16,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import spray.json._
 
 class ArrayOfFloatsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -58,6 +60,9 @@ class ArrayOfFloatsBenchmark extends CommonParams {
   def readPlayJson(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
 
   @Benchmark
+  def readSprayJson(): Array[Float] = JsonParser(jsonBytes).convertTo[Array[Float]]
+
+  @Benchmark
   def readUPickle(): Array[Float] = read[Array[Float]](jsonBytes)
 
   @Benchmark
@@ -83,6 +88,10 @@ class ArrayOfFloatsBenchmark extends CommonParams {
 /* FIXME: Play-JSON serializes double values instead of float
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+*/
+/* FIXME: Spray-JSON serializes double values instead of float
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

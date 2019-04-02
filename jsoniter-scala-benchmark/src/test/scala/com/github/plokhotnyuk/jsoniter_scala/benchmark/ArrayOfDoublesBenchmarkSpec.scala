@@ -15,6 +15,7 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       //benchmark.readJsoniterJava() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -27,8 +28,10 @@ class ArrayOfDoublesBenchmarkSpec extends BenchmarkSpecBase {
       //sameOrBetter(toString(benchmark.writeJsoniterJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeJsoniterScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()), benchmark.jsonString)
-      //FIXME: Play serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
+      //FIXME: Play-JSON serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
       //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)
+      //FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879
+      //sameOrBetter(toString(benchmark.writeSprayJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
     }
   }
