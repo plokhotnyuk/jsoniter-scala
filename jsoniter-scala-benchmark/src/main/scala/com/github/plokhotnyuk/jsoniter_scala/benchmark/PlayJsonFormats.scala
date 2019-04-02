@@ -31,7 +31,7 @@ object PlayJsonFormats {
   implicit val charFormat: Format[Char] = Format(
     Reads(js => JsSuccess(js.as[String].charAt(0))),
     Writes(c => JsString(c.toString)))
-  val missingReqFieldFormat: OFormat[MissingReqFields] = Json.format
+  val missingReqFieldsFormat: OFormat[MissingReqFields] = Json.format
   val nestedStructsFormat: OFormat[NestedStructs] = Json.format
   val anyRefsFormat: OFormat[AnyRefs] = Json.format
   val anyValsFormat: OFormat[AnyVals] = {

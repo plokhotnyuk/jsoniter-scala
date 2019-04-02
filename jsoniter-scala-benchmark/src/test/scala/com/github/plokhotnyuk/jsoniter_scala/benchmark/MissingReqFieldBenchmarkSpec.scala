@@ -32,6 +32,8 @@ class MissingReqFieldBenchmarkSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       benchmark.readPlayJson() shouldBe
         "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
+      benchmark.readSprayJson() shouldBe
+        "Object is missing required member 's'"
       benchmark.readUPickle() shouldBe
         "missing keys in dictionary: s, i at index 1"
     }

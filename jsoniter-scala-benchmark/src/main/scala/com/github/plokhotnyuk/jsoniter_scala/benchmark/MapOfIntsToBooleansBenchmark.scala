@@ -8,12 +8,14 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 //import upickle.default._
+//import spray.json._
 
 import scala.collection.immutable.Map
 
@@ -52,6 +54,10 @@ class MapOfIntsToBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Map[Int, Boolean] = Json.parse(jsonBytes).as[Map[Int, Boolean]](mapOfIntsToBooleansFormat)
+/* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
+  @Benchmark
+  def readSprayJson(): Map[Int, Boolean] = JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
+*/
 /* FIXME: uPickle parses maps from JSON arrays only
   @Benchmark
   def readUPickle(): Map[Int, Boolean] = read[Map[Int, Boolean]](jsonBytes)
@@ -76,6 +82,10 @@ class MapOfIntsToBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mapOfIntsToBooleansFormat))
+/* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+*/
 /* FIXME: uPickle serializes maps as JSON arrays
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

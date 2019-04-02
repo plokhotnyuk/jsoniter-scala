@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -17,6 +18,7 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import scala.annotation.meta.getter
+//import spray.json._
 
 @transparent case class ByteVal(@(JsonValue @getter) a: Byte) extends AnyVal
 
@@ -58,6 +60,10 @@ class AnyValsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): AnyVals = Json.parse(jsonBytes).as[AnyVals](anyValsFormat)
 
+/* FIXME: Spray-JSON throws java.lang.ExceptionInInitializerError
+  @Benchmark
+  def readSprayJson(): AnyVals = JsonParser(jsonBytes).convertTo[AnyVals](anyValsJsonFormat)
+*/
   @Benchmark
   def readUPickle(): AnyVals = read[AnyVals](jsonBytes)
 
@@ -78,7 +84,10 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyValsFormat))
-
+/* FIXME: Spray-JSON throws java.lang.ExceptionInInitializerError
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson(anyValsJsonFormat).compactPrint.getBytes(UTF_8)
+*/
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }

@@ -13,6 +13,8 @@ class MapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      //FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
+      //benchmark.readSprayJson() shouldBe benchmark.obj
       //FIXME: uPickle parses maps from JSON arrays only
       //benchmark.readUPickle() shouldBe benchmark.obj
     }
@@ -24,6 +26,8 @@ class MapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
+      //toString(benchmark.writeSprayJson()) shouldBe benchmark.jsonString
       //FIXME: uPickle serializes maps as JSON arrays
       //toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }

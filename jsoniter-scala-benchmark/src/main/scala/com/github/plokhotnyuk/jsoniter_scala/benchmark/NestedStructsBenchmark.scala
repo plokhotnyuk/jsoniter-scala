@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.generic.auto._
@@ -17,6 +18,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+//import spray.json._
 
 case class NestedStructs(@transientDefault n: Option[NestedStructs] = None)
 
@@ -53,7 +55,10 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs](nestedStructsFormat)
-
+/* FIXME: Spray-JSON throws java.lang.NullPointerException
+  @Benchmark
+  def readSprayJson(): NestedStructs = JsonParser(jsonBytes).convertTo[NestedStructs](nestedStructsJsonFormat)
+*/
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
 
@@ -78,7 +83,10 @@ class NestedStructsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
-
+/* FIXME: Spray-JSON throws java.lang.NullPointerException
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson(nestedStructsJsonFormat).compactPrint.getBytes(UTF_8)
+*/
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }
