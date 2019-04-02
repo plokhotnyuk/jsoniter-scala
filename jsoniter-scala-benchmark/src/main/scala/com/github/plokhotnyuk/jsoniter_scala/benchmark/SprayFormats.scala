@@ -57,9 +57,9 @@ object SprayFormats extends DefaultJsonProtocol {
         if (!value.isInstanceOf[JsArray]) deserializationError(s"Expected List as JsArray, but got $value")
         else {
           val es = value.asInstanceOf[JsArray].elements
-          new mutable.ArrayBuffer[T](es.size) {
-            es.foreach(e => this += e.convertTo[T])
-          }
+          val buf = new mutable.ArrayBuffer[T](es.size)
+          es.foreach(e => buf += e.convertTo[T])
+          buf
         }
 
       def write(buf: mutable.ArrayBuffer[T]) = JsArray(buf.map(_.toJson).toVector)
