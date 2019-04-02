@@ -1,7 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import spray.json.{RootJsonFormat, _}
+import spray.json._
 
+import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
@@ -43,6 +44,18 @@ object SprayFormats extends DefaultJsonProtocol {
   implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingReqFields] = jsonFormat2(MissingReqFields)
   implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormat1(NestedStructs)
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
+  implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = new RootJsonFormat[SuitADT] {
+    private[this] val suite = Map(
+      "Hearts" -> Hearts,
+      "Spades" -> Spades,
+      "Diamonds" -> Diamonds,
+      "Clubs" -> Clubs)
+
+    override def read(json: JsValue): SuitADT = Try(suite(json.asInstanceOf[JsString].value))
+      .getOrElse(deserializationError(s"No value found in Suit enum for $json"))
+
+    override def write(ev: SuitADT): JsValue = JsString(ev.toString)
+  }
   implicit val suitEnumJsonFormat: EnumJsonFormat[SuitEnum.type] = new EnumJsonFormat(SuitEnum)
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = new RootJsonFormat[Suit] {
     override def read(json: JsValue): Suit = Try(Suit.valueOf(json.asInstanceOf[JsString].value))
