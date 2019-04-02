@@ -53,10 +53,10 @@ class BigDecimalBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
-
+/* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
   def readPlayJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
-
+*/
   @Benchmark
   def readSprayJson(): BigDecimal = JsonParser(jsonBytes, jsonParserSettings).convertTo[BigDecimal]
 
