@@ -54,10 +54,10 @@ class NestedStructsBenchmark extends CommonParams {
   def readJsoniterScala(): NestedStructs = readFromArray[NestedStructs](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs](nestedStructsFormat)
+  def readPlayJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs]
 /* FIXME: Spray-JSON throws java.lang.NullPointerException
   @Benchmark
-  def readSprayJson(): NestedStructs = JsonParser(jsonBytes).convertTo[NestedStructs](nestedStructsJsonFormat)
+  def readSprayJson(): NestedStructs = JsonParser(jsonBytes).convertTo[NestedStructs]
 */
   @Benchmark
   def readUPickle(): NestedStructs = read[NestedStructs](jsonBytes)
@@ -82,10 +82,10 @@ class NestedStructsBenchmark extends CommonParams {
     writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(nestedStructsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: Spray-JSON throws java.lang.NullPointerException
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson(nestedStructsJsonFormat).compactPrint.getBytes(UTF_8)
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

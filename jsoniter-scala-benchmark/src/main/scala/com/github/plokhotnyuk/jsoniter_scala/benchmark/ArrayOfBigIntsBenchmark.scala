@@ -76,7 +76,7 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bigIntArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
   @Benchmark
   def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)

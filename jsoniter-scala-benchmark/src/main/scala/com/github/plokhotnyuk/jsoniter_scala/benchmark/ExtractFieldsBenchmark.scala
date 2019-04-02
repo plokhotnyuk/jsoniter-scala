@@ -80,10 +80,10 @@ class ExtractFieldsBenchmark extends CommonParams {
   }
 */
   @Benchmark
-  def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields](extractFieldsFormat)
+  def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
 
   @Benchmark
-  def readSprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields](extractFieldsJsonFormat)
+  def readSprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]
 
   @Benchmark
   def readUPickle(): ExtractFields = read[ExtractFields](jsonBytes)

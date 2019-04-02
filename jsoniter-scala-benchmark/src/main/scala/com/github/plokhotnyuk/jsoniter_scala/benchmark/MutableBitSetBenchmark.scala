@@ -47,7 +47,7 @@ class MutableBitSetBenchmark extends CommonParams {
   def readJsoniterScala(): mutable.BitSet = readFromArray[mutable.BitSet](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): mutable.BitSet = Json.parse(jsonBytes).as[mutable.BitSet](mutableBitSetFormat)
+  def readPlayJson(): mutable.BitSet = Json.parse(jsonBytes).as[mutable.BitSet]
 
 /* FIXME: uPickle doesn't support mutable bitsets
   @Benchmark
@@ -69,7 +69,7 @@ class MutableBitSetBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableBitSetFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: uPickle doesn't support mutable bitsets
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

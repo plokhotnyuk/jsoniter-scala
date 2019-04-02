@@ -70,7 +70,7 @@ class BitSetBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(bitSetFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
 /* FIXME: uPickle doesn't support writing of bitsets
   @Benchmark

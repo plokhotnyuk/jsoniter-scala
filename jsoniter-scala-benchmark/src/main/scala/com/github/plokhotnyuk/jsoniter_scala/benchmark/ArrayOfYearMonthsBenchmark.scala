@@ -45,7 +45,7 @@ class ArrayOfYearMonthsBenchmark extends CommonParams {
   def readJsoniterScala(): Array[YearMonth] = readFromArray[Array[YearMonth]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[YearMonth] = Json.parse(jsonBytes).as[Array[YearMonth]](yearMonthArrayFormat)
+  def readPlayJson(): Array[YearMonth] = Json.parse(jsonBytes).as[Array[YearMonth]]
 
   @Benchmark
   def readUPickle(): Array[YearMonth] = read[Array[YearMonth]](jsonBytes)
@@ -66,7 +66,7 @@ class ArrayOfYearMonthsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(yearMonthArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

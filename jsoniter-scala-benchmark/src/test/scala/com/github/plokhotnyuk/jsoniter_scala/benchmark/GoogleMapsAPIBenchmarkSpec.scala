@@ -12,6 +12,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -22,6 +23,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writePlayJson()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.writeSprayJson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeUPickle()) shouldBe GoogleMapsAPI.compactJsonString
     }
   }

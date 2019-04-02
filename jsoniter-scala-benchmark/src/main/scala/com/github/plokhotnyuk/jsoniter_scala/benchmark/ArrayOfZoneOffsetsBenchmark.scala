@@ -46,7 +46,7 @@ class ArrayOfZoneOffsetsBenchmark extends CommonParams {
   def readJsoniterScala(): Array[ZoneOffset] = readFromArray[Array[ZoneOffset]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[ZoneOffset] = Json.parse(jsonBytes).as[Array[ZoneOffset]](zoneOffsetArrayFormat)
+  def readPlayJson(): Array[ZoneOffset] = Json.parse(jsonBytes).as[Array[ZoneOffset]]
 
   @Benchmark
   def readUPickle(): Array[ZoneOffset] = read[Array[ZoneOffset]](jsonBytes)
@@ -67,7 +67,7 @@ class ArrayOfZoneOffsetsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(zoneOffsetArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

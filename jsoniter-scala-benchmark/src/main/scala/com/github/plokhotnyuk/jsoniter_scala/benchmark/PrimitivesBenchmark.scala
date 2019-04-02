@@ -41,10 +41,10 @@ class PrimitivesBenchmark extends CommonParams {
   def readJsoniterScala(): Primitives = readFromArray[Primitives](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Primitives = Json.parse(jsonBytes).as[Primitives](primitivesFormat)
+  def readPlayJson(): Primitives = Json.parse(jsonBytes).as[Primitives]
 
   @Benchmark
-  def readSprayJson(): Primitives = JsonParser(jsonBytes).convertTo[Primitives](primitivesJsonFormat)
+  def readSprayJson(): Primitives = JsonParser(jsonBytes).convertTo[Primitives]
 
   @Benchmark
   def readUPickle(): Primitives = read[Primitives](jsonBytes)
@@ -65,10 +65,10 @@ class PrimitivesBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(primitivesFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson(primitivesJsonFormat).compactPrint.getBytes(UTF_8)
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

@@ -31,10 +31,10 @@ object PlayJsonFormats {
   implicit val charFormat: Format[Char] = Format(
     Reads(js => JsSuccess(js.as[String].charAt(0))),
     Writes(c => JsString(c.toString)))
-  val missingReqFieldsFormat: OFormat[MissingReqFields] = Json.format
-  val nestedStructsFormat: OFormat[NestedStructs] = Json.format
-  val anyRefsFormat: OFormat[AnyRefs] = Json.format
-  val anyValsFormat: OFormat[AnyVals] = {
+  implicit val missingReqFieldsFormat: OFormat[MissingReqFields] = Json.format
+  implicit val nestedStructsFormat: OFormat[NestedStructs] = Json.format
+  implicit val anyRefsFormat: OFormat[AnyRefs] = Json.format
+  implicit val anyValsFormat: OFormat[AnyVals] = {
     implicit val v1: Format[ByteVal] = Jsonx.formatInline
     implicit val v2: Format[ShortVal] = Jsonx.formatInline
     implicit val v3: Format[IntVal] = Jsonx.formatInline
@@ -45,19 +45,19 @@ object PlayJsonFormats {
     implicit val v8: Format[FloatVal] = Jsonx.formatInline
     Json.format[AnyVals]
   }
-  val bitSetFormat: Format[BitSet] = Format(
+  implicit val bitSetFormat: Format[BitSet] = Format(
     Reads(js => JsSuccess(BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-system
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
-  val mutableBitSetFormat: Format[mutable.BitSet] = Format(
+  implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
     Reads(js => JsSuccess(mutable.BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-system
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
-  val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
+  implicit val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
     Reads[IntMap[Boolean]](js => JsSuccess(IntMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
     OWrites[IntMap[Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
   val mapOfIntsToBooleansFormat: OFormat[Map[Int, Boolean]] = OFormat(
     Reads[Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toInt, e._2)))),
     OWrites[Map[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
-  val mutableLongMapOfBooleansFormat: OFormat[mutable.LongMap[Boolean]] = OFormat(
+  implicit val mutableLongMapOfBooleansFormat: OFormat[mutable.LongMap[Boolean]] = OFormat(
     Reads[mutable.LongMap[Boolean]](js => JsSuccess(mutable.LongMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toLong, e._2)):_*))),
     OWrites[mutable.LongMap[Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
   val mutableMapOfIntsToBooleansFormat: OFormat[mutable.Map[Int, Boolean]] = OFormat(
@@ -66,8 +66,8 @@ object PlayJsonFormats {
   val openHashMapOfIntsToBooleansFormat: OFormat[mutable.OpenHashMap[Int, Boolean]] = OFormat(
     Reads[mutable.OpenHashMap[Int, Boolean]](js => JsSuccess(mutable.OpenHashMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
     OWrites[mutable.OpenHashMap[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
-  val primitivesFormat: OFormat[Primitives] = Json.format
-  val extractFieldsFormat: OFormat[ExtractFields] = Json.format
+  implicit val primitivesFormat: OFormat[Primitives] = Json.format
+  implicit val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {
     implicit lazy val v1: OFormat[X] = Json.format
     implicit lazy val v2: OFormat[Y] = Json.format
@@ -89,13 +89,13 @@ object PlayJsonFormats {
     implicit lazy val v11: OFormat[GeoJSON] = flat.oformat((__ \ "type").format[String])
     v11
   }
-  val googleMapsAPIFormat: OFormat[DistanceMatrix] = {
+  implicit val googleMapsAPIFormat: OFormat[DistanceMatrix] = {
     implicit val v1: OFormat[Value] = Json.format
     implicit val v2: OFormat[Elements] = Json.format
     implicit val v3: OFormat[Rows] = Json.format
     Json.format[DistanceMatrix]
   }
-  val twitterAPIFormat: Format[Seq[Tweet]] = {
+  implicit val twitterAPIFormat: Format[Seq[Tweet]] = {
     implicit val v1: OFormat[Urls] = Json.format
     implicit val v2: OFormat[Url] = Json.format
     implicit val v3: OFormat[UserEntities] = Json.format
@@ -108,13 +108,13 @@ object PlayJsonFormats {
       Reads[Seq[Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[Tweet]))),
       Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)))))
   }
-  val enumArrayFormat: Format[Array[SuitEnum]] = {
+  implicit val enumArrayFormat: Format[Array[SuitEnum]] = {
     implicit val v1: Format[SuitEnum] = Format(Reads.enumNameReads(SuitEnum), Writes.enumNameWrites)
     Format(
       Reads(js => JsSuccess(js.as[Array[JsString]].map(_.as[SuitEnum]))),
       Writes(es => JsArray(es.map(t => Json.toJson(t)))))
   }
-  val enumADTArrayFormat: Format[Array[SuitADT]] = {
+  implicit val enumADTArrayFormat: Format[Array[SuitADT]] = {
     val suite = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
@@ -124,28 +124,28 @@ object PlayJsonFormats {
       Reads(js => Try(js.as[Array[JsString]].map(s => suite(s.value))).fold[JsResult[Array[SuitADT]]](_ => JsError("SuitADT"), s => JsSuccess(s))),
       Writes(es => JsArray(es.map(v => JsString(v.toString)))))
   }
-  val javaEnumArrayFormat: Format[Array[Suit]] = Format(
+  implicit val javaEnumArrayFormat: Format[Array[Suit]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.name)))))
-  val charArrayFormat: Format[Array[Char]] = Format(
+  implicit val charArrayFormat: Format[Array[Char]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(_.value.charAt(0)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
-  val bigIntArrayFormat: Format[Array[BigInt]] = Format(
+  implicit val bigIntArrayFormat: Format[Array[BigInt]] = Format(
     Reads(js => Try(js.as[Array[JsNumber]].map(_.value.toBigIntExact.get)).fold[JsResult[Array[BigInt]]](_ => JsError("BigInt"), s => JsSuccess(s))),
     Writes(es => JsArray(es.map(v => JsNumber(BigDecimal(v))))))
-  val monthDayArrayFormat: Format[Array[MonthDay]] = Format(
+  implicit val monthDayArrayFormat: Format[Array[MonthDay]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => MonthDay.parse(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
-  val offsetTimeArrayFormat: Format[Array[OffsetTime]] = Format(
+  implicit val offsetTimeArrayFormat: Format[Array[OffsetTime]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => OffsetTime.parse(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
-  val yearArrayFormat: Format[Array[Year]] = Format(
+  implicit val yearArrayFormat: Format[Array[Year]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Year.parse(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
-  val yearMonthArrayFormat: Format[Array[YearMonth]] = Format(
+  implicit val yearMonthArrayFormat: Format[Array[YearMonth]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => YearMonth.parse(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
-  val zoneOffsetArrayFormat: Format[Array[ZoneOffset]] = Format(
+  implicit val zoneOffsetArrayFormat: Format[Array[ZoneOffset]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => ZoneOffset.of(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.toString)))))
 }

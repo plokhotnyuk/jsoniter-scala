@@ -44,10 +44,10 @@ class AnyRefsBenchmark extends CommonParams {
   def readJsoniterScala(): AnyRefs = readFromArray[AnyRefs](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs](anyRefsFormat)
+  def readPlayJson(): AnyRefs = Json.parse(jsonBytes).as[AnyRefs]
 
   @Benchmark
-  def readSprayJson(): AnyRefs = JsonParser(jsonBytes).convertTo[AnyRefs](anyRefsJsonFormat)
+  def readSprayJson(): AnyRefs = JsonParser(jsonBytes).convertTo[AnyRefs]
 
   @Benchmark
   def readUPickle(): AnyRefs = read[AnyRefs](jsonBytes)
@@ -71,10 +71,10 @@ class AnyRefsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyRefsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson(anyRefsJsonFormat).compactPrint.getBytes(UTF_8)
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

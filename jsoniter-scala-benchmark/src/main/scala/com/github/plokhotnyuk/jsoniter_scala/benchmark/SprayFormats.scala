@@ -1,9 +1,10 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import spray.json._
+import spray.json.{RootJsonFormat, _}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
@@ -14,6 +15,13 @@ class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Valu
 
   override def write(ev: T#Value): JsValue = JsString(ev.toString)
 }
+
+/*
+  val javaEnumArrayFormat: Format[Array[Suit]] = Format(
+    Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
+    Writes(es => JsArray(es.map(v => JsString(v.name)))))
+
+ */
 
 object SprayFormats extends DefaultJsonProtocol {
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
@@ -31,10 +39,22 @@ object SprayFormats extends DefaultJsonProtocol {
   }
 */
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormat2(ExtractFields)
+  implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = {
+    implicit val jf1: RootJsonFormat[Value] = jsonFormat2(Value)
+    implicit val jf2: RootJsonFormat[Elements] = jsonFormat3(Elements)
+    implicit val jf3: RootJsonFormat[Rows] = jsonFormat1(Rows)
+    jsonFormat4(DistanceMatrix)
+  }
   implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingReqFields] = jsonFormat2(MissingReqFields)
   implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormat1(NestedStructs)
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
   implicit val suitEnumJsonFormat: EnumJsonFormat[SuitEnum.type] = new EnumJsonFormat(SuitEnum)
+  implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = new RootJsonFormat[Suit] {
+    override def read(json: JsValue): Suit = Try(Suit.valueOf(json.asInstanceOf[JsString].value))
+      .getOrElse(deserializationError(s"No value found in Suit enum for $json"))
+
+    override def write(ev: Suit): JsValue = JsString(ev.name)
+  }
 
   implicit def arrayBufferFormat[T :JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
     new RootJsonFormat[mutable.ArrayBuffer[T]] {

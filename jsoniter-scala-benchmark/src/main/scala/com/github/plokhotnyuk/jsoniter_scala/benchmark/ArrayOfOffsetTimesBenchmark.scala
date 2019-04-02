@@ -53,7 +53,7 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
   def readJsoniterScala(): Array[OffsetTime] = readFromArray[Array[OffsetTime]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[OffsetTime] = Json.parse(jsonBytes).as[Array[OffsetTime]](offsetTimeArrayFormat)
+  def readPlayJson(): Array[OffsetTime] = Json.parse(jsonBytes).as[Array[OffsetTime]]
 
   @Benchmark
   def readUPickle(): Array[OffsetTime] = read[Array[OffsetTime]](jsonBytes)
@@ -74,7 +74,7 @@ class ArrayOfOffsetTimesBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(offsetTimeArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

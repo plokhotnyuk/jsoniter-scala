@@ -58,7 +58,7 @@ class AnyValsBenchmark extends CommonParams {
   def readJsoniterScala(): AnyVals = readFromArray[AnyVals](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): AnyVals = Json.parse(jsonBytes).as[AnyVals](anyValsFormat)
+  def readPlayJson(): AnyVals = Json.parse(jsonBytes).as[AnyVals]
 
 /* FIXME: Spray-JSON throws java.lang.ExceptionInInitializerError
   @Benchmark
@@ -83,10 +83,10 @@ class AnyValsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(anyValsFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: Spray-JSON throws java.lang.ExceptionInInitializerError
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson(anyValsJsonFormat).compactPrint.getBytes(UTF_8)
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

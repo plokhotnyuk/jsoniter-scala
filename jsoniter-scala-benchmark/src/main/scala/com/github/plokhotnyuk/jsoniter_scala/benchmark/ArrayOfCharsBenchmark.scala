@@ -51,7 +51,7 @@ class ArrayOfCharsBenchmark extends CommonParams {
   def readJsoniterScala(): Array[Char] = readFromArray[Array[Char]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[Char] = Json.parse(jsonBytes).as[Array[Char]](charArrayFormat)
+  def readPlayJson(): Array[Char] = Json.parse(jsonBytes).as[Array[Char]]
 
   @Benchmark
   def readSprayJson(): Array[Char] = JsonParser(jsonBytes).convertTo[Array[Char]]
@@ -79,7 +79,7 @@ class ArrayOfCharsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(charArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
   def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
