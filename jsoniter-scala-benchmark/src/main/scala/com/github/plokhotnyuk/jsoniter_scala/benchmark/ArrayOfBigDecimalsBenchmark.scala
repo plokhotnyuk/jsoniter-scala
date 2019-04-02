@@ -4,6 +4,7 @@ import java.math.MathContext
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -48,8 +49,8 @@ class ArrayOfBigDecimalsBenchmark extends CommonParams {
   }
 
   @Benchmark
-  def readAVSystemGenCodec(): Array[BigDecimal] = JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8),
-    JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /*WARNING: don't do this for open-system*/))
+  def readAVSystemGenCodec(): Array[BigDecimal] =
+    JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8), jsonOptions)
 
   @Benchmark
   def readCirce(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

@@ -17,6 +17,8 @@ class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Valu
 }
 
 object SprayFormats extends DefaultJsonProtocol {
+  val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
+    .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
 /* Spray-JSON throws java.lang.ExceptionInInitializerError
   implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {

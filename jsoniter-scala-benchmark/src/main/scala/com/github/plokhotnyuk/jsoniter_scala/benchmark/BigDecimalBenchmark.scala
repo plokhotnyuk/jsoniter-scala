@@ -4,16 +4,19 @@ import java.math.MathContext
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
-//import play.api.libs.json.Json
+import play.api.libs.json.Json
+import spray.json._
 
 class BigDecimalBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -37,8 +40,7 @@ class BigDecimalBenchmark extends CommonParams {
   }
 
   @Benchmark
-  def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8),
-    JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /*WARNING: don't do this for open-system*/))
+  def readAVSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8), jsonOptions)
 
   @Benchmark
   def readCirce(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
@@ -51,10 +53,13 @@ class BigDecimalBenchmark extends CommonParams {
 
   @Benchmark
   def readJsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
-/* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
+
   @Benchmark
   def readPlayJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
-*/
+
+  @Benchmark
+  def readSprayJson(): BigDecimal = JsonParser(jsonBytes, jsonParserSettings).convertTo[BigDecimal]
+
   @Benchmark
   def readUPickle(): BigDecimal = read[BigDecimal](jsonBytes)
 
@@ -79,6 +84,9 @@ class BigDecimalBenchmark extends CommonParams {
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }

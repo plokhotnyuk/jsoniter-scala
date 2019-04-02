@@ -46,10 +46,10 @@ object PlayJsonFormats {
     Json.format[AnyVals]
   }
   implicit val bitSetFormat: Format[BitSet] = Format(
-    Reads(js => JsSuccess(BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-system
+    Reads(js => JsSuccess(BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-systems
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
-    Reads(js => JsSuccess(mutable.BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-system
+    Reads(js => JsSuccess(mutable.BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-systems
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
     Reads[IntMap[Boolean]](js => JsSuccess(IntMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
