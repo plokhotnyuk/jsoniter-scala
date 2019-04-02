@@ -16,13 +16,6 @@ class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Valu
   override def write(ev: T#Value): JsValue = JsString(ev.toString)
 }
 
-/*
-  val javaEnumArrayFormat: Format[Array[Suit]] = Format(
-    Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
-    Writes(es => JsArray(es.map(v => JsString(v.name)))))
-
- */
-
 object SprayFormats extends DefaultJsonProtocol {
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
 /* Spray-JSON throws java.lang.ExceptionInInitializerError
