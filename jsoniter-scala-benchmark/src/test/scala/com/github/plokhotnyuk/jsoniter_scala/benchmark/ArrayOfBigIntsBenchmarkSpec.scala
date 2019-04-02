@@ -15,6 +15,7 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       //FIXME: PlayJson looses significant digits in big values
       //benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -27,6 +28,7 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.writeSprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }

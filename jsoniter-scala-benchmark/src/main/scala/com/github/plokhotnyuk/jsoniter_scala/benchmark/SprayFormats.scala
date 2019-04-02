@@ -2,12 +2,15 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import spray.json._
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
   override def read(json: JsValue): T#Value =
     e.values.iterator.find { ev =>
       json.isInstanceOf[JsString] && json.asInstanceOf[JsString].value == ev.toString
-    }.getOrElse(throw DeserializationException(s"No value found in enum $e for $json"))
+    }.getOrElse(deserializationError(s"No value found in enum $e for $json"))
 
   override def write(ev: T#Value): JsValue = JsString(ev.toString)
 }
@@ -32,4 +35,18 @@ object SprayFormats extends DefaultJsonProtocol {
   implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormat1(NestedStructs)
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
   implicit val suitEnumJsonFormat: EnumJsonFormat[SuitEnum.type] = new EnumJsonFormat(SuitEnum)
+
+  implicit def arrayBufferFormat[T :JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
+    new RootJsonFormat[mutable.ArrayBuffer[T]] {
+      def read(value: JsValue): mutable.ArrayBuffer[T] =
+        if (!value.isInstanceOf[JsArray]) deserializationError(s"Expected List as JsArray, but got $value")
+        else {
+          val es = value.asInstanceOf[JsArray].elements
+          new mutable.ArrayBuffer[T](es.size) {
+            es.foreach(e => this += e.convertTo[T])
+          }
+        }
+
+      def write(buf: mutable.ArrayBuffer[T]) = JsArray(buf.map(_.toJson).toVector)
+    }
 }
