@@ -15,6 +15,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJsoniterScala() shouldBe benchmark.sourceObj
       //FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
       //benchmark.readPlayJson() shouldBe benchmark.sourceObj
+      benchmark.readSprayJson() shouldBe benchmark.sourceObj
       benchmark.readUPickle() shouldBe benchmark.sourceObj
     }
     "serialize properly" in {
@@ -26,6 +27,7 @@ class ArrayOfBigDecimalsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.writeSprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }

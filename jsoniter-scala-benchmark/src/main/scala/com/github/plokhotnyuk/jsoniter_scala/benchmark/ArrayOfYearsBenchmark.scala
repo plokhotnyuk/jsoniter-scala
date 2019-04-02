@@ -67,7 +67,7 @@ class ArrayOfYearsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(yearArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

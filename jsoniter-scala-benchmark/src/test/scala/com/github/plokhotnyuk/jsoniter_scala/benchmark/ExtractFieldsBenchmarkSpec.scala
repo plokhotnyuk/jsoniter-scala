@@ -17,6 +17,7 @@ class ExtractFieldsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJsoniterScalaNIO() shouldBe benchmark.obj
 */
       benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
   }

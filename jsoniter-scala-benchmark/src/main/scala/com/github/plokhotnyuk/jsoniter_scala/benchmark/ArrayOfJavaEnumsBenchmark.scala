@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.input.JsoniterJavaParser
@@ -15,6 +16,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import spray.json._
 
 class ArrayOfJavaEnumsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -55,7 +57,10 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
   def readJsoniterScala(): Array[Suit] = readFromArray[Array[Suit]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[Suit] = Json.parse(jsonBytes).as[Array[Suit]](javaEnumArrayFormat)
+  def readPlayJson(): Array[Suit] = Json.parse(jsonBytes).as[Array[Suit]]
+
+  @Benchmark
+  def readSprayJson(): Array[Suit] = JsonParser(jsonBytes).convertTo[Array[Suit]]
 
   @Benchmark
   def readUPickle(): Array[Suit] = read[Array[Suit]](jsonBytes)
@@ -79,7 +84,10 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(javaEnumArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

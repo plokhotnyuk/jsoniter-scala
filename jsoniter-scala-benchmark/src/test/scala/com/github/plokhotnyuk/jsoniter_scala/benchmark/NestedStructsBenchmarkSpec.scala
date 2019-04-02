@@ -13,6 +13,8 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      //FIXME: Spray-JSON throws java.lang.NullPointerException
+      //benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -24,6 +26,8 @@ class NestedStructsBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
+      //FIXME: Spray-JSON throws java.lang.NullPointerException
+      //toString(benchmark.writeSprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
   }

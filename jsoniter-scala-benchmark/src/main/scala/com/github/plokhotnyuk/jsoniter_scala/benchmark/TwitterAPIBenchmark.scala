@@ -37,7 +37,7 @@ class TwitterAPIBenchmark extends CommonParams {
   def readJsoniterScala(): Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]](twitterAPIFormat)
+  def readPlayJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]]
 
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
@@ -62,7 +62,7 @@ class TwitterAPIBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(twitterAPIFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
 /* FIXME: uPickle serializes empty collections
   @Benchmark

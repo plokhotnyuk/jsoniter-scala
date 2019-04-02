@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.jsoniter.input.JsoniterJavaParser
@@ -15,6 +16,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import spray.json._
 
 class ArrayOfDoublesBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -55,6 +57,9 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def readPlayJson(): Array[Double] = Json.parse(jsonBytes).as[Array[Double]]
 
   @Benchmark
+  def readSprayJson(): Array[Double] = JsonParser(jsonBytes).convertTo[Array[Double]]
+
+  @Benchmark
   def readUPickle(): Array[Double] = read[Array[Double]](jsonBytes)
 
   @Benchmark
@@ -78,9 +83,13 @@ class ArrayOfDoublesBenchmark extends CommonParams {
 
   @Benchmark
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
-/* FIXME: Play serializes doubles in BigDecimal format: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
+/* FIXME: Play-JSON serializes doubles in BigDecimal format: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+*/
+/* FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

@@ -48,7 +48,7 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
   def readJsoniterScala(): mutable.LongMap[Boolean] = readFromArray[mutable.LongMap[Boolean]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): mutable.LongMap[Boolean] = Json.parse(jsonBytes).as[mutable.LongMap[Boolean]](mutableLongMapOfBooleansFormat)
+  def readPlayJson(): mutable.LongMap[Boolean] = Json.parse(jsonBytes).as[mutable.LongMap[Boolean]]
 /* FIXME: uPickle doesn't support mutable.LongMap
   @Benchmark
   def readUPickle(): mutable.LongMap[Boolean] = read[mutable.LongMap[Boolean]](jsonBytes)
@@ -69,7 +69,7 @@ class MutableLongMapOfBooleansBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableLongMapOfBooleansFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: uPickle doesn't support mutable.LongMap
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

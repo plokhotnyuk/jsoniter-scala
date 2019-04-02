@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.input.JsoniterJavaParser
 import com.jsoniter.output.JsoniterJavaSerializer
@@ -15,6 +16,7 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import upickle.default._
+import spray.json._
 
 class ArrayOfIntsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -54,6 +56,9 @@ class ArrayOfIntsBenchmark extends CommonParams {
   def readPlayJson(): Array[Int] = Json.parse(jsonBytes).as[Array[Int]]
 
   @Benchmark
+  def readSprayJson(): Array[Int] = JsonParser(jsonBytes).convertTo[Array[Int]]
+
+  @Benchmark
   def readUPickle(): Array[Int] = read[Array[Int]](jsonBytes)
 
   @Benchmark
@@ -79,6 +84,9 @@ class ArrayOfIntsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

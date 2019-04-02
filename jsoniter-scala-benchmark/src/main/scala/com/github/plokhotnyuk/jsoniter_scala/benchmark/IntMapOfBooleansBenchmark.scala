@@ -48,7 +48,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   def readJsoniterScala(): IntMap[Boolean] = readFromArray[IntMap[Boolean]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): IntMap[Boolean] = Json.parse(jsonBytes).as[IntMap[Boolean]](intMapOfBooleansFormat)
+  def readPlayJson(): IntMap[Boolean] = Json.parse(jsonBytes).as[IntMap[Boolean]]
 /* FIXME: uPickle doesn't support IntMap
   @Benchmark
   def readUPickle(): IntMap[Boolean] = read[IntMap[Boolean]](jsonBytes)
@@ -69,7 +69,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(intMapOfBooleansFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 /* FIXME: uPickle doesn't support IntMap
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

@@ -8,12 +8,14 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import spray.json._
 
 sealed trait SuitADT extends Product with Serializable
 
@@ -59,7 +61,10 @@ class ArrayOfEnumADTsBenchmark extends CommonParams {
   def readJsoniterScala(): Array[SuitADT] = readFromArray[Array[SuitADT]](jsonBytes)
 
   @Benchmark
-  def readPlayJson(): Array[SuitADT] = Json.parse(jsonBytes).as[Array[SuitADT]](enumADTArrayFormat)
+  def readPlayJson(): Array[SuitADT] = Json.parse(jsonBytes).as[Array[SuitADT]]
+
+  @Benchmark
+  def readSprayJson(): Array[SuitADT] = JsonParser(jsonBytes).convertTo[Array[SuitADT]]
 
   @Benchmark
   def readUPickle(): Array[SuitADT] = read[Array[SuitADT]](jsonBytes)
@@ -80,7 +85,10 @@ class ArrayOfEnumADTsBenchmark extends CommonParams {
   def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(enumADTArrayFormat))
+  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

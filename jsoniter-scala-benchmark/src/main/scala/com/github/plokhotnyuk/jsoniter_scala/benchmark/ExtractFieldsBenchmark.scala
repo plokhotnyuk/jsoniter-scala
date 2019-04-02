@@ -13,12 +13,14 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import spray.json._
 
 case class ExtractFields(s: String, i: Int)
 
@@ -78,7 +80,10 @@ class ExtractFieldsBenchmark extends CommonParams {
   }
 */
   @Benchmark
-  def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields](extractFieldsFormat)
+  def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
+
+  @Benchmark
+  def readSprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]
 
   @Benchmark
   def readUPickle(): ExtractFields = read[ExtractFields](jsonBytes)

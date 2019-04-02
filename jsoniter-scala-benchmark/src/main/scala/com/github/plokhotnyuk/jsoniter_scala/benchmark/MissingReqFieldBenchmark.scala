@@ -11,12 +11,14 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
+import spray.json._
 
 case class MissingReqFields(
     @com.fasterxml.jackson.annotation.JsonProperty(required = true) s: String,
@@ -81,9 +83,17 @@ class MissingReqFieldBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): String =
     try {
-      Json.parse(jsonBytes).as[MissingReqFields](missingReqFieldFormat).toString // toString() should not be called
+      Json.parse(jsonBytes).as[MissingReqFields](missingReqFieldsFormat).toString // toString() should not be called
     } catch {
       case ex: JsResultException => ex.getMessage
+    }
+
+  @Benchmark
+  def readSprayJson(): String =
+    try {
+      JsonParser(jsonBytes).convertTo[MissingReqFields](missingReqFieldsJsonFormat).toString // toString() should not be called
+    } catch {
+      case ex: spray.json.DeserializationException => ex.getMessage
     }
 
   @Benchmark
