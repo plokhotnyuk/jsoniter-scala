@@ -8,6 +8,7 @@ import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
+import scala.util.control.NonFatal
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
@@ -28,12 +29,11 @@ object SprayFormats extends DefaultJsonProtocol {
     implicit lazy val yjf: RootJsonFormat[Y] = jsonFormat1(Y)
     implicit lazy val zjf: RootJsonFormat[Z] = jsonFormat2(Z)
     implicit lazy val ajf: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
-      override def read(json: JsValue): ADTBase = json.asJsObject.getFields("type") match {
+      override def read(json: JsValue): ADTBase = Try(json.asJsObject.getFields("type") match {
         case Seq(JsString("X")) => json.convertTo[X]
         case Seq(JsString("Y")) => json.convertTo[Y]
         case Seq(JsString("Z")) => json.convertTo[Z]
-        case _ => deserializationError(s"Cannot deserialize ADTBase")
-      }
+      }).getOrElse(deserializationError(s"Cannot deserialize ADTBase"))
 
       override def write(obj: ADTBase): JsValue = JsObject((obj match {
         case x: X => x.toJson
@@ -77,33 +77,30 @@ object SprayFormats extends DefaultJsonProtocol {
     jf
   }
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
-  implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = new RootJsonFormat[SuitADT] {
-    private[this] val suite = Map(
+  implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = {
+    val suite = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-
-    override def read(json: JsValue): SuitADT = Try(suite(json.asInstanceOf[JsString].value))
-      .getOrElse(deserializationError(s"No value found in Suit enum for $json"))
-
-    override def write(ev: SuitADT): JsValue = JsString(ev.toString)
+    stringJsonFormat[SuitADT](suite.apply)
   }
   implicit val suitEnumJsonFormat: EnumJsonFormat[SuitEnum.type] = new EnumJsonFormat(SuitEnum)
-  implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = new RootJsonFormat[Suit] {
-    override def read(json: JsValue): Suit = Try(Suit.valueOf(json.asInstanceOf[JsString].value))
-      .getOrElse(deserializationError(s"No value found in Suit enum for $json"))
+  implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat[Suit](Suit.valueOf)
+  implicit val uuidJsonFormat: RootJsonFormat[UUID] = stringJsonFormat[UUID](UUID.fromString)
 
-    override def write(ev: Suit): JsValue = JsString(ev.name)
+  def stringJsonFormat[T](construct: String => T): RootJsonFormat[T] = new RootJsonFormat[T] {
+    def read(json: JsValue): T =
+      if (!json.isInstanceOf[JsString]) deserializationError(s"Expected JSON string, but got $json")
+      else {
+        val s = json.asInstanceOf[JsString].value
+        try construct(s) catch { case NonFatal(e) => deserializationError(s"Illegal value: $json", e) }
+      }
+
+    def write(obj: T) = new JsString(obj.toString)
   }
-  implicit val uuidJsonFormat: RootJsonFormat[UUID] = new RootJsonFormat[UUID] {
-    def write(uuid: UUID) = JsString(uuid.toString)
 
-    def read(json: JsValue): UUID = Try(UUID.fromString(json.asInstanceOf[JsString].value))
-      .getOrElse(deserializationError("Expected hexadecimal UUID string"))
-  }
-
-  implicit def arrayBufferFormat[T :JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
+  implicit def arrayBufferJsonFormat[T :JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
     new RootJsonFormat[mutable.ArrayBuffer[T]] {
       def read(value: JsValue): mutable.ArrayBuffer[T] =
         if (!value.isInstanceOf[JsArray]) deserializationError(s"Expected List as JsArray, but got $value")
