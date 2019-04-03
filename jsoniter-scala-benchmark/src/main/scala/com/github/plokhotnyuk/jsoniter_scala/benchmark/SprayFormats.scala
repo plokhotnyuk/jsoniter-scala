@@ -22,6 +22,27 @@ class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Valu
 object SprayFormats extends DefaultJsonProtocol {
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
+  // Based on the Cat/Dog sample: https://gist.github.com/jrudolph/f2d0825aac74ed81c92a
+  val adtBaseJsonFormat: RootJsonFormat[ADTBase] = {
+    implicit lazy val xjf: RootJsonFormat[X] = jsonFormat1(X)
+    implicit lazy val yjf: RootJsonFormat[Y] = jsonFormat1(Y)
+    implicit lazy val zjf: RootJsonFormat[Z] = jsonFormat2(Z)
+    implicit lazy val ajf: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
+      override def read(json: JsValue): ADTBase = json.asJsObject.getFields("type") match {
+        case Seq(JsString("X")) => json.convertTo[X]
+        case Seq(JsString("Y")) => json.convertTo[Y]
+        case Seq(JsString("Z")) => json.convertTo[Z]
+        case _ => deserializationError(s"Cannot deserialize ADTBase")
+      }
+
+      override def write(obj: ADTBase): JsValue = JsObject((obj match {
+        case x: X => x.toJson
+        case y: Y => y.toJson
+        case z: Z => z.toJson
+      }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
+    }
+    ajf
+  }
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
 /* Spray-JSON throws java.lang.ExceptionInInitializerError
   implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {
