@@ -25,10 +25,10 @@ object SprayFormats extends DefaultJsonProtocol {
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
   // Based on the Cat/Dog sample: https://gist.github.com/jrudolph/f2d0825aac74ed81c92a
   val adtBaseJsonFormat: RootJsonFormat[ADTBase] = {
-    implicit lazy val xjf: RootJsonFormat[X] = jsonFormat1(X)
-    implicit lazy val yjf: RootJsonFormat[Y] = jsonFormat1(Y)
-    implicit lazy val zjf: RootJsonFormat[Z] = jsonFormat2(Z)
-    implicit lazy val ajf: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
+    implicit lazy val jf1: RootJsonFormat[X] = jsonFormat1(X)
+    implicit lazy val jf2: RootJsonFormat[Y] = jsonFormat1(Y)
+    implicit lazy val jf3: RootJsonFormat[Z] = jsonFormat2(Z)
+    implicit lazy val jf4: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
       override def read(json: JsValue): ADTBase = Try(json.asJsObject.getFields("type") match {
         case Seq(JsString("X")) => json.convertTo[X]
         case Seq(JsString("Y")) => json.convertTo[Y]
@@ -41,7 +41,7 @@ object SprayFormats extends DefaultJsonProtocol {
         case z: Z => z.toJson
       }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
     }
-    ajf
+    jf4
   }
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
   implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {
@@ -65,6 +65,50 @@ object SprayFormats extends DefaultJsonProtocol {
     jsonFormat8(AnyVals)
   }
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormat2(ExtractFields)
+  val geoJSONJsonFormat: RootJsonFormat[GeoJSON] = {
+    implicit lazy val jf1: RootJsonFormat[Point] = jsonFormat1(Point)
+    implicit lazy val jf2: RootJsonFormat[MultiPoint] = jsonFormat1(MultiPoint)
+    implicit lazy val jf3: RootJsonFormat[LineString] = jsonFormat1(LineString)
+    implicit lazy val jf4: RootJsonFormat[MultiLineString] = jsonFormat1(MultiLineString)
+    implicit lazy val jf5: RootJsonFormat[Polygon] = jsonFormat1(Polygon)
+    implicit lazy val jf6: RootJsonFormat[MultiPolygon] = jsonFormat1(MultiPolygon)
+    implicit lazy val jf7: RootJsonFormat[GeometryCollection] = jsonFormat1(GeometryCollection)
+    implicit lazy val jf8: RootJsonFormat[Geometry] = new RootJsonFormat[Geometry] {
+      override def read(json: JsValue): Geometry = Try(json.asJsObject.getFields("type") match {
+        case Seq(JsString("Point")) => json.convertTo[Point]
+        case Seq(JsString("MultiPoint")) => json.convertTo[MultiPoint]
+        case Seq(JsString("LineString")) => json.convertTo[LineString]
+        case Seq(JsString("MultiLineString")) => json.convertTo[MultiLineString]
+        case Seq(JsString("Polygon")) => json.convertTo[Polygon]
+        case Seq(JsString("MultiPolygon")) => json.convertTo[MultiPolygon]
+        case Seq(JsString("GeometryCollection")) => json.convertTo[GeometryCollection]
+      }).getOrElse(deserializationError(s"Cannot deserialize Geometry"))
+
+      override def write(obj: Geometry): JsValue = JsObject((obj match {
+        case x: Point => x.toJson
+        case x: MultiPoint => x.toJson
+        case x: LineString => x.toJson
+        case x: MultiLineString => x.toJson
+        case x: Polygon => x.toJson
+        case x: MultiPolygon => x.toJson
+        case x: GeometryCollection => x.toJson
+      }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
+    }
+    implicit lazy val jf9: RootJsonFormat[Feature] = jsonFormat2(Feature)
+    implicit lazy val jf10: RootJsonFormat[FeatureCollection] = jsonFormat1(FeatureCollection)
+    implicit lazy val jf11: RootJsonFormat[GeoJSON] = new RootJsonFormat[GeoJSON] {
+      override def read(json: JsValue): GeoJSON = Try(json.asJsObject.getFields("type") match {
+        case Seq(JsString("Feature")) => json.convertTo[Feature]
+        case Seq(JsString("FeatureCollection")) => json.convertTo[FeatureCollection]
+      }).getOrElse(deserializationError(s"Cannot deserialize GeoJSON"))
+
+      override def write(obj: GeoJSON): JsValue = JsObject((obj match {
+        case x: Feature => x.toJson
+        case y: FeatureCollection => y.toJson
+      }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
+    }
+    jf11
+  }
   implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = {
     implicit val jf1: RootJsonFormat[Value] = jsonFormat2(Value)
     implicit val jf2: RootJsonFormat[Elements] = jsonFormat3(Elements)

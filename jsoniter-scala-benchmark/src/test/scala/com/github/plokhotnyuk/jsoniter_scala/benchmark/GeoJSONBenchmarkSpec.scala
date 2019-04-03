@@ -10,6 +10,7 @@ class GeoJSONBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -19,6 +20,7 @@ class GeoJSONBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeJsoniterScala()) shouldBe GeoJSON.jsonString1
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe GeoJSON.jsonString1
       toString(benchmark.writePlayJson()) shouldBe GeoJSON.jsonString3
+      toString(benchmark.writeSprayJson()) shouldBe GeoJSON.jsonString4
       toString(benchmark.writeUPickle()) shouldBe GeoJSON.jsonString1
     }
   }

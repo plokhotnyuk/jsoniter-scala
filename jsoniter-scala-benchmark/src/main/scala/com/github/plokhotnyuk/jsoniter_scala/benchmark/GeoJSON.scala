@@ -40,11 +40,10 @@ case class FeatureCollection(features: IndexedSeq[GeoJSON]) extends GeoJSON
 
 object GeoJSON {
   //Borders of Switzerland, from: https://github.com/mledoze/countries/blob/master/data/che.geo.json
-  var jsonBytes1: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-1.geo.json"))
-  var jsonString1: String = new String(jsonBytes1, UTF_8)
+  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-1.geo.json"))
+  var jsonString1: String = new String(jsonBytes, UTF_8)
   //the same as previous but changed position of the `type` fields
-  var jsonBytes2: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-2.geo.json"))
-  var jsonString2: String = new String(jsonBytes2, UTF_8)
-  var jsonBytes3: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-3.geo.json"))
-  var jsonString3: String = new String(jsonBytes3, UTF_8)
+  var jsonString2: String = new String(Streamable.bytes(getClass.getResourceAsStream("che-2.geo.json")), UTF_8)
+  var jsonString3: String = new String(Streamable.bytes(getClass.getResourceAsStream("che-3.geo.json")), UTF_8)
+  var jsonString4: String = new String(Streamable.bytes(getClass.getResourceAsStream("che-4.geo.json")), UTF_8)
 }
