@@ -26,6 +26,7 @@ class StringOfNonAsciiCharsBenchmarkSpec extends BenchmarkSpecBase {
       //toString(benchmark.writeJsoniterJava()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.writePlayJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeSprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeUPickle()) shouldBe benchmark.jsonString
     }
