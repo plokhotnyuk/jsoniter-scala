@@ -72,7 +72,10 @@ object SprayFormats extends DefaultJsonProtocol {
     jsonFormat4(DistanceMatrix)
   }
   implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingReqFields] = jsonFormat2(MissingReqFields)
-  implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormat1(NestedStructs)
+  val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = {
+    implicit lazy val jf: RootJsonFormat[NestedStructs] = rootFormat(lazyFormat(jsonFormat1(NestedStructs)))
+    jf
+  }
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
   implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = new RootJsonFormat[SuitADT] {
     private[this] val suite = Map(

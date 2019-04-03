@@ -12,6 +12,7 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.annotation.switch
+import scala.language.higherKinds
 
 case class UserId(id: String) extends AnyVal
 
