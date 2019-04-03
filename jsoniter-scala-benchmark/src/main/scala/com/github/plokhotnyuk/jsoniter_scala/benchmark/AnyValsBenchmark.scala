@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -18,7 +18,7 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import scala.annotation.meta.getter
-//import spray.json._
+import spray.json._
 
 @transparent case class ByteVal(@(JsonValue @getter) a: Byte) extends AnyVal
 
@@ -41,8 +41,9 @@ case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVa
 class AnyValsBenchmark extends CommonParams {
   //FIXME: 2.5 is for hiding of Play-JSON bug in serialization of floats as doubles: 2.2 -> 2.200000047683716
   var obj: AnyVals = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(1.1), FloatVal(2.5f))
-  var jsonString: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
-  var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
+  var jsonString1: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
+  var jsonString2: String = """{"b":1,"bl":true,"ch":"x","dbl":1.1,"f":2.5,"i":3,"l":4,"s":2}"""
+  var jsonBytes: Array[Byte] = jsonString1.getBytes(UTF_8)
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
@@ -60,10 +61,9 @@ class AnyValsBenchmark extends CommonParams {
   @Benchmark
   def readPlayJson(): AnyVals = Json.parse(jsonBytes).as[AnyVals]
 
-/* FIXME: Spray-JSON throws java.lang.ExceptionInInitializerError
   @Benchmark
   def readSprayJson(): AnyVals = JsonParser(jsonBytes).convertTo[AnyVals](anyValsJsonFormat)
-*/
+
   @Benchmark
   def readUPickle(): AnyVals = read[AnyVals](jsonBytes)
 
@@ -84,10 +84,10 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: Spray-JSON throws java.lang.ExceptionInInitializerError
+
   @Benchmark
   def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
-*/
+
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }

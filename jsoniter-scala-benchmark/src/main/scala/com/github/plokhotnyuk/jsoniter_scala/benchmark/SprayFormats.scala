@@ -44,19 +44,26 @@ object SprayFormats extends DefaultJsonProtocol {
     ajf
   }
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
-/* Spray-JSON throws java.lang.ExceptionInInitializerError
   implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {
-    implicit val jf1: RootJsonFormat[ByteVal] = jsonFormat1(ByteVal)
-    implicit val jf2: RootJsonFormat[ShortVal] = jsonFormat1(ShortVal)
-    implicit val jf3: RootJsonFormat[IntVal] = jsonFormat1(IntVal)
-    implicit val jf4: RootJsonFormat[LongVal] = jsonFormat1(LongVal)
-    implicit val jf5: RootJsonFormat[BooleanVal] = jsonFormat1(BooleanVal)
-    implicit val jf6: RootJsonFormat[CharVal] = jsonFormat1(CharVal)
-    implicit val jf7: RootJsonFormat[DoubleVal] = jsonFormat1(DoubleVal)
-    implicit val jf8: RootJsonFormat[FloatVal] = jsonFormat1(FloatVal)
+    // Based on the following "horrible hack": https://github.com/spray/spray-json/issues/38#issuecomment-11708058
+    case class AnyValJsonFormat[T <: AnyVal{def a : V}, V](construct: V => T)(implicit jf: JsonFormat[V]) extends JsonFormat[T] {
+      import scala.language.reflectiveCalls
+
+      override def read(json: JsValue): T = construct(jf.read(json))
+
+      override def write(obj: T): JsValue = jf.write(obj.a)
+    }
+
+    implicit val jf1: JsonFormat[ByteVal] = AnyValJsonFormat(ByteVal)
+    implicit val jf2: JsonFormat[ShortVal] = AnyValJsonFormat(ShortVal)
+    implicit val jf3: JsonFormat[IntVal] = AnyValJsonFormat(IntVal)
+    implicit val jf4: JsonFormat[LongVal] = AnyValJsonFormat(LongVal)
+    implicit val jf5: JsonFormat[BooleanVal] = AnyValJsonFormat(BooleanVal)
+    implicit val jf6: JsonFormat[CharVal] = AnyValJsonFormat(CharVal)
+    implicit val jf7: JsonFormat[DoubleVal] = AnyValJsonFormat(DoubleVal)
+    implicit val jf8: JsonFormat[FloatVal] = AnyValJsonFormat(FloatVal)
     jsonFormat8(AnyVals)
   }
-*/
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormat2(ExtractFields)
   implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = {
     implicit val jf1: RootJsonFormat[Value] = jsonFormat2(Value)
