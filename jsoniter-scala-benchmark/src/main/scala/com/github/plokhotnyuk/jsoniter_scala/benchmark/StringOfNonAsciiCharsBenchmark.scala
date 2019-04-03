@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.input.JsoniterJavaParser
 //import com.jsoniter.output.JsoniterJavaSerializer
@@ -71,6 +72,9 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
   def readPlayJson(): String = Json.parse(jsonBytes).as[String]
 
   @Benchmark
+  def readSprayJson(): String = spray.json.JsonParser(jsonBytes).convertTo[String]
+
+  @Benchmark
   def readUPickle(): String = read[String](jsonBytes)
 
   @Benchmark
@@ -96,6 +100,12 @@ class StringOfNonAsciiCharsBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = {
+    import spray.json._
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
