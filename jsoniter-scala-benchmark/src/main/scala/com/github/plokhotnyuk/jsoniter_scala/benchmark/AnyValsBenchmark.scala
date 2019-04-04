@@ -18,9 +18,9 @@ import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import pl.iterators.kebs.json.noflat
 import play.api.libs.json.Json
+import spray.json._
 
 import scala.annotation.meta.getter
-import spray.json._
 
 @transparent case class ByteVal(@(JsonValue @getter) a: Byte) extends AnyVal
 
