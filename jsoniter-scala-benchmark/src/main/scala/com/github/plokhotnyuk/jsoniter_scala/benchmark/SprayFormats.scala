@@ -13,7 +13,7 @@ import scala.util.Try
 import scala.util.control.NonFatal
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
-class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
+case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
   override def read(json: JsValue): T#Value =
     e.values.iterator.find { ev =>
       json.isInstanceOf[JsString] && json.asInstanceOf[JsString].value == ev.toString
@@ -107,7 +107,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
       "Clubs" -> Clubs)
     stringJsonFormat[SuitADT](suite.apply)
   }
-  implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum] = new EnumJsonFormat(SuitEnum)
+  implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum] = EnumJsonFormat(SuitEnum)
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat[Suit](Suit.valueOf)
   implicit val tweetJsonFormat: RootJsonFormat[Tweet] = jsonFormatN[Tweet]
   implicit val uuidJsonFormat: RootJsonFormat[UUID] = stringJsonFormat[UUID](UUID.fromString)
@@ -126,7 +126,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   implicit def arrayBufferJsonFormat[T :JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
     new RootJsonFormat[mutable.ArrayBuffer[T]] {
       def read(value: JsValue): mutable.ArrayBuffer[T] =
-        if (!value.isInstanceOf[JsArray]) deserializationError(s"Expected List as JsArray, but got $value")
+        if (!value.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array, but got $value")
         else {
           val es = value.asInstanceOf[JsArray].elements
           val buf = new mutable.ArrayBuffer[T](es.size)
