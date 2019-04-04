@@ -2,7 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.util.UUID
 
-import spray.json.{RootJsonFormat, _}
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
+import pl.iterators.kebs.json.KebsSpray
+import spray.json._
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -20,14 +22,18 @@ class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Valu
   override def write(ev: T#Value): JsValue = JsString(ev.toString)
 }
 
-object SprayFormats extends DefaultJsonProtocol {
+object FlatSprayFormats extends DefaultJsonProtocol with KebsSpray {
+  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = jsonFormatN[AnyVals]
+}
+
+object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
   // Based on the Cat/Dog sample: https://gist.github.com/jrudolph/f2d0825aac74ed81c92a
   val adtBaseJsonFormat: RootJsonFormat[ADTBase] = {
-    implicit lazy val jf1: RootJsonFormat[X] = jsonFormat1(X)
-    implicit lazy val jf2: RootJsonFormat[Y] = jsonFormat1(Y)
-    implicit lazy val jf3: RootJsonFormat[Z] = jsonFormat2(Z)
+    implicit lazy val jf1: RootJsonFormat[X] = jsonFormatN[X]
+    implicit lazy val jf2: RootJsonFormat[Y] = jsonFormatN[Y]
+    implicit lazy val jf3: RootJsonFormat[Z] = jsonFormatN[Z]
     implicit lazy val jf4: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
       override def read(json: JsValue): ADTBase = Try(json.asJsObject.getFields("type") match {
         case Seq(JsString("X")) => json.convertTo[X]
@@ -43,36 +49,16 @@ object SprayFormats extends DefaultJsonProtocol {
     }
     jf4
   }
-  implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
-  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {
-    // Based on the following "horrible hack": https://github.com/spray/spray-json/issues/38#issuecomment-11708058
-    case class AnyValJsonFormat[T <: AnyVal{def a : V}, V](construct: V => T)(implicit jf: JsonFormat[V]) extends JsonFormat[T] {
-      import scala.language.reflectiveCalls
-
-      override def read(json: JsValue): T = construct(jf.read(json))
-
-      override def write(obj: T): JsValue = jf.write(obj.a)
-    }
-
-    implicit val jf1: JsonFormat[ByteVal] = AnyValJsonFormat(ByteVal)
-    implicit val jf2: JsonFormat[ShortVal] = AnyValJsonFormat(ShortVal)
-    implicit val jf3: JsonFormat[IntVal] = AnyValJsonFormat(IntVal)
-    implicit val jf4: JsonFormat[LongVal] = AnyValJsonFormat(LongVal)
-    implicit val jf5: JsonFormat[BooleanVal] = AnyValJsonFormat(BooleanVal)
-    implicit val jf6: JsonFormat[CharVal] = AnyValJsonFormat(CharVal)
-    implicit val jf7: JsonFormat[DoubleVal] = AnyValJsonFormat(DoubleVal)
-    implicit val jf8: JsonFormat[FloatVal] = AnyValJsonFormat(FloatVal)
-    jsonFormat8(AnyVals)
-  }
-  implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormat2(ExtractFields)
+  implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormatN[AnyRefs]
+  implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormatN[ExtractFields]
   val geoJSONJsonFormat: RootJsonFormat[GeoJSON] = {
-    implicit lazy val jf1: RootJsonFormat[Point] = jsonFormat1(Point)
-    implicit lazy val jf2: RootJsonFormat[MultiPoint] = jsonFormat1(MultiPoint)
-    implicit lazy val jf3: RootJsonFormat[LineString] = jsonFormat1(LineString)
-    implicit lazy val jf4: RootJsonFormat[MultiLineString] = jsonFormat1(MultiLineString)
-    implicit lazy val jf5: RootJsonFormat[Polygon] = jsonFormat1(Polygon)
-    implicit lazy val jf6: RootJsonFormat[MultiPolygon] = jsonFormat1(MultiPolygon)
-    implicit lazy val jf7: RootJsonFormat[GeometryCollection] = jsonFormat1(GeometryCollection)
+    implicit lazy val jf1: RootJsonFormat[Point] = jsonFormatN[Point]
+    implicit lazy val jf2: RootJsonFormat[MultiPoint] = jsonFormatN[MultiPoint]
+    implicit lazy val jf3: RootJsonFormat[LineString] = jsonFormatN[LineString]
+    implicit lazy val jf4: RootJsonFormat[MultiLineString] = jsonFormatN[MultiLineString]
+    implicit lazy val jf5: RootJsonFormat[Polygon] = jsonFormatN[Polygon]
+    implicit lazy val jf6: RootJsonFormat[MultiPolygon] = jsonFormatN[MultiPolygon]
+    implicit lazy val jf7: RootJsonFormat[GeometryCollection] = jsonFormatN[GeometryCollection]
     implicit lazy val jf8: RootJsonFormat[Geometry] = new RootJsonFormat[Geometry] {
       override def read(json: JsValue): Geometry = Try(json.asJsObject.getFields("type") match {
         case Seq(JsString("Point")) => json.convertTo[Point]
@@ -94,8 +80,8 @@ object SprayFormats extends DefaultJsonProtocol {
         case x: GeometryCollection => x.toJson
       }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
     }
-    implicit lazy val jf9: RootJsonFormat[Feature] = jsonFormat2(Feature)
-    implicit lazy val jf10: RootJsonFormat[FeatureCollection] = jsonFormat1(FeatureCollection)
+    implicit lazy val jf9: RootJsonFormat[Feature] = jsonFormatN[Feature]
+    implicit lazy val jf10: RootJsonFormat[FeatureCollection] = jsonFormatN[FeatureCollection]
     implicit lazy val jf11: RootJsonFormat[GeoJSON] = new RootJsonFormat[GeoJSON] {
       override def read(json: JsValue): GeoJSON = Try(json.asJsObject.getFields("type") match {
         case Seq(JsString("Feature")) => json.convertTo[Feature]
@@ -109,18 +95,10 @@ object SprayFormats extends DefaultJsonProtocol {
     }
     jf11
   }
-  implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = {
-    implicit val jf1: RootJsonFormat[Value] = jsonFormat2(Value)
-    implicit val jf2: RootJsonFormat[Elements] = jsonFormat3(Elements)
-    implicit val jf3: RootJsonFormat[Rows] = jsonFormat1(Rows)
-    jsonFormat4(DistanceMatrix)
-  }
-  implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingReqFields] = jsonFormat2(MissingReqFields)
-  val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = {
-    implicit lazy val jf: RootJsonFormat[NestedStructs] = rootFormat(lazyFormat(jsonFormat1(NestedStructs)))
-    jf
-  }
-  implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
+  implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = jsonFormatN[DistanceMatrix]
+  implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingReqFields] = jsonFormatN[MissingReqFields]
+  implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormatRec[NestedStructs]
+  implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormatN[Primitives]
   implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = {
     val suite = Map(
       "Hearts" -> Hearts,
@@ -129,8 +107,9 @@ object SprayFormats extends DefaultJsonProtocol {
       "Clubs" -> Clubs)
     stringJsonFormat[SuitADT](suite.apply)
   }
-  implicit val suitEnumJsonFormat: EnumJsonFormat[SuitEnum.type] = new EnumJsonFormat(SuitEnum)
+  implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum] = new EnumJsonFormat(SuitEnum)
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat[Suit](Suit.valueOf)
+  implicit val tweetJsonFormat: RootJsonFormat[Tweet] = jsonFormatN[Tweet]
   implicit val uuidJsonFormat: RootJsonFormat[UUID] = stringJsonFormat[UUID](UUID.fromString)
 
   def stringJsonFormat[T](construct: String => T): RootJsonFormat[T] = new RootJsonFormat[T] {

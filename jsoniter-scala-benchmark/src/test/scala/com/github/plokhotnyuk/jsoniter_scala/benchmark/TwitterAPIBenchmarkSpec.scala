@@ -12,6 +12,7 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
+      benchmark.readSprayJson() shouldBe benchmark.obj
       benchmark.readUPickle() shouldBe benchmark.obj
     }
     "serialize properly" in {
@@ -25,6 +26,8 @@ class TwitterAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe TwitterAPI.compactJsonString
       //FIXME: Play-JSON serializes empty collections
       //toString(benchmark.writePlayJson()) shouldBe TwitterAPI.compactJsonString
+      //FIXME: Spray-JSON serializes empty collections
+      //toString(benchmark.writeSprayJson()) shouldBe TwitterAPI.compactJsonString
       //FIXME: uPickle serializes empty collections
       //toString(benchmark.writeUPickle()) shouldBe TwitterAPI.compactJsonString
     }

@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.generic.auto._
@@ -16,6 +17,7 @@ import io.circe.parser._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
+import spray.json._
 
 class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
@@ -38,6 +40,9 @@ class TwitterAPIBenchmark extends CommonParams {
 
   @Benchmark
   def readPlayJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]]
+
+  @Benchmark
+  def readSprayJson(): Seq[Tweet] = JsonParser(jsonBytes).convertTo[Seq[Tweet]]
 
   @Benchmark
   def readUPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
@@ -63,6 +68,10 @@ class TwitterAPIBenchmark extends CommonParams {
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+*/
+/* FIXME: Spray-JSON serializes empty collections
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
 /* FIXME: uPickle serializes empty collections
   @Benchmark
