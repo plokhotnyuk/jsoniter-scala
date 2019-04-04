@@ -16,7 +16,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
+import pl.iterators.kebs.json.noflat
 import play.api.libs.json.Json
+
 import scala.annotation.meta.getter
 import spray.json._
 
@@ -36,7 +38,7 @@ import spray.json._
 
 @transparent case class FloatVal(@(JsonValue @getter) a: Float) extends AnyVal
 
-case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
+@noflat case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 
 class AnyValsBenchmark extends CommonParams {
   //FIXME: 2.5 is for hiding of Play-JSON bug in serialization of floats as doubles: 2.2 -> 2.200000047683716
