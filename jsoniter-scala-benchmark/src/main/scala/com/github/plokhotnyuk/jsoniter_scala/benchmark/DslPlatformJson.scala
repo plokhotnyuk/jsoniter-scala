@@ -1,14 +1,16 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.dslplatform.json._
+import com.dslplatform.json.runtime.Settings
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
+import scala.util.Try
 
 object DslPlatformJson {
-  private[this] val dslJsonScala = new DslJsonScala(new DslJson[Any](new DslJson.Settings[Any]()
-    .includeServiceLoader.doublePrecision(JsonReader.DoublePrecision.EXACT)))
+  private[this] val dslJsonScala = new DslJsonScala(new DslJson[Any](Settings.withRuntime().`with`(new ConfigureScala)
+    .doublePrecision(JsonReader.DoublePrecision.EXACT)))
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJsonScala.json.newWriter()
   }
@@ -55,6 +57,6 @@ object DslPlatformJson {
   }
 
   private[this] def setupCodecs[T](implicit ct: ClassTag[T], tt: TypeTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
-    Option(dslJsonScala.json.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]).getOrElse(dslJsonScala.encoder[T]) ->
-      Option(dslJsonScala.json.tryFindReader(ct.runtimeClass).asInstanceOf[JsonReader.ReadObject[T]]).getOrElse(dslJsonScala.decoder[T])
+    Try(dslJsonScala.encoder[T]).getOrElse(dslJsonScala.json.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]) ->
+      Try(dslJsonScala.decoder[T]).getOrElse(dslJsonScala.json.tryFindReader(ct.runtimeClass).asInstanceOf[JsonReader.ReadObject[T]])
 }
