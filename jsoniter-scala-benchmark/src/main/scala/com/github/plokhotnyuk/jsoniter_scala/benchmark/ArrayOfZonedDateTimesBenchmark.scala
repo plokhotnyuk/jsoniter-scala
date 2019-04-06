@@ -6,6 +6,7 @@ import java.time.{ZoneId, _}
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -55,7 +56,10 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Array[ZonedDateTime] = decode[Array[ZonedDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
+/* FIXME: DSL-JSON does not parse preferred timezone
+  @Benchmark
+  def readDslJsonScala(): Array[ZonedDateTime] = dslJsonDecode[Array[ZonedDateTime]](jsonBytes)
+*/
   @Benchmark
   def readJacksonScala(): Array[ZonedDateTime] = jacksonMapper.readValue[Array[ZonedDateTime]](jsonBytes)
 
@@ -76,7 +80,10 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-
+/* FIXME: DSL-JSON does not serialize preferred timezone
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[ZonedDateTime]](obj)
+*/
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -38,10 +38,10 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: dsl-json cannot find decoder for array of BigInt
+
   @Benchmark
   def readDslJsonScala(): Array[BigInt] = dslJsonDecode[Array[BigInt]](jsonBytes)
-*/
+
   @Benchmark
   def readJacksonScala(): Array[BigInt] = jacksonMapper.readValue[Array[BigInt]](jsonBytes)
 
@@ -62,10 +62,10 @@ class ArrayOfBigIntsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME: dsl-json cannot find encoder for array of BigInt
+
   @Benchmark
   def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[BigInt]](obj)
-*/
+
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
