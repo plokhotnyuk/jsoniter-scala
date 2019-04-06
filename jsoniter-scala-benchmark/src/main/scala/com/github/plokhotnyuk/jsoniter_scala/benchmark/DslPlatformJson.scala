@@ -7,18 +7,16 @@ import com.dslplatform.json._
 import com.dslplatform.json.runtime.Settings
 
 import scala.collection.mutable
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
-import scala.util.Try
 
 object DslPlatformJson {
   private[this] val dslJson = new DslJson[Any](Settings.withRuntime().`with`(new ConfigureScala)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
-    override def initialValue(): JsonWriter = dslJson.newWriter()
+    override def initialValue(): JsonWriter = dslJson.newWriter
   }
   private[this] val threadLocalJsonReader = new ThreadLocal[JsonReader[_]] {
-    override def initialValue(): JsonReader[_] = dslJson.newReader()
+    override def initialValue(): JsonReader[_] = dslJson.newReader
   }
 
   implicit val (anyRefEncoder, anyRefDecoder) = setupCodecs[AnyRefs]
@@ -65,7 +63,6 @@ object DslPlatformJson {
     writer.toByteArray
   }
 
-  private[this] def setupCodecs[T](implicit ct: ClassTag[T], tt: TypeTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
-    Try(dslJson.encoder[T]).getOrElse(dslJson.tryFindWriter(ct.runtimeClass).asInstanceOf[JsonWriter.WriteObject[T]]) ->
-      Try(dslJson.decoder[T]).getOrElse(dslJson.tryFindReader(ct.runtimeClass).asInstanceOf[JsonReader.ReadObject[T]])
+  private[this] def setupCodecs[T](implicit tag: TypeTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
+    dslJson.encoder[T] -> dslJson.decoder[T]
 }

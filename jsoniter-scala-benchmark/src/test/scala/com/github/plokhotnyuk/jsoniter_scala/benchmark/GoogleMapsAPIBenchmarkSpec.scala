@@ -7,8 +7,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
-      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException
-      //benchmark.readDslJsonScala() shouldBe benchmark.obj
+      benchmark.readDslJsonScala() shouldBe benchmark.obj
       benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
       benchmark.readPlayJson() shouldBe benchmark.obj
