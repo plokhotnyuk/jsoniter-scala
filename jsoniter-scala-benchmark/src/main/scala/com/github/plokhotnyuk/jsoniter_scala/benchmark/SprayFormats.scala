@@ -20,7 +20,7 @@ case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T
       json.isInstanceOf[JsString] && json.asInstanceOf[JsString].value == ev.toString
     }.getOrElse(deserializationError(s"Expected JSON string of value from enum $e, but got $json"))
 
-  override def write(ev: T#Value): JsValue = JsString(ev.toString)
+  override def write(ev: T#Value): JsValue = new JsString(ev.toString)
 }
 
 object FlatSprayFormats extends DefaultJsonProtocol with KebsSpray {
@@ -37,17 +37,17 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     implicit lazy val jf3: RootJsonFormat[Z] = jsonFormatN
     implicit lazy val jf4: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
       override def read(json: JsValue): ADTBase =
-        Try(json.asJsObject.getFields("type").head.asInstanceOf[JsString].value match {
+        Try(json.asJsObject.fields("type").asInstanceOf[JsString].value match {
           case "X" => json.convertTo[X]
           case "Y" => json.convertTo[Y]
           case "Z" => json.convertTo[Z]
         }).getOrElse(deserializationError(s"Cannot deserialize ADTBase"))
 
-      override def write(obj: ADTBase): JsValue = JsObject((obj match {
+      override def write(obj: ADTBase): JsValue = new JsObject((obj match {
         case x: X => x.toJson
         case y: Y => y.toJson
         case z: Z => z.toJson
-      }).asJsObject.fields.updated("type", JsString(obj.productPrefix)))
+      }).asJsObject.fields.updated("type", new JsString(obj.productPrefix)))
     }
     jf4
   }
@@ -64,7 +64,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     implicit lazy val jf7: RootJsonFormat[GeometryCollection] = jsonFormatN
     implicit lazy val jf8: RootJsonFormat[Geometry] = new RootJsonFormat[Geometry] {
       override def read(json: JsValue): Geometry =
-        Try(json.asJsObject.getFields("type").head.asInstanceOf[JsString].value match {
+        Try(json.asJsObject.fields("type").asInstanceOf[JsString].value match {
           case "Point" => json.convertTo[Point]
           case "MultiPoint" => json.convertTo[MultiPoint]
           case "LineString" => json.convertTo[LineString]
@@ -74,7 +74,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
           case "GeometryCollection" => json.convertTo[GeometryCollection]
         }).getOrElse(deserializationError(s"Cannot deserialize Geometry"))
 
-      override def write(obj: Geometry): JsValue = JsObject((obj match {
+      override def write(obj: Geometry): JsValue = new JsObject((obj match {
         case x: Point => x.toJson
         case x: MultiPoint => x.toJson
         case x: LineString => x.toJson
@@ -82,21 +82,21 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
         case x: Polygon => x.toJson
         case x: MultiPolygon => x.toJson
         case x: GeometryCollection => x.toJson
-      }).asJsObject.fields.updated("type", JsString(obj.productPrefix)))
+      }).asJsObject.fields.updated("type", new JsString(obj.productPrefix)))
     }
     implicit lazy val jf9: RootJsonFormat[Feature] = jsonFormatN
     implicit lazy val jf10: RootJsonFormat[FeatureCollection] = jsonFormatN
     implicit lazy val jf11: RootJsonFormat[GeoJSON] = new RootJsonFormat[GeoJSON] {
       override def read(json: JsValue): GeoJSON =
-        Try(json.asJsObject.getFields("type").head.asInstanceOf[JsString].value match {
+        Try(json.asJsObject.fields("type").asInstanceOf[JsString].value match {
           case "Feature" => json.convertTo[Feature]
           case "FeatureCollection" => json.convertTo[FeatureCollection]
         }).getOrElse(deserializationError(s"Cannot deserialize GeoJSON"))
 
-      override def write(obj: GeoJSON): JsValue = JsObject((obj match {
+      override def write(obj: GeoJSON): JsValue = new JsObject((obj match {
         case x: Feature => x.toJson
         case y: FeatureCollection => y.toJson
-      }).asJsObject.fields.updated("type", JsString(obj.productPrefix)))
+      }).asJsObject.fields.updated("type", new JsString(obj.productPrefix)))
     }
     jf11
   }
@@ -152,6 +152,11 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
           buf
         }
 
-      def write(buf: mutable.ArrayBuffer[T]): JsValue = JsArray(buf.map(_.toJson).toVector)
+      def write(buf: mutable.ArrayBuffer[T]): JsValue = {
+        val vs = Vector.newBuilder[JsValue]
+        vs.sizeHint(buf.size)
+        buf.foreach(x => vs += x.toJson)
+        JsArray(vs.result)
+      }
     }
 }
