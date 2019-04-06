@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
+import java.util.UUID
 
 import com.dslplatform.json._
 import com.dslplatform.json.runtime.Settings
@@ -25,7 +26,6 @@ object DslPlatformJson {
   implicit val (arrayOfBigDecimalsEncoder, arrayOfBigDecimalsDecoder) = setupCodecs[Array[BigDecimal]]
   implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = setupCodecs[Array[BigInt]]
   implicit val (arrayOfBooleansEncoder, arrayOfBooleansDecoder) = setupCodecs[Array[Boolean]]
-  implicit val (arrayOfBytesEncoder, arrayOfBytesDecoder) = setupCodecs[Array[Byte]]
   implicit val (arrayOfDoublesEncoder, arrayOfDoublesDecoder) = setupCodecs[Array[Double]]
   implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = setupCodecs[Array[Float]]
   implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = setupCodecs[Array[Int]]
@@ -33,8 +33,9 @@ object DslPlatformJson {
   implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = setupCodecs[Array[LocalDateTime]]
   implicit val (arrayOfLongsEncoder, arrayOfLongsDecoder) = setupCodecs[Array[Long]]
   implicit val (arrayOfOffsetDateTimesEncoder, arrayOfOffsetDateTimesDecoder) = setupCodecs[Array[OffsetDateTime]]
-  implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = setupCodecs[Array[ZonedDateTime]]
   implicit val (arrayOfShortsEncoder, arrayOfShorsDecoder) = setupCodecs[Array[Short]]
+  implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = setupCodecs[Array[UUID]]
+  implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = setupCodecs[Array[ZonedDateTime]]
   implicit val (bigIntgEncoder, bigIntgDecoder) = setupCodecs[BigInt]
   implicit val (bigDecimalEncoder, bigDecimalDecoder) = setupCodecs[BigDecimal]
   implicit val (extractFieldsEncoder, extractFieldsDecoder) = setupCodecs[ExtractFields]
