@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.time._
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -50,6 +51,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     jf4
   }
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormatN
+  implicit val durationJsonFormat: RootJsonFormat[Duration] = stringJsonFormat(Duration.parse)
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormatN
   val geoJSONJsonFormat: RootJsonFormat[GeoJSON] = {
     implicit lazy val jf1: RootJsonFormat[Point] = jsonFormatN
@@ -96,8 +98,16 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     jf11
   }
   implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = jsonFormatN
+  implicit val instantJsonFormat: RootJsonFormat[Instant] = stringJsonFormat(Instant.parse)
+  implicit val localDateJsonFormat: RootJsonFormat[LocalDate] = stringJsonFormat(LocalDate.parse)
+  implicit val localDateTimeJsonFormat: RootJsonFormat[LocalDateTime] = stringJsonFormat(LocalDateTime.parse)
+  implicit val localTimeJsonFormat: RootJsonFormat[LocalTime] = stringJsonFormat(LocalTime.parse)
   implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingReqFields] = jsonFormatN
+  implicit val monthDayJsonFormat: RootJsonFormat[MonthDay] = stringJsonFormat(MonthDay.parse)
   implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormatRec
+  implicit val offsetDateTimeJsonFormat: RootJsonFormat[OffsetDateTime] = stringJsonFormat(OffsetDateTime.parse)
+  implicit val offsetTimeJsonFormat: RootJsonFormat[OffsetTime] = stringJsonFormat(OffsetTime.parse)
+  implicit val periodJsonFormat: RootJsonFormat[Period] = stringJsonFormat(Period.parse)
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormatN
   implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = {
     val suite = Map(
@@ -111,6 +121,11 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat(Suit.valueOf)
   implicit val tweetJsonFormat: RootJsonFormat[Tweet] = jsonFormatN
   implicit val uuidJsonFormat: RootJsonFormat[UUID] = stringJsonFormat(UUID.fromString)
+  implicit val yearMonthJsonFormat: RootJsonFormat[YearMonth] = stringJsonFormat(YearMonth.parse)
+  implicit val yearJsonFormat: RootJsonFormat[Year] = stringJsonFormat(Year.parse)
+  implicit val zonedDateTimeJsonFormat: RootJsonFormat[ZonedDateTime] = stringJsonFormat(ZonedDateTime.parse)
+  implicit val zoneIdJsonFormat: RootJsonFormat[ZoneId] = stringJsonFormat(ZoneId.of)
+  implicit val zoneOffsetJsonFormat: RootJsonFormat[ZoneOffset] = stringJsonFormat(ZoneOffset.of)
 
   def stringJsonFormat[T](construct: String => T): RootJsonFormat[T] = new RootJsonFormat[T] {
     def read(json: JsValue): T =

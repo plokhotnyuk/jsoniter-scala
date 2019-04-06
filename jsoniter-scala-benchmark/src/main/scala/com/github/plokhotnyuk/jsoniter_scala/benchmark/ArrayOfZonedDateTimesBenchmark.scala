@@ -8,12 +8,14 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
+import spray.json._
 
 import scala.collection.JavaConverters._
 
@@ -64,6 +66,9 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
   def readPlayJson(): Array[ZonedDateTime] = Json.parse(jsonBytes).as[Array[ZonedDateTime]]
 
   @Benchmark
+  def readSprayJson(): Array[ZonedDateTime] = JsonParser(jsonBytes).convertTo[Array[ZonedDateTime]]
+
+  @Benchmark
   def readUPickle(): Array[ZonedDateTime] = read[Array[ZonedDateTime]](jsonBytes)
 
   @Benchmark
@@ -83,6 +88,9 @@ class ArrayOfZonedDateTimesBenchmark extends CommonParams {
 
   @Benchmark
   def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
