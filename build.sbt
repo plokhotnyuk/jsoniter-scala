@@ -50,7 +50,6 @@ lazy val commonSettings = Seq(
     "-feature",
     "-unchecked",
     "-Ywarn-dead-code",
-    "-Xfuture",
     "-Xlint",
     "-Xmacro-settings:print-codecs"
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
