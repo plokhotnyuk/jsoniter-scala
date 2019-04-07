@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -39,6 +40,10 @@ class BitSetBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): BitSet = decode[BitSet](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
+/* FIXME: DSL-JSON throws scala.collection.immutable.HashSet$HashTrieSet cannot be cast to scala.collection.immutable.BitSet
+  @Benchmark
+  def readDslJsonScala(): BitSet = dslJsonDecode[BitSet](jsonBytes)
+*/
 /* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 1 type parameter for collection like types (scala.collection.immutable.BitSet)
   @Benchmark
   def readJacksonScala(): BitSet = jacksonMapper.readValue[BitSet](jsonBytes)
@@ -59,6 +64,8 @@ class BitSetBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

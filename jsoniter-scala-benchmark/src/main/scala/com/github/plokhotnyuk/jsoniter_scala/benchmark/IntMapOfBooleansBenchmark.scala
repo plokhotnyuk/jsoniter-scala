@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -40,6 +41,10 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
+/* FIXME: DSL-JSON doesn't support IntMap
+  @Benchmark
+  def readDslJsonScala(): IntMap[Boolean] = dslJsonDecode[IntMap[Boolean]](jsonBytes)
+*/
 /* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)
   @Benchmark
   def readJacksonScala(): IntMap[Boolean] = jacksonMapper.readValue[IntMap[Boolean]](jsonBytes)
@@ -58,6 +63,10 @@ class IntMapOfBooleansBenchmark extends CommonParams {
 /* FIXME: Circe doesn't support IntMap
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+*/
+/*
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

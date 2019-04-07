@@ -103,7 +103,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
 
 /* FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[String](obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

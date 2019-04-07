@@ -10,6 +10,8 @@ class OpenHashMapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Circe doesn't support parsing of OpenHashMap
       //benchmark.readCirce() shouldBe benchmark.obj
+      //FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
+      //benchmark.readDslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson cannot deserialize OpenHashMap and throws java.lang.ClassCastException: scala.collection.mutable.HashMap cannot be cast to scala.collection.mutable.OpenHashMap
       //benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -21,6 +23,8 @@ class OpenHashMapOfIntsToBooleansBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe doesn't support serialization of OpenHashMap
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
+      //FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
+      //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString

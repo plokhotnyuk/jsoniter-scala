@@ -10,6 +10,8 @@ class IntMapOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Circe doesn't support IntMap
       //benchmark.readCirce() shouldBe benchmark.obj
+      //FIXME: DSL-JSON doesn't support IntMap
+      //benchmark.readDslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)
       //benchmark.readJacksonScala() shouldBe benchmark.obj
       benchmark.readJsoniterScala() shouldBe benchmark.obj
@@ -21,6 +23,8 @@ class IntMapOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe doesn't support IntMap
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
+      //FIXME: DSL-JSON doesn't support IntMap
+      //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()) shouldBe benchmark.jsonString

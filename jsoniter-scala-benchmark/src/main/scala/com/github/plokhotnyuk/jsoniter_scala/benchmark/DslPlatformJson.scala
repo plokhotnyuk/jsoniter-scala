@@ -6,6 +6,7 @@ import java.util.UUID
 import com.dslplatform.json._
 import com.dslplatform.json.runtime.Settings
 
+import scala.collection.immutable.BitSet
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
 
@@ -36,15 +37,28 @@ object DslPlatformJson {
   implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = setupCodecs[Array[ZonedDateTime]]
   implicit val (bigIntgEncoder, bigIntgDecoder) = setupCodecs[BigInt]
   implicit val (bigDecimalEncoder, bigDecimalDecoder) = setupCodecs[BigDecimal]
+  implicit val (bitSetEncoder, bitSetDecoder) = setupCodecs[BitSet]
   implicit val (extractFieldsEncoder, extractFieldsDecoder) = setupCodecs[ExtractFields]
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = setupCodecs[DistanceMatrix]
   implicit val (intEncoder, intDecoder) = setupCodecs[Int]
+/* FIXME: DSL-JSON doesn't support IntMap
+  implicit val (intMapOfBooleansEncoder, intMapOfBooleansDecoder) = setupCodecs[IntMap[Boolean]]
+*/
   implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = setupCodecs[List[Boolean]]
   implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = setupCodecs[Map[Int, Boolean]]
-  implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) = setupCodecs[mutable.Map[Int, Boolean]]
+  implicit val (mutableBitSetEncoder, mutablebitSetDecoder) = setupCodecs[mutable.BitSet]
+/* FIXME: DSL-JSON doesn't support mutable.LongMap
+  implicit val (mutableLongMapOfBooleansEncoder, mutableLongMapOfBooleansDecoder) = setupCodecs[mutable.LongMap[Boolean]]
+*/
+  implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) =
+    setupCodecs[mutable.Map[Int, Boolean]]
   implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = setupCodecs[mutable.Set[Int]]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = setupCodecs[MissingReqFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = setupCodecs[NestedStructs]
+/* FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
+  implicit val (openHashMapOfIntsToBooleansEncoder, openHashMapOfIntsToBooleansDecoder) =
+    setupCodecs[mutable.OpenHashMap[Int, Boolean]]
+ */
   implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = setupCodecs[Seq[Tweet]]
   implicit val (setOfIntsEncoder, setOfIntsDecoder) = setupCodecs[Set[Int]]
   implicit val (stringEncoder, stringDecoder) = setupCodecs[String]

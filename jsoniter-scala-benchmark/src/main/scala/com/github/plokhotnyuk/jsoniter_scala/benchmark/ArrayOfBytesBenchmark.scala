@@ -68,7 +68,7 @@ class ArrayOfBytesBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME:dsl-json serializes a byte array to the base64 string
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode[Array[Byte]](obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
