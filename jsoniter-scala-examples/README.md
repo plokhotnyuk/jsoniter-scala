@@ -8,6 +8,7 @@ sbt clean +assembly
 java -jar target/scala-2.11/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
 java -jar target/scala-2.12/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
 java -jar target/scala-2.13.0-M5/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
+java -jar target/scala-2.13.0-RC1/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
 ```
 
 ## How to build with a native image and run binaries
