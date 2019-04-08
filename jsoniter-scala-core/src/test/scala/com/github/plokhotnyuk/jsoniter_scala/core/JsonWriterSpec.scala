@@ -36,9 +36,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(value: Boolean, excpectedOut: String): Unit = {
         val s = value.toString
         withWriter(_.writeVal(value)) shouldBe s
-        withWriter(_.writeValAsString(value)) shouldBe '\"' + s + '\"'
-        withWriter(_.writeKey(value)) shouldBe '\"' + s + "\":"
-        withWriter(WriterConfig(indentionStep = 2))(_.writeKey(value)) shouldBe '\"' + s + "\": "
+        withWriter(_.writeValAsString(value)) shouldBe s""""$s""""
+        withWriter(_.writeKey(value)) shouldBe s""""$s":"""
+        withWriter(WriterConfig(indentionStep = 2))(_.writeKey(value)) shouldBe s""""$s": """
       }
 
       check(value = true, "true")
@@ -52,8 +52,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write string of Ascii chars which should not be escaped" in {
       def check(s: String): Unit = {
-        withWriter(_.writeNonEscapedAsciiVal(s)) shouldBe '"' + s + '"'
-        withWriter(_.writeNonEscapedAsciiKey(s)) shouldBe '"' + s + "\":"
+        withWriter(_.writeNonEscapedAsciiVal(s)) shouldBe s""""$s""""
+        withWriter(_.writeNonEscapedAsciiKey(s)) shouldBe s""""$s":"""
       }
 
       forAll(Gen.listOf(genAsciiChar).map(_.mkString.filter(JsonWriter.isNonEscapedAscii)), minSuccessful(10000))(check)
@@ -67,8 +67,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write UUID as a string representation according to format that defined in IETF RFC4122 (section 3)" in {
       def check(x: UUID): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       forAll(Gen.uuid, minSuccessful(100000))(check)
@@ -81,8 +81,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write Duration as a string representation according to ISO-8601 format" in {
       def check(x: Duration, s: String): Unit = {
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(Duration.ZERO, "PT0S")
@@ -100,8 +100,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write Instant as a string representation according to ISO-8601 format" in {
       def check(x: Instant): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(Instant.MAX)
@@ -117,8 +117,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write LocalDate as a string representation according to ISO-8601 format" in {
       def check(x: LocalDate): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(LocalDate.MAX)
@@ -134,8 +134,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write LocalDateTime as a string representation according to ISO-8601 format" in {
       def check(x: LocalDateTime): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(LocalDateTime.MAX)
@@ -151,8 +151,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write LocalTime as a string representation according to ISO-8601 format" in {
       def check(x: LocalTime): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(LocalTime.MAX)
@@ -168,8 +168,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write MonthDay as a string representation according to ISO-8601 format" in {
       def check(x: MonthDay): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(MonthDay.of(12, 31))
@@ -185,8 +185,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write OffsetDateTime as a string representation according to ISO-8601 format" in {
       def check(x: OffsetDateTime): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(OffsetDateTime.MAX)
@@ -202,8 +202,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write OffsetTime as a string representation according to ISO-8601 format" in {
       def check(x: OffsetTime): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(OffsetTime.MAX)
@@ -219,8 +219,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write Period as a string representation according to ISO-8601 format" in {
       def check(x: Period): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(Period.ZERO)
@@ -237,8 +237,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       def check(x: Year): Unit = {
         val s = x.format(yearFormatter)
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(Year.of(Year.MAX_VALUE))
@@ -255,8 +255,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(x: YearMonth): Unit = {
         // '+' is required for years that extends 4 digits, see ISO 8601:2004 sections 3.4.2, 4.1.2.4
         val s = (if (x.getYear >= 10000) "+" else "") + x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(YearMonth.of(Year.MAX_VALUE, 12))
@@ -272,8 +272,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write ZonedDateTime as a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK 8+ format" in {
       def check(x: ZonedDateTime): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
@@ -289,8 +289,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write ZoneOffset as a string representation according to ISO-8601 format" in {
       def check(x: ZoneOffset): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(ZoneOffset.MAX)
@@ -306,8 +306,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write ZoneId as a string representation according to ISO-8601 format for timezone offset or JDK 8+ format for IANA timezone identifier" in {
       def check(x: ZoneId): Unit = {
         val s = x.toString
-        withWriter(_.writeVal(x)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(x)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(x)) shouldBe s""""$s""""
+        withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
       check(ZoneOffset.MAX)
@@ -322,8 +322,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write string of Unicode chars which are non-surrogate and should not be escaped" in {
       def check(s: String): Unit = {
-        withWriter(_.writeVal(s)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(s)) shouldBe '"' + s + "\":"
+        withWriter(_.writeVal(s)) shouldBe s""""$s""""
+        withWriter(_.writeKey(s)) shouldBe s""""$s":"""
       }
 
       check("Oó!")
@@ -335,8 +335,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write strings with chars that should be escaped" in {
       def check(s: String, escapeUnicode: Boolean, f: String => String = _.flatMap(toEscaped(_))): Unit = {
-        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe "\"" + f(s) + "\""
-        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)) shouldBe "\"" + f(s) + "\":"
+        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe s""""${f(s)}""""
+        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
       }
 
       check("Oó!", escapeUnicode = true, _ => "O\\u00f3!")
@@ -348,8 +348,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write strings with escaped Unicode chars if it is specified by provided writer config" in {
       def check(s: String, f: String => String = _.flatMap(toEscaped(_))): Unit = {
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + f(s) + "\""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + f(s) + "\":"
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe s""""${f(s)}""""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
       }
 
       forAll(minSuccessful(100000)) { (s: String) =>
@@ -360,10 +360,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write strings with valid character surrogate pair" in {
       def check(s: String): Unit = {
-        withWriter(_.writeVal(s)) shouldBe "\"" + s + "\""
-        withWriter(_.writeKey(s)) shouldBe "\"" + s + "\":"
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe "\"" + s.flatMap(toEscaped(_)) + "\":"
+        withWriter(_.writeVal(s)) shouldBe s""""$s""""
+        withWriter(_.writeKey(s)) shouldBe s""""$s":"""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe s""""${s.flatMap(toEscaped(_))}""""
+        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe s""""${s.flatMap(toEscaped(_))}":"""
       }
 
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (ch1: Char, ch2: Char) =>
@@ -400,28 +400,28 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write string with Unicode chars which are non-surrogate or should not be escaped" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(!Character.isSurrogate(ch) && !isEscapedAscii(ch)) {
-          withWriter(_.writeVal(ch)) shouldBe "\"" + ch + "\""
-          withWriter(_.writeKey(ch)) shouldBe "\"" + ch + "\":"
+          withWriter(_.writeVal(ch)) shouldBe s""""$ch""""
+          withWriter(_.writeKey(ch)) shouldBe s""""$ch":"""
         }
       }
     }
     "write string with chars that should be escaped" in {
       forAll(genEscapedAsciiChar, minSuccessful(10000)) { (ch: Char) =>
-        withWriter(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
-        withWriter(_.writeKey(ch)) shouldBe "\"" + toEscaped(ch) + "\":"
+        withWriter(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
+        withWriter(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
       }
       forAll(genNonAsciiChar, minSuccessful(10000)) { (ch: Char) =>
         whenever(!Character.isSurrogate(ch)) {
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(ch)) shouldBe "\"" + toEscaped(ch) + "\":"
+          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
+          withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
         }
       }
     }
     "write string with escaped Unicode chars if it is specified by provided writer config" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(isEscapedAscii(ch) || ch >= 128) {
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe "\"" + toEscaped(ch) + "\""
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(ch)) shouldBe "\"" + toEscaped(ch) + "\":"
+          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
+          withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
         }
       }
     }
@@ -439,8 +439,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(1000)) { (n: Byte) =>
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
     }
   }
@@ -449,8 +449,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(10000)) { (n: Short) =>
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
     }
   }
@@ -459,8 +459,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(n: Int): Unit = {
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       forAll(minSuccessful(100000)) { (n: Int) =>
@@ -473,8 +473,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(n: Long): Unit = {
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       forAll(minSuccessful(100000)) { (n: Int) =>
@@ -495,8 +495,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
         s.toFloat shouldBe n // no data loss
         s.length should be <= n.toString.length // rounding isn't worse than in JDK
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       check(0.0f)
@@ -557,8 +557,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(n: Float): Unit = {
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       check(0.33007812f)
@@ -583,8 +583,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
         s.toDouble shouldBe n // no data loss
         s.length should be <= n.toString.length // rounding isn't worse than in JDK
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       check(0.0)
@@ -623,8 +623,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(n: Double): Unit = {
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       check(1.8557466319180092E15)
@@ -649,8 +649,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(n: BigInt): Unit = {
         val s = new java.math.BigDecimal(n.bigInteger).toPlainString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       forAll(minSuccessful(100000)) { (n: Long) =>
@@ -671,8 +671,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(n: BigDecimal): Unit = {
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
-        withWriter(_.writeValAsString(n)) shouldBe '"' + s + '"'
-        withWriter(_.writeKey(n)) shouldBe '"' + s + "\":"
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       forAll(minSuccessful(100000)) { (n: Double) =>
