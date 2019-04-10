@@ -64,7 +64,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
+/* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
   @Benchmark
   def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */

@@ -23,7 +23,7 @@ class IntMapOfBooleansBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
       //FIXME: Circe doesn't support IntMap
       //toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
-      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
+      //FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
       //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJsoniterScala()) shouldBe benchmark.jsonString

@@ -1,30 +1,23 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+//import java.lang.reflect.{ParameterizedType, Type}
 import java.time._
 import java.util.UUID
 
 import com.dslplatform.json._
-import com.dslplatform.json.runtime.Settings
+import com.dslplatform.json.runtime.{ScalaMapEncoder, Settings}
 
-import scala.collection.immutable.BitSet
+import scala.collection.immutable.{BitSet, IntMap}
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
 
 object DslPlatformJson {
   private[this] val dslJson = new DslJson[Any](Settings.withRuntime().`with`(new ConfigureScala)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
-
 /*
-  import java.lang.reflect.Type
-  import com.dslplatform.json.runtime.ScalaMapEncoder
-
   dslJson.registerWriterFactory(primitiveMapWriter)
 
-  def primitiveMapWriter(manifest: Type, dslJson: DslJson[_]): ScalaMapEncoder[Int, Any] = {
-    import java.lang.reflect.ParameterizedType
-    import com.dslplatform.json.runtime.ScalaMapEncoder
-    import scala.collection.immutable.IntMap
-
+  private[this] def primitiveMapWriter(manifest: Type, dslJson: DslJson[_]): ScalaMapEncoder[Int, Any] = {
     manifest match {
       case pt: ParameterizedType if pt.getRawType == classOf[IntMap[_]] =>
         val valueWriter = dslJson.tryFindWriter(pt.getActualTypeArguments.head)
@@ -37,7 +30,6 @@ object DslPlatformJson {
     }
   }
 */
-
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter
   }
@@ -69,8 +61,8 @@ object DslPlatformJson {
   implicit val (extractFieldsEncoder, extractFieldsDecoder) = setupCodecs[ExtractFields]
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = setupCodecs[DistanceMatrix]
   implicit val (intEncoder, intDecoder) = setupCodecs[Int]
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
-  implicit val (intMapOfBooleansEncoder, intMapOfBooleansDecoder) = setupCodecs[IntMap[Boolean]]
+/* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
+  implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = dslJson.encoder[IntMap[Boolean]]
 */
   implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = setupCodecs[List[Boolean]]
   implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = setupCodecs[Map[Int, Boolean]]
