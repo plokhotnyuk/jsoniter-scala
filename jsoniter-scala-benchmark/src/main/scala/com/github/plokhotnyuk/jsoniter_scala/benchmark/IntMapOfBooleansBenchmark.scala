@@ -41,7 +41,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   @Benchmark
   def readCirce(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 */
-/* FIXME: DSL-JSON doesn't support IntMap
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
   @Benchmark
   def readDslJsonScala(): IntMap[Boolean] = dslJsonDecode[IntMap[Boolean]](jsonBytes)
 */
@@ -64,7 +64,7 @@ class IntMapOfBooleansBenchmark extends CommonParams {
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
-/*
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
   @Benchmark
   def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */

@@ -53,7 +53,14 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def readCirce(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
+  @Benchmark
+  def readDslJsonScala(): AnyVals = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
+    dslJsonDecode[AnyVals](jsonBytes)
+  }
+*/
   @Benchmark
   def readJacksonScala(): AnyVals = jacksonMapper.readValue[AnyVals](jsonBytes)
 
@@ -74,7 +81,14 @@ class AnyValsBenchmark extends CommonParams {
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
+  @Benchmark
+  def writeDslJsonScala(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 
+    dslJsonEncode(obj)
+  }
+*/
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

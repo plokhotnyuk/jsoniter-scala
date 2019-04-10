@@ -13,6 +13,31 @@ import scala.reflect.runtime.universe.TypeTag
 object DslPlatformJson {
   private[this] val dslJson = new DslJson[Any](Settings.withRuntime().`with`(new ConfigureScala)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
+
+/*
+  import java.lang.reflect.Type
+  import com.dslplatform.json.runtime.ScalaMapEncoder
+
+  dslJson.registerWriterFactory(primitiveMapWriter)
+
+  def primitiveMapWriter(manifest: Type, dslJson: DslJson[_]): ScalaMapEncoder[Int, Any] = {
+    import java.lang.reflect.ParameterizedType
+    import com.dslplatform.json.runtime.ScalaMapEncoder
+    import scala.collection.immutable.IntMap
+
+    manifest match {
+      case pt: ParameterizedType if pt.getRawType == classOf[IntMap[_]] =>
+        val valueWriter = dslJson.tryFindWriter(pt.getActualTypeArguments.head)
+        val encoder = new ScalaMapEncoder[Int, Any](dslJson,true,
+          Some(NumberConverter.INT_WRITER.asInstanceOf[JsonWriter.WriteObject[Int]]),
+          Some(valueWriter.asInstanceOf[JsonWriter.WriteObject[Any]]))
+        dslJson.registerWriter(manifest, encoder)
+        encoder
+      case _ => null
+    }
+  }
+*/
+
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter
   }
@@ -21,6 +46,9 @@ object DslPlatformJson {
   }
 
   implicit val (anyRefEncoder, anyRefDecoder) = setupCodecs[AnyRefs]
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
+  implicit val (anyValsEncoder, anyValsDecoder) = setupCodecs[AnyVals]
+*/
   implicit val (arrayBufferOfBooleansEncoder, arrayBufferOfBooleansDecoder) = setupCodecs[mutable.ArrayBuffer[Boolean]]
   implicit val (arrayOfBigDecimalsEncoder, arrayOfBigDecimalsDecoder) = setupCodecs[Array[BigDecimal]]
   implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = setupCodecs[Array[BigInt]]
@@ -41,7 +69,7 @@ object DslPlatformJson {
   implicit val (extractFieldsEncoder, extractFieldsDecoder) = setupCodecs[ExtractFields]
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = setupCodecs[DistanceMatrix]
   implicit val (intEncoder, intDecoder) = setupCodecs[Int]
-/* FIXME: DSL-JSON doesn't support IntMap
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
   implicit val (intMapOfBooleansEncoder, intMapOfBooleansDecoder) = setupCodecs[IntMap[Boolean]]
 */
   implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = setupCodecs[List[Boolean]]
@@ -58,7 +86,10 @@ object DslPlatformJson {
 /* FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
   implicit val (openHashMapOfIntsToBooleansEncoder, openHashMapOfIntsToBooleansDecoder) =
     setupCodecs[mutable.OpenHashMap[Int, Boolean]]
- */
+*/
+/* FIXME: DSL_JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+  implicit val (primitivesEncoder, primitivesDecoder) = setupCodecs[Primitives]
+*/
   implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = setupCodecs[Seq[Tweet]]
   implicit val (setOfIntsEncoder, setOfIntsDecoder) = setupCodecs[Set[Int]]
   implicit val (stringEncoder, stringDecoder) = setupCodecs[String]
