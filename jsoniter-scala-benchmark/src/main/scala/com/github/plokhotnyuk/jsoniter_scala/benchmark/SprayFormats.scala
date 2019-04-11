@@ -9,7 +9,6 @@ import spray.json._
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
@@ -147,7 +146,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     def write(obj: T): JsValue = new JsString(obj.toString)
   }
 
-  implicit def arrayBufferJsonFormat[T : JsonFormat]: RootJsonFormat[ArrayBuffer[T]] =
+  implicit def arrayBufferJsonFormat[T : JsonFormat]: RootJsonFormat[mutable.ArrayBuffer[T]] =
     new RootJsonFormat[mutable.ArrayBuffer[T]] {
       def read(json: JsValue): mutable.ArrayBuffer[T] =
         if (!json.isInstanceOf[JsArray]) deserializationError(s"Expected JSON array, but got $json")

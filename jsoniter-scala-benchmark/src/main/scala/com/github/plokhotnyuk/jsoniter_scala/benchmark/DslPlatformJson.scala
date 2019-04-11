@@ -5,9 +5,11 @@ import java.time._
 import java.util.UUID
 
 import com.dslplatform.json._
-import com.dslplatform.json.runtime.{ScalaMapEncoder, Settings}
+//import com.dslplatform.json.runtime.ScalaMapEncoder
+import com.dslplatform.json.runtime.Settings
 
-import scala.collection.immutable.{BitSet, IntMap}
+import scala.collection.immutable.BitSet
+//import scala.collection.immutable.IntMap
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
 
@@ -52,7 +54,7 @@ object DslPlatformJson {
   implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = setupCodecs[Array[LocalDateTime]]
   implicit val (arrayOfLongsEncoder, arrayOfLongsDecoder) = setupCodecs[Array[Long]]
   implicit val (arrayOfOffsetDateTimesEncoder, arrayOfOffsetDateTimesDecoder) = setupCodecs[Array[OffsetDateTime]]
-  implicit val (arrayOfShortsEncoder, arrayOfShorsDecoder) = setupCodecs[Array[Short]]
+  implicit val (arrayOfShortsEncoder, arrayOfShortsDecoder) = setupCodecs[Array[Short]]
   implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = setupCodecs[Array[UUID]]
   implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = setupCodecs[Array[ZonedDateTime]]
   implicit val (bigIntgEncoder, bigIntgDecoder) = setupCodecs[BigInt]
