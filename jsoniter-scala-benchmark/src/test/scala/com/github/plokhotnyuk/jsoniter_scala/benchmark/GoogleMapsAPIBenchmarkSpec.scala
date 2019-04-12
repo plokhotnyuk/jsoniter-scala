@@ -33,8 +33,7 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.prettyPrintJacksonScala()) shouldBe GoogleMapsAPI.jsonString1
       toString(benchmark.prettyPrintJsoniterScala()) shouldBe GoogleMapsAPI.jsonString2
       toString(benchmark.preallocatedBuf, 0, benchmark.prettyPrintJsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.jsonString2
-      //FIXME: Play-JSON print array values in the same string
-      //toString(benchmark.prettyPrintPlayJson()) shouldBe GoogleMapsAPI.jsonString1
+      toString(benchmark.prettyPrintPlayJson()) shouldBe GoogleMapsAPI.jsonString1
       toString(benchmark.prettyPrintSprayJson()) shouldBe GoogleMapsAPI.jsonString2
       toString(benchmark.prettyPrintUPickle()) shouldBe GoogleMapsAPI.jsonString2
     }

@@ -93,10 +93,10 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   @Benchmark
   def prettyPrintJsoniterScalaPrealloc(): Int =
     writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, prettyConfig)
-/* FIXME: Play-JSON print array values in the same string
+
   @Benchmark
-  def prettyPrintPlayJson(): Array[Byte] = Json.prettyPrint(Json.toJson(obj)).getBytes(UTF_8)
-*/
+  def prettyPrintPlayJson(): Array[Byte] = prettyPrintBytes(Json.toJson(obj))
+
   @Benchmark
   def prettyPrintSprayJson(): Array[Byte] = CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
 

@@ -2,17 +2,30 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import julienrf.json.derived.flat
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
 import ai.x.play.json.Jsonx
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
+import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
+import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
+import julienrf.json.derived.flat
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import play.api.libs.json.jackson.PlayJsonModule
 
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
+  private[this] val prettyPrintMapper = new ObjectMapper {
+    registerModule(new PlayJsonModule(JsonParserSettings.settings))
+    configure(SerializationFeature.INDENT_OUTPUT, true)
+    setDefaultPrettyPrinter(new DefaultPrettyPrinter {
+      indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+    })
+  }
+
+  def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
+
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
