@@ -21,6 +21,19 @@ case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T
   override def write(ev: T#Value): JsValue = new JsString(ev.toString)
 }
 
+object CustomPrettyPrinter extends PrettyPrinter {
+  override protected def printArray(vs: Seq[JsValue], sb: java.lang.StringBuilder, indent: Int): Unit = {
+    sb.append("[\n")
+    printSeq(vs, sb.append(",\n")){ v =>
+      printIndent(sb, indent + Indent)
+      print(v, sb, indent + Indent)
+    }
+    sb.append('\n')
+    printIndent(sb, indent)
+    sb.append(']')
+  }
+}
+
 object FlatSprayFormats extends DefaultJsonProtocol with KebsSpray {
   implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = jsonFormatN
 }
@@ -28,19 +41,18 @@ object FlatSprayFormats extends DefaultJsonProtocol with KebsSpray {
 object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
-  // Based on the Cat/Dog sample: https://gist.github.com/jrudolph/f2d0825aac74ed81c92a
   val adtBaseJsonFormat: RootJsonFormat[ADTBase] = {
     implicit lazy val jf1: RootJsonFormat[X] = jsonFormatN
     implicit lazy val jf2: RootJsonFormat[Y] = jsonFormatN
     implicit lazy val jf3: RootJsonFormat[Z] = jsonFormatN
     implicit lazy val jf4: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
-      override def read(json: JsValue): ADTBase = parseADT(json) {
+      override def read(json: JsValue): ADTBase = readADT(json) {
         case "X" => json.convertTo[X]
         case "Y" => json.convertTo[Y]
         case "Z" => json.convertTo[Z]
       }
 
-      override def write(obj: ADTBase): JsValue = serializeADT(obj) {
+      override def write(obj: ADTBase): JsValue = writeADT(obj) {
         case x: X => x.toJson
         case y: Y => y.toJson
         case z: Z => z.toJson
@@ -60,7 +72,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     implicit lazy val jf6: RootJsonFormat[MultiPolygon] = jsonFormatN
     implicit lazy val jf7: RootJsonFormat[GeometryCollection] = jsonFormatN
     implicit lazy val jf8: RootJsonFormat[Geometry] = new RootJsonFormat[Geometry] {
-      override def read(json: JsValue): Geometry = parseADT(json) {
+      override def read(json: JsValue): Geometry = readADT(json) {
         case "Point" => json.convertTo[Point]
         case "MultiPoint" => json.convertTo[MultiPoint]
         case "LineString" => json.convertTo[LineString]
@@ -70,7 +82,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
         case "GeometryCollection" => json.convertTo[GeometryCollection]
       }
 
-      override def write(obj: Geometry): JsValue = serializeADT(obj) {
+      override def write(obj: Geometry): JsValue = writeADT(obj) {
         case x: Point => x.toJson
         case x: MultiPoint => x.toJson
         case x: LineString => x.toJson
@@ -83,12 +95,12 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     implicit lazy val jf9: RootJsonFormat[Feature] = jsonFormatN
     implicit lazy val jf10: RootJsonFormat[FeatureCollection] = jsonFormatN
     implicit lazy val jf11: RootJsonFormat[GeoJSON] = new RootJsonFormat[GeoJSON] {
-      override def read(json: JsValue): GeoJSON = parseADT(json) {
+      override def read(json: JsValue): GeoJSON = readADT(json) {
         case "Feature" => json.convertTo[Feature]
         case "FeatureCollection" => json.convertTo[FeatureCollection]
       }
 
-      override def write(obj: GeoJSON): JsValue = serializeADT(obj) {
+      override def write(obj: GeoJSON): JsValue = writeADT(obj) {
         case x: Feature => x.toJson
         case y: FeatureCollection => y.toJson
       }
@@ -125,13 +137,17 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   implicit val zoneIdJsonFormat: RootJsonFormat[ZoneId] = stringJsonFormat(ZoneId.of)
   implicit val zoneOffsetJsonFormat: RootJsonFormat[ZoneOffset] = stringJsonFormat(ZoneOffset.of)
 
-  def parseADT[T](json: JsValue)(pf: PartialFunction[String, T]): T = {
+  // Based on the Cat/Dog sample: https://gist.github.com/jrudolph/f2d0825aac74ed81c92a
+  def readADT[T](json: JsValue)(pf: PartialFunction[String, T]): T = {
     val t = json.asJsObject.fields("type")
     if (!t.isInstanceOf[JsString]) deserializationError(s"Expected JSON string, but got $json")
-    else pf.applyOrElse(t.asInstanceOf[JsString].value, (x: String) => deserializationError(s"Expected a name of ADT subclass, but got '$x'"))
+    else {
+      val v = t.asInstanceOf[JsString].value
+      pf.applyOrElse(v, (x: String) => deserializationError(s"Expected a name of ADT base subclass, but got $x"))
+    }
   }
 
-  def serializeADT[T <: Product](obj: T)(pf: PartialFunction[T, JsValue]): JsObject =
+  def writeADT[T <: Product](obj: T)(pf: PartialFunction[T, JsValue]): JsObject =
     new JsObject(pf.applyOrElse(obj, (x: T) => deserializationError(s"Cannot serialize $x"))
       .asJsObject.fields.updated("type", new JsString(obj.productPrefix)))
 

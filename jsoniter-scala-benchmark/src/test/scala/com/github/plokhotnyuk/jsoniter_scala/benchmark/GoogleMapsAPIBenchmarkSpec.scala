@@ -25,5 +25,18 @@ class GoogleMapsAPIBenchmarkSpec extends BenchmarkSpecBase {
       toString(benchmark.writeSprayJson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.writeUPickle()) shouldBe GoogleMapsAPI.compactJsonString
     }
+    "pretty print properly" in {
+      toString(benchmark.prettyPrintAVSystemGenCodec()) shouldBe GoogleMapsAPI.jsonString2
+      toString(benchmark.prettyPrintCirce()) shouldBe GoogleMapsAPI.jsonString1
+      //FIXME: DSL-JSON doesn't support pretty printing
+      //toString(benchmark.prettyPrintDslJsonScala()) shouldBe GoogleMapsAPI.jsonString1
+      toString(benchmark.prettyPrintJacksonScala()) shouldBe GoogleMapsAPI.jsonString1
+      toString(benchmark.prettyPrintJsoniterScala()) shouldBe GoogleMapsAPI.jsonString2
+      toString(benchmark.preallocatedBuf, 0, benchmark.prettyPrintJsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.jsonString2
+      //FIXME: Play-JSON print array values in the same string
+      //toString(benchmark.prettyPrintPlayJson()) shouldBe GoogleMapsAPI.jsonString1
+      toString(benchmark.prettyPrintSprayJson()) shouldBe GoogleMapsAPI.jsonString2
+      toString(benchmark.prettyPrintUPickle()) shouldBe GoogleMapsAPI.jsonString2
+    }
   }
 }

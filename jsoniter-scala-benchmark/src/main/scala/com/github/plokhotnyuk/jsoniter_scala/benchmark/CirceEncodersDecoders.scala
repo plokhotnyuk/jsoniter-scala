@@ -8,6 +8,7 @@ import scala.util.Try
 
 object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
+  val prettyPrinter: Printer = Printer.spaces2.copy(dropNullValues = true, reuseWriters = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
   implicit val (adtDecoder: Decoder[ADTBase], adtEncoder: Encoder[ADTBase]) =

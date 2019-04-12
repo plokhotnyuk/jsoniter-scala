@@ -25,8 +25,10 @@ case class Rows(elements: IndexedSeq[Elements])
 object GoogleMapsAPI {
   //Distance Matrix API call for top-10 by population cities in US:
   //https://maps.googleapis.com/maps/api/distancematrix/json?origins=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose&destinations=New+York|Los+Angeles|Chicago|Houston|Phoenix+AZ|Philadelphia|San+Antonio|San+Diego|Dallas|San+Jose
-  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response.json"))
-  var jsonString: String = new String(jsonBytes, UTF_8)
+  var jsonBytes1: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response-1.json"))
+  var jsonString1: String = new String(jsonBytes1, UTF_8)
+  var jsonBytes2: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_response-2.json"))
+  var jsonString2: String = new String(jsonBytes2, UTF_8)
   var compactJsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("google_maps_api_compact_response.json"))
   var compactJsonString: String = new String(compactJsonBytes, UTF_8)
 }

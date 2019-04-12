@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.JsonToken._
+import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser}
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -40,6 +41,11 @@ object JacksonSerDesers {
   }
 
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
+  val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
+  jacksonPrettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true)
+    .setDefaultPrettyPrinter(new DefaultPrettyPrinter {
+      indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+    })
 }
 
 class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {
