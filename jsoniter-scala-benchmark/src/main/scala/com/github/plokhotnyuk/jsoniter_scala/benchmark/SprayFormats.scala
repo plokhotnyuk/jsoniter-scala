@@ -22,14 +22,30 @@ case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T
 }
 
 object CustomPrettyPrinter extends PrettyPrinter {
+  override protected def printObject(kvs: Map[String, JsValue], sb: java.lang.StringBuilder, indent: Int): Unit = {
+    sb.append('{').append('\n')
+    var first = true
+    kvs.foreach { kv =>
+      if (first) first = false
+      else sb.append(',').append('\n')
+      printIndent(sb, indent + Indent)
+      printString(kv._1, sb)
+      print(kv._2, sb.append(':').append(' '), indent + Indent)
+    }
+    printIndent(sb.append('\n'), indent)
+    sb.append('}')
+  }
+
   override protected def printArray(vs: Seq[JsValue], sb: java.lang.StringBuilder, indent: Int): Unit = {
-    sb.append("[\n")
-    printSeq(vs, sb.append(",\n")){ v =>
+    sb.append('[').append('\n')
+    var first = true
+    vs.foreach { v =>
+      if (first) first = false
+      else sb.append(',').append('\n')
       printIndent(sb, indent + Indent)
       print(v, sb, indent + Indent)
     }
-    sb.append('\n')
-    printIndent(sb, indent)
+    printIndent(sb.append('\n'), indent)
     sb.append(']')
   }
 }
