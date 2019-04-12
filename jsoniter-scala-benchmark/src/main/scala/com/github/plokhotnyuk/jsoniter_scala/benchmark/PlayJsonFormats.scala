@@ -16,11 +16,13 @@ import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
+  private[this] val indenter = new DefaultIndenter("  ", "\n")
   private[this] val prettyPrintMapper = new ObjectMapper {
     registerModule(new PlayJsonModule(JsonParserSettings.settings))
     configure(SerializationFeature.INDENT_OUTPUT, true)
     setDefaultPrettyPrinter(new DefaultPrettyPrinter {
-      indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+      indentObjectsWith(indenter)
+      indentArraysWith(indenter)
     })
   }
 

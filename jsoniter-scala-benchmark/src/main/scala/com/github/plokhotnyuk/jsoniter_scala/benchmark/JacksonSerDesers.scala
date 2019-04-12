@@ -41,10 +41,12 @@ object JacksonSerDesers {
   }
 
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
+  private[this] val indenter = new DefaultIndenter("  ", "\n")
   val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
   jacksonPrettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true)
     .setDefaultPrettyPrinter(new DefaultPrettyPrinter {
-      indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+      indentObjectsWith(indenter)
+      indentArraysWith(indenter)
     })
 }
 
