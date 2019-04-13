@@ -39,6 +39,10 @@ class ArrayBufferOfBooleansBenchmark extends CommonParams {
     JsonStringInput.read[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): mutable.ArrayBuffer[Boolean] =
+    io.bullet.borer.Json.decode(jsonBytes).to[mutable.ArrayBuffer[Boolean]].value
+
+  @Benchmark
   def readCirce(): mutable.ArrayBuffer[Boolean] =
     decode[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
@@ -62,6 +66,9 @@ class ArrayBufferOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

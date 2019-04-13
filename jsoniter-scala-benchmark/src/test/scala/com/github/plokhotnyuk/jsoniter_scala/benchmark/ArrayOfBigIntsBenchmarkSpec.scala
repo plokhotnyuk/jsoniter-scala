@@ -19,6 +19,7 @@ class ArrayOfBigIntsBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.writeBorerJson()) shouldBe benchmark.jsonString
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString
       toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.writeJacksonScala()) shouldBe benchmark.jsonString

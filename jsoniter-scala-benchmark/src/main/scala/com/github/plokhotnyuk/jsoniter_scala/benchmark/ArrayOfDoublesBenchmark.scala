@@ -66,6 +66,9 @@ class ArrayOfDoublesBenchmark extends CommonParams {
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
+
+  @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
 /*FIXME: dsl-json serializes doubles in a plain representation

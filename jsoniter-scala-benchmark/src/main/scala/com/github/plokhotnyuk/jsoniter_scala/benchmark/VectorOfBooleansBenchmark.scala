@@ -36,6 +36,9 @@ class VectorOfBooleansBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Vector[Boolean] = JsonStringInput.read[Vector[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): Vector[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[Vector[Boolean]].value
+
+  @Benchmark
   def readCirce(): Vector[Boolean] = decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
@@ -58,6 +61,9 @@ class VectorOfBooleansBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
