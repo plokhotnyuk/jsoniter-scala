@@ -26,13 +26,41 @@ class GoogleMapsAPIBenchmark extends CommonParams {
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes1.length + 100/*to avoid possible out of bounds error*/)
 
   @Benchmark
+  def prettyPrintAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, JsonOptions.Pretty).getBytes(UTF_8)
+
+  @Benchmark
+  def prettyPrintCirce(): Array[Byte] = prettyPrinter.pretty(obj.asJson).getBytes(UTF_8)
+  /* FIXME: DSL-JSON doesn't support pretty printing
+    @Benchmark
+    def prettyPrintDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  */
+  @Benchmark
+  def prettyPrintJacksonScala(): Array[Byte] = jacksonPrettyMapper.writeValueAsBytes(obj)
+
+  @Benchmark
+  def prettyPrintJsoniterScala(): Array[Byte] = writeToArray(obj, prettyConfig)
+
+  @Benchmark
+  def prettyPrintJsoniterScalaPrealloc(): Int =
+    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, prettyConfig)
+
+  @Benchmark
+  def prettyPrintPlayJson(): Array[Byte] = prettyPrintBytes(Json.toJson(obj))
+
+  @Benchmark
+  def prettyPrintSprayJson(): Array[Byte] = CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
+
+  @Benchmark
+  def prettyPrintUPickle(): Array[Byte] = write(obj, 2).getBytes(UTF_8)
+
+  @Benchmark
   def readAVSystemGenCodec(): DistanceMatrix = JsonStringInput.read[DistanceMatrix](new String(jsonBytes1, UTF_8))
 
   @Benchmark
-  def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)
+  def readBorerJson(): DistanceMatrix = io.bullet.borer.Json.decode(jsonBytes1).to[DistanceMatrix].value
 
   @Benchmark
-  def readBorerJson(): DistanceMatrix = io.bullet.borer.Json.decode(jsonBytes1).to[DistanceMatrix].value
+  def readCirce(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)
 
   @Benchmark
   def readDslJsonScala(): DistanceMatrix = dslJsonDecode[DistanceMatrix](jsonBytes1)
@@ -81,32 +109,4 @@ class GoogleMapsAPIBenchmark extends CommonParams {
 
   @Benchmark
   def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-
-  @Benchmark
-  def prettyPrintAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, JsonOptions.Pretty).getBytes(UTF_8)
-
-  @Benchmark
-  def prettyPrintCirce(): Array[Byte] = prettyPrinter.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME: DSL-JSON doesn't support pretty printing
-  @Benchmark
-  def prettyPrintDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
-*/
-  @Benchmark
-  def prettyPrintJacksonScala(): Array[Byte] = jacksonPrettyMapper.writeValueAsBytes(obj)
-
-  @Benchmark
-  def prettyPrintJsoniterScala(): Array[Byte] = writeToArray(obj, prettyConfig)
-
-  @Benchmark
-  def prettyPrintJsoniterScalaPrealloc(): Int =
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, prettyConfig)
-
-  @Benchmark
-  def prettyPrintPlayJson(): Array[Byte] = prettyPrintBytes(Json.toJson(obj))
-
-  @Benchmark
-  def prettyPrintSprayJson(): Array[Byte] = CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
-
-  @Benchmark
-  def prettyPrintUPickle(): Array[Byte] = write(obj, 2).getBytes(UTF_8)
 }
