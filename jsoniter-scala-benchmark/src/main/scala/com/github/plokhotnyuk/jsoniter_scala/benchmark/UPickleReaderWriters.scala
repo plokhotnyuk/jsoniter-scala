@@ -87,7 +87,7 @@ object UPickleReaderWriters extends AttributeTagged {
   private def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected string"
 
-    override def visitString(s: CharSequence, index: Int) = f(s)
+    override def visitString(s: CharSequence, index: Int): T = f(s)
   }
 
   private def strWriter[V]: Writer[V] = new Writer[V] {
