@@ -5,6 +5,7 @@ import java.util.UUID
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -38,6 +39,9 @@ class ArrayOfUUIDsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[UUID] = JsonStringInput.read[Array[UUID]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): Array[UUID] = io.bullet.borer.Json.decode(jsonBytes).to[Array[UUID]].value
+
+  @Benchmark
   def readCirce(): Array[UUID] = decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
@@ -60,6 +64,9 @@ class ArrayOfUUIDsBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

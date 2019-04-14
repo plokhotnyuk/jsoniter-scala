@@ -6,6 +6,7 @@ class PrimitivesBenchmarkSpec extends BenchmarkSpecBase {
   "PrimitivesBenchmark" should {
     "deserialize properly" in {
       benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
+      benchmark.readBorerJson() shouldBe benchmark.obj
       benchmark.readCirce() shouldBe benchmark.obj
       //FIXME: DSL_JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
       //benchmark.readDslJsonScala() shouldBe benchmark.obj
@@ -17,6 +18,7 @@ class PrimitivesBenchmarkSpec extends BenchmarkSpecBase {
     }
     "serialize properly" in {
       toString(benchmark.writeAVSystemGenCodec()) shouldBe benchmark.jsonString1
+      toString(benchmark.writeBorerJson()) shouldBe benchmark.jsonString1
       toString(benchmark.writeCirce()) shouldBe benchmark.jsonString1
       //FIXME: DSL_JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
       //toString(benchmark.writeDslJsonScala()) shouldBe benchmark.jsonString1

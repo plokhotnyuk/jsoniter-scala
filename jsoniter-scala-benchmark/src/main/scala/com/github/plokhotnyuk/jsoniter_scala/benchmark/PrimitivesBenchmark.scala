@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -33,6 +34,9 @@ class PrimitivesBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Primitives = JsonStringInput.read[Primitives](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): Primitives = io.bullet.borer.Json.decode(jsonBytes).to[Primitives].value
+
+  @Benchmark
   def readCirce(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /* FIXME: DSL_JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
   @Benchmark
@@ -55,6 +59,9 @@ class PrimitivesBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)

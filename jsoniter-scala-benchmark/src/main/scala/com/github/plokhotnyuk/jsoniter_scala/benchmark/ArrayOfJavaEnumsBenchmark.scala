@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -45,6 +46,9 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): Array[Suit] = JsonStringInput.read[Array[Suit]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): Array[Suit] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Suit]].value
+
+  @Benchmark
   def readCirce(): Array[Suit] = decode[Array[Suit]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
@@ -67,6 +71,9 @@ class ArrayOfJavaEnumsBenchmark extends CommonParams {
 
   @Benchmark
   def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def writeBorerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
