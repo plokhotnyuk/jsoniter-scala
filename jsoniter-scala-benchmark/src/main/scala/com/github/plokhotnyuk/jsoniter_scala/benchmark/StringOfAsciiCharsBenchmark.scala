@@ -59,7 +59,7 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonScala(): String = dslJsonDecode[String](jsonBytes)
+  def readDslJsonScala(): String = dslJsonDecode[String](jsonBytes)(stringDecoder)
 
   @Benchmark
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
@@ -89,7 +89,7 @@ class StringOfAsciiCharsBenchmark extends CommonParams {
   def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)(stringEncoder)
 
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

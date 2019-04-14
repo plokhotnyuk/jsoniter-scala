@@ -78,7 +78,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonScala(): String = dslJsonDecode[String](jsonBytes)
+  def readDslJsonScala(): String = dslJsonDecode[String](jsonBytes)(stringDecoder)
 
   @Benchmark
   def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
@@ -106,7 +106,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
 
 /* FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)(stringEncoder)
 */
   @Benchmark
   def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

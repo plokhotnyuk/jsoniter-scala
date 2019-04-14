@@ -39,55 +39,56 @@ object DslPlatformJson {
     override def initialValue(): JsonReader[_] = dslJson.newReader
   }
 
-  implicit val (anyRefEncoder, anyRefDecoder) = setupCodecs[AnyRefs]
+  val (stringEncoder, stringDecoder) = codec[String]
+  implicit val (anyRefEncoder, anyRefDecoder) = codec[AnyRefs]
 /* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
-  implicit val (anyValsEncoder, anyValsDecoder) = setupCodecs[AnyVals]
+  implicit val (anyValsEncoder, anyValsDecoder) = codec[AnyVals]
 */
-  implicit val (arrayBufferOfBooleansEncoder, arrayBufferOfBooleansDecoder) = setupCodecs[mutable.ArrayBuffer[Boolean]]
-  implicit val (arrayOfBigDecimalsEncoder, arrayOfBigDecimalsDecoder) = setupCodecs[Array[BigDecimal]]
-  implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = setupCodecs[Array[BigInt]]
-  implicit val (arrayOfBooleansEncoder, arrayOfBooleansDecoder) = setupCodecs[Array[Boolean]]
-  implicit val (arrayOfDoublesEncoder, arrayOfDoublesDecoder) = setupCodecs[Array[Double]]
-  implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = setupCodecs[Array[Float]]
-  implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = setupCodecs[Array[Int]]
-  implicit val (arrayOfLocalDatesEncoder, arrayOfLocalDatesDecoder) = setupCodecs[Array[LocalDate]]
-  implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = setupCodecs[Array[LocalDateTime]]
-  implicit val (arrayOfLongsEncoder, arrayOfLongsDecoder) = setupCodecs[Array[Long]]
-  implicit val (arrayOfOffsetDateTimesEncoder, arrayOfOffsetDateTimesDecoder) = setupCodecs[Array[OffsetDateTime]]
-  implicit val (arrayOfShortsEncoder, arrayOfShortsDecoder) = setupCodecs[Array[Short]]
-  implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = setupCodecs[Array[UUID]]
-  implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = setupCodecs[Array[ZonedDateTime]]
-  implicit val (bigIntgEncoder, bigIntgDecoder) = setupCodecs[BigInt]
-  implicit val (bigDecimalEncoder, bigDecimalDecoder) = setupCodecs[BigDecimal]
-  implicit val (bitSetEncoder, bitSetDecoder) = setupCodecs[BitSet]
-  implicit val (extractFieldsEncoder, extractFieldsDecoder) = setupCodecs[ExtractFields]
-  implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = setupCodecs[DistanceMatrix]
-  implicit val (intEncoder, intDecoder) = setupCodecs[Int]
+  implicit val (arrayBufferOfBooleansEncoder, arrayBufferOfBooleansDecoder) = codec[mutable.ArrayBuffer[Boolean]]
+  implicit val (arrayOfBigDecimalsEncoder, arrayOfBigDecimalsDecoder) = codec[Array[BigDecimal]]
+  implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = codec[Array[BigInt]]
+  implicit val (arrayOfBooleansEncoder, arrayOfBooleansDecoder) = codec[Array[Boolean]]
+  implicit val (arrayOfDoublesEncoder, arrayOfDoublesDecoder) = codec[Array[Double]]
+  implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = codec[Array[Float]]
+  implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = codec[Array[Int]]
+  implicit val (arrayOfJavaEnumsEncoder, arrayOfJavaEnumsDecoder) = codec[Array[Suit]]
+  implicit val (arrayOfLocalDatesEncoder, arrayOfLocalDatesDecoder) = codec[Array[LocalDate]]
+  implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = codec[Array[LocalDateTime]]
+  implicit val (arrayOfLongsEncoder, arrayOfLongsDecoder) = codec[Array[Long]]
+  implicit val (arrayOfOffsetDateTimesEncoder, arrayOfOffsetDateTimesDecoder) = codec[Array[OffsetDateTime]]
+  implicit val (arrayOfShortsEncoder, arrayOfShortsDecoder) = codec[Array[Short]]
+  implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = codec[Array[UUID]]
+  implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = codec[Array[ZonedDateTime]]
+  implicit val (bigIntgEncoder, bigIntgDecoder) = codec[BigInt]
+  implicit val (bigDecimalEncoder, bigDecimalDecoder) = codec[BigDecimal]
+  implicit val (bitSetEncoder, bitSetDecoder) = codec[BitSet]
+  implicit val (extractFieldsEncoder, extractFieldsDecoder) = codec[ExtractFields]
+  implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = codec[DistanceMatrix]
+  implicit val (intEncoder, intDecoder) = codec[Int]
 /* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
   implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = dslJson.encoder[IntMap[Boolean]]
 */
-  implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = setupCodecs[List[Boolean]]
-  implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = setupCodecs[Map[Int, Boolean]]
-  implicit val (mutableBitSetEncoder, mutablebitSetDecoder) = setupCodecs[mutable.BitSet]
+  implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = codec[List[Boolean]]
+  implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = codec[Map[Int, Boolean]]
+  implicit val (mutableBitSetEncoder, mutablebitSetDecoder) = codec[mutable.BitSet]
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
-  implicit val (mutableLongMapOfBooleansEncoder, mutableLongMapOfBooleansDecoder) = setupCodecs[mutable.LongMap[Boolean]]
+  implicit val (mutableLongMapOfBooleansEncoder, mutableLongMapOfBooleansDecoder) = codec[mutable.LongMap[Boolean]]
 */
   implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) =
-    setupCodecs[mutable.Map[Int, Boolean]]
-  implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = setupCodecs[mutable.Set[Int]]
-  implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = setupCodecs[MissingReqFields]
-  implicit val (nestedStructsEncoder, nestedStructsDecoder) = setupCodecs[NestedStructs]
+    codec[mutable.Map[Int, Boolean]]
+  implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
+  implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingReqFields]
+  implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]
 /* FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
   implicit val (openHashMapOfIntsToBooleansEncoder, openHashMapOfIntsToBooleansDecoder) =
-    setupCodecs[mutable.OpenHashMap[Int, Boolean]]
+    codec[mutable.OpenHashMap[Int, Boolean]]
 */
-/* FIXME: DSL_JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
   implicit val (primitivesEncoder, primitivesDecoder) = setupCodecs[Primitives]
 */
-  implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = setupCodecs[Seq[Tweet]]
-  implicit val (setOfIntsEncoder, setOfIntsDecoder) = setupCodecs[Set[Int]]
-  implicit val (stringEncoder, stringDecoder) = setupCodecs[String]
-  implicit val (vectorOfBooleansEncoder, vectorOfBooleansDecoder) = setupCodecs[Vector[Boolean]]
+  implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = codec[Seq[Tweet]]
+  implicit val (setOfIntsEncoder, setOfIntsDecoder) = codec[Set[Int]]
+  implicit val (vectorOfBooleansEncoder, vectorOfBooleansDecoder) = codec[Vector[Boolean]]
 
   def dslJsonDecode[T](bytes: Array[Byte])(implicit decoder: JsonReader.ReadObject[T]): T = {
     val reader = threadLocalJsonReader.get().process(bytes, bytes.length)
@@ -102,6 +103,15 @@ object DslPlatformJson {
     writer.toByteArray
   }
 
-  private[this] def setupCodecs[T](implicit tag: TypeTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
+  private[this] def codec[T](implicit tag: TypeTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
     dslJson.encoder[T] -> dslJson.decoder[T]
+
+/*
+  private[this] def stringCodec[T](f: String => T): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
+    new JsonWriter.WriteObject[T] {
+      override def write(writer: JsonWriter, value: T): Unit = writer.writeString(value.toString)
+    } -> new JsonReader.ReadObject[T] {
+      override def read(reader: JsonReader[_]): T = f(reader.readString())
+    }
+*/
 }
