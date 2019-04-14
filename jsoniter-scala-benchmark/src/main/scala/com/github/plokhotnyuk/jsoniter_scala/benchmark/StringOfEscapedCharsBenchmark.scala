@@ -72,6 +72,9 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def readBorerJson(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
+
+  @Benchmark
   def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
