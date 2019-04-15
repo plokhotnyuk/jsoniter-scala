@@ -346,7 +346,7 @@ object JsonCodecMaker {
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
-        if (enumValues.size <= 4 && enumValues.size == enumValues.map(length).distinct.size) {
+        if (enumValues.size <= 8 && enumValues.map(length).sum <= 64) {
           genReadCollisions(enumValues)
         } else {
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
@@ -798,7 +798,7 @@ object JsonCodecMaker {
           }
 
         val readFieldsBlock =
-          if (readFields.size <= 4 && readFields.size == readFields.map(length).distinct.size) {
+          if (readFields.size <= 8 && readFields.map(length).sum <= 64) {
             genReadCollisions(readFields)
           } else {
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
@@ -1080,7 +1080,7 @@ object JsonCodecMaker {
             }
 
           def genReadSubclassesBlock(leafClasses: collection.Seq[Type]) =
-            if (leafClasses.size <= 4 && leafClasses.size == leafClasses.map(length).distinct.size) {
+            if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) {
               genReadCollisions(leafClasses)
             } else {
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
