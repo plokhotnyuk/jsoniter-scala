@@ -6,7 +6,7 @@ import io.circe.generic.extras.semiauto._
 
 import scala.util.Try
 
-object CirceEncodersDecoders {
+object CirceEncodersDecoders extends io.circe.java8.time.JavaTimeDecoders with io.circe.java8.time.JavaTimeEncoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
   val prettyPrinter: Printer = Printer.spaces2.copy(dropNullValues = true, reuseWriters = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
