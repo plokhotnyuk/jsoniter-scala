@@ -996,12 +996,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       case class Nested(n: Option[Nested] = None)
 
       @tailrec
-      def construct(d: Int = 100000, n: Nested = Nested()): Nested =
+      def construct(d: Int = 1000000, n: Nested = Nested()): Nested =
         if (d <= 0) n
         else construct(d - 1, Nested(Some(n)))
 
       implicit val codecOfNestedStructs: JsonValueCodec[Nested] = make(CodecMakerConfig(allowRecursiveTypes = true))
-      val bytes = ("{" + "\"n\":{" * 100000 + "}" * 100000 + "}").getBytes
+      val bytes = ("{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}").getBytes
       val readStackTrace = new StringWriter
       intercept[StackOverflowError](readFromArray[Nested](bytes)).printStackTrace(new PrintWriter(readStackTrace))
       assert(readStackTrace.toString.contains(".d0("))
