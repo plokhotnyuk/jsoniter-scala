@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, PrintWriter, StringWriter}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
@@ -11,7 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{Matchers, WordSpec}
 
-import scala.annotation.switch
+import scala.annotation.{switch, tailrec}
 import scala.language.higherKinds
 
 case class UserId(id: String) extends AnyVal
@@ -991,6 +991,25 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
           |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
       })
+    }
+    "serialize and deserialize recursive structures with an implicit codec using a minimal thread stack" in {
+      case class Nested(n: Option[Nested] = None)
+
+      @tailrec
+      def construct(d: Int = 100000, n: Nested = Nested()): Nested =
+        if (d <= 0) n
+        else construct(d - 1, Nested(Some(n)))
+
+      implicit val codecOfNestedStructs: JsonValueCodec[Nested] = make(CodecMakerConfig(allowRecursiveTypes = true))
+      val bytes = ("{" + "\"n\":{" * 100000 + "}" * 100000 + "}").getBytes
+      val readStackTrace = new StringWriter
+      intercept[StackOverflowError](readFromArray[Nested](bytes)).printStackTrace(new PrintWriter(readStackTrace))
+      assert(readStackTrace.toString.contains(".d0("))
+      assert(!readStackTrace.toString.contains(".decodeValue("))
+      val writeStackTrace = new StringWriter
+      intercept[StackOverflowError](writeToArray[Nested](construct())).printStackTrace(new PrintWriter(writeStackTrace))
+      assert(writeStackTrace.toString.contains(".e0("))
+      assert(!writeStackTrace.toString.contains(".encodeValue("))
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfRecursive, recursive,

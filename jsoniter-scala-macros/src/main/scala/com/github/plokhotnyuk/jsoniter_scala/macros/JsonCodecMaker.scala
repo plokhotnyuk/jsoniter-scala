@@ -299,7 +299,8 @@ object JsonCodecMaker {
           else nestedTypes.indexOf(tpe)
         if (nestedTypes.isEmpty) EmptyTree
         else if (recursiveIdx < 0) {
-          if (isValueCodec) {
+          if (tpe == rootTpe) EmptyTree
+          else if (isValueCodec) {
             inferredValueCodecs.getOrElseUpdate(tpe,
               c.inferImplicitValue(getType(tq"com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
           } else {
@@ -346,9 +347,8 @@ object JsonCodecMaker {
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
-        if (enumValues.size <= 8 && enumValues.map(length).sum <= 64) {
-          genReadCollisions(enumValues)
-        } else {
+        if (enumValues.size <= 8 && enumValues.map(length).sum <= 64) genReadCollisions(enumValues)
+        else {
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
             cq"$hash => ${genReadCollisions(fs)}"
           } :+ cq"_ => $unexpectedEnumValueHandler"
@@ -798,9 +798,8 @@ object JsonCodecMaker {
           }
 
         val readFieldsBlock =
-          if (readFields.size <= 8 && readFields.map(length).sum <= 64) {
-            genReadCollisions(readFields)
-          } else {
+          if (readFields.size <= 8 && readFields.map(length).sum <= 64) genReadCollisions(readFields)
+          else {
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
               cq"$hash => ${genReadCollisions(fs)}"
             } :+ cq"_ => $unexpectedFieldHandler"
@@ -1080,9 +1079,8 @@ object JsonCodecMaker {
             }
 
           def genReadSubclassesBlock(leafClasses: collection.Seq[Type]) =
-            if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) {
-              genReadCollisions(leafClasses)
-            } else {
+            if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) genReadCollisions(leafClasses)
+            else {
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
                 val checkNameAndReadValue = genReadCollisions(ts)
                 cq"$hash => $checkNameAndReadValue"
@@ -1205,8 +1203,7 @@ object JsonCodecMaker {
             out.writeObjectEnd()"""
       }
 
-      def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree = EmptyTree,
-                      isRoot: Boolean = false): Tree = {
+      def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
         val tpe = types.head
         val implCodec = findImplicitCodec(types, isValueCodec = true)
         val methodKey = getMethodKey(tpe, isStringified, discriminator)
