@@ -2058,6 +2058,20 @@ object JsonWriter {
     es(127) = -1
     es
   }
+  private final val digits: Array[Short] = {
+    val ds = new Array[Short](100)
+    var i, j = 0
+    do {
+      var k = 0
+      do {
+        ds(i) = (((j + '0') << 8) + (k + '0')).toShort
+        i += 1
+        k += 1
+      } while (k < 10)
+      j += 1
+    } while (j < 10)
+    ds
+  }
   private final val hexDigits: Array[Short] = {
     val ds = new Array[Short](256)
     var i, j = 0
@@ -2076,20 +2090,6 @@ object JsonWriter {
       } while (k < 16)
       j += 1
     } while (j < 16)
-    ds
-  }
-  private final val digits: Array[Short] = {
-    val ds = new Array[Short](100)
-    var i, j = 0
-    do {
-      var k = 0
-      do {
-        ds(i) = (((j + '0') << 8) + (k + '0')).toShort
-        i += 1
-        k += 1
-      } while (k < 10)
-      j += 1
-    } while (j < 10)
     ds
   }
   private final val f32Pow5InvSplit = new Array[Int](62)
