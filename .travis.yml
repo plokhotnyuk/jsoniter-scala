@@ -12,7 +12,7 @@ before_cache:
 matrix:
   include:
     - os: linux
-      jdk: openjdk11
+      jdk: oraclejdk8
       scala: 2.12.8
     - os: linux
       jdk: openjdk8
