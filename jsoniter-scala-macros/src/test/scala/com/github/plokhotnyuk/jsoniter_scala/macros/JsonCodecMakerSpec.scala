@@ -1005,10 +1005,12 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       val readStackTrace = new StringWriter
       intercept[StackOverflowError](readFromArray[Nested](bytes)).printStackTrace(new PrintWriter(readStackTrace))
       assert(readStackTrace.toString.contains(".d0("))
+      assert(!readStackTrace.toString.contains(".d1("))
       assert(!readStackTrace.toString.contains(".decodeValue("))
       val writeStackTrace = new StringWriter
       intercept[StackOverflowError](writeToArray[Nested](construct())).printStackTrace(new PrintWriter(writeStackTrace))
       assert(writeStackTrace.toString.contains(".e0("))
+      assert(!writeStackTrace.toString.contains(".e1("))
       assert(!writeStackTrace.toString.contains(".encodeValue("))
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {

@@ -885,9 +885,9 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           q"new $tpe(${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})"
-        } else if (tpe <:< typeOf[Option[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[Option[_]]) {
           val tpe1 = typeArg1(tpe)
-          q"""if (in.isNextToken('n')) in.readNullOrError(default, "expected value or null")
+          q"""if (in.isNextToken('n')) in.readNullOrError($default, "expected value or null")
               else {
                 in.rollbackToken()
                 Some(${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})
@@ -1149,7 +1149,7 @@ object JsonCodecMaker {
                     }"""
               } else if (f.resolvedTpe <:< typeOf[Option[_]] && cfg.transientNone) {
                 q"""val v = x.${f.getter}
-                    if (!v.isEmpty && v != $d) {
+                    if ((v ne None) && v != $d) {
                       ..${genWriteConstantKey(f.mappedName)}
                       ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: types, f.isStringified)}
                     }"""
@@ -1179,7 +1179,7 @@ object JsonCodecMaker {
                     }"""
               } else if (f.resolvedTpe <:< typeOf[Option[_]] && cfg.transientNone) {
                 q"""val v = x.${f.getter}
-                    if (!v.isEmpty) {
+                    if (v ne None) {
                       ..${genWriteConstantKey(f.mappedName)}
                       ..${genWriteVal(q"v.get", typeArg1(f.resolvedTpe) :: types, f.isStringified)}
                     }"""
@@ -1231,8 +1231,11 @@ object JsonCodecMaker {
           tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeVal($m)"
         else if (isValueClass(tpe)) {
           genWriteVal(q"$m.${valueClassValueMethod(tpe)}", valueClassValueType(tpe) :: types, isStringified)
-        } else if (tpe <:< typeOf[Option[_]]) withEncoderFor(methodKey, m) {
-          q"if (x.isEmpty) out.writeNull() else ${genWriteVal(q"x.get", typeArg1(tpe) :: types, isStringified)}"
+        } else if (tpe <:< typeOf[Option[_]]) {
+          q"""$m match {
+                case Some(x) => ${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified)}
+                case None => out.writeNull()
+              }"""
         } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
           val writeVal2 = genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified)
