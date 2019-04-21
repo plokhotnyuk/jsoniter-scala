@@ -2,22 +2,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.avsystem.commons.serialization.json._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-//import io.circe.parser._
-//import io.circe.syntax._
-import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
-import play.api.libs.json.Json
-//import upickle.default._
+import org.openjdk.jmh.annotations.{Param, Setup}
 
 import scala.collection.immutable.IntMap
 
-class IntMapOfBooleansBenchmark extends CommonParams {
+abstract class IntMapOfBooleansBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 1000
   var obj: IntMap[Boolean] = _
@@ -34,53 +23,4 @@ class IntMapOfBooleansBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
-
-  @Benchmark
-  def readAVSystemGenCodec(): IntMap[Boolean] = JsonStringInput.read[IntMap[Boolean]](new String(jsonBytes, UTF_8))
-/* FIXME: Circe doesn't support IntMap
-  @Benchmark
-  def readCirce(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-*/
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
-  @Benchmark
-  def readDslJsonScala(): IntMap[Boolean] = dslJsonDecode[IntMap[Boolean]](jsonBytes)
-*/
-/* FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)
-  @Benchmark
-  def readJacksonScala(): IntMap[Boolean] = jacksonMapper.readValue[IntMap[Boolean]](jsonBytes)
-*/
-  @Benchmark
-  def readJsoniterScala(): IntMap[Boolean] = readFromArray[IntMap[Boolean]](jsonBytes)
-
-  @Benchmark
-  def readPlayJson(): IntMap[Boolean] = Json.parse(jsonBytes).as[IntMap[Boolean]]
-/* FIXME: uPickle doesn't support IntMap
-  @Benchmark
-  def readUPickle(): IntMap[Boolean] = read[IntMap[Boolean]](jsonBytes)
-*/
-  @Benchmark
-  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Circe doesn't support IntMap
-  @Benchmark
-  def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
-/* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
-  @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
-*/
-  @Benchmark
-  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
-  @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
-
-  @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
-
-  @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: uPickle doesn't support IntMap
-  @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }

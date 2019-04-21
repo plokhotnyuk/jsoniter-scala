@@ -48,7 +48,7 @@ object AVSystemCodecs {
   implicit val googleMapsAPIGenCodec: GenCodec[DistanceMatrix] = materializeRecursively
   implicit val intMapOfBooleansGenCodec: GenCodec[IntMap[Boolean]] =
     transformed(_.seq, (x: Map[Int, Boolean]) => IntMap(x.toArray:_*))
-  implicit val missingReqFieldGenCodec: GenCodec[MissingReqFields] = materializeRecursively
+  implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] =
     transformed(_.toArray, (x: Array[Int]) => mutable.BitSet(x:_*)) // WARNING: don't do this for open-systems
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =

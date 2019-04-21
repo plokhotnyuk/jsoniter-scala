@@ -8,7 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
 
-import scala.collection.immutable.{BitSet, IntMap, Map, Set}
+import scala.collection.immutable.{BitSet, IntMap, Map, Set, Seq}
 import scala.collection.mutable
 
 object JsoniterScalaCodecs {
@@ -70,7 +70,7 @@ object JsoniterScalaCodecs {
   implicit val googleMapsAPICodec: JsonValueCodec[DistanceMatrix] = make(CodecMakerConfig())
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] =
     make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
-  implicit val missingReqFieldCodec: JsonValueCodec[MissingReqFields] = make(CodecMakerConfig())
+  implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] = make(CodecMakerConfig())
   implicit val mutableBitSetCodec: JsonValueCodec[mutable.BitSet] =
     make(CodecMakerConfig(bitSetValueLimit = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val mutableLongMapOfBooleansCodec: JsonValueCodec[mutable.LongMap[Boolean]] =

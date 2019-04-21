@@ -11,7 +11,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.jackson.PlayJsonModule
 
-import scala.collection.immutable.{BitSet, IntMap, Map}
+import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.Try
 
@@ -46,7 +46,7 @@ object PlayJsonFormats {
   implicit val charFormat: Format[Char] = Format(
     Reads(js => JsSuccess(js.as[String].charAt(0))),
     Writes(c => JsString(c.toString)))
-  implicit val missingReqFieldsFormat: OFormat[MissingReqFields] = Json.format
+  implicit val missingReqFieldsFormat: OFormat[MissingRequiredFields] = Json.format
   implicit val nestedStructsFormat: OFormat[NestedStructs] = Json.format
   implicit val anyRefsFormat: OFormat[AnyRefs] = Json.format
   implicit val anyValsFormat: OFormat[AnyVals] = {

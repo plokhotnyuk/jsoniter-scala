@@ -3,24 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.lang.Character._
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.jsoniter.input.JsoniterJavaParser
-//import com.jsoniter.output.{EncodingMode, JsoniterJavaSerializer}
-//import com.jsoniter.spi.{Config, DecodingMode}
-import io.circe.parser._
-import io.circe.syntax._
-import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
-import play.api.libs.json.Json
-import upickle.default._
+import org.openjdk.jmh.annotations.{Param, Setup}
 
 class StringOfEscapedCharsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -67,69 +54,4 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
-
-  @Benchmark
-  def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
-
-  @Benchmark
-  def readBorerJson(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
-
-  @Benchmark
-  def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-
-  @Benchmark
-  def readDslJsonScala(): String = dslJsonDecode[String](jsonBytes)(stringDecoder)
-
-  @Benchmark
-  def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
-
-  @Benchmark
-  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
-
-  @Benchmark
-  def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
-
-  @Benchmark
-  def readPlayJson(): String = Json.parse(jsonBytes).as[String]
-
-  @Benchmark
-  def readSprayJson(): String = spray.json.JsonParser(jsonBytes).convertTo[String]
-
-  @Benchmark
-  def readUPickle(): String = read[String](jsonBytes)
-
-  @Benchmark
-  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, JsonOptions(asciiOutput = true)).getBytes(UTF_8)
-
-  @Benchmark
-  def writeCirce(): Array[Byte] = escapingPrinter.pretty(obj.asJson).getBytes
-
-/* FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
-  @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)(stringEncoder)
-*/
-  @Benchmark
-  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
-/* FIXME: Jsoniter Java cannot restore config properly
-  @Benchmark
-  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj, jsoniterJavaConfig)
-*/
-  @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)
-
-  @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, escapingConfig)(stringCodec)
-
-  @Benchmark
-  def writePlayJson(): Array[Byte] = Json.asciiStringify(Json.toJson(obj)).getBytes
-/* FIXME: Spray-JSON doesn't support escaping of non-ASCII characters
-  @Benchmark
-  def writeSprayJson(): Array[Byte] = {
-    import spray.json._
-    obj.toJson.compactPrint.getBytes(UTF_8)
-  }
-*/
-  @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj, escapeUnicode = true).getBytes(UTF_8)
 }

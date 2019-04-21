@@ -8,7 +8,7 @@ import com.dslplatform.json._
 //import com.dslplatform.json.runtime.ScalaMapEncoder
 import com.dslplatform.json.runtime.Settings
 
-import scala.collection.immutable.BitSet
+import scala.collection.immutable.{BitSet, Seq}
 //import scala.collection.immutable.IntMap
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
@@ -77,7 +77,7 @@ object DslPlatformJson {
   implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) =
     codec[mutable.Map[Int, Boolean]]
   implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
-  implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingReqFields]
+  implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingRequiredFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]
 /* FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
   implicit val (openHashMapOfIntsToBooleansEncoder, openHashMapOfIntsToBooleansDecoder) =

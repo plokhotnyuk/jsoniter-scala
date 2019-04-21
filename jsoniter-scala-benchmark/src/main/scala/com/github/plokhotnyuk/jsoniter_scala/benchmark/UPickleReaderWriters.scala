@@ -13,9 +13,9 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val doubleWriter: Writer[Double] = numWriter[Double]
   implicit val floatWriter: Writer[Float] = numWriter[Float]
   implicit val longWriter: Writer[Long] = numWriter[Long]
-  implicit val adtReaderWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
-  implicit val anyRefsReaderWriter: ReadWriter[AnyRefs] = macroRW
-  implicit val anyValsReaderWriter: ReadWriter[AnyVals] = {
+  implicit val adtReadWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
+  implicit val anyRefsReadWriter: ReadWriter[AnyRefs] = macroRW
+  implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
     implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
     implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)
     implicit val v3: ReadWriter[IntVal] = readwriter[Int].bimap(_.a, IntVal.apply)
@@ -26,19 +26,19 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v8: ReadWriter[FloatVal] = readwriter[Float].bimap(_.a, FloatVal.apply)
     macroRW
   }
-  implicit val extractFieldsReaderWriter: ReadWriter[ExtractFields] = macroRW
-  implicit val geometryReaderWriter: ReadWriter[Geometry] = ReadWriter.merge(macroRW[Point], macroRW[MultiPoint],
+  implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
+  implicit val geometryReadWriter: ReadWriter[Geometry] = ReadWriter.merge(macroRW[Point], macroRW[MultiPoint],
     macroRW[LineString], macroRW[MultiLineString], macroRW[Polygon], macroRW[GeometryCollection])
-  implicit val geoJsonReaderWriter: ReadWriter[GeoJSON] = ReadWriter.merge(macroRW[Feature], macroRW[FeatureCollection])
-  implicit val googleMApsAPIReaderWriter: ReadWriter[DistanceMatrix] = {
+  implicit val geoJsonReadWriter: ReadWriter[GeoJSON] = ReadWriter.merge(macroRW[Feature], macroRW[FeatureCollection])
+  implicit val googleMApsAPIReadWriter: ReadWriter[DistanceMatrix] = {
     implicit val v1: ReadWriter[Value] = macroRW
     implicit val v2: ReadWriter[Elements] = macroRW
     implicit val v3: ReadWriter[Rows] = macroRW
     macroRW[DistanceMatrix]
   }
-  implicit val nestedStructsReaderWriter: ReadWriter[NestedStructs] = macroRW
-  implicit val missingReqFieldsReaderWriter: ReadWriter[MissingReqFields] = macroRW
-  implicit val primitivesReaderWriter: ReadWriter[Primitives] = macroRW
+  implicit val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
+  implicit val missingRequiredFieldsReadWriter: ReadWriter[MissingRequiredFields] = macroRW
+  implicit val primitivesReadWriter: ReadWriter[Primitives] = macroRW
   implicit val (durationReader, durationWriter) = (strReader(Duration.parse), strWriter[Duration])
   implicit val (instantReader, instantWriter) = (strReader(Instant.parse), strWriter[Instant])
   implicit val (localDateReader, localDateWriter) = (strReader(LocalDate.parse), strWriter[LocalDate])
@@ -63,7 +63,7 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val (zonedDateTimeReader, zonedDateTimeWriter) = (strReader(ZonedDateTime.parse), strWriter[ZonedDateTime])
   implicit val (zonedIdReader, zonedIdWriter) = (strReader(s => ZoneId.of(s.toString)), strWriter[ZoneId])
   implicit val (zonedOffsetReader, zonedOffsetWriter) = (strReader(s => ZoneOffset.of(s.toString)), strWriter[ZoneOffset])
-  implicit val twitterAPIReaderWriter: ReadWriter[Tweet] = {
+  implicit val twitterAPIReadWriter: ReadWriter[Tweet] = {
     implicit val v1: ReadWriter[Urls] = macroRW
     implicit val v2: ReadWriter[Url] = macroRW
     implicit val v3: ReadWriter[UserMentions] = macroRW
