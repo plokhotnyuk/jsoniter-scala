@@ -1366,23 +1366,18 @@ final class JsonWriter private[jsoniter_scala](
     write2Digits(month, pos + 1, buf, ds)
   }
 
-  private[this] def writeYear(year: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    var pos = p
-    val q0 =
-      if (year >= 0) {
-        if (year >= 10000) {
-          buf(pos) = '+'
-          pos += 1
-        }
-        year
-      } else {
-        buf(pos) = '-'
-        pos += 1
-        -year
+  private[this] def writeYear(year: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (year >= 0) {
+      if (year < 10000) write4Digits(year, pos, buf, ds)
+      else {
+        buf(pos) = '+'
+        writePositiveInt(year, pos + 1, buf, ds)
       }
-    if (q0 >= 10000) writePositiveInt(q0, pos, buf, ds)
-    else write4Digits(q0, pos, buf, ds)
-  }
+    } else {
+      buf(pos) = '-'
+      if (year > -10000) write4Digits(-year, pos + 1, buf, ds)
+      else writePositiveInt(-year, pos + 1, buf, ds)
+    }
 
   private[this] def writeLocalTime(x: LocalTime, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     var pos = write2Digits(x.getHour, p, buf, ds)
