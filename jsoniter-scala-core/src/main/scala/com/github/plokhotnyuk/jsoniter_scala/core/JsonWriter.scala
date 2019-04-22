@@ -535,8 +535,11 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeNestedStart(b: Byte): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes(b)
-    indention += config.indentionStep
-    if (indention != 0) writeIndention()
+    val indentionStep = config.indentionStep
+    if (indentionStep != 0) {
+      indention += indentionStep
+      writeIndention()
+    }
   }
 
   private[this] def writeNestedEnd(b: Byte): Unit = {
@@ -560,6 +563,13 @@ final class JsonWriter private[jsoniter_scala](
       writeBytes(',')
       if (indention != 0) writeIndention()
     }
+
+  private[this] def writeIndention(): Unit = count = {
+    val pos = ensureBufCapacity(indention + 1)
+    val buf = this.buf
+    buf(pos) = '\n'
+    writeNBytes(indention, ' ', pos + 1, buf)
+  }
 
   private[this] def writeParenthesesWithColon(): Unit = count = {
     val pos = ensureBufCapacity(3)
@@ -1990,13 +2000,6 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q <= 0 || {
     val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
-  }
-
-  private[this] def writeIndention(): Unit = count = {
-    val pos = ensureBufCapacity(indention + 1)
-    val buf = this.buf
-    buf(pos) = '\n'
-    writeNBytes(indention, ' ', pos + 1, buf)
   }
 
   @tailrec
