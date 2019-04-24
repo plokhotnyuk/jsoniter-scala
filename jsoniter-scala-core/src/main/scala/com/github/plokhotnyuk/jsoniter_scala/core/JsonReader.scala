@@ -739,23 +739,16 @@ final class JsonReader private[jsoniter_scala](
   private[this] def nextTokenOrError(t: Byte, pos: Int): Unit =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == t) head = pos + 1
-      else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') nextTokenOrError(t, pos + 1)
-      else tokenError(t, pos)
+      head = pos + 1
+      if (b != t && ((b != ' ' && b != '\n' && b != '\t' && b != '\r') || nextToken(pos + 1) != t)) tokenError(t, head - 1)
     } else nextTokenOrError(t, loadMoreOrError(pos))
 
   @tailrec
   private[this] def isNextToken(t: Byte, pos: Int): Boolean =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == t) {
-        head = pos + 1
-        true
-      } else if (b == ' ' || b == '\n' || b == '\t' || b == '\r') isNextToken(t, pos + 1)
-      else {
-        head = pos + 1
-        false
-      }
+      head = pos + 1
+      b == t || ((b == ' ' || b == '\n' || b == '\t' || b == '\r') && nextToken(pos + 1) == t)
     } else isNextToken(t, loadMoreOrError(pos))
 
   private[this] def isCurrentToken(b: Byte, pos: Int): Boolean = {
