@@ -16,32 +16,32 @@ import upickle.default._
 
 class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
   @Benchmark
-  def readAVSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readBorerJson(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
+  def borerJson(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
 
   @Benchmark
-  def readCirce(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonScala(): String = dslJsonDecode[String](jsonBytes)(stringDecoder)
+  def dslJsonScala(): String = dslJsonDecode[String](jsonBytes)(stringDecoder)
 
   @Benchmark
-  def readJacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
+  def jacksonScala(): String = jacksonMapper.readValue[String](jsonBytes)
 
   @Benchmark
-  def readJsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
+  def jsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
 
   @Benchmark
-  def readJsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
+  def jsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
 
   @Benchmark
-  def readPlayJson(): String = Json.parse(jsonBytes).as[String]
+  def playJson(): String = Json.parse(jsonBytes).as[String]
 
   @Benchmark
-  def readSprayJson(): String = spray.json.JsonParser(jsonBytes).convertTo[String]
+  def sprayJson(): String = spray.json.JsonParser(jsonBytes).convertTo[String]
 
   @Benchmark
-  def readUPickle(): String = read[String](jsonBytes)
+  def uPickle(): String = read[String](jsonBytes)
 }

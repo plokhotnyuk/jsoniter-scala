@@ -29,7 +29,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)
 
   @Benchmark
-  def readAVSystemGenCodec(): String =
+  def avSystemGenCodec(): String =
     try {
       JsonStringInput.read[MissingRequiredFields](new String(jsonBytes, UTF_8)).toString // toString() should not be called
     } catch {
@@ -37,11 +37,11 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readCirce(): String =
+  def circe(): String =
     decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _ => null)
 
   @Benchmark
-  def readDslJsonScala(): String =
+  def dslJsonScala(): String =
     try {
       dslJsonDecode[MissingRequiredFields](jsonBytes).toString // toString() should not be called
     } catch {
@@ -49,7 +49,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readJacksonScala(): String =
+  def jacksonScala(): String =
     try {
       jacksonMapper.readValue[MissingRequiredFields](jsonBytes).toString // toString() should not be called
     } catch {
@@ -57,7 +57,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readJsoniterScala(): String =
+  def jsoniterScala(): String =
     try {
       readFromArray[MissingRequiredFields](jsonBytes).toString // toString() should not be called
     } catch {
@@ -65,7 +65,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readJsoniterScalaWithoutDump(): String =
+  def jsoniterScalaWithoutDump(): String =
     try {
       readFromArray[MissingRequiredFields](jsonBytes, exceptionWithoutDumpConfig).toString // toString() should not be called
     } catch {
@@ -73,7 +73,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readJsoniterScalaWithStacktrace(): String =
+  def jsoniterScalaWithStacktrace(): String =
     try {
       readFromArray[MissingRequiredFields](jsonBytes, exceptionWithStacktraceConfig).toString // toString() should not be called
     } catch {
@@ -81,7 +81,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readPlayJson(): String =
+  def playJson(): String =
     try {
       Json.parse(jsonBytes).as[MissingRequiredFields](missingReqFieldsFormat).toString // toString() should not be called
     } catch {
@@ -89,7 +89,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readSprayJson(): String =
+  def sprayJson(): String =
     try {
       JsonParser(jsonBytes).convertTo[MissingRequiredFields](missingReqFieldsJsonFormat).toString // toString() should not be called
     } catch {
@@ -97,7 +97,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def readUPickle(): String =
+  def uPickle(): String =
     try {
       read[MissingRequiredFields](jsonBytes).toString // toString() should not be called
     } catch {

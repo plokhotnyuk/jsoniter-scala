@@ -22,17 +22,17 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Circe parses 7.038531e-26 as 7.0385313e-26
-      //benchmark.readCirce() shouldBe benchmark.obj
+      //benchmark.circe() shouldBe benchmark.obj
       //FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
-      //benchmark.readDslJsonScala() shouldBe benchmark.obj
+      //benchmark.dslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
-      //benchmark.readJacksonScala() shouldBe benchmark.obj
+      //benchmark.jacksonScala() shouldBe benchmark.obj
       //FIXME: Jsoniter Java parses 1.199999988079071 as 1.2f instead of 1.1999999f
-      //benchmark.readJsoniterJava() shouldBe benchmark.obj
-      benchmark.readJsoniterScala() shouldBe benchmark.obj
-      benchmark.readPlayJson() shouldBe benchmark.obj
-      benchmark.readSprayJson() shouldBe benchmark.obj
-      benchmark.readUPickle() shouldBe benchmark.obj
+      //benchmark.jsoniterJava() shouldBe benchmark.obj
+      benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
     }
   }
 }

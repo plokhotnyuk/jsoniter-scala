@@ -7,16 +7,16 @@ class StringOfNonAsciiCharsReadingSpec extends BenchmarkSpecBase {
   
   "StringOfNonAsciiCharsReading" should {
     "read properly" in {
-      benchmark.readAVSystemGenCodec() shouldBe benchmark.obj
-      benchmark.readBorerJson() shouldBe benchmark.obj
-      benchmark.readCirce() shouldBe benchmark.obj
-      benchmark.readDslJsonScala() shouldBe benchmark.obj
-      benchmark.readJacksonScala() shouldBe benchmark.obj
-      benchmark.readJsoniterJava() shouldBe benchmark.obj
-      benchmark.readJsoniterScala() shouldBe benchmark.obj
-      benchmark.readPlayJson() shouldBe benchmark.obj
-      benchmark.readSprayJson() shouldBe benchmark.obj
-      benchmark.readUPickle() shouldBe benchmark.obj
+      benchmark.avSystemGenCodec() shouldBe benchmark.obj
+      benchmark.borerJson() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
+      benchmark.dslJsonScala() shouldBe benchmark.obj
+      benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.jsoniterJava() shouldBe benchmark.obj
+      benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
     }
   }
 }

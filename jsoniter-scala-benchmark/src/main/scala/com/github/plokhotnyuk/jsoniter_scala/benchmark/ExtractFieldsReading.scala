@@ -49,22 +49,22 @@ class ExtractFieldsReading extends CommonParams {
   }
 
   @Benchmark
-  def readAVSystemGenCodec(): ExtractFields = JsonStringInput.read[ExtractFields](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): ExtractFields = JsonStringInput.read[ExtractFields](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def readCirce(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def readDslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)
+  def dslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)
 
   @Benchmark
-  def readJacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
+  def jacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
 
   @Benchmark
-  def readJsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
+  def jsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
 /*
   @Benchmark
-  def readJsoniterScalaIO(): ExtractFields = {
+  def jsoniterScalaIO(): ExtractFields = {
     val fis = new FileInputStream(tmpFilePath.toFile)
     try readFromStream[ExtractFields](fis)
     finally fis.close()
@@ -73,18 +73,18 @@ class ExtractFieldsReading extends CommonParams {
   //FIXME: lot of warnings like: [warning][os,thread] Failed to start thread - pthread_create failed (EAGAIN) for attributes: stacksize: 1024k, guardsize: 4k, detached.
   //Read about mmap of files: http://www.mapdb.org/blog/mmap_files_alloc_and_jvm_crash/
   @Benchmark
-  def readJsoniterScalaNIO(): ExtractFields = {
+  def jsoniterScalaNIO(): ExtractFields = {
     val fc = FileChannel.open(tmpFilePath, READ)
     try readFromByteBuffer[ExtractFields](fc.map(FileChannel.MapMode.READ_ONLY, 0L, fc.size))
     finally fc.close()
   }
 */
   @Benchmark
-  def readPlayJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
+  def playJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
 
   @Benchmark
-  def readSprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]
+  def sprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]
 
   @Benchmark
-  def readUPickle(): ExtractFields = read[ExtractFields](jsonBytes)
+  def uPickle(): ExtractFields = read[ExtractFields](jsonBytes)
 }
