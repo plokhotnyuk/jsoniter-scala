@@ -697,12 +697,12 @@ final class JsonReader private[jsoniter_scala](
   private[this] def decodeError(msg: String, pos: Int, cause: Throwable = null): Nothing =
     decodeError(appendString(msg, 0), pos, cause)
 
-  private[this] def decodeError(from: Int, pos: Int, cause: Throwable) = {
+  private[this] def decodeError(from: Int, pos: Int, cause: Throwable): Nothing = {
     var i = appendString(", offset: 0x", from)
     val off =
       if ((bbuf eq null) && (in eq null)) 0
       else totalRead - tail
-    i = appendHexOffset(off + pos, i, hexDigits)
+    i = appendHexOffset(off + pos, i)
     if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
       i = appendHexDump(Math.max((pos - 32) & 0xFFFFFFF0, 0), Math.min((pos + 48) & 0xFFFFFFF0, tail), off.toInt, i)
@@ -2488,7 +2488,7 @@ final class JsonReader private[jsoniter_scala](
     appendChars(dumpBorder, i)
   }
 
-  private[this] def appendHexOffset(d: Long, i: Int, ds: Array[Char]): Int = {
+  private[this] def appendHexOffset(d: Long, i: Int): Int = {
     if (i + 16 >= charBuf.length) growCharBuf(i + 16)
     val ds = hexDigits
     var j = i
