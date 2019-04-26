@@ -15,6 +15,8 @@ import scala.reflect.runtime.universe.TypeTag
 
 object DslPlatformJson {
   private[this] val dslJson = new DslJson[Any](Settings.withRuntime().`with`(new ConfigureScala)
+    .limitDigitsBuffer(Int.MaxValue /*WARNING: don't do this for open-systems*/)
+    .limitStringBuffer(Int.MaxValue /*WARNING: don't do this for open-systems*/)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
 /*
   dslJson.registerWriterFactory(primitiveMapWriter)
