@@ -19,33 +19,33 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
   @Benchmark
-  def writeAVSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
+  def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
-  def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
-  def writeJacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 /* FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
   @Benchmark
-  def writeJsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
+  def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 */
   @Benchmark
-  def writeJsoniterScala(): Array[Byte] = writeToArray(obj)
+  def jsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def writeJsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
+  def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play-JSON serializes double values instead of float
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
 /* FIXME: Spray-JSON serializes double values instead of float
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 }

@@ -37,7 +37,7 @@ class BigDecimalWriting extends BigDecimalBenchmark {
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(bigDecimalCodec)
 /* FIXME: Play-JSON serializes BigInt in a scientific representation (as BigDecimal)
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)

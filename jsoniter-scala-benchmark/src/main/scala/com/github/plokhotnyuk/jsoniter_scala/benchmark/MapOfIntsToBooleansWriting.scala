@@ -39,10 +39,10 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mapOfIntsToBooleansFormat))
 /* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
 /* FIXME: uPickle serializes maps as JSON arrays
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
 }

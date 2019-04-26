@@ -25,7 +25,7 @@ class NestedStructsWriting extends NestedStructsBenchmark {
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: DSL-JSON serializes null value for Option.None
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -34,8 +34,7 @@ class NestedStructsWriting extends NestedStructsBenchmark {
   def jsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
-  def jsoniterScalaPrealloc(): Int =
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
+  def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

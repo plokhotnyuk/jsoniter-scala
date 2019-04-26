@@ -24,7 +24,7 @@ class ArrayOfZonedDateTimesWriting extends ArrayOfZonedDateTimesBenchmark {
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 /* FIXME: DSL-JSON does not serialize preferred timezone
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

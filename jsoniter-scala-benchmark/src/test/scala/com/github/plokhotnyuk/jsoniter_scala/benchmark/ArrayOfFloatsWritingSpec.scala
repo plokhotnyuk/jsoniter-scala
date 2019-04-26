@@ -20,19 +20,19 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
   
   "ArrayOfFloatsWriting" should {
     "write properly" in {
-      sameOrBetter(toString(benchmark.writeAVSystemGenCodec()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.writeCirce()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.writeDslJsonScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.writeJacksonScala()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.avSystemGenCodec()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
       //FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
-      //sameOrBetter(toString(benchmark.writeJsoniterJava()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.writeJsoniterScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.writeJsoniterScalaPrealloc()), benchmark.jsonString)
+      //sameOrBetter(toString(benchmark.jsoniterJava()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.jsoniterScala()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
-      //sameOrBetter(toString(benchmark.writePlayJson()), benchmark.jsonString)
+      //sameOrBetter(toString(benchmark.playJson()), benchmark.jsonString)
       //FIXME: Spray-JSON serializes double values instead of float
-      //sameOrBetter(toString(benchmark.writeSprayJson()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.writeUPickle()), benchmark.jsonString)
+      //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)
     }
   }
 

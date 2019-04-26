@@ -15,11 +15,11 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: circe serializes empty collections
   @Benchmark
-  def writeCirce(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark
-  def writeDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
+  def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
@@ -31,14 +31,14 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 /* FIXME: Play-JSON serializes empty collections
   @Benchmark
-  def writePlayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+  def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
 /* FIXME: Spray-JSON serializes empty collections
   @Benchmark
-  def writeSprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */
 /* FIXME: uPickle serializes empty collections
   @Benchmark
-  def writeUPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+  def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
 }
