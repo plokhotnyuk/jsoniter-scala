@@ -31,21 +31,14 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
 
   def enumCodec[T <: scala.Enumeration](e: T): Codec[T#Value] = Codec(
-    new Encoder[T#Value] {
-      override def write(w: Writer, value: T#Value): Writer = w.writeString(value.toString)
-    }, new Decoder[T#Value] {
-      override def read(r: Reader): T#Value = {
-        val v = r.readString()
-        e.values.iterator.find(_.toString == v)
-          .getOrElse(throw new InvalidJsonData(r.position, s"Expected [String] from enum $e, but got $v"))
-      }
+    (w: Writer, value: T#Value) => w.writeString(value.toString), (r: Reader) => {
+      val v = r.readString()
+      e.values.iterator.find(_.toString == v)
+        .getOrElse(throw new InvalidJsonData(r.position, s"Expected [String] from enum $e, but got $v"))
     })
 
   def stringCodec[T](f: String => T): Codec[T] = Codec(
-    new Encoder[T] {
-      override def write(w: Writer, value: T): Writer = w.writeString(value.toString)
-    }, new Decoder[T] {
-      override def read(r: Reader): T =
-        try f(r.readString()) catch { case NonFatal(e) => throw new InvalidJsonData(r.position, e.getMessage) }
+    (w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => try f(r.readString()) catch {
+      case NonFatal(e) => throw new InvalidJsonData(r.position, e.getMessage)
     })
 }

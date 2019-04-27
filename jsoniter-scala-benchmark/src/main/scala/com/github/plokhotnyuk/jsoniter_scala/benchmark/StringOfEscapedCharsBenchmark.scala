@@ -22,13 +22,6 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
     jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
     jm
   }
-/*
-  val jsoniterJavaConfig: Config = new Config.Builder()
-    .escapeUnicode(true)
-    .encodingMode(EncodingMode.DYNAMIC_MODE)
-    .decodingMode(DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_STRICTLY)
-    .build()
-*/
 
   @Setup
   def setup(): Unit = {

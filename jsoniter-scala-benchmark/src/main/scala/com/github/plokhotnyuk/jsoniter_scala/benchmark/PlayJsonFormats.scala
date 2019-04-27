@@ -31,17 +31,13 @@ object PlayJsonFormats {
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
-    new Reads[Tuple2[A, B]] {
-      def reads(json: JsValue): JsResult[Tuple2[A, B]] = Try {
-        val JsArray(IndexedSeq(aJson, bJson)) = json
-        aReads.reads(aJson).flatMap(a => bReads.reads(bJson).map(b => (a, b)))
-      }.getOrElse(JsError("Expected array of two elements"))
-    }
+    (json: JsValue) => Try {
+      val JsArray(IndexedSeq(aJson, bJson)) = json
+      aReads.reads(aJson).flatMap(a => bReads.reads(bJson).map(b => (a, b)))
+    }.getOrElse(JsError("Expected array of two elements"))
 
   implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] =
-    new Writes[Tuple2[A, B]] {
-      def writes(tuple: Tuple2[A, B]) = JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
-    }
+    (tuple: Tuple2[A, B]) => JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
 
   implicit val charFormat: Format[Char] = Format(
     Reads(js => JsSuccess(js.as[String].charAt(0))),

@@ -6,8 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.jsoniter.output.{EncodingMode, JsoniterJavaSerializer}
-//import com.jsoniter.spi.{Config, DecodingMode}
+import com.jsoniter.output.JsoniterJavaSerializer
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -25,10 +24,10 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 */
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-/* FIXME: Jsoniter Java cannot restore config properly
+
   @Benchmark
-  def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj, jsoniterJavaConfig)
-*/
+  def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
+
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)
 
