@@ -4,18 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
   private val benchmark: ArrayOfFloatsWriting = new ArrayOfFloatsWriting {
-    private val values: Array[String] = Array(
-      "7.038531e-26",
-      "1.199999988079071",
-      "3.4028235677973366e38",
-      "7.006492321624086e-46"
-    )
-
     setup()
-    jsonBytes = (1 to size).map(i => values(i % values.length)).mkString("[", ",", "]").getBytes(UTF_8)
-    obj = (1 to size).map(i => values(i % values.length).toFloat).toArray
-    jsonString = obj.mkString("[", ",", "]")
-    preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
   
   "ArrayOfFloatsWriting" should {
