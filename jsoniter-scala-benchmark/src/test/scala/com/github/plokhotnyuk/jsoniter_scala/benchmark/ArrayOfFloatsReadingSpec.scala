@@ -12,9 +12,9 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
     )
 
     setup()
-    jsonBytes = (1 to size).map(i => values(i % values.length)).mkString("[", ",", "]").getBytes(UTF_8)
-    obj = (1 to size).map(i => values(i % values.length).toFloat).toArray
-    jsonString = obj.mkString("[", ",", "]")
+    jsonString = (obj.map(_.toString) ++ values).mkString("[", ",", "]")
+    jsonBytes = jsonString.getBytes(UTF_8)
+    obj = obj ++ values.map(_.toFloat)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
   

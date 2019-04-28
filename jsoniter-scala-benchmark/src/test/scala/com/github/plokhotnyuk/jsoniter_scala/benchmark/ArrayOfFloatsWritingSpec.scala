@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.nio.charset.StandardCharsets.UTF_8
-
 class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
   private val benchmark: ArrayOfFloatsWriting = new ArrayOfFloatsWriting {
     setup()
