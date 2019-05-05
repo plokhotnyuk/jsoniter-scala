@@ -2275,11 +2275,10 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(BigInt(s"-$bigNumber"))
     }
     "throw parsing exception for values with more than max allowed digits" in {
-      val bigNumber = "9" * 308
-      checkError(bigNumber,
+      checkError("9" * 308,
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError(s"-$bigNumber",
+      checkError(s"-${"9" * 308}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
     }
@@ -2381,7 +2380,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkError("9" * 308,
         "value exceeds limit for number of digits, offset: 0x00000133",
         "value exceeds limit for number of digits, offset: 0x00000134")
-      checkError(s"0.0000${"9" * 308}",
+      checkError(s"-${"9" * 308}",
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
+      checkError(s"${"9" * 154}.${"9" * 154}",
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
+      checkError(s"0.${"0" * 307}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
     }
