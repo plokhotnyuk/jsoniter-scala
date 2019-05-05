@@ -1335,9 +1335,7 @@ final class JsonReader private[jsoniter_scala](
         if (isNeg) b = nextByte(head)
         if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
-        var significandDigits =
-          if (b == '0') 0
-          else 1
+        var digits = 1
         var pos = head
         var buf = this.buf
         while ((pos < tail || {
@@ -1349,8 +1347,8 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9'
         }) {
           if (isZeroFirst) leadingZeroError(pos - 1)
-          significandDigits += 1
-          if (significandDigits >= digitsLimit) digitsLimitError(pos)
+          digits += 1
+          if (digits >= digitsLimit) digitsLimitError(pos)
           pos += 1
         }
         head = pos
@@ -1376,9 +1374,7 @@ final class JsonReader private[jsoniter_scala](
         if (isNeg) b = nextByte(head)
         if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
-        var significandDigits =
-          if (b == '0') 0
-          else 1
+        var digits = 1
         var pos = head
         var buf = this.buf
         while ((pos < tail || {
@@ -1390,8 +1386,8 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9'
         }) {
           if (isZeroFirst) leadingZeroError(pos - 1)
-          significandDigits += 1
-          if (significandDigits >= digitsLimit) digitsLimitError(pos)
+          digits += 1
+          if (digits >= digitsLimit) digitsLimitError(pos)
           pos += 1
         }
         var scale = 0
@@ -1399,6 +1395,7 @@ final class JsonReader private[jsoniter_scala](
           b = nextByte(pos + 1)
           if (b < '0' || b > '9') numberError()
           scale += 1
+          digits += 1
           pos = head
           buf = this.buf
           while ((pos < tail || {
@@ -1409,10 +1406,8 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) {
-            if (significandDigits > 0 || b != '0') {
-              significandDigits += 1
-              if (significandDigits >= digitsLimit) digitsLimitError(pos)
-            }
+            digits += 1
+            if (digits >= digitsLimit) digitsLimitError(pos)
             scale += 1
             pos += 1
           }
@@ -1584,7 +1579,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
   private[this] def digitsLimitError(pos: Int): Nothing =
-    decodeError("value exceeds limit for number of significant digits", pos)
+    decodeError("value exceeds limit for number of digits", pos)
 
   private[this] def scaleLimitError(pos: Int = head - 1): Nothing = decodeError("value exceeds limit for scale", pos)
 

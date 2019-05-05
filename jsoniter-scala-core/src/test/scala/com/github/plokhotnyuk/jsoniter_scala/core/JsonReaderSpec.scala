@@ -2277,11 +2277,11 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception for values with more than max allowed digits" in {
       val bigNumber = "9" * 308
       checkError(bigNumber,
-        "value exceeds limit for number of significant digits, offset: 0x00000133",
-        "value exceeds limit for number of significant digits, offset: 0x00000134")
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
       checkError(s"-$bigNumber",
-        "value exceeds limit for number of significant digits, offset: 0x00000134",
-        "value exceeds limit for number of significant digits, offset: 0x00000135")
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
     }
     "throw parsing exception on valid number values with '.', 'e', 'E' chars" in {
       checkError("1234567890123456789.0", "illegal number, offset: 0x00000013", "illegal number, offset: 0x00000014")
@@ -2379,11 +2379,11 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw number format exception for too big mantissa" in {
       checkError("9" * 308,
-        "value exceeds limit for number of significant digits, offset: 0x00000133",
-        "value exceeds limit for number of significant digits, offset: 0x00000134")
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
       checkError(s"0.0000${"9" * 308}",
-        "value exceeds limit for number of significant digits, offset: 0x00000139",
-        "value exceeds limit for number of significant digits, offset: 0x0000013a")
+        "value exceeds limit for number of digits, offset: 0x00000134",
+        "value exceeds limit for number of digits, offset: 0x00000135")
     }
     "throw number format exception for too big scale" in {
       check(s"1e${bigDecimalScaleLimit - 1}")
