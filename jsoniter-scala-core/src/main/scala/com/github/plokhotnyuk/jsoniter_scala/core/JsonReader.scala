@@ -1462,11 +1462,11 @@ final class JsonReader private[jsoniter_scala](
   // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
   private def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                            scale: Int): java.math.BigDecimal = {
-    var pos = offset
     val len = limit - offset
     if (len == 1 && buf(offset) == '0') java.math.BigDecimal.ZERO.setScale(scale)
     else if (len < 19) {
       var x = 0L
+      var pos = offset
       while (pos < limit) {
         x = x * 10 + (buf(pos) - '0')
         pos += 1
@@ -1479,8 +1479,8 @@ final class JsonReader private[jsoniter_scala](
     else if (len < 285) toBigDecimal285(buf, offset, limit, isNeg, scale)
     else {
       val mid = len >> 1
-      toBigDecimal(buf, pos, limit - mid, isNeg, scale - mid)
-        .add(toBigDecimal(buf, pos + len - mid, limit, isNeg, scale))
+      val midPos = limit - mid
+      toBigDecimal(buf, offset, midPos, isNeg, scale - mid).add(toBigDecimal(buf, midPos, limit, isNeg, scale))
     }
   }
 
