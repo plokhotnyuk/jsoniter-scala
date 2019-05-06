@@ -1328,11 +1328,11 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
+      val isNeg = b == '-'
+      if (isNeg) b = nextByte(head)
       val mark = this.mark
       this.mark = Math.min(mark, head - 1)
       try {
-        val isNeg = b == '-'
-        if (isNeg) b = nextByte(head)
         if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
         var digits = 1
@@ -1353,9 +1353,7 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-        var numPos = this.mark
-        if (isNeg) numPos += 1
-        new BigInt(toBigDecimal(buf, numPos, pos, isNeg, 0).unscaledValue)
+        new BigInt(toBigDecimal(buf, this.mark, pos, isNeg, 0).unscaledValue)
       } finally this.mark = mark
     }
   }
@@ -1367,11 +1365,11 @@ final class JsonReader private[jsoniter_scala](
       else nextByte(head)
     if (isToken && b == 'n') readNullOrNumberError(default, head)
     else {
+      val isNeg = b == '-'
+      if (isNeg) b = nextByte(head)
       val mark = this.mark
       this.mark = Math.min(mark, head - 1)
       try {
-        val isNeg = b == '-'
-        if (isNeg) b = nextByte(head)
         if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
         var digits = 1
@@ -1441,9 +1439,8 @@ final class JsonReader private[jsoniter_scala](
           }
         }
         head = pos
-        var numPos = this.mark
+        val numPos = this.mark
         numLimit += numPos
-        if (isNeg) numPos += 1
         val x =
           (if (scale == 0) toBigDecimal(buf, numPos, numLimit, isNeg, -exp)
           else {
