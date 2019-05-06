@@ -12,6 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
+import play.api.libs.json.Json
 import spray.json._
 
 class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
@@ -30,10 +31,10 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
   @Benchmark
   def jsoniterScala(): Array[BigDecimal] = readFromArray[Array[BigDecimal]](jsonBytes)
-/* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
+
   @Benchmark
-  def readPlayJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
-*/
+  def playJson(): Array[BigDecimal] = Json.parse(jsonBytes).as[Array[BigDecimal]]
+
   @Benchmark
   def sprayJson(): Array[BigDecimal] = JsonParser(jsonBytes).convertTo[Array[BigDecimal]]
 

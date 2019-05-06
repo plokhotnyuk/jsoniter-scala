@@ -26,9 +26,8 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-systems*/))
   implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make(CodecMakerConfig())
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig())
-  implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] =
-    make(CodecMakerConfig(bigDecimalDigitsLimit = Int.MaxValue, bigDecimalScaleLimit = Int.MaxValue, bigDecimalPrecision = 0)) /*WARNING: don't do this for open-systems*/
-  implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make(CodecMakerConfig(bigIntDigitsLimit = Int.MaxValue)) /*WARNING: don't do this for open-systems*/
+  implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make(CodecMakerConfig())
+  implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make(CodecMakerConfig())
   implicit val booleanArrayBufferCodec: JsonValueCodec[mutable.ArrayBuffer[Boolean]] = make(CodecMakerConfig())
   implicit val booleanArrayCodec: JsonValueCodec[Array[Boolean]] = make(CodecMakerConfig())
   implicit val booleanListCodec: JsonValueCodec[List[Boolean]] = make(CodecMakerConfig())

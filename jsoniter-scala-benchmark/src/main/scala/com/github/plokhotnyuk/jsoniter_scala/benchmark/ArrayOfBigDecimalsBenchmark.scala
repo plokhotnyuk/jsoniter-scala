@@ -16,8 +16,8 @@ abstract class ArrayOfBigDecimalsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     sourceObj = (1 to size).map { i =>
-      BigDecimal(BigInt(Array.fill((i & 0xF) + 1)((i | 0x1).toByte)), i % 37, MathContext.UNLIMITED)
-    }.toArray // up to 128-bit numbers for unscaledVal and up to 37-digit (~127 bits) scale
+      BigDecimal(BigInt(Array.fill((i & 0xF) + 1)((i | 0x1).toByte)), i % 38).round(MathContext.DECIMAL128)
+    }.toArray // up to 128-bit BigInt numbers rounded to IEEE 754 Decimal128 format (34 decimal digits)
     jsonString = sourceObj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
