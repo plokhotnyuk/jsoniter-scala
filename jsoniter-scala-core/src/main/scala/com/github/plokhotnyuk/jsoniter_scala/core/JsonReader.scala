@@ -1413,8 +1413,7 @@ final class JsonReader private[jsoniter_scala](
           }
         }
         var exp = 0
-        var numLen = pos - this.mark
-        if (isNeg) numLen -= 1
+        var numLimit = pos - this.mark
         if ((b | 0x20) == 'e') {
           b = nextByte(pos + 1)
           val isExpNeg = b == '-'
@@ -1443,15 +1442,15 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         var numPos = this.mark
+        numLimit += numPos
         if (isNeg) numPos += 1
-        val limit = numPos + numLen
         val x =
-          (if (scale == 0) toBigDecimal(buf, numPos, limit, isNeg, -exp)
+          (if (scale == 0) toBigDecimal(buf, numPos, numLimit, isNeg, -exp)
           else {
-            val fracPos = limit - scale
+            val fracPos = numLimit - scale
             toBigDecimal(buf, numPos, fracPos - 1, isNeg, -exp)
-              .add(toBigDecimal(buf, fracPos, limit, isNeg, scale - exp))
-          }).round(mc)
+              .add(toBigDecimal(buf, fracPos, numLimit, isNeg, scale - exp))
+          }).plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
       } finally this.mark = mark
