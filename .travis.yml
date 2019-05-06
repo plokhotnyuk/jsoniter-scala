@@ -11,8 +11,8 @@ before_cache:
   - find $HOME/.sbt        -name "*.lock"               -print -delete
 matrix:
   include:
-    - os: linux
-      jdk: oraclejdk8
+    - os: osx
+      osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
       scala: 2.12.8
     - os: linux
       jdk: openjdk8
