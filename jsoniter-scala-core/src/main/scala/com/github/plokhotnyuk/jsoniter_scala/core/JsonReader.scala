@@ -1410,8 +1410,8 @@ final class JsonReader private[jsoniter_scala](
             pos += 1
           }
         }
+        val numLen = pos - this.mark
         var exp = 0
-        var numLimit = pos - this.mark
         if ((b | 0x20) == 'e') {
           b = nextByte(pos + 1)
           val isExpNeg = b == '-'
@@ -1440,16 +1440,21 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         val numPos = this.mark
-        numLimit += numPos
-        val x =
-          (if (scale == 0) toBigDecimal(buf, numPos, numLimit, isNeg, -exp)
-          else {
+        val numLimit = numPos + numLen
+        val roundedX =
+          if (scale == 0) {
+            val x = toBigDecimal(buf, numPos, numLimit, isNeg, -exp)
+            if (numLen <= mc.getPrecision) x
+            else x.plus(mc)
+          } else {
             val fracPos = numLimit - scale
-            toBigDecimal(buf, numPos, fracPos - 1, isNeg, -exp)
+            val x = toBigDecimal(buf, numPos, fracPos - 1, isNeg, -exp)
               .add(toBigDecimal(buf, fracPos, numLimit, isNeg, scale - exp))
-          }).plus(mc)
-        if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
-        new BigDecimal(x, mc)
+            if (numLen - 1 <= mc.getPrecision) x
+            else x.plus(mc)
+          }
+        if (Math.abs(roundedX.scale) >= scaleLimit) scaleLimitError()
+        new BigDecimal(roundedX, mc)
       } finally this.mark = mark
     }
   }
