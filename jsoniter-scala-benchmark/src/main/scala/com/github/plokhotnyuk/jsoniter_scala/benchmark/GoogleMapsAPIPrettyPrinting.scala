@@ -11,6 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.CirceJsoniter._
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
@@ -23,6 +24,10 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = prettyPrinter.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = writeToArray(obj.asJson, prettyConfig)
+
   /* FIXME: DSL-JSON doesn't support pretty printing
     @Benchmark
     def prettyPrintDslJsonScala(): Array[Byte] = dslJsonEncode(obj)

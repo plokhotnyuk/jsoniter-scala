@@ -13,6 +13,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.CirceJsoniter._
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
@@ -28,6 +29,9 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = writeToArray(obj.asJson)
 
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

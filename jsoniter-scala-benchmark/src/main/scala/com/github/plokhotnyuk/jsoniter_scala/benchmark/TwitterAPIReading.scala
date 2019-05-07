@@ -12,6 +12,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.CirceJsoniter._
+import io.circe.Decoder
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
@@ -26,6 +28,12 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
   @Benchmark
   def circe(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): Seq[Tweet] = {
+    val json = readFromArray[io.circe.Json](jsonBytes)
+    Decoder.apply[Seq[Tweet]].decodeJson(json).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): Seq[Tweet] = dslJsonDecode[Seq[Tweet]](jsonBytes)

@@ -7,6 +7,7 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
     "pretty print properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe GoogleMapsAPI.jsonString2
       toString(benchmark.circe()) shouldBe GoogleMapsAPI.jsonString1
+      toString(benchmark.circeJsoniter()) shouldBe GoogleMapsAPI.jsonString2
       //FIXME: DSL-JSON doesn't support pretty printing
       //toString(benchmark.dslJsonScala()) shouldBe GoogleMapsAPI.jsonString1
       toString(benchmark.jacksonScala()) shouldBe GoogleMapsAPI.jsonString1

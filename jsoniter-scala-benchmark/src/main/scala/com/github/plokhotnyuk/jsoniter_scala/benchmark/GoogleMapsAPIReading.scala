@@ -13,6 +13,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.Decoder
+import io.circe.CirceJsoniter._
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
@@ -28,6 +30,12 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def circe(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): DistanceMatrix = {
+    val json = readFromArray[io.circe.Json](jsonBytes1)
+    Decoder.apply[DistanceMatrix].decodeJson(json).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): DistanceMatrix = dslJsonDecode[DistanceMatrix](jsonBytes1)
