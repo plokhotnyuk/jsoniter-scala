@@ -1388,11 +1388,11 @@ final class JsonReader private[jsoniter_scala](
           if (digits >= digitsLimit) digitsLimitError(pos)
           pos += 1
         }
-        var scale = 0
+        var fracLen = 0
         if (b == '.') {
           b = nextByte(pos + 1)
           if (b < '0' || b > '9') numberError()
-          scale += 1
+          fracLen += 1
           digits += 1
           pos = head
           buf = this.buf
@@ -1406,7 +1406,7 @@ final class JsonReader private[jsoniter_scala](
           }) {
             digits += 1
             if (digits >= digitsLimit) digitsLimitError(pos)
-            scale += 1
+            fracLen += 1
             pos += 1
           }
         }
@@ -1440,14 +1440,14 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         val numPos = this.mark
-        val numLimit = numPos + numLen
+        val limit = numPos + numLen
         var x =
-          if (scale == 0) toBigDecimal(buf, numPos, numLimit, isNeg, -exp)
+          if (fracLen == 0) toBigDecimal(buf, numPos, limit, isNeg, -exp)
           else {
             numLen -= 1
-            val fracPos = numLimit - scale
+            val fracPos = limit - fracLen
             toBigDecimal(buf, numPos, fracPos - 1, isNeg, -exp)
-              .add(toBigDecimal(buf, fracPos, numLimit, isNeg, scale - exp))
+              .add(toBigDecimal(buf, fracPos, limit, isNeg, fracLen - exp))
           }
         if (numLen > mc.getPrecision) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
