@@ -1558,10 +1558,10 @@ final class JsonReader private[jsoniter_scala](
     while (i < numWords) {
       val w = magWords(i)
       val j = i << 2
-      magBytes(j) = ((w >> 24) & 0xFF).toByte
-      magBytes(j + 1) = ((w >> 16) & 0xFF).toByte
-      magBytes(j + 2) = ((w >> 8) & 0xFF).toByte
-      magBytes(j + 3) = (w & 0xFF).toByte
+      magBytes(j) = (w >> 24).toByte
+      magBytes(j + 1) = (w >> 16).toByte
+      magBytes(j + 2) = (w >> 8).toByte
+      magBytes(j + 3) = w.toByte
       i += 1
     }
     val signum =
