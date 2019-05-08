@@ -1499,8 +1499,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
     }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
       object PrivatePrimaryConstructor {
-        implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] =
-          JsonCodecMaker.make[PrivatePrimaryConstructor](CodecMakerConfig())
+        implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] = JsonCodecMaker.make(CodecMakerConfig())
 
         def apply(s: String) = new PrivatePrimaryConstructor(s)
       }
