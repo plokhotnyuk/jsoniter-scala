@@ -89,14 +89,14 @@ lazy val publishSettings = Seq(
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
-  .settings(commonSettings: _*)
-  .settings(noPublishSettings: _*)
+  .settings(commonSettings)
+  .settings(noPublishSettings)
   .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
 
 lazy val `jsoniter-scala-core` = project
-  .settings(commonSettings: _*)
-  .settings(mimaSettings: _*)
-  .settings(publishSettings: _*)
+  .settings(commonSettings)
+  .settings(mimaSettings)
+  .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("2.13.0-RC1", "2.13.0-M5", "2.12.8", "2.11.12"),
     libraryDependencies ++= Seq(
@@ -107,9 +107,9 @@ lazy val `jsoniter-scala-core` = project
 
 lazy val `jsoniter-scala-macros` = project
   .dependsOn(`jsoniter-scala-core`)
-  .settings(commonSettings: _*)
-  .settings(mimaSettings: _*)
-  .settings(publishSettings: _*)
+  .settings(commonSettings)
+  .settings(mimaSettings)
+  .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("2.13.0-RC1", "2.13.0-M5", "2.12.8", "2.11.12"),
     libraryDependencies ++= Seq(
@@ -123,8 +123,8 @@ lazy val `jsoniter-scala-macros` = project
 lazy val `jsoniter-scala-benchmark` = project
   .enablePlugins(JmhPlugin)
   .dependsOn(`jsoniter-scala-macros`)
-  .settings(commonSettings: _*)
-  .settings(noPublishSettings: _*)
+  .settings(commonSettings)
+  .settings(noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
       "io.bullet" %% "borer-core" % "0.8.0",
