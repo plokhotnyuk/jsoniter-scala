@@ -20,6 +20,9 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   def avSystemGenCodec(): Array[Double] = JsonStringInput.read[Array[Double]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def borerJson(): Array[Double] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Double]].value
+
+  @Benchmark
   def circe(): Array[Double] = decode[Array[Double]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark

@@ -7,6 +7,7 @@ import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -34,6 +35,14 @@ class MissingRequiredFieldsReading extends CommonParams {
       JsonStringInput.read[MissingRequiredFields](new String(jsonBytes, UTF_8)).toString // toString() should not be called
     } catch {
       case ex: GenCodec.ReadFailure => ex.getMessage
+    }
+
+  @Benchmark
+  def borerJson(): String =
+    try {
+      io.bullet.borer.Json.decode(jsonBytes).to[MissingRequiredFields].value.toString // toString() should not be called
+    } catch {
+      case ex: io.bullet.borer.Borer.Error[_] => ex.getMessage
     }
 
   @Benchmark
