@@ -489,6 +489,8 @@ final class JsonReader private[jsoniter_scala](
     else if (isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
     else tokenOrNullError(b)
 
+  def nextByte(): Byte = nextByte(head)
+
   def nextToken(): Byte = nextToken(head)
 
   def isNextToken(b: Byte): Boolean = isNextToken(b, head)

@@ -148,9 +148,23 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkError(":")
     }
   }
+  "JsonReader.nextByte" should {
+    "return next byte of input" in {
+      val r = reader("{\n}")
+      assert(r.nextByte() == '{')
+      assert(r.nextByte() == '\n')
+      assert(r.nextByte() == '}')
+    }
+    "throw parse exception in case of end of input" in {
+      val r = reader("{}")
+      r.skip()
+      assert(intercept[JsonReaderException](r.nextByte() == '{')
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
+    }
+  }
   "JsonReader.nextToken" should {
     "find next non-whitespace byte of input" in {
-      val r = reader("{}")
+      val r = reader("{\n}")
       assert(r.nextToken() == '{')
       assert(r.nextToken() == '}')
     }
