@@ -9,8 +9,6 @@ import io.bullet.borer.Borer.Error._
 import io.bullet.borer.Json.DecodingConfig
 import io.bullet.borer.derivation.MapBasedCodecs._
 
-import scala.util.control.NonFatal
-
 object BorerJsonEncodersDecoders {
   val decodingConfig = DecodingConfig(
     maxNumberMantissaDigits = 1000000, /*WARNING: don't do this for open-systems*/
