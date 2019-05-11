@@ -20,8 +20,19 @@ object BorerJsonEncodersDecoders {
     Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(x => new BigInt(x)) /*WARNING: don't do this for open-systems*/
   implicit val bigDecimalDec: Decoder[BigDecimal] =
     Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /*WARNING: don't do this for open-systems*/
-  implicit val Codec(anyRefsEnc: Encoder[AnyRefs], anyRefsDec: Decoder[AnyRefs]) = deriveCodec[AnyRefs]
   implicit val Codec(charEnc: Encoder[Char], charDec: Decoder[Char]) = stringCodec(_.charAt(0))
+  implicit val Codec(anyValsEnc: Encoder[AnyVals], anyValsDec: Decoder[AnyVals]) = {
+    implicit val c1: Codec[ByteVal] = Codec(Encoder.forCaseClass[ByteVal], Decoder.forCaseClass[ByteVal])
+    implicit val c2: Codec[ShortVal] = Codec(Encoder.forCaseClass[ShortVal], Decoder.forCaseClass[ShortVal])
+    implicit val c3: Codec[IntVal] = Codec(Encoder.forCaseClass[IntVal], Decoder.forCaseClass[IntVal])
+    implicit val c4: Codec[LongVal] = Codec(Encoder.forCaseClass[LongVal], Decoder.forCaseClass[LongVal])
+    implicit val c5: Codec[BooleanVal] = Codec(Encoder.forCaseClass[BooleanVal], Decoder.forCaseClass[BooleanVal])
+    implicit val c6: Codec[CharVal] = Codec(Encoder.forCaseClass[CharVal], Decoder.forCaseClass[CharVal])
+    implicit val c7: Codec[DoubleVal] = Codec(Encoder.forCaseClass[DoubleVal], Decoder.forCaseClass[DoubleVal])
+    implicit val c8: Codec[FloatVal] = Codec(Encoder.forCaseClass[FloatVal], Decoder.forCaseClass[FloatVal])
+    deriveCodec[AnyVals]
+  }
+  implicit val Codec(anyRefsEnc: Encoder[AnyRefs], anyRefsDec: Decoder[AnyRefs]) = deriveCodec[AnyRefs]
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
     deriveCodec[ExtractFields]
   implicit val Codec(googleMapsAPIEnc: Encoder[DistanceMatrix], googleMapsAPIDec: Decoder[DistanceMatrix]) = {
