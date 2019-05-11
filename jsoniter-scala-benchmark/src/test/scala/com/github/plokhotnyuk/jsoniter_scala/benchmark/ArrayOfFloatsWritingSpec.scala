@@ -8,6 +8,7 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
   "ArrayOfFloatsWriting" should {
     "write properly" in {
       sameOrBetter(toString(benchmark.avSystemGenCodec()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.borerJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
