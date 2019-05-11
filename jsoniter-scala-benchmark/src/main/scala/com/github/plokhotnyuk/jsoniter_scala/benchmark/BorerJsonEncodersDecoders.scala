@@ -66,6 +66,5 @@ object BorerJsonEncodersDecoders {
 
   def stringCodec[T](f: String => T): Codec[T] = Codec(
     (w: Writer, value: T) => w.writeString(value.toString),
-    (r: Reader) =>
-      try f(r.readString()) catch { case NonFatal(e) => throw new InvalidInputData(r.position, e.getMessage) })
+    (r: Reader) => f(r.readString()))
 }
