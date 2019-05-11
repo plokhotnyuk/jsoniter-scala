@@ -17,9 +17,9 @@ object BorerJsonEncodersDecoders {
     maxNumberAbsExponent = 1000000, /*WARNING: don't do this for open-systems*/
     readDecimalNumbersOnlyAsNumberStrings = true)
   implicit val bigIntDec: Decoder[BigInt] =
-    Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(BigInt.apply) /*WARNING: don't do this for open-systems*/
+    Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(x => new BigInt(x)) /*WARNING: don't do this for open-systems*/
   implicit val bigDecimalDec: Decoder[BigDecimal] =
-    Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => BigDecimal(x, MathContext.UNLIMITED)) /*WARNING: don't do this for open-systems*/
+    Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /*WARNING: don't do this for open-systems*/
   implicit val Codec(anyRefsEnc: Encoder[AnyRefs], anyRefsDec: Decoder[AnyRefs]) = deriveCodec[AnyRefs]
   implicit val Codec(charEnc: Encoder[Char], charDec: Decoder[Char]) = stringCodec(_.charAt(0))
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
