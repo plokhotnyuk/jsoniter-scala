@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.avsystem.commons.serialization.{transientDefault, whenAbsent}
+import com.avsystem.commons.serialization.transientDefault
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -14,9 +14,9 @@ case class Urls(
   url: String,
   expanded_url: String,
   display_url: String,
-  @transientDefault @whenAbsent(Seq.empty) indices: Seq[Int])
+  @transientDefault indices: Seq[Int] = Seq.empty)
 
-case class Url(@transientDefault @whenAbsent(Seq.empty) urls: Seq[Urls])
+case class Url(@transientDefault urls: Seq[Urls] = Seq.empty)
 
 case class UserEntities(
   url: Url,
@@ -67,10 +67,10 @@ case class User(
   translator_type: String)
 
 case class Entities(
-  @transientDefault @whenAbsent(Seq.empty) hashtags: Seq[String],
-  @transientDefault @whenAbsent(Seq.empty) symbols: Seq[String],
-  @transientDefault @whenAbsent(Seq.empty) user_mentions: Seq[UserMentions],
-  @transientDefault @whenAbsent(Seq.empty) urls: Seq[Urls])
+  @transientDefault hashtags: Seq[String] = Seq.empty,
+  @transientDefault symbols: Seq[String] = Seq.empty,
+  @transientDefault user_mentions: Seq[UserMentions] = Seq.empty,
+  @transientDefault urls: Seq[Urls] = Seq.empty)
 
 case class RetweetedStatus(
   created_at: String,
@@ -80,16 +80,16 @@ case class RetweetedStatus(
   truncated: Boolean,
   entities: Entities,
   source: String,
-  @transientDefault @whenAbsent(None) in_reply_to_status_id: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_status_id_str: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_user_id: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_user_id_str: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_screen_name: Option[String],
+  @transientDefault in_reply_to_status_id: Option[String] = None,
+  @transientDefault in_reply_to_status_id_str: Option[String] = None,
+  @transientDefault in_reply_to_user_id: Option[String] = None,
+  @transientDefault in_reply_to_user_id_str: Option[String] = None,
+  @transientDefault in_reply_to_screen_name: Option[String] = None,
   user: User,
-  @transientDefault @whenAbsent(None) geo: Option[String],
-  @transientDefault @whenAbsent(None) coordinates: Option[String],
-  @transientDefault @whenAbsent(None) place: Option[String],
-  @transientDefault @whenAbsent(None) contributors: Option[String],
+  @transientDefault geo: Option[String] = None,
+  @transientDefault coordinates: Option[String] = None,
+  @transientDefault place: Option[String] = None,
+  @transientDefault contributors: Option[String] = None,
   is_quote_status: Boolean,
   retweet_count: Int,
   favorite_count: Int,
@@ -103,7 +103,7 @@ case class UserMentions(
   name: String,
   id: Long,
   id_str: String,
-  @transientDefault @whenAbsent(Seq.empty) indices: Seq[Int])
+  @transientDefault indices: Seq[Int] = Seq.empty)
 
 case class Tweet(
   created_at: String,
@@ -113,16 +113,16 @@ case class Tweet(
   truncated: Boolean,
   entities: Entities,
   source: String,
-  @transientDefault @whenAbsent(None) in_reply_to_status_id: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_status_id_str: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_user_id: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_user_id_str: Option[String],
-  @transientDefault @whenAbsent(None) in_reply_to_screen_name: Option[String],
+  @transientDefault in_reply_to_status_id: Option[String] = None,
+  @transientDefault in_reply_to_status_id_str: Option[String] = None,
+  @transientDefault in_reply_to_user_id: Option[String] = None,
+  @transientDefault in_reply_to_user_id_str: Option[String] = None,
+  @transientDefault in_reply_to_screen_name: Option[String] = None,
   user: User,
-  @transientDefault @whenAbsent(None) geo: Option[String],
-  @transientDefault @whenAbsent(None) coordinates: Option[String],
-  @transientDefault @whenAbsent(None) place: Option[String],
-  @transientDefault @whenAbsent(None) contributors: Option[String],
+  @transientDefault geo: Option[String] = None,
+  @transientDefault coordinates: Option[String] = None,
+  @transientDefault place: Option[String] = None,
+  @transientDefault contributors: Option[String] = None,
   retweeted_status: RetweetedStatus,
   is_quote_status: Boolean,
   retweet_count: Int,
