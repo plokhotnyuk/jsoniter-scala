@@ -754,7 +754,7 @@ object JsonCodecMaker {
         }
         val paramVarNum = classInfo.fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
-        val lastParamVarBits = -1 >>> (32 - paramVarNum)
+        val lastParamVarBits = -1 >>> -paramVarNum
         val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
         val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (f, i) =>
           val (n, m) = (paramVarNames(i >> 5), 1 << i)
