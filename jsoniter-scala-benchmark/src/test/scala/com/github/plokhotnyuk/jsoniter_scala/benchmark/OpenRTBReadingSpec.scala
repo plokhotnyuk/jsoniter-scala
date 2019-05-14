@@ -12,6 +12,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'mimes'
       //benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
     }
   }
 }

@@ -10,6 +10,7 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       //toString(benchmark.borerJson()) shouldBe OpenRTB.jsonString
       toString(benchmark.jsoniterScala()) shouldBe OpenRTB.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe OpenRTB.jsonString
+      toString(benchmark.uPickle()) shouldBe OpenRTB.jsonString
     }
   }
 }

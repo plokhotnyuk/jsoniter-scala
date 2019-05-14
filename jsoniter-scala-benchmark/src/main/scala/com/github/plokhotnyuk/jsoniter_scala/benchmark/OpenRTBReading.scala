@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB.BidRequest
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import spray.json.JsonParser
 
@@ -32,4 +33,6 @@ class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
   def sprayJson(): BidRequest = JsonParser(jsonBytes).convertTo[BidRequest]
 */
+  @Benchmark
+  def uPickle(): BidRequest = read[BidRequest](jsonBytes)
 }

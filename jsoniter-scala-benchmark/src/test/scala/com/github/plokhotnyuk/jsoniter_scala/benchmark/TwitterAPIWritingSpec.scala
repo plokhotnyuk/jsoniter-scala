@@ -17,8 +17,7 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       //toString(benchmark.playJson()) shouldBe TwitterAPI.compactJsonString
       //FIXME: Spray-JSON serializes empty collections
       //toString(benchmark.sprayJson()) shouldBe TwitterAPI.compactJsonString
-      //FIXME: uPickle serializes empty collections
-      //toString(benchmark.uPickle()) shouldBe TwitterAPI.compactJsonString
+      toString(benchmark.uPickle()) shouldBe TwitterAPI.compactJsonString
     }
   }
 }

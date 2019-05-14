@@ -49,6 +49,30 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val (monthDayReader, monthDayWriter) = (strReader(MonthDay.parse), strWriter[MonthDay])
   implicit val (offsetDateTimeReader, offsetDateTimeWriter) = (strReader(OffsetDateTime.parse), strWriter[OffsetDateTime])
   implicit val (offsetTimeReader, offsetTimeWriter) = (strReader(OffsetTime.parse), strWriter[OffsetTime])
+  implicit val openRTBReadWriter: ReadWriter[OpenRTB.BidRequest] = {
+    implicit val v1: ReadWriter[OpenRTB.Segment] = macroRW
+    implicit val v2: ReadWriter[OpenRTB.Format] = macroRW
+    implicit val v3: ReadWriter[OpenRTB.Deal] = macroRW
+    implicit val v4: ReadWriter[OpenRTB.Metric] = macroRW
+    implicit val v5: ReadWriter[OpenRTB.Banner] = macroRW
+    implicit val v6: ReadWriter[OpenRTB.Audio] = macroRW
+    implicit val v7: ReadWriter[OpenRTB.Video] = macroRW
+    implicit val v8: ReadWriter[OpenRTB.Native] = macroRW
+    implicit val v9: ReadWriter[OpenRTB.Pmp] = macroRW
+    implicit val v10: ReadWriter[OpenRTB.Producer] = macroRW
+    implicit val v11: ReadWriter[OpenRTB.Data] = macroRW
+    implicit val v12: ReadWriter[OpenRTB.Content] = macroRW
+    implicit val v13: ReadWriter[OpenRTB.Publisher] = macroRW
+    implicit val v14: ReadWriter[OpenRTB.Geo] = macroRW
+    implicit val v15: ReadWriter[OpenRTB.Imp] = macroRW
+    implicit val v16: ReadWriter[OpenRTB.Site] = macroRW
+    implicit val v17: ReadWriter[OpenRTB.App] = macroRW
+    implicit val v18: ReadWriter[OpenRTB.Device] = macroRW
+    implicit val v19: ReadWriter[OpenRTB.User] = macroRW
+    implicit val v20: ReadWriter[OpenRTB.Source] = macroRW
+    implicit val v21: ReadWriter[OpenRTB.Reqs] = macroRW
+    macroRW[OpenRTB.BidRequest]
+  }
   implicit val (periodReader, periodWriter) = (strReader(Period.parse), strWriter[Period])
   implicit val (suiteADTReader: Reader[SuitADT], suiteADTWriter: Writer[SuitADT]) = {
     val suite = Map(
