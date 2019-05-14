@@ -86,38 +86,39 @@ object PlayJsonFormats {
     implicit lazy val v4: OFormat[ADTBase] = flat.oformat((__ \ "type").format[String])
     v4
   }
-  val geoJSONFormat: OFormat[GeoJSON] = {
-    implicit lazy val v1: Format[Point] = (__ \ "coordinates").format[(Double, Double)].inmap(Point.apply, _.coordinates)
-    implicit lazy val v2: OFormat[MultiPoint] = Json.format
-    implicit lazy val v3: OFormat[LineString] = Json.format
-    implicit lazy val v4: OFormat[MultiLineString] = Json.format
-    implicit lazy val v5: OFormat[Polygon] = Json.format
-    implicit lazy val v6: OFormat[MultiPolygon] = Json.format
-    implicit lazy val v7: OFormat[GeometryCollection] = Json.format
-    implicit lazy val v8: OFormat[Geometry] = flat.oformat((__ \ "type").format[String])
-    implicit lazy val v9: OFormat[Feature] = Json.format
-    implicit lazy val v10: OFormat[FeatureCollection] = Json.format
-    implicit lazy val v11: OFormat[GeoJSON] = flat.oformat((__ \ "type").format[String])
+  val geoJSONFormat: OFormat[GeoJSON.GeoJSON] = {
+    implicit lazy val v1: Format[GeoJSON.Point] =
+      (__ \ "coordinates").format[(Double, Double)].inmap(GeoJSON.Point.apply, _.coordinates)
+    implicit lazy val v2: OFormat[GeoJSON.MultiPoint] = Json.format
+    implicit lazy val v3: OFormat[GeoJSON.LineString] = Json.format
+    implicit lazy val v4: OFormat[GeoJSON.MultiLineString] = Json.format
+    implicit lazy val v5: OFormat[GeoJSON.Polygon] = Json.format
+    implicit lazy val v6: OFormat[GeoJSON.MultiPolygon] = Json.format
+    implicit lazy val v7: OFormat[GeoJSON.GeometryCollection] = Json.format
+    implicit lazy val v8: OFormat[GeoJSON.Geometry] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v9: OFormat[GeoJSON.Feature] = Json.format
+    implicit lazy val v10: OFormat[GeoJSON.FeatureCollection] = Json.format
+    implicit lazy val v11: OFormat[GeoJSON.GeoJSON] = flat.oformat((__ \ "type").format[String])
     v11
   }
-  implicit val googleMapsAPIFormat: OFormat[DistanceMatrix] = {
-    implicit val v1: OFormat[Value] = Json.format
-    implicit val v2: OFormat[Elements] = Json.format
-    implicit val v3: OFormat[Rows] = Json.format
-    Json.format[DistanceMatrix]
+  implicit val googleMapsAPIFormat: OFormat[GoogleMapsAPI.DistanceMatrix] = {
+    implicit val v1: OFormat[GoogleMapsAPI.Value] = Json.format
+    implicit val v2: OFormat[GoogleMapsAPI.Elements] = Json.format
+    implicit val v3: OFormat[GoogleMapsAPI.Rows] = Json.format
+    Json.format[GoogleMapsAPI.DistanceMatrix]
   }
-  implicit val twitterAPIFormat: Format[Seq[Tweet]] = {
-    implicit val v1: OFormat[Urls] = Json.format
-    implicit val v2: OFormat[Url] = Json.format
-    implicit val v3: OFormat[UserEntities] = Json.format
-    implicit val v4: OFormat[UserMentions] = Json.format
-    implicit val v5: OFormat[Entities] = Json.format
-    implicit val v6: Format[User] = Jsonx.formatCaseClass
-    implicit val v7: Format[RetweetedStatus] = Jsonx.formatCaseClass
-    implicit val v8: Format[Tweet] = Jsonx.formatCaseClass
+  implicit val twitterAPIFormat: Format[Seq[TwitterAPI.Tweet]] = {
+    implicit val v1: OFormat[TwitterAPI.Urls] = Json.format
+    implicit val v2: OFormat[TwitterAPI.Url] = Json.format
+    implicit val v3: OFormat[TwitterAPI.UserEntities] = Json.format
+    implicit val v4: OFormat[TwitterAPI.UserMentions] = Json.format
+    implicit val v5: OFormat[TwitterAPI.Entities] = Json.format
+    implicit val v6: Format[TwitterAPI.User] = Jsonx.formatCaseClass
+    implicit val v7: Format[TwitterAPI.RetweetedStatus] = Jsonx.formatCaseClass
+    implicit val v8: Format[TwitterAPI.Tweet] = Jsonx.formatCaseClass
     Format(
-      Reads[Seq[Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[Tweet]))),
-      Writes[Seq[Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)))))
+      Reads[Seq[TwitterAPI.Tweet]](js => JsSuccess(js.as[Seq[JsObject]].map(_.as[TwitterAPI.Tweet]))),
+      Writes[Seq[TwitterAPI.Tweet]](ts => JsArray(ts.map(t => Json.toJson(t)))))
   }
   implicit val enumArrayFormat: Format[Array[SuitEnum]] = {
     implicit val v1: Format[SuitEnum] = Format(Reads.enumNameReads(SuitEnum), Writes.enumNameWrites)

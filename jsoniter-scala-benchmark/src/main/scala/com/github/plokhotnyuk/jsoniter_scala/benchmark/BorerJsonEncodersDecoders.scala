@@ -20,27 +20,53 @@ object BorerJsonEncodersDecoders {
     Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /*WARNING: don't do this for open-systems*/
   implicit val Codec(charEnc: Encoder[Char], charDec: Decoder[Char]) = stringCodec(_.charAt(0))
   implicit val Codec(anyValsEnc: Encoder[AnyVals], anyValsDec: Decoder[AnyVals]) = {
-    implicit val c1: Codec[ByteVal] = Codec(Encoder.forCaseClass[ByteVal], Decoder.forCaseClass[ByteVal])
-    implicit val c2: Codec[ShortVal] = Codec(Encoder.forCaseClass[ShortVal], Decoder.forCaseClass[ShortVal])
-    implicit val c3: Codec[IntVal] = Codec(Encoder.forCaseClass[IntVal], Decoder.forCaseClass[IntVal])
-    implicit val c4: Codec[LongVal] = Codec(Encoder.forCaseClass[LongVal], Decoder.forCaseClass[LongVal])
-    implicit val c5: Codec[BooleanVal] = Codec(Encoder.forCaseClass[BooleanVal], Decoder.forCaseClass[BooleanVal])
-    implicit val c6: Codec[CharVal] = Codec(Encoder.forCaseClass[CharVal], Decoder.forCaseClass[CharVal])
-    implicit val c7: Codec[DoubleVal] = Codec(Encoder.forCaseClass[DoubleVal], Decoder.forCaseClass[DoubleVal])
-    implicit val c8: Codec[FloatVal] = Codec(Encoder.forCaseClass[FloatVal], Decoder.forCaseClass[FloatVal])
+    implicit val c1: Codec[ByteVal] = Codec.forCaseClass
+    implicit val c2: Codec[ShortVal] = Codec.forCaseClass
+    implicit val c3: Codec[IntVal] = Codec.forCaseClass
+    implicit val c4: Codec[LongVal] = Codec.forCaseClass
+    implicit val c5: Codec[BooleanVal] = Codec.forCaseClass
+    implicit val c6: Codec[CharVal] = Codec.forCaseClass
+    implicit val c7: Codec[DoubleVal] = Codec.forCaseClass
+    implicit val c8: Codec[FloatVal] = Codec.forCaseClass
     deriveCodec[AnyVals]
   }
   implicit val Codec(anyRefsEnc: Encoder[AnyRefs], anyRefsDec: Decoder[AnyRefs]) = deriveCodec[AnyRefs]
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
     deriveCodec[ExtractFields]
-  implicit val Codec(googleMapsAPIEnc: Encoder[DistanceMatrix], googleMapsAPIDec: Decoder[DistanceMatrix]) = {
-    implicit val c1: Codec[Value] = deriveCodec[Value]
-    implicit val c2: Codec[Elements] = deriveCodec[Elements]
-    implicit val c3: Codec[Rows] = deriveCodec[Rows]
-    deriveCodec[DistanceMatrix]
+  implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix],
+                     googleMapsAPIDec: Decoder[GoogleMapsAPI.DistanceMatrix]) = {
+    implicit val c1: Codec[GoogleMapsAPI.Value] = deriveCodec
+    implicit val c2: Codec[GoogleMapsAPI.Elements] = deriveCodec
+    implicit val c3: Codec[GoogleMapsAPI.Rows] = deriveCodec
+    deriveCodec[GoogleMapsAPI.DistanceMatrix]
   }
   implicit val Codec(missingRequiredFieldsEnc: Encoder[MissingRequiredFields],
                      missingRequiredFieldsDec: Decoder[MissingRequiredFields]) = deriveCodec[MissingRequiredFields]
+  implicit val Codec(openRTBBidRequestEnc: Encoder[OpenRTB.BidRequest],
+                     openRTBBidRequestDec: Decoder[OpenRTB.BidRequest]) = {
+    implicit val c1: Codec[OpenRTB.Segment] = deriveCodec
+    implicit val c2: Codec[OpenRTB.Format] = deriveCodec
+    implicit val c3: Codec[OpenRTB.Deal] = deriveCodec
+    implicit val c4: Codec[OpenRTB.Metric] = deriveCodec
+    implicit val c5: Codec[OpenRTB.Banner] = deriveCodec
+    implicit val c6: Codec[OpenRTB.Audio] = deriveCodec
+    implicit val c7: Codec[OpenRTB.Video] = deriveCodec
+    implicit val c8: Codec[OpenRTB.Native] = deriveCodec
+    implicit val c9: Codec[OpenRTB.Pmp] = deriveCodec
+    implicit val c10: Codec[OpenRTB.Producer] = deriveCodec
+    implicit val c11: Codec[OpenRTB.Data] = deriveCodec
+    implicit val c12: Codec[OpenRTB.Content] = deriveCodec
+    implicit val c13: Codec[OpenRTB.Publisher] = deriveCodec
+    implicit val c14: Codec[OpenRTB.Geo] = deriveCodec
+    implicit val c15: Codec[OpenRTB.Imp] = deriveCodec
+    implicit val c16: Codec[OpenRTB.Site] = deriveCodec
+    implicit val c17: Codec[OpenRTB.App] = deriveCodec
+    implicit val c18: Codec[OpenRTB.Device] = deriveCodec
+    implicit val c19: Codec[OpenRTB.User] = deriveCodec
+    implicit val c20: Codec[OpenRTB.Source] = deriveCodec
+    implicit val c21: Codec[OpenRTB.Reqs] = deriveCodec
+    deriveCodec[OpenRTB.BidRequest]
+  }
   implicit val Codec(primitivesEnc: Encoder[Primitives], primitivesDec: Decoder[Primitives]) = deriveCodec[Primitives]
   implicit val Codec(suitADTEnc: Encoder[SuitADT], suitADTDec: Decoder[SuitADT]) = {
     val suite = Map(

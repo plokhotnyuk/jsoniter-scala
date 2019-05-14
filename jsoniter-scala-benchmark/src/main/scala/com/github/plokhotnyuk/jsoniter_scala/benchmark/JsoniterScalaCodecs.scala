@@ -39,7 +39,7 @@ object JsoniterScalaCodecs {
   implicit val enumArrayCodec: JsonValueCodec[Array[SuitEnum]] = make(CodecMakerConfig())
   implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] = make(CodecMakerConfig(discriminatorFieldName = None))
   implicit val floatArrayCodec: JsonValueCodec[Array[Float]] = make(CodecMakerConfig())
-  implicit val geoJSONCodec: JsonValueCodec[GeoJSON] =
+  implicit val geoJSONCodec: JsonValueCodec[GeoJSON.GeoJSON] =
     make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-systems*/))
   implicit val instantArrayCodec: JsonValueCodec[Array[Instant]] = make(CodecMakerConfig())
   implicit val intArrayCodec: JsonValueCodec[Array[Int]] = make(CodecMakerConfig())
@@ -53,6 +53,7 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig(allowRecursiveTypes = true /*WARNING: don't do this for open-systems*/))
   implicit val offsetDateTimeArrayCodec: JsonValueCodec[Array[OffsetDateTime]] = make(CodecMakerConfig())
   implicit val offsetTimeArrayCodec: JsonValueCodec[Array[OffsetTime]] = make(CodecMakerConfig())
+  implicit val openRTB25Codec: JsonValueCodec[OpenRTB.BidRequest] = make(CodecMakerConfig())
   implicit val periodArrayCodec: JsonValueCodec[Array[Period]] = make(CodecMakerConfig())
   implicit val shortArrayCodec: JsonValueCodec[Array[Short]] = make(CodecMakerConfig())
   implicit val uuidArrayCodec: JsonValueCodec[Array[UUID]] = make(CodecMakerConfig())
@@ -66,7 +67,7 @@ object JsoniterScalaCodecs {
   implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make(CodecMakerConfig())
   implicit val intMapOfBooleansCodec: JsonValueCodec[IntMap[Boolean]] =
     make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
-  implicit val googleMapsAPICodec: JsonValueCodec[DistanceMatrix] = make(CodecMakerConfig())
+  implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] = make(CodecMakerConfig())
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] =
     make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] = make(CodecMakerConfig())
@@ -82,5 +83,5 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig())
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make(CodecMakerConfig())
-  implicit val twitterAPICodec: JsonValueCodec[Seq[Tweet]] = make(CodecMakerConfig())
+  implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig())
 }

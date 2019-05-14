@@ -31,8 +31,8 @@ object CirceEncodersDecoders {
       Encoder.encodeString.contramap[Suit](_.name))
   implicit val (suitADTDecoder, suitADTEncoder) = (deriveEnumerationDecoder[SuitADT], deriveEnumerationEncoder[SuitADT])
   implicit val (suitEnumDecoder, suitEnumEncoder) = (Decoder.enumDecoder(SuitEnum), Encoder.enumEncoder(SuitEnum))
-  implicit val (geometryDecoder: Decoder[Geometry], geometryEncoder: Encoder[Geometry]) =
-    (deriveDecoder[Geometry], deriveEncoder[Geometry])
-  implicit val (geoJSONDecoder: Decoder[GeoJSON], geoJSONEncoder: Encoder[GeoJSON]) =
-    (deriveDecoder[GeoJSON], deriveEncoder[GeoJSON])
+  implicit val (geometryDecoder: Decoder[GeoJSON.Geometry], geometryEncoder: Encoder[GeoJSON.Geometry]) =
+    (deriveDecoder[GeoJSON.Geometry], deriveEncoder[GeoJSON.Geometry])
+  implicit val (geoJSONDecoder: Decoder[GeoJSON.GeoJSON], geoJSONEncoder: Encoder[GeoJSON.GeoJSON]) =
+    (deriveDecoder[GeoJSON.GeoJSON], deriveEncoder[GeoJSON.GeoJSON])
 }

@@ -79,51 +79,51 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormatN
   implicit val durationJsonFormat: RootJsonFormat[Duration] = stringJsonFormat(Duration.parse)
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormatN
-  val geoJSONJsonFormat: RootJsonFormat[GeoJSON] = {
-    implicit lazy val jf1: RootJsonFormat[Point] = jsonFormatN
-    implicit lazy val jf2: RootJsonFormat[MultiPoint] = jsonFormatN
-    implicit lazy val jf3: RootJsonFormat[LineString] = jsonFormatN
-    implicit lazy val jf4: RootJsonFormat[MultiLineString] = jsonFormatN
-    implicit lazy val jf5: RootJsonFormat[Polygon] = jsonFormatN
-    implicit lazy val jf6: RootJsonFormat[MultiPolygon] = jsonFormatN
-    implicit lazy val jf7: RootJsonFormat[GeometryCollection] = jsonFormatN
-    implicit lazy val jf8: RootJsonFormat[Geometry] = new RootJsonFormat[Geometry] {
-      override def read(json: JsValue): Geometry = readADT(json) {
-        case "Point" => json.convertTo[Point]
-        case "MultiPoint" => json.convertTo[MultiPoint]
-        case "LineString" => json.convertTo[LineString]
-        case "MultiLineString" => json.convertTo[MultiLineString]
-        case "Polygon" => json.convertTo[Polygon]
-        case "MultiPolygon" => json.convertTo[MultiPolygon]
-        case "GeometryCollection" => json.convertTo[GeometryCollection]
+  val geoJSONJsonFormat: RootJsonFormat[GeoJSON.GeoJSON] = {
+    implicit lazy val jf1: RootJsonFormat[GeoJSON.Point] = jsonFormatN
+    implicit lazy val jf2: RootJsonFormat[GeoJSON.MultiPoint] = jsonFormatN
+    implicit lazy val jf3: RootJsonFormat[GeoJSON.LineString] = jsonFormatN
+    implicit lazy val jf4: RootJsonFormat[GeoJSON.MultiLineString] = jsonFormatN
+    implicit lazy val jf5: RootJsonFormat[GeoJSON.Polygon] = jsonFormatN
+    implicit lazy val jf6: RootJsonFormat[GeoJSON.MultiPolygon] = jsonFormatN
+    implicit lazy val jf7: RootJsonFormat[GeoJSON.GeometryCollection] = jsonFormatN
+    implicit lazy val jf8: RootJsonFormat[GeoJSON.Geometry] = new RootJsonFormat[GeoJSON.Geometry] {
+      override def read(json: JsValue): GeoJSON.Geometry = readADT(json) {
+        case "Point" => json.convertTo[GeoJSON.Point]
+        case "MultiPoint" => json.convertTo[GeoJSON.MultiPoint]
+        case "LineString" => json.convertTo[GeoJSON.LineString]
+        case "MultiLineString" => json.convertTo[GeoJSON.MultiLineString]
+        case "Polygon" => json.convertTo[GeoJSON.Polygon]
+        case "MultiPolygon" => json.convertTo[GeoJSON.MultiPolygon]
+        case "GeometryCollection" => json.convertTo[GeoJSON.GeometryCollection]
       }
 
-      override def write(obj: Geometry): JsValue = writeADT(obj) {
-        case x: Point => x.toJson
-        case x: MultiPoint => x.toJson
-        case x: LineString => x.toJson
-        case x: MultiLineString => x.toJson
-        case x: Polygon => x.toJson
-        case x: MultiPolygon => x.toJson
-        case x: GeometryCollection => x.toJson
+      override def write(obj: GeoJSON.Geometry): JsValue = writeADT(obj) {
+        case x: GeoJSON.Point => x.toJson
+        case x: GeoJSON.MultiPoint => x.toJson
+        case x: GeoJSON.LineString => x.toJson
+        case x: GeoJSON.MultiLineString => x.toJson
+        case x: GeoJSON.Polygon => x.toJson
+        case x: GeoJSON.MultiPolygon => x.toJson
+        case x: GeoJSON.GeometryCollection => x.toJson
       }
     }
-    implicit lazy val jf9: RootJsonFormat[Feature] = jsonFormatN
-    implicit lazy val jf10: RootJsonFormat[FeatureCollection] = jsonFormatN
-    implicit lazy val jf11: RootJsonFormat[GeoJSON] = new RootJsonFormat[GeoJSON] {
-      override def read(json: JsValue): GeoJSON = readADT(json) {
-        case "Feature" => json.convertTo[Feature]
-        case "FeatureCollection" => json.convertTo[FeatureCollection]
+    implicit lazy val jf9: RootJsonFormat[GeoJSON.Feature] = jsonFormatN
+    implicit lazy val jf10: RootJsonFormat[GeoJSON.FeatureCollection] = jsonFormatN
+    implicit lazy val jf11: RootJsonFormat[GeoJSON.GeoJSON] = new RootJsonFormat[GeoJSON.GeoJSON] {
+      override def read(json: JsValue): GeoJSON.GeoJSON = readADT(json) {
+        case "Feature" => json.convertTo[GeoJSON.Feature]
+        case "FeatureCollection" => json.convertTo[GeoJSON.FeatureCollection]
       }
 
-      override def write(obj: GeoJSON): JsValue = writeADT(obj) {
-        case x: Feature => x.toJson
-        case y: FeatureCollection => y.toJson
+      override def write(obj: GeoJSON.GeoJSON): JsValue = writeADT(obj) {
+        case x: GeoJSON.Feature => x.toJson
+        case y: GeoJSON.FeatureCollection => y.toJson
       }
     }
     jf11
   }
-  implicit val googleMapsAPIJsonFormat: RootJsonFormat[DistanceMatrix] = jsonFormatN
+  implicit val googleMapsAPIJsonFormat: RootJsonFormat[GoogleMapsAPI.DistanceMatrix] = jsonFormatN
   implicit val instantJsonFormat: RootJsonFormat[Instant] = stringJsonFormat(Instant.parse)
   implicit val localDateJsonFormat: RootJsonFormat[LocalDate] = stringJsonFormat(LocalDate.parse)
   implicit val localDateTimeJsonFormat: RootJsonFormat[LocalDateTime] = stringJsonFormat(LocalDateTime.parse)
@@ -145,7 +145,8 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   }
   implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum] = EnumJsonFormat(SuitEnum)
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat(Suit.valueOf)
-  implicit val tweetJsonFormat: RootJsonFormat[Tweet] = jsonFormatN
+  implicit val tweetJsonFormat: RootJsonFormat[TwitterAPI.Tweet] = jsonFormatN
+  implicit val bidRequestJsonFormat: RootJsonFormat[OpenRTB.BidRequest] = jsonFormatN
   implicit val uuidJsonFormat: RootJsonFormat[UUID] = stringJsonFormat(UUID.fromString)
   implicit val yearMonthJsonFormat: RootJsonFormat[YearMonth] = stringJsonFormat(YearMonth.parse)
   implicit val yearJsonFormat: RootJsonFormat[Year] = stringJsonFormat(Year.parse)

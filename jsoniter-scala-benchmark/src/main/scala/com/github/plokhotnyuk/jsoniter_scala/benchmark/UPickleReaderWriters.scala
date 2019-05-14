@@ -27,14 +27,16 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
-  implicit val geometryReadWriter: ReadWriter[Geometry] = ReadWriter.merge(macroRW[Point], macroRW[MultiPoint],
-    macroRW[LineString], macroRW[MultiLineString], macroRW[Polygon], macroRW[GeometryCollection])
-  implicit val geoJsonReadWriter: ReadWriter[GeoJSON] = ReadWriter.merge(macroRW[Feature], macroRW[FeatureCollection])
-  implicit val googleMApsAPIReadWriter: ReadWriter[DistanceMatrix] = {
-    implicit val v1: ReadWriter[Value] = macroRW
-    implicit val v2: ReadWriter[Elements] = macroRW
-    implicit val v3: ReadWriter[Rows] = macroRW
-    macroRW[DistanceMatrix]
+  implicit val geometryReadWriter: ReadWriter[GeoJSON.Geometry] =
+    ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.GeometryCollection])
+  implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
+    ReadWriter.merge(macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
+  implicit val googleMApsAPIReadWriter: ReadWriter[GoogleMapsAPI.DistanceMatrix] = {
+    implicit val v1: ReadWriter[GoogleMapsAPI.Value] = macroRW
+    implicit val v2: ReadWriter[GoogleMapsAPI.Elements] = macroRW
+    implicit val v3: ReadWriter[GoogleMapsAPI.Rows] = macroRW
+    macroRW[GoogleMapsAPI.DistanceMatrix]
   }
   implicit val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingRequiredFieldsReadWriter: ReadWriter[MissingRequiredFields] = macroRW
@@ -63,15 +65,15 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val (zonedDateTimeReader, zonedDateTimeWriter) = (strReader(ZonedDateTime.parse), strWriter[ZonedDateTime])
   implicit val (zonedIdReader, zonedIdWriter) = (strReader(s => ZoneId.of(s.toString)), strWriter[ZoneId])
   implicit val (zonedOffsetReader, zonedOffsetWriter) = (strReader(s => ZoneOffset.of(s.toString)), strWriter[ZoneOffset])
-  implicit val twitterAPIReadWriter: ReadWriter[Tweet] = {
-    implicit val v1: ReadWriter[Urls] = macroRW
-    implicit val v2: ReadWriter[Url] = macroRW
-    implicit val v3: ReadWriter[UserMentions] = macroRW
-    implicit val v4: ReadWriter[Entities] = macroRW
-    implicit val v5: ReadWriter[UserEntities] = macroRW
-    implicit val v6: ReadWriter[User] = macroRW
-    implicit val v7: ReadWriter[RetweetedStatus] = macroRW
-    macroRW[Tweet]
+  implicit val twitterAPIReadWriter: ReadWriter[TwitterAPI.Tweet] = {
+    implicit val v1: ReadWriter[TwitterAPI.Urls] = macroRW
+    implicit val v2: ReadWriter[TwitterAPI.Url] = macroRW
+    implicit val v3: ReadWriter[TwitterAPI.UserMentions] = macroRW
+    implicit val v4: ReadWriter[TwitterAPI.Entities] = macroRW
+    implicit val v5: ReadWriter[TwitterAPI.UserEntities] = macroRW
+    implicit val v6: ReadWriter[TwitterAPI.User] = macroRW
+    implicit val v7: ReadWriter[TwitterAPI.RetweetedStatus] = macroRW
+    macroRW[TwitterAPI.Tweet]
   }
 
   override def objectTypeKeyReadMap(s: CharSequence): CharSequence =

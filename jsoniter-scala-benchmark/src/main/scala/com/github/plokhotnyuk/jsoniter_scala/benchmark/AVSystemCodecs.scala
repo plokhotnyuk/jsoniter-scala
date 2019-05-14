@@ -44,8 +44,8 @@ object AVSystemCodecs {
   implicit val bitSetGenCodec: GenCodec[BitSet] =
     transformed(_.toArray, (x: Array[Int]) => BitSet(x:_*)) // WARNING: don't do this for open-systems
   implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = materializeRecursively
-  implicit val geoJSONGenCodec: GenCodec[GeoJSON] = materializeRecursively
-  implicit val googleMapsAPIGenCodec: GenCodec[DistanceMatrix] = materializeRecursively
+  implicit val geoJSONGenCodec: GenCodec[GeoJSON.GeoJSON] = materializeRecursively
+  implicit val googleMapsAPIGenCodec: GenCodec[GoogleMapsAPI.DistanceMatrix] = materializeRecursively
   implicit val intMapOfBooleansGenCodec: GenCodec[IntMap[Boolean]] =
     transformed(_.seq, (x: Map[Int, Boolean]) => IntMap(x.toArray:_*))
   implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
@@ -54,8 +54,7 @@ object AVSystemCodecs {
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed(_.seq, (x: mutable.Map[Long, Boolean]) => mutable.LongMap(x.toArray:_*))
   implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively
-  implicit val openHashMapOfIntsToBooleansGenCodec: GenCodec[mutable.OpenHashMap[Int, Boolean]] =
-    transformed(_.seq, (x: mutable.Map[Int, Boolean]) => mutable.OpenHashMap(x.toArray:_*))
+  implicit val openRTBGenCodec: GenCodec[OpenRTB.BidRequest] = materializeRecursively
   implicit val primitivesGenCodec: GenCodec[Primitives] = materializeRecursively
-  implicit val twitterAPIGenCodec: GenCodec[Tweet] = materializeRecursively
+  implicit val twitterAPIGenCodec: GenCodec[TwitterAPI.Tweet] = materializeRecursively
 }
