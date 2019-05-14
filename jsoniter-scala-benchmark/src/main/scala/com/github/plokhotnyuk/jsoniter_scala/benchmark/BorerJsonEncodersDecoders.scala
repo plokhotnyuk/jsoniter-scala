@@ -42,6 +42,8 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(missingRequiredFieldsEnc: Encoder[MissingRequiredFields],
                      missingRequiredFieldsDec: Decoder[MissingRequiredFields]) = deriveCodec[MissingRequiredFields]
+  implicit val Codec(nestedStructsEnc: Encoder[NestedStructs],
+                     nestedStructsDec: Decoder[NestedStructs]) = deriveCodec[NestedStructs]
   implicit val Codec(openRTBBidRequestEnc: Encoder[OpenRTB.BidRequest],
                      openRTBBidRequestDec: Decoder[OpenRTB.BidRequest]) = {
     implicit val c1: Codec[OpenRTB.Segment] = deriveCodec
