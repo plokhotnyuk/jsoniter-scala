@@ -15,9 +15,9 @@ object TwitterAPI {
     url: String,
     expanded_url: String,
     display_url: String,
-    @transientDefault indices: Seq[Int] = Seq.empty)
+    @transientDefault indices: Seq[Int] = Nil)
 
-  case class Url(@transientDefault urls: Seq[Urls] = Seq.empty)
+  case class Url(@transientDefault urls: Seq[Urls] = Nil)
 
   case class UserEntities(
     url: Url,
@@ -68,10 +68,10 @@ object TwitterAPI {
     translator_type: String)
 
   case class Entities(
-    @transientDefault hashtags: Seq[String] = Seq.empty,
-    @transientDefault symbols: Seq[String] = Seq.empty,
-    @transientDefault user_mentions: Seq[UserMentions] = Seq.empty,
-    @transientDefault urls: Seq[Urls] = Seq.empty)
+    @transientDefault hashtags: Seq[String] = Nil,
+    @transientDefault symbols: Seq[String] = Nil,
+    @transientDefault user_mentions: Seq[UserMentions] = Nil,
+    @transientDefault urls: Seq[Urls] = Nil)
 
   case class RetweetedStatus(
     created_at: String,
@@ -104,7 +104,7 @@ object TwitterAPI {
     name: String,
     id: Long,
     id_str: String,
-    @transientDefault indices: Seq[Int] = Seq.empty)
+    @transientDefault indices: Seq[Int] = Nil)
 
   case class Tweet(
     created_at: String,
