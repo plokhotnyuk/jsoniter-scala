@@ -7,8 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 
 import scala.annotation.StaticAnnotation
 import scala.annotation.meta.field
-import scala.collection.{BitSet, mutable}
-import scala.collection.immutable.{IntMap, LongMap}
+import scala.collection.{BitSet, mutable, immutable}
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
@@ -727,10 +726,10 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
         else if (tpe <:< typeOf[List[_]]) q"Nil"
-        else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[LongMap[_]] ||
-          tpe <:< typeOf[collection.immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
+        else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[immutable.LongMap[_]] ||
+          tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        } else if (tpe <:< typeOf[collection.immutable.Map[_, _]]) withNullValueFor(tpe) {
+        } else if (tpe <:< typeOf[immutable.Map[_, _]]) withNullValueFor(tpe) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
         } else if (tpe <:< typeOf[collection.Map[_, _]]) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}, ${typeArg2(tpe)}]"
@@ -890,9 +889,9 @@ object JsonCodecMaker {
           q"""if (in.isNextToken('n')) in.readNullOrError($default, "expected value or null")
               else {
                 in.rollbackToken()
-                Some(${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})
+                new Some(${genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)})
               }"""
-        } else if (tpe <:< typeOf[IntMap[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[immutable.IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}"
           val readVal = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
@@ -914,7 +913,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               q"x.update($readKey, { if (in.isNextToken(',')) $readVal else in.commaError() })")
           } else genReadMap(newBuilder, q"x.update(in.readKeyAsLong(), $readVal)")
-        } else if (tpe <:< typeOf[LongMap[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[immutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1]")}"
           val readVal = genReadVal(tpe1 :: types, nullValue(tpe1), isStringified)
@@ -1078,7 +1077,7 @@ object JsonCodecMaker {
               q"if (in.isCharBufEqualsTo(l, ${discriminatorValue(subTpe)})) $readVal else $acc"
             }
 
-          def genReadSubclassesBlock(leafClasses: collection.Seq[Type]) =
+          def genReadSubclassesBlock(leafClasses: collection.Seq[Type]): Tree =
             if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) genReadCollisions(leafClasses)
             else {
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
@@ -1236,8 +1235,8 @@ object JsonCodecMaker {
                 case Some(x) => ${genWriteVal(q"x", typeArg1(tpe) :: types, isStringified)}
                 case None => out.writeNull()
               }"""
-        } else if (tpe <:< typeOf[IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
-            tpe <:< typeOf[LongMap[_]]) withEncoderFor(methodKey, m) {
+        } else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
+            tpe <:< typeOf[immutable.LongMap[_]]) withEncoderFor(methodKey, m) {
           val writeVal2 = genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified)
           if (cfg.mapAsArray) {
             val writeVal1 =
