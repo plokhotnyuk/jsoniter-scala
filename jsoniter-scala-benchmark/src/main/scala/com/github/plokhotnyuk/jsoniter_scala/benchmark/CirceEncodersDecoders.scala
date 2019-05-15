@@ -15,13 +15,8 @@ object CirceEncodersDecoders {
   implicit val config: Configuration = Configuration.default.withDiscriminator("type")
   implicit val (adtDecoder: Decoder[ADTBase], adtEncoder: Encoder[ADTBase]) =
     (deriveDecoder[ADTBase], deriveEncoder[ADTBase])
-  implicit val (anyValsDecoder: Decoder[AnyVals], anyValsEncoder: Encoder[AnyVals]) = {
-    implicit def valueClassEncoder[A: UnwrappedEncoder]: Encoder[A] = implicitly
-
-    implicit def valueClassDecoder[A: UnwrappedDecoder]: Decoder[A] = implicitly
-
+  implicit val (anyValsDecoder: Decoder[AnyVals], anyValsEncoder: Encoder[AnyVals]) =
     (deriveDecoder[AnyVals], deriveEncoder[AnyVals])
-  }
   implicit val bigIntEncoder: Encoder[BigInt] = Encoder.encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
   implicit val (suitDecoder: Decoder[Suit], suitEncoder: Encoder[Suit]) =
@@ -33,4 +28,8 @@ object CirceEncodersDecoders {
     (deriveDecoder[GeoJSON.Geometry], deriveEncoder[GeoJSON.Geometry])
   implicit val (geoJSONDecoder: Decoder[GeoJSON.GeoJSON], geoJSONEncoder: Encoder[GeoJSON.GeoJSON]) =
     (deriveDecoder[GeoJSON.GeoJSON], deriveEncoder[GeoJSON.GeoJSON])
+
+  implicit def valueClassEncoder[A <: AnyVal : UnwrappedEncoder]: Encoder[A] = implicitly
+
+  implicit def valueClassDecoder[A <: AnyVal : UnwrappedDecoder]: Decoder[A] = implicitly
 }
