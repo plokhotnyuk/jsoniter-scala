@@ -337,8 +337,13 @@ names for currently running Java processes. While your Java process still runnin
 `list` option and ID of your process like here:  
 ```sh
 $ ~/Projects/com/github/jvm-profiling-tools/async-profiler/profiler.sh list 6924
-Perf events:
+Basic events:
   cpu
+  alloc
+  lock
+  wall
+  itimer
+Perf events:
   page-faults
   context-switches
   cycles
@@ -351,9 +356,8 @@ Perf events:
   L1-dcache-load-misses
   LLC-load-misses
   dTLB-load-misses
-Java events:
-  alloc
-  lock
+  mem:breakpoint
+  trace:tracepoint
 ```
 
 Following command can be used to profile and print assembly code of hottest methods, but it requires [a setup of an 
