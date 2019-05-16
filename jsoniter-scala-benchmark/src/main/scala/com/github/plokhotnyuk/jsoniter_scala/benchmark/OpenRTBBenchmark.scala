@@ -314,7 +314,7 @@ object OpenRTB {
     @transientDefault value: Option[String] = None,
     /*@transientDefault ext: Option[DataExt] = None*/)
 
-  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("openrtb25_bidrequest.json"))
+  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("openrtb_bidrequest.json"))
   var jsonString: String = new String(jsonBytes, UTF_8)
 }
 
