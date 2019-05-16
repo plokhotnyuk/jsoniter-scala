@@ -370,7 +370,10 @@ sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 -p size=1
 More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 Other benchmarks with results for jsoniter-scala:
+- [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parser for Scala mostly on samples from real APIs 
 - [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializers for Scala
+- [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for Scala
+- [comparison](https://github.com/tkrs/json-bench) with JSON serializers for Scala on synthetic samples  
 - [comparison](https://github.com/guillaumebort/mison/pull/1) with a state of the art filter that by "building
   structural indices converts control flow into data flow, thereby largely eliminating inherently unpredictable branches
   in the program and exploiting the parallelism available in modern processors"
