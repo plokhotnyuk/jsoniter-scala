@@ -80,6 +80,16 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(suitEnc: Encoder[Suit], suitDec: Decoder[Suit]) = stringCodec(Suit.valueOf)
   implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = enumCodec(SuitEnum)
+  implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
+    implicit val c1: Codec[TwitterAPI.UserMentions] = deriveCodec
+    implicit val c2: Codec[TwitterAPI.Urls] = deriveCodec
+    implicit val c3: Codec[TwitterAPI.Entities] = deriveCodec
+    implicit val c4: Codec[TwitterAPI.Url] = deriveCodec
+    implicit val c5: Codec[TwitterAPI.UserEntities] = deriveCodec
+    implicit val c6: Codec[TwitterAPI.User] = deriveCodec
+    implicit val c7: Codec[TwitterAPI.RetweetedStatus] = deriveCodec
+    deriveCodec[TwitterAPI.Tweet]
+  }
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
 
   def enumCodec[T <: scala.Enumeration](e: T): Codec[T#Value] = Codec(

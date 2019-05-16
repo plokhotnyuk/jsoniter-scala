@@ -6,6 +6,8 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
   "TwitterAPIWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe TwitterAPI.compactJsonString
+      //FIXME: Borer serializes empty collections
+      //toString(benchmark.borerJson()) shouldBe TwitterAPI.compactJsonString
       //FIXME: circe serializes empty collections
       //toString(benchmark.circe()) shouldBe TwitterAPI.compactJsonString
       //FIXME: DSL-JSON serializes empty collections
