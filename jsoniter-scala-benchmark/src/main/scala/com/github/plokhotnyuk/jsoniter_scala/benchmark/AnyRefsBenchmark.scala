@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-case class AnyRefs(s: String, bd: BigDecimal, os: Option[String])
+case class AnyRefs(s: String, bd: BigDecimal, os: Option[String] = None)
 
 abstract class AnyRefsBenchmark extends CommonParams {
   var obj: AnyRefs = AnyRefs("s", 1, Some("os"))
