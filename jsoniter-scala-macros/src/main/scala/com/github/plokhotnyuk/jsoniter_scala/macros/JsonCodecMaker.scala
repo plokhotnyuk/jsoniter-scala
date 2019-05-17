@@ -986,13 +986,13 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val growArray =
-            if (tpe1.typeArgs.nonEmpty && tpe1 <:< typeOf[AnyRef]) {
+            if (tpe1.typeArgs.nonEmpty) {
               q"""val x1 = new $tpe(i << 1)
                   System.arraycopy(x, 0, x1, 0, i)
                   x1"""
             } else q"java.util.Arrays.copyOf(x, i << 1)"
           val shrinkArray =
-            if (tpe1.typeArgs.nonEmpty && tpe1 <:< typeOf[AnyRef]) {
+            if (tpe1.typeArgs.nonEmpty) {
               q"""val x1 = new $tpe(i)
                   System.arraycopy(x, 0, x1, 0, i)
                   x1"""

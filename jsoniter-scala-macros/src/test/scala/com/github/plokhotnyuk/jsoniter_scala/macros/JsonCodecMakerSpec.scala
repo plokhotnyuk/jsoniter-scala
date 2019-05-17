@@ -1467,6 +1467,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(make[L](CodecMakerConfig()), List(1, 2, 3), "[1,2,3]")
     }
     "serialize and deserialize first-order types" in {
+      verifySerDeser(make[Array[Id[String]]](CodecMakerConfig()), Array[Id[String]](Id("1"), Id("2")),
+        """["1","2"]""")
       verifySerDeser(make[Either[Int, String]](CodecMakerConfig(fieldNameMapper = _ => "value")), Right("VVV"),
         """{"type":"Right","value":"VVV"}""")
 
@@ -1494,8 +1496,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       case object Qux extends Bar[String]
 
-      val codecOfBar = make[Array[Bar[_]]](CodecMakerConfig())
-      verifySerDeser(codecOfBar, Array[Bar[_]](Qux, Baz), """[{"type":"Qux"},{"type":"Baz"}]""")
+      val codecOfArrayOfBar = make[Array[Bar[_]]](CodecMakerConfig())
+      verifySerDeser(codecOfArrayOfBar, Array[Bar[_]](Qux, Baz), """[{"type":"Qux"},{"type":"Baz"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
       import scala.language.higherKinds
