@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.avsystem.commons.serialization.flatten
+import com.avsystem.commons.serialization.{flatten, transientDefault}
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON._
@@ -39,8 +39,13 @@ object GeoJSON {
     new Type(value = classOf[Feature], name = "Feature"),
     new Type(value = classOf[FeatureCollection], name = "FeatureCollection")))
   sealed trait GeoJSON extends Product with Serializable
-  case class Feature(properties: Map[String, String], geometry: Geometry) extends GeoJSON
-  case class FeatureCollection(features: IndexedSeq[GeoJSON]) extends GeoJSON
+  case class Feature(
+    @transientDefault properties: Map[String, String] = Map.empty,
+    geometry: Geometry,
+    @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
+  case class FeatureCollection(
+    features: IndexedSeq[GeoJSON],
+    @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
 
   //Borders of Switzerland, from: https://github.com/mledoze/countries/blob/master/data/che.geo.json
   var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("che-1.geo.json"))
