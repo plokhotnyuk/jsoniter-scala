@@ -28,25 +28,19 @@ object UserAPI {
         var p0 = 0x3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
-          do {
-            val l = in.readKeyAsCharBuf()
-            (in.charBufToHashCode(l): @switch) match {
-              case 3355 =>
-                if (in.isCharBufEqualsTo(l, "id")) {
-                  if ((p0 & 0x1) != 0) p0 ^= 0x1
-                  else in.duplicatedKeyError(l)
-                  _id = in.readInt()
-                } else in.skip()
-              case 104069929 =>
-                if (in.isCharBufEqualsTo(l, "model")) {
-                  if ((p0 & 0x2) != 0) p0 ^= 0x2
-                  else in.duplicatedKeyError(l)
-                  _model = in.readString(_model)
-                } else in.skip()
-              case _ =>
-                in.skip()
-            }
-          } while (in.isNextToken(','))
+          var l = -1
+          while (l < 0 || in.isNextToken(',')) {
+            l = in.readKeyAsCharBuf()
+            if (in.isCharBufEqualsTo(l, "id")) {
+              if ((p0 & 0x1) != 0) p0 ^= 0x1
+              else in.duplicatedKeyError(l)
+              _id = in.readInt()
+            } else if (in.isCharBufEqualsTo(l, "model")) {
+              if ((p0 & 0x2) != 0) p0 ^= 0x2
+              else in.duplicatedKeyError(l)
+              _model = in.readString(_model)
+            } else in.skip()
+          }
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
         if ((p0 & 0x3) != 0) in.requiredFieldError(f1(Integer.numberOfTrailingZeros(p0)))
@@ -73,24 +67,19 @@ object UserAPI {
         var p0 = 0x3
         if (!in.isNextToken('}')) {
           in.rollbackToken()
-          do {
-            val l = in.readKeyAsCharBuf()
-            (in.charBufToHashCode(l): @switch) match {
-              case 3373707 =>
-                if (in.isCharBufEqualsTo(l, "name")) {
-                  if ((p0 & 0x1) != 0) p0 ^= 0x1
-                  else in.duplicatedKeyError(l)
-                  _name = in.readString(_name)
-                } else in.skip()
-              case 1559801053 =>
-                if (in.isCharBufEqualsTo(l, "devices")) {
-                  if ((p0 & 0x2) != 0) p0 ^= 0x2
-                  else in.duplicatedKeyError(l)
-                  _devices = d1(in, _devices)
-                } else in.skip()
-              case _ => in.skip()
-            }
-          } while (in.isNextToken(','))
+          var l = -1
+          while (l < 0 || in.isNextToken(',')) {
+            l = in.readKeyAsCharBuf()
+            if (in.isCharBufEqualsTo(l, "name")) {
+              if ((p0 & 0x1) != 0) p0 ^= 0x1
+              else in.duplicatedKeyError(l)
+              _name = in.readString(_name)
+            } else if (in.isCharBufEqualsTo(l, "devices")) {
+              if ((p0 & 0x2) != 0) p0 ^= 0x2
+              else in.duplicatedKeyError(l)
+              _devices = d1(in, _devices)
+            } else in.skip()
+          }
           if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
         }
         if ((p0 & 0x1) != 0) in.requiredFieldError(f0(Integer.numberOfTrailingZeros(p0)))

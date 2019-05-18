@@ -815,10 +815,11 @@ object JsonCodecMaker {
               ..$discriminatorVar
               if (!in.isNextToken('}')) {
                 in.rollbackToken()
-                do {
-                  val l = in.readKeyAsCharBuf()
+                var l = -1
+                while (l < 0 || in.isNextToken(',')) {
+                  l = in.readKeyAsCharBuf()
                   ..$readFieldsBlock
-                } while (in.isNextToken(','))
+                }
                 if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
               }
               ..$checkReqVars
