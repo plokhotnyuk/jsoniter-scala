@@ -102,10 +102,10 @@ lazy val `jsoniter-scala-core` = project
     libraryDependencies ++= {
       if (scalaVersion.value == "2.13.0-RC2") Seq(
         "org.scalacheck" % "scalacheck_2.13.0-RC1" % "1.14.0" % Test,
-        "org.scalatest" % "scalatest_2.13.0-RC1" % "3.0.8-RC2" % Test
+        "org.scalatest" % "scalatest_2.13.0-RC1" % "3.0.8-RC3" % Test
       ) else Seq(
         "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-        "org.scalatest" %% "scalatest" % "3.0.8-RC2" % Test
+        "org.scalatest" %% "scalatest" % "3.0.8-RC3" % Test
       )
     }
   )
@@ -124,10 +124,10 @@ lazy val `jsoniter-scala-macros` = project
     libraryDependencies ++= {
       if (scalaVersion.value == "2.13.0-RC2") Seq(
         "org.scalacheck" % "scalacheck_2.13.0-RC1" % "1.14.0" % Test,
-        "org.scalatest" % "scalatest_2.13.0-RC1" % "3.0.8-RC2" % Test
+        "org.scalatest" % "scalatest_2.13.0-RC1" % "3.0.8-RC3" % Test
       ) else Seq(
         "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-        "org.scalatest" %% "scalatest" % "3.0.8-RC2" % Test
+        "org.scalatest" %% "scalatest" % "3.0.8-RC3" % Test
       )
     }
   )
@@ -157,6 +157,6 @@ lazy val `jsoniter-scala-benchmark` = project
       "org.julienrf" %% "play-json-derived-codecs" % "5.0.0",
       "ai.x" %% "play-json-extensions" % "0.30.1",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
-      "org.scalatest" %% "scalatest" % "3.0.8-RC2" % Test
+      "org.scalatest" %% "scalatest" % "3.0.8-RC3" % Test
     )
   )
