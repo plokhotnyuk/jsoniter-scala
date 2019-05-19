@@ -16,8 +16,8 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromStream(new ByteArrayInputStream(httpMessage))(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
@@ -36,8 +36,8 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromArray(httpMessage)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
@@ -56,8 +56,8 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromSubArray(httpMessage, 0, httpMessage.length)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
@@ -104,8 +104,8 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       bbuf.position(10)
       assert(intercept[JsonReaderException](readFromByteBuffer(bbuf)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 30 30 20 4f 4b 0a 43 6f 6e 74 65 6e 74 2d 54 79 | 00 OK.Content-Ty |
           || 00000010 | 70 65 3a 20 61 70 70 6c 69 63 61 74 69 6f 6e 2f | pe: application/ |
@@ -118,8 +118,8 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       bbuf.position(10)
       assert(intercept[JsonReaderException](readFromByteBuffer(bbuf)(codec)).getMessage ==
         """expected '{', offset: 0x0000000a, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
@@ -218,8 +218,8 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromString(new String(httpMessage, UTF_8))(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |

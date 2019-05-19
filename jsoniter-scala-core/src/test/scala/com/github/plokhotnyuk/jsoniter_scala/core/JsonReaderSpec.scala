@@ -2596,8 +2596,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       assert(intercept[JsonReaderException](reader("null", 1L << 41).readInt())
         .getMessage.contains(
         """illegal number, offset: 0x20000000000, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 6e 75 6c 6c                                     | null             |
           |+----------+-------------------------------------------------+------------------+""".stripMargin))

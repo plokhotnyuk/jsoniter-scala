@@ -18,8 +18,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           | at [Source: (byte[])"{}"; line: 1, column: 2]""".stripMargin
       benchmark.jsoniterScala() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
@@ -27,8 +27,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         """missing required field "s", offset: 0x00000001"""
       benchmark.jsoniterScalaWithStacktrace() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
-          |           +-------------------------------------------------+
-          |           |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
