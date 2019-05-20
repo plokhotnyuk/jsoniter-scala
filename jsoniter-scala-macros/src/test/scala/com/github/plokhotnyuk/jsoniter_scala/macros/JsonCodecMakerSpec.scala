@@ -1358,6 +1358,10 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       implicit val implicitRootCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1")
     }
+    "serialize and deserialize dependent codecs which use lazy val to don't depend on order of definition" in {
+      verifySerDeser(make[List[Int]](CodecMakerConfig()), List(1, 2), "[\"1\",\"2\"]")
+      implicit lazy val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig(isStringified = true))
+    }
     "serialize and deserialize case classes with Java time types" in {
       case class JavaTimeTypes(dow: DayOfWeek, d: Duration, i: Instant, ld: LocalDate, ldt: LocalDateTime,
                                lt: LocalTime, m: Month, md: MonthDay, odt: OffsetDateTime, ot: OffsetTime, p: Period,
