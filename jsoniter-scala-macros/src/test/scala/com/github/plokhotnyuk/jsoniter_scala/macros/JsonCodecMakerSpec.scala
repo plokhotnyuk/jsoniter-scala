@@ -1516,9 +1516,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifySerDeser(codecOfFooForOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
       verifySerDeser(codecOfFooForOption, Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
     }
+    "serialize and deserialize case classes with an auxiliary constructor using primary one" in {
+      case class AuxiliaryConstructor(i: Int, s: String = "") {
+        def this(s: String) = this(0, s)
+      }
+
+      val codecOfAuxiliaryConstructor = make[AuxiliaryConstructor](CodecMakerConfig())
+      verifySerDeser(codecOfAuxiliaryConstructor, new AuxiliaryConstructor("VVV"),"{\"i\":0,\"s\":\"VVV\"}")
+      verifySerDeser(codecOfAuxiliaryConstructor, AuxiliaryConstructor(1),"{\"i\":1}")
+    }
     "serialize and deserialize case classes with private primary constructor if it can be accessed" in {
       object PrivatePrimaryConstructor {
-        implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] = JsonCodecMaker.make(CodecMakerConfig())
+        implicit val codec: JsonValueCodec[PrivatePrimaryConstructor] = make(CodecMakerConfig())
 
         def apply(s: String) = new PrivatePrimaryConstructor(s)
       }
