@@ -14,6 +14,6 @@ install:
   - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: SET SBT_OPTS=-Xmx4g -Dfile.encoding=UTF8
 build_script:
-  - sbt clean compile
+  - sbt clean +compile
 test_script:
-  - sbt test
+  - sbt +test
