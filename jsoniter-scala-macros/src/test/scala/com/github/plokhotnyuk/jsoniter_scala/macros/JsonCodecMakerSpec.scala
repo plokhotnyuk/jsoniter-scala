@@ -56,8 +56,8 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
   object LocationType extends Enumeration {
     type LocationType = Value
-    val GPS: LocationType = Value(1, "GPS") // always set name explicitly in your Enumeration definition, if you still not sure,
-    val IP: LocationType = Value(2, "IP") // then please look and check that following synchronized block will not affect your code in runtime:
+    val GPS: LocationType = Value(1, "GPS") // always set the name explicitly in your Enumeration definition, if you still not sure, then
+    val IP: LocationType = Value(2, "IP") // please look and check that the following synchronized block will not affect your code in run-time:
     val UserProvided: LocationType = Value(3, "UserProvided") // https://github.com/scala/scala/blob/1692ae306dc9a5ff3feebba6041348dfdee7cfb5/src/library/scala/Enumeration.scala#L203
   }
 

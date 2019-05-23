@@ -238,7 +238,7 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt clean coverage test coverageReport
+sbt -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport
 sbt -J-XX:MaxMetaspaceSize=512m clean +test +mimaReportBinaryIssues
 ```
 
@@ -383,13 +383,13 @@ Other benchmarks with results for jsoniter-scala:
 Publish to local Ivy repo:
 
 ```sh
-sbt clean publishLocal
+sbt -J-XX:MaxMetaspaceSize=512m clean +publishLocal
 ```
 
 Publish to local Maven repo:
 
 ```sh
-sbt clean publishM2
+sbt -J-XX:MaxMetaspaceSize=512m clean +publishM2
 ```
 
 ### Release
