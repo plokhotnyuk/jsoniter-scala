@@ -1390,11 +1390,10 @@ final class JsonReader private[jsoniter_scala](
           if (digits >= digitsLimit) digitsLimitError(pos)
           pos += 1
         }
-        var fracLen = 0
+        var fracLen = digits
         if (b == '.') {
           b = nextByte(pos + 1)
           if (b < '0' || b > '9') numberError()
-          fracLen += 1
           digits += 1
           pos = head
           buf = this.buf
@@ -1408,10 +1407,10 @@ final class JsonReader private[jsoniter_scala](
           }) {
             digits += 1
             if (digits >= digitsLimit) digitsLimitError(pos)
-            fracLen += 1
             pos += 1
           }
         }
+        fracLen = digits - fracLen
         var numLen = pos - this.mark
         var exp = 0
         if ((b | 0x20) == 'e') {
