@@ -8,6 +8,8 @@ class ArrayOfBytesWritingSpec extends BenchmarkSpecBase {
   "ArrayOfBytesWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
+      //FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support byte strings (Output.ToByteArray index 0)
+      //toString(benchmark.borerJson()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: dsl-json serializes a byte array to the base64 string
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
