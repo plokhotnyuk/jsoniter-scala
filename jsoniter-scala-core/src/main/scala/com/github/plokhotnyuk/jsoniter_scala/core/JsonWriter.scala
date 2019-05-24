@@ -1634,7 +1634,7 @@ final class JsonWriter private[jsoniter_scala](
         if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
         else 0
       val mm = mv - 1 - mmShift
-      var dv, dp, dm, exp, lastRemovedDigit = 0
+      var dv, dp, dm, exp = 0
       var dvIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f32Pow5InvSplit
@@ -1670,7 +1670,7 @@ final class JsonWriter private[jsoniter_scala](
       len += 1
       val decimalNotation = exp >= -3 && exp < 7
       if (dmIsTrailingZeros || dvIsTrailingZeros) {
-        var newDm = 0
+        var newDm, lastRemovedDigit = 0
         while ((decimalNotation || dp >= 100) && {
           dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
           newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
@@ -1701,17 +1701,31 @@ final class JsonWriter private[jsoniter_scala](
         if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
           (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
       } else {
+        var roundUp = false
+        var newDp, newDm = 0
+        while ((decimalNotation || dp >= 1000) && {
+          newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
+          newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
+          newDp > newDm
+        }) {
+          val newDv = (dv * 1374389535L >> 37).toInt // divide positive int by 100
+          roundUp = dv - newDv * 100 >= 50
+          dv = newDv
+          dp = newDp
+          dm = newDm
+          len -= 2
+        }
         while ((decimalNotation || dp >= 100) && {
           dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
           dm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
           dp > dm
         }) {
           val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-          lastRemovedDigit = dv - newDv * 10
+          roundUp = dv - newDv * 10 >= 5
           dv = newDv
           len -= 1
         }
-        if (lastRemovedDigit >= 5 || dv == dm) dv += 1
+        if (roundUp || dv == dm) dv += 1
       }
       var pos = ensureBufCapacity(15)
       val buf = this.buf
@@ -1794,7 +1808,7 @@ final class JsonWriter private[jsoniter_scala](
         if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
         else 0
       val mm = mv - 1 - mmShift
-      var dv, dp, dm, lastRemovedDigit = 0L
+      var dv, dp, dm = 0L
       var exp = 0
       var dvIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
@@ -1831,7 +1845,7 @@ final class JsonWriter private[jsoniter_scala](
       len += 1
       val decimalNotation = exp >= -3 && exp < 7
       if (dmIsTrailingZeros || dvIsTrailingZeros) {
-        var newDm = 0L
+        var newDm, lastRemovedDigit = 0L
         while ((decimalNotation || dp >= 100) && {
           dp /= 10
           newDm = dm / 10
@@ -1862,17 +1876,31 @@ final class JsonWriter private[jsoniter_scala](
         if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
           (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
       } else {
+        var roundUp = false
+        var newDp, newDm = 0L
+        while ((decimalNotation || dp >= 1000) && {
+          newDp = dp / 100
+          newDm = dm / 100
+          newDp > newDm
+        }) {
+          val newDv = dv / 100
+          roundUp = dv - newDv * 100 >= 50
+          dv = newDv
+          dp = newDp
+          dm = newDm
+          len -= 2
+        }
         while ((decimalNotation || dp >= 100) && {
           dp /= 10
           dm /= 10
           dp > dm
         }) {
           val newDv = dv / 10
-          lastRemovedDigit = dv - newDv * 10
+          roundUp = dv - newDv * 10 >= 5
           dv = newDv
           len -= 1
         }
-        if (lastRemovedDigit >= 5 || dv == dm) dv += 1
+        if (roundUp || dv == dm) dv += 1
       }
       var pos = ensureBufCapacity(24)
       val buf = this.buf
