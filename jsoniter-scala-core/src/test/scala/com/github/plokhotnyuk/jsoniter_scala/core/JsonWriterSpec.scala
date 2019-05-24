@@ -523,7 +523,6 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(-2.47E-43f)
       check(1.993244E-38f)
       check(4103.9003f)
-      check(4103.9003f)
       check(5.3399997E9f)
       check(6.0898E-39f)
       check(0.0010310042f)
