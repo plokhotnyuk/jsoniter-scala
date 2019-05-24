@@ -1665,57 +1665,54 @@ final class JsonWriter private[jsoniter_scala](
           else dp -= 1
         } else if (q < 23) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
       }
-      var olength = offset(dp)
-      exp += olength
-      olength += 1
+      var len = offset(dp)
+      exp += len
+      len += 1
       val decimalNotation = exp >= -3 && exp < 7
-      val output =
-        if (dmIsTrailingZeros || dvIsTrailingZeros) {
-          var newDm = 0
+      if (dmIsTrailingZeros || dvIsTrailingZeros) {
+        var newDm = 0
+        while ({
+          dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+          newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+          dp > newDm && (dp >= 10 || decimalNotation)
+        }) {
+          dmIsTrailingZeros &= newDm * 10 == dm
+          dm = newDm
+          dvIsTrailingZeros &= lastRemovedDigit == 0
+          val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+          lastRemovedDigit = dv - newDv * 10
+          dv = newDv
+          len -= 1
+        }
+        if (dmIsTrailingZeros && even) {
           while ({
-            dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
             newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-            dp > newDm && (dp >= 10 || decimalNotation)
+            newDm * 10 == dm && (dp >= 100 && decimalNotation)
           }) {
-            dmIsTrailingZeros &= newDm * 10 == dm
             dm = newDm
+            dp = (dp * 3435973837L >> 35).toInt
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
             lastRemovedDigit = dv - newDv * 10
             dv = newDv
-            olength -= 1
+            len -= 1
           }
-          if (dmIsTrailingZeros && even) {
-            while ({
-              newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-              newDm * 10 == dm && (dp >= 100 || decimalNotation)
-            }) {
-              dm = newDm
-              dp = (dp * 3435973837L >> 35).toInt
-              dvIsTrailingZeros &= lastRemovedDigit == 0
-              val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-              lastRemovedDigit = dv - newDv * 10
-              dv = newDv
-              olength -= 1
-            }
-          }
-          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv
-          else dv + 1
-        } else {
-          while ({
-            dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-            dm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-            dp > dm && (dp >= 10 || decimalNotation)
-          }) {
-            val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-            lastRemovedDigit = dv - newDv * 10
-            dv = newDv
-            olength -= 1
-          }
-          if (lastRemovedDigit < 5 && dv != dm) dv
-          else dv + 1
         }
+        if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
+          (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
+      } else {
+        while ({
+          dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+          dm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+          dp > dm && (dp >= 10 || decimalNotation)
+        }) {
+          val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+          lastRemovedDigit = dv - newDv * 10
+          dv = newDv
+          len -= 1
+        }
+        if (lastRemovedDigit >= 5 || dv == dm) dv += 1
+      }
       var pos = ensureBufCapacity(15)
       val buf = this.buf
       if (bits < 0) {
@@ -1728,18 +1725,18 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNBytes(-1 - exp, '0', pos + 2, buf)
-          writePositiveIntStartingFromLastPosition(output, pos + olength - 1, buf, ds)
-          pos + olength
-        } else if (exp + 1 >= olength) {
-          writePositiveIntStartingFromLastPosition(output, pos + olength - 1, buf, ds)
-          pos = writeNBytes(exp - olength + 1, '0', pos + olength, buf)
+          writePositiveIntStartingFromLastPosition(dv, pos + len - 1, buf, ds)
+          pos + len
+        } else if (exp + 1 >= len) {
+          writePositiveIntStartingFromLastPosition(dv, pos + len - 1, buf, ds)
+          pos = writeNBytes(exp - len + 1, '0', pos + len, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
           pos + 2
         } else {
-          val lastPos = pos + olength
+          val lastPos = pos + len
           val dotPos = pos + exp + 1
-          writePositiveIntStartingFromLastPosition(output, lastPos, buf, ds)
+          writePositiveIntStartingFromLastPosition(dv, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1748,10 +1745,10 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writePositiveIntStartingFromLastPosition(output, pos + olength, buf, ds)
+        writePositiveIntStartingFromLastPosition(dv, pos + len, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
-        pos += olength + 1
+        pos += len + 1
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
@@ -1797,8 +1794,8 @@ final class JsonWriter private[jsoniter_scala](
         if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
         else 0
       val mm = mv - 1 - mmShift
-      var dv, dp, dm = 0L
-      var exp, lastRemovedDigit = 0
+      var dv, dp, dm, lastRemovedDigit = 0L
+      var exp = 0
       var dvIsTrailingZeros, dmIsTrailingZeros = false
       if (e2 >= 0) {
         val ss = f64Pow5InvSplit
@@ -1829,57 +1826,54 @@ final class JsonWriter private[jsoniter_scala](
           else dp -= 1
         } else if (q < 52) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
       }
-      var olength = offset(dp)
-      exp += olength
-      olength += 1
+      var len = offset(dp)
+      exp += len
+      len += 1
       val decimalNotation = exp >= -3 && exp < 7
-      val output =
-        if (dmIsTrailingZeros || dvIsTrailingZeros) {
-          var newDm = 0L
+      if (dmIsTrailingZeros || dvIsTrailingZeros) {
+        var newDm = 0L
+        while ({
+          dp /= 10
+          newDm = dm / 10
+          dp > newDm && (dp >= 10 || decimalNotation)
+        }) {
+          dmIsTrailingZeros &= newDm * 10 == dm
+          dm = newDm
+          dvIsTrailingZeros &= lastRemovedDigit == 0
+          val newDv = dv / 10
+          lastRemovedDigit = dv - newDv * 10
+          dv = newDv
+          len -= 1
+        }
+        if (dmIsTrailingZeros && even) {
           while ({
-            dp /= 10
             newDm = dm / 10
-            dp > newDm && (dp >= 10 || decimalNotation)
+            newDm * 10 == dm && (dp >= 100 || decimalNotation)
           }) {
-            dmIsTrailingZeros &= newDm * 10 == dm
             dm = newDm
+            dp /= 10
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = dv / 10
-            lastRemovedDigit = (dv - newDv * 10).toInt
+            lastRemovedDigit = dv - newDv * 10
             dv = newDv
-            olength -= 1
+            len -= 1
           }
-          if (dmIsTrailingZeros && even) {
-            while ({
-              newDm = dm / 10
-              newDm * 10 == dm && (dp >= 100 || decimalNotation)
-            }) {
-              dm = newDm
-              dp /= 10
-              dvIsTrailingZeros &= lastRemovedDigit == 0
-              val newDv = dv / 10
-              lastRemovedDigit = (dv - newDv * 10).toInt
-              dv = newDv
-              olength -= 1
-            }
-          }
-          if (dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even))) dv
-          else dv + 1
-        } else {
-          while ({
-            dp /= 10
-            dm /= 10
-            dp > dm && (dp >= 10 || decimalNotation)
-          }) {
-            val newDv = dv / 10
-            lastRemovedDigit = (dv - newDv * 10).toInt
-            dv = newDv
-            olength -= 1
-          }
-          if (lastRemovedDigit < 5 && dv != dm) dv
-          else dv + 1
         }
+        if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
+          (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
+      } else {
+        while ({
+          dp /= 10
+          dm /= 10
+          dp > dm && (dp >= 10 || decimalNotation)
+        }) {
+          val newDv = dv / 10
+          lastRemovedDigit = dv - newDv * 10
+          dv = newDv
+          len -= 1
+        }
+        if (lastRemovedDigit >= 5 || dv == dm) dv += 1
+      }
       var pos = ensureBufCapacity(24)
       val buf = this.buf
       if (bits < 0) {
@@ -1892,18 +1886,18 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '0'
           buf(pos + 1) = '.'
           pos = writeNBytes(-1 - exp, '0', pos + 2, buf)
-          writeSmallPositiveLongStartingFromLastPosition(output, pos + olength - 1, buf, ds)
-          pos + olength
-        } else if (exp + 1 >= olength) {
-          writeSmallPositiveLongStartingFromLastPosition(output, pos + olength - 1, buf, ds)
-          pos = writeNBytes(exp - olength + 1, '0', pos + olength, buf)
+          writeSmallPositiveLongStartingFromLastPosition(dv, pos + len - 1, buf, ds)
+          pos + len
+        } else if (exp + 1 >= len) {
+          writeSmallPositiveLongStartingFromLastPosition(dv, pos + len - 1, buf, ds)
+          pos = writeNBytes(exp - len + 1, '0', pos + len, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
           pos + 2
         } else {
-          val lastPos = pos + olength
+          val lastPos = pos + len
           val dotPos = pos + exp + 1
-          writeSmallPositiveLongStartingFromLastPosition(output, lastPos, buf, ds)
+          writeSmallPositiveLongStartingFromLastPosition(dv, lastPos, buf, ds)
           while (pos < dotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
@@ -1912,10 +1906,10 @@ final class JsonWriter private[jsoniter_scala](
           lastPos + 1
         }
       } else {
-        writeSmallPositiveLongStartingFromLastPosition(output, pos + olength, buf, ds)
+        writeSmallPositiveLongStartingFromLastPosition(dv, pos + len, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
-        pos += olength + 1
+        pos += len + 1
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
