@@ -863,7 +863,7 @@ final class JsonWriter private[jsoniter_scala](
       writeBigIntegerReminder(qr(1), n - 1)
     }
 
-  private def writeBigDecimal(x: java.math.BigDecimal): Unit = {
+  private[this] def writeBigDecimal(x: java.math.BigDecimal): Unit = {
     val exp = writeBigDecimal(x.unscaledValue, x.scale, 0)
     if (exp != 0) {
       if (exp > 0) writeBytes('E', '+')
@@ -1964,7 +1964,7 @@ final class JsonWriter private[jsoniter_scala](
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
   }
 
-  private def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
+  private[this] def fullMulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Long = {
     val ml = m & 0x7FFFFFFF
     val mh = m >>> 31
     val idx = i << 2

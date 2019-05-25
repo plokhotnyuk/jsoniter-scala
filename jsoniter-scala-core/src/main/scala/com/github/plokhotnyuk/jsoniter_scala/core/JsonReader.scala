@@ -720,7 +720,7 @@ final class JsonReader private[jsoniter_scala](
     } else nextByte(loadMoreOrError(pos))
 
   @tailrec
-  private def nextByteOrError(b: Byte, pos: Int): Unit =
+  private[this] def nextByteOrError(b: Byte, pos: Int): Unit =
     if (pos < tail) {
       if (buf(pos) != b) tokenError(b, pos)
       head = pos + 1
@@ -1460,8 +1460,8 @@ final class JsonReader private[jsoniter_scala](
   // Based on a great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing a really big numbers
   // with O(n^1.5) complexity instead of O(n^2) when using the constructor for a decimal representation from JDK 8/11:
   // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
-  private def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
-                           scale: Int): java.math.BigDecimal = {
+  private[this] def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+                                 scale: Int): java.math.BigDecimal = {
     val len = limit - offset
     if (len == 1 && buf(offset) == '0') java.math.BigDecimal.ZERO.setScale(scale)
     else if (len < 19) {
