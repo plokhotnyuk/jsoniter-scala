@@ -3,7 +3,7 @@
 [![AppVeyor build](https://ci.appveyor.com/api/projects/status/17frw06h8rjwuc6g?svg=true)](https://ci.appveyor.com/project/plokhotnyuk/jsoniter-scala)
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![Code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
-[![Scaladex](https://img.shields.io/badge/scala--index-0.48.2-green.svg)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/jsoniter-scala-macros)
+[![Scaladex](https://img.shields.io/badge/scala--index-0.48.3-green.svg)](https://index.scala-lang.org/plokhotnyuk/jsoniter-scala/jsoniter-scala-macros)
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Scala macros that generate codecs for case classes, standard types and collections
@@ -131,8 +131,8 @@ Add the core library with a "compile" scope and the macros library with a "provi
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "0.48.2" % Compile, 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "0.48.2" % Provided // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "0.48.3" % Compile, 
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "0.48.3" % Provided // required only in compile-time
 )
 ```
 
