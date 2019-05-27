@@ -1298,7 +1298,7 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      if (posMan < 16777216) { // 16777215 == (1L << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
+      if (posMan < 16777216) { // 16777215 == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
         val exp =
           if (isExpNeg) manExp - posExp
           else manExp + posExp

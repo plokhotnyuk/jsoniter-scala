@@ -2068,9 +2068,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid float values" in {
-      checkFloat("1.199999988079071")
-      checkFloat("3.4028235677973366e38")
-      checkFloat("7.006492321624086e-46")
       forAll(minSuccessful(100000)) { (n: Float) =>
         checkFloat(n.toString)
       }
@@ -2078,16 +2075,20 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         checkFloat(n.toString)
       }
       //(1 to Int.MaxValue).par.foreach { n =>
+      //  val x = java.lang.Float.intBitsToFloat(n)
+      //  if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
+      //}
       forAll(minSuccessful(100000)) { (n: Int) =>
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
-      forAll(Gen.choose(0, (1 << 24) - 1), Gen.choose(-10, 10), minSuccessful(100000)) { (m: Int, e: Int) =>
+      //(-17 to 16).foreach { e =>
+      //  (1 to 1 << 24).par.foreach { m =>
+      //    checkFloat(s"${m}e$e")
+      //  }
+      //}
+      forAll(Gen.choose(0, 1 << 24), Gen.choose(-17, 16), minSuccessful(100000)) { (m: Int, e: Int) =>
         checkFloat(s"${m}e$e")
-      }
-      forAll(minSuccessful(100000)) { (n: Long) =>
-        val x = java.lang.Double.longBitsToDouble(n & ~0xFFFFFFFL)
-        if (java.lang.Double.isFinite(x)) checkFloat(n.toString)
       }
       forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         checkFloat(n.toString)
