@@ -1194,22 +1194,17 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      if (posMan < 9007199254740992L) { // 9007199254740991L == (1L << 53) - 1, max mantissa that can be converted w/o rounding error by double mul or div
-        val exp =
-          if (isExpNeg) manExp - posExp
-          else manExp + posExp
-        if (exp == 0) toSignedDouble(isNeg, posMan)
-        else if (exp < 0) {
-          if (exp >= -22) toSignedDouble(isNeg, posMan / pow10d(-exp))
-          else toDouble(pos)
-        } else if (exp <= 22) toSignedDouble(isNeg, posMan * pow10d(exp))
-        else {
-          val slop = 15 - digits
-          if (exp - slop <= 22) {
-            val pow10 = JsonReader.pow10d
-            toSignedDouble(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
-          } else toDouble(pos)
-        }
+      val isSmallMan = posMan < 9007199254740992L // == (1L << 53) - 1, max mantissa that can be converted w/o rounding error by double mul or div
+      val exp =
+        if (isExpNeg) manExp - posExp
+        else manExp + posExp
+      if (isSmallMan && exp == 0) toSignedDouble(isNeg, posMan)
+      else if (isSmallMan && exp >= -22 && exp < 0) toSignedDouble(isNeg, posMan / pow10d(-exp))
+      else if (isSmallMan && exp > 0 && exp <= 22) toSignedDouble(isNeg, posMan * pow10d(exp))
+      else if (isSmallMan && exp > 22 && exp + digits <= 37) {
+        val pow10 = pow10d
+        val slop = 15 - digits
+        toSignedDouble(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
       } else toDouble(pos)
     } finally this.mark = mark
   }
@@ -1298,22 +1293,17 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      if (posMan < 16777216) { // 16777215 == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
-        val exp =
-          if (isExpNeg) manExp - posExp
-          else manExp + posExp
-        if (exp == 0) toSignedFloat(isNeg, posMan)
-        else if (exp < 0) {
-          if (exp >= -10) toSignedFloat(isNeg, posMan / pow10f(-exp))
-          else toFloat(pos)
-        } else if (exp <= 10) toSignedFloat(isNeg, posMan * pow10f(exp))
-        else {
-          val slop = 6 - digits
-          if (exp - slop <= 10) {
-            val pow10 = JsonReader.pow10f
-            toSignedFloat(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
-          } else toFloat(pos)
-        }
+      val isSmallMan = posMan < 16777216 // == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
+      val exp =
+        if (isExpNeg) manExp - posExp
+        else manExp + posExp
+      if (isSmallMan && exp == 0) toSignedFloat(isNeg, posMan)
+      else if (isSmallMan && exp >= -10 && exp < 0) toSignedFloat(isNeg, posMan / pow10f(-exp))
+      else if (isSmallMan && exp > 0 && exp <= 10) toSignedFloat(isNeg, posMan * pow10f(exp))
+      else if (isSmallMan && exp > 10 && exp + digits <= 16) {
+        val pow10 = pow10f
+        val slop = 6 - digits
+        toSignedFloat(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
       } else toFloat(pos)
     } finally this.mark = mark
   }
