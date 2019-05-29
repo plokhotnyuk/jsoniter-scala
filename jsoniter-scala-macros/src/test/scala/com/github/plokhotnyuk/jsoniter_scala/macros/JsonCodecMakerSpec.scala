@@ -1368,8 +1368,7 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       assert(intercept[TestFailedException](assertCompiles {
         """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
       }).getMessage.contains {
-        """inferred type arguments [Product with Serializable with Fruit[_ >: Apple with Orange <: Product with Serializable with Fruit[_ >: Apple with Orange <: Product with Serializable]]]
-          |do not conform to method copy's type parameter bounds [T <: Fruit[T]]""".stripMargin.replace('\n', ' ')
+        """do not conform to method copy's type parameter bounds [T <: Fruit[T]]"""
       })
       verifySerDeser(make[Basket[Apple]](CodecMakerConfig()), twoFruits,
         """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
