@@ -1354,6 +1354,18 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.discriminatorFieldName' option.""".stripMargin.replace('\n', ' ')
       })
     }
+    "serialize and deserialize ADTs with self-recursive (aka F-bounded) types without discriminators" in {
+      sealed trait Fruit[T <: Fruit[T]]
+
+      final case class Apple(family: String) extends Fruit[Apple]
+
+      final case class Orange(color: Int) extends Fruit[Orange]
+
+      verifySerDeser(make[List[Apple]](CodecMakerConfig()), List[Apple](Apple("golden"), Apple("red")),
+        """[{"family":"golden"},{"family":"red"}]""")
+      verifySerDeser(make[List[Orange]](CodecMakerConfig()), List[Orange](Orange(1), Orange(2)),
+        """[{"color":1},{"color":2}]""")
+    }
     "serialize and deserialize when the root codec defined as an impicit val" in {
       implicit val implicitRootCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1")
