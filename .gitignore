@@ -1,8 +1,8 @@
 # Sbt
-target/
+target
 
 # Idea
-.idea/
+.idea
 *.iml
 *.ipr
 *.iws
@@ -24,3 +24,7 @@ target/
 .#*
 .ensime
 TAGS
+
+# Visual Studio Code
+.metals
+.bloop
