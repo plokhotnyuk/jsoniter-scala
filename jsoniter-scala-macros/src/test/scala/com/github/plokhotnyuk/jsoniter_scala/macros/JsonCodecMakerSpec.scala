@@ -1361,10 +1361,20 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
 
       final case class Orange(color: Int) extends Fruit[Orange]
 
-      verifySerDeser(make[List[Apple]](CodecMakerConfig()), List[Apple](Apple("golden"), Apple("red")),
-        """[{"family":"golden"},{"family":"red"}]""")
-      verifySerDeser(make[List[Orange]](CodecMakerConfig()), List[Orange](Orange(1), Orange(2)),
-        """[{"color":1},{"color":2}]""")
+      case class Basket[T <: Fruit[T]](fruits: List[T])
+
+      val oneFruit: Basket[Apple] = Basket(List(Apple("golden")))
+      val twoFruits: Basket[Apple] = oneFruit.copy(fruits = oneFruit.fruits :+ Apple("red"))
+      assert(intercept[TestFailedException](assertCompiles {
+        """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
+      }).getMessage.contains {
+        """inferred type arguments [Product with Serializable with Fruit[_ >: Apple with Orange <: Product with Serializable with Fruit[_ >: Apple with Orange <: Product with Serializable]]]
+          |do not conform to method copy's type parameter bounds [T <: Fruit[T]]""".stripMargin.replace('\n', ' ')
+      })
+      verifySerDeser(make[Basket[Apple]](CodecMakerConfig()), twoFruits,
+        """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
+      verifySerDeser(make[Basket[Orange]](CodecMakerConfig()), Basket(List(Orange(1), Orange(2))),
+        """{"fruits":[{"color":1},{"color":2}]}""")
     }
     "serialize and deserialize when the root codec defined as an impicit val" in {
       implicit val implicitRootCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig())
