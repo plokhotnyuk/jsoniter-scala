@@ -45,7 +45,7 @@ object OpenRTB {
 
   case class Imp(
     id: String,
-    @transientDefault metric: Option[Metric] = None,
+    @transientDefault metric: List[Metric] = Nil,
     @transientDefault banner: Option[Banner] = None,
     @transientDefault video: Option[Video] = None,
     @transientDefault audio: Option[Audio] = None,
