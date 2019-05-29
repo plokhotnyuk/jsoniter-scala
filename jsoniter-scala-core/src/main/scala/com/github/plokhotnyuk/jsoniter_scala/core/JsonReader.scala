@@ -1225,7 +1225,7 @@ final class JsonReader private[jsoniter_scala](
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
       if (b < '0' || b > '9') numberError()
-      var posMan = b - '0'
+      var posMan: Long = b - '0'
       val isZeroFirst = isToken && posMan == 0
       var manExp, posExp, digits = 0
       var isExpNeg = false
@@ -1240,7 +1240,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
-        if (posMan < 16777216) {
+        if (posMan < 1073741824) {
           posMan = posMan * 10 + (b - '0')
           digits += 1
         } else manExp += 1
@@ -1249,7 +1249,7 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         b = nextByte(pos + 1)
         if (b < '0' || b > '9') numberError()
-        if (posMan < 16777216) {
+        if (posMan < 1073741824) {
           posMan = posMan * 10 + (b - '0')
           digits += 1
           manExp -= 1
@@ -1264,7 +1264,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMan < 16777216) {
+          if (posMan < 1073741824) {
             posMan = posMan * 10 + (b - '0')
             digits += 1
             manExp -= 1
@@ -1293,24 +1293,21 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      val isSmallMan = posMan < 16777216 // == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
+      val isSmallMan = posMan < 1073741824 // == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
       val exp =
         if (isExpNeg) manExp - posExp
         else manExp + posExp
       if (isSmallMan && exp == 0) toSignedFloat(isNeg, posMan)
-      else if (isSmallMan && exp >= -10 && exp < 0) toSignedFloat(isNeg, posMan / pow10f(-exp))
-      else if (isSmallMan && exp > 0 && exp <= 10) toSignedFloat(isNeg, posMan * pow10f(exp))
-      else if (isSmallMan && exp > 10 && exp + digits <= 16) {
-        val pow10 = pow10f
-        val slop = 6 - digits
-        toSignedFloat(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
-      } else toFloat(pos)
+      else if (isSmallMan && exp >= -18 && exp < 0) toSignedFloat(isNeg, posMan / pow10d(-exp))
+      else if (isSmallMan && exp > 0 && exp <= 12) toSignedFloat(isNeg, posMan * pow10d(exp))
+      else if (isSmallMan && exp > 12 && exp + digits <= 20) toSignedFloat(isNeg, posMan * pow10d(exp))
+      else toFloat(pos)
     } finally this.mark = mark
   }
 
-  private[this] def toSignedFloat(isNeg: Boolean, posX: Float): Float =
-    if (isNeg) -posX
-    else posX
+  private[this] def toSignedFloat(isNeg: Boolean, posX: Double): Float =
+    (if (isNeg) -posX
+    else posX).toFloat
 
   private[this] def toFloat(pos: Int): Float = java.lang.Float.parseFloat(new String(buf, 0, mark, pos - mark))
 
@@ -2633,8 +2630,6 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val pow10f: Array[Float] =
-    Array(1f, 1e+1f, 1e+2f, 1e+3f, 1e+4f, 1e+5f, 1e+6f, 1e+7f, 1e+8f, 1e+9f, 1e+10f)
   private final val pow10d: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)

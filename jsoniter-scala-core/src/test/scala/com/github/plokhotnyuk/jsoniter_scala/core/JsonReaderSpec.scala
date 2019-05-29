@@ -2082,12 +2082,12 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
-      //(-17 to 16).foreach { e =>
-      //  (1 to 1 << 24).par.foreach { m =>
+      //(-26 to 20).foreach { e =>
+      //  (0 to 1 << 30).par.foreach { m =>
       //    checkFloat(s"${m}e$e")
       //  }
       //}
-      forAll(Gen.choose(0, 1 << 24), Gen.choose(-17, 16), minSuccessful(100000)) { (m: Int, e: Int) =>
+      forAll(Gen.choose(0, 1 << 30), Gen.choose(-26, 20), minSuccessful(100000)) { (m: Int, e: Int) =>
         checkFloat(s"${m}e$e")
       }
       forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
@@ -2186,7 +2186,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
       }
-      forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 22 + 15), minSuccessful(100000)) { (m: Long, e: Int) =>
+      forAll(Gen.choose(0L, 1L << 53), Gen.choose(-22, 37), minSuccessful(100000)) { (m: Long, e: Int) =>
         checkDouble(s"${m}e$e")
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
