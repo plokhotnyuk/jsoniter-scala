@@ -98,10 +98,10 @@ lazy val `jsoniter-scala-core` = project
   .settings(mimaSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0-RC2", "2.13.0-RC1", "2.12.8", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-RC3", "2.13.0-RC2", "2.13.0-RC1", "2.12.8", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-      "org.scalatest" %% "scalatest" % (if (scalaVersion.value == "2.13.0-RC1") "3.0.8-RC3" else "3.0.8-RC4") % Test
+      "org.scalatest" %% "scalatest" % (if (scalaVersion.value == "2.13.0-RC1") "3.0.8-RC3" else "3.0.8-RC5") % Test
     )
   )
 
@@ -111,12 +111,12 @@ lazy val `jsoniter-scala-macros` = project
   .settings(mimaSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0-RC2", "2.13.0-RC1", "2.12.8", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-RC3", "2.13.0-RC2", "2.13.0-RC1", "2.12.8", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
-      "org.scalatest" %% "scalatest" % (if (scalaVersion.value == "2.13.0-RC1") "3.0.8-RC3" else "3.0.8-RC4") % Test
+      "org.scalatest" %% "scalatest" % (if (scalaVersion.value == "2.13.0-RC1") "3.0.8-RC3" else "3.0.8-RC5") % Test
     )
   )
 
