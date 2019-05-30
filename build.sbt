@@ -130,7 +130,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "io.bullet" %% "borer-derivation" % "0.9.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.2",
       "io.spray" %%  "spray-json" % "1.3.5",
-      "com.avsystem.commons" %% "commons-core" % "1.34.19",
+      "com.avsystem.commons" %% "commons-core" % "1.34.20",
       "com.lihaoyi" %% "upickle" % "0.7.4",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
