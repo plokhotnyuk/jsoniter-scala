@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
@@ -35,8 +35,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
   @Benchmark
   def sprayJson(): GeoJSON = JsonParser(jsonBytes).convertTo[GeoJSON](geoJSONJsonFormat)
-/* FIXME: upickle.core.AbortException: invalid tag for tagged object: com.github.plokhotnyuk.jsoniter_scala.benchmark.FeatureCollection at index 8
+
   @Benchmark
   def uPickle(): GeoJSON = read[GeoJSON](jsonBytes)
-*/
 }

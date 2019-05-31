@@ -11,8 +11,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
-      //FIXME: upickle.core.AbortException: invalid tag for tagged object: com.github.plokhotnyuk.jsoniter_scala.benchmark.FeatureCollection at index 8
-      //benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
     }
   }
 }

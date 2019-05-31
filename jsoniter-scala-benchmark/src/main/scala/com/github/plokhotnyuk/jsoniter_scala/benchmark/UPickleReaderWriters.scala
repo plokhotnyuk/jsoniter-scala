@@ -6,6 +6,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import upickle.AttributeTagged
 import upickle.core.Visitor
 
+import scala.reflect.ClassTag
+
 object UPickleReaderWriters extends AttributeTagged {
   override val tagName: String = "type"
   implicit val (bigDecimalReader, bigDecimalWriter) = (numReader(s => BigDecimal(s.toString)), numWriter[BigDecimal])
@@ -100,10 +102,11 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW[TwitterAPI.Tweet]
   }
 
-  override def objectTypeKeyReadMap(s: CharSequence): CharSequence =
-    s"com.github.plokhotnyuk.jsoniter_scala.benchmark.$s"
+  override def annotate[V](rw: CaseR[V], n: String): TaggedReader.Leaf[V] =
+    new TaggedReader.Leaf[V](simpleName(n), rw)
 
-  override def objectTypeKeyWriteMap(s: CharSequence): CharSequence = simpleName(s.toString)
+  override def annotate[V](rw: CaseW[V], n: String)(implicit c: ClassTag[V]): TaggedWriter.Leaf[V] =
+    new TaggedWriter.Leaf[V](c, simpleName(n), rw)
 
   override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
