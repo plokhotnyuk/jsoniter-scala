@@ -6,6 +6,7 @@ import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import julienrf.json.derived.flat
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -57,10 +58,10 @@ object PlayJsonFormats {
     Json.format[AnyVals]
   }
   implicit val bitSetFormat: Format[BitSet] = Format(
-    Reads(js => JsSuccess(BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-systems
+    Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: don't do this for open-systems */)))),
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
-    Reads(js => JsSuccess(mutable.BitSet(js.as[Array[Int]]:_*))), // WARNING: don't do this for open-systems
+    Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: don't do this for open-systems */)))),
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
     Reads[IntMap[Boolean]](js => JsSuccess(IntMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
