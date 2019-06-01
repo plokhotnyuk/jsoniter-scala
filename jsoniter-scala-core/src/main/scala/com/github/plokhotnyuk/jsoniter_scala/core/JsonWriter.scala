@@ -1663,7 +1663,7 @@ final class JsonWriter private[jsoniter_scala](
           dvIsTrailingZeros = true
           if (even) dmIsTrailingZeros = mmShift == 1
           else dp -= 1
-        } else if (q < 23) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
+        } else if (q < 31) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
       }
       var len = offset(dp)
       exp += len
@@ -1839,7 +1839,7 @@ final class JsonWriter private[jsoniter_scala](
           dvIsTrailingZeros = true
           if (even) dmIsTrailingZeros = mmShift == 1
           else dp -= 1
-        } else if (q < 52) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
+        } else if (q < 63) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
       }
       var len = offset(dp)
       exp += len

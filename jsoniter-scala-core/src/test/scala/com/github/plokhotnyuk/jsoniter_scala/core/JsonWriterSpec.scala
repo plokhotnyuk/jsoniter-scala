@@ -552,6 +552,15 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         if (java.lang.Float.isFinite(n)) check(n)
       }
     }
+    "write float values exactly as expected" in {
+      def check(n: Float, s: String): Unit = {
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
+      }
+
+      check(2.4414062E-4f, "2.4414062E-4")
+    }
     "write round-even float values" in {
       def check(n: Float): Unit = {
         val s = n.toString
@@ -617,6 +626,15 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Double) =>
         if (java.lang.Double.isFinite(n)) check(n)
       }
+    }
+    "write double values exactly as expected" in {
+      def check(n: Double, s: String): Unit = {
+        withWriter(_.writeVal(n)) shouldBe s
+        withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
+        withWriter(_.writeKey(n)) shouldBe s""""$s":"""
+      }
+
+      check(2.98023223876953125E-8, "2.9802322387695312E-8")
     }
     "write round-even double values" in {
       def check(n: Double): Unit = {
