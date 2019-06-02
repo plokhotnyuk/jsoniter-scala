@@ -1621,76 +1621,81 @@ final class JsonWriter private[jsoniter_scala](
       val ieeeExponent = (bits >> 23) & 0xFF
       if (ieeeExponent == 255) encodeError("illegal number: " + x)
       val ieeeMantissa = bits & 0x7FFFFF
-      val e2 =
-        if (ieeeExponent == 0) -151
-        else ieeeExponent - 152
-      val m2 =
+      val e =
+        if (ieeeExponent == 0) -149
+        else ieeeExponent - 150
+      val m =
         if (ieeeExponent == 0) ieeeMantissa
         else ieeeMantissa | 0x800000
-      val even = (m2 & 0x1) == 0
-      val mv = m2 << 2
-      val mp = mv + 2
-      val mmShift =
-        if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
-        else 0
-      val mm = mv - 1 - mmShift
-      var dv, dp, dm, exp = 0
-      var dvIsTrailingZeros, dmIsTrailingZeros = false
-      if (e2 >= 0) {
-        val ss = f32Pow5InvSplit
-        val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
-        val i = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 59
-        exp = q
-        dv = mulPow5DivPow2(mv, q, i, ss)
-        dp = mulPow5DivPow2(mp, q, i, ss)
-        dm = mulPow5DivPow2(mm, q, i, ss)
-        if (q <= 9) {
-          val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
-          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
-          else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
-          else if (multiplePowOf5(mp, q)) dp -= 1
-        }
-      } else {
-        val ss = f32Pow5Split
-        val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
-        val i = -e2 - q
-        val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 60 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 60
-        exp = -i
-        dv = mulPow5DivPow2(mv, i, j, ss)
-        dp = mulPow5DivPow2(mp, i, j, ss)
-        dm = mulPow5DivPow2(mm, i, j, ss)
-        if (q <= 1) {
-          dvIsTrailingZeros = true
-          if (even) dmIsTrailingZeros = mmShift == 1
-          else dp -= 1
-        } else if (q < 31) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
-      }
-      var len = offset(dp)
-      exp += len
-      len += 1
-      val decimalNotation = exp >= -3 && exp < 7
-      if (dmIsTrailingZeros || dvIsTrailingZeros) {
-        var newDp, newDm, lastRemovedDigit = 0
-        while ((decimalNotation || dp >= 100) && {
-          newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-          newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-          newDp > newDm
+      var decimalNotation = false
+      var dv, exp, len = 0
+      if (e >= -23 && e <= 0 && (m & ((1 << -e) - 1)) == 0) {
+        dv = m >> -e
+        var newDv = 0
+        while ((dv >= 100) && {
+          newDv = (dv * 3435973837L >> 35).toInt
+          newDv * 10 == dv
         }) {
-          dp = newDp
-          dmIsTrailingZeros &= newDm * 10 == dm
-          dm = newDm
-          dvIsTrailingZeros &= lastRemovedDigit == 0
-          val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-          lastRemovedDigit = dv - newDv * 10
           dv = newDv
-          len -= 1
+          exp += 1
         }
-        if (dmIsTrailingZeros && even) {
+        len = offset(dv)
+        exp += len
+        len += 1
+        decimalNotation = exp < 7
+      } else {
+        val even = (m & 0x1) == 0
+        val mv = m << 2
+        val mp = mv + 2
+        val mmShift =
+          if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
+          else 0
+        val mm = mv - 1 - mmShift
+        val e2 = e - 2
+        var dp, dm = 0
+        var dvIsTrailingZeros, dmIsTrailingZeros = false
+        if (e2 >= 0) {
+          val ss = f32Pow5InvSplit
+          val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
+          val i = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 59
+          exp = q
+          dv = mulPow5DivPow2(mv, q, i, ss)
+          dp = mulPow5DivPow2(mp, q, i, ss)
+          dm = mulPow5DivPow2(mm, q, i, ss)
+          if (q <= 9) {
+            val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
+            if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
+            else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
+            else if (multiplePowOf5(mp, q)) dp -= 1
+          }
+        } else {
+          val ss = f32Pow5Split
+          val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
+          val i = -e2 - q
+          val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 60 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 60
+          exp = -i
+          dv = mulPow5DivPow2(mv, i, j, ss)
+          dp = mulPow5DivPow2(mp, i, j, ss)
+          dm = mulPow5DivPow2(mm, i, j, ss)
+          if (q <= 1) {
+            dvIsTrailingZeros = true
+            if (even) dmIsTrailingZeros = mmShift == 1
+            else dp -= 1
+          } else if (q < 31) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
+        }
+        len = offset(dp)
+        exp += len
+        len += 1
+        decimalNotation = exp >= -3 && exp < 7
+        if (dmIsTrailingZeros || dvIsTrailingZeros) {
+          var newDp, newDm, lastRemovedDigit = 0
           while ((decimalNotation || dp >= 100) && {
+            newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
             newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-            newDm * 10 == dm
+            newDp > newDm
           }) {
-            dp = (dp * 3435973837L >> 35).toInt
+            dp = newDp
+            dmIsTrailingZeros &= newDm * 10 == dm
             dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
@@ -1698,35 +1703,49 @@ final class JsonWriter private[jsoniter_scala](
             dv = newDv
             len -= 1
           }
+          if (dmIsTrailingZeros && even) {
+            while ((decimalNotation || dp >= 100) && {
+              newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+              newDm * 10 == dm
+            }) {
+              dp = (dp * 3435973837L >> 35).toInt
+              dm = newDm
+              dvIsTrailingZeros &= lastRemovedDigit == 0
+              val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+              lastRemovedDigit = dv - newDv * 10
+              dv = newDv
+              len -= 1
+            }
+          }
+          if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
+        } else {
+          var newDp, newDm = 0
+          var roundUp = false
+          while ((decimalNotation || dp >= 1000) && {
+            newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
+            newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
+            newDp > newDm
+          }) {
+            dm = newDm
+            dp = newDp
+            val newDv = (dv * 1374389535L >> 37).toInt // divide positive int by 100
+            roundUp = dv - newDv * 100 >= 50
+            dv = newDv
+            len -= 2
+          }
+          if ((decimalNotation || dp >= 100) && {
+            newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+            (dp * 3435973837L >> 35).toInt > newDm // divide positive int by 10
+          }) {
+            dm = newDm
+            val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+            roundUp = dv - newDv * 10 >= 5
+            dv = newDv
+            len -= 1
+          }
+          if (roundUp || dv == dm) dv += 1
         }
-        if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-          (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
-      } else {
-        var newDp, newDm = 0
-        var roundUp = false
-        while ((decimalNotation || dp >= 1000) && {
-          newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
-          newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
-          newDp > newDm
-        }) {
-          dm = newDm
-          dp = newDp
-          val newDv = (dv * 1374389535L >> 37).toInt // divide positive int by 100
-          roundUp = dv - newDv * 100 >= 50
-          dv = newDv
-          len -= 2
-        }
-        if ((decimalNotation || dp >= 100) && {
-          newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-          (dp * 3435973837L >> 35).toInt > newDm // divide positive int by 10
-        }) {
-          dm = newDm
-          val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-          roundUp = dv - newDv * 10 >= 5
-          dv = newDv
-          len -= 1
-        }
-        if (roundUp || dv == dm) dv += 1
       }
       var pos = ensureBufCapacity(15)
       val buf = this.buf
@@ -1796,77 +1815,82 @@ final class JsonWriter private[jsoniter_scala](
       val ieeeExponent = ((bits >> 52) & 0x7FF).toInt
       if (ieeeExponent == 2047) encodeError("illegal number: " + x)
       val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
-      val e2 =
-        if (ieeeExponent == 0) -1076
-        else ieeeExponent - 1077
-      val m2 =
+      val e =
+        if (ieeeExponent == 0) -1074
+        else ieeeExponent - 1075
+      val m =
         if (ieeeExponent == 0) ieeeMantissa
         else ieeeMantissa | 0x10000000000000L
-      val even = (m2 & 0x1) == 0
-      val mv = m2 << 2
-      val mp = mv + 2
-      val mmShift =
-        if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
-        else 0
-      val mm = mv - 1 - mmShift
-      var dv, dp, dm = 0L
-      var exp = 0
-      var dvIsTrailingZeros, dmIsTrailingZeros = false
-      if (e2 >= 0) {
-        val ss = f64Pow5InvSplit
-        val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
-        val i = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 122 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 122
-        exp = q
-        dv = fullMulPow5DivPow2(mv, q, i, ss)
-        dp = fullMulPow5DivPow2(mp, q, i, ss)
-        dm = fullMulPow5DivPow2(mm, q, i, ss)
-        if (q <= 21) {
-          val mv5 = mv / 5
-          if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
-          else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
-          else if (multiplePowOf5(mp, q)) dp -= 1
-        }
-      } else {
-        val ss = f64Pow5Split
-        val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
-        val i = -e2 - q
-        val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 120 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 120
-        exp = -i
-        dv = fullMulPow5DivPow2(mv, i, j, ss)
-        dp = fullMulPow5DivPow2(mp, i, j, ss)
-        dm = fullMulPow5DivPow2(mm, i, j, ss)
-        if (q <= 1) {
-          dvIsTrailingZeros = true
-          if (even) dmIsTrailingZeros = mmShift == 1
-          else dp -= 1
-        } else if (q < 63) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
-      }
-      var len = offset(dp)
-      exp += len
-      len += 1
-      val decimalNotation = exp >= -3 && exp < 7
-      if (dmIsTrailingZeros || dvIsTrailingZeros) {
-        var newDp, newDm, lastRemovedDigit = 0L
-        while ((decimalNotation || dp >= 100) && {
-          newDp = dp / 10
-          newDm = dm / 10
-          newDp > newDm
+      var decimalNotation = false
+      var dv = 0L
+      var exp, len = 0
+      if (e >= -52 && e <= 0 && (m & ((1L << -e) - 1)) == 0) {
+        dv = m >> -e
+        var newDv = 0L
+        while ((dv >= 100) && {
+          newDv = dv / 10
+          newDv * 10 == dv
         }) {
-          dp = newDp
-          dmIsTrailingZeros &= newDm * 10 == dm
-          dm = newDm
-          dvIsTrailingZeros &= lastRemovedDigit == 0
-          val newDv = dv / 10
-          lastRemovedDigit = dv - newDv * 10
           dv = newDv
-          len -= 1
+          exp += 1
         }
-        if (dmIsTrailingZeros && even) {
+        len = offset(dv)
+        exp += len
+        len += 1
+        decimalNotation = exp < 7
+      } else {
+        val even = (m & 0x1) == 0
+        val mv = m << 2
+        val mp = mv + 2
+        val mmShift =
+          if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
+          else 0
+        val mm = mv - 1 - mmShift
+        val e2 = e - 2
+        var dp, dm = 0L
+        var dvIsTrailingZeros, dmIsTrailingZeros = false
+        if (e2 >= 0) {
+          val ss = f64Pow5InvSplit
+          val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
+          val i = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 122 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 122
+          exp = q
+          dv = fullMulPow5DivPow2(mv, q, i, ss)
+          dp = fullMulPow5DivPow2(mp, q, i, ss)
+          dm = fullMulPow5DivPow2(mm, q, i, ss)
+          if (q <= 21) {
+            val mv5 = mv / 5
+            if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
+            else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
+            else if (multiplePowOf5(mp, q)) dp -= 1
+          }
+        } else {
+          val ss = f64Pow5Split
+          val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
+          val i = -e2 - q
+          val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 120 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 120
+          exp = -i
+          dv = fullMulPow5DivPow2(mv, i, j, ss)
+          dp = fullMulPow5DivPow2(mp, i, j, ss)
+          dm = fullMulPow5DivPow2(mm, i, j, ss)
+          if (q <= 1) {
+            dvIsTrailingZeros = true
+            if (even) dmIsTrailingZeros = mmShift == 1
+            else dp -= 1
+          } else if (q < 63) dvIsTrailingZeros = multiplePowOf2(mv, q - 1)
+        }
+        len = offset(dp)
+        exp += len
+        len += 1
+        decimalNotation = exp >= -3 && exp < 7
+        if (dmIsTrailingZeros || dvIsTrailingZeros) {
+          var newDp, newDm, lastRemovedDigit = 0L
           while ((decimalNotation || dp >= 100) && {
+            newDp = dp / 10
             newDm = dm / 10
-            newDm * 10 == dm
+            newDp > newDm
           }) {
-            dp /= 10
+            dp = newDp
+            dmIsTrailingZeros &= newDm * 10 == dm
             dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = dv / 10
@@ -1874,35 +1898,49 @@ final class JsonWriter private[jsoniter_scala](
             dv = newDv
             len -= 1
           }
+          if (dmIsTrailingZeros && even) {
+            while ((decimalNotation || dp >= 100) && {
+              newDm = dm / 10
+              newDm * 10 == dm
+            }) {
+              dp /= 10
+              dm = newDm
+              dvIsTrailingZeros &= lastRemovedDigit == 0
+              val newDv = dv / 10
+              lastRemovedDigit = dv - newDv * 10
+              dv = newDv
+              len -= 1
+            }
+          }
+          if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
+        } else {
+          var newDp, newDm = 0L
+          var roundUp = false
+          while ((decimalNotation || dp >= 1000) && {
+            newDp = dp / 100
+            newDm = dm / 100
+            newDp > newDm
+          }) {
+            dp = newDp
+            dm = newDm
+            val newDv = dv / 100
+            roundUp = dv - newDv * 100 >= 50
+            dv = newDv
+            len -= 2
+          }
+          if ((decimalNotation || dp >= 100) && {
+            newDm = dm / 10
+            dp / 10 > newDm
+          }) {
+            dm = newDm
+            val newDv = dv / 10
+            roundUp = dv - newDv * 10 >= 5
+            dv = newDv
+            len -= 1
+          }
+          if (roundUp || dv == dm) dv += 1
         }
-        if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-          (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
-      } else {
-        var newDp, newDm = 0L
-        var roundUp = false
-        while ((decimalNotation || dp >= 1000) && {
-          newDp = dp / 100
-          newDm = dm / 100
-          newDp > newDm
-        }) {
-          dp = newDp
-          dm = newDm
-          val newDv = dv / 100
-          roundUp = dv - newDv * 100 >= 50
-          dv = newDv
-          len -= 2
-        }
-        if ((decimalNotation || dp >= 100) && {
-          newDm = dm / 10
-          dp / 10 > newDm
-        }) {
-          dm = newDm
-          val newDv = dv / 10
-          roundUp = dv - newDv * 10 >= 5
-          dv = newDv
-          len -= 1
-        }
-        if (roundUp || dv == dm) dv += 1
       }
       var pos = ensureBufCapacity(24)
       val buf = this.buf

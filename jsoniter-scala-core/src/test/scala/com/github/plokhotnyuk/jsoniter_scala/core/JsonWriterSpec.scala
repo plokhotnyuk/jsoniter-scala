@@ -543,6 +543,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(1.00014165E-36f)
       check(200f)
       check(3.3554432E7f)
+      //(1 to 16777216).par.foreach { n =>
+      forAll(minSuccessful(100000)) { (n: Int) =>
+        check(n.toFloat)
+      }
       //(1 to Int.MaxValue).par.foreach { n =>
       forAll(minSuccessful(100000)) { (n: Int) =>
         val x = java.lang.Float.intBitsToFloat(n)
@@ -619,6 +623,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(1.9430376160308388E16)
       check(-6.9741824662760956E19)
       check(4.3816050601147837E18)
+      forAll(minSuccessful(100000)) { (n: Long) =>
+        check(n.toDouble)
+      }
       forAll(minSuccessful(100000)) { (n: Long) =>
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) check(x)
