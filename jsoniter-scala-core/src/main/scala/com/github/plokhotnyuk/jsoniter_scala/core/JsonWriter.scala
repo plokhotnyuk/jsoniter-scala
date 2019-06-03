@@ -1629,11 +1629,11 @@ final class JsonWriter private[jsoniter_scala](
         else ieeeMantissa | 0x800000
       var decimalNotation = false
       var dv, exp, len = 0
-      if (e >= -23 && e <= 0 && (m & ((1 << -e) - 1)) == 0) {
+      if (e >= -23 && e <= 0 && multiplePowOf2(m, -e)) {
         dv = m >> -e
         var newDv = 0
         while ((dv >= 100) && {
-          newDv = (dv * 3435973837L >> 35).toInt
+          newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
           newDv * 10 == dv
         }) {
           dv = newDv
@@ -1824,7 +1824,7 @@ final class JsonWriter private[jsoniter_scala](
       var decimalNotation = false
       var dv = 0L
       var exp, len = 0
-      if (e >= -52 && e <= 0 && (m & ((1L << -e) - 1)) == 0) {
+      if (e >= -52 && e <= 0 && multiplePowOf2(m, -e)) {
         dv = m >> -e
         var newDv = 0L
         while ((dv >= 100) && {
