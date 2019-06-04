@@ -27,10 +27,10 @@ import scala.annotation.meta.getter
 @noflat case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 
 abstract class AnyValsBenchmark extends CommonParams {
-  //FIXME: 2.5 is for hiding of Play-JSON bug in serialization of floats as doubles: 2.2 -> 2.200000047683716
-  var obj: AnyVals = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(1.1), FloatVal(2.5f))
-  var jsonString1: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":1.1,"f":2.5}"""
-  var jsonString2: String = """{"b":1,"bl":true,"ch":"x","dbl":1.1,"f":2.5,"i":3,"l":4,"s":2}"""
+  var obj: AnyVals = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(5), FloatVal(6))
+  var jsonString1: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":5.0,"f":6.0}"""
+  var jsonString2: String = """{"b":1,"bl":true,"ch":"x","dbl":5.0,"f":6.0,"i":3,"l":4,"s":2}"""
+  var jsonString3: String = """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"x","dbl":5,"f":6}"""
   var jsonBytes: Array[Byte] = jsonString1.getBytes(UTF_8)
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
 }
