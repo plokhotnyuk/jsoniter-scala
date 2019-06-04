@@ -1721,29 +1721,29 @@ final class JsonWriter private[jsoniter_scala](
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
         } else {
           var newDp, newDm = 0
-          var roundUp = false
+          var oldDv = dv
           while ((decimalNotation || dp >= 1000) && {
             newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
             newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
             newDp > newDm
           }) {
+            oldDv = dv
+            dv = (dv * 1374389535L >> 37).toInt // divide positive int by 100
             dm = newDm
             dp = newDp
-            val newDv = (dv * 1374389535L >> 37).toInt // divide positive int by 100
-            roundUp = dv - newDv * 100 >= 50
-            dv = newDv
             len -= 2
           }
-          if ((decimalNotation || dp >= 100) && {
-            newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-            (dp * 3435973837L >> 35).toInt > newDm // divide positive int by 10
-          }) {
-            dm = newDm
-            val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-            roundUp = dv - newDv * 10 >= 5
-            dv = newDv
-            len -= 1
-          }
+          val roundUp =
+            if ((decimalNotation || dp >= 100) && {
+              newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+              (dp * 3435973837L >> 35).toInt > newDm // divide positive int by 10
+            }) {
+              oldDv = dv
+              dv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+              dm = newDm
+              len -= 1
+              oldDv - dv * 10 >= 5
+            } else oldDv - dv * 100 >= 50
           if (roundUp || dv == dm) dv += 1
         }
       }
@@ -1916,29 +1916,29 @@ final class JsonWriter private[jsoniter_scala](
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
         } else {
           var newDp, newDm = 0L
-          var roundUp = false
+          var oldDv = dv
           while ((decimalNotation || dp >= 1000) && {
             newDp = dp / 100
             newDm = dm / 100
             newDp > newDm
           }) {
+            oldDv = dv
+            dv /= 100
             dp = newDp
             dm = newDm
-            val newDv = dv / 100
-            roundUp = dv - newDv * 100 >= 50
-            dv = newDv
             len -= 2
           }
-          if ((decimalNotation || dp >= 100) && {
-            newDm = dm / 10
-            dp / 10 > newDm
-          }) {
-            dm = newDm
-            val newDv = dv / 10
-            roundUp = dv - newDv * 10 >= 5
-            dv = newDv
-            len -= 1
-          }
+          val roundUp =
+            if ((decimalNotation || dp >= 100) && {
+              newDm = dm / 10
+              dp / 10 > newDm
+            }) {
+              oldDv = dv
+              dv /= 10
+              dm = newDm
+              len -= 1
+              oldDv - dv * 10 >= 5
+            } else oldDv - dv * 100 >= 50
           if (roundUp || dv == dm) dv += 1
         }
       }
