@@ -1126,9 +1126,9 @@ final class JsonReader private[jsoniter_scala](
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
       if (b < '0' || b > '9') numberError()
-      var posMan: Long = b - '0'
-      val isZeroFirst = isToken && posMan == 0
-      var manExp, posExp, digits = 0
+      var posMant: Long = b - '0'
+      val isZeroFirst = isToken && posMant == 0
+      var mantExp, posExp, digits = 0
       var isExpNeg = false
       var pos = head
       var buf = this.buf
@@ -1141,19 +1141,19 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
-        if (posMan < 9007199254740992L) {
-          posMan = posMan * 10 + (b - '0')
+        if (posMant < 922337203685477580L) {
+          posMant = posMant * 10 + (b - '0')
           digits += 1
-        } else manExp += 1
+        } else mantExp += 1
         pos += 1
       }
       if (b == '.') {
         b = nextByte(pos + 1)
         if (b < '0' || b > '9') numberError()
-        if (posMan < 9007199254740992L) {
-          posMan = posMan * 10 + (b - '0')
+        if (posMant < 922337203685477580L) {
+          posMant = posMant * 10 + (b - '0')
           digits += 1
-          manExp -= 1
+          mantExp -= 1
         }
         pos = head
         buf = this.buf
@@ -1165,10 +1165,10 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMan < 9007199254740992L) {
-            posMan = posMan * 10 + (b - '0')
+          if (posMant < 922337203685477580L) {
+            posMant = posMant * 10 + (b - '0')
             digits += 1
-            manExp -= 1
+            mantExp -= 1
           }
           pos += 1
         }
@@ -1189,23 +1189,23 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 100) posExp = posExp * 10 + (b - '0')
+          if (posExp < 1000) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
       }
       head = pos
-      val isSmallMan = posMan < 9007199254740992L // 9007199254740991 is a max mantissa that can be converted w/o rounding error by double mul or div
+      val isSmallMan = posMant < 9007199254740992L // 9007199254740991 is a max mantissa that can be converted w/o rounding error by double mul or div
       val exp =
-        if (isExpNeg) manExp - posExp
-        else manExp + posExp
-      if (isSmallMan && exp == 0) toSignedDouble(isNeg, posMan)
-      else if (isSmallMan && exp >= -22 && exp < 0) toSignedDouble(isNeg, posMan / pow10d(-exp))
-      else if (isSmallMan && exp > 0 && exp <= 22) toSignedDouble(isNeg, posMan * pow10d(exp))
+        if (isExpNeg) mantExp - posExp
+        else mantExp + posExp
+      if (isSmallMan && exp == 0) toSignedDouble(isNeg, posMant)
+      else if (isSmallMan && exp >= -22 && exp < 0) toSignedDouble(isNeg, posMant / pow10d(-exp))
+      else if (isSmallMan && exp > 0 && exp <= 22) toSignedDouble(isNeg, posMant * pow10d(exp))
       else if (isSmallMan && exp > 22 && exp + digits <= 37) {
         val pow10 = pow10d
         val slop = 15 - digits
-        toSignedDouble(isNeg, (posMan * pow10(slop)) * pow10(exp - slop))
-      } else toDouble(pos)
+        toSignedDouble(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
+      } else toDouble(pos, isNeg, posMant, exp + 350)
     } finally this.mark = mark
   }
 
@@ -1213,7 +1213,81 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) -posX
     else posX
 
-  private[this] def toDouble(pos: Int): Double = java.lang.Double.parseDouble(new String(buf, 0, mark, pos - mark))
+  // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
+  // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
+  private[this] def toDouble(pos: Int, isNeg: Boolean, posMant: Long, expIndex: Int): Double =
+    if (expIndex < 0) toSignedDouble(isNeg, 0.0)
+    else if (expIndex >= 660) toSignedDouble(isNeg, Double.PositiveInfinity)
+    else {
+      val largeIndex = (expIndex * 3435973837L >> 35).toInt // divide positive int by 10
+      val smallIndex = expIndex - largeIndex * 10
+      var mant = posMant
+      var exp, errors = 0
+      if (posMant >= 922337203685477580L) errors += 4
+      val si = smallIntPowers(smallIndex)
+      var shift = java.lang.Long.numberOfLeadingZeros(mant)
+      val smallMulShift = shift + java.lang.Long.numberOfLeadingZeros(si) - 64
+      if (smallMulShift >= 0) {
+        mant = (mant * si) << smallMulShift
+        exp -= smallMulShift
+      } else {
+        mant = mulMant(mant << shift, smallMantissa(smallIndex))
+        exp = mulExp(exp - shift, smallExponent(smallIndex))
+        errors += 4
+      }
+      mant = mulMant(mant, largeMantissa(largeIndex))
+      exp = mulExp(exp, largeExponent(largeIndex))
+      if (errors > 0) errors += 1
+      errors += 4
+      shift = java.lang.Long.numberOfLeadingZeros(mant)
+      mant <<= shift
+      exp -= shift
+      errors <<= shift
+      val extrabits = Math.max(-exp - 1074, 11)
+      val mask = -1L >>> Math.max(64 - extrabits, 0)
+      val extra = mant & mask
+      val halfway = (mask >>> 1) + 1
+      if (extrabits > 63 || (extrabits == 63 && isNotOverflowingSum(mant, errors)) ||
+          halfway - errors >= extra || extra >= halfway + errors) {
+        if (extrabits > 63) mant = 0
+        else mant >>>= extrabits
+        exp += extrabits
+        if (extrabits <= 64 && (extra > halfway || (extra == halfway && (mant & 1) != 0))) mant += 1
+        if (mant == 0x0020000000000000L) exp += 1
+        if (mant == 0 || exp < -1074) toSignedDouble(isNeg,0.0)
+        else if (exp >= 972) toSignedDouble(isNeg, Double.PositiveInfinity)
+        else {
+          val signBit =
+            if (isNeg) 0x8000000000000000L
+            else 0
+          val expBits =
+            if (exp == -1074 && (mant & 0x0010000000000000L) == 0) 0
+            else (exp + 1075L) << 52
+          val mantBits = mant & 0x000FFFFFFFFFFFFFL
+          java.lang.Double.longBitsToDouble(signBit | expBits | mantBits)
+        }
+      } else java.lang.Double.parseDouble(new String(buf, 0, mark, pos - mark))
+    }
+
+  private[this] def mulMant(a: Long, b: Long): Long = {
+    val ah = a >>> 32
+    val al = a & 0x00000000FFFFFFFFL
+    val bh = b >>> 32
+    val bl = b & 0x00000000FFFFFFFFL
+    val ah_bl = ah * bl
+    val al_bh = al * bh
+    val al_bl = al * bl
+    val ah_bh = ah * bh
+    val c = (ah_bl & 0x00000000FFFFFFFFL) + (al_bh & 0x00000000FFFFFFFFL) + (al_bl >>> 32) + 2147483648L
+    ah_bh + (ah_bl >>> 32) + (al_bh >>> 32) + (c >>> 32)
+  }
+
+  private[this] def mulExp(a: Int, b: Int): Int = a + b + 64
+
+  private def isNotOverflowingSum(s1: Long, s2: Long): Boolean = {
+    val s = s1 + s2
+    ((s1 ^ s) & (s2 ^ s)) >= 0
+  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
@@ -1225,8 +1299,8 @@ final class JsonReader private[jsoniter_scala](
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
       if (b < '0' || b > '9') numberError()
-      var posMan: Long = b - '0'
-      val isZeroFirst = isToken && posMan == 0
+      var posMant: Long = b - '0'
+      val isZeroFirst = isToken && posMant == 0
       var manExp, posExp, digits = 0
       var isExpNeg = false
       var pos = head
@@ -1240,8 +1314,8 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (isZeroFirst) leadingZeroError(pos - 1)
-        if (posMan < 1073741824) {
-          posMan = posMan * 10 + (b - '0')
+        if (posMant < 1073741824) {
+          posMant = posMant * 10 + (b - '0')
           digits += 1
         } else manExp += 1
         pos += 1
@@ -1249,8 +1323,8 @@ final class JsonReader private[jsoniter_scala](
       if (b == '.') {
         b = nextByte(pos + 1)
         if (b < '0' || b > '9') numberError()
-        if (posMan < 1073741824) {
-          posMan = posMan * 10 + (b - '0')
+        if (posMant < 1073741824) {
+          posMant = posMant * 10 + (b - '0')
           digits += 1
           manExp -= 1
         }
@@ -1264,8 +1338,8 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posMan < 1073741824) {
-            posMan = posMan * 10 + (b - '0')
+          if (posMant < 1073741824) {
+            posMant = posMant * 10 + (b - '0')
             digits += 1
             manExp -= 1
           }
@@ -1293,14 +1367,14 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      val isSmallMan = posMan < 1073741824 // 1073741823 is a max mantissa that can be converted w/o rounding error by double mul or div and subsequent conversion to float
+      val isSmallMan = posMant < 1073741824 // 1073741823 is a max mantissa that can be converted w/o rounding error by double mul or div and subsequent conversion to float
       val exp =
         if (isExpNeg) manExp - posExp
         else manExp + posExp
-      if (isSmallMan && exp == 0) toSignedFloat(isNeg, posMan)
-      else if (isSmallMan && exp >= -18 && exp < 0) toSignedFloat(isNeg, posMan / pow10d(-exp))
-      else if (isSmallMan && exp > 0 && exp <= 12) toSignedFloat(isNeg, posMan * pow10d(exp))
-      else if (isSmallMan && exp > 12 && exp + digits <= 20) toSignedFloat(isNeg, posMan * pow10d(exp))
+      if (isSmallMan && exp == 0) toSignedFloat(isNeg, posMant)
+      else if (isSmallMan && exp >= -18 && exp < 0) toSignedFloat(isNeg, posMant / pow10d(-exp))
+      else if (isSmallMan && exp > 0 && exp <= 12) toSignedFloat(isNeg, posMant * pow10d(exp))
+      else if (isSmallMan && exp > 12 && exp + digits <= 20) toSignedFloat(isNeg, posMant * pow10d(exp))
       else toFloat(pos)
     } finally this.mark = mark
   }
@@ -2633,6 +2707,32 @@ object JsonReader {
   private final val pow10d: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
+  private final val smallIntPowers =
+    Array[Int](1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000)
+  private final val smallMantissa = Array[Long](
+    -9223372036854775808L, -6917529027641081856L, -4035225266123964416L, -432345564227567616L, -7187745005283311616L,
+    -4372995238176751616L, -854558029293551616L, -7451627795949551616L, -4702848726509551616L, -1266874889709551616L)
+  private final val smallExponent = Array[Short](-63, -60, -57, -54, -50, -47, -44, -40, -37, -34)
+  private final val largeMantissa = Array[Long](
+    -6891618112455698919L, -4994806998408183946L, -2786628235540701832L, -215969822234494768L, -7835036815511224669L,
+    -6093090917745768758L, -4065198994811024355L, -1704422086424124727L, -8701430062309552536L, -7101705404292871755L,
+    -5239380795317920458L, -3071349608317525546L, -547429124662700864L, -8027971522334779313L, -6317696477610263061L,
+    -4326674280168464132L, -2008819381370884406L, -8878612607581929669L, -7307973034592864071L, -5479507920956448621L,
+    -3350894374423386208L, -872862063775190746L, -8217398424034108273L, -6538218414850328322L, -4583395603105477319L,
+    -2307682335666372931L, -9052573742614218705L, -7510490449794491995L, -5715269221619013577L, -3625356651333078602L,
+    -1192378206733142148L, -8403381297090862394L, -6754730975062328271L, -4835449396872013078L, -2601111570856684098L,
+    -9223372036854775808L, -7709325833709551616L, -5946744073709551616L, -3894828845342699810L, -1506085128623544835L,
+    -8585982758446904049L, -6967307053960650171L, -5082920523248573386L, -2889205879056697349L, -335385916056126881L,
+    -7904546130479028392L, -6174010410465235234L, -4159401682681114339L, -1814088448677712867L, -8765264286586255934L,
+    -7176018221920323369L, -5325892301117581398L, -3172062256211528206L, -664674077828931749L, -8096217067111932656L,
+    -6397144748195131028L, -4419164240055772162L, -2116491865831296966L, -8941286242233752499L, -7380934748073420955L,
+    -5564446534515285000L, -3449775934753242068L, -987975350460687153L, -8284403175614349646L, -6616222212041804507L,
+    -4674203974643163860L)
+  private final val largeExponent = Array[Short](
+    -1226, -1193, -1160, -1127, -1093, -1060, -1027, -994, -960, -927, -894, -861, -828, -794, -761, -728, -695,
+    -661, -628, -595, -562, -529, -495, -462, -429, -396, -362, -329, -296, -263, -230, -196, -163, -130, -97,  -63,
+    -30,  3, 36, 69, 103, 136, 169, 202, 235, 269, 302, 335, 368, 402, 435, 468, 501, 534, 568, 601, 634, 667, 701,
+    734, 767, 800, 833, 867, 900, 933)
   private final val nibbles: Array[Byte] = {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)

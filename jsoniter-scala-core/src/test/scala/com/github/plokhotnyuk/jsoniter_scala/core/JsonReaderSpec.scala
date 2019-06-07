@@ -2176,6 +2176,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid double values" in {
+      checkDouble("36028797018963967")
       forAll(minSuccessful(100000)) { (n: Double) =>
         checkDouble(n.toString)
       }
