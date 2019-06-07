@@ -2176,6 +2176,34 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid double values" in {
+      checkDouble("9007199254740992") // Round-down, halfway
+      checkDouble("9007199254740993")
+      checkDouble("9007199254740994")
+      checkDouble("18014398509481984")
+      checkDouble("18014398509481986")
+      checkDouble("18014398509481988")
+      checkDouble("9223372036854775808")
+      checkDouble("9223372036854776832")
+      checkDouble("9223372036854777856")
+      checkDouble("11417981541647679048466287755595961091061972992")
+      checkDouble("11417981541647680316116887983825362587765178368")
+      checkDouble("11417981541647681583767488212054764084468383744")
+      checkDouble("11417981541647681583767488212054764084468383744")
+      checkDouble("9007199254740994") // Round-up, halfway
+      checkDouble("9007199254740995")
+      checkDouble("9007199254740996")
+      checkDouble("18014398509481988")
+      checkDouble("18014398509481990")
+      checkDouble("18014398509481992")
+      checkDouble("9223372036854777856")
+      checkDouble("9223372036854778880")
+      checkDouble("9223372036854779904")
+      checkDouble("11417981541647681583767488212054764084468383744")
+      checkDouble("11417981541647682851418088440284165581171589120")
+      checkDouble("11417981541647684119068688668513567077874794496")
+      checkDouble("9223372036854776833") // Round-up, above halfway
+      checkDouble("11417981541647680316116887983825362587765178369")
+      checkDouble("36028797018963967") // 2^n - 1 integer regression
       forAll(minSuccessful(100000)) { (n: Double) =>
         checkDouble(n.toString)
       }
