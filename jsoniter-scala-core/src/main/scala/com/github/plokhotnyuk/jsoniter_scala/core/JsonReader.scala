@@ -1247,8 +1247,7 @@ final class JsonReader private[jsoniter_scala](
       val mask = -1L >>> Math.max(64 - extrabits, 0)
       val extra = mant & mask
       val halfway = (mask >>> 1) + 1
-      if (extrabits > 63 || (extrabits == 63 && isNotOverflowingSum(mant, errors)) ||
-          halfway - errors >= extra || extra >= halfway + errors) {
+      if (extrabits > 63 || Math.abs(extra - halfway) >= errors) {
         if (extrabits > 63) mant = 0
         else mant >>>= extrabits
         exp += extrabits
@@ -1283,11 +1282,6 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def mulExp(a: Int, b: Int): Int = a + b + 64
-
-  private def isNotOverflowingSum(s1: Long, s2: Long): Boolean = {
-    val s = s1 + s2
-    ((s1 ^ s) & (s2 ^ s)) >= 0
-  }
 
   private[this] def parseFloat(isToken: Boolean): Float = {
     var b =
