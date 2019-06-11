@@ -1212,13 +1212,13 @@ final class JsonReader private[jsoniter_scala](
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
   private[this] def toDouble(pos: Int, isNeg: Boolean, posMant: Long, exponent: Int): Double =
-    if (posMant == 0 || exponent < -350) toSignedDouble(isNeg, 0.0)
+    if (posMant == 0 || exponent < -343) toSignedDouble(isNeg, 0.0)
     else if (exponent >= 310) toSignedDouble(isNeg, Double.PositiveInfinity)
     else {
       var errors =
         if (posMant >= 922337203685477580L) 20
         else 2
-      val expIndex = exponent + 350
+      val expIndex = exponent + 343
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
       var mant = mulMant(posMant << shift, pow10F80Mantissas(expIndex))
       var exp = mulExp(-shift, pow10F80Exponents(expIndex))
@@ -1351,13 +1351,13 @@ final class JsonReader private[jsoniter_scala](
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
   private[this] def toFloat(pos: Int, isNeg: Boolean, posMant: Long, exponent: Int): Float =
-    if (posMant == 0 || exponent < -70) toSignedFloat(isNeg, 0.0f)
-    else if (exponent >= 40) toSignedFloat(isNeg, Float.PositiveInfinity)
+    if (posMant == 0 || exponent < -64) toSignedFloat(isNeg, 0.0f)
+    else if (exponent >= 39) toSignedFloat(isNeg, Float.PositiveInfinity)
     else {
       var errors =
         if (posMant >= 922337203685477580L) 20
         else 2
-      val expIndex = exponent + 350
+      val expIndex = exponent + 343
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
       var mant = mulMant(posMant << shift, pow10F80Mantissas(expIndex))
       var exp = mulExp(-shift, pow10F80Exponents(expIndex))
@@ -2733,8 +2733,8 @@ object JsonReader {
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
-  private final val pow10F80Mantissas = new Array[Long](660)
-  private final val pow10F80Exponents = new Array[Short](660)
+  private final val pow10F80Mantissas = new Array[Long](653)
+  private final val pow10F80Exponents = new Array[Short](653)
   private final val nibbles: Array[Byte] = {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
@@ -2807,7 +2807,7 @@ object JsonReader {
 
   {
     var pow10 = BigInteger.TEN
-    var i = 349
+    var i = 342
     while (i >= 0) {
       pow10F80Mantissas(i) = BigInteger.ONE.shiftLeft(pow10.bitLength + 63).divide(pow10).longValue
       pow10F80Exponents(i) = (-pow10.bitLength - 63).toShort
@@ -2815,8 +2815,8 @@ object JsonReader {
       i -= 1
     }
     pow10 = BigInteger.ONE.shiftLeft(63)
-    i = 350
-    while (i < 660) {
+    i = 343
+    while (i < 653) {
       pow10F80Mantissas(i) = pow10.shiftRight(pow10.bitLength - 64).longValue
       pow10F80Exponents(i) = (pow10.bitLength - 127).toShort
       pow10 = pow10.shiftLeft(2).add(pow10).shiftLeft(1)
