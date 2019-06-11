@@ -1218,10 +1218,9 @@ final class JsonReader private[jsoniter_scala](
       var errors =
         if (posMant >= 922337203685477580L) 20
         else 2
-      val expIndex = exponent + 343
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
-      var mant = mulMant(posMant << shift, pow10F80Mantissas(expIndex))
-      var exp = mulExp(-shift, pow10F80Exponents(expIndex))
+      var mant = mulMant(posMant << shift, pow10Mantissas(exponent + 343))
+      var exp = mulExp(-shift, exponent)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
@@ -1357,10 +1356,9 @@ final class JsonReader private[jsoniter_scala](
       var errors =
         if (posMant >= 922337203685477580L) 20
         else 2
-      val expIndex = exponent + 343
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
-      var mant = mulMant(posMant << shift, pow10F80Mantissas(expIndex))
-      var exp = mulExp(-shift, pow10F80Exponents(expIndex))
+      var mant = mulMant(posMant << shift, pow10Mantissas(exponent + 343))
+      var exp = mulExp(-shift, exponent)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
@@ -1407,7 +1405,7 @@ final class JsonReader private[jsoniter_scala](
     ph + (pm1 >>> 32) + (pm2 >>> 32) + (c >>> 32)
   }
 
-  private[this] def mulExp(a: Int, b: Int): Int = a + b + 64
+  private[this] def mulExp(a: Int, b: Int): Int = a + (b * 14267572527L >> 32).toInt + 1
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -2733,8 +2731,7 @@ object JsonReader {
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
-  private final val pow10F80Mantissas = new Array[Long](653)
-  private final val pow10F80Exponents = new Array[Short](653)
+  private final val pow10Mantissas = new Array[Long](653)
   private final val nibbles: Array[Byte] = {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
@@ -2809,16 +2806,14 @@ object JsonReader {
     var pow10 = BigInteger.TEN
     var i = 342
     while (i >= 0) {
-      pow10F80Mantissas(i) = BigInteger.ONE.shiftLeft(pow10.bitLength + 63).divide(pow10).longValue
-      pow10F80Exponents(i) = (-pow10.bitLength - 63).toShort
+      pow10Mantissas(i) = BigInteger.ONE.shiftLeft(pow10.bitLength + 63).divide(pow10).longValue
       pow10 = pow10.shiftLeft(2).add(pow10).shiftLeft(1)
       i -= 1
     }
     pow10 = BigInteger.ONE.shiftLeft(63)
     i = 343
     while (i < 653) {
-      pow10F80Mantissas(i) = pow10.shiftRight(pow10.bitLength - 64).longValue
-      pow10F80Exponents(i) = (pow10.bitLength - 127).toShort
+      pow10Mantissas(i) = pow10.shiftRight(pow10.bitLength - 64).longValue
       pow10 = pow10.shiftLeft(2).add(pow10).shiftLeft(1)
       i += 1
     }
