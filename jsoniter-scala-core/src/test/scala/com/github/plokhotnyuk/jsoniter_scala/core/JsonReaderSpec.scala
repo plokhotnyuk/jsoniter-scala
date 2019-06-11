@@ -2068,6 +2068,30 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid float values" in {
+      checkFloat("16777216") // Round-down, halfway
+      checkFloat("16777217")
+      checkFloat("16777218")
+      checkFloat("33554432")
+      checkFloat("33554434")
+      checkFloat("33554436")
+      checkFloat("17179869184")
+      checkFloat("17179870208")
+      checkFloat("17179871232")
+      checkFloat("16777218") // Round-up, halfway
+      checkFloat("16777219")
+      checkFloat("16777220")
+      checkFloat("33554436")
+      checkFloat("33554438")
+      checkFloat("33554440")
+      checkFloat("17179871232")
+      checkFloat("17179872256")
+      checkFloat("17179873280")
+      checkFloat("33554435") // Round-up, above halfway
+      checkFloat("17179870209")
+      checkFloat("1.00000017881393432617187499") // Check exactly halfway, round-up at halfway
+      checkFloat("1.000000178813934326171875")
+      checkFloat("1.00000017881393432617187501")
+      checkFloat("36028797018963967") // 2^n - 1 integer regression
       forAll(minSuccessful(100000)) { (n: Float) =>
         checkFloat(n.toString)
       }
@@ -2081,14 +2105,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Int) =>
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
-      }
-      //(-26 to 20).foreach { e =>
-      //  (0 to 1 << 30).par.foreach { m =>
-      //    checkFloat(s"${m}e$e")
-      //  }
-      //}
-      forAll(Gen.choose(0, 1 << 30), Gen.choose(-26, 20), minSuccessful(100000)) { (m: Int, e: Int) =>
-        checkFloat(s"${m}e$e")
       }
       forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         checkFloat(n.toString)
@@ -2213,9 +2229,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(minSuccessful(100000)) { (n: Long) =>
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
-      }
-      forAll(Gen.choose(0L, 1L << 53), Gen.choose(-22, 37), minSuccessful(100000)) { (m: Long, e: Int) =>
-        checkDouble(s"${m}e$e")
       }
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkDouble(n.toString)
