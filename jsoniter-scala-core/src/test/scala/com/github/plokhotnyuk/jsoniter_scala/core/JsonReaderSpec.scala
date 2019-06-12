@@ -2068,6 +2068,30 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid float values" in {
+      checkFloat("16777216") // Round-down, halfway
+      checkFloat("16777217")
+      checkFloat("16777218")
+      checkFloat("33554432")
+      checkFloat("33554434")
+      checkFloat("33554436")
+      checkFloat("17179869184")
+      checkFloat("17179870208")
+      checkFloat("17179871232")
+      checkFloat("16777218") // Round-up, halfway
+      checkFloat("16777219")
+      checkFloat("16777220")
+      checkFloat("33554436")
+      checkFloat("33554438")
+      checkFloat("33554440")
+      checkFloat("17179871232")
+      checkFloat("17179872256")
+      checkFloat("17179873280")
+      checkFloat("33554435") // Round-up, above halfway
+      checkFloat("17179870209")
+      checkFloat("1.00000017881393432617187499") // Check exactly halfway, round-up at halfway
+      checkFloat("1.000000178813934326171875")
+      checkFloat("1.00000017881393432617187501")
+      checkFloat("36028797018963967") // 2^n - 1 integer regression
       forAll(minSuccessful(100000)) { (n: Float) =>
         checkFloat(n.toString)
       }
@@ -2082,14 +2106,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
-      //(-26 to 20).foreach { e =>
-      //  (0 to 1 << 30).par.foreach { m =>
-      //    checkFloat(s"${m}e$e")
-      //  }
-      //}
-      forAll(Gen.choose(0, 1 << 30), Gen.choose(-26, 20), minSuccessful(100000)) { (m: Int, e: Int) =>
-        checkFloat(s"${m}e$e")
-      }
       forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
         checkFloat(n.toString)
       }
@@ -2097,7 +2113,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         checkFloat(n.toString)
       }
     }
-    "parse infinity on float overflow" in {
+    "parse infinities on float overflow" in {
       check("12345e6789", Float.PositiveInfinity)
       check("-12345e6789", Float.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Float.PositiveInfinity)
@@ -2105,15 +2121,19 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader("12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.PositiveInfinity
       reader("-12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.NegativeInfinity
     }
-    "parse zero on float underflow" in {
+    "parse zeroes on float underflow" in {
       check("12345e-6789", 0.0f)
       check("-12345e-6789", -0.0f)
       check("12345678901234567890e-12345678901234567890", 0.0f)
       check("-12345678901234567890e-12345678901234567890", -0.0f)
     }
-    "parse positive and negative zero" in {
+    "parse positive and negative zeroes" in {
       check2("0.0")
       check2("-0.0")
+    }
+    "parse denormalized numbers with long mantissa and compensating exponent" in {
+      check("1" + "0" * 1000000 + "e-1000000", 1.0f)
+      check("0." + "0" * 1000000 + "1e1000000", 0.1f)
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
@@ -2214,9 +2234,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
       }
-      forAll(Gen.choose(0L, 1L << 53), Gen.choose(-22, 37), minSuccessful(100000)) { (m: Long, e: Int) =>
-        checkDouble(s"${m}e$e")
-      }
       forAll(minSuccessful(100000)) { (n: Long) =>
         checkDouble(n.toString)
       }
@@ -2227,7 +2244,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         checkDouble(n.toString)
       }
     }
-    "parse infinity on double overflow" in {
+    "parse infinities on double overflow" in {
       check("12345e6789", Double.PositiveInfinity)
       check("-12345e6789", Double.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Double.PositiveInfinity)
@@ -2235,15 +2252,19 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader("12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.PositiveInfinity
       reader("-12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.NegativeInfinity
     }
-    "parse zero on double underflow" in {
+    "parse zeroes on double underflow" in {
       check("12345e-6789", 0.0)
       check("-12345e-6789", -0.0)
       check("12345678901234567890e-12345678901234567890", 0.0)
       check("-1234567890123456789e-12345678901234567890", -0.0)
     }
-    "parse positive and negative zero" in {
+    "parse positive and negative zeroes" in {
       check2("0.0")
       check2("-0.0")
+    }
+    "parse denormalized numbers with long mantissa and compensating exponent" in {
+      check("1" + "0" * 1000000 + "e-1000000", 1.0)
+      check("0." + "0" * 1000000 + "1e1000000", 0.1)
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
