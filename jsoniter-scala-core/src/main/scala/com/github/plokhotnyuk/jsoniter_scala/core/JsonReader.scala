@@ -1216,25 +1216,24 @@ final class JsonReader private[jsoniter_scala](
     else if (exponent >= 310) toSignedDouble(isNeg, Double.PositiveInfinity)
     else {
       var errors =
-        if (posMant >= 922337203685477580L) 20
-        else 2
+        if (posMant >= 922337203685477580L) 14
+        else 4
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
-      var mant = mulMant(posMant << shift, pow10Mantissas(exponent + 343))
-      var exp = mulExp(-shift, exponent)
+      var mant = mulMant(posMant << shift, exponent)
+      var exp = addExp(-shift, exponent)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
       errors <<= shift
-      val truncateBitNum = Math.max(-exp - 1074, 11)
-      val saveBitNum = 64 - truncateBitNum
-      val mask = -1L >>> Math.max(saveBitNum, 0)
-      val halfwayDiff = (mant & mask) - ((mask >>> 1) + 1)
-      if (saveBitNum <= 0 || Math.abs(halfwayDiff) >= errors) {
-        if (saveBitNum <= 0) mant = 0
-        else mant >>>= truncateBitNum
-        exp += truncateBitNum
-        if (saveBitNum >= 0 && (halfwayDiff > 0 || (halfwayDiff == 0 && (mant & 1) != 0))) mant += 1
-        if (mant == 0x0020000000000000L) exp += 1
+      val truncatedBitNum = Math.max(-exp - 1074, 11)
+      val savedBitNum = 64 - truncatedBitNum
+      val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
+      if (savedBitNum <= 0 || Math.abs(halfwayDiff) >= errors) {
+        if (savedBitNum <= 0) mant = 0
+        else mant >>>= truncatedBitNum
+        exp += truncatedBitNum
+        if (savedBitNum >= 0 && (halfwayDiff > 0 || (halfwayDiff == 0 && (mant & 1) != 0))) mant += 1 // rounding
+        if (mant == 0x0020000000000000L) exp += 1 // overflow correction
         if (mant == 0 || exp < -1074) toSignedDouble(isNeg,0.0)
         else if (exp >= 972) toSignedDouble(isNeg, Double.PositiveInfinity)
         else {
@@ -1354,25 +1353,24 @@ final class JsonReader private[jsoniter_scala](
     else if (exponent >= 39) toSignedFloat(isNeg, Float.PositiveInfinity)
     else {
       var errors =
-        if (posMant >= 922337203685477580L) 20
-        else 2
+        if (posMant >= 922337203685477580L) 14
+        else 4
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
-      var mant = mulMant(posMant << shift, pow10Mantissas(exponent + 343))
-      var exp = mulExp(-shift, exponent)
+      var mant = mulMant(posMant << shift, exponent)
+      var exp = addExp(-shift, exponent)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
       errors <<= shift
-      val truncateBitNum = Math.max(-exp - 149, 40)
-      val saveBitNum = 64 - truncateBitNum
-      val mask = -1L >>> Math.max(saveBitNum, 0)
-      val halfwayDiff = (mant & mask) - ((mask >>> 1) + 1)
-      if (saveBitNum <= 0 || Math.abs(halfwayDiff) >= errors) {
-        if (saveBitNum <= 0) mant = 0
-        else mant >>>= truncateBitNum
-        exp += truncateBitNum
-        if (saveBitNum >= 0 && (halfwayDiff > 0 || (halfwayDiff == 0 && (mant & 1) != 0))) mant += 1
-        if (mant == 0x01000000) exp += 1
+      val truncatedBitNum = Math.max(-exp - 149, 40)
+      val savedBitNum = 64 - truncatedBitNum
+      val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
+      if (savedBitNum <= 0 || Math.abs(halfwayDiff) >= errors) {
+        if (savedBitNum <= 0) mant = 0
+        else mant >>>= truncatedBitNum
+        exp += truncatedBitNum
+        if (savedBitNum >= 0 && (halfwayDiff > 0 || (halfwayDiff == 0 && (mant & 1) != 0))) mant += 1 // rounding
+        if (mant == 0x01000000) exp += 1 // overflow correction
         if (mant == 0 || exp < -149) toSignedFloat(isNeg,0.0f)
         else if (exp >= 105) toSignedFloat(isNeg, Float.PositiveInfinity)
         else {
@@ -1392,7 +1390,8 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) -posX
     else posX
 
-  private[this] def mulMant(a: Long, b: Long): Long = {
+  private[this] def mulMant(a: Long, e10: Int): Long = {
+    val b = pow10Mantissas(e10 + 343)
     val ah = a >>> 32
     val al = a & 0x00000000FFFFFFFFL
     val bh = b >>> 32
@@ -1401,11 +1400,16 @@ final class JsonReader private[jsoniter_scala](
     val pm2 = al * bh
     val pl = al * bl
     val ph = ah * bh
-    val c = (pm1 & 0x00000000FFFFFFFFL) + (pm2 & 0x00000000FFFFFFFFL) + (pl >>> 32) + 2147483648L
+    val c = (pm1 + pm2 & 0x00000000FFFFFFFFL) + (pl >>> 32) + 2147483648L // carry bit with rounding
     ph + (pm1 >>> 32) + (pm2 >>> 32) + (c >>> 32)
   }
 
-  private[this] def mulExp(a: Int, b: Int): Int = a + (b * 14267572527L >> 32).toInt + 1
+  private[this] def addExp(e2: Int, e10: Int): Int = e2 + 1 + (e10 * 14267572527L >> 32).toInt // == (e10 * Math.log(10) / Math.log(2)).toInt
+
+  private[this] def getHalfwayDiff(mant: Long, savedBitNum: Int): Long = {
+    val mask = -1L >>> Math.max(savedBitNum, 0)
+    (mant & mask) - ((mask >>> 1) + 1)
+  }
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
