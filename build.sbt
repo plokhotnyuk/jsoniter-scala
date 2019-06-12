@@ -142,7 +142,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "io.circe" %% "circe-generic" % "0.12.0-M2",
       "io.circe" %% "circe-generic-extras" % "0.12.0-M2",
       "io.circe" %% "circe-parser" % "0.12.0-M2",
-      "com.typesafe.play" %% "play-json" % "2.7.3",
+      "com.typesafe.play" %% "play-json" % "2.7.4",
       "org.julienrf" %% "play-json-derived-codecs" % "5.0.0",
       "ai.x" %% "play-json-extensions" % "0.30.1",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
