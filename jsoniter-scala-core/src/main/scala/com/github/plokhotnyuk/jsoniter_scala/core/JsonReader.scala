@@ -1227,13 +1227,13 @@ final class JsonReader private[jsoniter_scala](
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
-      val errors =
-        (if (isExact) 4
-        else 14) << shift
+      val roundingError =
+        (if (isExact) 2
+        else 20) << shift
       val truncatedBitNum = Math.max(-exp - 1074, 11)
       val savedBitNum = 64 - truncatedBitNum
       val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
-      if (savedBitNum <= 0 || Math.abs(halfwayDiff) >= errors) {
+      if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
         if (savedBitNum <= 0) mant = 0
         else mant >>>= truncatedBitNum
         exp += truncatedBitNum
@@ -1369,13 +1369,13 @@ final class JsonReader private[jsoniter_scala](
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
-      val errors =
-        (if (isExact) 4
-        else 14) << shift
+      val roundingError =
+        (if (isExact) 2
+        else 20) << shift
       val truncatedBitNum = Math.max(-exp - 149, 40)
       val savedBitNum = 64 - truncatedBitNum
       val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
-      if (savedBitNum <= 0 || Math.abs(halfwayDiff) >= errors) {
+      if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
         if (savedBitNum <= 0) mant = 0
         else mant >>>= truncatedBitNum
         exp += truncatedBitNum
