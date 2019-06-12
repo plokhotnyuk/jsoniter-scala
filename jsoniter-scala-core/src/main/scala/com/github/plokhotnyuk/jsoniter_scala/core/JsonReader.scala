@@ -1201,7 +1201,7 @@ final class JsonReader private[jsoniter_scala](
       if (isExact && exp == 0) toSignedDouble(isNeg, posMant)
       else {
         val isSmall = (posMant >> 52) == 0 // max mantissa that can be converted w/o rounding error by double mul or div
-        if (isSmall && exp >= -22 && exp <= 22) {
+        if (isSmall && Math.abs(exp) <= 22) {
           val x =
             if (exp < 0) posMant / pow10Doubles(-exp)
             else posMant * pow10Doubles(exp)
@@ -1343,7 +1343,7 @@ final class JsonReader private[jsoniter_scala](
       if (isExact && exp == 0) toSignedFloat(isNeg, posMant)
       else {
         val isSmall = (posMant >> 23) == 0 // max mantissa that can be converted w/o rounding error by float mul or div
-        if (isSmall && exp >= -10 && exp <= 10) {
+        if (isSmall && Math.abs(exp) <= 10) {
           val x =
             if (exp < 0) posMant / pow10Floats(-exp)
             else posMant * pow10Floats(exp)
