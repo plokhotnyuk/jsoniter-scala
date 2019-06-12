@@ -1194,18 +1194,20 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      val isSmallMan = posMant < 9007199254740992L // 9007199254740991 is a max mantissa that can be converted w/o rounding error by double mul or div
       val exp =
         if (isExpNeg) mantExp - posExp
         else mantExp + posExp
-      if (isSmallMan && exp == 0) toSignedDouble(isNeg, posMant)
-      else if (isSmallMan && exp >= -22 && exp < 0) toSignedDouble(isNeg, posMant / pow10Doubles(-exp))
-      else if (isSmallMan && exp > 0 && exp <= 22) toSignedDouble(isNeg, posMant * pow10Doubles(exp))
-      else if (isSmallMan && exp > 22 && exp + digits <= 37) {
-        val pow10 = pow10Doubles
-        val slop = 15 - digits
-        toSignedDouble(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
-      } else toDouble(pos, isNeg, posMant, exp)
+      if (exp == 0) toSignedDouble(isNeg, posMant)
+      else {
+        val isSmallMant = (posMant >> 52) == 0 // max mantissa that can be converted w/o rounding error by double mul or div
+        if (isSmallMant && exp >= -22 && exp < 0) toSignedDouble(isNeg, posMant / pow10Doubles(-exp))
+        else if (isSmallMant && exp > 0 && exp <= 22) toSignedDouble(isNeg, posMant * pow10Doubles(exp))
+        else if (isSmallMant && exp > 22 && exp + digits <= 37) {
+          val pow10 = pow10Doubles
+          val slop = 15 - digits
+          toSignedDouble(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
+        } else toDouble(pos, isNeg, posMant, exp)
+      }
     } finally this.mark = mark
   }
 
@@ -1331,18 +1333,20 @@ final class JsonReader private[jsoniter_scala](
         }
       }
       head = pos
-      val isSmallMan = posMant < 16777216 // == (1 << 24) - 1, max mantissa that can be converted w/o rounding error by float mul or div
       val exp =
         if (isExpNeg) manExp - posExp
         else manExp + posExp
-      if (isSmallMan && exp == 0) toSignedFloat(isNeg, posMant)
-      else if (isSmallMan && exp >= -10 && exp < 0) toSignedFloat(isNeg, posMant / pow10Floats(-exp))
-      else if (isSmallMan && exp > 0 && exp <= 10) toSignedFloat(isNeg, posMant * pow10Floats(exp))
-      else if (isSmallMan && exp > 10 && exp + digits <= 16) {
-        val pow10 = pow10Floats
-        val slop = 6 - digits
-        toSignedFloat(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
-      } else toFloat(pos, isNeg, posMant, exp)
+      if (exp == 0) toSignedFloat(isNeg, posMant)
+      else {
+        val isSmalMant = (posMant >> 23) == 0 // max mantissa that can be converted w/o rounding error by float mul or div
+        if (isSmalMant && exp >= -10 && exp < 0) toSignedFloat(isNeg, posMant / pow10Floats(-exp))
+        else if (isSmalMant && exp > 0 && exp <= 10) toSignedFloat(isNeg, posMant * pow10Floats(exp))
+        else if (isSmalMant && exp > 10 && exp + digits <= 16) {
+          val pow10 = pow10Floats
+          val slop = 6 - digits
+          toSignedFloat(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
+        } else toFloat(pos, isNeg, posMant, exp)
+      }
     } finally this.mark = mark
   }
 
