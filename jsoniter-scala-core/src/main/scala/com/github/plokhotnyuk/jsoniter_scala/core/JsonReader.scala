@@ -1237,7 +1237,7 @@ final class JsonReader private[jsoniter_scala](
         if (savedBitNum <= 0) mant = 0
         else mant >>>= truncatedBitNum
         exp += truncatedBitNum
-        if (savedBitNum >= 0 && (halfwayDiff > 0 || (halfwayDiff == 0 && (mant & 1) != 0))) mant += 1 // rounding
+        if (savedBitNum >= 0 && halfwayDiff > 0) mant += 1 // rounding
         if (mant == 0x0020000000000000L) exp += 1 // overflow correction
         if (mant == 0 || exp < -1074) toSignedDouble(isNeg,0.0)
         else if (exp >= 972) toSignedDouble(isNeg, Double.PositiveInfinity)
@@ -1379,7 +1379,7 @@ final class JsonReader private[jsoniter_scala](
         if (savedBitNum <= 0) mant = 0
         else mant >>>= truncatedBitNum
         exp += truncatedBitNum
-        if (savedBitNum >= 0 && (halfwayDiff > 0 || (halfwayDiff == 0 && (mant & 1) != 0))) mant += 1 // rounding
+        if (savedBitNum >= 0 && halfwayDiff > 0) mant += 1 // rounding
         if (mant == 0x01000000) exp += 1 // overflow correction
         if (mant == 0 || exp < -149) toSignedFloat(isNeg,0.0f)
         else if (exp >= 105) toSignedFloat(isNeg, Float.PositiveInfinity)
