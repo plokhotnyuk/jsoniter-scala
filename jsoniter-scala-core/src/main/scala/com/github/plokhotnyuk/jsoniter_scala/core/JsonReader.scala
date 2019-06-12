@@ -1189,7 +1189,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 1000) posExp = posExp * 10 + (b - '0')
+          if (posExp < 214748364) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
       }
@@ -1197,36 +1197,39 @@ final class JsonReader private[jsoniter_scala](
       val exp =
         if (isExpNeg) mantExp - posExp
         else mantExp + posExp
-      if (exp == 0) toSignedDouble(isNeg, posMant)
+      val isExact = posMant < 922337203685477580L
+      if (isExact && exp == 0) toSignedDouble(isNeg, posMant)
       else {
-        val isSmallMant = (posMant >> 52) == 0 // max mantissa that can be converted w/o rounding error by double mul or div
-        if (isSmallMant && exp >= -22 && exp < 0) toSignedDouble(isNeg, posMant / pow10Doubles(-exp))
-        else if (isSmallMant && exp > 0 && exp <= 22) toSignedDouble(isNeg, posMant * pow10Doubles(exp))
-        else if (isSmallMant && exp > 22 && exp + digits <= 37) {
+        val isSmall = (posMant >> 52) == 0 // max mantissa that can be converted w/o rounding error by double mul or div
+        if (isSmall && exp >= -22 && exp <= 22) {
+          val x =
+            if (exp < 0) posMant / pow10Doubles(-exp)
+            else posMant * pow10Doubles(exp)
+          toSignedDouble(isNeg, x)
+        } else if (isSmall && exp > 22 && exp + digits <= 37) {
           val pow10 = pow10Doubles
           val slop = 15 - digits
           toSignedDouble(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
-        } else toDouble(pos, isNeg, posMant, exp)
+        } else toDouble(pos, isNeg, isExact, posMant, exp)
       }
     } finally this.mark = mark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(pos: Int, isNeg: Boolean, posMant: Long, exponent: Int): Double =
+  private[this] def toDouble(pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Double =
     if (posMant == 0 || exponent < -343) toSignedDouble(isNeg, 0.0)
     else if (exponent >= 310) toSignedDouble(isNeg, Double.PositiveInfinity)
     else {
-      var errors =
-        if (posMant >= 922337203685477580L) 14
-        else 4
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
       var mant = mulMant(posMant << shift, exponent)
       var exp = addExp(-shift, exponent)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
-      errors <<= shift
+      val errors =
+        (if (isExact) 4
+        else 14) << shift
       val truncatedBitNum = Math.max(-exp - 1074, 11)
       val savedBitNum = 64 - truncatedBitNum
       val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
@@ -1328,7 +1331,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 100) posExp = posExp * 10 + (b - '0')
+          if (posExp < 214748364) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
       }
@@ -1336,36 +1339,39 @@ final class JsonReader private[jsoniter_scala](
       val exp =
         if (isExpNeg) manExp - posExp
         else manExp + posExp
-      if (exp == 0) toSignedFloat(isNeg, posMant)
+      val isExact = posMant < 922337203685477580L
+      if (isExact && exp == 0) toSignedFloat(isNeg, posMant)
       else {
-        val isSmalMant = (posMant >> 23) == 0 // max mantissa that can be converted w/o rounding error by float mul or div
-        if (isSmalMant && exp >= -10 && exp < 0) toSignedFloat(isNeg, posMant / pow10Floats(-exp))
-        else if (isSmalMant && exp > 0 && exp <= 10) toSignedFloat(isNeg, posMant * pow10Floats(exp))
-        else if (isSmalMant && exp > 10 && exp + digits <= 16) {
+        val isSmall = (posMant >> 23) == 0 // max mantissa that can be converted w/o rounding error by float mul or div
+        if (isSmall && exp >= -10 && exp <= 10) {
+          val x =
+            if (exp < 0) posMant / pow10Floats(-exp)
+            else posMant * pow10Floats(exp)
+          toSignedFloat(isNeg, x)
+        } else if (isSmall && exp > 10 && exp + digits <= 16) {
           val pow10 = pow10Floats
           val slop = 6 - digits
           toSignedFloat(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
-        } else toFloat(pos, isNeg, posMant, exp)
+        } else toFloat(pos, isNeg, isExact, posMant, exp)
       }
     } finally this.mark = mark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(pos: Int, isNeg: Boolean, posMant: Long, exponent: Int): Float =
+  private[this] def toFloat(pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Float =
     if (posMant == 0 || exponent < -64) toSignedFloat(isNeg, 0.0f)
     else if (exponent >= 39) toSignedFloat(isNeg, Float.PositiveInfinity)
     else {
-      var errors =
-        if (posMant >= 922337203685477580L) 14
-        else 4
       var shift = java.lang.Long.numberOfLeadingZeros(posMant)
       var mant = mulMant(posMant << shift, exponent)
       var exp = addExp(-shift, exponent)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
-      errors <<= shift
+      val errors =
+        (if (isExact) 4
+        else 14) << shift
       val truncatedBitNum = Math.max(-exp - 149, 40)
       val savedBitNum = 64 - truncatedBitNum
       val halfwayDiff = getHalfwayDiff(mant, savedBitNum)

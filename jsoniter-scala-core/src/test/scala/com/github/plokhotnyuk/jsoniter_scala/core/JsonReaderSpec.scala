@@ -2131,6 +2131,10 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check2("0.0")
       check2("-0.0")
     }
+    "parse denormalized number with long mantissa and compensating exponent" in {
+      check("1" + "0" * 1000000 + "e-1000000", 1.0f)
+      check("0." + "0" * 1000000 + "1e1000000", 0.1f)
+    }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
@@ -2257,6 +2261,10 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse positive and negative zero" in {
       check2("0.0")
       check2("-0.0")
+    }
+    "parse denormalized number with long mantissa and compensating exponent" in {
+      check("1" + "0" * 1000000 + "e-1000000", 1.0)
+      check("0." + "0" * 1000000 + "1e1000000", 0.1)
     }
     "throw parsing exception on illegal or empty input" in {
       checkError("", "unexpected end of input, offset: 0x00000000", "illegal number, offset: 0x00000001")
