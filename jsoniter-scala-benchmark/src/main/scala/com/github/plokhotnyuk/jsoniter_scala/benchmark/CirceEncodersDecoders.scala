@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import io.circe.Decoder._
+import io.circe.Encoder._
 import io.circe._
 import io.circe.generic.extras._
 import io.circe.generic.extras.decoding.UnwrappedDecoder
@@ -22,13 +24,13 @@ object CirceEncodersDecoders {
 
     (deriveDecoder[AnyVals], deriveEncoder[AnyVals])
   }
-  implicit val bigIntEncoder: Encoder[BigInt] = Encoder.encodeJsonNumber
+  implicit val bigIntEncoder: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
   implicit val (suitDecoder: Decoder[Suit], suitEncoder: Encoder[Suit]) =
-    (Decoder.decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
-      Encoder.encodeString.contramap[Suit](_.name))
+    (decodeString.emap(s => Try(Suit.valueOf(s)).fold[Either[String, Suit]](_ => Left("Suit"), Right.apply)),
+      encodeString.contramap[Suit](_.name))
   implicit val (suitADTDecoder, suitADTEncoder) = (deriveEnumerationDecoder[SuitADT], deriveEnumerationEncoder[SuitADT])
-  implicit val (suitEnumDecoder, suitEnumEncoder) = (Decoder.enumDecoder(SuitEnum), Encoder.enumEncoder(SuitEnum))
+  implicit val (suitEnumDecoder, suitEnumEncoder) = (decodeEnumeration(SuitEnum), encodeEnumeration(SuitEnum))
   implicit val (geometryDecoder: Decoder[GeoJSON.Geometry], geometryEncoder: Encoder[GeoJSON.Geometry]) =
     (deriveDecoder[GeoJSON.Geometry], deriveEncoder[GeoJSON.Geometry])
   implicit val (geoJSONDecoder: Decoder[GeoJSON.GeoJSON], geoJSONEncoder: Encoder[GeoJSON.GeoJSON]) =

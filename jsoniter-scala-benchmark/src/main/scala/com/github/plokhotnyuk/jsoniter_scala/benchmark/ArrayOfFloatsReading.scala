@@ -9,7 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.jsoniter.input.JsoniterJavaParser
-//import io.circe.parser._
+import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
@@ -21,10 +21,9 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   @Benchmark
   def borerJson(): Array[Float] =
     io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[Float]].value
-/* FIXME: circe parses 1.199999988079071 as 1.2f instead of 1.1999999f
+
   @Benchmark
   def circe(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-*/
 /* FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def dslJsonScala(): Array[Float] = dslJsonDecode[Array[Float]](jsonBytes)
