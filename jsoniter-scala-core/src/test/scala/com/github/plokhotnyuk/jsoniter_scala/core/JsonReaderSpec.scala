@@ -2113,7 +2113,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         checkFloat(n.toString)
       }
     }
-    "parse infinity on float overflow" in {
+    "parse infinities on float overflow" in {
       check("12345e6789", Float.PositiveInfinity)
       check("-12345e6789", Float.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Float.PositiveInfinity)
@@ -2121,17 +2121,17 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader("12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.PositiveInfinity
       reader("-12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.NegativeInfinity
     }
-    "parse zero on float underflow" in {
+    "parse zeroes on float underflow" in {
       check("12345e-6789", 0.0f)
       check("-12345e-6789", -0.0f)
       check("12345678901234567890e-12345678901234567890", 0.0f)
       check("-12345678901234567890e-12345678901234567890", -0.0f)
     }
-    "parse positive and negative zero" in {
+    "parse positive and negative zeroes" in {
       check2("0.0")
       check2("-0.0")
     }
-    "parse denormalized number with long mantissa and compensating exponent" in {
+    "parse denormalized numbers with long mantissa and compensating exponent" in {
       check("1" + "0" * 1000000 + "e-1000000", 1.0f)
       check("0." + "0" * 1000000 + "1e1000000", 0.1f)
     }
@@ -2244,7 +2244,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         checkDouble(n.toString)
       }
     }
-    "parse infinity on double overflow" in {
+    "parse infinities on double overflow" in {
       check("12345e6789", Double.PositiveInfinity)
       check("-12345e6789", Double.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Double.PositiveInfinity)
@@ -2252,17 +2252,17 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader("12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.PositiveInfinity
       reader("-12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.NegativeInfinity
     }
-    "parse zero on double underflow" in {
+    "parse zeroes on double underflow" in {
       check("12345e-6789", 0.0)
       check("-12345e-6789", -0.0)
       check("12345678901234567890e-12345678901234567890", 0.0)
       check("-1234567890123456789e-12345678901234567890", -0.0)
     }
-    "parse positive and negative zero" in {
+    "parse positive and negative zeroes" in {
       check2("0.0")
       check2("-0.0")
     }
-    "parse denormalized number with long mantissa and compensating exponent" in {
+    "parse denormalized numbers with long mantissa and compensating exponent" in {
       check("1" + "0" * 1000000 + "e-1000000", 1.0)
       check("0." + "0" * 1000000 + "1e1000000", 0.1)
     }
