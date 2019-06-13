@@ -313,7 +313,7 @@ sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfnorm TwitterAPIReading.jso
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt clean 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 
 Now you can open files from the `/tmp/profile-jfr` directory:
@@ -330,7 +330,7 @@ To run benchmarks with recordings by [Async profiler](https://github.com/jvm-pro
 repository and use command like this:
 
 ```sh
-sbt -no-colors 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt -no-colors 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
