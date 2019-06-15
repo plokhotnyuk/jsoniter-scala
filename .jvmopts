@@ -1,0 +1,4 @@
+-Xverify:none
+-XX:MaxMetaspaceSize=512m
+-XX:ReservedCodeCacheSize=256m
+-XX:+UseParallelGC

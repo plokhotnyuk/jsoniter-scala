@@ -239,8 +239,8 @@ creating pull requests (fixes and improvements to docs, code, and tests are high
 ### Run tests, check coverage and binary compatibility
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m clean coverage test coverageReport
-sbt -J-XX:MaxMetaspaceSize=512m clean +test +mimaReportBinaryIssues
+sbt clean coverage test coverageReport
+sbt clean +test +mimaReportBinaryIssues
 ```
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
@@ -384,13 +384,13 @@ Other benchmarks with results for jsoniter-scala:
 Publish to local Ivy repo:
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m clean +publishLocal
+sbt clean +publishLocal
 ```
 
 Publish to local Maven repo:
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m clean +publishM2
+sbt clean +publishM2
 ```
 
 ### Release
@@ -402,7 +402,7 @@ Double check binary and source compatibility, including behavior, and release us
 are required):
 
 ```sh
-sbt -J-XX:MaxMetaspaceSize=512m release
+sbt release
 ```
 
 Do not push changes to github until promoted artifacts for the new version are not available for download on
