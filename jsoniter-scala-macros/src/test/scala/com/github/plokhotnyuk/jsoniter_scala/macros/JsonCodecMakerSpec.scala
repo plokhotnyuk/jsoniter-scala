@@ -4,6 +4,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, PrintWriter, String
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
+import java.util
 import java.util.{Objects, UUID}
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -13,6 +14,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 import scala.annotation.{switch, tailrec}
 import scala.language.higherKinds
+import scala.util.hashing.MurmurHash3
 
 case class UserId(id: String) extends AnyVal
 
@@ -546,6 +548,30 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
         collection.immutable.TreeSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
       verifyDeserByCheck(codecOfOrderedLevelTreeSet, """[0,1]""",
         check = (actual: collection.immutable.TreeSet[Level]) => actual.ordering shouldBe levelOrdering)
+    }
+    "serialize and deserialize raw untouched bytes using a custom value codec" in {
+      case class RawVal(bs: Array[Byte]) {
+        override lazy val hashCode: Int = MurmurHash3.arrayHash(bs)
+
+        override def equals(obj: Any): Boolean = obj match {
+          case that: RawVal => java.util.Arrays.equals(bs, that.bs)
+          case _ => false
+        }
+      }
+
+      implicit val codecOfRawVal: JsonValueCodec[RawVal] = new JsonValueCodec[RawVal] {
+        override def decodeValue(in: JsonReader, default: RawVal): RawVal = new RawVal(in.readRawValAsBytes())
+
+        override def encodeValue(x: RawVal, out: JsonWriter): Unit = out.writeRawVal(x.bs)
+
+        override val nullValue: RawVal = new RawVal(new Array[Byte](0))
+      }
+
+      case class Message(param1: String, param2: String, payload: RawVal)
+
+      verifySerDeser(make[Message](CodecMakerConfig()),
+        Message("A", "B", RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}""".getBytes)),
+        """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}}""")
     }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)

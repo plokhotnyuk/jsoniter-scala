@@ -49,6 +49,25 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
   "JsonReader.skip" should {
+    def validateSkip(s: String): Unit = {
+      def checkWithSuffix(s: String, suffix: Char): Unit = {
+        val r = reader(s + suffix)
+        r.skip()
+        r.nextToken().toChar shouldBe suffix
+      }
+
+      def check(s: String): Unit = {
+        val r = reader(s)
+        r.skip()
+        assert(intercept[JsonReaderException](r.nextToken()).getMessage.contains("unexpected end of input"))
+      }
+
+      checkWithSuffix(s, ',')
+      checkWithSuffix(s, '}')
+      checkWithSuffix(s, ']')
+      check(s)
+    }
+
     "skip string values" in {
       validateSkip("\"\"")
       validateSkip("\" \"")
@@ -140,6 +159,108 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw parsing exception when skipping not from start of JSON value" in {
       def checkError(invalidInput: String): Unit =
         assert(intercept[JsonReaderException](validateSkip(invalidInput))
+          .getMessage.contains("expected value, offset: 0x00000000"))
+
+      checkError("]")
+      checkError("}")
+      checkError(",")
+      checkError(":")
+    }
+  }
+  "JsonReader.readRawValueAsBytes" should {
+    def check(s: String): Unit = toString(reader(s).readRawValAsBytes()) shouldBe s
+
+    "read raw values" in {
+      check("\"\"")
+      check("\" \"")
+      check(" \n\t\r\" \"")
+      check("\"[\"")
+      check("\"{\"")
+      check("\"0\"")
+      check("\"9\"")
+      check("\"-\"")
+    }
+    "throw parsing exception when reading string that is not closed by parentheses" in {
+      assert(intercept[JsonReaderException](check("\""))
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonReaderException](check("\"abc"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000004"))
+    }
+    "read raw string values with escaped characters" in {
+      check(""""\\"""")
+      check(""""\\\"\\"""")
+    }
+    "read raw number values" in {
+      check("0")
+      check("-0.0")
+      check("1.1")
+      check("2.1")
+      check(" 3.1")
+      check("\n4.1")
+      check("\t5.1")
+      check("\r6.1")
+      check("7.1e+123456789")
+      check("8.1E-123456789")
+      check("987654321.0E+10")
+    }
+    "read raw boolean values" in {
+      check("true")
+      check(" \n\t\rfalse")
+    }
+    "throw parsing exception when reading truncated boolean value" in {
+      assert(intercept[JsonReaderException](check("t"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
+      assert(intercept[JsonReaderException](check("f"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000001"))
+    }
+    "read raw null values" in {
+      check("null")
+      check(" \n\t\rnull")
+    }
+    "read raw object values" in {
+      check("{}")
+      check(" \n\t\r{{{{{}}}}{{{}}}}")
+      check("{\"{\"}")
+    }
+    "throw parsing exception when reading not closed object" in {
+      assert(intercept[JsonReaderException](check("{{}"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+    }
+    "read raw array values" in {
+      check("[]")
+      check(" \n\t\r[[[[[]]]][[[]]]]")
+      check("[\"[\"]")
+    }
+    "throw parsing exception when reading not closed array" in {
+      assert(intercept[JsonReaderException](check("[[]"))
+        .getMessage.contains("unexpected end of input, offset: 0x00000003"))
+    }
+    "read raw mixed values" in {
+      check(
+        """
+          |{
+          |  "x": {
+          |    "xx": [
+          |      -1.0,
+          |      1,
+          |      4.0E20
+          |    ],
+          |    "yy": {
+          |      "xxx": true,
+          |      "yyy": false,
+          |      "zzz": null
+          |    }
+          |  },
+          |  "y": [
+          |    [1, 2, 3],
+          |    [4, 5, 6],
+          |    [7, 8, 9]
+          |  ]
+          |}""".stripMargin)
+    }
+    "throw parsing exception when reading not from start of JSON value" in {
+      def checkError(invalidInput: String): Unit =
+        assert(intercept[JsonReaderException](check(invalidInput))
           .getMessage.contains("expected value, offset: 0x00000000"))
 
       checkError("]")
@@ -2654,24 +2775,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
 
-  def validateSkip(s: String): Unit = {
-    def checkWithSuffix(s: String, suffix: Char): Unit = {
-      val r = reader(s + suffix)
-      r.skip()
-      r.nextToken().toChar shouldBe suffix
-    }
-
-    def check(s: String): Unit = {
-      val r = reader(s)
-      r.skip()
-      assert(intercept[JsonReaderException](r.nextToken()).getMessage.contains("unexpected end of input"))
-    }
-
-    checkWithSuffix(s, ',')
-    checkWithSuffix(s, '}')
-    checkWithSuffix(s, ']')
-    check(s)
-  }
+  def toString(bs: Array[Byte]): String = new String(bs, 0, 0, bs.length)
 
   def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
 

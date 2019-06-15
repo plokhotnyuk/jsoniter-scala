@@ -479,6 +479,19 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
+  def readRawValAsBytes(): Array[Byte] = {
+    val mark = this.mark
+    this.mark = Math.min(mark, head)
+    try {
+      skip()
+      val from = this.mark
+      val len = head - from
+      val x = new Array[Byte](len)
+      System.arraycopy(buf, from, x, 0, len)
+      x
+    } finally this.mark = mark
+  }
+
   def readNullOrError[@sp A](default: A, msg: String): A =
     if (default == null) decodeError(msg)
     else if (isCurrentToken('n', head)) parseNullOrError(default, msg, head)

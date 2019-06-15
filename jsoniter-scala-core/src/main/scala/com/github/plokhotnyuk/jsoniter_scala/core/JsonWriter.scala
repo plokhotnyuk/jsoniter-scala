@@ -427,6 +427,13 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  def writeRawVal(bs: Array[Byte]): Unit = count = {
+    val len = bs.length
+    val pos = ensureBufCapacity(len)
+    System.arraycopy(bs, 0, this.buf, pos, len)
+    pos + len
+  }
+
   def writeNull(): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('n', 'u', 'l', 'l')

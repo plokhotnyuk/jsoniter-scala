@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -705,6 +706,16 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
         check(n)
       }
+    }
+  }
+  "JsonWriter.writeRawVal" should {
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeRawVal(null.asInstanceOf[Array[Byte]])))
+    }
+    "write raw bytes as is" in {
+      def check(s: String): Unit = withWriter(_.writeRawVal(s.getBytes())) shouldBe s
+
+      forAll(arbitrary[String], minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeNull" should {
