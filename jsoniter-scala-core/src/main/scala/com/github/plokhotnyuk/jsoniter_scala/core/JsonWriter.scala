@@ -39,7 +39,7 @@ case class WriterConfig(
     escapeUnicode: Boolean = false,
     preferredBufSize: Int = 16384) {
   if (indentionStep < 0) throw new IllegalArgumentException("'indentionStep' should be not less than 0")
-  if (preferredBufSize < 0) throw new IllegalArgumentException("'preferredBufSize' should be not less than 0")
+  if (preferredBufSize < 1) throw new IllegalArgumentException("'preferredBufSize' should be not less than 1")
 }
 
 class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
@@ -429,9 +429,21 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeRawVal(bs: Array[Byte]): Unit = count = {
     val len = bs.length
-    val pos = ensureBufCapacity(len)
-    System.arraycopy(bs, 0, this.buf, pos, len)
-    pos + len
+    val preferredBufSize = config.preferredBufSize
+    var buf = this.buf
+    var pos = count
+    var offset, step = 0
+    do {
+      step = Math.min(preferredBufSize, len - offset)
+      if (pos + step > limit) {
+        pos = flushAndGrowBuf(step, pos)
+        buf = this.buf
+      }
+      System.arraycopy(bs, offset, buf, pos, step)
+      pos += step
+      offset += step
+    } while (offset < len)
+    pos
   }
 
   def writeNull(): Unit = {

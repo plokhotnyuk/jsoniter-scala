@@ -21,8 +21,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw exception in case for unsupported values of params" in {
       assert(intercept[IllegalArgumentException](WriterConfig(indentionStep = -1))
         .getMessage.contains("'indentionStep' should be not less than 0"))
-      assert(intercept[IllegalArgumentException](WriterConfig(preferredBufSize = -1))
-        .getMessage.contains("'preferredBufSize' should be not less than 0"))
+      assert(intercept[IllegalArgumentException](WriterConfig(preferredBufSize = 0))
+        .getMessage.contains("'preferredBufSize' should be not less than 1"))
     }
   }
   "JsonWriter.isNonEscapedAscii" should {
@@ -791,7 +791,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
 
   def withWriter(f: JsonWriter => Unit): String =
-    withWriter(WriterConfig(preferredBufSize = 0, throwWriterExceptionWithStackTrace = true))(f)
+    withWriter(WriterConfig(preferredBufSize = 1, throwWriterExceptionWithStackTrace = true))(f)
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val writer = new JsonWriter(new Array[Byte](0), 0, 0, 0, false, false, null, null, cfg)
