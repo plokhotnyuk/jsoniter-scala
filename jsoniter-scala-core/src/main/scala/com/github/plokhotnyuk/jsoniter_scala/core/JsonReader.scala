@@ -1406,16 +1406,17 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) -posX
     else posX
 
-  private[this] def mulMant(a: Long, e10: Int): Long = {
-    val b = pow10Mantissas(e10 + 343)
-    val ah = a >>> 32
-    val al = a & 0x00000000FFFFFFFFL
-    val bh = b >>> 32
-    val bl = b & 0x00000000FFFFFFFFL
-    val pm1 = ah * bl
-    val pm2 = al * bh
-    val c = (pm1 & 0x00000000FFFFFFFFL) + (pm2 & 0x00000000FFFFFFFFL) + (al * bl >>> 32) + 2147483648L // carry bit with rounding
-    ah * bh + (pm1 >>> 32) + (pm2 >>> 32) + (c >>> 32)
+  // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
+  // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
+  // https://doc.lagout.org/security/Hackers%20Delight.pdf
+  private[this] def mulMant(x: Long, e10: Int): Long = {
+    val y = pow10Mantissas(e10 + 343)
+    val x1 = x >>> 32
+    val x2 = x & 0xFFFFFFFFL
+    val y1 = y >>> 32
+    val y2 = y & 0xFFFFFFFFL
+    val t = x1 * y2 + (x2 * y2 >>> 32)
+    x1 * y1 + (t >>> 32) + (x2 * y1 + (t & 0xFFFFFFFFL) >>> 32)
   }
 
   private[this] def addExp(e2: Int, e10: Int): Int = e2 + 1 + (e10 * 14267572527L >> 32).toInt // == (e10 * Math.log(10) / Math.log(2)).toInt
@@ -2174,9 +2175,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def epochDayForYear(year: Int): Long =
     365L * year + (((year + 3) >> 2) - (if (year < 0) {
-      val century = year * 1374389535L >> 37 // divide int by 100 (a sign correction is not required)
+      val century = year * 1374389535L >> 37 // divide int by 100 (x sign correction is not required)
       century - (century >> 2)
-    } else ((year + 99) * 1374389535L >> 37) - ((year + 399) * 1374389535L >> 39))) // divide int by 100 and by 400 accordingly (a sign correction is not required)
+    } else ((year + 99) * 1374389535L >> 37) - ((year + 399) * 1374389535L >> 39))) // divide int by 100 and by 400 accordingly (x sign correction is not required)
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
     ((month * 1050835331877L - 1036518774222L) >> 35).toInt - // == (367 * month - 362) / 12
