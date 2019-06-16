@@ -168,7 +168,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
   "JsonReader.readRawValueAsBytes" should {
-    def check(s: String): Unit = toString(reader(s).readRawValAsBytes()) shouldBe s
+    def check(s: String): Unit = new String(reader(s).readRawValAsBytes(), UTF_8) shouldBe s
 
     "read raw values" in {
       check("\"\"")
@@ -2788,8 +2788,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
           |+----------+-------------------------------------------------+------------------+""".stripMargin))
     }
   }
-
-  def toString(bs: Array[Byte]): String = new String(bs, 0, 0, bs.length)
 
   def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
 
