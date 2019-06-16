@@ -1414,10 +1414,8 @@ final class JsonReader private[jsoniter_scala](
     val bl = b & 0x00000000FFFFFFFFL
     val pm1 = ah * bl
     val pm2 = al * bh
-    val pl = al * bl
-    val ph = ah * bh
-    val c = (pm1 + pm2 & 0x00000000FFFFFFFFL) + (pl >>> 32) + 2147483648L // carry bit with rounding
-    ph + (pm1 >>> 32) + (pm2 >>> 32) + (c >>> 32)
+    val c = (pm1 & 0x00000000FFFFFFFFL) + (pm2 & 0x00000000FFFFFFFFL) + (al * bl >>> 32) + 2147483648L // carry bit with rounding
+    ah * bh + (pm1 >>> 32) + (pm2 >>> 32) + (c >>> 32)
   }
 
   private[this] def addExp(e2: Int, e10: Int): Int = e2 + 1 + (e10 * 14267572527L >> 32).toInt // == (e10 * Math.log(10) / Math.log(2)).toInt
