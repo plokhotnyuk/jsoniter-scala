@@ -73,6 +73,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already
   supported classes
+- Reading and writing of arbitrary bytes or raw values using custom codecs  
 - Type aliases are also supported for all types
 - Order of instance fields is preserved during serialization
 - Only acyclic graphs of class instances are supported
