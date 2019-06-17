@@ -12,7 +12,7 @@ install:
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
       }
   - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
-  - cmd: SET SBT_OPTS=-Dfile.encoding=UTF8 -Dsbt.supershell=false
+  - cmd: SET SBT_OPTS=-Dsbt.supershell=false
 build_script:
   - sbt clean +compile
 test_script:
