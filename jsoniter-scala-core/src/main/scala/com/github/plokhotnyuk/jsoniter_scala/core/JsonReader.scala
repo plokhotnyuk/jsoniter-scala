@@ -1213,7 +1213,7 @@ final class JsonReader private[jsoniter_scala](
       val isExact = posMant < 922337203685477580L
       if (isExact && exp == 0) toSignedDouble(isNeg, posMant)
       else {
-        val isSmall = (posMant >> 52) == 0 // max mantissa that can be converted w/o rounding error by double mul or div
+        val isSmall = posMant < 4503599627370496L // max mantissa that can be converted w/o rounding error by double mul or div
         if (isSmall && Math.abs(exp) <= 22) {
           val x =
             if (exp < 0) posMant / pow10Doubles(-exp)
@@ -1243,7 +1243,7 @@ final class JsonReader private[jsoniter_scala](
       val roundingError =
         (if (isExact) 2
         else 20) << shift
-      val truncatedBitNum = Math.max(-exp - 1074, 11)
+      val truncatedBitNum = Math.max(-1074 - exp, 11)
       val savedBitNum = 64 - truncatedBitNum
       val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
       if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
@@ -1355,7 +1355,7 @@ final class JsonReader private[jsoniter_scala](
       val isExact = posMant < 922337203685477580L
       if (isExact && exp == 0) toSignedFloat(isNeg, posMant)
       else {
-        val isSmall = (posMant >> 32) == 0 // max mantissa that can be converted w/o rounding error by double mul or div
+        val isSmall = posMant < 4294967296L // max mantissa that can be converted w/o rounding error by double mul or div
         if (isSmall && exp >= -22 + digits && exp < 0) toSignedFloat(isNeg, (posMant / pow10Doubles(-exp)).toFloat)
         else if (isSmall && exp >= 0 && exp <= 18 - digits) toSignedFloat(isNeg, (posMant * pow10Doubles(exp)).toFloat)
         else toFloat(pos, isNeg, isExact, posMant, exp)
@@ -1378,7 +1378,7 @@ final class JsonReader private[jsoniter_scala](
       val roundingError =
         (if (isExact) 2
         else 20) << shift
-      val truncatedBitNum = Math.max(-exp - 149, 40)
+      val truncatedBitNum = Math.max(-149 - exp, 40)
       val savedBitNum = 64 - truncatedBitNum
       val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
       if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
@@ -1423,7 +1423,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def getHalfwayDiff(mant: Long, savedBitNum: Int): Long = {
     val mask = -1L >>> Math.max(savedBitNum, 0)
-    (mant & mask) - ((mask >>> 1) + 1)
+    (mant & mask) - (mask >>> 1)
   }
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
