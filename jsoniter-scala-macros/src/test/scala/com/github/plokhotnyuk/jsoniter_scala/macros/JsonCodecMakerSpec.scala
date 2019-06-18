@@ -548,6 +548,34 @@ class JsonCodecMakerSpec extends WordSpec with Matchers {
       verifyDeserByCheck(codecOfOrderedLevelTreeSet, """[0,1]""",
         check = (actual: collection.immutable.TreeSet[Level]) => actual.ordering shouldBe levelOrdering)
     }
+    "serialize and deserialize sequences of tuples as JSON object with duplicated keys using a custom codec" in {
+      implicit val codecOfSeqOfTuples: JsonValueCodec[Seq[(String, Int)]] = new JsonValueCodec[Seq[(String, Int)]] {
+        override def decodeValue(in: JsonReader, default: Seq[(String, Int)]): Seq[(String, Int)] =
+          if (in.isNextToken('{')) {
+            val kvs = List.newBuilder[(String, Int)]
+            if (!in.isNextToken('}')) {
+              in.rollbackToken()
+              do  {
+                kvs.+=((in.readKeyAsString(), in.readInt()))
+              } while (in.isNextToken(','))
+              if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+            }
+            kvs.result()
+          } else in.readNullOrTokenError(default, '{')
+
+        override def encodeValue(kvs: Seq[(String, Int)], out: JsonWriter): Unit = {
+          out.writeObjectStart()
+          kvs.foreach { case (k, v) =>
+            out.writeKey(k)
+            out.writeVal(v)
+          }
+          out.writeObjectEnd()
+        }
+
+        override val nullValue: Seq[(String, Int)] = Seq.empty
+      }
+      verifySerDeser(codecOfSeqOfTuples, Seq("foo" -> 1, "bar" -> 2, "foo" -> 3),"""{"foo":1,"bar":2,"foo":3}""")
+    }
     "serialize and deserialize raw untouched bytes using a custom value codec" in {
       object RawVal {
         def apply(s: String) = new RawVal(s.getBytes)
