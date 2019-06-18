@@ -31,6 +31,8 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       //benchmark.jsoniterJava() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      //FIXME: ScalikeJackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
+      //benchmark.scalikeJackson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
     }

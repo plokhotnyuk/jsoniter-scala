@@ -11,11 +11,13 @@ class ArrayOfCharsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.borerJson()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
-      // FIXME: Jsoniter Java serializes chars as ints
+      //FIXME: Jsoniter Java serializes an array of chars as an array of ints
       //toString(benchmark.jsoniterJava()) shouldBe benchmark.jsonString
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.playJson()) shouldBe benchmark.jsonString
+      //FIXME: ScalikeJackson serializes an array of chars as a string
+      //toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
     }

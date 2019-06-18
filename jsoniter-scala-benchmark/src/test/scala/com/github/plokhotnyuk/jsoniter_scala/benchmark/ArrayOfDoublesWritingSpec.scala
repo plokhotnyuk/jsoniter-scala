@@ -19,6 +19,7 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
       //sameOrBetter(toString(benchmark.playJson()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.scalikeJackson()), benchmark.jsonString)
       //FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879
       //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)

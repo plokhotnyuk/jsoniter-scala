@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.input.JsoniterJavaParser
@@ -39,6 +40,12 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
 
   @Benchmark
   def playJson(): Array[Short] = Json.parse(jsonBytes).as[Array[Short]]
+
+  @Benchmark
+  def scalikeJackson(): Array[Short] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+    new String(jsonBytes, UTF_8).read[Array[Short]]
+  }
 
   @Benchmark
   def sprayJson(): Array[Short] = JsonParser(jsonBytes).convertTo[Array[Short]]
