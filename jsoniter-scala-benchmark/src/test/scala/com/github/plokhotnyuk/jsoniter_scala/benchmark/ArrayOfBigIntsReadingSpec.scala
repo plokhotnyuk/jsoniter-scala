@@ -15,6 +15,7 @@ class ArrayOfBigIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: PlayJson looses significant digits in big values
       //benchmark.playJson() shouldBe benchmark.obj
+      benchmark.scalikeJackson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
     }
