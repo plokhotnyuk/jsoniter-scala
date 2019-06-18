@@ -19,5 +19,8 @@ object ScalikeJacksonFormatters {
   implicit val arrayOfIntsFormatter: ScalaJacksonFormatter[Array[Int]] = Json.format()
   implicit val arrayOfLongsFormatter: ScalaJacksonFormatter[Array[Long]] = Json.format()
   implicit val arrayOfShortsFormatter: ScalaJacksonFormatter[Array[Short]] = Json.format()
+  implicit val bigDecimalFormatter: ScalaJacksonFormatter[BigDecimal] = Json.format()
+  implicit val bigIntFormatter: ScalaJacksonFormatter[BigInt] = Json.format()
+  implicit val extractFieldsFormatter: ScalaJacksonFormatter[ExtractFields] = Json.format()
   implicit val primitivesFormatter: ScalaJacksonFormatter[Primitives] = Json.format()
 }
