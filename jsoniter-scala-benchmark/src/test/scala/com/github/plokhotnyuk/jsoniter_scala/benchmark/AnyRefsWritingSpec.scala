@@ -13,6 +13,7 @@ class AnyRefsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString1
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString1
       toString(benchmark.playJson()) shouldBe benchmark.jsonString1
+      toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString1
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString1
     }
