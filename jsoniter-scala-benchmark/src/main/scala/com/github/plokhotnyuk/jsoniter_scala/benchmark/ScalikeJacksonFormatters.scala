@@ -3,12 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import reug.scalikejackson.ScalaJacksonFormatter
 import reug.scalikejackson.play.Json
 
-import scala.collection.immutable.Map
-import scala.collection.immutable.Seq
-import scala.collection.immutable.Set
+import scala.collection.immutable.{Map, Seq, Set}
 import scala.collection.mutable
 
 object ScalikeJacksonFormatters {
@@ -20,9 +19,11 @@ object ScalikeJacksonFormatters {
   implicit val arrayOfBooleansFormatter: ScalaJacksonFormatter[Array[Boolean]] = Json.format()
   implicit val arrayOfBytesFormatter: ScalaJacksonFormatter[Array[Byte]] = Json.format()
   implicit val arrayOfCharsFormatter: ScalaJacksonFormatter[Array[Char]] = Json.format()
+  implicit val arrayOfEnumsFormatter: ScalaJacksonFormatter[Array[SuitEnum]] = Json.format()
   implicit val arrayOfDoublesFormatter: ScalaJacksonFormatter[Array[Double]] = Json.format()
   implicit val arrayOfFloatsFormatter: ScalaJacksonFormatter[Array[Float]] = Json.format()
   implicit val arrayOfIntsFormatter: ScalaJacksonFormatter[Array[Int]] = Json.format()
+  implicit val arrayOfJavaEnumsFormatter: ScalaJacksonFormatter[Array[Suit]] = Json.format()
   implicit val arrayOfLongsFormatter: ScalaJacksonFormatter[Array[Long]] = Json.format()
   implicit val arrayOfShortsFormatter: ScalaJacksonFormatter[Array[Short]] = Json.format()
   implicit val arrayOfUUIDsFormatter: ScalaJacksonFormatter[Array[UUID]] = Json.format()
