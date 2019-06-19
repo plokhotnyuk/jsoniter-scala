@@ -10,7 +10,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -36,9 +36,9 @@ class ExtractFieldsReading extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    val value = """{"number":0.0,"boolean":false,"string":null}"""
-    jsonString = zeroHashCodeStrings.take(size).mkString("""{"s":"s","""", s"""":$value,"""", s"""":$value,"i":1}""")
-    //jsonString = """{"s":"s","x":""" + "9" * size + ""","i":1}"""
+    //val value = """{"number":0.0,"boolean":false,"string":null}"""
+    //jsonString = zeroHashCodeStrings.take(size).mkString("""{"s":"s","""", s"""":$value,"""", s"""":$value,"i":1}""")
+    jsonString = """{"s":"s","x":""" + "9" * size + ""","i":1}"""
     //jsonString = """{"s":"s","x":"""" + "x" * size + """","i":1}"""
     //jsonString = """{"s":"s","x":""" + "[" * size + "]" * size + ""","i":1}"""
     //jsonString = """{"s":"s",""" + "\"x\":{" * size + "}" * size + ""","i":1}"""
