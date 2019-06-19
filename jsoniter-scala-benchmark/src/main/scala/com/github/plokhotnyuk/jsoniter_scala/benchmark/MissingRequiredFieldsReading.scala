@@ -12,6 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -96,7 +97,17 @@ class MissingRequiredFieldsReading extends CommonParams {
     } catch {
       case ex: JsResultException => ex.getMessage
     }
-
+/* FIXME: ScalikeJackson throws an exception with unexpected message: "No MissingRequiredFields ScalaJacksonFormat found for json input"
+  @Benchmark
+  def scalikeJackson(): String = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+    try {
+      new String(jsonBytes, UTF_8).read[MissingRequiredFields].toString // toString() should not be called
+    } catch {
+      case ex: Exception => ex.getMessage
+    }
+  }
+*/
   @Benchmark
   def sprayJson(): String =
     try {

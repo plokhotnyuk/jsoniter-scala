@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -42,7 +43,13 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
   @Benchmark
   def playJson(): Seq[Tweet] = Json.parse(jsonBytes).as[Seq[Tweet]]
-
+/* FIXME: ScalikeJackson parses to the sequence of maps instead a sequence of Tweet
+  @Benchmark
+  def scalikeJackson(): Seq[Tweet] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+    new String(jsonBytes, UTF_8).read[Seq[Tweet]]
+  }
+*/
   @Benchmark
   def sprayJson(): Seq[Tweet] = JsonParser(jsonBytes).convertTo[Seq[Tweet]]
 
