@@ -7,6 +7,7 @@ import java.nio.{BufferOverflowException, ByteBuffer}
 import java.time._
 import java.util.UUID
 
+import com.github.plokhotnyuk.expression_evaluator.eval
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
 
 import scala.annotation.tailrec
@@ -2124,7 +2125,7 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private final val escapedChars: Array[Byte] = {
+  private final val escapedChars: Array[Byte] = eval {
     val es = new Array[Byte](128)
     java.util.Arrays.fill(es, 0, 32, -1: Byte)
     es('\n') = 'n'
@@ -2137,7 +2138,7 @@ object JsonWriter {
     es(127) = -1
     es
   }
-  private final val digits: Array[Short] = {
+  private final val digits: Array[Short] = eval {
     val ds = new Array[Short](100)
     var i, j = 0
     do {
@@ -2151,7 +2152,7 @@ object JsonWriter {
     } while (j < 10)
     ds
   }
-  private final val hexDigits: Array[Short] = {
+  private final val hexDigits: Array[Short] = eval {
     val ds = new Array[Short](256)
     var i, j = 0
     do {
@@ -2171,45 +2172,65 @@ object JsonWriter {
     } while (j < 16)
     ds
   }
-  private final val f32Pow5InvSplit = new Array[Int](62)
-  private final val f32Pow5Split = new Array[Int](94)
-  private final val f64Pow5InvSplit = new Array[Int](1164)
-  private final val f64Pow5Split = new Array[Int](1304)
-  private final val tenPow18Squares: Stream[BigInteger] =
-    BigInteger.valueOf(1000000000000000000L) #:: tenPow18Squares.map(p => p.multiply(p))
-
-  {
-    var pow5 = BigInteger.ONE
+  private final val f32Pow5InvSplit: Array[Int] = eval {
+    val fs = new Array[Int](62)
+    var pow5 = BigInt(1)
     var i = 0
-    while (i < 326) {
-      val pow5len = pow5.bitLength
-      if (i < 31) {
-        val s = BigInteger.ONE.shiftLeft(pow5len + 58).divide(pow5).longValue + 1
-        f32Pow5InvSplit(i * 2) = (s & 0x7FFFFFFF).toInt
-        f32Pow5InvSplit(i * 2 + 1) = (s >> 31).toInt
-      }
-      if (i < 47) {
-        val s = pow5.shiftRight(pow5len - 61).longValue
-        f32Pow5Split(i * 2) = (s & 0x7FFFFFFF).toInt
-        f32Pow5Split(i * 2 + 1) = (s >> 31).toInt
-      }
-      if (i < 291) {
-        val inv = BigInteger.ONE.shiftLeft(pow5len + 121).divide(pow5).add(BigInteger.ONE)
-        var j = 0
-        while (j < 4) {
-          f64Pow5InvSplit(i * 4 + j) = inv.shiftRight((3 - j) * 31).intValue & 0x7FFFFFFF
-          j += 1
-        }
-      }
-      var j = 0
-      while (j < 4) {
-        f64Pow5Split(i * 4 + j) = pow5.shiftRight(pow5len - 121 + (3 - j) * 31).intValue & 0x7FFFFFFF
-        j += 1
-      }
-      pow5 = pow5.shiftLeft(2).add(pow5)
+    while (i < 31) {
+      val s = ((BigInt(1) << (pow5.bitLength + 58)) / pow5).longValue + 1
+      fs(i * 2) = (s & 0x7FFFFFFF).toInt
+      fs(i * 2 + 1) = (s >> 31).toInt
+      pow5 *= 5
       i += 1
     }
+    fs
   }
+  private final val f32Pow5Split: Array[Int] = eval {
+    val fs = new Array[Int](94)
+    var pow5 = BigInt(1)
+    var i = 0
+    while (i < 47) {
+      val s = (pow5 >> (pow5.bitLength - 61)).longValue
+      fs(i * 2) = (s & 0x7FFFFFFF).toInt
+      fs(i * 2 + 1) = (s >> 31).toInt
+      pow5 *= 5
+      i += 1
+    }
+    fs
+  }
+  private final val f64Pow5InvSplit: Array[Int] = eval {
+    val fs = new Array[Int](1164)
+    var pow5 = BigInt(1)
+    var i = 0
+    while (i < 291) {
+      val inv = ((BigInt(1) << (pow5.bitLength + 121)) / pow5) + 1
+      var j = 0
+      while (j < 4) {
+        fs(i * 4 + j) = (inv >> ((3 - j) * 31)).intValue & 0x7FFFFFFF
+        j += 1
+      }
+      pow5 *= 5
+      i += 1
+    }
+    fs
+  }
+  private final val f64Pow5Split: Array[Int] = eval {
+    val fs = new Array[Int](1304)
+    var pow5 = BigInt(1)
+    var i = 0
+    while (i < 326) {
+      var j = 0
+      while (j < 4) {
+        fs(i * 4 + j) = (pow5 >> (pow5.bitLength - 121 + (3 - j) * 31)).intValue & 0x7FFFFFFF
+        j += 1
+      }
+      pow5 *= 5
+      i += 1
+    }
+    fs
+  }
+  private final val tenPow18Squares: Stream[BigInteger] =
+    BigInteger.valueOf(1000000000000000000L) #:: tenPow18Squares.map(p => p.multiply(p))
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
 }

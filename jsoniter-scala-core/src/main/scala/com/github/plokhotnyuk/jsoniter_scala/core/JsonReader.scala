@@ -1,11 +1,12 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.io.InputStream
-import java.math.{BigInteger, MathContext}
+import java.math.MathContext
 import java.nio.ByteBuffer
 import java.time._
 import java.util.UUID
 
+import com.github.plokhotnyuk.expression_evaluator.eval
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
@@ -2748,8 +2749,25 @@ object JsonReader {
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
-  private final val pow10Mantissas = new Array[Long](653)
-  private final val nibbles: Array[Byte] = {
+  private final val pow10Mantissas: Array[Long] = eval {
+    val ms = new Array[Long](653)
+    var pow10 = BigInt(10)
+    var i = 342
+    while (i >= 0) {
+      ms(i) = ((BigInt(1) << (pow10.bitLength + 63)) / pow10).longValue
+      pow10 *= 10
+      i -= 1
+    }
+    pow10 = BigInt(1) << 63
+    i = 343
+    while (i < 653) {
+      ms(i) = (pow10 >> (pow10.bitLength - 64)).longValue
+      pow10 *= 10
+      i += 1
+    }
+    ms
+  }
+  private final val nibbles: Array[Byte] = eval {
     val ns = new Array[Byte](256)
     java.util.Arrays.fill(ns, -1: Byte)
     ns('0') = 0
@@ -2818,23 +2836,6 @@ object JsonReader {
   final val bigDecimalDigitsLimit: Int = 308
   final val bigDecimalScaleLimit: Int = 6178
   final val bigIntDigitsLimit: Int = 308
-
-  {
-    var pow10 = BigInteger.TEN
-    var i = 342
-    while (i >= 0) {
-      pow10Mantissas(i) = BigInteger.ONE.shiftLeft(pow10.bitLength + 63).divide(pow10).longValue
-      pow10 = pow10.shiftLeft(2).add(pow10).shiftLeft(1)
-      i -= 1
-    }
-    pow10 = BigInteger.ONE.shiftLeft(63)
-    i = 343
-    while (i < 653) {
-      pow10Mantissas(i) = pow10.shiftRight(pow10.bitLength - 64).longValue
-      pow10 = pow10.shiftLeft(2).add(pow10).shiftLeft(1)
-      i += 1
-    }
-  }
 
   /**
     * Calculates hash code value string represented by sequence of characters from begining of the provided char array
