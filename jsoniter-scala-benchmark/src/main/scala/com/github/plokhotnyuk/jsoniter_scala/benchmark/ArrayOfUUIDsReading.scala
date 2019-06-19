@@ -43,6 +43,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   @Benchmark
   def scalikeJackson(): Array[UUID] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[UUID]]
   }
 

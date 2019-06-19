@@ -44,6 +44,7 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   @Benchmark
   def scalikeJackson(): Array[BigDecimal] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[BigDecimal]]
   }
 

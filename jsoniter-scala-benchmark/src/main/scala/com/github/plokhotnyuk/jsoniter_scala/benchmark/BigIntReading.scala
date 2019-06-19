@@ -41,6 +41,7 @@ class BigIntReading extends BigIntBenchmark {
   @Benchmark
   def scalikeJackson(): BigInt = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[BigInt]
   }
 

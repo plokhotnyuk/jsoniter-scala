@@ -101,6 +101,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def scalikeJackson(): String = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     try {
       new String(jsonBytes, UTF_8).read[MissingRequiredFields].toString // toString() should not be called
     } catch {

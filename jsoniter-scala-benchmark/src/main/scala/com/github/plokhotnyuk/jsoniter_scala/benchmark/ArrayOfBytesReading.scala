@@ -44,6 +44,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[Byte]]
   }
 

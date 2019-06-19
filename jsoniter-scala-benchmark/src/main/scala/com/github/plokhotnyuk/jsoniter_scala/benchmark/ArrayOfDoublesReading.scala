@@ -44,6 +44,7 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Double] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[Double]]
   }
 

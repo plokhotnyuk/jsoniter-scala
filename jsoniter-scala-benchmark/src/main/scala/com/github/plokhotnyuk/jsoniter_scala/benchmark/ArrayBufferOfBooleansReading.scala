@@ -45,6 +45,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   @Benchmark
   def scalikeJackson(): mutable.ArrayBuffer[Boolean] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[mutable.ArrayBuffer[Boolean]]
   }
 

@@ -44,6 +44,7 @@ class BigIntWriting extends BigIntBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     obj.write.getBytes(UTF_8)
   }
 

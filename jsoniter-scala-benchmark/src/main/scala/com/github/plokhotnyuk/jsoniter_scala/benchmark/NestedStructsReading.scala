@@ -44,6 +44,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
   @Benchmark
   def scalikeJackson(): NestedStructs = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[NestedStructs]
   }
 

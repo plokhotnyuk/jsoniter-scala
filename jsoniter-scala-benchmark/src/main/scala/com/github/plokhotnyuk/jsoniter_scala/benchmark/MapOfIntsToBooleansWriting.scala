@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
@@ -37,10 +38,18 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mapOfIntsToBooleansFormat))
-/* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
+
   @Benchmark
-  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
-*/
+  def scalikeJackson(): Array[Byte] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    obj.write.getBytes(UTF_8)
+  }
+
+/* FIXME: Spray-JSON throws spray.json.SerializationException: Map key must be formatted as JsString, not '-130530'
+    @Benchmark
+    def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  */
 /* FIXME: uPickle serializes maps as JSON arrays
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

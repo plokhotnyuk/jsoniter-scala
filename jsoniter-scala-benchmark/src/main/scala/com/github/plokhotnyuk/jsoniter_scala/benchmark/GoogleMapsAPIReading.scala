@@ -45,6 +45,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   @Benchmark
   def scalikeJackson(): DistanceMatrix = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes1, UTF_8).read[DistanceMatrix]
   }
 

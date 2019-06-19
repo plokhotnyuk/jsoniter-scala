@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.input.JsoniterJavaParser
@@ -35,6 +36,13 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
 
   @Benchmark
   def jsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
+
+  @Benchmark
+  def scalikeJackson(): String = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[String]
+  }
 
   @Benchmark
   def playJson(): String = Json.parse(jsonBytes).as[String]

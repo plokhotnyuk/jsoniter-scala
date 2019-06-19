@@ -47,6 +47,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   @Benchmark
   def scalikeJackson(): Seq[Tweet] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Seq[Tweet]]
   }
 */

@@ -6,7 +6,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMat
 import reug.scalikejackson.ScalaJacksonFormatter
 import reug.scalikejackson.play.Json
 
+import scala.collection.immutable.Map
 import scala.collection.immutable.Seq
+import scala.collection.immutable.Set
 import scala.collection.mutable
 
 object ScalikeJacksonFormatters {
@@ -28,8 +30,14 @@ object ScalikeJacksonFormatters {
   implicit val bigIntFormatter: ScalaJacksonFormatter[BigInt] = Json.format()
   implicit val distanceMatrixFormatter: ScalaJacksonFormatter[DistanceMatrix] = Json.format()
   implicit val extractFieldsFormatter: ScalaJacksonFormatter[ExtractFields] = Json.format()
+  implicit val listOfBooleansFormatter: ScalaJacksonFormatter[List[Boolean]] = Json.format()
+  implicit val mapOfIntsToBooleansFormatter: ScalaJacksonFormatter[Map[Int, Boolean]] = Json.format()
+  implicit val mutableMapOfIntsToBooleansFormatter: ScalaJacksonFormatter[mutable.Map[Int, Boolean]] = Json.format()
+  implicit val mutableSetOfIntsFormatter: ScalaJacksonFormatter[mutable.Set[Int]] = Json.format()
   implicit val missingRequiredFieldsFormatter: ScalaJacksonFormatter[MissingRequiredFields] = Json.format()
   implicit val nestedStructsFormatter: ScalaJacksonFormatter[NestedStructs] = Json.format()
   implicit val primitivesFormatter: ScalaJacksonFormatter[Primitives] = Json.format()
   implicit val seqOfTweetsFormatter: ScalaJacksonFormatter[Seq[TwitterAPI.Tweet]] = Json.format()
+  implicit val setOfIntsFormatter: ScalaJacksonFormatter[Set[Int]] = Json.format()
+  implicit val vectorOfBooleansFormatter: ScalaJacksonFormatter[Vector[Boolean]] = Json.format()
 }

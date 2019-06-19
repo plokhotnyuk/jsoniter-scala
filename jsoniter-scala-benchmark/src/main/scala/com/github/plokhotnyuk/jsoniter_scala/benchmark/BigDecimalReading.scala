@@ -41,6 +41,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def scalikeJackson(): BigDecimal = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[BigDecimal]
   }
 

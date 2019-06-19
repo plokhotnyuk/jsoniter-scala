@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -33,6 +34,14 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
   @Benchmark
   def playJson(): mutable.Map[Int, Boolean] =
     Json.parse(jsonBytes).as[mutable.Map[Int, Boolean]](mutableMapOfIntsToBooleansFormat)
+/* FIXME: ScalikeJackson returns map of string to boolean instead of map of int to boolean
+  @Benchmark
+  def scalikeJackson(): mutable.Map[Int, Boolean] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[mutable.Map[Int, Boolean]]
+  }
+*/
 /* FIXME: uPickle doesn't support mutable maps
   @Benchmark
   def uPickle(): mutable.Map[Int, Boolean] = read[mutable.Map[Int, Boolean]](jsonBytes)

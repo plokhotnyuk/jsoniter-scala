@@ -44,6 +44,7 @@ class PrimitivesReading extends PrimitivesBenchmark {
   @Benchmark
   def scalikeJackson(): Primitives = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Primitives]
   }
 

@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -35,6 +36,13 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
 
   @Benchmark
   def playJson(): Vector[Boolean] = Json.parse(jsonBytes).as[Vector[Boolean]]
+
+  @Benchmark
+  def scalikeJackson(): Vector[Boolean] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[Vector[Boolean]]
+  }
 
   @Benchmark
   def sprayJson(): Vector[Boolean] = JsonParser(jsonBytes).convertTo[Vector[Boolean]]

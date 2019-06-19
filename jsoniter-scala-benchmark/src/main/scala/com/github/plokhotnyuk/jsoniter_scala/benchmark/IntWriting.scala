@@ -45,6 +45,7 @@ class IntWriting extends IntBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     obj.write.getBytes(UTF_8)
   }
 

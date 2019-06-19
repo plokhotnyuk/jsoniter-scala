@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -35,6 +36,14 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def playJson(): Map[Int, Boolean] = Json.parse(jsonBytes).as[Map[Int, Boolean]](mapOfIntsToBooleansFormat)
+/* FIXME: ScalikeJackson returns map of string to boolean instead of map of int to boolean
+  @Benchmark
+  def scalikeJackson(): Map[Int, Boolean] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[Map[Int, Boolean]]
+  }
+*/
 /* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
   @Benchmark
   def sprayJson(): Map[Int, Boolean] = JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]
