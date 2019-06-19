@@ -1675,13 +1675,13 @@ final class JsonWriter private[jsoniter_scala](
         var dp, dm = 0
         var dvIsTrailingZeros, dmIsTrailingZeros = false
         if (e2 >= 0) {
-          val ss = f32Pow5InvSplit
           val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
-          val i = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 59
+          val s = f32Pow5InvSplit(q)
+          val j = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 59
           exp = q
-          dv = mulPow5DivPow2(mv, q, i, ss)
-          dp = mulPow5DivPow2(mp, q, i, ss)
-          dm = mulPow5DivPow2(mm, q, i, ss)
+          dv = mulPow5DivPow2(mv, j, s)
+          dp = mulPow5DivPow2(mp, j, s)
+          dm = mulPow5DivPow2(mm, j, s)
           if (q <= 9) {
             val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
             if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
@@ -1689,14 +1689,14 @@ final class JsonWriter private[jsoniter_scala](
             else if (multiplePowOf5(mp, q)) dp -= 1
           }
         } else {
-          val ss = f32Pow5Split
           val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
           val i = -e2 - q
+          val s = f32Pow5Split(i)
           val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 60 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 60
           exp = -i
-          dv = mulPow5DivPow2(mv, i, j, ss)
-          dp = mulPow5DivPow2(mp, i, j, ss)
-          dm = mulPow5DivPow2(mm, i, j, ss)
+          dv = mulPow5DivPow2(mv, j, s)
+          dp = mulPow5DivPow2(mp, j, s)
+          dm = mulPow5DivPow2(mm, j, s)
           if (q <= 1) {
             dvIsTrailingZeros = true
             if (even) dmIsTrailingZeros = mmShift == 1
@@ -1818,10 +1818,8 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def mulPow5DivPow2(m: Long, i: Int, j: Int, ss: Array[Int]): Int = {
-    val idx = i << 1
-    ((m * ss(idx + 1) + (m * ss(idx) >> 31)) >> (j - 31)).toInt
-  }
+  private[this] def mulPow5DivPow2(m: Long, j: Int, s: Long): Int =
+    ((m * (s >> 31) + (m * (s & 0x7FFFFFFF) >> 31)) >> (j - 31)).toInt
 
   // Based on a great work of Ulf Adams:
   // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
@@ -2172,27 +2170,23 @@ object JsonWriter {
     } while (j < 16)
     ds
   }
-  private final val f32Pow5InvSplit: Array[Int] = eval {
-    val fs = new Array[Int](62)
+  private final val f32Pow5InvSplit: Array[Long] = eval {
+    val fs = new Array[Long](31)
     var pow5 = BigInt(1)
     var i = 0
     while (i < 31) {
-      val s = ((BigInt(1) << (pow5.bitLength + 58)) / pow5).longValue + 1
-      fs(i * 2) = (s & 0x7FFFFFFF).toInt
-      fs(i * 2 + 1) = (s >> 31).toInt
+      fs(i) = ((BigInt(1) << (pow5.bitLength + 58)) / pow5).longValue + 1
       pow5 *= 5
       i += 1
     }
     fs
   }
-  private final val f32Pow5Split: Array[Int] = eval {
-    val fs = new Array[Int](94)
+  private final val f32Pow5Split: Array[Long] = eval {
+    val fs = new Array[Long](47)
     var pow5 = BigInt(1)
     var i = 0
     while (i < 47) {
-      val s = (pow5 >> (pow5.bitLength - 61)).longValue
-      fs(i * 2) = (s & 0x7FFFFFFF).toInt
-      fs(i * 2 + 1) = (s >> 31).toInt
+      fs(i) = (pow5 >> (pow5.bitLength - 61)).longValue
       pow5 *= 5
       i += 1
     }

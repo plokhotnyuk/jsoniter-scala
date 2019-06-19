@@ -2829,9 +2829,9 @@ object JsonReader {
   private final val hexDigits: Array[Char] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
   private final val dumpBorder: Array[Char] =
-    "\n+----------+-------------------------------------------------+------------------+".toCharArray
+    eval("\n+----------+-------------------------------------------------+------------------+".toCharArray)
   private final val dumpHeader: Array[Char] =
-    "\n|          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |".toCharArray
+    eval("\n|          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |".toCharArray)
   final val bigDecimalMathContext: MathContext = MathContext.DECIMAL128
   final val bigDecimalDigitsLimit: Int = 308
   final val bigDecimalScaleLimit: Int = 6178
