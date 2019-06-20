@@ -2794,7 +2794,7 @@ object JsonReader {
     ns('f') = 15
     ns
   }
-  private final val zoneOffsets: Array[ZoneOffset] = {
+  private final lazy val zoneOffsets: Array[ZoneOffset] = {
     val zos = new Array[ZoneOffset](145)
     var i = 0
     while (i < 145) {
@@ -2803,7 +2803,7 @@ object JsonReader {
     }
     zos
   }
-  private final val zoneIds: java.util.HashMap[String, ZoneId] = {
+  private final lazy val zoneIds: java.util.HashMap[String, ZoneId] = {
     val zs = new java.util.HashMap[String, ZoneId](1024)
     val azs = ZoneId.getAvailableZoneIds.iterator()
     while (azs.hasNext) {

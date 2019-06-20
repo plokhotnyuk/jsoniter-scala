@@ -2176,51 +2176,51 @@ object JsonWriter {
     ds
   }
   private final val f32Pow5InvSplit: Array[Long] = eval {
-    val fs = new Array[Long](31)
+    val ss = new Array[Long](31)
     var pow5 = BigInt(1)
     var i = 0
     while (i < 31) {
-      fs(i) = ((BigInt(1) << (pow5.bitLength + 58)) / pow5).longValue + 1
+      ss(i) = ((BigInt(1) << (pow5.bitLength + 58)) / pow5).longValue + 1
       pow5 *= 5
       i += 1
     }
-    fs
+    ss
   }
   private final val f32Pow5Split: Array[Long] = eval {
-    val fs = new Array[Long](47)
+    val ss = new Array[Long](47)
     var pow5 = BigInt(1)
     var i = 0
     while (i < 47) {
-      fs(i) = (pow5 >> (pow5.bitLength - 61)).longValue
+      ss(i) = (pow5 >> (pow5.bitLength - 61)).longValue
       pow5 *= 5
       i += 1
     }
-    fs
+    ss
   }
   private final val f64Pow5InvSplit: Array[Long] = eval {
-    val fs = new Array[Long](582)
+    val ss = new Array[Long](582)
     var pow5 = BigInt(1)
     var i = 0
     while (i < 582) {
       val inv = ((BigInt(1) << (pow5.bitLength + 121)) / pow5) + 1
-      fs(i) = inv.longValue & 0x3FFFFFFFFFFFFFFFL
-      fs(i + 1) = (inv >> 62).longValue & 0x3FFFFFFFFFFFFFFFL
+      ss(i) = inv.longValue & 0x3FFFFFFFFFFFFFFFL
+      ss(i + 1) = (inv >> 62).longValue & 0x3FFFFFFFFFFFFFFFL
       pow5 *= 5
       i += 2
     }
-    fs
+    ss
   }
   private final val f64Pow5Split: Array[Long] = eval {
-    val fs = new Array[Long](652)
+    val ss = new Array[Long](652)
     var pow5 = BigInt(1)
     var i = 0
     while (i < 652) {
-      fs(i) = (pow5 >> (pow5.bitLength - 121)).longValue & 0x3FFFFFFFFFFFFFFFL
-      fs(i + 1) = (pow5 >> (pow5.bitLength - 59)).longValue & 0x3FFFFFFFFFFFFFFFL
+      ss(i) = (pow5 >> (pow5.bitLength - 121)).longValue & 0x3FFFFFFFFFFFFFFFL
+      ss(i + 1) = (pow5 >> (pow5.bitLength - 59)).longValue & 0x3FFFFFFFFFFFFFFFL
       pow5 *= 5
       i += 2
     }
-    fs
+    ss
   }
   private final val tenPow18Squares: Stream[BigInteger] =
     BigInteger.valueOf(1000000000000000000L) #:: tenPow18Squares.map(p => p.multiply(p))
