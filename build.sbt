@@ -100,6 +100,7 @@ lazy val `jsoniter-scala-core` = project
   .settings(
     crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
     libraryDependencies ++= Seq(
+      "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.0" % Provided,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
