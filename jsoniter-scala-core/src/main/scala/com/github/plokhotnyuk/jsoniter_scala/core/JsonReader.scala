@@ -721,7 +721,7 @@ final class JsonReader private[jsoniter_scala](
     i = appendHexOffset(off + pos, i)
     if (config.appendHexDumpToParseException) {
       i = appendString(", buf:", i)
-      i = appendHexDump(Math.max((pos - 32) & 0xFFFFFFF0, 0), Math.min((pos + 48) & 0xFFFFFFF0, tail), off.toInt, i)
+      i = appendHexDump(pos, off.toInt, i)
     }
     throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
   }
@@ -2526,7 +2526,9 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, pos + 3, null)
   }
 
-  private[this] def appendHexDump(start: Int, end: Int, offset: Int, from: Int): Int = {
+  private[this] def appendHexDump(pos: Int, offset: Int, from: Int): Int = {
+    val start = Math.max((pos - 32) & 0xFFFFFFF0, 0)
+    val end = Math.min((pos + 48) & 0xFFFFFFF0, tail)
     val alignedAbsFrom = (start + offset) & 0xFFFFFFF0
     val alignedAbsTo = (end + offset + 15) & 0xFFFFFFF0
     val len = alignedAbsTo - alignedAbsFrom
