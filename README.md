@@ -1,6 +1,6 @@
 # Jsoniter Scala 
 
-[![AppVeyor build](https://ci.appveyor.com/api/projects/status/17frw06h8rjwuc6g?svg=true)](https://ci.appveyor.com/project/plokhotnyuk/jsoniter-scala)
+[![AppVeyor build](https://ci.appveyor.com/api/projects/status/17frw06h8rjwuc6g/branch/master?svg=true)](https://ci.appveyor.com/project/plokhotnyuk/jsoniter-scala/branch/master)
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![Code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
