@@ -1651,18 +1651,21 @@ final class JsonWriter private[jsoniter_scala](
       var dv, exp, len = 0
       if (e >= -23 && e <= 0 && multiplePowOf2(m, -e)) {
         dv = m >> -e
-        var newDv = 0
-        while ((dv >= 100) && {
-          newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-          newDv * 10 == dv
-        }) {
-          dv = newDv
-          exp += 1
-        }
         len = offset(dv)
         exp += len
         len += 1
-        decimalNotation = exp < 7
+        decimalNotation =
+          if (exp >= 7) {
+            var newDv = 0
+            while ((dv >= 100) && {
+              newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+              newDv * 10 == dv
+            }) {
+              dv = newDv
+              len -= 1
+            }
+            false
+          } else true
       } else {
         val even = (m & 0x1) == 0
         val mv = m << 2
@@ -1844,18 +1847,21 @@ final class JsonWriter private[jsoniter_scala](
       var exp, len = 0
       if (e >= -52 && e <= 0 && multiplePowOf2(m, -e)) {
         dv = m >> -e
-        var newDv = 0L
-        while ((dv >= 100) && {
-          newDv = dv / 10
-          newDv * 10 == dv
-        }) {
-          dv = newDv
-          exp += 1
-        }
         len = offset(dv)
         exp += len
         len += 1
-        decimalNotation = exp < 7
+        decimalNotation =
+          if (exp >= 7) {
+            var newDv = 0L
+            while ((dv >= 100) && {
+              newDv = dv / 10
+              newDv * 10 == dv
+            }) {
+              dv = newDv
+              len -= 1
+            }
+            false
+          } else true
       } else {
         val even = (m & 0x1) == 0
         val mv = m << 2
