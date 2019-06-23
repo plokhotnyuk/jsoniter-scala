@@ -1412,15 +1412,16 @@ final class JsonReader private[jsoniter_scala](
   // https://doc.lagout.org/security/Hackers%20Delight.pdf
   private[this] def mulMant(x: Long, e10: Int): Long = {
     val y = pow10Mantissas(e10 + 343)
-    val x1 = x >>> 32
-    val x2 = x & 0xFFFFFFFFL
-    val y1 = y >>> 32
-    val y2 = y & 0xFFFFFFFFL
-    val t = x1 * y2 + (x2 * y2 >>> 32)
-    x1 * y1 + (t >>> 32) + (x2 * y1 + (t & 0xFFFFFFFFL) >>> 32)
+    val xl = x & 0xFFFFFFFFL
+    val xh = x >>> 32
+    val yl = y & 0xFFFFFFFFL
+    val yh = y >>> 32
+    val t = xh * yl + (xl * yl >>> 32)
+    xh * yh + (t >>> 32) + (xl * yh + (t & 0xFFFFFFFFL) >>> 32)
   }
 
-  private[this] def addExp(e2: Int, e10: Int): Int = e2 + 1 + (e10 * 14267572527L >> 32).toInt // == (e10 * Math.log(10) / Math.log(2)).toInt
+  private[this] def addExp(e2: Int, e10: Int): Int =
+    (e10 * 14267572527L >> 32).toInt + e2 + 1 // == (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
 
   private[this] def getHalfwayDiff(mant: Long, savedBitNum: Int): Long = {
     val mask = -1L >>> Math.max(savedBitNum, 0)

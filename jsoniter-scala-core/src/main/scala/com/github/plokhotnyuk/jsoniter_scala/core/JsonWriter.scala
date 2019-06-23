@@ -1677,11 +1677,11 @@ final class JsonWriter private[jsoniter_scala](
         if (e2 >= 0) {
           val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
           val s = f32Pow5InvSplit(q)
-          val j = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 59 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 59
+          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 28 // == -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 28
           exp = q
-          dv = mulPow5DivPow2(mv, j, s)
-          dp = mulPow5DivPow2(mp, j, s)
-          dm = mulPow5DivPow2(mm, j, s)
+          dv = mulPow5DivPow2(mv, s, j)
+          dp = mulPow5DivPow2(mp, s, j)
+          dm = mulPow5DivPow2(mm, s, j)
           if (q <= 9) {
             val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
             if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
@@ -1692,11 +1692,11 @@ final class JsonWriter private[jsoniter_scala](
           val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
           val i = -e2 - q
           val s = f32Pow5Split(i)
-          val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 60 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 60
+          val j = q - (i * 9972605231L >> 32).toInt + 29 // == q - (i * Math.log(5) / Math.log(2)).toInt + 29
           exp = -i
-          dv = mulPow5DivPow2(mv, j, s)
-          dp = mulPow5DivPow2(mp, j, s)
-          dm = mulPow5DivPow2(mm, j, s)
+          dv = mulPow5DivPow2(mv, s, j)
+          dp = mulPow5DivPow2(mp, s, j)
+          dm = mulPow5DivPow2(mm, s, j)
           if (q <= 1) {
             dvIsTrailingZeros = true
             if (even) dmIsTrailingZeros = mmShift == 1
@@ -1818,8 +1818,8 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def mulPow5DivPow2(m: Long, j: Int, s: Long): Int =
-    ((m * (s >> 31) + (m * (s & 0x7FFFFFFF) >> 31)) >> (j - 31)).toInt
+  private[this] def mulPow5DivPow2(m: Long, s: Long, j: Int): Int =
+    ((m * (s >> 31) + (m * (s & 0x7FFFFFFF) >> 31)) >> j).toInt
 
   // Based on a great work of Ulf Adams:
   // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
@@ -1873,11 +1873,11 @@ final class JsonWriter private[jsoniter_scala](
           val idx = q << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          val j = -e2 + q + Math.max(0, (q * 9972605231L >> 32).toInt) + 122 // == -e2 + q + Math.max(0, (q * Math.log(5) / Math.log(2)).toInt) + 122
+          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 8 // == -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 8
           exp = q
-          dv = fullMulPow5DivPow2(mv, j, s0, s1)
-          dp = fullMulPow5DivPow2(mp, j, s0, s1)
-          dm = fullMulPow5DivPow2(mm, j, s0, s1)
+          dv = fullMulPow5DivPow2(mv, s0, s1, j)
+          dp = fullMulPow5DivPow2(mp, s0, s1, j)
+          dm = fullMulPow5DivPow2(mm, s0, s1, j)
           if (q <= 21) {
             val mv5 = mv / 5
             if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
@@ -1891,11 +1891,11 @@ final class JsonWriter private[jsoniter_scala](
           val idx = i << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          val j = q - Math.max(0, (i * 9972605231L >> 32).toInt) + 120 // == q - Math.max(0, (i * Math.log(5) / Math.log(2)).toInt) + 120
+          val j = q - (i * 9972605231L >> 32).toInt + 6 // == q - (i * Math.log(5) / Math.log(2)).toInt + 6
           exp = -i
-          dv = fullMulPow5DivPow2(mv, j, s0, s1)
-          dp = fullMulPow5DivPow2(mp, j, s0, s1)
-          dm = fullMulPow5DivPow2(mm, j, s0, s1)
+          dv = fullMulPow5DivPow2(mv, s0, s1, j)
+          dp = fullMulPow5DivPow2(mp, s0, s1, j)
+          dm = fullMulPow5DivPow2(mm, s0, s1, j)
           if (q <= 1) {
             dvIsTrailingZeros = true
             if (even) dmIsTrailingZeros = mmShift == 1
@@ -2026,7 +2026,7 @@ final class JsonWriter private[jsoniter_scala](
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
   }
 
-  private[this] def fullMulPow5DivPow2(m: Long, j: Int, s0: Long, s1: Long): Long = {
+  private[this] def fullMulPow5DivPow2(m: Long, s0: Long, s1: Long, j: Int): Long = {
     val ml = m & 0x7FFFFFFF
     val mh = m >>> 31
     val s0l = s0 & 0x7FFFFFFF
@@ -2034,7 +2034,7 @@ final class JsonWriter private[jsoniter_scala](
     val s1l = s1 & 0x7FFFFFFF
     val s1h = s1 >>> 31
     ((((((((ml * s0l >>> 31) + ml * s0h + mh * s0l) >>> 31) + ml * s1l +
-      mh * s0h) >>> 31) + ml * s1h + mh * s1l) >>> 21) + (mh * s1h << 10)) >>> (j - 114)
+      mh * s0h) >>> 31) + ml * s1h + mh * s1l) >>> 21) + (mh * s1h << 10)) >>> j
   }
 
   private[this] def offset(q0: Long): Int = {
