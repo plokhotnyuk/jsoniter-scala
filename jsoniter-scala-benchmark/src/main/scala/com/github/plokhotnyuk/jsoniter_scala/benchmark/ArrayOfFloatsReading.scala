@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -42,14 +42,14 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def playJson(): Array[Float] = Json.parse(jsonBytes).as[Array[Float]]
-/* FIXME: ScalikeJackson parses 1.199999988079071 as 1.2f instead of 1.1999999f
+
   @Benchmark
   def scalikeJackson(): Array[Float] = {
     import reug.scalikejackson.ScalaJacksonImpl._
 
     new String(jsonBytes, UTF_8).read[Array[Float]]
   }
-*/
+
   @Benchmark
   def sprayJson(): Array[Float] = JsonParser(jsonBytes).convertTo[Array[Float]]
 
