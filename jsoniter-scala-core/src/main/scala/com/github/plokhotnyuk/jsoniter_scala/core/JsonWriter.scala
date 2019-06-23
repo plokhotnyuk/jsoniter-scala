@@ -1671,9 +1671,9 @@ final class JsonWriter private[jsoniter_scala](
         val mv = m << 2
         val mp = mv + 2
         val mmShift =
-          if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
-          else 0
-        val mm = mv - 1 - mmShift
+          if (ieeeMantissa != 0 || ieeeExponent <= 1) 2
+          else 1
+        val mm = mv - mmShift
         val e2 = e - 2
         var dp, dm = 0
         var dvIsTrailingZeros, dmIsTrailingZeros = false
@@ -1702,7 +1702,7 @@ final class JsonWriter private[jsoniter_scala](
           dm = mulPow5DivPow2(mm, s, j)
           if (q <= 1) {
             dvIsTrailingZeros = true
-            if (even) dmIsTrailingZeros = mmShift == 1
+            if (even) dmIsTrailingZeros = mmShift != 1
             else dp -= 1
           } else if (q < 31) dvIsTrailingZeros = multiplePowOf2(mv, q)
         }
@@ -1867,9 +1867,9 @@ final class JsonWriter private[jsoniter_scala](
         val mv = m << 2
         val mp = mv + 2
         val mmShift =
-          if (ieeeMantissa != 0 || ieeeExponent <= 1) 1
-          else 0
-        val mm = mv - 1 - mmShift
+          if (ieeeMantissa != 0 || ieeeExponent <= 1) 2
+          else 1
+        val mm = mv - mmShift
         val e2 = e - 2
         var dp, dm = 0L
         var dvIsTrailingZeros, dmIsTrailingZeros = false
@@ -1904,7 +1904,7 @@ final class JsonWriter private[jsoniter_scala](
           dm = fullMulPow5DivPow2(mm, s0, s1, j)
           if (q <= 1) {
             dvIsTrailingZeros = true
-            if (even) dmIsTrailingZeros = mmShift == 1
+            if (even) dmIsTrailingZeros = mmShift != 1
             else dp -= 1
           } else if (q < 63) dvIsTrailingZeros = multiplePowOf2(mv, q)
         }
