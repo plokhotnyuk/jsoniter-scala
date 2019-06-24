@@ -796,76 +796,78 @@ final class JsonReader private[jsoniter_scala](
   private[this] def next2Digits(pos: Int): Int =
     if (pos + 1 < tail) {
       val buf = this.buf
-      val d1 = buf(pos) - '0'
-      val d2 = buf(pos + 1) - '0'
-      if (d1 < 0 || d1 > 9) digitError(pos)
-      if (d2 < 0 || d2 > 9) digitError(pos + 1)
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      if (b1 < '0' || b1 > '9') digitError(pos)
+      if (b2 < '0' || b2 > '9') digitError(pos + 1)
       head = pos + 2
-      d1 * 10 + d2
+      b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else next2Digits(loadMoreOrError(pos))
 
   @tailrec
   private[this] def next2DigitsWithByte(t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
       val buf = this.buf
-      val d1 = buf(pos) - '0'
-      val d2 = buf(pos + 1) - '0'
-      if (d1 < 0 || d1 > 9) digitError(pos)
-      if (d2 < 0 || d2 > 9) digitError(pos + 1)
-      if (buf(pos + 2) != t) tokenError(t, pos + 2)
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      if (b1 < '0' || b1 > '9') digitError(pos)
+      if (b2 < '0' || b2 > '9') digitError(pos + 1)
+      if (b3 != t) tokenError(t, pos + 2)
       head = pos + 3
-      d1 * 10 + d2
+      b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else next2DigitsWithByte(t, loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseYearWithByte(t: Byte, maxDigits: Int, pos: Int): Int =
     if (pos + 4 < tail) {
       val buf = this.buf
-      val b = buf(pos)
-      if (b >= '0' && b <= '9') {
-        val d2 = buf(pos + 1) - '0'
-        val d3 = buf(pos + 2) - '0'
-        val d4 = buf(pos + 3) - '0'
-        if (d2 < 0 || d2 > 9) digitError(pos + 1)
-        if (d3 < 0 || d3 > 9) digitError(pos + 2)
-        if (d4 < 0 || d4 > 9) digitError(pos + 3)
-        if (buf(pos + 4) != t) tokenError(t, pos + 4)
+      val b1 = buf(pos)
+      if (b1 >= '0' && b1 <= '9') {
+        val b2 = buf(pos + 1)
+        val b3 = buf(pos + 2)
+        val b4 = buf(pos + 3)
+        val b5 = buf(pos + 4)
+        if (b2 < '0' || b2 > '9') digitError(pos + 1)
+        if (b3 < '0' || b3 > '9') digitError(pos + 2)
+        if (b4 < '0' || b4 > '9') digitError(pos + 3)
+        if (b5 != t) tokenError(t, pos + 4)
         head = pos + 5
-        (b - '0') * 1000 + d2 * 100 + d3 * 10 + d4
-      } else parseNon4DigitYearWithByte(t, maxDigits, b, pos)
+        b1 * 1000 + b2 * 100 + b3 * 10 + b4 - 53328 // 53328 == '0' * 1111
+      } else parseNon4DigitYearWithByte(t, maxDigits, b1, pos)
     } else parseYearWithByte(t, maxDigits, loadMoreOrError(pos))
 
-  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b: Byte, p: Int): Int = {
+  private[this] def parseNon4DigitYearWithByte(t: Byte, maxDigits: Int, b1: Byte, p: Int): Int = {
     var pos = p
     var buf = this.buf
-    val yearNeg = b == '-' || (b != '+' && decodeError("expected '-' or '+' or digit", pos))
-    val d2 = buf(pos + 1) - '0'
-    val d3 = buf(pos + 2) - '0'
-    val d4 = buf(pos + 3) - '0'
-    val d5 = buf(pos + 4) - '0'
-    if (d2 < 0 || d2 > 9) digitError(pos + 1)
-    if (d3 < 0 || d3 > 9) digitError(pos + 2)
-    if (d4 < 0 || d4 > 9) digitError(pos + 3)
-    if (d5 < 0 || d5 > 9) digitError(pos + 4)
-    var year = d2 * 1000 + d3 * 100 + d4 * 10 + d5
+    val b2 = buf(pos + 1)
+    val b3 = buf(pos + 2)
+    val b4 = buf(pos + 3)
+    val b5 = buf(pos + 4)
+    val yearNeg = b1 == '-' || (b1 != '+' && decodeError("expected '-' or '+' or digit", pos))
+    if (b2 < '0' || b2 > '9') digitError(pos + 1)
+    if (b3 < '0' || b3 > '9') digitError(pos + 2)
+    if (b4 < '0' || b4 > '9') digitError(pos + 3)
+    if (b5 < '0' || b5 > '9') digitError(pos + 4)
+    var year = b2 * 1000 + b3 * 100 + b4 * 10 + b5 - 53328 // 53328 == '0' * 1111
     var yearDigits = 4
-    var d = 0
+    var b: Byte = 0
     pos += 5
     while ({
       if (pos >= tail) {
         pos = loadMoreOrError(pos)
         buf = this.buf
       }
-      d = buf(pos) - '0'
-      d >= 0 && d <= 9 && yearDigits < maxDigits
+      b = buf(pos)
+      b >= '0' && b <= '9' && yearDigits < maxDigits
     }) {
       year =
         if (year > 100000000) 2147483647
-        else year * 10 + d
+        else year * 10 + (b - '0')
       yearDigits += 1
       pos += 1
     }
-    if (d + '0' != t) {
+    if (b != t) {
       if (!yearNeg && yearDigits == 4) digitError(pos)
       if (yearDigits == maxDigits) tokenError(t, pos)
       tokenOrDigitError(t, pos)
@@ -1857,20 +1859,24 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseMonthDay(pos: Int): MonthDay =
     if (pos + 7 < tail) {
       val buf = this.buf
-      val md1 = buf(pos + 2) - '0'
-      val md2 = buf(pos + 3) - '0'
-      val dd1 = buf(pos + 5) - '0'
-      val dd2 = buf(pos + 6) - '0'
-      if (buf(pos) != '-') tokenError('-', pos)
-      if (buf(pos + 1) != '-') tokenError('-', pos + 1)
-      if (md1 < 0 || md1 > 9) digitError(pos + 2)
-      if (md2 < 0 || md2 > 9) digitError(pos + 3)
-      if (buf(pos + 4) != '-') tokenError('-', pos + 4)
-      if (dd1 < 0 || dd1 > 9) digitError(pos + 5)
-      if (dd2 < 0 || dd2 > 9) digitError(pos + 6)
-      if (buf(pos + 7) != '"') tokenError('"', pos + 7)
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      val b4 = buf(pos + 3)
+      val b5 = buf(pos + 4)
+      val b6 = buf(pos + 5)
+      val b7 = buf(pos + 6)
+      val b8 = buf(pos + 7)
+      if (b1 != '-') tokenError('-', pos)
+      if (b2 != '-') tokenError('-', pos + 1)
+      if (b3 < '0' || b3 > '9') digitError(pos + 2)
+      if (b4 < '0' || b4 > '9') digitError(pos + 3)
+      if (b5 != '-') tokenError('-', pos + 4)
+      if (b6 < '0' || b6 > '9') digitError(pos + 5)
+      if (b7 < '0' || b7 > '9') digitError(pos + 6)
+      if (b8 != '"') tokenError('"', pos + 7)
       head = pos + 8
-      toMonthDay(md1 * 10 + md2, dd1 * 10 + dd2)
+      toMonthDay(b3 * 10 + b4 - 528, b6 * 10 + b7 - 528) // 528 == '0' * 11
     } else parseMonthDay(loadMoreOrError(pos))
 
   private[this] def parseOffsetDateTime(): OffsetDateTime = {
