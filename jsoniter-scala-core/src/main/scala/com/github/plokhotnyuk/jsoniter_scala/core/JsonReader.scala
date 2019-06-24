@@ -1421,8 +1421,8 @@ final class JsonReader private[jsoniter_scala](
       else posExp
     val e = e1 + e2
     if (((e1 ^ e) & (e2 ^ e)) >= 0) Math.max(Math.min(e, 2147483647), -2147483648).toInt
-    else if (e1 > 0) 2147483647
-    else -2147483648
+    else if (isNegExp) -2147483648
+    else 2147483647
   }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
