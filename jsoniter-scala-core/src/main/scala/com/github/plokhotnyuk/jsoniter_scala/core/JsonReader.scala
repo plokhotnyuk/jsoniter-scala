@@ -917,9 +917,12 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
     if (pos + 2 < tail) {
       val buf = this.buf
-      if (buf(pos) != 'u') decodeError(error, pos)
-      if (buf(pos + 1) != 'l') decodeError(error, pos + 1)
-      if (buf(pos + 2) != 'l') decodeError(error, pos + 2)
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      if (b1 != 'u') decodeError(error, pos)
+      if (b2 != 'l') decodeError(error, pos + 1)
+      if (b3 != 'l') decodeError(error, pos + 2)
       head = pos + 3
       default
     } else parseNullOrError(default, error, loadMoreOrError(pos))
@@ -928,9 +931,12 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
     if (pos + 2 < tail) {
       val buf = this.buf
-      if (buf(pos) != 'u') tokenOrNullError(b, pos)
-      if (buf(pos + 1) != 'l') tokenOrNullError(b, pos + 1)
-      if (buf(pos + 2) != 'l') tokenOrNullError(b, pos + 2)
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      if (b1 != 'u') tokenOrNullError(b, pos)
+      if (b2 != 'l') tokenOrNullError(b, pos + 1)
+      if (b3 != 'l') tokenOrNullError(b, pos + 2)
       head = pos + 3
       default
     } else parseNullOrTokenError(default, b, loadMoreOrError(pos))
@@ -976,23 +982,27 @@ final class JsonReader private[jsoniter_scala](
   private[this] def parseBoolean(isToken: Boolean, pos: Int): Boolean =
     if (pos + 3 < tail) {
       val buf = this.buf
-      val b = buf(pos)
-      if (b == 't') {
-        if (buf(pos + 1) != 'r') booleanError(pos + 1)
-        if (buf(pos + 2) != 'u') booleanError(pos + 2)
-        if (buf(pos + 3) != 'e') booleanError(pos + 3)
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      val b4 = buf(pos + 3)
+      if (b1 == 't') {
+        if (b2 != 'r') booleanError(pos + 1)
+        if (b3 != 'u') booleanError(pos + 2)
+        if (b4 != 'e') booleanError(pos + 3)
         head = pos + 4
         true
-      } else if (b == 'f') {
+      } else if (b1 == 'f') {
         if (pos + 4 < tail) {
-          if (buf(pos + 1) != 'a') booleanError(pos + 1)
-          if (buf(pos + 2) != 'l') booleanError(pos + 2)
-          if (buf(pos + 3) != 's') booleanError(pos + 3)
-          if (buf(pos + 4) != 'e') booleanError(pos + 4)
+          val b5 = buf(pos + 4)
+          if (b2 != 'a') booleanError(pos + 1)
+          if (b3 != 'l') booleanError(pos + 2)
+          if (b4 != 's') booleanError(pos + 3)
+          if (b5 != 'e') booleanError(pos + 4)
           head = pos + 5
           false
         } else parseBoolean(isToken, loadMoreOrError(pos))
-      } else if (isToken && (b == ' ' || b == '\n' || b == '\t' || b == '\r')) parseBoolean(isToken, pos + 1)
+      } else if (isToken && (b1 == ' ' || b1 == '\n' || b1 == '\t' || b1 == '\r')) parseBoolean(isToken, pos + 1)
       else booleanError(pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
 
