@@ -1645,15 +1645,16 @@ final class JsonReader private[jsoniter_scala](
                                     scale: Int): java.math.BigDecimal = {
     var pos = offset
     val len = limit - pos
-    val numWords = ((len * 445861642L) >>> 32).toInt + 1 // == numDigits * log(10) / log (1L << 32) + 1
-    val firstBlockLimit = pos + len - 9 * ((len * 954437177L) >> 33).toInt // divide positive int by 9
+    val firstBlockLimit = pos + len - 9 * ((len * 954437177L) >> 33).toInt // divide positive int by module of 9
     var x = 0L
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
+    val lastWord = ((len * 445861642L) >>> 32).toInt // == (len * log(10) / log (1L << 32)).toInt
+    val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
-    magWords(numWords - 1) = x.toInt
+    magWords(lastWord) = x.toInt
     while (pos < limit) {
       x =
         buf(pos) * 100000000L +
@@ -1665,7 +1666,7 @@ final class JsonReader private[jsoniter_scala](
         buf(pos + 6) * 100 +
         buf(pos + 7) * 10 +
         buf(pos + 8) - 5333333328L // == '0' * 111111111L
-      var i = numWords - 1
+      var i = lastWord
       while (i >= 0) {
         val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
         magWords(i) = p.toInt
