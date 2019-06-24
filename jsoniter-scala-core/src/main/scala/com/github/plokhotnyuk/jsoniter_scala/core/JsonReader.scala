@@ -1142,8 +1142,7 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError()
       var posMant: Long = b - '0'
       val isZeroFirst = isToken && posMant == 0
-      var posExp = 0
-      var mantExp, digits = 0L
+      var posExp, mantExp, digits = 0L
       var isNegExp = false
       var pos = head
       var buf = this.buf
@@ -1204,12 +1203,12 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 214748364) posExp = posExp * 10 + (b - '0')
+          if (posExp < 922337203685477580L) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
       }
       head = pos
-      val exp: Int = sumExp(mantExp, posExp, isNegExp)
+      val exp = sumExp(mantExp, posExp, isNegExp)
       val isExact = posMant < 922337203685477580L
       if (isExact && exp == 0) toSignedDouble(isNeg, posMant)
       else {
@@ -1283,8 +1282,7 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError()
       var posMant: Long = b - '0'
       val isZeroFirst = isToken && posMant == 0
-      var posExp = 0
-      var mantExp, digits = 0L
+      var posExp, mantExp, digits = 0L
       var isNegExp = false
       var pos = head
       var buf = this.buf
@@ -1345,12 +1343,12 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 214748364) posExp = posExp * 10 + (b - '0')
+          if (posExp < 922337203685477580L) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
       }
       head = pos
-      val exp: Int = sumExp(mantExp, posExp, isNegExp)
+      val exp = sumExp(mantExp, posExp, isNegExp)
       val isExact = posMant < 922337203685477580L
       if (isExact && exp == 0) toSignedFloat(isNeg, posMant)
       else {
@@ -1405,13 +1403,14 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) -posX
     else posX
 
-  private[this] def sumExp(mantExp: Long, posExp: Int, isNegExp: Boolean): Int = {
-    val exp = mantExp +
-      (if (isNegExp) -posExp
-      else posExp)
-    if (Math.abs(exp) <= 2147483647) exp.toInt
-    else if (exp > 0) 2147483647
-    else -2147483647
+  private[this] def sumExp(e1: Long, posExp: Long, isNegExp: Boolean): Int = {
+    val e2 =
+      if (isNegExp) -posExp
+      else posExp
+    val e = e1 + e2
+    if (((e1 ^ e) & (e2 ^ e)) >= 0) Math.max(Math.min(e, 2147483647), -2147483648).toInt
+    else if (e1 > 0) 2147483647
+    else -2147483648
   }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
