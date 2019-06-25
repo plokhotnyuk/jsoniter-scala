@@ -664,60 +664,60 @@ final class JsonWriter private[jsoniter_scala](
     val mostSigBits1 = (mostSigBits >>> 32).toInt
     buf(pos) = '"'
     val d1 = ds(mostSigBits1 >>> 24)
-    buf(pos + 1) = (d1 >> 8).toByte
-    buf(pos + 2) = d1.toByte
+    buf(pos + 1) = d1.toByte
+    buf(pos + 2) = (d1 >> 8).toByte
     val d2 = ds((mostSigBits1 >>> 16) & 0xFF)
-    buf(pos + 3) = (d2 >> 8).toByte
-    buf(pos + 4) = d2.toByte
+    buf(pos + 3) = d2.toByte
+    buf(pos + 4) = (d2 >> 8).toByte
     val d3 = ds((mostSigBits1 >>> 8) & 0xFF)
-    buf(pos + 5) = (d3 >> 8).toByte
-    buf(pos + 6) = d3.toByte
+    buf(pos + 5) = d3.toByte
+    buf(pos + 6) = (d3 >> 8).toByte
     val d4 = ds(mostSigBits1 & 0xFF)
-    buf(pos + 7) = (d4 >> 8).toByte
-    buf(pos + 8) = d4.toByte
+    buf(pos + 7) = d4.toByte
+    buf(pos + 8) = (d4 >> 8).toByte
     val mostSigBits2 = mostSigBits.toInt
     buf(pos + 9) = '-'
     val d5 = ds(mostSigBits2 >>> 24)
-    buf(pos + 10) = (d5 >> 8).toByte
-    buf(pos + 11) = d5.toByte
+    buf(pos + 10) = d5.toByte
+    buf(pos + 11) = (d5 >> 8).toByte
     val d6 = ds((mostSigBits2 >>> 16) & 0xFF)
-    buf(pos + 12) = (d6 >> 8).toByte
-    buf(pos + 13) = d6.toByte
+    buf(pos + 12) = d6.toByte
+    buf(pos + 13) = (d6 >> 8).toByte
     buf(pos + 14) = '-'
     val d7 = ds((mostSigBits2 >>> 8) & 0xFF)
-    buf(pos + 15) = (d7 >> 8).toByte
-    buf(pos + 16) = d7.toByte
+    buf(pos + 15) = d7.toByte
+    buf(pos + 16) = (d7 >> 8).toByte
     val d8 = ds(mostSigBits2 & 0xFF)
-    buf(pos + 17) = (d8 >> 8).toByte
-    buf(pos + 18) = d8.toByte
+    buf(pos + 17) = d8.toByte
+    buf(pos + 18) = (d8 >> 8).toByte
     val leastSigBits1 = (leastSigBits >>> 32).toInt
     buf(pos + 19) = '-'
     val d9 = ds(leastSigBits1 >>> 24)
-    buf(pos + 20) = (d9 >> 8).toByte
-    buf(pos + 21) = d9.toByte
+    buf(pos + 20) = d9.toByte
+    buf(pos + 21) = (d9 >> 8).toByte
     val d10 = ds((leastSigBits1 >>> 16) & 0xFF)
-    buf(pos + 22) = (d10 >> 8).toByte
-    buf(pos + 23) = d10.toByte
+    buf(pos + 22) = d10.toByte
+    buf(pos + 23) = (d10 >> 8).toByte
     buf(pos + 24) = '-'
     val d11 = ds((leastSigBits1 >>> 8) & 0xFF)
-    buf(pos + 25) = (d11 >> 8).toByte
-    buf(pos + 26) = d11.toByte
+    buf(pos + 25) = d11.toByte
+    buf(pos + 26) = (d11 >> 8).toByte
     val d12 = ds(leastSigBits1 & 0xFF)
-    buf(pos + 27) = (d12 >> 8).toByte
-    buf(pos + 28) = d12.toByte
+    buf(pos + 27) = d12.toByte
+    buf(pos + 28) = (d12 >> 8).toByte
     val leastSigBits2 = leastSigBits.toInt
     val d13 = ds(leastSigBits2 >>> 24)
-    buf(pos + 29) = (d13 >> 8).toByte
-    buf(pos + 30) = d13.toByte
+    buf(pos + 29) = d13.toByte
+    buf(pos + 30) = (d13 >> 8).toByte
     val d14 = ds((leastSigBits2 >>> 16) & 0xFF)
-    buf(pos + 31) = (d14 >> 8).toByte
-    buf(pos + 32) = d14.toByte
+    buf(pos + 31) = d14.toByte
+    buf(pos + 32) = (d14 >> 8).toByte
     val d15 = ds((leastSigBits2 >>> 8) & 0xFF)
-    buf(pos + 33) = (d15 >> 8).toByte
-    buf(pos + 34) = d15.toByte
+    buf(pos + 33) = d15.toByte
+    buf(pos + 34) = (d15 >> 8).toByte
     val d16 = ds(leastSigBits2 & 0xFF)
-    buf(pos + 35) = (d16 >> 8).toByte
-    buf(pos + 36) = d16.toByte
+    buf(pos + 35) = d16.toByte
+    buf(pos + 36) = (d16 >> 8).toByte
     buf(pos + 37) = '"'
     pos + 38
   }
@@ -845,11 +845,11 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     val d1 = ds(ch >>> 8)
-    buf(pos + 2) = (d1 >> 8).toByte
-    buf(pos + 3) = d1.toByte
+    buf(pos + 2) = d1.toByte
+    buf(pos + 3) = (d1 >> 8).toByte
     val d2 = ds(ch & 0xFF)
-    buf(pos + 4) = (d2 >> 8).toByte
-    buf(pos + 5) = d2.toByte
+    buf(pos + 4) = d2.toByte
+    buf(pos + 5) = (d2 >> 8).toByte
     pos + 6
   }
 
@@ -859,8 +859,8 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
     buf(pos + 3) = '0'
-    buf(pos + 4) = (d >> 8).toByte
-    buf(pos + 5) = d.toByte
+    buf(pos + 4) = d.toByte
+    buf(pos + 5) = (d >> 8).toByte
     pos + 6
   }
 
@@ -2173,7 +2173,7 @@ object JsonWriter {
         val d2 =
           if (k <= 9) k + '0'
           else k + 'a' - 10
-        ds(i) = ((d1 << 8) + d2).toShort
+        ds(i) = ((d2 << 8) + d1).toShort
         i += 1
         k += 1
       } while (k < 16)
