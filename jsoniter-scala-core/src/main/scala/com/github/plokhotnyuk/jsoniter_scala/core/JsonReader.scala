@@ -2000,20 +2000,13 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    if (b != 'P') {
-      if (isNeg) tokenError('P')
-      else tokensError('P', '-')
-    }
+    if (b != 'P') periodStartError(isNeg)
     b = nextByte(head)
     do {
       if (state == 4) tokenError('"')
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') {
-        if (isNegX) digitError()
-        if (state < 1) tokenOrDigitError('-')
-        decodeError("expected '\"' or '-' or digit")
-      }
+      if (b < '0' || b > '9') periodDigitError(isNegX, state)
       var x = '0' - b
       var pos = head
       var buf = this.buf
@@ -2247,6 +2240,17 @@ final class JsonReader private[jsoniter_scala](
     case 2 => "expected 'W' or 'D' or digit"
     case 3 => "expected 'D' or digit"
   }, pos)
+
+  private[this] def periodStartError(isNeg: Boolean): Nothing = {
+    if (isNeg) tokenError('P')
+    tokensError('P', '-')
+  }
+
+  private[this] def periodDigitError(isNegX: Boolean, state: Int): Nothing = {
+    if (isNegX) digitError()
+    if (state < 1) tokenOrDigitError('-')
+    decodeError("expected '\"' or '-' or digit")
+  }
 
   private[this] def durationError(pos: Int): Nothing = decodeError("illegal duration", pos)
 
