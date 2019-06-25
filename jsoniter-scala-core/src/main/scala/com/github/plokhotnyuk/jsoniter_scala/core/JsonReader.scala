@@ -983,10 +983,10 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 3 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      val b4 = buf(pos + 3)
       if (b1 == 't') {
+        val b2 = buf(pos + 1)
+        val b3 = buf(pos + 2)
+        val b4 = buf(pos + 3)
         if (b2 != 'r') booleanError(pos + 1)
         if (b3 != 'u') booleanError(pos + 2)
         if (b4 != 'e') booleanError(pos + 3)
@@ -994,6 +994,9 @@ final class JsonReader private[jsoniter_scala](
         true
       } else if (b1 == 'f') {
         if (pos + 4 < tail) {
+          val b2 = buf(pos + 1)
+          val b3 = buf(pos + 2)
+          val b4 = buf(pos + 3)
           val b5 = buf(pos + 4)
           if (b2 != 'a') booleanError(pos + 1)
           if (b3 != 'l') booleanError(pos + 2)
