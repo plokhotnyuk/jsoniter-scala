@@ -1023,9 +1023,9 @@ final class JsonWriter private[jsoniter_scala](
     } else {
       val ds = digits
       val totalSecs = x.getSeconds
-      val nanos = x.getNano
+      val nano = x.getNano
       val effectiveTotalSecs =
-        if (totalSecs < 0 && nanos > 0) totalSecs + 1
+        if (totalSecs < 0 && nano > 0) totalSecs + 1
         else totalSecs
       val hours = effectiveTotalSecs / 3600 // 3600 == seconds in a hour
       if (hours != 0) {
@@ -1069,11 +1069,11 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       val seconds = secsOfHour - minutes * 60
-      if (seconds == 0 && nanos == 0) {
+      if (seconds == 0 && nano == 0) {
         buf(pos) = '"'
         pos + 1
       } else {
-        if (totalSecs < 0 && seconds == 0 && nanos != 0) {
+        if (totalSecs < 0 && seconds == 0 && nano != 0) {
           buf(pos) = '-'
           buf(pos + 1) = '0'
           pos += 2
@@ -1095,14 +1095,14 @@ final class JsonWriter private[jsoniter_scala](
             pos += 2
           }
         }
-        if (nanos == 0) {
+        if (nano == 0) {
           buf(pos) = 'S'
           buf(pos + 1) = '"'
           pos + 2
         } else {
           val q0 =
-            if (totalSecs < 0) 1000000000 - nanos
-            else nanos
+            if (totalSecs < 0) 1000000000 - nano
+            else nano
           val dotPos = pos
           pos = writeSignificantFractionDigits(q0, pos + 9, pos, 0, buf, ds)
           buf(dotPos) = '.'
