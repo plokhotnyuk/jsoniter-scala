@@ -1517,9 +1517,9 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def write4Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
     val d1 = ds(q1)
-    val d2 = ds(q0 - 100 * q1)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
+    val d2 = ds(q0 - 100 * q1)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
     pos + 4
@@ -1529,17 +1529,17 @@ final class JsonWriter private[jsoniter_scala](
     val q1 = (q0 * 3518437209L >> 45).toInt // divide positive int by 10000
     val q2 = (q1 * 1374389535L >> 37).toInt // divide positive int by 100
     val d1 = ds(q2)
-    val d2 = ds(q1 - 100 * q2)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
+    val d2 = ds(q1 - 100 * q2)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
     val r1 = q0 - 10000 * q1
     val q3 = (r1 * 1374389535L >> 37).toInt // divide positive int by 100
     val d3 = ds(q3)
-    val d4 = ds(r1 - 100 * q3)
     buf(pos + 4) = d3.toByte
     buf(pos + 5) = (d3 >> 8).toByte
+    val d4 = ds(r1 - 100 * q3)
     buf(pos + 6) = d4.toByte
     buf(pos + 7) = (d4 >> 8).toByte
     pos + 8
