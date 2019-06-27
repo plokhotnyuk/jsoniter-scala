@@ -37,6 +37,13 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   def jsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
 
   @Benchmark
+  def scalikeJackson(): String = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[String]
+  }
+
+  @Benchmark
   def playJson(): String = Json.parse(jsonBytes).as[String]
 
   @Benchmark

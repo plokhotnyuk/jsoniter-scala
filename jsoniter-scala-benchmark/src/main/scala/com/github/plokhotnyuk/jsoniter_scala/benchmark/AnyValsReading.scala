@@ -47,6 +47,7 @@ class AnyValsReading extends AnyValsBenchmark {
   @Benchmark
   def scalikeJackson(): AnyVals = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[AnyVals]
   }
 

@@ -43,6 +43,7 @@ class IntReading extends IntBenchmark {
   @Benchmark
   def scalikeJackson(): Int = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Int]
   }
 

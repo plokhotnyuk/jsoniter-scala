@@ -43,6 +43,7 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Char] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[Char]]
   }
 

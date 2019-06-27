@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -37,6 +38,13 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def playJson(): Set[Int] = Json.parse(jsonBytes).as[Set[Int]]
+
+  @Benchmark
+  def scalikeJackson(): Set[Int] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[Set[Int]]
+  }
 
   @Benchmark
   def sprayJson(): Set[Int] = JsonParser(jsonBytes).convertTo[Set[Int]]

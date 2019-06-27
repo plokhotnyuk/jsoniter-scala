@@ -79,11 +79,6 @@ lazy val publishSettings = Seq(
       "scm:git@github.com:plokhotnyuk/jsoniter-scala.git"
     )
   ),
-  publishConfiguration := {
-    val javaVersion = System.getProperty("java.specification.version")
-    if (javaVersion != "1.8") throw new IllegalStateException("Cancelling publish, please use JDK 1.8")
-    publishConfiguration.value
-  },
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false }
 )
@@ -100,6 +95,7 @@ lazy val `jsoniter-scala-core` = project
   .settings(
     crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
     libraryDependencies ++= Seq(
+      "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.0" % Provided,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
@@ -133,7 +129,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "io.bullet" %% "borer-derivation" % "0.9.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.2",
       "io.spray" %%  "spray-json" % "1.3.5",
-      "com.avsystem.commons" %% "commons-core" % "1.34.21",
+      "com.avsystem.commons" %% "commons-core" % "2.0.0-M1",
       "com.lihaoyi" %% "upickle" % "0.7.5",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
@@ -147,7 +143,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.typesafe.play" %% "play-json" % "2.7.4",
       "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
       "ai.x" %% "play-json-extensions" % "0.40.2",
-      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.4",
+      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )

@@ -42,9 +42,10 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   def playJson(): Array[Int] = Json.parse(jsonBytes).as[Array[Int]]
 
   @Benchmark
-  def scalikeJackson(): Array[Char] = {
+  def scalikeJackson(): Array[Int] = {
     import reug.scalikejackson.ScalaJacksonImpl._
-    new String(jsonBytes, UTF_8).read[Array[Char]]
+
+    new String(jsonBytes, UTF_8).read[Array[Int]]
   }
 
   @Benchmark

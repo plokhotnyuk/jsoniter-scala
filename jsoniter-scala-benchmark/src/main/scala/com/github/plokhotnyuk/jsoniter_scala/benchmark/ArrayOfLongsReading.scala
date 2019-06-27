@@ -44,6 +44,7 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Long] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[Long]]
   }
 

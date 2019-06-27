@@ -47,6 +47,7 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     obj.write.getBytes(UTF_8)
   }
 /* FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879

@@ -34,6 +34,9 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       benchmark.playJson() shouldBe
         "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
+      //FIXME: ScalikeJackson throws an exception with unexpected message: "No MissingRequiredFields ScalaJacksonFormat found for json input"
+      //benchmark.scalikeJackson() shouldBe
+      //  "???"
       benchmark.sprayJson() shouldBe
         "Object is missing required member 's'"
       benchmark.uPickle() shouldBe

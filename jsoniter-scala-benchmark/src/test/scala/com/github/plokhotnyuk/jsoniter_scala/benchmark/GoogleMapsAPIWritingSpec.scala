@@ -13,6 +13,7 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jsoniterScala()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.playJson()) shouldBe GoogleMapsAPI.compactJsonString
+      toString(benchmark.scalikeJackson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.sprayJson()) shouldBe GoogleMapsAPI.compactJsonString
       toString(benchmark.uPickle()) shouldBe GoogleMapsAPI.compactJsonString
     }

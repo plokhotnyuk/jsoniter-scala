@@ -42,6 +42,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   @Benchmark
   def scalikeJackson(): Array[BigInt] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[Array[BigInt]]
   }
 

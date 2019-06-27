@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -38,6 +39,13 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
 
   @Benchmark
   def playJson(): Array[UUID] = Json.parse(jsonBytes).as[Array[UUID]]
+
+  @Benchmark
+  def scalikeJackson(): Array[UUID] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[Array[UUID]]
+  }
 
   @Benchmark
   def sprayJson(): Array[UUID] = JsonParser(jsonBytes).convertTo[Array[UUID]]

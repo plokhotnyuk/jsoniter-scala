@@ -90,6 +90,7 @@ class ExtractFieldsReading extends CommonParams {
   @Benchmark
   def scalikeJackson(): ExtractFields = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     new String(jsonBytes, UTF_8).read[ExtractFields]
   }
 

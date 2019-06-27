@@ -2248,6 +2248,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse infinities on float overflow" in {
       check("12345e6789", Float.PositiveInfinity)
       check("-12345e6789", Float.NegativeInfinity)
+      check("123456789012345678901234567890e9223372036854775799", Float.PositiveInfinity)
+      check("-123456789012345678901234567890e9223372036854775799", Float.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Float.PositiveInfinity)
       check("-12345678901234567890e12345678901234567890", Float.NegativeInfinity)
       reader("12345678901234567890e12345678901234567890$").readFloat() shouldBe Float.PositiveInfinity
@@ -2256,6 +2258,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse zeroes on float underflow" in {
       check("12345e-6789", 0.0f)
       check("-12345e-6789", -0.0f)
+      check("0.12345678901234567890e-9223372036854775799", 0.0f)
+      check("-0.12345678901234567890e-9223372036854775799", -0.0f)
       check("12345678901234567890e-12345678901234567890", 0.0f)
       check("-12345678901234567890e-12345678901234567890", -0.0f)
     }
@@ -2382,6 +2386,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse infinities on double overflow" in {
       check("12345e6789", Double.PositiveInfinity)
       check("-12345e6789", Double.NegativeInfinity)
+      check("123456789012345678901234567890e9223372036854775799", Double.PositiveInfinity)
+      check("-123456789012345678901234567890e9223372036854775799", Double.NegativeInfinity)
       check("12345678901234567890e12345678901234567890", Double.PositiveInfinity)
       check("-12345678901234567890e12345678901234567890", Double.NegativeInfinity)
       reader("12345678901234567890e12345678901234567890$").readDouble() shouldBe Double.PositiveInfinity
@@ -2390,6 +2396,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse zeroes on double underflow" in {
       check("12345e-6789", 0.0)
       check("-12345e-6789", -0.0)
+      check("0.12345678901234567890e-9223372036854775799", 0.0)
+      check("-0.12345678901234567890e-9223372036854775799", -0.0)
       check("12345678901234567890e-12345678901234567890", 0.0)
       check("-1234567890123456789e-12345678901234567890", -0.0)
     }

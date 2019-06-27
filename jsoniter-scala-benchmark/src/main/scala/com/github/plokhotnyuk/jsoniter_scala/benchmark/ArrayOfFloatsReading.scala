@@ -46,6 +46,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   @Benchmark
   def scalikeJackson(): Array[Float] = {
     import reug.scalikejackson.ScalaJacksonImpl._
+
     reug.scalikejackson.play.Json.parse(jsonBytes.write).asSeq[Float].toArray
   }
 

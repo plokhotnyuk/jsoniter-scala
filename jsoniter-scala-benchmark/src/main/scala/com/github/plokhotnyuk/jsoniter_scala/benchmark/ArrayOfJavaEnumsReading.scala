@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -42,6 +43,13 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
 
   @Benchmark
   def playJson(): Array[Suit] = Json.parse(jsonBytes).as[Array[Suit]]
+
+  @Benchmark
+  def scalikeJackson(): Array[Suit] = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[Array[Suit]]
+  }
 
   @Benchmark
   def sprayJson(): Array[Suit] = JsonParser(jsonBytes).convertTo[Array[Suit]]

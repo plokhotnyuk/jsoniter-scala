@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -39,6 +40,13 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
   @Benchmark
   def playJson(): NestedStructs = Json.parse(jsonBytes).as[NestedStructs]
+
+  @Benchmark
+  def scalikeJackson(): NestedStructs = {
+    import reug.scalikejackson.ScalaJacksonImpl._
+
+    new String(jsonBytes, UTF_8).read[NestedStructs]
+  }
 
   @Benchmark
   def sprayJson(): NestedStructs = JsonParser(jsonBytes).convertTo[NestedStructs](nestedStructsJsonFormat)
