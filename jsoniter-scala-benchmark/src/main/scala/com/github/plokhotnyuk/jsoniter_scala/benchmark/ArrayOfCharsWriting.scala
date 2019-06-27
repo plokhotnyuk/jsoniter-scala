@@ -43,13 +43,13 @@ class ArrayOfCharsWriting extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/*FIXME: ScalikeJackson serializes an array of chars as a string
+
   @Benchmark
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
     obj.write.getBytes(UTF_8)
   }
-*/
+
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
