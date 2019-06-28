@@ -99,4 +99,10 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def uPickle(): ExtractFields = read[ExtractFields](jsonBytes)
+
+  @Benchmark
+  def uJson(): ExtractFields = {
+    val jsonValue = ujson.read(new String(jsonBytes, UTF_8))
+    ExtractFields(jsonValue("s").str, jsonValue("i").num.toInt)
+  }
 }
