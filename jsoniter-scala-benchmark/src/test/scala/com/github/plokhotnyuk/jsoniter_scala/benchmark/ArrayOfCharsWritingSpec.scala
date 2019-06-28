@@ -16,8 +16,7 @@ class ArrayOfCharsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.playJson()) shouldBe benchmark.jsonString
-      //FIXME: ScalikeJackson serializes an array of chars as a string
-      //toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
+      toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
     }
