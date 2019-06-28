@@ -35,7 +35,7 @@ final class stringified extends StaticAnnotation
   * `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`. Or their composition like:
   * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
   *
-  * @param fieldNameMapper        the function of mapping from string of case class field name to JSON key (an identity
+  * @param fieldNameMapper        the partial function of mapping from string of case class field name to JSON key (an identity
   *                               function by default)
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
   *                               discriminator field (a function that truncate to simple class name by default)
@@ -64,7 +64,7 @@ final class stringified extends StaticAnnotation
   * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default)
   */
 case class CodecMakerConfig(
-  fieldNameMapper: String => String = identity,
+  fieldNameMapper: PartialFunction[String, String] = JsonCodecMaker.partialIdentity,
   adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
   discriminatorFieldName: Option[String] = Some("type"),
   isStringified: Boolean = false,
@@ -83,13 +83,14 @@ case class CodecMakerConfig(
   allowRecursiveTypes: Boolean = false) // to avoid stack overflow errors with untrusted input
 
 object JsonCodecMaker {
+
+  val partialIdentity: PartialFunction[String, String] = { case s => s }
   /**
     * Mapping function for field or class names that should be in camelCase format.
     *
-    * @param s the name to transform
     * @return a transformed name or the same name if no transformation is required
     */
-  def enforceCamelCase(s: String): String =
+  val enforceCamelCase: PartialFunction[String, String] = { case s =>
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) s
     else {
       val len = s.length
@@ -108,23 +109,25 @@ object JsonCodecMaker {
         }
       }
       sb.toString
-    }
+    }}
 
   /**
     * Mapping function for field or class names that should be in snake_case format.
     *
-    * @param s the name to transform
     * @return a transformed name or the same name if no transformation is required
     */
-  def enforce_snake_case(s: String): String = enforceSnakeOrKebabCase(s, '_')
+  val enforce_snake_case: PartialFunction[String, String] = {
+    case s => enforceSnakeOrKebabCase(s, '_')
+  }
 
   /**
     * Mapping function for field or class names that should be in kebab-case.
     *
-    * @param s the name to transform
     * @return a transformed name or the same name if no transformation is required
     */
-  def `enforce-kebab-case`(s: String): String = enforceSnakeOrKebabCase(s, '-')
+  val `enforce-kebab-case`: PartialFunction[String, String] = {
+    case s => enforceSnakeOrKebabCase(s, '-')
+  }
 
   private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
     val len = s.length
@@ -631,7 +634,8 @@ object JsonCodecMaker {
             val annotationOption = annotations.get(name)
             if (annotationOption.fold(false)(_.transient)) None
             else {
-              val mappedName = annotationOption.fold(cfg.fieldNameMapper(name))(_.partiallyMappedName)
+              val fieldNameMapperFunction: String => String = n => cfg.fieldNameMapper.lift(n).getOrElse(n)
+              val mappedName = annotationOption.fold(fieldNameMapperFunction(name))(_.partiallyMappedName)
               val tmpName = TermName("_" + symbol.name)
               val getter = getters.find(_.name == symbol.name).getOrElse {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
