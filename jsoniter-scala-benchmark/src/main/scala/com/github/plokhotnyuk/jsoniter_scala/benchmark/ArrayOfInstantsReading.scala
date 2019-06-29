@@ -16,8 +16,25 @@ import play.api.libs.json.Json
 import spray.json._
 
 class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
+  val borerCborDecoder: io.bullet.borer.Decoder[Instant] =
+    io.bullet.borer.Decoder.forTuple2[Long, Long].map(t => Instant.ofEpochSecond(t._1, t._2))
+  val borerJsonDecoder: io.bullet.borer.Decoder[Instant] =
+    io.bullet.borer.Decoder.forString.map(Instant.parse)
+
   @Benchmark
   def avSystemGenCodec(): Array[Instant] = JsonStringInput.read[Array[Instant]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borerCbor(): Array[Instant] = {
+    implicit val decoder: io.bullet.borer.Decoder[Instant] = borerCborDecoder
+    io.bullet.borer.Json.decode(cborBytes).to[Array[Instant]].value
+  }
+
+  @Benchmark
+  def borerJson(): Array[Instant] = {
+    implicit val decoder: io.bullet.borer.Decoder[Instant] = borerJsonDecoder
+    io.bullet.borer.Json.decode(jsonBytes).to[Array[Instant]].value
+  }
 
   @Benchmark
   def circe(): Array[Instant] = decode[Array[Instant]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

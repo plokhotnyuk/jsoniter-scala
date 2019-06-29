@@ -11,6 +11,7 @@ abstract class ArrayOfInstantsBenchmark extends CommonParams {
   var obj: Array[Instant] = _
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
+  var cborBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
 
   @Setup
@@ -26,6 +27,11 @@ abstract class ArrayOfInstantsBenchmark extends CommonParams {
     }.toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
+    cborBytes = {
+      implicit val e: io.bullet.borer.Encoder[Instant] =
+        io.bullet.borer.Encoder.forTuple2[Long, Long].contramap((x: Instant) => (x.getEpochSecond, x.getNano))
+      io.bullet.borer.Json.encode(obj).toByteArray
+    }
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 }
