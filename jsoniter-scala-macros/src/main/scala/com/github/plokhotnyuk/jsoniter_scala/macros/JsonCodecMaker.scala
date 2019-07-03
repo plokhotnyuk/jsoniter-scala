@@ -204,6 +204,11 @@ object JsonCodecMaker {
 
       def isSealedClass(tpe: Type): Boolean = tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed
 
+      def isConstType(tpe: Type): Boolean = tpe match {
+        case _ @ ConstantType(Constant(_)) => true
+        case _ => false
+      }
+
       def adtLeafClasses(tpe: Type): Seq[Type] = {
         def collectRecursively(tpe: Type): Seq[Type] =
           if (tpe.typeSymbol.isClass) {
@@ -405,6 +410,28 @@ object JsonCodecMaker {
             q"""val l = in.readKeyAsCharBuf()
                 ${genReadEnumValue(es, q"in.enumValueError(l)")}"""
           }
+        } else if (isConstType(tpe)) {
+          tpe match {
+            case _ @ ConstantType(Constant(v: String)) =>
+              q"""if (in.readKeyAsString() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Boolean)) =>
+              q"""if (in.readKeyAsBoolean() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Byte)) =>
+              q"""if (in.readKeyAsByte() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Char)) =>
+              q"""if (in.readKeyAsChar() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Short)) =>
+              q"""if (in.readKeyAsShort() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Int)) =>
+              q"""if (in.readKeyAsInt() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Long)) =>
+              q"""if (in.readKeyAsLong() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Float)) =>
+              q"""if (in.readKeyAsFloat() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ @ ConstantType(Constant(v: Double)) =>
+              q"""if (in.readKeyAsDouble() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
+            case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
+          }
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
 
@@ -500,6 +527,19 @@ object JsonCodecMaker {
           val es = javaEnumValues(tpe)
           if (es.isEmpty || es.exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
           else q"out.writeNonEscapedAsciiKey($x.name)"
+        } else if (isConstType(tpe)) {
+          tpe match {
+            case _ @ ConstantType(Constant(v: String)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Boolean)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Byte)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Char)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Short)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Int)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Long)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Float)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(v: Double)) => q"out.writeKey($x)"
+            case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
+          }
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
       }
 
@@ -737,7 +777,20 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[Array[_]]) withNullValueFor(tpe)(q"new Array[${typeArg1(tpe)}](0)")
         else if (tpe.typeSymbol.isModuleClass) q"${tpe.typeSymbol.asClass.module}"
         else if (tpe <:< typeOf[AnyRef]) q"null"
-        else q"null.asInstanceOf[$tpe]"
+        else if (isConstType(tpe)) {
+          tpe match {
+            case _ @ ConstantType(Constant(v: String)) => q"$v"
+            case _ @ ConstantType(Constant(v: Boolean)) => q"$v"
+            case _ @ ConstantType(Constant(v: Byte)) => q"$v"
+            case _ @ ConstantType(Constant(v: Char)) => q"$v"
+            case _ @ ConstantType(Constant(v: Short)) => q"$v"
+            case _ @ ConstantType(Constant(v: Int)) => q"$v"
+            case _ @ ConstantType(Constant(v: Long)) => q"$v"
+            case _ @ ConstantType(Constant(v: Float)) => q"$v"
+            case _ @ ConstantType(Constant(v: Double)) => q"$v"
+            case _ => cannotFindCodecError(tpe)
+          }
+        } else q"null.asInstanceOf[$tpe]"
 
       def genReadNonAbstractScalaClass(types: List[Type], default: Tree, isStringified: Boolean,
                                        discriminator: Tree): Tree = {
@@ -825,6 +878,35 @@ object JsonCodecMaker {
               ..$checkReqVars
               $construct
             } else in.readNullOrTokenError(default, '{')"""
+      }
+
+      def genReadConstType(tpe: c.universe.Type, isStringified: Boolean): Tree = tpe match {
+        case _@ConstantType(Constant(v: String)) =>
+          q"""if (in.readString(null) != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+        case _@ConstantType(Constant(v: Boolean)) =>
+          if (isStringified) q"""if (in.readStringAsBoolean() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readBoolean() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _@ConstantType(Constant(v: Byte)) =>
+          if (isStringified) q"""if (in.readStringAsByte() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readByte() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _@ConstantType(Constant(v: Char)) =>
+          q"""if (in.readChar() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+        case _@ConstantType(Constant(v: Short)) =>
+          if (isStringified) q"""if (in.readStringAsShort() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readShort() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _@ConstantType(Constant(v: Int)) =>
+          if (isStringified) q"""if (in.readStringAsInt() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readInt() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _@ConstantType(Constant(v: Long)) =>
+          if (isStringified) q"""if (in.readStringAsLong() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readLong() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _@ConstantType(Constant(v: Float)) =>
+          if (isStringified) q"""if (in.readStringAsFloat() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readFloat() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _@ConstantType(Constant(v: Double)) =>
+          if (isStringified) q"""if (in.readStringAsDouble() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
+          else q"""if (in.readDouble() != $v) in.decodeError(${"expected value: " + v}); $v"""
+        case _ => cannotFindCodecError(tpe)
       }
 
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
@@ -1131,7 +1213,8 @@ object JsonCodecMaker {
           }
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
           genReadNonAbstractScalaClass(types, default, isStringified, discriminator)
-        } else cannotFindCodecError(tpe)
+        } else if (isConstType(tpe)) genReadConstType(tpe, isStringified)
+        else cannotFindCodecError(tpe)
       }
 
       def genWriteNonAbstractScalaClass(types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
@@ -1201,6 +1284,33 @@ object JsonCodecMaker {
         q"""out.writeObjectStart()
             ..$allWriteFields
             out.writeObjectEnd()"""
+      }
+
+      def getWriteConstType(tpe: c.universe.Type, m: c.universe.Tree, isStringified: Boolean): Tree = tpe match {
+        case _@ConstantType(Constant(v: String)) => q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Boolean)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Byte)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Char)) => q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Short)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Int)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Long)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Float)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _@ConstantType(Constant(v: Double)) =>
+          if (isStringified) q"out.writeValAsString($m)"
+          else q"out.writeVal($m)"
+        case _ => cannotFindCodecError(tpe)
       }
 
       def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
@@ -1330,7 +1440,8 @@ object JsonCodecMaker {
               }"""
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
           genWriteNonAbstractScalaClass(types, isStringified, discriminator)
-        } else cannotFindCodecError(tpe)
+        } else if (isConstType(tpe)) getWriteConstType(tpe, m, isStringified)
+        else cannotFindCodecError(tpe)
       }
 
       val codec =

@@ -57,12 +57,12 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`,
   `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module
-  classes, value classes and case classes with values/fields having any of types listed here
+  classes, literal types, value classes, and case classes with values/fields having any of types listed here
 - Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
 - Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary
   constructor
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
-  `java.util.UUID`, `java.time.*`, and value classes for any of them
+  `java.util.UUID`, `java.time.*`, literal types, and value classes for any of them
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at
   the scope of the `make` macro call
 - Parsing of escaped characters is not supported for strings which are mapped to numeric and `java.time.*` types
