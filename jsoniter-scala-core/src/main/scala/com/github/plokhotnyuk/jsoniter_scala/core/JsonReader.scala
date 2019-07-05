@@ -1734,10 +1734,7 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    if (b != 'P') {
-      if (isNeg) tokenError('P')
-      else tokensError('P', '-')
-    }
+    if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
     do {
       if (state == 0) {
@@ -1751,11 +1748,7 @@ final class JsonReader private[jsoniter_scala](
       } else if (state == 4) tokenError('"')
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') {
-        if (isNegX) digitError()
-        if (state < 2) tokenOrDigitError('-')
-        decodeError("expected '\"' or '-' or digit")
-      }
+      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state < 2)
       var x: Long = '0' - b
       var pos = head
       var buf = this.buf
@@ -2000,13 +1993,13 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    if (b != 'P') periodStartError(isNeg)
+    if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
     do {
       if (state == 4) tokenError('"')
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') periodDigitError(isNegX, state)
+      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state < 1)
       var x = '0' - b
       var pos = head
       var buf = this.buf
@@ -2241,14 +2234,14 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'D' or digit"
   }, pos)
 
-  private[this] def periodStartError(isNeg: Boolean): Nothing = {
+  private[this] def durationOrPeriodStartError(isNeg: Boolean): Nothing = {
     if (isNeg) tokenError('P')
     tokensError('P', '-')
   }
 
-  private[this] def periodDigitError(isNegX: Boolean, state: Int): Nothing = {
+  private[this] def durationOrPeriodDigitError(isNegX: Boolean, isNumReq: Boolean): Nothing = {
     if (isNegX) digitError()
-    if (state < 1) tokenOrDigitError('-')
+    if (isNumReq) tokenOrDigitError('-')
     decodeError("expected '\"' or '-' or digit")
   }
 
