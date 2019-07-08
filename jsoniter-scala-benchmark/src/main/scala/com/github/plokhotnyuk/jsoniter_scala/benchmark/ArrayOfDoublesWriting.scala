@@ -20,9 +20,6 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
-
-  @Benchmark
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
 /*FIXME: dsl-json serializes doubles in a plain representation

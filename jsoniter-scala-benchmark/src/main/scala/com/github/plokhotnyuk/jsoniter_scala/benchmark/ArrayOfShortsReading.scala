@@ -21,9 +21,6 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
   def avSystemGenCodec(): Array[Short] = JsonStringInput.read[Array[Short]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[Short] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Short]].value
-
-  @Benchmark
   def circe(): Array[Short] = decode[Array[Short]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark

@@ -8,7 +8,6 @@ class ArrayOfBigIntsWritingSpec extends BenchmarkSpecBase {
   "ArrayOfBigIntsWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.borerJson()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString

@@ -8,7 +8,6 @@ class ArrayOfCharsReadingSpec extends BenchmarkSpecBase {
   "ArrayOfCharsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
-      benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       // FIXME: Jsoniter Java parsers chars as ints

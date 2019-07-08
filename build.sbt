@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
     )
   ),
   resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.0",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -124,10 +124,11 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     resolvers += Resolver.bintrayRepo("reug", "maven"),
+    crossScalaVersions := Seq("2.13.0", "2.12.8"),
     libraryDependencies ++= Seq(
       "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.9.0",
-      "pl.iterators" %% "kebs-spray-json" % "1.6.2",
+//      "io.bullet" %% "borer-derivation" % "0.9.0",
+//      "pl.iterators" %% "kebs-spray-json" % "1.6.2",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
       "com.lihaoyi" %% "upickle" % "0.7.5",

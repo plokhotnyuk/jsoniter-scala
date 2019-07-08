@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -23,9 +22,6 @@ import spray.json._
 class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   @Benchmark
   def avSystemGenCodec(): DistanceMatrix = JsonStringInput.read[DistanceMatrix](new String(jsonBytes1, UTF_8))
-
-  @Benchmark
-  def borerJson(): DistanceMatrix = io.bullet.borer.Json.decode(jsonBytes1).to[DistanceMatrix].value
 
   @Benchmark
   def circe(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)

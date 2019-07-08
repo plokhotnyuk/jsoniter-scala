@@ -8,7 +8,6 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
   "ArrayOfBigDecimalsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj
-      benchmark.borerJson() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
       benchmark.dslJsonScala() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
