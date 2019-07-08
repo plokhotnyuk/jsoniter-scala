@@ -10,7 +10,7 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jacksonScala()) shouldBe GeoJSON.jsonString1
       toString(benchmark.jsoniterScala()) shouldBe GeoJSON.jsonString1
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe GeoJSON.jsonString1
-      toString(benchmark.playJson()) shouldBe GeoJSON.jsonString3
+      toString(benchmark.playJson()) shouldBe GeoJSON.jsonString1
       toString(benchmark.sprayJson()) shouldBe GeoJSON.jsonString4
       toString(benchmark.uPickle()) shouldBe GeoJSON.jsonString1
     }
