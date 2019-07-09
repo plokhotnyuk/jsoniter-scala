@@ -1712,6 +1712,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
   }
+  "deserialize using the nullValue of codecs that are injected by implicits" in {
+    import test._
+
+    verifyDeser(make[C3](CodecMakerConfig()), C3(List((C1("A"), C2("0")))),"""{"member":[["A","0"]]}""")
+  }
   "JsonCodecMaker.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {
       JsonCodecMaker.enforceCamelCase("o_o") shouldBe "oO"
@@ -1777,3 +1782,25 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 }
 
 case class NameOverridden(@named("new_" + "name") oldName: String) // intentionally declared after the `make` call
+
+package object test {
+  implicit def tup2[A: JsonValueCodec, B: JsonValueCodec]: JsonValueCodec[(A, B)] = make[(A, B)](CodecMakerConfig())
+
+  case class C1(s: String) extends AnyVal
+
+  object C1 {
+    implicit val codec: JsonValueCodec[C1] = make[C1](CodecMakerConfig())
+  }
+
+  case class C2(s: String) extends AnyVal
+
+  object C2 {
+    implicit val codec: JsonValueCodec[C2] = make[C2](CodecMakerConfig())
+  }
+
+  case class C3(member: Seq[(C1, C2)])
+
+  object C3 {
+    implicit val codec: JsonValueCodec[C3] = make[C3](CodecMakerConfig())
+  }
+}
