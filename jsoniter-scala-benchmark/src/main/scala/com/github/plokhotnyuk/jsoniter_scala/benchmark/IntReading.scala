@@ -20,9 +20,6 @@ class IntReading extends IntBenchmark {
   def avSystemGenCodec(): Int = JsonStringInput.read[Int](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Int = io.bullet.borer.Json.decode(jsonBytes).to[Int].value
-
-  @Benchmark
   def circe(): Int = decode[Int](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark

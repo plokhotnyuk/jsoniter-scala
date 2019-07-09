@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders.decodingConfig
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -21,10 +20,6 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[BigDecimal] =
     JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8), jsonOptions)
-
-  @Benchmark
-  def borerJson(): Array[BigDecimal] =
-    io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[BigDecimal]].value
 
   @Benchmark
   def circe(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

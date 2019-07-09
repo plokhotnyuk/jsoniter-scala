@@ -7,8 +7,6 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
     "return some parsing error" in {
       benchmark.avSystemGenCodec() shouldBe
         "Cannot read com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields, field s is missing in decoded data"
-      benchmark.borerJson() shouldBe
-        "Missing map key `s` for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields` (input position 1)"
       benchmark.circe() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"
       benchmark.dslJsonScala() shouldBe
@@ -32,8 +30,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
-      benchmark.playJson() shouldBe
-        "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
+      benchmark.playJson() should include("JsResultException")
       //FIXME: ScalikeJackson throws an exception with unexpected message: "No MissingRequiredFields ScalaJacksonFormat found for json input"
       //benchmark.scalikeJackson() shouldBe
       //  "???"

@@ -8,7 +8,6 @@ class ArrayOfCharsWritingSpec extends BenchmarkSpecBase {
   "ArrayOfCharsWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.borerJson()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
       //FIXME: Jsoniter Java serializes an array of chars as an array of ints
