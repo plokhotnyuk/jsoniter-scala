@@ -870,7 +870,7 @@ final class JsonWriter private[jsoniter_scala](
     if (x.bitLength < 64) writeLong(x.longValue)
     else {
       val n = calculateTenPow18SquareNumber(x)
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
+      val qr = x.divideAndRemainder(getTenPow18Square(n))
       writeBigInteger(qr(0))
       writeBigIntegerReminder(qr(1), n - 1)
     }
@@ -878,7 +878,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigIntegerReminder(x: BigInteger, n: Int): Unit =
     if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
     else {
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
+      val qr = x.divideAndRemainder(getTenPow18Square(n))
       writeBigIntegerReminder(qr(0), n - 1)
       writeBigIntegerReminder(qr(1), n - 1)
     }
@@ -910,7 +910,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     } else {
       val n = calculateTenPow18SquareNumber(x)
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
+      val qr = x.divideAndRemainder(getTenPow18Square(n))
       val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n))
       writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
       exp
@@ -922,7 +922,7 @@ final class JsonWriter private[jsoniter_scala](
       val dotOff = scale - blockScale
       if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
     } else {
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
+      val qr = x.divideAndRemainder(getTenPow18Square(n))
       writeBigDecimalReminder(qr(0), scale, blockScale + (18 << n), n - 1)
       writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
     }
@@ -2230,8 +2230,22 @@ object JsonWriter {
     }
     ss
   }
-  private final val tenPow18Squares: Stream[BigInteger] =
-    BigInteger.valueOf(1000000000000000000L) #:: tenPow18Squares.map(p => p.multiply(p))
+  @volatile private[this] var tenPow18Squares: Array[BigInteger] = Array(BigInteger.valueOf(1000000000000000000L))
+
+  final private def getTenPow18Square(n: Int): BigInteger = {
+    var ss = tenPow18Squares
+    var i = ss.length
+    if (n >= i) {
+      ss = java.util.Arrays.copyOf(ss, n + 1)
+      do {
+        val s = ss(i - 1)
+        ss(i) = s.multiply(s)
+        i += 1
+      } while (i <= n)
+      tenPow18Squares = ss
+    }
+    ss(n)
+  }
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
 }
