@@ -6,6 +6,8 @@ class PrimitivesWritingSpec extends BenchmarkSpecBase {
   "PrimitivesWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString1
+      //FIXME: Borer write chars as numbers and do not allow customize codec for them
+      //toString(benchmark.borerJson()) shouldBe benchmark.jsonString1
       toString(benchmark.circe()) shouldBe benchmark.jsonString1
       //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString1

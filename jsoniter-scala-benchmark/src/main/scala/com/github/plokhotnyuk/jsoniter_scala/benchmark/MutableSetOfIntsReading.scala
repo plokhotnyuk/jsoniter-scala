@@ -20,6 +20,9 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
   def avSystemGenCodec(): mutable.Set[Int] = JsonStringInput.read[mutable.Set[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def borerJson(): mutable.Set[Int] = io.bullet.borer.Json.decode(jsonBytes).to[mutable.Set[Int]].value
+
+  @Benchmark
   def circe(): mutable.Set[Int] = decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark

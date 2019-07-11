@@ -6,6 +6,7 @@ class GoogleMapsAPIReadingSpec extends BenchmarkSpecBase {
   "GoogleMapsAPIReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
+      benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj

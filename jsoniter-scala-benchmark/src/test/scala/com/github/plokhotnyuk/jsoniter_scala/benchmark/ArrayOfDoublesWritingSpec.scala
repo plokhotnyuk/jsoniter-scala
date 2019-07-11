@@ -8,6 +8,7 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
   "ArrayOfDoublesWriting" should {
     "write properly" in {
       sameOrBetter(toString(benchmark.avSystemGenCodec()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.borerJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
       //FIXME: dsl-json serializes doubles in a plain representation
       //sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)

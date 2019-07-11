@@ -21,6 +21,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
   "ArrayOfFloatsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
+      benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       //FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.dslJsonScala() shouldBe benchmark.obj

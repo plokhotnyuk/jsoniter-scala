@@ -5,6 +5,7 @@ import java.util.UUID
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -20,6 +21,9 @@ import upickle.default._
 class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[UUID] = JsonStringInput.read[Array[UUID]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borerJson(): Array[UUID] = io.bullet.borer.Json.decode(jsonBytes).to[Array[UUID]].value
 
   @Benchmark
   def circe(): Array[UUID] = decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

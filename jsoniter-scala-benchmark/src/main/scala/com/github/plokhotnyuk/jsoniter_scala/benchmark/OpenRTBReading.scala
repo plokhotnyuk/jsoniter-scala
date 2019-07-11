@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json.JsonStringInput
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB.BidRequest
@@ -21,6 +22,8 @@ class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
   def avSystemGenCodec(): BidRequest = JsonStringInput.read[BidRequest](new String(jsonBytes, UTF_8))
 
+  @Benchmark
+  def borerJson(): BidRequest = io.bullet.borer.Json.decode(jsonBytes).to[BidRequest].value
 /* FIXME: circe throws DecodingFailure(Attempt to decode value on failed cursor, List(DownField(mimes), DownField(banner), DownArray, DownField(imp)))
   @Benchmark
   def circe(): BidRequest = decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)

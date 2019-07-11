@@ -21,6 +21,9 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
   def avSystemGenCodec(): Array[Int] = JsonStringInput.read[Array[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
+  def borerJson(): Array[Int] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Int]].value
+
+  @Benchmark
   def circe(): Array[Int] = decode[Array[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark

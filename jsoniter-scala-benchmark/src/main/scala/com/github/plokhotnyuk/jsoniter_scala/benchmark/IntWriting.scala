@@ -19,6 +19,9 @@ class IntWriting extends IntBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
+  def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
+
+  @Benchmark
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
   @Benchmark

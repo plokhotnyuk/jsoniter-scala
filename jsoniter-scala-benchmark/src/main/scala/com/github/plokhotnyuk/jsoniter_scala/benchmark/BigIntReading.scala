@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -18,7 +19,10 @@ import spray.json._
 class BigIntReading extends BigIntBenchmark {
   @Benchmark
   def avSystemGenCodec(): BigInt = JsonStringInput.read[BigInt](new String(jsonBytes, UTF_8))
-
+/* FIXME: Borer doesn't allow BigInts longer than 200 decimal digits
+  @Benchmark
+  def borerJson(): BigInt = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[BigInt].value
+*/
   @Benchmark
   def circe(): BigInt = decode[BigInt](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
