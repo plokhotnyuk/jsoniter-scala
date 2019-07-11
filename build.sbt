@@ -98,7 +98,7 @@ lazy val `jsoniter-scala-core` = project
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.0" % Provided,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    )
+    ).map(_.withSources())
   )
 
 lazy val `jsoniter-scala-macros` = project
@@ -113,7 +113,7 @@ lazy val `jsoniter-scala-macros` = project
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    )
+    ).map(_.withSources())
   )
 
 lazy val `jsoniter-scala-benchmark` = project
@@ -126,25 +126,25 @@ lazy val `jsoniter-scala-benchmark` = project
     resolvers += Resolver.bintrayRepo("reug", "maven"),
     crossScalaVersions := Seq("2.13.0", "2.12.8"),
     libraryDependencies ++= Seq(
-      "reug" %% "scalikejackson" % "0.5.6" withSources(),
-//      "io.bullet" %% "borer-derivation" % "0.9.0" withSources(),
-//      "pl.iterators" %% "kebs-spray-json" % "1.6.2" withSources(),
-      "io.spray" %%  "spray-json" % "1.3.5" withSources(),
-      "com.avsystem.commons" %% "commons-core" % "2.0.0-M2" withSources(),
-      "com.lihaoyi" %% "upickle" % "0.7.5" withSources(),
-      "com.dslplatform" %% "dsl-json-scala" % "1.9.3" withSources(),
-      "com.jsoniter" % "jsoniter" % "0.9.23" withSources(),
-      "org.javassist" % "javassist" % "3.25.0-GA" withSources(), // required for Jsoniter Java
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.9" withSources(),
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.9" withSources(),
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9" withSources(),
-      "io.circe" %% "circe-generic" % "0.12.0-M4" withSources(),
-      "io.circe" %% "circe-generic-extras" % "0.12.0-M4" withSources(),
-      "io.circe" %% "circe-parser" % "0.12.0-M4" withSources(),
-      "com.typesafe.play" %% "play-json" % "2.8.0-M4" withSources(),
-      "org.julienrf" %% "play-json-derived-codecs" % "6.0.0" withSources(),
-      "ai.x" %% "play-json-extensions" % "0.40.2" withSources(),
+      "reug" %% "scalikejackson" % "0.5.6",
+//      "io.bullet" %% "borer-derivation" % "0.9.0",
+//      "pl.iterators" %% "kebs-spray-json" % "1.6.2",
+      "io.spray" %%  "spray-json" % "1.3.5",
+      "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
+      "com.lihaoyi" %% "upickle" % "0.7.5",
+      "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
+      "com.jsoniter" % "jsoniter" % "0.9.23",
+      "org.javassist" % "javassist" % "3.25.0-GA", // required for Jsoniter Java
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.9",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.9",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9",
+      "io.circe" %% "circe-generic" % "0.12.0-M4",
+      "io.circe" %% "circe-generic-extras" % "0.12.0-M4",
+      "io.circe" %% "circe-parser" % "0.12.0-M4",
+      "com.typesafe.play" %% "play-json" % "2.8.0-M4",
+      "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
+      "ai.x" %% "play-json-extensions" % "0.40.2",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    )
+    ).map(_.withSources())
   )
