@@ -33,9 +33,10 @@ object PlayJsonFormats {
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
     (json: JsValue) => Try {
-      val JsArray(IndexedSeq(aJson, bJson)) = json
-      aReads.reads(aJson).flatMap(a => bReads.reads(bJson).map(b => (a, b)))
-    }.getOrElse(JsError("Expected array of two elements"))
+      import scala.language.existentials
+      val JsArray(arr) = json
+      aReads.reads(arr(0)).flatMap(a => bReads.reads(arr(1)).map(b => (a, b)))
+    }.getOrElse(JsError("Expected array of two elements, but got: " + json))
 
   implicit def tuple2Writes[A, B](implicit aWrites: Writes[A], bWrites: Writes[B]): Writes[Tuple2[A, B]] =
     (tuple: Tuple2[A, B]) => JsArray(Seq(aWrites.writes(tuple._1), bWrites.writes(tuple._2)))
@@ -75,9 +76,6 @@ object PlayJsonFormats {
   val mutableMapOfIntsToBooleansFormat: OFormat[mutable.Map[Int, Boolean]] = OFormat(
     Reads[mutable.Map[Int, Boolean]](js => JsSuccess(mutable.Map(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
     OWrites[mutable.Map[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
-  val openHashMapOfIntsToBooleansFormat: OFormat[mutable.OpenHashMap[Int, Boolean]] = OFormat(
-    Reads[mutable.OpenHashMap[Int, Boolean]](js => JsSuccess(mutable.OpenHashMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
-    OWrites[mutable.OpenHashMap[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
   implicit val primitivesFormat: OFormat[Primitives] = Json.format
   implicit val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {
