@@ -42,7 +42,7 @@ object AVSystemCodecs {
   implicit val zoneIdGenCodec: GenCodec[ZoneId] = transformed(_.toString, ZoneId.of)
   implicit val zoneOffsetGenCodec: GenCodec[ZoneOffset] = transformed(_.toString, ZoneOffset.of)
   implicit val bitSetGenCodec: GenCodec[BitSet] =
-    transformed(_.toArray, (x: Array[Int]) => BitSet(x:_*)) // WARNING: don't do this for open-systems
+    transformed(_.toArray, (x: Array[Int]) => BitSet(x.toIndexedSeq:_*)) // WARNING: don't do this for open-systems
   implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = materializeRecursively
   implicit val geoJSONGenCodec: GenCodec[GeoJSON.GeoJSON] = materializeRecursively
   implicit val googleMapsAPIGenCodec: GenCodec[GoogleMapsAPI.DistanceMatrix] = materializeRecursively

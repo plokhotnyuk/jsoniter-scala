@@ -79,8 +79,6 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] =
     make(CodecMakerConfig(setMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
-  implicit val openHashMapOfIntsToBooleansCodec: JsonValueCodec[mutable.OpenHashMap[Int, Boolean]] =
-    make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig())
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make(CodecMakerConfig())
   implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig())
