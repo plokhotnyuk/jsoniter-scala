@@ -1059,8 +1059,12 @@ object JsonCodecMaker {
             q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.result()")
         } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = new collection.mutable.ListBuffer[$tpe1]",
-            q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.toList")
+          genReadArray(q"var h, l: ::[$tpe1] = null",
+            q"""val x = ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}
+                if (h eq null) {
+                  h = new ::(x, Nil)
+                  l = h
+                } else l = collection.immutable.Unsafe.append(l, x)""",q"h")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
