@@ -26,6 +26,10 @@ def mimaSettings: Seq[Setting[_]] = mimaDefaultSettings ++ Seq(
   }
 )
 
+def noMimaSettings: Seq[Setting[_]] = mimaDefaultSettings ++ Seq(
+  mimaPreviousArtifacts := Set()
+)
+
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
   organizationHomepage := Some(url("https://github.com/plokhotnyuk")),
@@ -85,6 +89,7 @@ lazy val publishSettings = Seq(
 
 lazy val `jsoniter-scala` = project.in(file("."))
   .settings(commonSettings)
+  .settings(noMimaSettings)
   .settings(noPublishSettings)
   .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
 
@@ -120,6 +125,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .enablePlugins(JmhPlugin)
   .dependsOn(`jsoniter-scala-macros`)
   .settings(commonSettings)
+  .settings(noMimaSettings)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
