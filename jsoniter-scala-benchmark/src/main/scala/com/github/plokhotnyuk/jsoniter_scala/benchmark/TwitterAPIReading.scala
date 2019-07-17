@@ -11,12 +11,14 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
+import spray.json._
 
 import scala.collection.immutable.Seq
 
@@ -49,6 +51,9 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
     new String(jsonBytes, UTF_8).read[Seq[Tweet]]
   }
 */
+  @Benchmark
+  def sprayJson(): Seq[Tweet] = JsonParser(jsonBytes).convertTo[Seq[Tweet]]
+
   @Benchmark
   def uPickle(): Seq[Tweet] = read[Seq[Tweet]](jsonBytes)
 }

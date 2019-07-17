@@ -36,7 +36,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
-/* FIXME: Spray-JSON doesn't support product types with more than 22 fields
+/* FIXME: Spray-JSON serializes fields with default values
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 */

@@ -19,7 +19,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe benchmark.jsonString
       //FIXME: ScalikeJackson serializes null value for Option.None
       //toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
-      //toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
     }
   }

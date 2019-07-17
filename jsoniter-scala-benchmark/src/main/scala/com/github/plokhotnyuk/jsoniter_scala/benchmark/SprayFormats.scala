@@ -3,10 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.time._
 import java.util.UUID
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
+import pl.iterators.kebs.json.KebsSpray
+import spray.json._
 import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.util.control.NonFatal
-import spray.json._
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
@@ -47,13 +48,17 @@ object CustomPrettyPrinter extends PrettyPrinter {
   }
 }
 
-object SprayFormats extends DefaultJsonProtocol /*with KebsSpray.NoFlat*/ {
+object FlatSprayFormats extends DefaultJsonProtocol with KebsSpray {
+  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = jsonFormatN
+}
+
+object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
     .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
   val adtBaseJsonFormat: RootJsonFormat[ADTBase] = {
-    implicit lazy val jf1: RootJsonFormat[X] = jsonFormat1(X)
-    implicit lazy val jf2: RootJsonFormat[Y] = jsonFormat1(Y)
-    implicit lazy val jf3: RootJsonFormat[Z] = jsonFormat2(Z)
+    implicit lazy val jf1: RootJsonFormat[X] = jsonFormatN
+    implicit lazy val jf2: RootJsonFormat[Y] = jsonFormatN
+    implicit lazy val jf3: RootJsonFormat[Z] = jsonFormatN
     implicit lazy val jf4: RootJsonFormat[ADTBase] = new RootJsonFormat[ADTBase] {
       override def read(json: JsValue): ADTBase = readADT(json) {
         case "X" => json.convertTo[X]
@@ -69,37 +74,17 @@ object SprayFormats extends DefaultJsonProtocol /*with KebsSpray.NoFlat*/ {
     }
     jf4
   }
-  implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormat3(AnyRefs)
-  implicit val anyValsJsonFormat: RootJsonFormat[AnyVals] = {
-    // Based on the following "horrible hack": https://github.com/spray/spray-json/issues/38#issuecomment-11708058
-    case class AnyValJsonFormat[T <: AnyVal{def a : V}, V](construct: V => T)(implicit jf: JsonFormat[V]) extends JsonFormat[T] {
-      import scala.language.reflectiveCalls
-
-      override def read(json: JsValue): T = construct(jf.read(json))
-
-      override def write(obj: T): JsValue = jf.write(obj.a)
-    }
-
-    implicit val jf1: JsonFormat[ByteVal] = AnyValJsonFormat(ByteVal)
-    implicit val jf2: JsonFormat[ShortVal] = AnyValJsonFormat(ShortVal)
-    implicit val jf3: JsonFormat[IntVal] = AnyValJsonFormat(IntVal)
-    implicit val jf4: JsonFormat[LongVal] = AnyValJsonFormat(LongVal)
-    implicit val jf5: JsonFormat[BooleanVal] = AnyValJsonFormat(BooleanVal)
-    implicit val jf6: JsonFormat[CharVal] = AnyValJsonFormat(CharVal)
-    implicit val jf7: JsonFormat[DoubleVal] = AnyValJsonFormat(DoubleVal)
-    implicit val jf8: JsonFormat[FloatVal] = AnyValJsonFormat(FloatVal)
-    jsonFormat8(AnyVals)
-  }
+  implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormatN
   implicit val durationJsonFormat: RootJsonFormat[Duration] = stringJsonFormat(Duration.parse)
-  implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormat2(ExtractFields)
+  implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormatN
   val geoJSONJsonFormat: RootJsonFormat[GeoJSON.GeoJSON] = {
-    implicit lazy val jf1: RootJsonFormat[GeoJSON.Point] = jsonFormat1(GeoJSON.Point)
-    implicit lazy val jf2: RootJsonFormat[GeoJSON.MultiPoint] = jsonFormat1(GeoJSON.MultiPoint)
-    implicit lazy val jf3: RootJsonFormat[GeoJSON.LineString] = jsonFormat1(GeoJSON.LineString)
-    implicit lazy val jf4: RootJsonFormat[GeoJSON.MultiLineString] = jsonFormat1(GeoJSON.MultiLineString)
-    implicit lazy val jf5: RootJsonFormat[GeoJSON.Polygon] = jsonFormat1(GeoJSON.Polygon)
-    implicit lazy val jf6: RootJsonFormat[GeoJSON.MultiPolygon] = jsonFormat1(GeoJSON.MultiPolygon)
-    implicit lazy val jf7: RootJsonFormat[GeoJSON.GeometryCollection] = jsonFormat1(GeoJSON.GeometryCollection)
+    implicit lazy val jf1: RootJsonFormat[GeoJSON.Point] = jsonFormatN
+    implicit lazy val jf2: RootJsonFormat[GeoJSON.MultiPoint] = jsonFormatN
+    implicit lazy val jf3: RootJsonFormat[GeoJSON.LineString] = jsonFormatN
+    implicit lazy val jf4: RootJsonFormat[GeoJSON.MultiLineString] = jsonFormatN
+    implicit lazy val jf5: RootJsonFormat[GeoJSON.Polygon] = jsonFormatN
+    implicit lazy val jf6: RootJsonFormat[GeoJSON.MultiPolygon] = jsonFormatN
+    implicit lazy val jf7: RootJsonFormat[GeoJSON.GeometryCollection] = jsonFormatN
     implicit lazy val jf8: RootJsonFormat[GeoJSON.Geometry] = new RootJsonFormat[GeoJSON.Geometry] {
       override def read(json: JsValue): GeoJSON.Geometry = readADT(json) {
         case "Point" => json.convertTo[GeoJSON.Point]
@@ -121,8 +106,8 @@ object SprayFormats extends DefaultJsonProtocol /*with KebsSpray.NoFlat*/ {
         case x: GeoJSON.GeometryCollection => x.toJson
       }
     }
-    implicit lazy val jf9: RootJsonFormat[GeoJSON.Feature] = jsonFormat3(GeoJSON.Feature)
-    implicit lazy val jf10: RootJsonFormat[GeoJSON.FeatureCollection] = jsonFormat2(GeoJSON.FeatureCollection)
+    implicit lazy val jf9: RootJsonFormat[GeoJSON.Feature] = jsonFormatN
+    implicit lazy val jf10: RootJsonFormat[GeoJSON.FeatureCollection] = jsonFormatN
     implicit lazy val jf11: RootJsonFormat[GeoJSON.GeoJSON] = new RootJsonFormat[GeoJSON.GeoJSON] {
       override def read(json: JsValue): GeoJSON.GeoJSON = readADT(json) {
         case "Feature" => json.convertTo[GeoJSON.Feature]
@@ -136,22 +121,18 @@ object SprayFormats extends DefaultJsonProtocol /*with KebsSpray.NoFlat*/ {
     }
     jf11
   }
-  implicit val googleMapsAPIJsonFormat: RootJsonFormat[GoogleMapsAPI.DistanceMatrix] = {
-    implicit val jf1: RootJsonFormat[GoogleMapsAPI.Value] = jsonFormat2(GoogleMapsAPI.Value)
-    implicit val jf2: RootJsonFormat[GoogleMapsAPI.Elements] = jsonFormat3(GoogleMapsAPI.Elements)
-    implicit val jf3: RootJsonFormat[GoogleMapsAPI.Rows] = jsonFormat1(GoogleMapsAPI.Rows)
-    jsonFormat4(GoogleMapsAPI.DistanceMatrix)
-  }
+  implicit val googleMapsAPIJsonFormat: RootJsonFormat[GoogleMapsAPI.DistanceMatrix] = jsonFormatN
   implicit val instantJsonFormat: RootJsonFormat[Instant] = stringJsonFormat(Instant.parse)
   implicit val localDateJsonFormat: RootJsonFormat[LocalDate] = stringJsonFormat(LocalDate.parse)
   implicit val localDateTimeJsonFormat: RootJsonFormat[LocalDateTime] = stringJsonFormat(LocalDateTime.parse)
   implicit val localTimeJsonFormat: RootJsonFormat[LocalTime] = stringJsonFormat(LocalTime.parse)
-  implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingRequiredFields] = jsonFormat2(MissingRequiredFields)
+  implicit val missingReqFieldsJsonFormat: RootJsonFormat[MissingRequiredFields] = jsonFormatN
   implicit val monthDayJsonFormat: RootJsonFormat[MonthDay] = stringJsonFormat(MonthDay.parse)
+  implicit val nestedStructsJsonFormat: RootJsonFormat[NestedStructs] = jsonFormatRec
   implicit val offsetDateTimeJsonFormat: RootJsonFormat[OffsetDateTime] = stringJsonFormat(OffsetDateTime.parse)
   implicit val offsetTimeJsonFormat: RootJsonFormat[OffsetTime] = stringJsonFormat(OffsetTime.parse)
   implicit val periodJsonFormat: RootJsonFormat[Period] = stringJsonFormat(Period.parse)
-  implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormat8(Primitives)
+  implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormatN
   implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = {
     val suite = Map(
       "Hearts" -> Hearts,
@@ -162,6 +143,8 @@ object SprayFormats extends DefaultJsonProtocol /*with KebsSpray.NoFlat*/ {
   }
   implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum] = EnumJsonFormat(SuitEnum)
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat(Suit.valueOf)
+  implicit val tweetJsonFormat: RootJsonFormat[TwitterAPI.Tweet] = jsonFormatN
+  implicit val bidRequestJsonFormat: RootJsonFormat[OpenRTB.BidRequest] = jsonFormatN
   implicit val uuidJsonFormat: RootJsonFormat[UUID] = stringJsonFormat(UUID.fromString)
   implicit val yearMonthJsonFormat: RootJsonFormat[YearMonth] = stringJsonFormat(YearMonth.parse)
   implicit val yearJsonFormat: RootJsonFormat[Year] = stringJsonFormat(Year.parse)
