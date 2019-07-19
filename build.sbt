@@ -94,7 +94,7 @@ lazy val `jsoniter-scala-core` = project
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.0" % Provided,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    ).map(_.withSources())
+    )
   )
 
 lazy val `jsoniter-scala-macros` = project
@@ -108,7 +108,7 @@ lazy val `jsoniter-scala-macros` = project
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    ).map(_.withSources())
+    )
   )
 
 lazy val `jsoniter-scala-benchmark` = project
@@ -141,5 +141,5 @@ lazy val `jsoniter-scala-benchmark` = project
       "ai.x" %% "play-json-extensions" % "0.40.2",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    ).map(_.withSources())
+    )
   )
