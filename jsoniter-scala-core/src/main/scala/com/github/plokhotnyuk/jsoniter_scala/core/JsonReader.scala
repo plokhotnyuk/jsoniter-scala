@@ -2346,7 +2346,11 @@ final class JsonReader private[jsoniter_scala](
         (leastSigBits1.toLong << 48) | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
 
-  private[this] def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
+  private[this] def parseString(): Int = {
+    val minLim = Math.min(charBuf.length, tail - head)
+    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, head)
+    else parseString(0, minLim, charBuf, head)
+  }
 
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
@@ -2356,12 +2360,53 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"') {
         head = pos + 1
         i
-      } else if (((b - 32) ^ 60) > 0) parseString(i + 1, minLim, charBuf, pos + 1) // == else if (b >= ' ' && b != '\\') ...
-      else parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else parseString(i + 1, minLim, charBuf, pos + 1)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
       parseString(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
+
+  @tailrec
+  private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
+    if (i + 3 < minLim) {
+      val b1 = buf(pos)
+      charBuf(i) = b1.toChar
+      val b2 = buf(pos + 1)
+      charBuf(i + 1) = b2.toChar
+      val b3 = buf(pos + 2)
+      charBuf(i + 2) = b3.toChar
+      val b4 = buf(pos + 3)
+      charBuf(i + 3) = b4.toChar
+      if (b1 == '"') {
+        head = pos + 1
+        i
+      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else if (b2 == '"') {
+        head = pos + 2
+        i + 1
+      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
+      else if (b3 == '"') {
+        head = pos + 3
+        i + 2
+      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
+      else if (b4 == '"') {
+        head = pos + 4
+        i + 3
+      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
+      else parseStringUnrolled(i + 4, minLim, charBuf, pos + 4)
+    } else if (i < minLim) {
+      val b = buf(pos)
+      charBuf(i) = b.toChar
+      if (b == '"') {
+        head = pos + 1
+        i
+      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else parseStringUnrolled(i + 1, minLim, charBuf, pos + 1)
+    } else if (pos >= tail) {
+      val newPos = loadMoreOrError(pos)
+      parseStringUnrolled(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
+    } else parseStringUnrolled(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
   private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
@@ -2782,6 +2827,7 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
+  private final val isGraalVM: Boolean = System.getProperty("java.vm.name").contains("GraalVM")
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
