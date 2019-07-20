@@ -2254,17 +2254,17 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'S or '.' or digit"
   }, pos)
 
-  private[this] def yearError(): NotImplementedError = decodeError("illegal year")
+  private[this] def yearError(): Nothing = decodeError("illegal year")
 
-  private[this] def monthError(): NotImplementedError = decodeError("illegal month")
+  private[this] def monthError(): Nothing = decodeError("illegal month")
 
-  private[this] def dayError(): NotImplementedError = decodeError("illegal day")
+  private[this] def dayError(): Nothing = decodeError("illegal day")
 
-  private[this] def hourError(): NotImplementedError = decodeError("illegal hour")
+  private[this] def hourError(): Nothing = decodeError("illegal hour")
 
-  private[this] def minuteError(): NotImplementedError = decodeError("illegal minute")
+  private[this] def minuteError(): Nothing = decodeError("illegal minute")
 
-  private[this] def secondError(): NotImplementedError = decodeError("illegal second")
+  private[this] def secondError(): Nothing = decodeError("illegal second")
 
   private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
     if (nanoDigitWeight == 0) tokenError(t, pos)
