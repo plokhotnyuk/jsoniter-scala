@@ -13,7 +13,7 @@ matrix:
   include:
     - os: osx
       osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
-      scala: 2.12.8
+      scala: 2.13.0
     - os: linux
       jdk: openjdk8
       scala: 2.12.8
