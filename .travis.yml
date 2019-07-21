@@ -1,4 +1,6 @@
 language: scala
+before_script:
+  - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
 git:
   depth: 100
 cache:
@@ -11,13 +13,17 @@ before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
 matrix:
   include:
-    - os: osx
-      osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
-      scala: 2.13.0
     - os: linux
       jdk: openjdk8
+      scala: 2.11.12
+    - os: osx
+      osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
       scala: 2.12.8
+    - os: linux
+      env: JDK=graalvm-ce-19.1.0
+      script: source install-jdk.sh --url https://github.com/oracle/graal/releases/download/vm-19.1.0/graalvm-ce-linux-amd64-19.1.0.tar.gz
+      scala: 2.13.0
 script:
-  - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -Dsbt.supershell=false clean coverage test coverageAggregate mimaReportBinaryIssues
+  - travis_wait 40 sbt -java-home ${JAVA_HOME} -no-colors ++$TRAVIS_SCALA_VERSION -Dsbt.supershell=false clean coverage test coverageAggregate mimaReportBinaryIssues
 after_success:
   - bash <(curl -s https://codecov.io/bash)
