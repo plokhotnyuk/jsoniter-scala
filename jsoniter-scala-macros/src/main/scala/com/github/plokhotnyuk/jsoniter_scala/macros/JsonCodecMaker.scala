@@ -109,7 +109,8 @@ object JsonCodecMaker {
         }
       }
       sb.toString
-    }}
+    }
+  }
 
   /**
     * Mapping function for field or class names that should be in snake_case format.
