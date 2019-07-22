@@ -931,6 +931,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[CamelSnakeKebabCases](CodecMakerConfig()), CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
         """{"camelCase":1,"snake_case":2,"kebab-case":3,"camel1":4,"snake_1":5,"kebab-1":6}""")
     }
+    "serialize and deserialize with keys renamed" in {
+      verifySerDeser(make[CamelSnakeKebabCases](CodecMakerConfig({
+        case "camelCase" => "CMLCS"
+        case "kebab-1" => "KBB1"})
+      ), CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        """{"CMLCS":1,"snake_case":2,"kebab-case":3,"camel1":4,"snake_1":5,"KBB1":6}""")
+    }
     "serialize and deserialize with keys enforced to camelCase and throw parse exception when they are missing" in {
       val codecOfCamelAndSnakeCases = make[CamelSnakeKebabCases](CodecMakerConfig(JsonCodecMaker.enforceCamelCase))
       verifySerDeser(codecOfCamelAndSnakeCases, CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
@@ -990,7 +997,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }).getMessage.contains(expectedError))
       assert(intercept[TestFailedException](assertCompiles {
         """case class DuplicatedJsonName(y: Int, z: Int)
-          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(fieldNameMapper = _ => "x"))""".stripMargin
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig(fieldNameMapper = { case _ => "x" }))""".stripMargin
       }).getMessage.contains(expectedError))
     }
     "serialize and deserialize fields that stringified by annotation" in {
@@ -1565,7 +1572,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize first-order types" in {
       verifySerDeser(make[Array[Id[String]]](CodecMakerConfig()), Array[Id[String]](Id("1"), Id("2")),
         """["1","2"]""")
-      verifySerDeser(make[Either[Int, String]](CodecMakerConfig(fieldNameMapper = _ => "value")), Right("VVV"),
+      verifySerDeser(make[Either[Int, String]](CodecMakerConfig(fieldNameMapper = { case _ => "value" })), Right("VVV"),
         """{"type":"Right","value":"VVV"}""")
 
       case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
