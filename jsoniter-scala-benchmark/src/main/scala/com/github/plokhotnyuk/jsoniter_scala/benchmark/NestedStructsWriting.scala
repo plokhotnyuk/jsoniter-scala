@@ -22,7 +22,7 @@ import spray.json._
 class NestedStructsWriting extends NestedStructsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$General: java.lang.NullPointerException (Output.ToByteArray index 4)
+/* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 */

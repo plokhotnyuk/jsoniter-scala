@@ -22,7 +22,7 @@ import spray.json._
 class NestedStructsReading extends NestedStructsBenchmark {
   @Benchmark
   def avSystemGenCodec(): NestedStructs = JsonStringInput.read[NestedStructs](new String(jsonBytes, UTF_8))
-/* FIXME: Borer doesn't support recusive structures, see https://github.com/sirthias/borer/issues/28
+/* FIXME: Borer throws io.bullet.borer.Borer$Error$Overflow: This JSON parser does not support more than 64 Array/Object nesting levels
   @Benchmark
   def borerJson(): NestedStructs = io.bullet.borer.Json.decode(jsonBytes).to[NestedStructs].value
 */
