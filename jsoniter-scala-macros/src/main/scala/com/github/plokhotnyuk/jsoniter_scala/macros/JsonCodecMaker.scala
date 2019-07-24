@@ -83,8 +83,13 @@ case class CodecMakerConfig(
   allowRecursiveTypes: Boolean = false) // to avoid stack overflow errors with untrusted input
 
 object JsonCodecMaker {
-
+  /**
+    * A partial function that is a total in fact and always returns a string passed to it.
+    *
+    * @return a provided value
+    */
   val partialIdentity: PartialFunction[String, String] = { case s => s }
+
   /**
     * Mapping function for field or class names that should be in camelCase format.
     *
@@ -129,6 +134,8 @@ object JsonCodecMaker {
   val `enforce-kebab-case`: PartialFunction[String, String] = {
     case s => enforceSnakeOrKebabCase(s, '-')
   }
+
+  private[this] val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
 
   private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
     val len = s.length
@@ -773,7 +780,7 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[mutable.BitSet]) q"${collectionCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
-        else if (tpe <:< typeOf[List[_]]) q"Nil"
+        else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) q"Nil"
         else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[immutable.LongMap[_]] ||
           tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
           q"${collectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
@@ -1062,10 +1069,11 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"val x = ${collectionCompanion(tpe)}.newBuilder[$tpe1]",
             q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.result()")
-        } else if (tpe <:< typeOf[List[_]]) withDecoderFor(methodKey, default) {
+        } else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
+          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)
           genReadArray(q"val x = new collection.mutable.ListBuffer[$tpe1]",
-            q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.toList")
+            if (isScala213) q"x.addOne($readVal)" else q"x += $readVal", q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
           val tpe1 = typeArg1(tpe)
