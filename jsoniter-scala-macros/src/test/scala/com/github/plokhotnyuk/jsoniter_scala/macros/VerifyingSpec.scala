@@ -10,6 +10,11 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.language.higherKinds
 
 class VerifyingSpec extends WordSpec with Matchers {
+  // Intentionally pollute namespace for testing of macro quasi-quotes
+  lazy val java, scala, collection, mutable, immutable, util, switch, core, macros, com, org,
+  System, Array, None, Nil, Byte, Short, Unit, Int, String, Boolean, Double, Float, Long,
+  JsonReader, JsonWriter, JsonValueCodec, JsonKeyCodec, JsonCodec = ???
+
   def verifySerDeser[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig()): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)
