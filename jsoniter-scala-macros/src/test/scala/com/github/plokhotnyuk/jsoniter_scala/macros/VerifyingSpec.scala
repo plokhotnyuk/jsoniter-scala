@@ -10,11 +10,6 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.language.higherKinds
 
 class VerifyingSpec extends WordSpec with Matchers {
-  // Intentionally pollute namespace for testing of macro quasi-quotes
-  lazy val java, scala, collection, mutable, immutable, util, switch, core, macros, com, org,
-  System, Array, None, Nil, Byte, Short, Unit, Int, String, Boolean, Double, Float, Long,
-  JsonReader, JsonWriter, JsonValueCodec, JsonKeyCodec, JsonCodec = ???
-
   def verifySerDeser[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig()): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)
@@ -53,36 +48,36 @@ class VerifyingSpec extends WordSpec with Matchers {
       .getMessage.contains(msg))
   }
 
-  def verifyDirectByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expectedStr: String): Unit = {
+  def verifyDirectByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expected: String): Unit = {
     val directBuf = ByteBuffer.allocateDirect(len + 100)
     directBuf.position(0)
     writeToByteBuffer(obj, directBuf, cfg)(codec)
     directBuf.position(0)
     val buf = new Array[Byte](len)
     directBuf.get(buf)
-    toString(buf) shouldBe expectedStr
+    toString(buf) shouldBe expected
   }
 
-  def verifyHeapByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expectedStr: String): Unit = {
+  def verifyHeapByteBufferSer[T](codec: JsonValueCodec[T], obj: T, len: Int, cfg: WriterConfig, expected: String): Unit = {
     val heapBuf = ByteBuffer.wrap(new Array[Byte](len + 100))
     heapBuf.position(0)
     writeToByteBuffer(obj, heapBuf, cfg)(codec)
     heapBuf.position(0)
     val buf = new Array[Byte](len)
     heapBuf.get(buf)
-    toString(buf) shouldBe expectedStr
+    toString(buf) shouldBe expected
   }
 
-  def verifyOutputStreamSer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expectedStr: String): Unit = {
+  def verifyOutputStreamSer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expected: String): Unit = {
     val baos = new ByteArrayOutputStream
     writeToStream(obj, baos, cfg)(codec)
-    toString(baos.toByteArray) shouldBe expectedStr
+    toString(baos.toByteArray) shouldBe expected
   }
 
-  def verifyArraySer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expectedStr: String): Unit =
-    toString(writeToArray(obj, cfg)(codec)) shouldBe expectedStr
+  def verifyArraySer[T](codec: JsonValueCodec[T], obj: T, cfg: WriterConfig, expected: String): Unit =
+    toString(writeToArray(obj, cfg)(codec)) shouldBe expected
 
-  def verifyDirectByteBufferDeser[T](codec: JsonValueCodec[T], json: Array[Byte], check: T => Unit): Unit = {
+  def verifyDirectByteBufferDeser[T](codec: JsonValueCodec[T], json:  Array[Byte], check: T => Unit): Unit = {
     val directBuf = ByteBuffer.allocateDirect(json.length)
     directBuf.put(json)
     directBuf.position(0)
@@ -95,8 +90,8 @@ class VerifyingSpec extends WordSpec with Matchers {
   def verifyInputStreamDeser[T](codec: JsonValueCodec[T], json: Array[Byte], check: T => Unit): Unit =
     check(readFromStream(new ByteArrayInputStream(json))(codec))
 
-  def verifyByteArrayDeser[T](codec: JsonValueCodec[T], json: Array[Byte], check: T => Unit): Unit =
+  def verifyByteArrayDeser[T](codec: JsonValueCodec[T], json:  Array[Byte], check: T => Unit): Unit =
     check(readFromArray(json)(codec))
 
-  def toString(json: Array[Byte]): String = new String(json, 0, json.length, UTF_8)
+  def toString(json:  Array[Byte]): String = new String(json, 0, json.length, UTF_8)
 }

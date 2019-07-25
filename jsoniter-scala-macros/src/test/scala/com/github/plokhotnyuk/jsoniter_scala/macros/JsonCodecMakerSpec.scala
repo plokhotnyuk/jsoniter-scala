@@ -25,148 +25,215 @@ object Weapon {
   final case object Sword extends Weapon
 }
 
+case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
+
+case class BoxedPrimitives(
+  b: java.lang.Byte,
+  s: java.lang.Short,
+  i: java.lang.Integer,
+  l: java.lang.Long,
+  bl: java.lang.Boolean,
+  ch: java.lang.Character,
+  dbl: java.lang.Double,
+  f: java.lang.Float)
+
+case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
+
+class NonCaseClass(val id: Int, var name: String) {
+  override def hashCode(): Int = id * 31 + Objects.hashCode(name)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case c: NonCaseClass => id == c.id && Objects.equals(name, c.name)
+    case _ => false
+  }
+
+  override def toString: String = s"NonCaseClass(id=$id,name=$name)"
+}
+
+case class JavaTypes(uuid: UUID)
+
+object LocationType extends Enumeration {
+  type LocationType = Value
+  val GPS: LocationType = Value(1, "GPS") // always set the name explicitly in your Enumeration definition, if you still not sure, then
+  val IP: LocationType = Value(2, "IP") // please look and check that the following synchronized block will not affect your code in run-time:
+  val UserProvided: LocationType = Value(3, "UserProvided") // https://github.com/scala/scala/blob/1692ae306dc9a5ff3feebba6041348dfdee7cfb5/src/library/scala/Enumeration.scala#L203
+}
+
+case class Enums(lt: LocationType.LocationType)
+
+case class JavaEnums(l: Level, il: Levels.InnerLevel)
+
+case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
+
+case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long], ojl: Option[java.lang.Long])
+
+case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
+
+case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
+
+case class MutableMaps(
+  hm: collection.mutable.HashMap[Boolean, collection.mutable.AnyRefMap[BigDecimal, Int]],
+  m: collection.mutable.Map[Float, collection.mutable.ListMap[BigInt, String]],
+  ohm: collection.mutable.OpenHashMap[Double, collection.mutable.LinkedHashMap[Short, Double]])
+
+case class ImmutableMaps(
+  m: Map[Int, Double],
+  hm: collection.immutable.HashMap[String, collection.immutable.ListMap[Char, BigInt]],
+  sm: collection.immutable.SortedMap[Long, collection.immutable.TreeMap[Byte, Float]])
+
+case class EmptyMaps(im: collection.immutable.Map[String, Int], mm: collection.mutable.Map[Long, Int])
+
+case class GenericIterables(
+  s: collection.Set[collection.SortedSet[String]],
+  is: collection.IndexedSeq[collection.Seq[Float]],
+  i: collection.Iterable[Int])
+
+case class MutableIterables(
+  ml: collection.mutable.Seq[collection.mutable.SortedSet[String]],
+  ab: collection.mutable.ArrayBuffer[collection.mutable.Set[BigInt]],
+  as: collection.mutable.ArraySeq[collection.mutable.LinkedHashSet[Int]],
+  b: collection.mutable.Buffer[collection.mutable.HashSet[Double]],
+  lb: collection.mutable.ListBuffer[collection.mutable.TreeSet[Long]],
+  is: collection.mutable.IndexedSeq[collection.mutable.ArrayStack[Float]],
+  ub: collection.mutable.UnrolledBuffer[collection.mutable.Iterable[Short]])
+
+case class ImmutableIterables(
+  l: List[collection.immutable.ListSet[String]],
+  q: collection.immutable.Queue[Set[BigInt]],
+  is: IndexedSeq[collection.immutable.SortedSet[Int]],
+  s: Stream[collection.immutable.TreeSet[Double]],
+  v: Vector[Iterable[Long]])
+
+case class EmptyIterables(l: List[String], a: collection.mutable.ArrayBuffer[Int])
+
+case class MutableLongMaps(lm1: collection.mutable.LongMap[Double], lm2: collection.mutable.LongMap[String])
+
+case class ImmutableIntLongMaps(im: collection.immutable.IntMap[Double], lm: collection.immutable.LongMap[String])
+
+case class BitSets(bs: collection.BitSet, ibs: collection.immutable.BitSet, mbs: collection.mutable.BitSet)
+
+case class CamelSnakeKebabCases(
+  camelCase: Int,
+  snake_case: Int,
+  `kebab-case`: Int,
+  `camel1`: Int,
+  `snake_1`: Int,
+  `kebab-1`: Int)
+
+case class Recursive(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Recursive])
+
+case class UTF8KeysAndValues(გასაღები: String)
+
+case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
+
+case class Defaults(
+  st: String = "VVV",
+  i: Int = 1,
+  bi: BigInt = -1,
+  oc: Option[Char] = Some('X'),
+  l: List[Int] = collection.immutable.List(0),
+  e: Level = Level.HIGH,
+  a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)),
+  ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
+  m: Map[Int, Boolean] = Map(1 -> true),
+  mm: collection.mutable.Map[String, Int] = collection.mutable.Map("VVV" -> 1),
+  im: collection.immutable.IntMap[String] = collection.immutable.IntMap(1 -> "VVV"),
+  lm: collection.mutable.LongMap[Int] = collection.mutable.LongMap(1L -> 2),
+  s: Set[String] = Set("VVV"),
+  ms: collection.mutable.Set[Int] = collection.mutable.Set(1),
+  bs: collection.immutable.BitSet = collection.immutable.BitSet(1),
+  mbs: collection.mutable.BitSet = scala.collection.mutable.BitSet(1))
+
+case class Defaults2(
+  st: String = "VVV",
+  i: Int = 1,
+  bi: BigInt = -1,
+  oc: Option[Char] = Some('X'),
+  l: List[Int] = collection.immutable.List(0),
+  e: Level = Level.HIGH,
+  ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
+  m: Map[Int, Boolean] = Map(1 -> true),
+  mm: collection.mutable.Map[String, Int] = collection.mutable.Map("VVV" -> 1),
+  im: collection.immutable.IntMap[String] = collection.immutable.IntMap(1 -> "VVV"),
+  lm: collection.mutable.LongMap[Int] = collection.mutable.LongMap(1L -> 2),
+  s: Set[String] = Set("VVV"),
+  ms: collection.mutable.Set[Int] = collection.mutable.Set(1),
+  bs: collection.immutable.BitSet = collection.immutable.BitSet(1),
+  mbs: collection.mutable.BitSet = collection.mutable.BitSet(1))
+
+case class JavaTimeTypes(
+  dow: DayOfWeek,
+  d: Duration,
+  i: Instant,
+  ld: LocalDate,
+  ldt: LocalDateTime,
+  lt: LocalTime,
+  m: Month,
+  md: MonthDay,
+  odt: OffsetDateTime,
+  ot: OffsetTime,
+  p: Period,
+  y: Year,
+  ym: YearMonth,
+  zdt: ZonedDateTime,
+  zi: ZoneId,
+  zo: ZoneOffset)
+
+sealed trait AdtBase extends Product with Serializable
+
+sealed abstract class Inner extends AdtBase {
+  def a: Int
+}
+
+case class AAA(a: Int) extends Inner
+
+case class BBB(a: BigInt) extends AdtBase
+
+case class CCC(a: Int, b: String) extends Inner
+
+case object DDD extends AdtBase
+
 class JsonCodecMakerSpec extends VerifyingSpec {
-  case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
+  import NamespacePollutions._
 
-  val primitives = Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f)
   val codecOfPrimitives: JsonValueCodec[Primitives] = make(CodecMakerConfig())
-
-  case class StandardTypes(s: String, bi: BigInt, bd: BigDecimal)
-
-  val standardTypes = StandardTypes("VVV", 1, 1.1)
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make(CodecMakerConfig())
-
-  class NonCaseClass(val id: Int, var name: String) {
-    override def hashCode(): Int = id * 31 + Objects.hashCode(name)
-
-    override def equals(obj: Any): Boolean = obj match {
-      case c: NonCaseClass => id == c.id && Objects.equals(name, c.name)
-      case _ => false
-    }
-
-    override def toString: String = s"NonCaseClass(id=$id,name=$name)"
-  }
-
-  val codecOfNonCaseClass: JsonValueCodec[NonCaseClass] = make(CodecMakerConfig())
-
-  case class JavaTypes(uuid: UUID)
-
   val codecOfJavaTypes: JsonValueCodec[JavaTypes] = make(CodecMakerConfig())
-
-  object LocationType extends Enumeration {
-    type LocationType = Value
-    val GPS: LocationType = Value(1, "GPS") // always set the name explicitly in your Enumeration definition, if you still not sure, then
-    val IP: LocationType = Value(2, "IP") // please look and check that the following synchronized block will not affect your code in run-time:
-    val UserProvided: LocationType = Value(3, "UserProvided") // https://github.com/scala/scala/blob/1692ae306dc9a5ff3feebba6041348dfdee7cfb5/src/library/scala/Enumeration.scala#L203
-  }
-
-  case class Enums(lt: LocationType.LocationType)
-
   val codecOfEnums: JsonValueCodec[Enums] = make(CodecMakerConfig())
-
-  case class JavaEnums(l: Level, il: Levels.InnerLevel)
-
   val codecOfJavaEnums: JsonValueCodec[JavaEnums] = make(CodecMakerConfig())
-
-  case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
-
-  case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long],
-                     ojl: Option[_root_.java.lang.Long])
-
   val codecOfOptions: JsonValueCodec[Options] = make(CodecMakerConfig())
-
-  case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
-
   val codecOfTuples: JsonValueCodec[Tuples] = make(CodecMakerConfig())
-
-  case class Arrays(aa: Array[Array[Int]], a: Array[BigInt])
-
-  val arrays = Arrays(_root_.scala.Array(_root_.scala.Array(1, 2), _root_.scala.Array(3, 4)),
-    _root_.scala.Array[BigInt](1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17))
   val codecOfArrays: JsonValueCodec[Arrays] = make(CodecMakerConfig())
-
-  case class MutableMaps(hm: _root_.scala.collection.mutable.HashMap[Boolean, _root_.scala.collection.mutable.AnyRefMap[BigDecimal, Int]],
-                         m: _root_.scala.collection.mutable.Map[Float, _root_.scala.collection.mutable.ListMap[BigInt, String]],
-                         ohm: _root_.scala.collection.mutable.OpenHashMap[Double, _root_.scala.collection.mutable.LinkedHashMap[Short, Double]])
-
   val codecOfMutableMaps: JsonValueCodec[MutableMaps] = make(CodecMakerConfig())
-
-  case class ImmutableMaps(m: Map[Int, Double],
-                           hm: _root_.scala.collection.immutable.HashMap[String, _root_.scala.collection.immutable.ListMap[Char, BigInt]],
-                           sm: _root_.scala.collection.immutable.SortedMap[Long, _root_.scala.collection.immutable.TreeMap[Byte, Float]])
-
   val codecOfImmutableMaps: JsonValueCodec[ImmutableMaps] = make(CodecMakerConfig())
-
-  case class CamelSnakeKebabCases(camelCase: Int, snake_case: Int, `kebab-case`: Int,
-                                  `camel1`: Int, `snake_1`: Int, `kebab-1`: Int)
-
   val codecOfNameOverridden: JsonValueCodec[NameOverridden] = make(CodecMakerConfig())
-
-  case class Recursive(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Recursive])
-
-  val recursive = Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map())))
   val codecOfRecursive: JsonValueCodec[Recursive] = make(CodecMakerConfig(allowRecursiveTypes = true))
-
-  case class UTF8KeysAndValues(გასაღები: String)
-
   val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make(CodecMakerConfig())
-
-  case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
-
-  val stringified = Stringified(1, 2, List(1), List(2))
   val codecOfStringified: JsonValueCodec[Stringified] = make(CodecMakerConfig())
-
-  case class Defaults(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                      l: List[Int] = _root_.scala.collection.immutable.List(0), e: Level = Level.HIGH,
-                      a: Array[Array[Int]] = _root_.scala.Array(_root_.scala.Array(1, 2), _root_.scala.Array(3, 4)),
-                      ab: _root_.scala.collection.mutable.ArrayBuffer[Int] = _root_.scala.collection.mutable.ArrayBuffer(1, 2),
-                      m: Map[Int, Boolean] = Map(1 -> true),
-                      mm: _root_.scala.collection.mutable.Map[String, Int] = _root_.scala.collection.mutable.Map("VVV" -> 1),
-                      im: _root_.scala.collection.immutable.IntMap[String] = _root_.scala.collection.immutable.IntMap(1 -> "VVV"),
-                      lm: _root_.scala.collection.mutable.LongMap[Int] = _root_.scala.collection.mutable.LongMap(1L -> 2),
-                      s: Set[String] = Set("VVV"),
-                      ms: _root_.scala.collection.mutable.Set[Int] = _root_.scala.collection.mutable.Set(1),
-                      bs: _root_.scala.collection.immutable.BitSet = _root_.scala.collection.immutable.BitSet(1),
-                      mbs: _root_.scala.collection.mutable.BitSet = _root_.scala.collection.mutable.BitSet(1))
-
-  sealed trait AdtBase extends Product with Serializable
-
-  sealed abstract class Inner extends AdtBase {
-    def a: Int
-  }
-
-  case class AAA(a: Int) extends Inner
-
-  case class BBB(a: BigInt) extends AdtBase
-
-  case class CCC(a: Int, b: String) extends Inner
-
-  case object DDD extends AdtBase
-
   val codecOfADTList: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig(bigIntDigitsLimit = 20001))
   val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig(discriminatorFieldName = _root_.scala.None))
 
   "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize case classes with primitives" in {
-      verifySerDeser(codecOfPrimitives, primitives,
+      verifySerDeser(codecOfPrimitives, Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""")
     }
     "serialize and deserialize top-level primitives" in {
-      verifySerDeser(make[Byte](CodecMakerConfig()), 1.toByte, "1")
-      verifySerDeser(make[Short](CodecMakerConfig()), 2.toShort, "2")
+      verifySerDeser(make[_root_.scala.Byte](CodecMakerConfig()), 1.toByte, "1")
+      verifySerDeser(make[_root_.scala.Short](CodecMakerConfig()), 2.toShort, "2")
       verifySerDeser(make[Int](CodecMakerConfig()), 3, "3")
       verifySerDeser(make[Long](CodecMakerConfig()), 4L, "4")
-      verifySerDeser(make[Boolean](CodecMakerConfig()), true, "true")
+      verifySerDeser(make[_root_.scala.Boolean](CodecMakerConfig()), true, "true")
       verifySerDeser(make[Char](CodecMakerConfig()), 'V', "\"V\"")
       verifySerDeser(make[Double](CodecMakerConfig()), 1.1, "1.1")
       verifySerDeser(make[Float](CodecMakerConfig()), 2.2f, "2.2")
     }
     "serialize and deserialize stringified top-level primitives" in {
-      verifySerDeser(make[Byte](CodecMakerConfig(isStringified = true)), 1.toByte, "\"1\"")
-      verifySerDeser(make[Short](CodecMakerConfig(isStringified = true)), 2.toShort, "\"2\"")
+      verifySerDeser(make[_root_.scala.Byte](CodecMakerConfig(isStringified = true)), 1.toByte, "\"1\"")
+      verifySerDeser(make[_root_.scala.Short](CodecMakerConfig(isStringified = true)), 2.toShort, "\"2\"")
       verifySerDeser(make[Int](CodecMakerConfig(isStringified = true)), 3, "\"3\"")
       verifySerDeser(make[Long](CodecMakerConfig(isStringified = true)), 4L, "\"4\"")
-      verifySerDeser(make[Boolean](CodecMakerConfig(isStringified = true)), true, "\"true\"")
+      verifySerDeser(make[_root_.scala.Boolean](CodecMakerConfig(isStringified = true)), true, "\"true\"")
       verifySerDeser(make[Double](CodecMakerConfig(isStringified = true)), 1.1, "\"1.1\"")
       verifySerDeser(make[Float](CodecMakerConfig(isStringified = true)), 2.2f, "\"2.2\"")
     }
@@ -190,10 +257,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """unexpected end of input, offset: 0x00000068""".stripMargin)
     }
     "serialize and deserialize case classes with boxed primitives" in {
-      case class BoxedPrimitives(b: _root_.java.lang.Byte, s: _root_.java.lang.Short, i: _root_.java.lang.Integer,
-                                 l: _root_.java.lang.Long, bl: _root_.java.lang.Boolean, ch: _root_.java.lang.Character,
-                                 dbl: _root_.java.lang.Double, f: _root_.java.lang.Float)
-
       verifySerDeser(make[BoxedPrimitives](CodecMakerConfig()),
         BoxedPrimitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""")
@@ -272,7 +335,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfStandardTypes, """{"s":"VVV","bi":1,"bd":2,}""", "expected '\"', offset: 0x00000019")
     }
     "serialize and deserialize Scala classes which has a primary constructor with 'var' or 'var' parameters only" in {
-      verifySerDeser(codecOfNonCaseClass, new NonCaseClass(1, "VVV"), """{"id":1,"name":"VVV"}""")
+      verifySerDeser(make[NonCaseClass](CodecMakerConfig()), new NonCaseClass(1, "VVV"), """{"id":1,"name":"VVV"}""")
     }
     "serialize and deserialize Java types" in {
       verifySerDeser(codecOfJavaTypes, JavaTypes(new UUID(0, 0)), """{"uuid":"00000000-0000-0000-0000-000000000000"}""")
@@ -328,15 +391,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             in.readInt()
           }
 
-        def encodeValue(x: Int, out: JsonWriter): Unit = out.writeVal(x)
+        def encodeValue(x: Int, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
       }
       val codecOfIntList = make[List[Int]](CodecMakerConfig())
       verifyDeser(codecOfIntList, List(1, 2, 3), "[1,\"2\",3]")
       verifySer(codecOfIntList, List(1, 2, 3), "[1,2,3]")
-      implicit val customCodecOfBoolean: JsonValueCodec[Boolean] = new JsonValueCodec[Boolean] {
-        val nullValue: Boolean = false
+      implicit val customCodecOfBoolean: JsonValueCodec[_root_.scala.Boolean] = new JsonValueCodec[_root_.scala.Boolean] {
+        val nullValue: _root_.scala.Boolean = false
 
-        def decodeValue(in: JsonReader, default: Boolean): Boolean =
+        def decodeValue(in: JsonReader, default: _root_.scala.Boolean): _root_.scala.Boolean =
           if (in.isNextToken('"')) {
             in.rollbackToken()
             val v = in.readString(null)
@@ -348,10 +411,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             in.readBoolean()
           }
 
-        def encodeValue(x: Boolean, out: JsonWriter): Unit = out.writeNonEscapedAsciiVal(if (x) "TRUE" else "FALSE")
+        def encodeValue(x: _root_.scala.Boolean, out: JsonWriter): _root_.scala.Unit =
+          out.writeNonEscapedAsciiVal(if (x) "TRUE" else "FALSE")
       }
 
-      case class Flags(f1: Boolean, f2: Boolean)
+      case class Flags(f1: _root_.scala.Boolean, f2: _root_.scala.Boolean)
 
       val codecOfFlags = make[Flags](CodecMakerConfig())
       verifyDeser(codecOfFlags, Flags(f1 = true, f2 = false), "{\"f1\":true,\"f2\":\"False\"}")
@@ -365,16 +429,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           if (in.isNextToken('"')) {
             in.rollbackToken()
             val len = in.readStringAsCharBuf()
-            if (in.isCharBufEqualsTo(len, "NaN")) _root_.scala.Double.NaN
-            else if (in.isCharBufEqualsTo(len, "Infinity")) _root_.scala.Double.PositiveInfinity
-            else if (in.isCharBufEqualsTo(len, "-Infinity")) _root_.scala.Double.NegativeInfinity
+            if (in.isCharBufEqualsTo(len, "NaN")) Double.NaN
+            else if (in.isCharBufEqualsTo(len, "Infinity")) Double.PositiveInfinity
+            else if (in.isCharBufEqualsTo(len, "-Infinity")) Double.NegativeInfinity
             else in.decodeError("illegal double")
           } else {
             in.rollbackToken()
             in.readDouble()
           }
 
-        def encodeValue(x: Double, out: JsonWriter): Unit =
+        def encodeValue(x: Double, out: JsonWriter): _root_.scala.Unit =
           if (_root_.java.lang.Double.isFinite(x)) out.writeVal(x)
           else out.writeNonEscapedAsciiVal {
             if (x != x) "NaN"
@@ -403,7 +467,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit val customCodecOfBar: JsonValueCodec[Bar] = new JsonValueCodec[Bar] {
         val nullValue: Bar = null.asInstanceOf[Bar]
 
-        def encodeValue(x: Bar, out: JsonWriter): Unit = out.writeVal(x.asInstanceOf[Int])
+        def encodeValue(x: Bar, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.asInstanceOf[Int])
 
         def decodeValue(in: JsonReader, default: Bar): Bar = in.readInt().asInstanceOf[Bar]
       }
@@ -422,7 +486,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             else Right(in.readInt())
           }
 
-          def encodeValue(x: Either[String, Int], out: JsonWriter): Unit = x match {
+          def encodeValue(x: Either[String, Int], out: JsonWriter): _root_.scala.Unit = x match {
             case Right(i) => out.writeVal(i)
             case Left(s) => out.writeVal(s)
           }
@@ -445,14 +509,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
                 in.decodeError("expected '{' or '\"'")
             }
 
-          def encodeValue(x: Either[String, StandardTypes], out: JsonWriter): Unit =
+          def encodeValue(x: Either[String, StandardTypes], out: JsonWriter): _root_.scala.Unit =
             x match {
               case Left(s) => out.writeVal(s)
               case Right(st) => codecOfStandardTypes.encodeValue(st, out)
             }
         }
       val codecOfOuterTypes = make[OuterTypes](CodecMakerConfig())
-      verifySerDeser(codecOfOuterTypes, OuterTypes("X", Right(standardTypes)),
+      verifySerDeser(codecOfOuterTypes, OuterTypes("X", Right(StandardTypes("VVV", 1, 1.1))),
         """{"s":"X","st":{"s":"VVV","bi":1,"bd":1.1}}""")
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Left("fatal error")), """{"s":"X","st":"fatal error"}""")
       verifySerDeser(codecOfOuterTypes, OuterTypes("X", Left("error")), """{"s":"X"}""") // st matches with default value
@@ -467,7 +531,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           }
         }
 
-        def encodeValue(x: LocationType.LocationType, out: JsonWriter): Unit = out.writeVal(x.id)
+        def encodeValue(x: LocationType.LocationType, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.id)
       }
       val codecOfEnums = make[Enums](CodecMakerConfig())
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":1}""")
@@ -478,26 +542,24 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         new JsonValueCodec[StandardTypes] {
           val nullValue: StandardTypes = null
 
-          def decodeValue(in: JsonReader, default: StandardTypes): StandardTypes =
-            (in.nextToken(): @switch) match {
-              case '{' =>
-                in.rollbackToken()
-                codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue)
-              case '"' =>
-                in.rollbackToken()
-                readFromString(in.readString(null))(codecOfStandardTypes)
-              case _ =>
-                in.decodeError("expected '{' or '\"'")
-            }
+          def decodeValue(in: JsonReader, default: StandardTypes): StandardTypes = (in.nextToken(): @switch) match {
+            case '{' =>
+              in.rollbackToken()
+              codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue)
+            case '"' =>
+              in.rollbackToken()
+              readFromString(in.readString(null))(codecOfStandardTypes)
+            case _ =>
+              in.decodeError("expected '{' or '\"'")
+          }
 
-          def encodeValue(x: StandardTypes, out: JsonWriter): Unit =
-            x.s match {
-              case "VVV" => codecOfStandardTypes.encodeValue(x, out)
-              case "XXX" => out.writeVal(writeToString(x)(codecOfStandardTypes))
-            }
+          def encodeValue(x: StandardTypes, out: JsonWriter): _root_.scala.Unit = x.s match {
+            case "VVV" => codecOfStandardTypes.encodeValue(x, out)
+            case "XXX" => out.writeVal(writeToString(x)(codecOfStandardTypes))
+          }
         }
-      verifySerDeser(customCodecOfStandardTypes, standardTypes, """{"s":"VVV","bi":1,"bd":1.1}""")
-      verifySerDeser(customCodecOfStandardTypes, standardTypes.copy(s = "XXX"), """"{\"s\":\"XXX\",\"bi\":1,\"bd\":1.1}"""")
+      verifySerDeser(customCodecOfStandardTypes, StandardTypes("VVV", 1, 1.1), """{"s":"VVV","bi":1,"bd":1.1}""")
+      verifySerDeser(customCodecOfStandardTypes, StandardTypes("XXX", 1, 1.1), """"{\"s\":\"XXX\",\"bi\":1,\"bd\":1.1}"""")
     }
     "serialize and deserialize types using a custom key codec and a custom ordering for map keys" in {
       implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
@@ -507,7 +569,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           case x => in.enumValueError(x.toString)
         }
 
-        override def encodeKey(x: Level, out: JsonWriter): Unit = x match {
+        override def encodeKey(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
           case Level.LOW => out.writeKey(0)
           case Level.HIGH => out.writeKey(1)
           case _ => out.encodeError("illegal enum value")
@@ -531,7 +593,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           case x => in.enumValueError(x.toString)
         }
 
-        override def encodeValue(x: Level, out: JsonWriter): Unit = x match {
+        override def encodeValue(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
           case Level.LOW => out.writeVal(0)
           case Level.HIGH => out.writeVal(1)
           case _ => out.encodeError("illegal enum value")
@@ -563,7 +625,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             kvs.result()
           } else in.readNullOrTokenError(default, '{')
 
-        override def encodeValue(kvs: Seq[(String, Int)], out: JsonWriter): Unit = {
+        override def encodeValue(kvs: Seq[(String, Int)], out: JsonWriter): _root_.scala.Unit = {
           out.writeObjectStart()
           kvs.foreach { case (k, v) =>
             out.writeKey(k)
@@ -583,18 +645,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         implicit val codec: JsonValueCodec[RawVal] = new JsonValueCodec[RawVal] {
           override def decodeValue(in: JsonReader, default: RawVal): RawVal = new RawVal(in.readRawValAsBytes())
 
-          override def encodeValue(x: RawVal, out: JsonWriter): Unit = out.writeRawVal(x.bs)
+          override def encodeValue(x: RawVal, out: JsonWriter): _root_.scala.Unit = out.writeRawVal(x.bs)
 
-          override val nullValue: RawVal = new RawVal(new _root_.scala.Array[Byte](0))
+          override val nullValue: RawVal = new RawVal(new _root_.scala.Array[_root_.scala.Byte](0))
         }
       }
 
-      case class RawVal private(bs: Array[Byte]) {
-        def this(s: String) = this(s.getBytes(UTF_8))
+      case class RawVal private(bs: _root_.scala.Array[_root_.scala.Byte]) {
+        def this(s: _root_.scala.Predef.String) = this(s.getBytes(UTF_8))
 
         override lazy val hashCode: Int = MurmurHash3.arrayHash(bs)
 
-        override def equals(obj: Any): Boolean = obj match {
+        override def equals(obj: Any): _root_.scala.Boolean = obj match {
           case that: RawVal => _root_.java.util.Arrays.equals(bs, that.bs)
           case _ => false
         }
@@ -677,6 +739,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[(S, I)](CodecMakerConfig()), ("VVV", 1), "[\"VVV\",1]")
     }
     "serialize and deserialize case classes with arrays" in {
+      val arrays = Arrays(_root_.scala.Array(_root_.scala.Array(1, 2), _root_.scala.Array(3, 4)),
+        _root_.scala.Array[BigInt](1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17))
       val json = """{"aa":[[1,2],[3,4]],"a":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]}"""
       verifySer(codecOfArrays, arrays, json)
       verifySer(make[Arrays](CodecMakerConfig(transientEmpty = false)), arrays, json)
@@ -723,10 +787,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfArrays, """{"aa":[[1,2,3,]],"a":[]}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with generic Iterables" in {
-      case class GenericIterables(s: _root_.scala.collection.Set[_root_.scala.collection.SortedSet[String]],
-                                  is: _root_.scala.collection.IndexedSeq[_root_.scala.collection.Seq[Float]],
-                                  i: _root_.scala.collection.Iterable[Int])
-
       val codecOfGenericIterables = make[GenericIterables](CodecMakerConfig())
       verifySerDeser(codecOfGenericIterables,
         GenericIterables(_root_.scala.collection.Set(_root_.scala.collection.SortedSet("1", "2", "3")),
@@ -745,16 +805,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"s":[["1","2","3"]],"is":[[1.1,2.2,3.3]],"i":[4,5,6]}""")
     }
     "serialize and deserialize case classes with mutable Iterables" in {
-      case class MutableIterables(ml: _root_.scala.collection.mutable.Seq[_root_.scala.collection.mutable.SortedSet[String]],
-                                     ab: _root_.scala.collection.mutable.ArrayBuffer[_root_.scala.collection.mutable.Set[BigInt]],
-                                     as: _root_.scala.collection.mutable.ArraySeq[_root_.scala.collection.mutable.LinkedHashSet[Int]],
-                                     b: _root_.scala.collection.mutable.Buffer[_root_.scala.collection.mutable.HashSet[Double]],
-                                     lb: _root_.scala.collection.mutable.ListBuffer[_root_.scala.collection.mutable.TreeSet[Long]],
-                                     is: _root_.scala.collection.mutable.IndexedSeq[_root_.scala.collection.mutable.ArrayStack[Float]],
-                                     ub: _root_.scala.collection.mutable.UnrolledBuffer[_root_.scala.collection.mutable.Iterable[Short]])
-
       verifySerDeser(make[MutableIterables](CodecMakerConfig()),
-        MutableIterables(_root_.scala.collection.mutable.Seq(_root_.scala.collection.mutable.SortedSet("1", "2", "3")),
+        MutableIterables(
+          _root_.scala.collection.mutable.Seq(_root_.scala.collection.mutable.SortedSet("1", "2", "3")),
           _root_.scala.collection.mutable.ArrayBuffer(_root_.scala.collection.mutable.Set[BigInt](4),
             _root_.scala.collection.mutable.Set.empty[BigInt]),
           _root_.scala.collection.mutable.ArraySeq(_root_.scala.collection.mutable.LinkedHashSet(5, 6),
@@ -766,12 +819,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""")
     }
     "serialize and deserialize case classes with immutable Iterables" in {
-      case class ImmutableIterables(l: List[_root_.scala.collection.immutable.ListSet[String]],
-                                    q: _root_.scala.collection.immutable.Queue[Set[BigInt]],
-                                    is: IndexedSeq[_root_.scala.collection.immutable.SortedSet[Int]],
-                                    s: Stream[_root_.scala.collection.immutable.TreeSet[Double]],
-                                    v: Vector[Iterable[Long]])
-
       verifySerDeser(make[ImmutableIterables](CodecMakerConfig()),
         ImmutableIterables(List(_root_.scala.collection.immutable.ListSet("1")), _root_.scala.collection.immutable.Queue(Set[BigInt](4)),
           IndexedSeq(_root_.scala.collection.immutable.SortedSet(5, 6, 7), _root_.scala.collection.immutable.SortedSet()),
@@ -779,8 +826,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"l":[["1"]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
     }
     "serialize and deserialize case class fields with empty iterables when transientEmpty is off" in {
-      case class EmptyIterables(l: List[String], a: _root_.scala.collection.mutable.ArrayBuffer[Int])
-
       verifySerDeser(make[EmptyIterables](CodecMakerConfig(transientEmpty = false)),
         EmptyIterables(List(), _root_.scala.collection.mutable.ArrayBuffer()), """{"l":[],"a":[]}""")
       verifySerDeser(make[EmptyIterables](CodecMakerConfig(transientEmpty = false)),
@@ -801,7 +846,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[1,2,3,4,5,6,7,8,9,10,11]""", "too many set inserts, offset: 0x00000017")
     }
     "serialize and deserialize case classes with generic maps" in {
-      case class GenericMaps(m: _root_.scala.collection.Map[Int, Boolean])
+      case class GenericMaps(m: _root_.scala.collection.Map[Int, _root_.scala.Boolean])
 
       val codecOfGenericMaps = make[GenericMaps](CodecMakerConfig())
       verifySerDeser(codecOfGenericMaps, GenericMaps(_root_.scala.collection.Map(1 -> true)),
@@ -821,16 +866,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize case classes with immutable maps" in {
       verifySerDeser(codecOfImmutableMaps,
-        ImmutableMaps(Map(1 -> 1.1), _root_.scala.collection.immutable.HashMap("2" -> _root_.scala.collection.immutable.ListMap('V' -> 2),
+        ImmutableMaps(Map(1 -> 1.1),
+          _root_.scala.collection.immutable.HashMap("2" -> _root_.scala.collection.immutable.ListMap('V' -> 2),
           "3" -> _root_.scala.collection.immutable.ListMap('X' -> 3)),
           _root_.scala.collection.immutable.SortedMap(4L -> _root_.scala.collection.immutable.TreeMap(4.toByte -> 4.4f),
-            5L -> _root_.scala.collection.immutable.TreeMap.empty[Byte, Float])),
+            5L -> _root_.scala.collection.immutable.TreeMap.empty[_root_.scala.Byte, Float])),
         """{"m":{"1":1.1},"hm":{"2":{"V":2},"3":{"X":3}},"sm":{"4":{"4":4.4},"5":{}}}""")
     }
     "serialize case class fields with empty maps if transientEmpty is off" in {
-      case class EmptyMaps(im: _root_.scala.collection.immutable.Map[String, Int],
-                           mm: _root_.scala.collection.mutable.Map[Long, Int])
-
       verifySerDeser(make[EmptyMaps](CodecMakerConfig(transientEmpty = false)),
         EmptyMaps(Map(), _root_.scala.collection.mutable.Map()), """{"im":{},"mm":{}}""")
       verifySerDeser(make[EmptyMaps](CodecMakerConfig(transientEmpty = false)),
@@ -838,33 +881,33 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"im":{"VVV":1},"mm":{"2":3}}""")
     }
     "serialize and deserialize top-level maps" in {
-      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig()),
-        _root_.scala.collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
+      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Map[Char, _root_.scala.Boolean]]](CodecMakerConfig()),
+        _root_.scala.collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, _root_.scala.Boolean]),
         """{"1":{"V":true},"2":{}}""")
     }
     "serialize and deserialize stringified top-level maps" in {
-      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Map[Char, Boolean]]](CodecMakerConfig(isStringified = true)),
-        _root_.scala.collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, Boolean]),
+      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Map[Char, _root_.scala.Boolean]]](CodecMakerConfig(isStringified = true)),
+        _root_.scala.collection.mutable.LinkedHashMap(1 -> Map('V' -> true), 2 -> Map.empty[Char, _root_.scala.Boolean]),
         """{"1":{"V":"true"},"2":{}}""")
     }
     "serialize and deserialize top-level maps as arrays" in {
-      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Boolean]](CodecMakerConfig(mapAsArray = true)),
+      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, _root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
         _root_.scala.collection.mutable.LinkedHashMap(1 -> true), """[[1,true]]""")
-      verifySerDeser(make[_root_.scala.collection.mutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true)),
+      verifySerDeser(make[_root_.scala.collection.mutable.LongMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
         _root_.scala.collection.mutable.LongMap(1L -> true), """[[1,true]]""")
-      verifySerDeser(make[_root_.scala.collection.immutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true)),
+      verifySerDeser(make[_root_.scala.collection.immutable.LongMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
         _root_.scala.collection.immutable.LongMap(1L -> true), """[[1,true]]""")
-      verifySerDeser(make[_root_.scala.collection.immutable.IntMap[Boolean]](CodecMakerConfig(mapAsArray = true)),
+      verifySerDeser(make[_root_.scala.collection.immutable.IntMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
         _root_.scala.collection.immutable.IntMap(1 -> true), """[[1,true]]""")
     }
     "serialize and deserialize stringified top-level maps as arrays" in {
-      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+      verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, _root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
         _root_.scala.collection.mutable.LinkedHashMap(1 -> true), """[["1","true"]]""")
-      verifySerDeser(make[_root_.scala.collection.mutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+      verifySerDeser(make[_root_.scala.collection.mutable.LongMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
         _root_.scala.collection.mutable.LongMap(1L -> true), """[["1","true"]]""")
-      verifySerDeser(make[_root_.scala.collection.immutable.LongMap[Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+      verifySerDeser(make[_root_.scala.collection.immutable.LongMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
         _root_.scala.collection.immutable.LongMap(1L -> true), """[["1","true"]]""")
-      verifySerDeser(make[_root_.scala.collection.immutable.IntMap[Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+      verifySerDeser(make[_root_.scala.collection.immutable.IntMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
         _root_.scala.collection.immutable.IntMap(1 -> true), """[["1","true"]]""")
     }
     "throw parse exception when too many inserts into map was completed" in {
@@ -886,31 +929,19 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfMutableMaps, """{"m":{"1.1":{"null":"2"}}""", "illegal number, offset: 0x0000000e")
     }
     "serialize and deserialize case classes with mutable long maps" in {
-      case class MutableLongMaps(lm1: _root_.scala.collection.mutable.LongMap[Double],
-                                 lm2: _root_.scala.collection.mutable.LongMap[String])
-
       verifySerDeser(make[MutableLongMaps](CodecMakerConfig()),
         MutableLongMaps(_root_.scala.collection.mutable.LongMap(1L -> 1.1),
-          _root_.scala.collection.mutable.LongMap(3L -> "33")),
-        """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""")
+          _root_.scala.collection.mutable.LongMap(3L -> "33")), """{"lm1":{"1":1.1},"lm2":{"3":"33"}}""")
     }
     "serialize and deserialize case classes with immutable int and long maps" in {
-      case class ImmutableIntLongMaps(im: _root_.scala.collection.immutable.IntMap[Double],
-                                      lm: _root_.scala.collection.immutable.LongMap[String])
-
       verifySerDeser(make[ImmutableIntLongMaps](CodecMakerConfig()),
         ImmutableIntLongMaps(_root_.scala.collection.immutable.IntMap(1 -> 1.1, 2 -> 2.2),
-          _root_.scala.collection.immutable.LongMap(3L -> "33")),
-        """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""")
+          _root_.scala.collection.immutable.LongMap(3L -> "33")), """{"im":{"1":1.1,"2":2.2},"lm":{"3":"33"}}""")
     }
     "serialize and deserialize case classes with mutable & immutable bitsets" in {
-      case class BitSets(bs: _root_.scala.collection.BitSet,
-                         ibs: _root_.scala.collection.immutable.BitSet,
-                         mbs: _root_.scala.collection.mutable.BitSet)
-
       verifySerDeser(make[BitSets](CodecMakerConfig()),
         BitSets(_root_.scala.collection.BitSet(0), _root_.scala.collection.immutable.BitSet(1, 2, 3),
-          _root_.scala.collection.mutable.BitSet(4, 5, 6)),"""{"bs":[0],"ibs":[1,2,3],"mbs":[4,5,6]}""")
+          _root_.scala.collection.mutable.BitSet(4, 5, 6)), """{"bs":[0],"ibs":[1,2,3],"mbs":[4,5,6]}""")
     }
     "serialize and deserialize top-level int/long maps & bitsets" in {
       val codecOfIntLongMapsAndBitSets =
@@ -952,8 +983,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize with keys renamed" in {
       verifySerDeser(make[CamelSnakeKebabCases](CodecMakerConfig({
         case "camelCase" => "CMLCS"
-        case "kebab-1" => "KBB1"})
-      ), CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
+        case "kebab-1" => "KBB1"
+      })), CamelSnakeKebabCases(1, 2, 3, 4, 5, 6),
         """{"CMLCS":1,"snake_case":2,"kebab-case":3,"camel1":4,"snake_1":5,"KBB1":6}""")
     }
     "serialize and deserialize with keys enforced to camelCase and throw parse exception when they are missing" in {
@@ -1019,7 +1050,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }).getMessage.contains(expectedError))
     }
     "serialize and deserialize fields that stringified by annotation" in {
-      verifySerDeser(codecOfStringified, stringified, """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""")
+      verifySerDeser(codecOfStringified, Stringified(1, 2, List(1), List(2)),
+        """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""")
     }
     "throw parse exception when stringified fields have non-string values" in {
       verifyDeserError(codecOfStringified, """{"i":1,"bi":"2","l1":["1"],"l2":[2]}""",
@@ -1028,7 +1060,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "expected '\"', offset: 0x0000000e")
     }
     "serialize and deserialize recursive types if it was allowed" in {
-      verifySerDeser(make(CodecMakerConfig(allowRecursiveTypes = true)), recursive,
+      verifySerDeser(make(CodecMakerConfig(allowRecursiveTypes = true)),
+        Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         "{\"s\":\"VVV\",\"bd\":1.1,\"l\":[1,2,3],\"m\":{\"S\":{\"s\":\"WWW\",\"bd\":2.2,\"l\":[4,5,6]}}}")
     }
     "don't generate codecs for recursive types by default" in {
@@ -1085,7 +1118,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       assert(!writeStackTrace.toString.contains(".encodeValue("))
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
-      verifySerDeser(codecOfRecursive, recursive,
+      verifySerDeser(codecOfRecursive,
+        Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         """{
           |  "s": "VVV",
           |  "bd": 1.1,
@@ -1109,7 +1143,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         WriterConfig(indentionStep = 2))
     }
     "deserialize JSON with whitespaces, tabs, new lines, and line returns" in {
-      verifyDeser(codecOfRecursive, recursive,
+      verifyDeser(codecOfRecursive,
+        Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         "{\r \"s\":\t\"VVV\",\n\t\"bd\":\t1.1,\r  \"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\n\t\t\"S\":\t{\r  \t\t\"s\":\t\t \t\"WWW\",\n\t\"bd\":\t2.2,\"l\":\t[\r\t\t4,\n\n\n5,\r\t\t6\r\t]\n}\r}\r}")
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
@@ -1147,18 +1182,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false, transientNone = false)), Defaults(), """{}""")
     }
     "deserialize default values of case classes that defined for fields" in {
-      case class Defaults2(st: String = "VVV", i: Int = 1, bi: BigInt = -1, oc: Option[Char] = Some('X'),
-                           l: List[Int] = _root_.scala.collection.immutable.List(0), e: Level = Level.HIGH,
-                           ab: _root_.scala.collection.mutable.ArrayBuffer[Int] = _root_.scala.collection.mutable.ArrayBuffer(1, 2),
-                           m: Map[Int, Boolean] = Map(1 -> true),
-                           mm: _root_.scala.collection.mutable.Map[String, Int] = _root_.scala.collection.mutable.Map("VVV" -> 1),
-                           im: _root_.scala.collection.immutable.IntMap[String] = _root_.scala.collection.immutable.IntMap(1 -> "VVV"),
-                           lm: _root_.scala.collection.mutable.LongMap[Int] = _root_.scala.collection.mutable.LongMap(1L -> 2),
-                           s: Set[String] = Set("VVV"),
-                           ms: _root_.scala.collection.mutable.Set[Int] = _root_.scala.collection.mutable.Set(1),
-                           bs: _root_.scala.collection.immutable.BitSet = _root_.scala.collection.immutable.BitSet(1),
-                           mbs: _root_.scala.collection.mutable.BitSet = _root_.scala.collection.mutable.BitSet(1))
-
       val codecOfDefaults: JsonValueCodec[Defaults2] = make[Defaults2](CodecMakerConfig())
       verifyDeser(codecOfDefaults, Defaults2(), """{}""")
       verifyDeser(codecOfDefaults, Defaults2(),
@@ -1202,21 +1225,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfStandardTypes, """{"s":"VVV","bi":null,"bd":1}""", "illegal number, offset: 0x00000010")
     }
     "throw parse exception in case of missing required case class fields detected during deserialization" in {
-      case class Required32(r00: Int = 0, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
-                            r10: Int = 10, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
-                            r20: Int = 20, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
-                            r30: Int = 30, r31: Int)
+      case class Required32(
+        r00: Int = 0, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
+        r10: Int = 10, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
+        r20: Int = 20, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
+        r30: Int = 30, r31: Int)
 
-      case class Required100(r00: Int = 0, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
-                             r10: Int = 10, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
-                             r20: Int = 20, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
-                             r30: Int = 30, r31: Int, r32: Int, r33: Int, r34: Int, r35: Int, r36: Int, r37: Int, r38: Int, r39: Int,
-                             r40: Int = 40, r41: Int, r42: Int, r43: Int, r44: Int, r45: Int, r46: Int, r47: Int, r48: Int, r49: Int,
-                             r50: Int = 50, r51: Int, r52: Int, r53: Int, r54: Int, r55: Int, r56: Int, r57: Int, r58: Int, r59: Int,
-                             r60: Int = 60, r61: Int, r62: Int, r63: Int, r64: Int, r65: Int, r66: Int, r67: Int, r68: Int, r69: Int,
-                             r70: Int = 70, r71: Int, r72: Int, r73: Int, r74: Int, r75: Int, r76: Int, r77: Int, r78: Int, r79: Int,
-                             r80: Int = 80, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
-                             r90: Int = 90, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
+      case class Required100(
+        r00: Int = 0, r01: Int, r02: Int, r03: Int, r04: Int, r05: Int, r06: Int, r07: Int, r08: Int, r09: Int,
+        r10: Int = 10, r11: Int, r12: Int, r13: Int, r14: Int, r15: Int, r16: Int, r17: Int, r18: Int, r19: Int,
+        r20: Int = 20, r21: Int, r22: Int, r23: Int, r24: Int, r25: Int, r26: Int, r27: Int, r28: Int, r29: Int,
+        r30: Int = 30, r31: Int, r32: Int, r33: Int, r34: Int, r35: Int, r36: Int, r37: Int, r38: Int, r39: Int,
+        r40: Int = 40, r41: Int, r42: Int, r43: Int, r44: Int, r45: Int, r46: Int, r47: Int, r48: Int, r49: Int,
+        r50: Int = 50, r51: Int, r52: Int, r53: Int, r54: Int, r55: Int, r56: Int, r57: Int, r58: Int, r59: Int,
+        r60: Int = 60, r61: Int, r62: Int, r63: Int, r64: Int, r65: Int, r66: Int, r67: Int, r68: Int, r69: Int,
+        r70: Int = 70, r71: Int, r72: Int, r73: Int, r74: Int, r75: Int, r76: Int, r77: Int, r78: Int, r79: Int,
+        r80: Int = 80, r81: Int, r82: Int, r83: Int, r84: Int, r85: Int, r86: Int, r87: Int, r88: Int, r89: Int,
+        r90: Int = 90, r91: Int, r92: Int, r93: Int, r94: Int, r95: Int, r96: Int, r97: Int, r98: Int, r99: Int)
 
       verifyDeserError(make[Required32](CodecMakerConfig()),
         """{
@@ -1225,7 +1250,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |"r20":20,"r21":21,"r22":22,"r23":23,"r24":24,"r25":25,"r26":26,"r27":27,"r28":28,"r29":29,
           |"r30":30
           |}""".stripMargin, """missing required field "r31", offset: 0x00000112""")
-
       verifyDeserError(make[Required100](CodecMakerConfig()),
         """{
           |"r00":0,"r01":1,"r02":2,"r03":3,"r04":4,"r05":5,"r06":6,"r07":7,"r08":8,"r09":9,
@@ -1275,7 +1299,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       class A() extends X {
         override def hashCode(): Int = 1
 
-        override def equals(obj: Any): Boolean = obj.isInstanceOf[A]
+        override def equals(obj: Any): _root_.scala.Boolean = obj.isInstanceOf[A]
 
         override def toString: String = "A()"
       }
@@ -1290,7 +1314,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       sealed class A {
         override def hashCode(): Int = 1
 
-        override def equals(obj: Any): Boolean = obj.isInstanceOf[A]
+        override def equals(obj: Any): _root_.scala.Boolean = obj.isInstanceOf[A]
 
         override def toString: String = "A()"
       }
@@ -1482,10 +1506,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       implicit lazy val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig(isStringified = true))
     }
     "serialize and deserialize case classes with Java time types" in {
-      case class JavaTimeTypes(dow: DayOfWeek, d: Duration, i: Instant, ld: LocalDate, ldt: LocalDateTime,
-                               lt: LocalTime, m: Month, md: MonthDay, odt: OffsetDateTime, ot: OffsetTime, p: Period,
-                               y: Year, ym: YearMonth, zdt: ZonedDateTime, zi: ZoneId, zo: ZoneOffset)
-
       verifySerDeser(make[JavaTimeTypes](CodecMakerConfig()),
         obj = JavaTimeTypes(
           dow = DayOfWeek.FRIDAY,
@@ -1503,8 +1523,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           ym = YearMonth.parse("2007-12"),
           zdt = ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"),
           zi = ZoneId.of("Europe/Paris"),
-          zo = ZoneOffset.of("+01:00")
-        ),
+          zo = ZoneOffset.of("+01:00")),
         json =
           """{"dow":"FRIDAY","d":"PT10H30M","i":"2007-12-03T10:15:30.001Z","ld":"2007-12-03","ldt":"2007-12-03T10:15:30",""" +
           """"lt":"10:15:30","m":"APRIL","md":"--12-03","odt":"2007-12-03T10:15:30+01:00","ot":"10:15:30+01:00",""" +
@@ -1619,8 +1638,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       case object Qux extends Bar[String]
 
-      val codecOfArrayOfBar = make[Array[Bar[_]]](CodecMakerConfig())
-      verifySerDeser(codecOfArrayOfBar, _root_.scala.Array[Bar[_]](Qux, Baz), """[{"type":"Qux"},{"type":"Baz"}]""")
+      verifySerDeser(make[Array[Bar[_]]](CodecMakerConfig()),
+        _root_.scala.Array[Bar[_]](Qux, Baz), """[{"type":"Qux"},{"type":"Baz"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
       import _root_.scala.language.higherKinds
