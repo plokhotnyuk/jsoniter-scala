@@ -32,16 +32,22 @@ Other Scala macros features were peeped in
 
 ## Goals
 
-Initially, this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
-- do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but
-  do it crazily fast without runtime-reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
-  copying
-- do validation of UTF-8 encoding, JSON format and mapped values efficiently (fail fast approach) with clear reporting,
+- *safety*: validate JSON format, UTF-8 encoding of strings, and mapped values safely with the fail-fast approach and 
+  clear reporting, provide configurable limits for suboptimal data structures with safe defaults to be resilient for DoS 
+  attacks
+- *correctness*: parse and serialize numbers without loosing of precision doing half even rounding for too long values,       
   do not replace illegally encoded characters of string values by placeholder characters
-- define classes, that will be instantiated during parsing, in _compile-time_ to minimize a probability of runtime issues,
-  generated sources can be inspected to prove that there are no security vulnerabilities during parsing
+- *speed*: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back; do it 
+  crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations 
+  and copying
+- *productivity*: derive codecs recursively for complex types using one line macro, do it in _compile-time_ to minimize
+  probability of run-time issues, optionally print generated sources as compiler output to be inspected for proving of
+  safety and correctness or to be reused as a starting point for the implementation of custom codecs
+- *ergonomics*: have preconfigured defaults for the safest and common usage that can be easily altered by compile- and 
+  run-time configuration instances, compile-time annotations and implicits, embrace textual representation of JSON 
+  providing a pretty printing option    
 
-It targets JDK 8+ without any platform restrictions.
+The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
 
 Support of Scala.js and Scala Native is not a goal for the moment. 
 
