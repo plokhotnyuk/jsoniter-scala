@@ -19,10 +19,10 @@ import upickle.default._
 class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8))
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Bytes but got Start of unbounded Array (input position 0)
+
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]].value
-*/
+
   @Benchmark
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 /*FIXME:dsl-json expects a base64 string for the byte array

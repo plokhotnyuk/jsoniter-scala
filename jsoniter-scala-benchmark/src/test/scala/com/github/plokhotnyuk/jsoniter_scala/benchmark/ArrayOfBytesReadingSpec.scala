@@ -8,8 +8,7 @@ class ArrayOfBytesReadingSpec extends BenchmarkSpecBase {
   "ArrayOfBytesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Bytes but got Start of unbounded Array (input position 0)
-      //benchmark.borerJson() shouldBe benchmark.obj
+      benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       //FIXME:dsl-json expects a base64 string for the byte array
       //benchmark.dslJsonScala() shouldBe benchmark.obj

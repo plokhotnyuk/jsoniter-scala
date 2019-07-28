@@ -14,7 +14,7 @@ object CirceEncodersDecoders {
   val printer: Printer = Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true, predictSize = true)
   val prettyPrinter: Printer = Printer.spaces2.copy(dropNullValues = true, reuseWriters = true, predictSize = true)
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
-  implicit val config: Configuration = Configuration.default.withDiscriminator("type")
+  implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val (adtDecoder: Decoder[ADTBase], adtEncoder: Encoder[ADTBase]) =
     (deriveDecoder[ADTBase], deriveEncoder[ADTBase])
   implicit val (anyValsDecoder: Decoder[AnyVals], anyValsEncoder: Encoder[AnyVals]) = {
