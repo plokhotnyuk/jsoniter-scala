@@ -15,7 +15,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import spray.json.JsonParser
 
-import io.circe.generic.extras.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 

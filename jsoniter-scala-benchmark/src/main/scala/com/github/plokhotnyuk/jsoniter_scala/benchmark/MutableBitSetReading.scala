@@ -7,8 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import io.circe.generic.auto._
-//import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 //import upickle.default._
@@ -18,10 +16,6 @@ import scala.collection.mutable
 class MutableBitSetReading extends MutableBitSetBenchmark {
   @Benchmark
   def avSystemGenCodec(): mutable.BitSet = JsonStringInput.read[mutable.BitSet](new String(jsonBytes, UTF_8))
-/* FIXME: Circe doesn't support parsing of bitsets
-  @Benchmark
-  def circe(): mutable.BitSet = decode[mutable.BitSet](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-*/
 /* FIXME: DSL-JSON throws scala.collection.mutable.HashSet cannot be cast to scala.collection.mutable.BitSet
   @Benchmark
   def dslJsonScala(): mutable.BitSet = dslJsonDecode[mutable.BitSet](jsonBytes)

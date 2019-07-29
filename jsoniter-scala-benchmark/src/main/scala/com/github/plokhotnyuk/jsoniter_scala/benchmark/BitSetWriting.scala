@@ -9,8 +9,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import io.circe.generic.auto._
-//import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 //import upickle.default._
@@ -18,10 +16,7 @@ import play.api.libs.json.Json
 class BitSetWriting extends BitSetBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Circe doesn't support writing of bitsets
-  @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
+
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
