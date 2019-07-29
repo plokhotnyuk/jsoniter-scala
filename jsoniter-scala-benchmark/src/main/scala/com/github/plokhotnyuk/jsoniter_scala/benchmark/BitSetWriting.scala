@@ -11,7 +11,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 class BitSetWriting extends BitSetBenchmark {
   @Benchmark
@@ -31,9 +30,4 @@ class BitSetWriting extends BitSetBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-
-/* FIXME: uPickle doesn't support writing of bitsets
-  @Benchmark
-  def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }
