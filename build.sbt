@@ -122,6 +122,7 @@ lazy val `jsoniter-scala-benchmark` = project
     resolvers += Resolver.bintrayRepo("reug", "maven"),
     crossScalaVersions := Seq("2.13.0", "2.12.8"),
     libraryDependencies ++= Seq(
+      "com.github.pathikrit" %% "dijon" % "0.3.0-SNAPSHOT",
       "reug" %% "scalikejackson" % "0.5.6",
       "io.bullet" %% "borer-derivation" % "0.10.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
