@@ -263,6 +263,21 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       }(codec)
       users shouldBe Seq()
     }
+    "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
+      def inputStreamWithError: InputStream = getClass.getResourceAsStream("user_api_array_with_error.json")
+
+      scanJsonArrayFromStream[User](inputStreamWithError)(_ => false)(codec)
+      scanJsonArrayFromStream[User](inputStreamWithError, ReaderConfig(checkForEndOfInput = false))(_ => true)(codec)
+      assert(intercept[JsonReaderException](scanJsonArrayFromStream[User](inputStreamWithError)(_ => true)(codec)).getMessage ==
+        """expected end of input, offset: 0x00000192, buf:
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000170 | 65 6c 22 3a 20 22 69 50 68 6f 6e 65 20 58 22 0a | el": "iPhone X". |
+          || 00000180 | 20 20 20 20 20 20 7d 0a 20 20 20 20 5d 0a 20 20 |       }.    ].   |
+          || 00000190 | 7d 0a 5d 5d 5d 5d 5d 5d 5d                      | }.]]]]]]]        |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
     "throw a parse exception in case of JSON array is not closed properly" in {
       assert(intercept[JsonReaderException] {
         scanJsonArrayFromStream(new ByteArrayInputStream("""[{"name":"x"}y""".getBytes("UTF-8"))) { (_: User) =>
@@ -298,6 +313,20 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
           || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
           || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
+    "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
+      val compactJsonWithError = compactJson ++ "}}}}}".getBytes(UTF_8)
+
+      readFromString(new String(compactJsonWithError, UTF_8), ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      assert(intercept[JsonReaderException](readFromString(new String(compactJsonWithError, UTF_8))(codec)).getMessage ==
+        """expected end of input, offset: 0x00000053, buf:
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000030 | 6e 65 20 58 22 7d 2c 7b 22 69 64 22 3a 32 2c 22 | ne X"},{"id":2," |
+          || 00000040 | 6d 6f 64 65 6c 22 3a 22 69 50 68 6f 6e 65 20 58 | model":"iPhone X |
+          || 00000050 | 22 7d 5d 7d 7d 7d 7d 7d 7d                      | "}]}}}}}}        |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
     "throw NullPointerException in case of the provided params are null" in {

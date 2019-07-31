@@ -644,10 +644,7 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = 2147483647
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-      var continue = true
-      do continue = f(codec.decodeValue(this, codec.nullValue))
-      while (continue && skipWhitespaces())
-      if (continue && config.checkForEndOfInput) endOfInputOrError()
+      while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -681,7 +678,7 @@ final class JsonReader private[jsoniter_scala](
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
-  private[this] def endOfInputOrError(): Boolean = !skipWhitespaces() || decodeError("expected end of input")
+  private[jsoniter_scala] def endOfInputOrError(): Boolean = !skipWhitespaces() || decodeError("expected end of input")
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
