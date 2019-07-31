@@ -38,12 +38,15 @@ import scala.{specialized => sp}
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
   *                         [[java.io.InputStream]]
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
+  * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
+  *                           successful parsing of the value
   */
 case class ReaderConfig(
     throwReaderExceptionWithStackTrace: Boolean = false,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
-    preferredCharBufSize: Int = 1024) {
+    preferredCharBufSize: Int = 1024,
+    checkForEndOfInput: Boolean = true) {
   if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
   if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
 }
@@ -563,7 +566,9 @@ final class JsonReader private[jsoniter_scala](
       tail = to
       totalRead = 0
       mark = 2147483647
-      codec.decodeValue(this, codec.nullValue)
+      val x = codec.decodeValue(this, codec.nullValue)
+      if (head != to && config.checkForEndOfInput) endOfInputOrError()
+      x
     } finally {
       this.buf = currBuf
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
@@ -579,7 +584,9 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = 2147483647
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-      codec.decodeValue(this, codec.nullValue)
+      val x = codec.decodeValue(this, codec.nullValue)
+      if (config.checkForEndOfInput) endOfInputOrError()
+      x
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -589,15 +596,18 @@ final class JsonReader private[jsoniter_scala](
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], bbuf: ByteBuffer, config: ReaderConfig): A =
     if (bbuf.hasArray) {
       val offset = bbuf.arrayOffset
+      val to = offset + bbuf.limit()
       val currBuf = this.buf
       try {
         this.buf = bbuf.array
         this.config = config
         head = offset + bbuf.position()
-        tail = offset + bbuf.limit()
+        tail = to
         totalRead = 0
         mark = 2147483647
-        codec.decodeValue(this, codec.nullValue)
+        val x = codec.decodeValue(this, codec.nullValue)
+        if (head != to && config.checkForEndOfInput) endOfInputOrError()
+        x
       } finally {
         this.buf = currBuf
         if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
@@ -613,7 +623,9 @@ final class JsonReader private[jsoniter_scala](
         totalRead = 0
         mark = 2147483647
         if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-        codec.decodeValue(this, codec.nullValue)
+        val x = codec.decodeValue(this, codec.nullValue)
+        if (config.checkForEndOfInput) endOfInputOrError()
+        x
       } finally {
         this.bbuf = null
         if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -632,7 +644,10 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = 2147483647
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-      while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
+      var continue = true
+      do continue = f(codec.decodeValue(this, codec.nullValue))
+      while (continue && skipWhitespaces())
+      if (continue && config.checkForEndOfInput) endOfInputOrError()
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -649,21 +664,24 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = 2147483647
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
+      var continue = true
       if (isNextToken('[')) {
         if (!isNextToken(']')) {
           rollbackToken()
-          var continue = true
           do {
             continue = f(codec.decodeValue(this, codec.nullValue))
           } while (continue && isNextToken(','))
           if (continue && !isCurrentToken(']')) arrayEndOrCommaError()
         }
       } else readNullOrTokenError((), '[')
+      if (continue && config.checkForEndOfInput) endOfInputOrError()
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
+
+  private[this] def endOfInputOrError(): Boolean = !skipWhitespaces() || decodeError("expected end of input")
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
