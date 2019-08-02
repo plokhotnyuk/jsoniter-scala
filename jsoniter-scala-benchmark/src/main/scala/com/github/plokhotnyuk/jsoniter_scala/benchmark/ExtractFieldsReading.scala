@@ -3,6 +3,9 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 //import java.io.{File, FileInputStream, FileOutputStream}
 //import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets.UTF_8
+
+import com.github.pathikrit.dijon.SomeJson
+
 //import java.nio.file.StandardOpenOption._
 //import java.nio.file.{Path, Paths}
 
@@ -27,7 +30,7 @@ import spray.json._
 case class ExtractFields(s: String, i: Int)
 
 class ExtractFieldsReading extends CommonParams {
-  @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
+  @Param(Array("1", "10", "100", "1000", "10000", "100000"))
   var size: Int = 100
   var obj: ExtractFields = ExtractFields("s", 1)
   var jsonString: String = _
@@ -36,7 +39,7 @@ class ExtractFieldsReading extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    val value = """{"number":0.0,"boolean":false,"string":null}"""
+    val value = "1"
     jsonString = zeroHashCodeStrings.take(size).mkString("""{"s":"s","""", s"""":$value,"""", s"""":$value,"i":1}""")
     //jsonString = """{"s":"s","x":""" + "9" * size + ""","i":1}"""
     //jsonString = """{"s":"s","x":"""" + "x" * size + """","i":1}"""
@@ -58,6 +61,12 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def dijonParse(): SomeJson = com.github.pathikrit.dijon.parse(new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def dijonParseAndThenToMap(): collection.Map[String, SomeJson] = readFromArray[SomeJson](jsonBytes).toMap
 
   @Benchmark
   def dslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)
