@@ -20,7 +20,7 @@ import upickle.default._
 class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support byte strings (Output.ToByteArray index 0)
+/* FIXME: Borer serializes a byte array to the base64 string
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 */

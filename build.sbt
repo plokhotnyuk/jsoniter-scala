@@ -124,7 +124,7 @@ lazy val `jsoniter-scala-benchmark` = project
     libraryDependencies ++= Seq(
       "com.github.pathikrit" %% "dijon" % "0.3.0-SNAPSHOT",
       "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.10.0",
+      "io.bullet" %% "borer-derivation" % "0.10.1-SNAPSHOT",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
