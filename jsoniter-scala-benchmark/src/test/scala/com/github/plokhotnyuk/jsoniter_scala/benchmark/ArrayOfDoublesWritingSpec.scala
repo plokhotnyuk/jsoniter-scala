@@ -10,10 +10,10 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.avSystemGenCodec()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.borerJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
-      //FIXME: dsl-json serializes doubles in a plain representation
+      //FIXME: DSL-JSON serializes doubles in a plain representation
       //sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
-      //FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
+      //FIXME: Jsoniter Java serializes values rounded to 6 digits (sometime PreciseFloatSupport.enable() doesn't work)
       //sameOrBetter(toString(benchmark.jsoniterJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jsoniterScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
