@@ -678,7 +678,8 @@ final class JsonReader private[jsoniter_scala](
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
 
-  private[jsoniter_scala] def endOfInputOrError(): Boolean = !skipWhitespaces() || decodeError("expected end of input")
+  private[jsoniter_scala] def endOfInputOrError(): Boolean =
+    !skipWhitespaces() || decodeError("expected end of input", head)
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head

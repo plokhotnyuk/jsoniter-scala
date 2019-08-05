@@ -29,7 +29,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
 
       readFromStream(streamWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromStream(streamWithError)(codec)).getMessage ==
-        """expected end of input, offset: 0x00000093, buf:
+        """expected end of input, offset: 0x00000094, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
@@ -63,7 +63,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
 
       readFromArray(compactJsonWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromArray(compactJsonWithError)(codec)).getMessage ==
-        """expected end of input, offset: 0x00000053, buf:
+        """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
@@ -97,7 +97,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
 
       readFromSubArray(msgWithError, 66, msgWithError.length, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromSubArray(msgWithError, 66, msgWithError.length)(codec)).getMessage ==
-        """expected end of input, offset: 0x00000096, buf:
+        """expected end of input, offset: 0x00000097, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
@@ -182,7 +182,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
 
       readFromByteBuffer(bbufWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromByteBuffer(bbufWithError)(codec)).getMessage ==
-        """expected end of input, offset: 0x00000053, buf:
+        """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
@@ -192,7 +192,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
       readFromByteBuffer(directBbufWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromByteBuffer(directBbufWithError)(codec)).getMessage ==
-        """expected end of input, offset: 0x00000053, buf:
+        """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
@@ -269,7 +269,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       scanJsonArrayFromStream[User](inputStreamWithError)(_ => false)(codec)
       scanJsonArrayFromStream[User](inputStreamWithError, ReaderConfig(checkForEndOfInput = false))(_ => true)(codec)
       assert(intercept[JsonReaderException](scanJsonArrayFromStream[User](inputStreamWithError)(_ => true)(codec)).getMessage ==
-        """expected end of input, offset: 0x00000192, buf:
+        """expected end of input, offset: 0x00000193, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
@@ -320,7 +320,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
 
       readFromString(new String(compactJsonWithError, UTF_8), ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromString(new String(compactJsonWithError, UTF_8))(codec)).getMessage ==
-        """expected end of input, offset: 0x00000053, buf:
+        """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
           |+----------+-------------------------------------------------+------------------+
