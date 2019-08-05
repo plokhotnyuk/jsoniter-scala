@@ -25,13 +25,13 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
   @Benchmark
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 
-/*FIXME: dsl-json serializes doubles in a plain representation
+/*FIXME: DSL-JSON serializes doubles in a plain representation
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-/* FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
+/* FIXME: Jsoniter Java serializes values rounded to 6 digits (sometime PreciseFloatSupport.enable() doesn't work)
   @Benchmark
   def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 */

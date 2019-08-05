@@ -123,7 +123,7 @@ lazy val `jsoniter-scala-benchmark` = project
     crossScalaVersions := Seq("2.13.0", "2.12.8"),
     libraryDependencies ++= Seq(
       "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.10.0",
+      "io.bullet" %% "borer-derivation" % "0.11.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
