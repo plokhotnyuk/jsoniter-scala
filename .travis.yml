@@ -16,7 +16,7 @@ matrix:
       scala: 2.13.0
     - os: linux
       jdk: openjdk8
-      scala: 2.12.8
+      scala: 2.12.9
 script:
   - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -Dsbt.supershell=false clean coverage test coverageAggregate mimaReportBinaryIssues
 after_success:
