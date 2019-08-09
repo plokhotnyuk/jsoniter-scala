@@ -8,5 +8,9 @@ val `jsoniter-scala-examples` = project.in(file("."))
       "com.oracle.substratevm" % "svm" % "19.1.0" % Provided, // required only for compilation to GraalVM native-image
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "latest.integration",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % Provided // required only in compile-time
+    ),
+    assemblyShadeRules in assembly := Seq(
+      ShadeRule.rename("com.github.plokhotnyuk.jsoniter_scala.core.**" -> "shaded.jsoniter_scala.latest.integration.core.@1").inAll,
+      ShadeRule.rename("com.github.plokhotnyuk.jsoniter_scala.macros.**" -> "shaded.jsoniter_scala.latest.integration.macros.@1").inAll
     )
   )
