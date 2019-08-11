@@ -1780,6 +1780,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       JsonCodecMaker.enforceCamelCase("OOoo111") shouldBe "oOoo111"
     }
     "leave camelCase names as is" in {
+      JsonCodecMaker.enforceCamelCase("") shouldBe ""
+      JsonCodecMaker.enforceCamelCase("o") shouldBe "o"
       JsonCodecMaker.enforceCamelCase("oO") shouldBe "oO"
       JsonCodecMaker.enforceCamelCase("oOoo") shouldBe "oOoo"
     }
@@ -1801,7 +1803,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       JsonCodecMaker.EnforcePascalCase("oOoo111") shouldBe "OOoo111"
     }
     "leave PascalCase names as is" in {
-      JsonCodecMaker.EnforcePascalCase("OO") shouldBe "OO"
+      JsonCodecMaker.EnforcePascalCase("") shouldBe ""
+      JsonCodecMaker.EnforcePascalCase("O") shouldBe "O"
+      JsonCodecMaker.EnforcePascalCase("Oo") shouldBe "Oo"
       JsonCodecMaker.EnforcePascalCase("OOoo") shouldBe "OOoo"
     }
   }
@@ -1819,10 +1823,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       JsonCodecMaker.enforce_snake_case("o-ooo-") shouldBe "o_ooo_"
       JsonCodecMaker.enforce_snake_case("O-OOO-111") shouldBe "o_ooo_111"
     }
-    "enforce lower case for snake_case names" in {
-      JsonCodecMaker.enforce_snake_case("o_O") shouldBe "o_o"
+    "leave snake_case as is" in {
+      JsonCodecMaker.enforce_snake_case("") shouldBe ""
+      JsonCodecMaker.enforce_snake_case("o") shouldBe "o"
+      JsonCodecMaker.enforce_snake_case("o_o") shouldBe "o_o"
       JsonCodecMaker.enforce_snake_case("o_ooo_") shouldBe "o_ooo_"
-      JsonCodecMaker.enforce_snake_case("O_OOO_111") shouldBe "o_ooo_111"
     }
   }
   "JsonCodecMaker.enforce-kebab-case" should {
@@ -1839,10 +1844,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       JsonCodecMaker.`enforce-kebab-case`("o_ooo_") shouldBe "o-ooo-"
       JsonCodecMaker.`enforce-kebab-case`("O_OOO_111") shouldBe "o-ooo-111"
     }
-    "enforce lower case for kebab-case names" in {
-      JsonCodecMaker.`enforce-kebab-case`("o-O") shouldBe "o-o"
+    "leave kebab-case names as is" in {
+      JsonCodecMaker.`enforce-kebab-case`("") shouldBe ""
+      JsonCodecMaker.`enforce-kebab-case`("o") shouldBe "o"
+      JsonCodecMaker.`enforce-kebab-case`("o-o") shouldBe "o-o"
       JsonCodecMaker.`enforce-kebab-case`("o-ooo-") shouldBe "o-ooo-"
-      JsonCodecMaker.`enforce-kebab-case`("O-OOO-111") shouldBe "o-ooo-111"
     }
   }
   "JsonCodecMaker.simpleClassName" should {
