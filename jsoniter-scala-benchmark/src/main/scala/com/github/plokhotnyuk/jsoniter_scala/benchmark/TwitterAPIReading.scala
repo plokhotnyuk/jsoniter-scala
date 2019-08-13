@@ -25,7 +25,7 @@ import scala.collection.immutable.Seq
 class TwitterAPIReading extends TwitterAPIBenchmark {
   @Benchmark
   def avSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected String or Text Bytes but got Null (input position 994)
+/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected String or Text Bytes but got Null (input position 1019)
   @Benchmark
   def borerJson(): Seq[Tweet] = io.bullet.borer.Json.decode(jsonBytes).to[Seq[Tweet]].value
 */
