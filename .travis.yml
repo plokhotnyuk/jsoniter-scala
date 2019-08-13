@@ -15,7 +15,7 @@ matrix:
       osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
       scala: 2.13.0
     - os: linux
-      scala: 2.12.8
+      scala: 2.12.9
       env: JDK=graalvm-ce-19.1.1
       before_script:
         - unset -v _JAVA_OPTIONS
@@ -24,7 +24,6 @@ matrix:
         - echo JAVA_HOME = ${JAVA_HOME}
         - echo PATH = ${PATH}
         - ls ${JAVA_HOME}
-
 script:
   - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -Dsbt.supershell=false clean coverage test coverageAggregate mimaReportBinaryIssues
 after_success:

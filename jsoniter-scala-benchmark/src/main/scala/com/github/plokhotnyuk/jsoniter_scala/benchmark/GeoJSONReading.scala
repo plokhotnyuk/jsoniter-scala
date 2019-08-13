@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -20,7 +21,10 @@ import spray.json._
 class GeoJSONReading extends GeoJSONBenchmark {
   @Benchmark
   def avSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes, UTF_8))
-
+/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Map for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON.GeoJSON` but got Start of unbounded Map (input position 41)
+  @Benchmark
+  def borerJson(): GeoJSON = io.bullet.borer.Json.decode(jsonBytes).to[GeoJSON].value
+*/
   @Benchmark
   def circe(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 

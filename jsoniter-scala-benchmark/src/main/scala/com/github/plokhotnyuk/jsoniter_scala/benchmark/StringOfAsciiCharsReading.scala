@@ -34,7 +34,7 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   def jsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
 
   @Benchmark
-  def jsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
+  def jsoniterScala(): String = readFromArray[String](jsonBytes, tooLongStringConfig)(stringCodec)
 
   @Benchmark
   def scalikeJackson(): String = {

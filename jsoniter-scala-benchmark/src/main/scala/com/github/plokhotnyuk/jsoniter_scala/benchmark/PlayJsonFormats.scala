@@ -21,13 +21,15 @@ object PlayJsonFormats {
   private[this] val prettyPrintMapper = new ObjectMapper {
     registerModule(new PlayJsonModule(JsonParserSettings.settings))
     configure(SerializationFeature.INDENT_OUTPUT, true)
-    setDefaultPrettyPrinter(new DefaultPrettyPrinter {
-      indentObjectsWith(indenter)
-      indentArraysWith(indenter)
-    })
   }
+  prettyPrintMapper.setDefaultPrettyPrinter(new DefaultPrettyPrinter {
+    indentObjectsWith(indenter)
+    indentArraysWith(indenter)
+  })
 
+/* FIXME: Play-JSON throws java.lang.IllegalStateException: Failed `createInstance()`: com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats$$anon$1$$anon$2 does not override method; it has to
   def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
+*/
 
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298

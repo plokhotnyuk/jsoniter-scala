@@ -89,9 +89,10 @@ lazy val `jsoniter-scala-core` = project
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0", "2.12.9", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.1" % Provided,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2" % Test,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
@@ -102,7 +103,7 @@ lazy val `jsoniter-scala-macros` = project
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0", "2.12.9", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -119,10 +120,10 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     resolvers += Resolver.bintrayRepo("reug", "maven"),
-    crossScalaVersions := Seq("2.13.0", "2.12.8"),
+    crossScalaVersions := Seq("2.13.0", "2.12.9"),
     libraryDependencies ++= Seq(
       "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.10.0",
+      "io.bullet" %% "borer-derivation" % "0.11.1",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
@@ -130,16 +131,17 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.25.0-GA", // required for Jsoniter Java
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.9",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.9",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9",
-      "io.circe" %% "circe-generic" % "0.12.0-M4",
-      "io.circe" %% "circe-generic-extras" % "0.12.0-M4",
-      "io.circe" %% "circe-parser" % "0.12.0-M4",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.0.pr1",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.0.pr1",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.0.pr1",
+      "io.circe" %% "circe-generic" % "0.12.0-RC2",
+      "io.circe" %% "circe-generic-extras" % "0.12.0-RC2",
+      "io.circe" %% "circe-parser" % "0.12.0-RC2",
       "com.typesafe.play" %% "play-json" % "2.8.0-M4",
       "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
       "ai.x" %% "play-json-extensions" % "0.40.2",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )

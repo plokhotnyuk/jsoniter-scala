@@ -95,13 +95,46 @@ object JsonCodecMaker {
     *
     * @return a transformed name or the same name if no transformation is required
     */
-  val enforceCamelCase: PartialFunction[String, String] = { case s =>
-    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) s
-    else {
+  val enforceCamelCase: PartialFunction[String, String] = { case s => enforceCamelOrPascalCase(s, toPascal = false) }
+
+  /**
+    * Mapping function for field or class names that should be in PascalCase format.
+    *
+    * @return a transformed name or the same name if no transformation is required
+    */
+  val EnforcePascalCase: PartialFunction[String, String] = { case s => enforceCamelOrPascalCase(s, toPascal = true) }
+
+  /**
+    * Mapping function for field or class names that should be in snake_case format.
+    *
+    * @return a transformed name or the same name if no transformation is required
+    */
+  val enforce_snake_case: PartialFunction[String, String] = { case s => enforceSnakeOrKebabCase(s, '_') }
+
+  /**
+    * Mapping function for field or class names that should be in kebab-case format.
+    *
+    * @return a transformed name or the same name if no transformation is required
+    */
+  val `enforce-kebab-case`: PartialFunction[String, String] = { case s => enforceSnakeOrKebabCase(s, '-') }
+
+  private[this] val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
+
+  private[this] def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
+    if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
+      if (s.length == 0) s
+      else {
+        val ch = s.charAt(0)
+        val fixedCh =
+          if (toPascal) toUpperCase(ch)
+          else toLowerCase(ch)
+        fixedCh + s.substring(1)
+      }
+    } else {
       val len = s.length
       val sb = new StringBuilder(len)
       var i = 0
-      var isPrecedingDash = false
+      var isPrecedingDash = toPascal
       while (i < len) isPrecedingDash = {
         val ch = s.charAt(i)
         i += 1
@@ -115,27 +148,6 @@ object JsonCodecMaker {
       }
       sb.toString
     }
-  }
-
-  /**
-    * Mapping function for field or class names that should be in snake_case format.
-    *
-    * @return a transformed name or the same name if no transformation is required
-    */
-  val enforce_snake_case: PartialFunction[String, String] = {
-    case s => enforceSnakeOrKebabCase(s, '_')
-  }
-
-  /**
-    * Mapping function for field or class names that should be in kebab-case.
-    *
-    * @return a transformed name or the same name if no transformation is required
-    */
-  val `enforce-kebab-case`: PartialFunction[String, String] = {
-    case s => enforceSnakeOrKebabCase(s, '-')
-  }
-
-  private[this] val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
 
   private[this] def enforceSnakeOrKebabCase(s: String, separator: Char): String = {
     val len = s.length

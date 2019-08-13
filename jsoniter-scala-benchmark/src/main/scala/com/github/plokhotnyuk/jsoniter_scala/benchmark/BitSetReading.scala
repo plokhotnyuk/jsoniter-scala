@@ -9,7 +9,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 import scala.collection.immutable.BitSet
 
@@ -29,9 +28,4 @@ class BitSetReading extends BitSetBenchmark {
 
   @Benchmark
   def playJson(): BitSet = Json.parse(jsonBytes).as[BitSet](bitSetFormat)
-
-/* FIXME: uPickle doesn't support reading of bitsets
-  @Benchmark
-  def uPickle(): BitSet = read[BitSet](jsonBytes)
-*/
 }
