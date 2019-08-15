@@ -34,7 +34,7 @@ Other Scala macros features were peeped in
 
 - *safety*: validate JSON format, UTF-8 encoding of strings, and mapped values safely with the fail-fast approach and 
   clear reporting, provide configurable limits for suboptimal data structures with safe defaults to be resilient for DoS 
-  attacks
+  attacks, generate codecs that create instances of a _fixed_ set of classes during parsing to avoid RCE attacks
 - *correctness*: parse and serialize numbers without loosing of precision doing half even rounding for too long values,       
   do not replace illegally encoded characters of string values by placeholder characters
 - *speed*: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back; do it 
