@@ -123,7 +123,7 @@ lazy val `jsoniter-scala-benchmark` = project
     crossScalaVersions := Seq("2.13.0", "2.12.9"),
     libraryDependencies ++= Seq(
       "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.11.0",
+      "io.bullet" %% "borer-derivation" % "0.11.1",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
@@ -137,7 +137,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "io.circe" %% "circe-generic" % "0.12.0-RC2",
       "io.circe" %% "circe-generic-extras" % "0.12.0-RC2",
       "io.circe" %% "circe-parser" % "0.12.0-RC2",
-      "com.typesafe.play" %% "play-json" % "2.8.0-M4",
+      "com.typesafe.play" %% "play-json" % "2.8.0-M5",
       "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
       "ai.x" %% "play-json-extensions" % "0.40.2",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",

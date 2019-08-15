@@ -15,8 +15,15 @@ matrix:
       osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
       scala: 2.13.0
     - os: linux
-      jdk: openjdk8
       scala: 2.12.9
+      env: JDK=graalvm-ce-19.1.1
+      before_script:
+        - unset -v _JAVA_OPTIONS
+        - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
+        - source install-jdk.sh --url https://github.com/oracle/graal/releases/download/vm-19.1.1/graalvm-ce-linux-amd64-19.1.1.tar.gz
+        - echo JAVA_HOME = ${JAVA_HOME}
+        - echo PATH = ${PATH}
+        - ls ${JAVA_HOME}
 script:
   - travis_wait 40 sbt -no-colors ++$TRAVIS_SCALA_VERSION -Dsbt.supershell=false clean coverage test coverageAggregate mimaReportBinaryIssues
 after_success:
