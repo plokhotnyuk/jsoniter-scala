@@ -16,8 +16,8 @@ performance of Jsoniter Scala with [Borer](https://github.com/sirthias/borer), [
 [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), [DSL-JSON](https://github.com/ngs-doo/dsl-json)
 and [Jsoniter Java](https://github.com/json-iterator/java) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, and latest
-versions of Open JDK 8/11/[12](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing)
-and GraalVM CE/EE
+versions of OpenJDK 8/11/[13](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+OpenJDK 13 + Graal, and GraalVM CE/EE
 
 ## Acknowledgments
 
@@ -32,20 +32,23 @@ Other Scala macros features were peeped in
 
 ## Goals
 
-- *safety*: validate JSON format, UTF-8 encoding of strings, and mapped values safely with the fail-fast approach and 
-  clear reporting, provide configurable limits for suboptimal data structures with safe defaults to be resilient for DoS 
-  attacks, generate codecs that create instances of a _fixed_ set of classes during parsing to avoid RCE attacks
-- *correctness*: parse and serialize numbers without loosing of precision doing half even rounding for too long values,       
-  do not replace illegally encoded characters of string values by placeholder characters
-- *speed*: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back; do it 
-  crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations 
-  and copying
-- *productivity*: derive codecs recursively for complex types using one line macro, do it in _compile-time_ to minimize
-  probability of run-time issues, optionally print generated sources as compiler output to be inspected for proving of
-  safety and correctness or to be reused as a starting point for the implementation of custom codecs
-- *ergonomics*: have preconfigured defaults for the safest and common usage that can be easily altered by compile- and 
-  run-time configuration instances, compile-time annotations and implicits, embrace textual representation of JSON 
-  providing a pretty printing option    
+1. **Safety**: validate JSON format, UTF-8 encoding of strings, and mapped values safely with the fail-fast approach and 
+clear reporting, provide configurable limits for suboptimal data structures with safe defaults to be resilient for DoS 
+attacks, generate codecs that create instances of a _fixed_ set of classes during parsing to avoid RCE attacks
+2. **Correctness**: parse and serialize numbers without loosing of precision doing half even rounding for too long JSON
+numbers when they bounded to floats or doubles, do not replace illegally encoded characters of string values by 
+placeholder characters
+3. **Speed**: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back, do it 
+crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
+copying
+4. **Productivity**: derive codecs recursively for complex types using one line macro, do it in _compile-time_ to 
+minimize probability of run-time issues, optionally print generated sources as compiler output to be inspected for 
+proving of safety and correctness or to be reused as a starting point for the implementation of custom codecs,
+prohibit serializing of `null` Scala values and parsing immediately to them in generated codecs
+5. **Ergonomics**: have preconfigured defaults for the safest and common usage that can be easily altered by compile- 
+and run-time configuration instances, combined with compile-time annotations and implicits, embrace the textual 
+representation of JSON providing a pretty printing option, provide a hex dump in the parse error message to speed up the
+view of an error context
 
 The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
 
@@ -79,11 +82,13 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already
   supported classes
-- Reading and writing of arbitrary bytes or raw values using custom codecs  
-- Type aliases are also supported for all types
-- Order of instance fields is preserved during serialization
-- Only acyclic graphs of class instances are supported
+- Type aliases are also supported for all types mentioned above
+- Only acyclic graphs of class instances are supported by generated codecs
+- Order of instance fields is preserved during serialization for generated codecs
 - Throws a parsing exception if duplicated keys were detected for a class instance (except maps)
+- Serialization of `null` values is prohibited by throwing of `NullPointerException` errors
+- Parsing of `null` values allowed only for optional of collection types (that means the `None` value or an empty 
+  collection accordingly) and for fields which have defined non-null default values
 - Fields with default values that defined in the constructor are optional, other fields are required (no special
   annotation required)
 - Fields with values that are equals to default values, or are empty options/collections/arrays are not serialized to
@@ -92,6 +97,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   implementations of the `equals` method (it mostly concerns non-case classes or other types that have custom codecs)
 - Fields can be annotated as transient or just not defined in the constructor to avoid parsing and serializing at all
 - Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
+- Reading and writing of any arbitrary bytes or raw values are possible by using custom codecs
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
   where it occurs and an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
@@ -101,6 +107,8 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
 - Releases for different Scala versions: 2.11, 2.12, 2.13
+- Support of shading to another package for locking on particular released version
+- Patch versions are backward and forward compatible 
 - Support of compilation to a native image by GraalVM
   
 There are configurable options that can be set in compile-time:
