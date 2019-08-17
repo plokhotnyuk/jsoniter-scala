@@ -1199,10 +1199,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeser(codecOfTransient, Transient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
     }
     "don't serialize case class fields with 'None' values" in {
-      case class NullAndNoneValues(opt: Option[String])
+      case class NoneValues(opt: Option[String])
 
-      verifySer(make[NullAndNoneValues](CodecMakerConfig()), NullAndNoneValues(_root_.scala.None), """{}""")
-      verifySer(make[List[NullAndNoneValues]](CodecMakerConfig()), List(NullAndNoneValues(_root_.scala.None)), """[{}]""")
+      verifySer(make[NoneValues](CodecMakerConfig()), NoneValues(_root_.scala.None), """{}""")
+      verifySer(make[List[NoneValues]](CodecMakerConfig()), List(NoneValues(_root_.scala.None)), """[{}]""")
     }
     "don't serialize case class fields with empty collections" in {
       case class EmptyIterables(l: List[String], s: Set[Int], ls: List[Set[Int]])
