@@ -34,7 +34,7 @@ class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
   def jsoniterJava(): String = JsoniterJavaParser.parse[String](jsonBytes, classOf[String])
 
   @Benchmark
-  def jsoniterScala(): String = readFromArray[String](jsonBytes)(stringCodec)
+  def jsoniterScala(): String = readFromArray[String](jsonBytes, tooLongStringConfig)(stringCodec)
 
   @Benchmark
   def playJson(): String = Json.parse(jsonBytes).as[String]

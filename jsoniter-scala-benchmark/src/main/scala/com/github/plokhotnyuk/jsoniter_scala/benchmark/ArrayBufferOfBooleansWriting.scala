@@ -44,7 +44,7 @@ class ArrayBufferOfBooleansWriting extends ArrayBufferOfBooleansBenchmark {
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
 
-    obj.write.getBytes(UTF_8)
+    obj.toSeq.write.getBytes(UTF_8)
   }
 
   @Benchmark

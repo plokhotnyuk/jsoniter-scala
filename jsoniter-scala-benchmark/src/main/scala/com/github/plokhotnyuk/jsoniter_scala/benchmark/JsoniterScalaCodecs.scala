@@ -14,6 +14,7 @@ import scala.collection.mutable
 object JsoniterScalaCodecs {
   val exceptionWithoutDumpConfig = ReaderConfig(appendHexDumpToParseException = false)
   val exceptionWithStacktraceConfig = ReaderConfig(throwReaderExceptionWithStackTrace = true)
+  val tooLongStringConfig = ReaderConfig(preferredCharBufSize = 1024 * 1024)
   val escapingConfig = WriterConfig(escapeUnicode = true)
   val prettyConfig = WriterConfig(indentionStep = 2, preferredBufSize = 32768)
   val bigDecimalCodec: JsonValueCodec[BigDecimal] =
@@ -79,8 +80,6 @@ object JsoniterScalaCodecs {
     make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] =
     make(CodecMakerConfig(setMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
-  implicit val openHashMapOfIntsToBooleansCodec: JsonValueCodec[mutable.OpenHashMap[Int, Boolean]] =
-    make(CodecMakerConfig(mapMaxInsertNumber = Int.MaxValue /*WARNING: don't do this for open-systems*/))
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig())
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make(CodecMakerConfig())
   implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig())

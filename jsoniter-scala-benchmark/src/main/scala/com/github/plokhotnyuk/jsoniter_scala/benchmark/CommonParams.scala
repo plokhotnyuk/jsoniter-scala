@@ -16,6 +16,7 @@ import org.openjdk.jmh.annotations._
   "-XX:InitialCodeCacheSize=512m",
   "-XX:ReservedCodeCacheSize=512m",
   "-XX:+UseParallelGC",
+  "-XX:MaxInlineLevel=18",
   "-XX:-UseBiasedLocking",
   "-XX:+AlwaysPreTouch"
 ))

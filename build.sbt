@@ -1,30 +1,7 @@
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt._
 import scala.sys.process._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
-
-def mimaSettings: Seq[Setting[_]] = mimaDefaultSettings ++ Seq(
-  mimaCheckDirection := {
-    def isPatch: Boolean = {
-      val Array(newMajor, newMinor, _) = version.value.split('.')
-      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
-      newMajor == oldMajor && newMinor == oldMinor
-    }
-
-    if (isPatch) "both" else "backward"
-  },
-  mimaPreviousArtifacts := {
-    def isCheckingRequired: Boolean = {
-      val Array(newMajor, newMinor, _) = version.value.split('.')
-      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
-      newMajor == oldMajor && (newMajor != "0" || newMinor == oldMinor)
-    }
-
-    if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
-    else Set()
-  }
-)
 
 lazy val commonSettings = Seq(
   organization := "com.github.plokhotnyuk.jsoniter-scala",
@@ -41,7 +18,7 @@ lazy val commonSettings = Seq(
     )
   ),
   resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.0",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -67,7 +44,8 @@ lazy val commonSettings = Seq(
 
 lazy val noPublishSettings = Seq(
   skip in publish := true,
-  publishTo := Some(if (isSnapshot.value) Opts.resolver.sonatypeSnapshots else Opts.resolver.sonatypeStaging)
+  publishTo := Some(if (isSnapshot.value) Opts.resolver.sonatypeSnapshots else Opts.resolver.sonatypeStaging),
+  mimaPreviousArtifacts := Set()  
 )
 
 lazy val publishSettings = Seq(
@@ -80,7 +58,26 @@ lazy val publishSettings = Seq(
     )
   ),
   publishMavenStyle := true,
-  pomIncludeRepository := { _ => false }
+  pomIncludeRepository := { _ => false },
+  mimaCheckDirection := {
+    def isPatch: Boolean = {
+      val Array(newMajor, newMinor, _) = version.value.split('.')
+      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
+      newMajor == oldMajor && newMinor == oldMinor
+    }
+
+    if (isPatch) "both" else "backward"
+  },
+  mimaPreviousArtifacts := {
+    def isCheckingRequired: Boolean = {
+      val Array(newMajor, newMinor, _) = version.value.split('.')
+      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
+      newMajor == oldMajor && (newMajor != "0" || newMinor == oldMinor)
+    }
+
+    if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
+    else Set()
+  }
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
@@ -90,12 +87,12 @@ lazy val `jsoniter-scala` = project.in(file("."))
 
 lazy val `jsoniter-scala-core` = project
   .settings(commonSettings)
-  .settings(mimaSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0", "2.12.9", "2.11.12"),
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.0" % Provided,
+      "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.1" % Provided,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2" % Test,
       "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
@@ -104,10 +101,9 @@ lazy val `jsoniter-scala-core` = project
 lazy val `jsoniter-scala-macros` = project
   .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings)
-  .settings(mimaSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0", "2.12.9", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -124,26 +120,28 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     resolvers += Resolver.bintrayRepo("reug", "maven"),
+    crossScalaVersions := Seq("2.13.0", "2.12.9"),
     libraryDependencies ++= Seq(
       "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.9.0",
-      "pl.iterators" %% "kebs-spray-json" % "1.6.2",
+      "io.bullet" %% "borer-derivation" % "0.11.1",
+      "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
-      "com.avsystem.commons" %% "commons-core" % "2.0.0-M1",
+      "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
       "com.lihaoyi" %% "upickle" % "0.7.5",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.25.0-GA", // required for Jsoniter Java
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.9",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.9.9",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9",
-      "io.circe" %% "circe-generic" % "0.12.0-M3",
-      "io.circe" %% "circe-generic-extras" % "0.12.0-M3",
-      "io.circe" %% "circe-parser" % "0.12.0-M3",
-      "com.typesafe.play" %% "play-json" % "2.7.4",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.0.pr1",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.0.pr1",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.0.pr1",
+      "io.circe" %% "circe-generic" % "0.12.0-RC3",
+      "io.circe" %% "circe-generic-extras" % "0.12.0-RC3",
+      "io.circe" %% "circe-parser" % "0.12.0-RC3",
+      "com.typesafe.play" %% "play-json" % "2.8.0-M5",
       "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
       "ai.x" %% "play-json-extensions" % "0.40.2",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -19,6 +20,9 @@ import spray.json._
 class ADTReading extends ADTBenchmark {
   @Benchmark
   def avSystemGenCodec(): ADTBase = JsonStringInput.read[ADTBase](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borerJson(): ADTBase = io.bullet.borer.Json.decode(jsonBytes).to[ADTBase].value
 
   @Benchmark
   def circe(): ADTBase = decode[ADTBase](new String(jsonBytes, UTF_8)).fold(throw _, identity)

@@ -4,7 +4,7 @@
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![Code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://img.shields.io/badge/maven--central-0.51.3-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
+[![Maven Central](https://img.shields.io/badge/maven--central-0.55.0-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
 
 Scala macros that generate codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing and serialization.
@@ -32,16 +32,22 @@ Other Scala macros features were peeped in
 
 ## Goals
 
-Initially, this library was developed for requirements of real-time bidding in ad-tech and goals are simple:
-- do parsing and serialization of JSON directly from UTF-8 bytes to your case classes and Scala collections and back but
-  do it crazily fast without runtime-reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
-  copying
-- do validation of UTF-8 encoding, JSON format and mapped values efficiently (fail fast approach) with clear reporting,
+- *safety*: validate JSON format, UTF-8 encoding of strings, and mapped values safely with the fail-fast approach and 
+  clear reporting, provide configurable limits for suboptimal data structures with safe defaults to be resilient for DoS 
+  attacks, generate codecs that create instances of a _fixed_ set of classes during parsing to avoid RCE attacks
+- *correctness*: parse and serialize numbers without loosing of precision doing half even rounding for too long values,       
   do not replace illegally encoded characters of string values by placeholder characters
-- define classes, that will be instantiated during parsing, in _compile-time_ to minimize a probability of runtime issues,
-  generated sources can be inspected to prove that there are no security vulnerabilities during parsing
+- *speed*: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back; do it 
+  crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations 
+  and copying
+- *productivity*: derive codecs recursively for complex types using one line macro, do it in _compile-time_ to minimize
+  probability of run-time issues, optionally print generated sources as compiler output to be inspected for proving of
+  safety and correctness or to be reused as a starting point for the implementation of custom codecs
+- *ergonomics*: have preconfigured defaults for the safest and common usage that can be easily altered by compile- and 
+  run-time configuration instances, compile-time annotations and implicits, embrace textual representation of JSON 
+  providing a pretty printing option    
 
-It targets JDK 8+ without any platform restrictions.
+The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
 
 Support of Scala.js and Scala Native is not a goal for the moment. 
 
@@ -57,12 +63,12 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Parsing of strings with escaped characters for JSON keys and string values
 - Codecs can be generated for primitives, boxed primitives, enums, tuples, `String`, `BigInt`, `BigDecimal`, `Option`,
   `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module
-  classes, value classes and case classes with values/fields having any of types listed here
+  classes, literal types, value classes, and case classes with values/fields having any of types listed here
 - Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
 - Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary
   constructor
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
-  `java.util.UUID`, `java.time.*`, and value classes for any of them
+  `java.util.UUID`, `java.time.*`, literal types, and value classes for any of them
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at
   the scope of the `make` macro call
 - Parsing of escaped characters is not supported for strings which are mapped to numeric and `java.time.*` types
@@ -133,8 +139,8 @@ Add the core library with a "compile" scope and the macros library with a "provi
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "0.51.3" % Compile,
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "0.51.3" % Provided // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "0.55.0" % Compile,
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "0.55.0" % Provided // required only in compile-time
 )
 ```
 
@@ -246,6 +252,17 @@ sbt clean +test +mimaReportBinaryIssues
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
  for 2.11.x, 2.12.x, and 2.13.x versions of Scala.
+ 
+### Printing of code generated by macros
+
+To see and check code generated by the `make` macro add the `-Dmacro.settings=print-codecs` option like here:
+```sh
+sbt -Dmacro.settings=print-codecs clean test
+``` 
+
+Also, to print code generated by the `eval` macro use the `-Dmacro.settings=print-expr-results` option.
+
+Both options can be combined: `-Dmacro.settings=print-codecs,print-expr-results`
 
 ### Run benchmarks
 

@@ -173,7 +173,9 @@ package object core {
     val buf = s.getBytes(UTF_8)
     val len = buf.length
     val reader = new JsonReader(buf = buf, charBuf = new Array[Char](len >> 4), tail = len, config = config)
-    codec.decodeValue(reader, codec.nullValue)
+    val x = codec.decodeValue(reader, codec.nullValue)
+    if (config.checkForEndOfInput) reader.endOfInputOrError()
+    x
   }
 
   /**

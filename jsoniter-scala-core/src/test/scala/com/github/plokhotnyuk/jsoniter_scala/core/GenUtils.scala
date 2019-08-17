@@ -8,7 +8,7 @@ import java.time._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Gen
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 object GenUtils {
@@ -99,8 +99,8 @@ object GenUtils {
     genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
-    Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of),
-    Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toList).map(ZoneId.of))
+    Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toSeq).map(ZoneId.of),
+    Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toSeq).map(ZoneId.of))
   val genZonedDateTime: Gen[ZonedDateTime] = for {
     localDateTime <- genLocalDateTime
     zoneId <- genZoneId
