@@ -1639,6 +1639,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader(s""""$s":""").readKeyAsString() shouldBe s
     }
 
+    def checkEscaped(s1: String, s2: String): Unit = {
+      reader(s""""$s1"""").readString(null) shouldBe s2
+      val r = reader(s""""$s1"""")
+      r.isCharBufEqualsTo(r.readStringAsCharBuf(), s2) shouldBe true
+      reader(s""""$s1":""").readKeyAsString() shouldBe s2
+    }
+
     def checkError(json: String, error: String): Unit = {
       assert(intercept[JsonReaderException](reader(json).readString(null)).getMessage.contains(error))
       assert(intercept[JsonReaderException](reader(json).readStringAsCharBuf()).getMessage.contains(error))
@@ -1677,15 +1684,22 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
     }
     "parse escaped chars of string value" in {
-      def checkEncoded(s1: String, s2: String): Unit = {
-        reader(s""""$s1"""").readString(null) shouldBe s2
-        val r = reader(s""""$s1"""")
-        r.isCharBufEqualsTo(r.readStringAsCharBuf(), s2) shouldBe true
-        reader(s""""$s1":""").readKeyAsString() shouldBe s2
+      checkEscaped("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\")
+    }
+    "parse string with hexadecimal escaped chars which are non-surrogate" in {
+      forAll(minSuccessful(100000)) { (s: String) =>
+        whenever(s.forall(ch => !Character.isSurrogate(ch))) {
+          checkEscaped(s.map((ch: Char) => f"\\u${ch.toInt}%04x").mkString, s)
+        }
       }
-
-      checkEncoded("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\")
-      checkEncoded("\\u0008\\u000C\\u000a\\u000D\\u0009\\u002F\\u0041\\u0438\\u10d1\\ud834\\udd1e", "\b\f\n\r\t/Aиბ𝄞")
+    }
+    "parse string with hexadecimal escaped chars which are valid surrogate pairs" in {
+      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(100000)) { (hi: Char, lo: Char) =>
+        whenever(Character.isSurrogatePair(hi, lo)) {
+          val s = new String(Array(hi, lo))
+          checkEscaped(s.map((ch: Char) => f"\\u${ch.toInt}%04x").mkString, s)
+        }
+      }
     }
     "throw parsing exception for control chars that must be escaped" in {
       forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
@@ -1814,15 +1828,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkEscaped("""\t""", '\t')
       checkEscaped("""\/""", '/')
       checkEscaped("""\\""", '\\')
-      checkEscaped("\\u0008", '\b')
-      checkEscaped("\\u000C", '\f')
-      checkEscaped("\\u000a", '\n')
-      checkEscaped("\\u000D", '\r')
-      checkEscaped("\\u0009", '\t')
-      checkEscaped("\\u002F", '/')
-      checkEscaped("\\u0041", 'A')
-      checkEscaped("\\u0438", 'и')
-      checkEscaped("\\u10d1", 'ბ')
+    }
+    "parse hexadecimal escaped chars which are non-surrogate" in {
+      forAll(minSuccessful(100000)) { (ch: Char) =>
+        whenever(!Character.isSurrogate(ch)) {
+          checkEscaped(f"\\u${ch.toInt}%04x", ch)
+        }
+      }
     }
     "throw parsing exception for string with length > 1" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
