@@ -35,7 +35,6 @@ object PlayJsonFormats {
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
     (json: JsValue) => Try {
-      import scala.language.existentials
       val JsArray(arr) = json
       aReads.reads(arr(0)).flatMap(a => bReads.reads(arr(1)).map(b => (a, b)))
     }.getOrElse(JsError("Expected array of two elements, but got: " + json))

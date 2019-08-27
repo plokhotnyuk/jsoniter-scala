@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.JsonToken._
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator, JsonParser}
+import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser}
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
@@ -17,33 +17,36 @@ import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 object JacksonSerDesers {
-  def createJacksonMapper: ObjectMapper with ScalaObjectMapper = new ObjectMapper(new JsonFactory {
-    disable(JsonFactory.Feature.INTERN_FIELD_NAMES)
-  }) with ScalaObjectMapper {
-    registerModule(DefaultScalaModule)
-    registerModule(new SimpleModule()
-      .addSerializer(classOf[BitSet], new BitSetSerializer)
-      .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
-      .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
-      .addSerializer(classOf[SuitADT], new SuitADTSerializer)
-      .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
-      .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
-      .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
-    registerModule(new JavaTimeModule)
-    registerModule(new AfterburnerModule)
-    configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
-    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
-    configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-    configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
-    configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
-    setSerializationInclusion(Include.NON_EMPTY)
-    setDefaultPrettyPrinter {
-      val indenter = new DefaultIndenter("  ", "\n")
-      val prettyPrinter = new DefaultPrettyPrinter()
-      prettyPrinter.indentArraysWith(indenter)
-      prettyPrinter.indentObjectsWith(indenter)
-      prettyPrinter
+  def createJacksonMapper: ObjectMapper with ScalaObjectMapper = {
+    val jsonFactory = new JsonFactoryBuilder()
+      .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
+      .configure(JsonFactory.Feature.CANONICALIZE_FIELD_NAMES, false)
+      .build()
+    new ObjectMapper(jsonFactory) with ScalaObjectMapper {
+      registerModule(DefaultScalaModule)
+      registerModule(new SimpleModule()
+        .addSerializer(classOf[BitSet], new BitSetSerializer)
+        .addSerializer(classOf[mutable.BitSet], new MutableBitSetSerializer)
+        .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
+        .addSerializer(classOf[SuitADT], new SuitADTSerializer)
+        .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
+        .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
+        .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
+      registerModule(new JavaTimeModule)
+      registerModule(new AfterburnerModule)
+      configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
+      configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
+      configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+      configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
+      setSerializationInclusion(Include.NON_EMPTY)
+      setDefaultPrettyPrinter {
+        val indenter = new DefaultIndenter("  ", "\n")
+        val prettyPrinter = new DefaultPrettyPrinter()
+        prettyPrinter.indentArraysWith(indenter)
+        prettyPrinter.indentObjectsWith(indenter)
+        prettyPrinter
+      }
     }
   }
 
