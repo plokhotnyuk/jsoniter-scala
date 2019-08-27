@@ -5,9 +5,9 @@ import java.time._
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 
-import scala.annotation.StaticAnnotation
+import scala.annotation.{StaticAnnotation, tailrec}
 import scala.annotation.meta.field
-import scala.collection.{BitSet, mutable, immutable}
+import scala.collection.{BitSet, immutable, mutable}
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
@@ -128,7 +128,7 @@ object JsonCodecMaker {
         val fixedCh =
           if (toPascal) toUpperCase(ch)
           else toLowerCase(ch)
-        fixedCh + s.substring(1)
+        s"$fixedCh${s.substring(1)}"
       }
     } else {
       val len = s.length
@@ -526,6 +526,7 @@ object JsonCodecMaker {
               }
             } else in.readNullOrTokenError(default, '[')"""
 
+      @tailrec
       def genWriteKey(x: Tree, types: List[Type]): Tree = {
         val tpe = types.head
         val implKeyCodec = findImplicitCodec(types, isValueCodec = false)
@@ -552,15 +553,15 @@ object JsonCodecMaker {
           else q"out.writeNonEscapedAsciiKey($x.name)"
         } else if (isConstType(tpe)) {
           tpe match {
-            case _ @ ConstantType(Constant(v: String)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Boolean)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Byte)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Char)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Short)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Int)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Long)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Float)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(v: Double)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: String)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Boolean)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Byte)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Char)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Short)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Int)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Long)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Float)) => q"out.writeKey($x)"
+            case _ @ ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
             case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
           }
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
@@ -637,14 +638,14 @@ object JsonCodecMaker {
               warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
-            val partiallyMappedName = named.headOption.flatMap(a => Option {
+            val partiallyMappedName = named.headOption.map { a =>
               try eval[named](a.tree).name catch { case _: Throwable => // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
                 fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
                   "It should not depend on code from the same compilation module where the 'make' macro is called. " +
                   "Use a separated submodule of the project to compile all such dependencies before their usage " +
                   "for generation of codecs.")
               }
-            }).getOrElse(name)
+            }.getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
         ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
@@ -1087,7 +1088,7 @@ object JsonCodecMaker {
           genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]",
             if (isScala213) q"x.addOne($readVal)" else q"x += $readVal", q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
-            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+='
+            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.11.x/2.12.x
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
             q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}")
