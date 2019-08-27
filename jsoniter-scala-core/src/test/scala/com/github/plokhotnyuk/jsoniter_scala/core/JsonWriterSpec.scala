@@ -807,19 +807,4 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       override val nullValue: String = ""
     }, "", cfg), "UTF-8")
   }
-
-  def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'
-
-  def toEscaped(ch: Char): String = ch match {
-    case '"' => """\""""
-    case '\\' => """\\"""
-    case '\b' => """\b"""
-    case '\f' => """\f"""
-    case '\n' => """\n"""
-    case '\r' => """\r"""
-    case '\t' => """\t"""
-    case _ => toHexEscaped(ch)
-  }
-
-  def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
 }

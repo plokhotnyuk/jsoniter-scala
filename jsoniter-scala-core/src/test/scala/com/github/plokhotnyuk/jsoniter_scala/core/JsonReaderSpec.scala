@@ -2815,6 +2815,4 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     new JsonReader(new Array[Byte](12), // a minimal allowed length
       0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(jsonBytes), totalRead,
       ReaderConfig(throwReaderExceptionWithStackTrace = true))
-
-  def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
 }
