@@ -471,8 +471,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
         def decodeValue(in: JsonReader, default: Bar): Bar = in.readInt().asInstanceOf[Bar]
       }
-      verifySerDeser(make[Baz](CodecMakerConfig()), Baz(42.asInstanceOf[Bar]),
-        "{\"bar\":42}")
+      verifySerDeser(make[Baz](CodecMakerConfig()), Baz(42.asInstanceOf[Bar]), "{\"bar\":42}")
     }
     "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
@@ -1060,7 +1059,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "expected '\"', offset: 0x0000000e")
     }
     "serialize and deserialize recursive types if it was allowed" in {
-      verifySerDeser(make(CodecMakerConfig(allowRecursiveTypes = true)),
+      verifySerDeser(make[Recursive](CodecMakerConfig(allowRecursiveTypes = true)),
         Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         "{\"s\":\"VVV\",\"bd\":1.1,\"l\":[1,2,3],\"m\":{\"S\":{\"s\":\"WWW\",\"bd\":2.2,\"l\":[4,5,6]}}}")
     }
@@ -1163,7 +1162,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Operators](CodecMakerConfig()), Operators(7), """{"=<>!#%^&|*/\\~+-:$":7}""")
     }
     "don't serialize default values of case classes that defined for fields when the transientDefault flag is on (by default)" in {
-      val codecOfDefaults: JsonValueCodec[Defaults] = make[Defaults](CodecMakerConfig())
+      val codecOfDefaults: JsonValueCodec[Defaults] = make(CodecMakerConfig())
       verifySer(codecOfDefaults, Defaults(), "{}")
       verifySer(codecOfDefaults, Defaults(oc = _root_.scala.None, l = _root_.scala.collection.immutable.Nil), """{}""")
     }
@@ -1182,7 +1181,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySer(make[Defaults](CodecMakerConfig(transientEmpty = false, transientNone = false)), Defaults(), """{}""")
     }
     "deserialize default values of case classes that defined for fields" in {
-      val codecOfDefaults: JsonValueCodec[Defaults2] = make[Defaults2](CodecMakerConfig())
+      val codecOfDefaults: JsonValueCodec[Defaults2] = make(CodecMakerConfig())
       verifyDeser(codecOfDefaults, Defaults2(), """{}""")
       verifyDeser(codecOfDefaults, Defaults2(),
         """{"st":null,"bi":null,"l":null,"oc":null,"e":null,"ab":null,"m":null,"mm":null,"im":null,"lm":null,"s":null,"ms":null,"bs":null,"mbs":null}""".stripMargin)
@@ -1498,12 +1497,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"fruits":[{"color":1},{"color":2}]}""")
     }
     "serialize and deserialize when the root codec defined as an impicit val" in {
-      implicit val implicitRootCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig())
+      implicit val implicitRootCodec: JsonValueCodec[Int] = make(CodecMakerConfig())
       verifySerDeser(implicitRootCodec, 1, "1")
     }
     "serialize and deserialize dependent codecs which use lazy val to don't depend on order of definition" in {
       verifySerDeser(make[List[Int]](CodecMakerConfig()), List(1, 2), "[\"1\",\"2\"]")
-      implicit lazy val intCodec: JsonValueCodec[Int] = make[Int](CodecMakerConfig(isStringified = true))
+      implicit lazy val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig(isStringified = true))
     }
     "serialize and deserialize case classes with Java time types" in {
       verifySerDeser(make[JavaTimeTypes](CodecMakerConfig()),
@@ -1761,7 +1760,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   "deserialize using the nullValue of codecs that are injected by implicits" in {
     import test._
 
-    verifyDeser(make[C3](CodecMakerConfig()), C3(List((C1("A"), C2("0")))),"""{"member":[["A","0"]]}""")
+    verifyDeser(C3.codec, C3(List((C1("A"), C2("0")))),"""{"member":[["A","0"]]}""")
   }
   "JsonCodecMaker.enforceCamelCase" should {
     "transform snake_case names to camelCase" in {
@@ -1864,23 +1863,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 case class NameOverridden(@named("new_" + "name") oldName: String) // intentionally declared after the `make` call
 
 package object test {
-  implicit def tup2[A: JsonValueCodec, B: JsonValueCodec]: JsonValueCodec[(A, B)] = make[(A, B)](CodecMakerConfig())
+  implicit def tup2[A: JsonValueCodec, B: JsonValueCodec]: JsonValueCodec[(A, B)] = make(CodecMakerConfig())
 
   case class C1(s: String) extends AnyVal
 
   object C1 {
-    implicit val codec: JsonValueCodec[C1] = make[C1](CodecMakerConfig())
+    implicit val codec: JsonValueCodec[C1] = make(CodecMakerConfig())
   }
 
   case class C2(s: String) extends AnyVal
 
   object C2 {
-    implicit val codec: JsonValueCodec[C2] = make[C2](CodecMakerConfig())
+    implicit val codec: JsonValueCodec[C2] = make(CodecMakerConfig())
   }
 
   case class C3(member: Seq[(C1, C2)])
 
   object C3 {
-    implicit val codec: JsonValueCodec[C3] = make[C3](CodecMakerConfig())
+    implicit val codec: JsonValueCodec[C3] = make(CodecMakerConfig())
   }
 }
