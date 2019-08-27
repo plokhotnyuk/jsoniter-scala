@@ -38,16 +38,18 @@ object JacksonSerDesers {
     configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
     configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
     setSerializationInclusion(Include.NON_EMPTY)
+    setDefaultPrettyPrinter {
+      val indenter = new DefaultIndenter("  ", "\n")
+      val prettyPrinter = new DefaultPrettyPrinter()
+      prettyPrinter.indentArraysWith(indenter)
+      prettyPrinter.indentObjectsWith(indenter)
+      prettyPrinter
+    }
   }
 
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
-  private[this] val indenter = new DefaultIndenter("  ", "\n")
   val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
   jacksonPrettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    .setDefaultPrettyPrinter(new DefaultPrettyPrinter {
-      indentObjectsWith(indenter)
-      indentArraysWith(indenter)
-    })
 }
 
 class BitSetSerializer extends StdSerializer[BitSet](classOf[BitSet]) {

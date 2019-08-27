@@ -26,20 +26,19 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   @Benchmark
   def prettyPrintDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
-/* FIXME: Jackson throws java.lang.IllegalStateException: Failed `createInstance()`: com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers$$anon$3 does not override method; it has to
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonPrettyMapper.writeValueAsBytes(obj)
-*/
+
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj, prettyConfig)
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int =
     writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, prettyConfig)
-/* FIXME: Play-JSON throws java.lang.IllegalStateException: Failed `createInstance()`: com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats$$anon$1$$anon$2 does not override method; it has to
+
   @Benchmark
   def playJson(): Array[Byte] = prettyPrintBytes(Json.toJson(obj))
-*/
+
   @Benchmark
   def sprayJson(): Array[Byte] = CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
 
