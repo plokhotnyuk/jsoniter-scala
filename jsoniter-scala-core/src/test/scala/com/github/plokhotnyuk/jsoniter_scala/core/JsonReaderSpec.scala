@@ -1689,7 +1689,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse string with hexadecimal escaped chars which are non-surrogate" in {
       forAll(minSuccessful(100000)) { (s: String) =>
         whenever(s.forall(ch => !Character.isSurrogate(ch))) {
-          checkEscaped(s.map((ch: Char) => f"\\u${ch.toInt}%04x").mkString, s)
+          checkEscaped(s.map((ch: Char) => toHexEscaped(ch)).mkString, s)
         }
       }
     }
@@ -1697,7 +1697,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(100000)) { (hi: Char, lo: Char) =>
         whenever(Character.isSurrogatePair(hi, lo)) {
           val s = new String(Array(hi, lo))
-          checkEscaped(s.map((ch: Char) => f"\\u${ch.toInt}%04x").mkString, s)
+          checkEscaped(s.map((ch: Char) => toHexEscaped(ch)).mkString, s)
         }
       }
     }
@@ -1832,7 +1832,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse hexadecimal escaped chars which are non-surrogate" in {
       forAll(minSuccessful(100000)) { (ch: Char) =>
         whenever(!Character.isSurrogate(ch)) {
-          checkEscaped(f"\\u${ch.toInt}%04x", ch)
+          checkEscaped(toHexEscaped(ch), ch)
         }
       }
     }
@@ -2815,4 +2815,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     new JsonReader(new Array[Byte](12), // a minimal allowed length
       0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(jsonBytes), totalRead,
       ReaderConfig(throwReaderExceptionWithStackTrace = true))
+
+  def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
 }
