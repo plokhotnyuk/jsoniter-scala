@@ -1274,6 +1274,19 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfRequiredAfterOptionalFields, """{"f1":1,"f2":2}""",
         """missing required field "f4", offset: 0x0000000e""")
     }
+    "throw the stack overflow error in case of serialization of a cyclic graph" in {
+      case class Cyclic(var opt: Option[Cyclic])
+
+      val codecOfCyclic = make[Cyclic](CodecMakerConfig(allowRecursiveTypes = true))
+      val cyclic = Cyclic(_root_.scala.None)
+      cyclic.opt = Some(cyclic)
+      val len = 100000
+      val cfg = WriterConfig()
+      intercept[StackOverflowError](verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      intercept[StackOverflowError](verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      intercept[StackOverflowError](verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
+      intercept[StackOverflowError](verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
+    }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"type":"AAA","a":1},{"type":"BBB","a":1},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]""")
