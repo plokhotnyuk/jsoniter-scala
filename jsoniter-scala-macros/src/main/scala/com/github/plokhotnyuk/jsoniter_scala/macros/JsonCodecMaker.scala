@@ -435,23 +435,23 @@ object JsonCodecMaker {
           }
         } else if (isConstType(tpe)) {
           tpe match {
-            case _ @ ConstantType(Constant(v: String)) =>
+            case ConstantType(Constant(v: String)) =>
               q"""if (in.readKeyAsString() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Boolean)) =>
+            case ConstantType(Constant(v: Boolean)) =>
               q"""if (in.readKeyAsBoolean() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Byte)) =>
+            case ConstantType(Constant(v: Byte)) =>
               q"""if (in.readKeyAsByte() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Char)) =>
+            case ConstantType(Constant(v: Char)) =>
               q"""if (in.readKeyAsChar() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Short)) =>
+            case ConstantType(Constant(v: Short)) =>
               q"""if (in.readKeyAsShort() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Int)) =>
+            case ConstantType(Constant(v: Int)) =>
               q"""if (in.readKeyAsInt() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Long)) =>
+            case ConstantType(Constant(v: Long)) =>
               q"""if (in.readKeyAsLong() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Float)) =>
+            case ConstantType(Constant(v: Float)) =>
               q"""if (in.readKeyAsFloat() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ @ ConstantType(Constant(v: Double)) =>
+            case ConstantType(Constant(v: Double)) =>
               q"""if (in.readKeyAsDouble() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
             case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
           }
@@ -553,15 +553,15 @@ object JsonCodecMaker {
           else q"out.writeNonEscapedAsciiKey($x.name)"
         } else if (isConstType(tpe)) {
           tpe match {
-            case _ @ ConstantType(Constant(_: String)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Boolean)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Byte)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Char)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Short)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Int)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Long)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Float)) => q"out.writeKey($x)"
-            case _ @ ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: String)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Boolean)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Byte)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Char)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Short)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Int)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Long)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Float)) => q"out.writeKey($x)"
+            case ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
             case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
           }
         } else fail(s"Unsupported type to be used as map key '$tpe'.")
@@ -853,13 +853,16 @@ object JsonCodecMaker {
             })
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
-              if (i == 0) q"if (($n & $m) != 0) in.requiredFieldError($names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m)))"
-              else q"if (($n & $m) != 0) in.requiredFieldError($names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5}))"
+              val fieldName =
+                if (i == 0) q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m))"
+                else q"$names(_root_.java.lang.Integer.numberOfTrailingZeros($n & $m) + ${i << 5})"
+              q"if (($n & $m) != 0) in.requiredFieldError($fieldName)"
             }
           }
         val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
-        val readVars = classInfo.fields
-          .map(f => q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe :: types))}")
+        val readVars = classInfo.fields.map { f =>
+          q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe :: types))}"
+        }
         val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
         val length: FieldInfo => Int = _.mappedName.length
         val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
@@ -1176,8 +1179,8 @@ object JsonCodecMaker {
             .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
 
           def genReadLeafClass(subTpe: Type): Tree =
-            if (subTpe != tpe) genReadVal(subTpe :: types, nullValue(subTpe :: types), isStringified, skipDiscriminatorField)
-            else genReadNonAbstractScalaClass(types, default, isStringified, skipDiscriminatorField)
+            if (subTpe == tpe) genReadNonAbstractScalaClass(types, default, isStringified, skipDiscriminatorField)
+            else genReadVal(subTpe :: types, nullValue(subTpe :: types), isStringified, skipDiscriminatorField)
 
           def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
             subTpes.foldRight(discriminatorError) { case (subTpe, acc) =>
