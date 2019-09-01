@@ -972,7 +972,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       assert(intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[Map[_root_.java.util.Date,String]](CodecMakerConfig())"""
       }).getMessage.contains {
-        """Unsupported type to be used as map key 'java.util.Date'."""
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'java.util.Date'."""
       })
     }
     "serialize and deserialize with keys defined as is by fields" in {

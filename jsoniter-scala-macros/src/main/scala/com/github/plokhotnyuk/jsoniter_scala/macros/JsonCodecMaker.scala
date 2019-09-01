@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.lang.Character._
 import java.time._
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 
 import scala.annotation.{StaticAnnotation, tailrec}
 import scala.annotation.meta.field
@@ -453,9 +453,9 @@ object JsonCodecMaker {
               q"""if (in.readKeyAsFloat() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
             case ConstantType(Constant(v: Double)) =>
               q"""if (in.readKeyAsDouble() != $v) in.decodeError(${"expected key: \"" + v + '"'}); $v"""
-            case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
+            case _ => cannotFindKeyCodecError(tpe)
           }
-        } else fail(s"Unsupported type to be used as map key '$tpe'.")
+        } else cannotFindKeyCodecError(tpe)
       }
 
       def genReadArray(newBuilder: Tree, readVal: Tree, result: Tree = q"x"): Tree =
@@ -562,9 +562,9 @@ object JsonCodecMaker {
             case ConstantType(Constant(_: Long)) => q"out.writeKey($x)"
             case ConstantType(Constant(_: Float)) => q"out.writeKey($x)"
             case ConstantType(Constant(_: Double)) => q"out.writeKey($x)"
-            case _ => fail(s"Unsupported type to be used as map key '$tpe'.")
+            case _ => cannotFindKeyCodecError(tpe)
           }
-        } else fail(s"Unsupported type to be used as map key '$tpe'.")
+        } else cannotFindKeyCodecError(tpe)
       }
 
       def genWriteConstantKey(name: String): Tree =
@@ -600,7 +600,10 @@ object JsonCodecMaker {
             }
             out.writeArrayEnd()"""
 
-      def cannotFindCodecError(tpe: Type): Nothing =
+      def cannotFindKeyCodecError(tpe: Type): Nothing =
+        fail(s"No implicit '${typeOf[JsonKeyCodec[_]]}' defined for '$tpe'.")
+
+      def cannotFindValueCodecError(tpe: Type): Nothing =
         fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
@@ -816,7 +819,7 @@ object JsonCodecMaker {
             case ConstantType(Constant(v: Long)) => q"$v"
             case ConstantType(Constant(v: Float)) => q"$v"
             case ConstantType(Constant(v: Double)) => q"$v"
-            case _ => cannotFindCodecError(tpe)
+            case _ => cannotFindValueCodecError(tpe)
           }
         } else q"null.asInstanceOf[$tpe]"
       }
@@ -938,7 +941,7 @@ object JsonCodecMaker {
         case ConstantType(Constant(v: Double)) =>
           if (isStringified) q"""if (in.readStringAsDouble() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
           else q"""if (in.readDouble() != $v) in.decodeError(${"expected value: " + v}); $v"""
-        case _ => cannotFindCodecError(tpe)
+        case _ => cannotFindValueCodecError(tpe)
       }
 
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
@@ -1247,7 +1250,7 @@ object JsonCodecMaker {
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
           genReadNonAbstractScalaClass(types, default, isStringified, discriminator)
         } else if (isConstType(tpe)) genReadConstType(tpe, isStringified)
-        else cannotFindCodecError(tpe)
+        else cannotFindValueCodecError(tpe)
       }
 
       def genWriteNonAbstractScalaClass(types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
@@ -1343,7 +1346,7 @@ object JsonCodecMaker {
         case ConstantType(Constant(_: Double)) =>
           if (isStringified) q"out.writeValAsString($m)"
           else q"out.writeVal($m)"
-        case _ => cannotFindCodecError(tpe)
+        case _ => cannotFindValueCodecError(tpe)
       }
 
       def genWriteVal(m: Tree, types: List[Type], isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
@@ -1474,7 +1477,7 @@ object JsonCodecMaker {
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
           genWriteNonAbstractScalaClass(types, isStringified, discriminator)
         } else if (isConstType(tpe)) getWriteConstType(tpe, m, isStringified)
-        else cannotFindCodecError(tpe)
+        else cannotFindValueCodecError(tpe)
       }
 
       val codec =
