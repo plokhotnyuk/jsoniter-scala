@@ -890,6 +890,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"1":{"V":"true"},"2":{}}""")
     }
     "serialize and deserialize top-level maps as arrays" in {
+      verifySerDeser(make[_root_.scala.collection.Map[Int, _root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
+        _root_.scala.collection.Map(1 -> true), """[[1,true]]""")
       verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, _root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
         _root_.scala.collection.mutable.LinkedHashMap(1 -> true), """[[1,true]]""")
       verifySerDeser(make[_root_.scala.collection.mutable.LongMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true)),
@@ -900,6 +902,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         _root_.scala.collection.immutable.IntMap(1 -> true), """[[1,true]]""")
     }
     "serialize and deserialize stringified top-level maps as arrays" in {
+      verifySerDeser(make[_root_.scala.collection.Map[Int, _root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
+        _root_.scala.collection.Map(1 -> true), """[["1","true"]]""")
       verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, _root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),
         _root_.scala.collection.mutable.LinkedHashMap(1 -> true), """[["1","true"]]""")
       verifySerDeser(make[_root_.scala.collection.mutable.LongMap[_root_.scala.Boolean]](CodecMakerConfig(mapAsArray = true, isStringified = true)),

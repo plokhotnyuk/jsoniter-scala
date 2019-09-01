@@ -1061,7 +1061,7 @@ object JsonCodecMaker {
             genReadMapAsArray(newBuilder,
               if (tpe <:< typeOf[Map[_, _]]) {
                 q"x = x.updated($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
-              } else q"x = x + (($readVal1, $readVal2))")
+              } else q"x = x + (($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))")
           } else {
             val readKey = genReadKey(tpe1 :: types)
             genReadMap(newBuilder,
