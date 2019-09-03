@@ -1284,7 +1284,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfCyclic = make[Cyclic](CodecMakerConfig(allowRecursiveTypes = true))
       val cyclic = Cyclic(_root_.scala.None)
       cyclic.opt = Some(cyclic)
-      val len = 100000
+      val len = 10000000
       val cfg = WriterConfig()
       intercept[StackOverflowError](verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
       intercept[StackOverflowError](verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
