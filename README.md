@@ -9,7 +9,7 @@
 Scala macros that generate codecs for case classes, standard types and collections
 to get maximum performance of JSON parsing and serialization.
 
-[Latest results of benchmarks](http://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
+[Latest results of benchmarks](https://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
 performance of Jsoniter Scala with [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe),
 [Play-JSON](https://github.com/playframework/play-json), [Spray-JSON](https://github.com/spray/spray-json),
 [Jackson](https://github.com/FasterXML/jackson-module-scala), [uPickle](https://github.com/lihaoyi/upickle),
@@ -175,7 +175,7 @@ val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model =
 ```
 
 If you don't know how make your data structures from scratch but have a JSON sample then use on-line services
-[1](http://json2caseclass.cleverapps.io/) [2](https://transform.now.sh/json-to-scala-case-class/) to generate an initial
+[1](https://json2caseclass.cleverapps.io/) [2](https://transform.now.sh/json-to-scala-case-class/) to generate an initial
 version of them.
 
 To see generated code for codecs add the following line to your sbt build file
@@ -283,10 +283,10 @@ echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governo
 ```
 
 Sbt plugin for JMH tool is used for benchmarking, to see all their features and options please check
-[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](http://openjdk.java.net/projects/code-tools/jmh/
+[Sbt-JMH docs](https://github.com/ktoso/sbt-jmh) and [JMH tool docs](https://openjdk.java.net/projects/code-tools/jmh/
 
-Learn how to write benchmarks in [JMH samples](http://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/)
- and JMH articles posted in [Aleksey Shipilёv’s](https://shipilev.net/) and [Nitsan Wakart’s](http://psy-lob-saw.blogspot.com/p/jmh-related-posts.html)
+Learn how to write benchmarks in [JMH samples](https://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/)
+ and JMH articles posted in [Aleksey Shipilёv’s](https://shipilev.net/) and [Nitsan Wakart’s](https://psy-lob-saw.blogspot.com/p/jmh-related-posts.html)
  blogs.
 
 List of available option can be printed by:
@@ -326,9 +326,9 @@ To see throughput with allocation rate of generated codecs run benchmarks with G
 sbt clean 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
 ```
 
-Results that are stored in JSON can be easy plotted in [JMH Visualizer](http://jmh.morethan.io/) by drugging & dropping
+Results that are stored in JSON can be easy plotted in [JMH Visualizer](https://jmh.morethan.io/) by drugging & dropping
 of your file to the drop zone or using the `source` parameter with an HTTP link to your file in the URL like
-[here](http://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/oraclejdk11.json).
+[here](https://jmh.morethan.io/?source=https://plokhotnyuk.github.io/jsoniter-scala/oraclejdk11.json).
 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
@@ -388,7 +388,7 @@ Perf events:
 ```
 
 Following command can be used to profile and print assembly code of hottest methods, but it requires [a setup of an 
-additional library to make PrintAssembly feature enabled](http://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
+additional library to make PrintAssembly feature enabled](https://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
 sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
@@ -421,7 +421,7 @@ sbt clean +publishM2
 
 ### Release
 
-For version numbering use [Recommended Versioning Scheme](http://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
+For version numbering use [Recommended Versioning Scheme](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
 Double check binary and source compatibility, including behavior, and release using the following command (credentials 
@@ -432,7 +432,7 @@ sbt release
 ```
 
 Do not push changes to github until promoted artifacts for the new version are not available for download on
-[Maven Central Repository](http://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
+[Maven Central Repository](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds.
 
 Last step is updating of the tag info in a [release list](https://github.com/plokhotnyuk/jsoniter-scala/releases).
