@@ -15,7 +15,7 @@ abstract class ArrayOfCharsBenchmark extends CommonParams {
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map(i => (((i * 1498724053) % 10) + 48).toChar).toArray
-    jsonString = "[" + obj.map(x => "\"" + x + "\"").reduce(_ + "," + _) + "]"
+    jsonString = obj.map(_.toString).mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
