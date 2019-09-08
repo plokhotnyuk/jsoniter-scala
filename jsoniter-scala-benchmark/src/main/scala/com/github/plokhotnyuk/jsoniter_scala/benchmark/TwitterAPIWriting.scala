@@ -22,7 +22,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 */
-/* FIXME: circe serializes empty collections
+/* FIXME: Circe serializes empty collections
   @Benchmark
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
 */
