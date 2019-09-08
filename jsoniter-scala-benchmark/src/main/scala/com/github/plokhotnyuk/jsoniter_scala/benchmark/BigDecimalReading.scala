@@ -14,6 +14,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
+//import play.api.libs.json.Json
 import spray.json._
 
 class BigDecimalReading extends BigDecimalBenchmark {
@@ -36,7 +37,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
   def jsoniterScala(): BigDecimal = readFromArray[BigDecimal](jsonBytes)(bigDecimalCodec)
 /* FIXME: Play-JSON: don't know how to tune precision for parsing of BigDecimal values
   @Benchmark
-  def readPlayJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
+  def playJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
 */
   @Benchmark
   def scalikeJackson(): BigDecimal = {

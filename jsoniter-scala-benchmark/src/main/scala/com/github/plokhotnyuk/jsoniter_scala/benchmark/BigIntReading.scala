@@ -36,7 +36,7 @@ class BigIntReading extends BigIntBenchmark {
   def jsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes)(bigIntCodec)
 /* FIXME: Play-JSON looses significant digits in BigInt values
   @Benchmark
-  def readPlayJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
+  def playJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
 */
   @Benchmark
   def scalikeJackson(): BigInt = {
