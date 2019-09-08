@@ -6,10 +6,10 @@
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://img.shields.io/badge/maven--central-0.55.2-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
 
-Scala macros that generate codecs for case classes, standard types and collections
-to get maximum performance of JSON parsing and serialization.
+Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
+parsing and serialization.
 
-[Latest results of benchmarks](https://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
+[**Latest results of benchmarks**](https://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
 performance of Jsoniter Scala with [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe),
 [Play-JSON](https://github.com/playframework/play-json), [Spray-JSON](https://github.com/spray/spray-json),
 [Jackson](https://github.com/FasterXML/jackson-module-scala), [uPickle](https://github.com/lihaoyi/upickle),
@@ -24,7 +24,7 @@ OpenJDK 13 + Graal, and GraalVM CE/EE
 This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and
 generated codecs for them but then evolved to have own core of mechanics for parsing and serialization.
 
-Idea to generate codecs by Scala macros and main details was borrowed from
+The idea to generate codecs by Scala macros and main details was borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of the JSON domain.
   
 Other Scala macros features were peeped in
@@ -42,9 +42,9 @@ placeholder characters
 crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
 copying
 4. **Productivity**: derive codecs recursively for complex types using one line macro, do it in _compile-time_ to 
-minimize probability of run-time issues, optionally print generated sources as compiler output to be inspected for 
-proving of safety and correctness or to be reused as a starting point for the implementation of custom codecs,
-prohibit serializing of `null` Scala values and parsing immediately to them in generated codecs
+minimize the probability of run-time issues, optionally print generated sources as compiler output to be inspected for 
+proving safety and correctness or to be reused as a starting point for the implementation of custom codecs, prohibit 
+serializing of `null` Scala values and parsing immediately to them in generated codecs
 5. **Ergonomics**: have preconfigured defaults for the safest and common usage that can be easily altered by compile- 
 and run-time configuration instances, combined with compile-time annotations and implicits, embrace the textual 
 representation of JSON providing a pretty printing option, provide a hex dump in the parse error message to speed up the
@@ -75,10 +75,10 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at
   the scope of the `make` macro call
 - Parsing of escaped characters is not supported for strings which are mapped to numeric and `java.time.*` types
-- Support of first-order and higher-kinded types
-- Support of 2 representations of ADTs with a sealed trait or a Scala class as base type and non-abstract Scala classes
-  or objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one uses string
-  values for objects and a wrapper JSON object with a discriminator key for case class instances
+- Support of first-order and higher-kind types
+- Support of 2 representations of ADTs with a sealed trait or a Scala class as a base type and non-abstract Scala 
+  classes or objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one 
+  uses string values for objects and a wrapper JSON object with a discriminator key for case class instances
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already
   supported classes
@@ -107,7 +107,7 @@ Support of Scala.js and Scala Native is not a goal for the moment.
 - Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
 - Releases for different Scala versions: 2.11, 2.12, 2.13
-- Support of shading to another package for locking on particular released version
+- Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible 
 - Support of compilation to a native image by GraalVM
   
@@ -116,27 +116,27 @@ There are configurable options that can be set in compile-time:
 - Skipping of unexpected fields or throwing of parse exceptions
 - Skipping of serialization of fields that have empty collection values can be turned off to force serialization of them
 - Skipping of serialization of fields that have empty optional values can be turned off to force serialization of them
-- Skipping of serialization of fields which values are matched with defaults which is defined in the primary constructor
+- Skipping of serialization of fields which values are matched with defaults that are defined in the primary constructor
   can be turned off to force serialization of that values
-- Mapping function for names between classes and JSON, including predefined functions which enforce snake_case,
-  kebab-case or camelCase names for all fields
+- Mapping function for property names between classes and JSON, including predefined functions which enforce snake_case,
+  kebab-case, camelCase or PascalCase names for all fields in the generated codec
 - An optional name of the discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
-- Ability to set precision, scale limit, and max number of significant digits when parsing `BigDecimal` values
-- Ability to set max number of significant digits when parsing `BigInt` values
+- Ability to set precision, scale limit, and the max number of significant digits when parsing `BigDecimal` values
+- Ability to set the max number of significant digits when parsing `BigInt` values
 - Ability to set max allowed value when parsing bit sets
-- Ability to set limit for number of inserts when parsing sets or maps
+- Ability to set a limit for the number of inserts when parsing sets or maps
 - Throwing of compilation error for recursive data structures can be turned off
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
 - Indenting of output and its step
-- Throwing of stack-less parsing exceptions by default to greatly reduce impact on performance, while stack traces can
-  be turned on in development for debugging
+- Throwing of stack-less parsing exceptions by default to greatly reduce the impact on performance, while stack traces
+  can be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
-- A preferred size of internal in buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
-- A preferred size of internal out buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
-- A preferred size of char buffers when parsing string values
+- Preferred size of internal in buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
+- Preferred size of internal out buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
+- Preferred size of char buffers when parsing string values
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
 and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
@@ -174,7 +174,7 @@ val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
-If you don't know how make your data structures from scratch but have a JSON sample then use on-line services
+If you don't know-how to make your data structures from scratch but have a JSON sample then use on-line services
 [1](https://json2caseclass.cleverapps.io/) [2](https://transform.now.sh/json-to-scala-case-class/) to generate an initial
 version of them.
 
@@ -204,15 +204,15 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 
 ## Known issues
 
-1. Scalac has a bug that affects case classes which have 2 fields where name of one is a prefix for the another name that
-contains a character which should be encoded immediately after the prefix (like `o` and `o-o`). You will got compilation
-or runtime error, depending on the version of the compiler, see details here: https://github.com/scala/bug/issues/11212
+1. Scalac has a bug that affects case classes which have 2 fields where the name of one is a prefix for another name
+that contains a character which should be encoded immediately after the prefix (like `o` and `o-o`). You will get 
+compilation or runtime error, depending on the version of the compiler, see details [here](https://github.com/scala/bug/issues/11212).
 
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
 affected by the exception (after the `o` field)
 
-2. A configuration parameter for the `make` macro is evaluated in compile time only that require no dependency on other
-code that uses result of the macro's call. In that case the following compilation error will be reported:
+2. A configuration parameter for the `make` macro is evaluated in compile-time only that require no dependency on other
+code that uses a result of the macro's call. In that case the following compilation error will be reported:
 
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
@@ -221,7 +221,7 @@ code that uses result of the macro's call. In that case the following compilatio
 ```
 
 But sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for configuration
-that has not clear dependencies on other code. For that cases workarounds can be simpler than recommended usage of
+that has not clear dependencies on other code. For those cases workarounds can be simpler than recommended usage of
 separated submodule:
 - isolate the `make` macro call(s) in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
@@ -243,8 +243,8 @@ java.lang.StackOverflowError
 ```
 
 Workarounds are:
-- don't enclose ADTs with object into outer classes
-- use outer object (not a class) instead 
+- don't enclose ADTs with an object into outer classes
+- use the outer object (not a class) instead 
 
 ## How to develop
 
@@ -424,7 +424,7 @@ sbt clean +publishM2
 For version numbering use [Recommended Versioning Scheme](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html#recommended-versioning-scheme)
 that is used in the Scala ecosystem.
 
-Double check binary and source compatibility, including behavior, and release using the following command (credentials 
+Double-check binary and source compatibility, including behavior, and release using the following command (credentials 
 are required):
 
 ```sh
@@ -435,4 +435,4 @@ Do not push changes to github until promoted artifacts for the new version are n
 [Maven Central Repository](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds.
 
-Last step is updating of the tag info in a [release list](https://github.com/plokhotnyuk/jsoniter-scala/releases).
+The last step is updating of the tag info in a [release list](https://github.com/plokhotnyuk/jsoniter-scala/releases).
