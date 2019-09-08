@@ -32,7 +32,7 @@ class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-/* FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
+/* FIXME: Jsoniter Java serializes values rounded to 6 digits because PreciseFloatSupport.enable() doesn't work sometime
   @Benchmark
   def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 */
