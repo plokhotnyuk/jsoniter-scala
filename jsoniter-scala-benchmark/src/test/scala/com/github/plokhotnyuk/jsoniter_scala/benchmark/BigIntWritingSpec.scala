@@ -14,7 +14,7 @@ class BigIntWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      //FIXME: Play-json uses BigDecimal with engineering decimal representation to serialize numbers
+      //FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(benchmark.playJson()) shouldBe benchmark.jsonString
       toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString

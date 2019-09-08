@@ -26,7 +26,7 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
 */
   @Benchmark
   def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-/* FIXME:dsl-json serializes a byte array to the base64 string
+/* FIXME: DSL-JSON serializes a byte array to the base64 string
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */

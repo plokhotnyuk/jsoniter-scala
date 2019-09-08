@@ -25,7 +25,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
 */
   @Benchmark
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/*FIXME:dsl-json expects a base64 string for the byte array
+/*FIXME: DSL-JSON expects a base64 string for the byte array
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonDecode[Array[Byte]](jsonBytes)
 */

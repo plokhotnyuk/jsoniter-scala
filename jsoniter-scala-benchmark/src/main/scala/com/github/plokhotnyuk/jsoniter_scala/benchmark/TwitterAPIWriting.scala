@@ -42,7 +42,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
-/* FIXME: ScalikeJSON serializes empty collections
+/* FIXME: ScalikeJackson serializes empty collections
   @Benchmark
   def scalikeJackson(): Array[Byte] = {
     import reug.scalikejackson.ScalaJacksonImpl._
