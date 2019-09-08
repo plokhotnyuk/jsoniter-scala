@@ -13,7 +13,7 @@ import scala.collection.immutable.IndexedSeq
 import scala.reflect.io.Streamable
 
 object GeoJSON {
-  //FIXME: the GeoJSON spec require to avoid ability to create nested Geometry or Feature collections, also it can be a security issue for untrusted input
+  //FIXME: the GeoJSON spec (RFC-2119) recommends to avoid ability to create nested Geometry or Feature collections, also it can be a security issue for untrusted input
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(Array(
