@@ -24,7 +24,7 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 */
 /* FIXME: Circe serializes empty collections
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 */
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark

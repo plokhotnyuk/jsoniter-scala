@@ -21,7 +21,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, JsonOptions.Pretty).getBytes(UTF_8)
 
   @Benchmark
-  def circe(): Array[Byte] = prettyPrinter.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = prettyPrinter.print(obj.asJson).getBytes(UTF_8)
 /* FIXME: DSL-JSON doesn't support pretty printing
   @Benchmark
   def prettyPrintDslJsonScala(): Array[Byte] = dslJsonEncode(obj)

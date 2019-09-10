@@ -19,7 +19,7 @@ class IntMapOfBooleansWriting extends IntMapOfBooleansBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe doesn't support IntMap
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 */
 /* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
   @Benchmark

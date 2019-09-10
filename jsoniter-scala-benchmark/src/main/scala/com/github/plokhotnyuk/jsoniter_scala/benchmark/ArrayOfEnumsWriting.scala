@@ -26,7 +26,7 @@ class ArrayOfEnumsWriting extends ArrayOfEnumsBenchmark {
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

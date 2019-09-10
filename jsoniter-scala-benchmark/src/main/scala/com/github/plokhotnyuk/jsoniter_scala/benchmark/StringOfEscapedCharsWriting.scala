@@ -17,7 +17,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, JsonOptions(asciiOutput = true)).getBytes(UTF_8)
 
   @Benchmark
-  def circe(): Array[Byte] = escapingPrinter.pretty(obj.asJson).getBytes
+  def circe(): Array[Byte] = escapingPrinter.print(obj.asJson).getBytes
 /* FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)(stringEncoder)

@@ -25,7 +25,7 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 */
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 /* FIXME: DSL-JSON serializes a byte array to the base64 string
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

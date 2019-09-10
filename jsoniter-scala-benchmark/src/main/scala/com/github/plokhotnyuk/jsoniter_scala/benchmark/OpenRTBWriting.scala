@@ -23,7 +23,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 /* FIXME: Circe serializes fields with default values
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 */
 /* FIXME: Jackson serializes fields with default values
   @Benchmark

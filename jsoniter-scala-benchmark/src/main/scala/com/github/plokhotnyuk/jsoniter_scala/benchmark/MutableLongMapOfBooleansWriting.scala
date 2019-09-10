@@ -20,7 +20,7 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Circe doesn't support mutable.LongMap
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 */
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
   @Benchmark

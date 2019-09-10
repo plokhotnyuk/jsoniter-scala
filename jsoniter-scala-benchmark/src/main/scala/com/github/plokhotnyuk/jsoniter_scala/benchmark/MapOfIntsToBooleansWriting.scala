@@ -22,7 +22,7 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
