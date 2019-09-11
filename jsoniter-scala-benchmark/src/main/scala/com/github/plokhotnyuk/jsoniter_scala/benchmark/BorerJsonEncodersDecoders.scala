@@ -42,18 +42,18 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
     deriveCodec[ExtractFields]
   implicit val Codec(geoJsonEnc: Encoder[GeoJSON.GeoJSON], geoJsonDec: Decoder[GeoJSON.GeoJSON]) = {
-    implicit lazy val c1: Codec[GeoJSON.Geometry] = {
-      implicit val c11: Codec[GeoJSON.Point] = deriveCodec
-      implicit val c12: Codec[GeoJSON.MultiPoint] = deriveCodec
-      implicit val c13: Codec[GeoJSON.LineString] = deriveCodec
-      implicit val c14: Codec[GeoJSON.MultiLineString] = deriveCodec
-      implicit val c15: Codec[GeoJSON.Polygon] = deriveCodec
-      implicit val c16: Codec[GeoJSON.MultiPolygon] = deriveCodec
-      implicit val c17: Codec[GeoJSON.GeometryCollection] = deriveCodec
-      deriveCodec[GeoJSON.Geometry]
-    }
-    implicit val c2: Codec[GeoJSON.Feature] = deriveCodec
-    implicit val c3: Codec[GeoJSON.FeatureCollection] = deriveCodec
+    implicit val c1: Codec[GeoJSON.Point] = deriveCodec
+    implicit val c2: Codec[GeoJSON.MultiPoint] = deriveCodec
+    implicit val c3: Codec[GeoJSON.LineString] = deriveCodec
+    implicit val c4: Codec[GeoJSON.MultiLineString] = deriveCodec
+    implicit val c5: Codec[GeoJSON.Polygon] = deriveCodec
+    implicit val c6: Codec[GeoJSON.MultiPolygon] = deriveCodec
+    implicit val c7: Codec[GeoJSON.SimpleGeometry] = deriveCodec
+    implicit val c8: Codec[GeoJSON.GeometryCollection] = deriveCodec
+    implicit val c9: Codec[GeoJSON.Geometry] = deriveCodec
+    implicit val c10: Codec[GeoJSON.Feature] = deriveCodec
+    implicit val c11: Codec[GeoJSON.SimpleGeoJSON] = deriveCodec
+    implicit val c12: Codec[GeoJSON.FeatureCollection] = deriveCodec
     deriveCodec[GeoJSON.GeoJSON]
   }
   implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix],

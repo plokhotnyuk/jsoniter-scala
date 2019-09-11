@@ -13,7 +13,6 @@ import scala.collection.immutable.IndexedSeq
 import scala.reflect.io.Streamable
 
 object GeoJSON {
-  //FIXME: the GeoJSON spec (RFC-2119) recommends to avoid nested Geometry or Feature collections, also it can be a security issue for untrusted input
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(Array(
@@ -25,13 +24,14 @@ object GeoJSON {
     new Type(value = classOf[MultiPolygon], name = "MultiPolygon"),
     new Type(value = classOf[GeometryCollection], name = "GeometryCollection")))
   sealed trait Geometry extends Product with Serializable
-  case class Point(coordinates: (Double, Double)) extends Geometry
-  case class MultiPoint(coordinates: IndexedSeq[(Double, Double)]) extends Geometry
-  case class LineString(coordinates: IndexedSeq[(Double, Double)]) extends Geometry
-  case class MultiLineString(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends Geometry
-  case class Polygon(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends Geometry
-  case class MultiPolygon(coordinates: IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]) extends Geometry
-  case class GeometryCollection(geometries: IndexedSeq[Geometry]) extends Geometry
+  sealed trait SimpleGeometry extends Geometry
+  case class Point(coordinates: (Double, Double)) extends SimpleGeometry
+  case class MultiPoint(coordinates: IndexedSeq[(Double, Double)]) extends SimpleGeometry
+  case class LineString(coordinates: IndexedSeq[(Double, Double)]) extends SimpleGeometry
+  case class MultiLineString(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends SimpleGeometry
+  case class Polygon(coordinates: IndexedSeq[IndexedSeq[(Double, Double)]]) extends SimpleGeometry
+  case class MultiPolygon(coordinates: IndexedSeq[IndexedSeq[IndexedSeq[(Double, Double)]]]) extends SimpleGeometry
+  case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
 
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -39,12 +39,13 @@ object GeoJSON {
     new Type(value = classOf[Feature], name = "Feature"),
     new Type(value = classOf[FeatureCollection], name = "FeatureCollection")))
   sealed trait GeoJSON extends Product with Serializable
+  sealed trait SimpleGeoJSON extends GeoJSON
   case class Feature(
     @transientDefault properties: Map[String, String] = Map.empty,
     geometry: Geometry,
-    @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
+    @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends SimpleGeoJSON
   case class FeatureCollection(
-    features: IndexedSeq[GeoJSON],
+    features: IndexedSeq[SimpleGeoJSON],
     @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
 
   //Borders of Switzerland, from: https://github.com/mledoze/countries/blob/master/data/che.geo.json

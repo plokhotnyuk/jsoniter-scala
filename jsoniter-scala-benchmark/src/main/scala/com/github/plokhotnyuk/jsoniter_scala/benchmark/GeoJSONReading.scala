@@ -21,7 +21,7 @@ import spray.json._
 class GeoJSONReading extends GeoJSONBenchmark {
   @Benchmark
   def avSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes, UTF_8))
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Map for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON.GeoJSON` but got Start of unbounded Map (input position 41)
+/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Map for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON.SimpleGeoJSON` but got Start of unbounded Map (input position 41)
   @Benchmark
   def borerJson(): GeoJSON = io.bullet.borer.Json.decode(jsonBytes).to[GeoJSON].value
 */

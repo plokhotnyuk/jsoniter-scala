@@ -94,12 +94,14 @@ object PlayJsonFormats {
     implicit lazy val v4: OFormat[GeoJSON.MultiLineString] = Json.format
     implicit lazy val v5: OFormat[GeoJSON.Polygon] = Json.format
     implicit lazy val v6: OFormat[GeoJSON.MultiPolygon] = Json.format
-    implicit lazy val v7: OFormat[GeoJSON.GeometryCollection] = Json.format
-    implicit lazy val v8: OFormat[GeoJSON.Geometry] = flat.oformat((__ \ "type").format[String])
-    implicit lazy val v9: OFormat[GeoJSON.Feature] = Json.format
-    implicit lazy val v10: OFormat[GeoJSON.FeatureCollection] = Json.format
-    implicit lazy val v11: OFormat[GeoJSON.GeoJSON] = flat.oformat((__ \ "type").format[String])
-    v11
+    implicit lazy val v7: OFormat[GeoJSON.SimpleGeometry] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v8: OFormat[GeoJSON.GeometryCollection] = Json.format
+    implicit lazy val v9: OFormat[GeoJSON.Geometry] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v10: OFormat[GeoJSON.Feature] = Json.format
+    implicit lazy val v11: OFormat[GeoJSON.SimpleGeoJSON] = flat.oformat((__ \ "type").format[String])
+    implicit lazy val v12: OFormat[GeoJSON.FeatureCollection] = Json.format
+    implicit lazy val v13: OFormat[GeoJSON.GeoJSON] = flat.oformat((__ \ "type").format[String])
+    v13
   }
   implicit val googleMapsAPIFormat: OFormat[GoogleMapsAPI.DistanceMatrix] = {
     implicit val v1: OFormat[GoogleMapsAPI.Value] = Json.format

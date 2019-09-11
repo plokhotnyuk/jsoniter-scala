@@ -6,7 +6,7 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
   "GeoJSONReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Map for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON.GeoJSON` but got Start of unbounded Map (input position 41)
+      //FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Map for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.GeoJSON.SimpleGeoJSON` but got Start of unbounded Map (input position 41)
       //benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj

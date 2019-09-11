@@ -40,8 +40,12 @@ object CirceEncodersDecoders {
   }
   implicit val (extractFieldsD5r: Decoder[ExtractFields], extractFieldsE5r: Encoder[ExtractFields]) =
     (deriveConfiguredDecoder[ExtractFields], deriveConfiguredEncoder[ExtractFields])
+  implicit val (simpleGeometryD5r: Decoder[GeoJSON.SimpleGeometry], simpleGeometryE5r: Encoder[GeoJSON.SimpleGeometry]) =
+    (deriveConfiguredDecoder[GeoJSON.SimpleGeometry], deriveConfiguredEncoder[GeoJSON.SimpleGeometry])
   implicit val (geometryD5r: Decoder[GeoJSON.Geometry], geometryE5r: Encoder[GeoJSON.Geometry]) =
     (deriveConfiguredDecoder[GeoJSON.Geometry], deriveConfiguredEncoder[GeoJSON.Geometry])
+  implicit val (simpleGeoJSOND5r: Decoder[GeoJSON.SimpleGeoJSON], simpleGeoJSONE5r: Encoder[GeoJSON.SimpleGeoJSON]) =
+    (deriveConfiguredDecoder[GeoJSON.SimpleGeoJSON], deriveConfiguredEncoder[GeoJSON.SimpleGeoJSON])
   implicit val (geoJSOND5r: Decoder[GeoJSON.GeoJSON], geoJSONE5r: Encoder[GeoJSON.GeoJSON]) =
     (deriveConfiguredDecoder[GeoJSON.GeoJSON], deriveConfiguredEncoder[GeoJSON.GeoJSON])
   implicit val (missingRequiredFieldsD5r: Decoder[MissingRequiredFields], missingRequiredFieldsE5r: Encoder[MissingRequiredFields]) =

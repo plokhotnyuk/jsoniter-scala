@@ -29,9 +29,14 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
+  implicit val simpleGeometryReadWriter: ReadWriter[GeoJSON.SimpleGeometry] =
+    ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
   implicit val geometryReadWriter: ReadWriter[GeoJSON.Geometry] =
     ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
       macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon], macroRW[GeoJSON.GeometryCollection])
+  implicit val simpleGeoJsonReadWriter: ReadWriter[GeoJSON.SimpleGeoJSON] =
+    ReadWriter.merge(macroRW[GeoJSON.Feature])
   implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
     ReadWriter.merge(macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
   implicit val googleMApsAPIReadWriter: ReadWriter[GoogleMapsAPI.DistanceMatrix] = {
