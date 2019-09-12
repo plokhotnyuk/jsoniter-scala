@@ -379,23 +379,27 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Map[Level, Int]](CodecMakerConfig()), Map(Level.HIGH -> 0), """{"HIGH":0}""")
     }
     "serialize and deserialize outer types using custom value codecs for primitive types" in {
-      implicit val customCodecOfInt: JsonValueCodec[Int] = new JsonValueCodec[Int] {
-        val nullValue: Int = 0
+      implicit val customCodecOfLong: JsonValueCodec[Long] = new JsonValueCodec[Long] {
+        val nullValue: Long = 0
 
-        def decodeValue(in: JsonReader, default: Int): Int =
+        def decodeValue(in: JsonReader, default: Long): Long =
           if (in.isNextToken('"')) {
             in.rollbackToken()
-            in.readStringAsInt() // or in.readString().toInt - less efficient and safe but more universal because can accepts escaped characters
+            in.readStringAsLong() // or in.readString().toLong is less efficient and less safe but more universal because can accepts escaped characters
           } else {
             in.rollbackToken()
-            in.readInt()
+            in.readLong()
           }
 
-        def encodeValue(x: Int, out: JsonWriter): _root_.scala.Unit = out.writeVal(x)
+        def encodeValue(x: Long, out: JsonWriter): _root_.scala.Unit =
+          if (x > 9007199254740992L || x < -9007199254740992L) out.writeValAsString(x)
+          else out.writeVal(x)
       }
-      val codecOfIntList = make[List[Int]](CodecMakerConfig())
-      verifyDeser(codecOfIntList, List(1, 2, 3), "[1,\"2\",3]")
-      verifySer(codecOfIntList, List(1, 2, 3), "[1,2,3]")
+      val codecOfLongList = make[List[Long]](CodecMakerConfig())
+      verifyDeser(codecOfLongList, List(1L, 9007199254740992L, 9007199254740993L),
+        "[\"1\",9007199254740992,\"9007199254740993\"]")
+      verifySer(codecOfLongList, List(1L, 9007199254740992L, 9007199254740993L),
+        "[1,9007199254740992,\"9007199254740993\"]")
       implicit val customCodecOfBoolean: JsonValueCodec[_root_.scala.Boolean] = new JsonValueCodec[_root_.scala.Boolean] {
         val nullValue: _root_.scala.Boolean = false
 
