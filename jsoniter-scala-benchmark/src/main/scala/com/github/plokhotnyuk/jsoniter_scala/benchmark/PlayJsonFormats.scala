@@ -66,17 +66,17 @@ object PlayJsonFormats {
     Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: don't do this for open-systems */)))),
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
-    Reads[IntMap[Boolean]](js => JsSuccess(IntMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
-    OWrites[IntMap[Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
+    Reads[IntMap[Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1.toInt, p._2)))),
+    OWrites[IntMap[Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
   val mapOfIntsToBooleansFormat: OFormat[Map[Int, Boolean]] = OFormat(
     Reads[Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toInt, e._2)))),
-    OWrites[Map[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
+    OWrites[Map[Int, Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
   implicit val mutableLongMapOfBooleansFormat: OFormat[mutable.LongMap[Boolean]] = OFormat(
-    Reads[mutable.LongMap[Boolean]](js => JsSuccess(mutable.LongMap(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toLong, e._2)):_*))),
-    OWrites[mutable.LongMap[Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
+    Reads[mutable.LongMap[Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].foldLeft(new mutable.LongMap[Boolean])((m, p) => m += (p._1.toLong, p._2)))),
+    OWrites[mutable.LongMap[Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
   val mutableMapOfIntsToBooleansFormat: OFormat[mutable.Map[Int, Boolean]] = OFormat(
-    Reads[mutable.Map[Int, Boolean]](js => JsSuccess(mutable.Map(js.as[Map[String, Boolean]].toSeq.map(e => (e._1.toInt, e._2)):_*))),
-    OWrites[mutable.Map[Int, Boolean]](m => Json.toJsObject(mutable.LinkedHashMap[String, Boolean](m.toSeq.map(e => (e._1.toString, e._2)):_*))))
+    Reads[mutable.Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].foldLeft(mutable.Map.empty[Int, Boolean])((m, p) => m += ((p._1.toInt, p._2))))),
+    OWrites[mutable.Map[Int, Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
   implicit val primitivesFormat: OFormat[Primitives] = Json.format
   implicit val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {
