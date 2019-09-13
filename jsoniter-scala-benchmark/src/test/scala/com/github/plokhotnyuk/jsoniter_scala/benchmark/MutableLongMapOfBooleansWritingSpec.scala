@@ -8,8 +8,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
   "MutableLongMapOfBooleansWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      //FIXME: Circe doesn't support mutable.LongMap
-      //toString(benchmark.circe()) shouldBe benchmark.jsonString
+      toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: DSL-JSON doesn't support mutable.LongMap
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString

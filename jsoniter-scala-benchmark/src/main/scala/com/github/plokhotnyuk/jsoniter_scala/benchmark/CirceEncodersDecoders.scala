@@ -8,6 +8,8 @@ import io.circe.generic.extras.decoding.UnwrappedDecoder
 import io.circe.generic.extras.encoding.UnwrappedEncoder
 import io.circe.generic.extras.semiauto._
 
+import scala.collection.immutable.IntMap
+import scala.collection.mutable
 import scala.util.Try
 
 object CirceEncodersDecoders {
@@ -48,6 +50,12 @@ object CirceEncodersDecoders {
     (deriveConfiguredDecoder[GeoJSON.SimpleGeoJSON], deriveConfiguredEncoder[GeoJSON.SimpleGeoJSON])
   implicit val (geoJSOND5r: Decoder[GeoJSON.GeoJSON], geoJSONE5r: Encoder[GeoJSON.GeoJSON]) =
     (deriveConfiguredDecoder[GeoJSON.GeoJSON], deriveConfiguredEncoder[GeoJSON.GeoJSON])
+  implicit val (intMapD5r: Decoder[IntMap[Boolean]], intMapE5r: Encoder[IntMap[Boolean]]) =
+    (Decoder.decodeMap[Int, Boolean].map(_.foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1, p._2))),
+      Encoder.encodeMap[Int, Boolean].contramapObject((m: IntMap[Boolean]) => m))
+  implicit val (longMapD5r: Decoder[mutable.LongMap[Boolean]], longMapE5r: Encoder[mutable.LongMap[Boolean]]) =
+    (Decoder.decodeMap[Long, Boolean].map(_.foldLeft(new mutable.LongMap[Boolean])((m, p) => m += (p._1, p._2))),
+      Encoder.encodeMapLike[Long, Boolean, mutable.Map].contramapObject((m: mutable.LongMap[Boolean]) => m))
   implicit val (missingRequiredFieldsD5r: Decoder[MissingRequiredFields], missingRequiredFieldsE5r: Encoder[MissingRequiredFields]) =
     (deriveConfiguredDecoder[MissingRequiredFields], deriveConfiguredEncoder[MissingRequiredFields])
   implicit val (nestedStructsD5r: Decoder[NestedStructs], nestedStructsE5r: Encoder[NestedStructs]) =

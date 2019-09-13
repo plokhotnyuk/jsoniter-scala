@@ -8,8 +8,7 @@ class IntMapOfBooleansWritingSpec extends BenchmarkSpecBase {
   "IntMapOfBooleansWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      //FIXME: Circe doesn't support IntMap
-      //toString(benchmark.circe()) shouldBe benchmark.jsonString
+      toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString

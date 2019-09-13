@@ -8,8 +8,7 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
   "MutableLongMapOfBooleansReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Circe doesn't support mutable.LongMap
-      //benchmark.circe() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
       //FIXME: DSL-JSON doesn't support mutable.LongMap
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson throws Need exactly 2 type parameters for map like types (scala.collection.mutable.LongMap)
