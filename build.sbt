@@ -135,7 +135,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.0.pr2",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.0.pr2",
       "io.circe" %% "circe-generic" % "0.12.1",
-      "io.circe" %% "circe-generic-extras" % "0.12.1",
+      "io.circe" %% "circe-generic-extras" % "0.12.2",
       "io.circe" %% "circe-parser" % "0.12.1",
       "com.typesafe.play" %% "play-json" % "2.8.0-M6",
       "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
