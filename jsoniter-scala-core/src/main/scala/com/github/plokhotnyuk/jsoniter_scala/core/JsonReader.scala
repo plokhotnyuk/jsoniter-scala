@@ -537,19 +537,16 @@ final class JsonReader private[jsoniter_scala](
     if (b == '"') {
       if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, head)
       else skipString(evenBackSlashes = true, head)
-    }
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
+    } else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
     else if (b == 'n' || b == 't') skipFixedBytes(3, head)
     else if (b == 'f') skipFixedBytes(4, head)
     else if (b == '[') {
       if (isGraalVM) skipArrayUnrolled(0, head)
       else skipArray(0, head)
-    }
-    else if (b == '{') {
+    } else if (b == '{') {
       if (isGraalVM) skipObjectUnrolled(0, head)
       else skipObject(0, head)
-    }
-    else decodeError("expected value")
+    } else decodeError("expected value")
   }
 
   def commaError(): Nothing = tokenError(',')
@@ -1738,8 +1735,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
-  private[this] def digitsLimitError(pos: Int): Nothing =
-    decodeError("value exceeds limit for number of digits", pos)
+  private[this] def digitsLimitError(pos: Int): Nothing = decodeError("value exceeds limit for number of digits", pos)
 
   private[this] def scaleLimitError(pos: Int = head - 1): Nothing = decodeError("value exceeds limit for scale", pos)
 
@@ -3059,7 +3055,7 @@ object JsonReader {
   final val bigIntDigitsLimit: Int = 308
 
   /**
-    * Calculates hash code value string represented by sequence of characters from begining of the provided char array
+    * Calculates hash code value string represented by sequence of characters from beginning of the provided char array
     * up to limit position.
     *
     * @param cs a char array
