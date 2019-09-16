@@ -24,7 +24,7 @@ case class ExtractFields(s: String, i: Int)
 
 class ExtractFieldsReading extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 100
+  var size: Int = 1000
   var obj: ExtractFields = ExtractFields("s", 1)
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _

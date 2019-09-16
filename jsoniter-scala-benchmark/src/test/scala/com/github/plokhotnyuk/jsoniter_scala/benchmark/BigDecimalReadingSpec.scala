@@ -8,8 +8,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
   "BigDecimalReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj
-      //FIXME: Borer doesn't allow BigDecimal mantissas longer than 200 decimal digits
-      //benchmark.borerJson() shouldBe benchmark.sourceObj
+      benchmark.borerJson() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
       benchmark.dslJsonScala() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj

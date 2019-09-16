@@ -9,7 +9,7 @@ case class NestedStructs(@transientDefault n: Option[NestedStructs] = None)
 
 abstract class NestedStructsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 300
+  var size: Int = 128
   var obj: NestedStructs = _
   var jsonBytes: Array[Byte] = _
   var jsonString: String = _
