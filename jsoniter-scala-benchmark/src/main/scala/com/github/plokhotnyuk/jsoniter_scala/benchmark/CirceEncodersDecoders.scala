@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import io.circe.Decoder._
 import io.circe.Encoder._
 import io.circe._
@@ -8,7 +9,7 @@ import io.circe.generic.extras.decoding.UnwrappedDecoder
 import io.circe.generic.extras.encoding.UnwrappedEncoder
 import io.circe.generic.extras.semiauto._
 
-import scala.collection.immutable.IntMap
+import scala.collection.immutable.{BitSet, IntMap}
 import scala.collection.mutable
 import scala.util.Try
 
@@ -35,6 +36,12 @@ object CirceEncodersDecoders {
   }
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
+  implicit val (bitSetD5r: Decoder[BitSet], bitSetE5r: Encoder[BitSet]) =
+    (Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */))),
+      Encoder.encodeSet[Int].contramapArray((m: BitSet) => m))
+  implicit val (mutableBitSetD5r: Decoder[mutable.BitSet], mutableBitSetE5r: Encoder[mutable.BitSet]) =
+    (Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */))),
+      Encoder.encodeSeq[Int].contramapArray((m: mutable.BitSet) => m.toVector))
   implicit val (distanceMatrixD5r: Decoder[GoogleMapsAPI.DistanceMatrix], distanceMatrixE5r: Encoder[GoogleMapsAPI.DistanceMatrix]) = {
     import io.circe.generic.auto._
 

@@ -8,6 +8,7 @@ import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
 import com.avsystem.commons.serialization.json.JsonOptions
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
@@ -42,7 +43,7 @@ object AVSystemCodecs {
   implicit val zoneIdGenCodec: GenCodec[ZoneId] = transformed(_.toString, ZoneId.of)
   implicit val zoneOffsetGenCodec: GenCodec[ZoneOffset] = transformed(_.toString, ZoneOffset.of)
   implicit val bitSetGenCodec: GenCodec[BitSet] =
-    transformed(_.toArray, (arr: Array[Int]) => (BitSet.newBuilder ++= arr).result()) // WARNING: don't do this for open-systems
+    transformed(_.toArray, (arr: Array[Int]) => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */)))
   implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = materializeRecursively
   implicit val geoJSONGenCodec: GenCodec[GeoJSON.GeoJSON] = materializeRecursively
   implicit val googleMapsAPIGenCodec: GenCodec[GoogleMapsAPI.DistanceMatrix] = materializeRecursively
@@ -51,7 +52,7 @@ object AVSystemCodecs {
       (m: Map[Int, Boolean]) => m.foldLeft(IntMap.empty[Boolean])((im, p) => im.updated(p._1, p._2)))
   implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] =
-    transformed(_.toArray, (arr: Array[Int]) => (mutable.BitSet.newBuilder ++= arr).result()) // WARNING: don't do this for open-systems
+    transformed(_.toArray, (arr: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */)))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed(m => (m: mutable.Map[Long, Boolean]),
       (m: mutable.Map[Long, Boolean]) => m.foldLeft(new mutable.LongMap[Boolean])((lm, p) => lm += (p._1, p._2)))
