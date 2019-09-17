@@ -28,7 +28,7 @@ class PrimitivesWriting extends PrimitivesBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+/* FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */

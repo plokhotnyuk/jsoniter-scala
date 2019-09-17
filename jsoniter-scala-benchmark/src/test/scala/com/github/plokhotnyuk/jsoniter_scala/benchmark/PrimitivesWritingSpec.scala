@@ -8,7 +8,7 @@ class PrimitivesWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString1
       toString(benchmark.borerJson()) shouldBe benchmark.jsonString1
       toString(benchmark.circe()) shouldBe benchmark.jsonString1
-      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+      //FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString1
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString1
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString1

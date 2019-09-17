@@ -28,7 +28,7 @@ class PrimitivesReading extends PrimitivesBenchmark {
 
   @Benchmark
   def circe(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+/* FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
   @Benchmark
   def dslJsonScala(): Primitives = dslJsonDecode[Primitives](jsonBytes)
 */
