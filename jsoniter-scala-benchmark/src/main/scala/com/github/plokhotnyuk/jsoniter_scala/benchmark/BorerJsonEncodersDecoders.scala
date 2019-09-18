@@ -11,6 +11,8 @@ import io.bullet.borer.derivation.ArrayBasedCodecs
 import io.bullet.borer.derivation.MapBasedCodecs._
 
 object BorerJsonEncodersDecoders {
+  import io.bullet.borer.NullOptions._
+
   val decodingConfig = DecodingConfig(
     maxNumberMantissaDigits = 200,
     maxNumberAbsExponent = 999,
