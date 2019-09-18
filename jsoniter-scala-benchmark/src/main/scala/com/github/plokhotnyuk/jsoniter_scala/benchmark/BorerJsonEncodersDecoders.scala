@@ -11,8 +11,6 @@ import io.bullet.borer.derivation.ArrayBasedCodecs
 import io.bullet.borer.derivation.MapBasedCodecs._
 
 object BorerJsonEncodersDecoders {
-  import io.bullet.borer.NullOptions._
-
   val decodingConfig = DecodingConfig(
     maxNumberMantissaDigits = 200,
     maxNumberAbsExponent = 999,
@@ -106,6 +104,8 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(suitEnc: Encoder[Suit], suitDec: Decoder[Suit]) = stringCodec(Suit.valueOf)
   implicit val Codec(suitEnumEnc: Encoder[SuitEnum], suitEnumDec: Decoder[SuitEnum]) = enumCodec(SuitEnum)
   implicit val Codec(twitterAPIEnc: Encoder[TwitterAPI.Tweet], twitterAPIDec: Decoder[TwitterAPI.Tweet]) = {
+    import io.bullet.borer.NullOptions._
+
     implicit val c1: Codec[TwitterAPI.UserMentions] = deriveCodec
     implicit val c2: Codec[TwitterAPI.Urls] = deriveCodec
     implicit val c3: Codec[TwitterAPI.Entities] = deriveCodec
