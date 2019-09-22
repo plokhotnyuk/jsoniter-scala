@@ -18,7 +18,6 @@ object JacksonSerDesers {
   def createJacksonMapper: ObjectMapper with ScalaObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
-      .configure(JsonFactory.Feature.CANONICALIZE_FIELD_NAMES, false)
       .build()
     new ObjectMapper(jsonFactory) with ScalaObjectMapper {
       registerModule(DefaultScalaModule)
