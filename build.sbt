@@ -127,7 +127,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
-      "com.lihaoyi" %% "upickle" % "0.7.5",
+      "com.lihaoyi" %% "upickle" % "0.8.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.25.0-GA", // required for Jsoniter Java

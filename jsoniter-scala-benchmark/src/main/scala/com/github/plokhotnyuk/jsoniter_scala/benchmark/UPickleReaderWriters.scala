@@ -113,10 +113,15 @@ object UPickleReaderWriters extends AttributeTagged {
   override def annotate[V](rw: CaseW[V], n: String)(implicit c: ClassTag[V]): TaggedWriter.Leaf[V] =
     new TaggedWriter.Leaf[V](c, simpleName(n), rw)
 
-  override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
+  override implicit def OptionWriter[T: Writer]: Writer[Option[T]] = implicitly[Writer[T]].comap[Option[T]] {
+    case None => null.asInstanceOf[T]
+    case Some(x) => x
+  }
 
-  override implicit def OptionReader[T: Reader]: Reader[Option[T]] = implicitly[Reader[T]].mapNulls(Option.apply)
+  override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
+    new Reader.Delegate[Any, Option[T]](implicitly[Reader[T]].map(x => new Some(x))){
+      override def visitNull(index: Int): Option[T] = None
+    }
 
   private def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected string"
