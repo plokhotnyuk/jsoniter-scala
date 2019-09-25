@@ -93,7 +93,7 @@ lazy val `jsoniter-scala-core` = project
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.1" % Provided,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2" % Test,
-      "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
+      "org.scalacheck" %% "scalacheck" % "1.14.2" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )
@@ -107,7 +107,7 @@ lazy val `jsoniter-scala-macros` = project
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
+      "org.scalacheck" %% "scalacheck" % "1.14.2" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )
