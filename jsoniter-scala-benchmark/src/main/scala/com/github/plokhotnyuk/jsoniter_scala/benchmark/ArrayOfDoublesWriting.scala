@@ -6,7 +6,6 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.jsoniter.output.JsoniterJavaSerializer
@@ -44,12 +43,6 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
-  @Benchmark
-  def scalikeJackson(): Array[Byte] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    obj.write.getBytes(UTF_8)
-  }
 /* FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)

@@ -13,8 +13,6 @@ class ArrayOfEnumsReadingSpec extends BenchmarkSpecBase {
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
-      //FIXME: ScalikeJackson throws java.lang.Exception: No Value[] ScalaJacksonFormat found for json input
-      //benchmark.scalikeJackson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
     }

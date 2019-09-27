@@ -10,7 +10,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -40,13 +39,6 @@ class PrimitivesReading extends PrimitivesBenchmark {
 
   @Benchmark
   def playJson(): Primitives = Json.parse(jsonBytes).as[Primitives]
-
-  @Benchmark
-  def scalikeJackson(): Primitives = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[Primitives]
-  }
 
   @Benchmark
   def sprayJson(): Primitives = JsonParser(jsonBytes).convertTo[Primitives]

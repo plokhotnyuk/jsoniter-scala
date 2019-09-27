@@ -11,7 +11,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -60,13 +59,6 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def playJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
-
-  @Benchmark
-  def scalikeJackson(): ExtractFields = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[ExtractFields]
-  }
 
   @Benchmark
   def sprayJson(): ExtractFields = JsonParser(jsonBytes).convertTo[ExtractFields]

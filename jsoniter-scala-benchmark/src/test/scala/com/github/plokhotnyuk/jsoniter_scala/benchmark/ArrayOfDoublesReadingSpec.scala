@@ -16,7 +16,6 @@ class ArrayOfDoublesReadingSpec extends BenchmarkSpecBase {
       //benchmark.jsoniterJava() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
-      benchmark.scalikeJackson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
     }

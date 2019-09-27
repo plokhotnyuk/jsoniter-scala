@@ -122,7 +122,6 @@ lazy val `jsoniter-scala-benchmark` = project
     resolvers += Resolver.bintrayRepo("reug", "maven"),
     crossScalaVersions := Seq("2.13.0", "2.12.10"),
     libraryDependencies ++= Seq(
-      "reug" %% "scalikejackson" % "0.5.6",
       "io.bullet" %% "borer-derivation" % "1.0.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
@@ -131,7 +130,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.25.0-GA", // required for Jsoniter Java
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.0.pr3",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.0",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.0",
       "io.circe" %% "circe-generic" % "0.12.1",

@@ -14,7 +14,6 @@ class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
-      benchmark.scalikeJackson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
     }
   }

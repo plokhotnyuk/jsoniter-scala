@@ -39,13 +39,6 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def playJson(): String = Json.parse(jsonBytes).as[String]
 
   @Benchmark
-  def scalikeJackson(): String = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[String]
-  }
-
-  @Benchmark
   def sprayJson(): String = spray.json.JsonParser(jsonBytes).convertTo[String]
 
   @Benchmark

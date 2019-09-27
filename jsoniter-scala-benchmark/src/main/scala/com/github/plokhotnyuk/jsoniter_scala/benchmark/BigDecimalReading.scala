@@ -8,7 +8,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -39,13 +38,6 @@ class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def playJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
 */
-  @Benchmark
-  def scalikeJackson(): BigDecimal = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[BigDecimal]
-  }
-
   @Benchmark
   def sprayJson(): BigDecimal = JsonParser(jsonBytes, jsonParserSettings).convertTo[BigDecimal]
 

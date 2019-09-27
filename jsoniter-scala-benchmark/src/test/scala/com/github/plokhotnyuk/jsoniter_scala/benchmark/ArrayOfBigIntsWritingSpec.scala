@@ -16,7 +16,6 @@ class ArrayOfBigIntsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-JSON uses BigDecimal with engineering decimal representation to serialize numbers
       //toString(benchmark.playJson()) shouldBe benchmark.jsonString
-      toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
     }
