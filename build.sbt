@@ -39,26 +39,25 @@ lazy val commonSettings = Seq(
     )
     case _ => Seq()
   }),
-  testOptions in Test += Tests.Argument("-oDF")
-)
-
-lazy val noPublishSettings = Seq(
-  skip in publish := true,
-  publishTo := sonatypePublishToBundle.value,
-  mimaPreviousArtifacts := Set()  
-)
-
-lazy val publishSettings = Seq(
-  publishTo := sonatypePublishToBundle.value,
+  testOptions in Test += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
+  publishTo := sonatypePublishToBundle.value,
+  publishMavenStyle := true,
+  pomIncludeRepository := { _ => false },
   scmInfo := Some(
     ScmInfo(
       url("https://github.com/plokhotnyuk/jsoniter-scala"),
       "scm:git@github.com:plokhotnyuk/jsoniter-scala.git"
     )
-  ),
-  publishMavenStyle := true,
-  pomIncludeRepository := { _ => false },
+  )
+)
+
+lazy val noPublishSettings = Seq(
+  skip in publish := true,
+  mimaPreviousArtifacts := Set()
+)
+
+lazy val publishSettings = Seq(
   mimaCheckDirection := {
     def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
