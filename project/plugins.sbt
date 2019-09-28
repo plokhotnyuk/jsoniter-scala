@@ -1,4 +1,4 @@
-resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging"
+resolvers += Resolver.sonatypeRepo("staging")
 
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.7")
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.11")
