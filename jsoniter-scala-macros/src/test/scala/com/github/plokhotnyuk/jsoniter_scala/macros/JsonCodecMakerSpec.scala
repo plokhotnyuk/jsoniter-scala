@@ -19,7 +19,7 @@ case class OrderId(value: Int) extends AnyVal
 
 case class Id[A](id: A) extends AnyVal
 
-sealed trait Weapon
+sealed trait Weapon extends Product with Serializable
 object Weapon {
   final case object Axe extends Weapon
   final case object Sword extends Weapon
@@ -1391,7 +1391,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""")
     }
     "serialize and deserialize ADTs with leafs that have mixed traits that extends the same base" in {
-      sealed trait Base
+      sealed trait Base extends Product with Serializable
 
       sealed trait Base2 extends Base
 
@@ -1403,7 +1403,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
     "serialize and deserialize ADTs with leafs that have a mixed trait hierarchy that makes a diamond" in {
-      sealed trait Base
+      sealed trait Base extends Product with Serializable
 
       sealed trait Base1 extends Base
 
@@ -1475,7 +1475,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |should be unique.""".stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait Data
+        """sealed trait Data extends Product with Serializable
           |case class Data1(i: Int, s: String) extends Data
           |case object Data1 extends Data
           |val c = make[Data](CodecMakerConfig())""".stripMargin
@@ -1497,7 +1497,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "serialize and deserialize ADTs with self-recursive (aka F-bounded) types without discriminators" in {
-      sealed trait Fruit[T <: Fruit[T]]
+      sealed trait Fruit[T <: Fruit[T]] extends Product with Serializable
 
       final case class Apple(family: String) extends Fruit[Apple]
 
@@ -1652,7 +1652,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "serialize and deserialize array of a generic type" in {
-      sealed trait Bar[A]
+      sealed trait Bar[A] extends Product with Serializable
 
       case object Baz extends Bar[Int]
 
@@ -1753,9 +1753,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs when all generic type parameters cannot be resolved" in {
       assert(intercept[TestFailedException](assertCompiles {
         """import _root_.scala.language.higherKinds
-          |sealed trait Foo[F[_]]
+          |sealed trait Foo[F[_]] extends Product with Serializable
           |case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
-          |sealed trait Bar[A]
+          |sealed trait Bar[A] extends Product with Serializable
           |case object Baz extends Bar[Int]
           |case object Qux extends Bar[String]
           |val v = FooImpl[Bar, String](Qux, Vector.empty[String])
