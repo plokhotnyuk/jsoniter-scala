@@ -11,6 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalaJackStuff.sj
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -40,6 +41,9 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def playJson(): DistanceMatrix = Json.parse(jsonBytes1).as[DistanceMatrix]
+
+  @Benchmark
+  def scalaJack(): DistanceMatrix = sj.read[DistanceMatrix](new String(jsonBytes1, UTF_8))
 
   @Benchmark
   def sprayJson(): DistanceMatrix = JsonParser(jsonBytes1).convertTo[DistanceMatrix]
