@@ -429,6 +429,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeRawVal(bs: Array[Byte]): Unit = count = {
+    writeOptionalCommaAndIndentionBeforeValue()
     val len = bs.length
     val preferredBufSize = config.preferredBufSize
     var buf = this.buf

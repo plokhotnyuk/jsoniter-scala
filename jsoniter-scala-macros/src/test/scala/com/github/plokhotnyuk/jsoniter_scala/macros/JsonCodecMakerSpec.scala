@@ -665,11 +665,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         }
       }
 
-      case class Message(param1: String, param2: String, payload: RawVal)
+      case class Message(param1: String, param2: String, payload: RawVal, param3: String)
 
       verifySerDeser(make[Message](CodecMakerConfig()),
-        Message("A", "B", RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}""")),
-        """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}}""")
+        Message("A", "B", RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}"""), "C"),
+        """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"},"param3":"C"}""")
     }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
