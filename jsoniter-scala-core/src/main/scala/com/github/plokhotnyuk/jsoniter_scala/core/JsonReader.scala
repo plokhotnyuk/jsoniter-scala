@@ -38,12 +38,15 @@ import scala.{specialized => sp}
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when parsing from
   *                         [[java.io.InputStream]]
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
+  * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
+  *                           successful parsing of the value
   */
 case class ReaderConfig(
     throwReaderExceptionWithStackTrace: Boolean = false,
     appendHexDumpToParseException: Boolean = true,
     preferredBufSize: Int = 16384,
-    preferredCharBufSize: Int = 1024) {
+    preferredCharBufSize: Int = 1024,
+    checkForEndOfInput: Boolean = true) {
   if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
   if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
 }
@@ -531,13 +534,19 @@ final class JsonReader private[jsoniter_scala](
 
   def skip(): Unit = head = {
     val b = nextToken(head)
-    if (b == '"') skipString(evenBackSlashes = true, head)
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
+    if (b == '"') {
+      if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, head)
+      else skipString(evenBackSlashes = true, head)
+    } else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
     else if (b == 'n' || b == 't') skipFixedBytes(3, head)
     else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') skipArray(0, head)
-    else if (b == '{') skipObject(0, head)
-    else decodeError("expected value")
+    else if (b == '[') {
+      if (isGraalVM) skipArrayUnrolled(0, head)
+      else skipArray(0, head)
+    } else if (b == '{') {
+      if (isGraalVM) skipObjectUnrolled(0, head)
+      else skipObject(0, head)
+    } else decodeError("expected value")
   }
 
   def commaError(): Nothing = tokenError(',')
@@ -563,7 +572,9 @@ final class JsonReader private[jsoniter_scala](
       tail = to
       totalRead = 0
       mark = 2147483647
-      codec.decodeValue(this, codec.nullValue)
+      val x = codec.decodeValue(this, codec.nullValue)
+      if (head != to && config.checkForEndOfInput) endOfInputOrError()
+      x
     } finally {
       this.buf = currBuf
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
@@ -579,7 +590,9 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = 2147483647
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-      codec.decodeValue(this, codec.nullValue)
+      val x = codec.decodeValue(this, codec.nullValue)
+      if (config.checkForEndOfInput) endOfInputOrError()
+      x
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -589,15 +602,18 @@ final class JsonReader private[jsoniter_scala](
   private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], bbuf: ByteBuffer, config: ReaderConfig): A =
     if (bbuf.hasArray) {
       val offset = bbuf.arrayOffset
+      val to = offset + bbuf.limit()
       val currBuf = this.buf
       try {
         this.buf = bbuf.array
         this.config = config
         head = offset + bbuf.position()
-        tail = offset + bbuf.limit()
+        tail = to
         totalRead = 0
         mark = 2147483647
-        codec.decodeValue(this, codec.nullValue)
+        val x = codec.decodeValue(this, codec.nullValue)
+        if (head != to && config.checkForEndOfInput) endOfInputOrError()
+        x
       } finally {
         this.buf = currBuf
         if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
@@ -613,7 +629,9 @@ final class JsonReader private[jsoniter_scala](
         totalRead = 0
         mark = 2147483647
         if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
-        codec.decodeValue(this, codec.nullValue)
+        val x = codec.decodeValue(this, codec.nullValue)
+        if (config.checkForEndOfInput) endOfInputOrError()
+        x
       } finally {
         this.bbuf = null
         if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
@@ -649,21 +667,25 @@ final class JsonReader private[jsoniter_scala](
       totalRead = 0
       mark = 2147483647
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
+      var continue = true
       if (isNextToken('[')) {
         if (!isNextToken(']')) {
           rollbackToken()
-          var continue = true
           do {
             continue = f(codec.decodeValue(this, codec.nullValue))
           } while (continue && isNextToken(','))
           if (continue && !isCurrentToken(']')) arrayEndOrCommaError()
         }
       } else readNullOrTokenError((), '[')
+      if (continue && config.checkForEndOfInput) endOfInputOrError()
     } finally {
       this.in = null
       if (buf.length > config.preferredBufSize) reallocateBufToPreferredSize()
       if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
     }
+
+  private[jsoniter_scala] def endOfInputOrError(): Boolean =
+    !skipWhitespaces() || decodeError("expected end of input", head)
 
   private[this] def skipWhitespaces(): Boolean = {
     var pos = head
@@ -1713,8 +1735,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
-  private[this] def digitsLimitError(pos: Int): Nothing =
-    decodeError("value exceeds limit for number of digits", pos)
+  private[this] def digitsLimitError(pos: Int): Nothing = decodeError("value exceeds limit for number of digits", pos)
 
   private[this] def scaleLimitError(pos: Int = head - 1): Nothing = decodeError("value exceeds limit for scale", pos)
 
@@ -1734,10 +1755,7 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    if (b != 'P') {
-      if (isNeg) tokenError('P')
-      else tokensError('P', '-')
-    }
+    if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
     do {
       if (state == 0) {
@@ -1751,11 +1769,7 @@ final class JsonReader private[jsoniter_scala](
       } else if (state == 4) tokenError('"')
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') {
-        if (isNegX) digitError()
-        if (state < 2) tokenOrDigitError('-')
-        decodeError("expected '\"' or '-' or digit")
-      }
+      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state < 2)
       var x: Long = '0' - b
       var pos = head
       var buf = this.buf
@@ -2000,13 +2014,13 @@ final class JsonReader private[jsoniter_scala](
     var b = nextByte(head)
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
-    if (b != 'P') periodStartError(isNeg)
+    if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
     do {
       if (state == 4) tokenError('"')
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
-      if (b < '0' || b > '9') periodDigitError(isNegX, state)
+      if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state < 1)
       var x = '0' - b
       var pos = head
       var buf = this.buf
@@ -2241,14 +2255,14 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'D' or digit"
   }, pos)
 
-  private[this] def periodStartError(isNeg: Boolean): Nothing = {
+  private[this] def durationOrPeriodStartError(isNeg: Boolean): Nothing = {
     if (isNeg) tokenError('P')
     tokensError('P', '-')
   }
 
-  private[this] def periodDigitError(isNegX: Boolean, state: Int): Nothing = {
+  private[this] def durationOrPeriodDigitError(isNegX: Boolean, isNumReq: Boolean): Nothing = {
     if (isNegX) digitError()
-    if (state < 1) tokenOrDigitError('-')
+    if (isNumReq) tokenOrDigitError('-')
     decodeError("expected '\"' or '-' or digit")
   }
 
@@ -2261,17 +2275,17 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'S or '.' or digit"
   }, pos)
 
-  private[this] def yearError(): NotImplementedError = decodeError("illegal year")
+  private[this] def yearError(): Nothing = decodeError("illegal year")
 
-  private[this] def monthError(): NotImplementedError = decodeError("illegal month")
+  private[this] def monthError(): Nothing = decodeError("illegal month")
 
-  private[this] def dayError(): NotImplementedError = decodeError("illegal day")
+  private[this] def dayError(): Nothing = decodeError("illegal day")
 
-  private[this] def hourError(): NotImplementedError = decodeError("illegal hour")
+  private[this] def hourError(): Nothing = decodeError("illegal hour")
 
-  private[this] def minuteError(): NotImplementedError = decodeError("illegal minute")
+  private[this] def minuteError(): Nothing = decodeError("illegal minute")
 
-  private[this] def secondError(): NotImplementedError = decodeError("illegal second")
+  private[this] def secondError(): Nothing = decodeError("illegal second")
 
   private[this] def nanoError(nanoDigitWeight: Int, t: Byte, pos: Int): Nothing =
     if (nanoDigitWeight == 0) tokenError(t, pos)
@@ -2353,7 +2367,11 @@ final class JsonReader private[jsoniter_scala](
         (leastSigBits1.toLong << 48) | leastSigBits2)
     } else parseUUID(loadMoreOrError(pos))
 
-  private[this] def parseString(): Int = parseString(0, Math.min(charBuf.length, tail - head), charBuf, head)
+  private[this] def parseString(): Int = {
+    val minLim = Math.min(charBuf.length, tail - head)
+    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, head)
+    else parseString(0, minLim, charBuf, head)
+  }
 
   @tailrec
   private[this] def parseString(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
@@ -2363,12 +2381,54 @@ final class JsonReader private[jsoniter_scala](
       if (b == '"') {
         head = pos + 1
         i
-      } else if (((b - 32) ^ 60) > 0) parseString(i + 1, minLim, charBuf, pos + 1) // == else if (b >= ' ' && b != '\\') ...
-      else parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else parseString(i + 1, minLim, charBuf, pos + 1)
     } else if (pos >= tail) {
       val newPos = loadMoreOrError(pos)
       parseString(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
+
+  @tailrec
+  private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
+    if (i + 3 < minLim) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      charBuf(i) = b1.toChar
+      val b2 = buf(pos + 1)
+      charBuf(i + 1) = b2.toChar
+      val b3 = buf(pos + 2)
+      charBuf(i + 2) = b3.toChar
+      val b4 = buf(pos + 3)
+      charBuf(i + 3) = b4.toChar
+      if (b1 == '"') {
+        head = pos + 1
+        i
+      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else if (b2 == '"') {
+        head = pos + 2
+        i + 1
+      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
+      else if (b3 == '"') {
+        head = pos + 3
+        i + 2
+      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
+      else if (b4 == '"') {
+        head = pos + 4
+        i + 3
+      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
+      else parseStringUnrolled(i + 4, minLim, charBuf, pos + 4)
+    } else if (i < minLim) {
+      val b = buf(pos)
+      charBuf(i) = b.toChar
+      if (b == '"') {
+        head = pos + 1
+        i
+      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
+      else parseStringUnrolled(i + 1, minLim, charBuf, pos + 1)
+    } else if (pos >= tail) {
+      val newPos = loadMoreOrError(pos)
+      parseStringUnrolled(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
+    } else parseStringUnrolled(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
   private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
@@ -2675,6 +2735,35 @@ final class JsonReader private[jsoniter_scala](
       else skipString(b != '\\' || !evenBackSlashes, pos + 1)
     } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
+  @tailrec
+  private[this] def skipStringUnrolled(evenBackSlashes: Boolean, pos: Int): Int =
+    if (pos + 3 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      val b4 = buf(pos + 3)
+      var ebs = evenBackSlashes
+      if (b1 == '"' && ebs) pos + 1
+      else {
+        ebs = b1 != '\\' || !ebs
+        if (b2 == '"' && ebs) pos + 2
+        else {
+          ebs = b2 != '\\' || !ebs
+          if (b3 == '"' && ebs) pos + 3
+          else {
+            ebs = b3 != '\\' || !ebs
+            if (b4 == '"' && ebs) pos + 4
+            else skipStringUnrolled(b4 != '\\' || !ebs, pos + 4)
+          }
+        }
+      }
+    } else if (pos < tail) {
+        val b = buf(pos)
+        if (b == '"' && evenBackSlashes) pos + 1
+        else skipStringUnrolled(b != '\\' || !evenBackSlashes, pos + 1)
+    } else skipStringUnrolled(evenBackSlashes, loadMoreOrError(pos))
+
   private[this] def skipNumber(p: Int): Int = {
     var pos = p
     var buf = this.buf
@@ -2702,6 +2791,48 @@ final class JsonReader private[jsoniter_scala](
     } else skipObject(level, loadMoreOrError(pos))
 
   @tailrec
+  private[this] def skipObjectUnrolled(level: Int, pos: Int): Int =
+    if (pos + 3 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      val b4 = buf(pos + 3)
+      var l = level
+      if (b1 == '}') l -= 1
+      else if (b1 == '{') l += 1
+      if (b1 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 1))
+      else if (l < 0) pos + 1
+      else {
+        if (b2 == '}') l -= 1
+        else if (b2 == '{') l += 1
+        if (b2 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 2))
+        else if (l < 0) pos + 2
+        else {
+          if (b3 == '}') l -= 1
+          else if (b3 == '{') l += 1
+          if (b3 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 3))
+          else if (l < 0) pos + 3
+          else {
+            if (b4 == '}') l -= 1
+            else if (b4 == '{') l += 1
+            if (b4 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 4))
+            else if (l < 0) pos + 4
+            else skipObjectUnrolled(l, pos + 4)
+          }
+        }
+      }
+    } else if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipObjectUnrolled(level, skipStringUnrolled(evenBackSlashes = true, pos + 1))
+      else if (b == '}') {
+        if (level == 0) pos + 1
+        else skipObjectUnrolled(level - 1, pos + 1)
+      } else if (b == '{') skipObjectUnrolled(level + 1, pos + 1)
+      else skipObjectUnrolled(level, pos + 1)
+    } else skipObjectUnrolled(level, loadMoreOrError(pos))
+
+  @tailrec
   private[this] def skipArray(level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
@@ -2712,6 +2843,48 @@ final class JsonReader private[jsoniter_scala](
       } else if (b == '[') skipArray(level + 1, pos + 1)
       else skipArray(level, pos + 1)
     } else skipArray(level, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def skipArrayUnrolled(level: Int, pos: Int): Int =
+    if (pos + 3 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      val b4 = buf(pos + 3)
+      var l = level
+      if (b1 == ']') l -= 1
+      else if (b1 == '[') l += 1
+      if (b1 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 1))
+      else if (l < 0) pos + 1
+      else {
+        if (b2 == ']') l -= 1
+        else if (b2 == '[') l += 1
+        if (b2 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 2))
+        else if (l < 0) pos + 2
+        else {
+          if (b3 == ']') l -= 1
+          else if (b3 == '[') l += 1
+          if (b3 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 3))
+          else if (l < 0) pos + 3
+          else {
+            if (b4 == ']') l -= 1
+            else if (b4 == '[') l += 1
+            if (b4 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 4))
+            else if (l < 0) pos + 4
+            else skipArrayUnrolled(l, pos + 4)
+          }
+        }
+      }
+    } else if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipArrayUnrolled(level, skipStringUnrolled(evenBackSlashes = true, pos + 1))
+      else if (b == ']') {
+        if (level == 0) pos + 1
+        else skipArrayUnrolled(level - 1, pos + 1)
+      } else if (b == '[') skipArrayUnrolled(level + 1, pos + 1)
+      else skipArrayUnrolled(level, pos + 1)
+    } else skipArrayUnrolled(level, loadMoreOrError(pos))
 
   @tailrec
   private[this] def skipFixedBytes(n: Int, pos: Int): Int = {
@@ -2789,6 +2962,7 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
+  private final val isGraalVM: Boolean = System.getProperty("java.vm.name").contains("GraalVM")
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
@@ -2881,7 +3055,7 @@ object JsonReader {
   final val bigIntDigitsLimit: Int = 308
 
   /**
-    * Calculates hash code value string represented by sequence of characters from begining of the provided char array
+    * Calculates hash code value string represented by sequence of characters from beginning of the provided char array
     * up to limit position.
     *
     * @param cs a char array

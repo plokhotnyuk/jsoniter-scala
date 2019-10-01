@@ -13,7 +13,9 @@ java -jar target/scala-2.13/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
 ## How to build with a native image and run binaries
 
 ```sh
-/usr/lib/jvm/graalvm-ce-19/bin/native-image --no-server -H:UnsafeAutomaticSubstitutionsLogLevel=3 -jar target/scala-2.12/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
+sudo /usr/lib/jvm/graalvm-ce-19/bin/gu install native-image # (optional) to install the AOT compiler
+
+/usr/lib/jvm/graalvm-ce-19/bin/native-image --no-server --no-fallback --allow-incomplete-classpath -H:UnsafeAutomaticSubstitutionsLogLevel=3 -jar target/scala-2.13/jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT.jar
 
 ./jsoniter-scala-examples-assembly-0.1.0-SNAPSHOT
 ```

@@ -8,6 +8,7 @@ import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
 import com.avsystem.commons.serialization.json.JsonOptions
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
@@ -42,17 +43,19 @@ object AVSystemCodecs {
   implicit val zoneIdGenCodec: GenCodec[ZoneId] = transformed(_.toString, ZoneId.of)
   implicit val zoneOffsetGenCodec: GenCodec[ZoneOffset] = transformed(_.toString, ZoneOffset.of)
   implicit val bitSetGenCodec: GenCodec[BitSet] =
-    transformed(_.toArray, (x: Array[Int]) => BitSet(x:_*)) // WARNING: don't do this for open-systems
+    transformed(_.toArray, (arr: Array[Int]) => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */)))
   implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = materializeRecursively
   implicit val geoJSONGenCodec: GenCodec[GeoJSON.GeoJSON] = materializeRecursively
   implicit val googleMapsAPIGenCodec: GenCodec[GoogleMapsAPI.DistanceMatrix] = materializeRecursively
   implicit val intMapOfBooleansGenCodec: GenCodec[IntMap[Boolean]] =
-    transformed(_.seq, (x: Map[Int, Boolean]) => IntMap(x.toArray:_*))
+    transformed(m => (m: Map[Int, Boolean]),
+      (m: Map[Int, Boolean]) => m.foldLeft(IntMap.empty[Boolean])((im, p) => im.updated(p._1, p._2)))
   implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] =
-    transformed(_.toArray, (x: Array[Int]) => mutable.BitSet(x:_*)) // WARNING: don't do this for open-systems
+    transformed(_.toArray, (arr: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */)))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
-    transformed(_.seq, (x: mutable.Map[Long, Boolean]) => mutable.LongMap(x.toArray:_*))
+    transformed(m => (m: mutable.Map[Long, Boolean]),
+      (m: mutable.Map[Long, Boolean]) => m.foldLeft(new mutable.LongMap[Boolean])((lm, p) => lm += (p._1, p._2)))
   implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively
   implicit val openRTBGenCodec: GenCodec[OpenRTB.BidRequest] = materializeRecursively
   implicit val primitivesGenCodec: GenCodec[Primitives] = materializeRecursively

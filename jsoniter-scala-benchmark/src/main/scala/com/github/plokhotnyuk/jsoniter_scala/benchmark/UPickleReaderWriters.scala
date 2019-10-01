@@ -29,9 +29,14 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
+  implicit val simpleGeometryReadWriter: ReadWriter[GeoJSON.SimpleGeometry] =
+    ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
+      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
   implicit val geometryReadWriter: ReadWriter[GeoJSON.Geometry] =
     ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
-      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.GeometryCollection])
+      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon], macroRW[GeoJSON.GeometryCollection])
+  implicit val simpleGeoJsonReadWriter: ReadWriter[GeoJSON.SimpleGeoJSON] =
+    ReadWriter.merge(macroRW[GeoJSON.Feature])
   implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
     ReadWriter.merge(macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
   implicit val googleMApsAPIReadWriter: ReadWriter[GoogleMapsAPI.DistanceMatrix] = {
@@ -111,7 +116,10 @@ object UPickleReaderWriters extends AttributeTagged {
   override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
 
-  override implicit def OptionReader[T: Reader]: Reader[Option[T]] = implicitly[Reader[T]].mapNulls(Option.apply)
+  override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
+    new Reader.Delegate[Any, Option[T]](implicitly[Reader[T]].map(x => new Some(x))){
+      override def visitNull(index: Int): Option[T] = None
+    }
 
   private def strReader[T](f: CharSequence => T): SimpleReader[T] = new SimpleReader[T] {
     override val expectedMsg = "expected string"

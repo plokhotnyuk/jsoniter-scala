@@ -5,7 +5,7 @@ import java.time._
 
 import org.openjdk.jmh.annotations.{Param, Setup}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 abstract class ArrayOfZoneIdsBenchmark extends CommonParams {
   val zoneIds: Array[ZoneId] = (ZoneId.getAvailableZoneIds.asScala.take(100).map(ZoneId.of) ++

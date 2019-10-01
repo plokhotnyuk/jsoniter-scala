@@ -8,14 +8,14 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe
         "Cannot read com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields, field s is missing in decoded data"
       benchmark.borerJson() shouldBe
-        "Missing map key `s` for decoding an instance of type `com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields` (input position 1)"
+        "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
       benchmark.circe() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"
       benchmark.dslJsonScala() shouldBe
         "Mandatory properties (s, i) not found at position: 1, following: `{`, before: `}`"
       benchmark.jacksonScala() shouldBe
         """Missing required creator property 's' (index 0)
-          | at [Source: (byte[])"{}"; line: 1, column: 2]""".stripMargin
+          | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["s"])""".stripMargin
       benchmark.jsoniterScala() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -32,11 +32,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
-      benchmark.playJson() shouldBe
-        "JsResultException(errors:List((/s,List(JsonValidationError(List(error.path.missing),WrappedArray()))), (/i,List(JsonValidationError(List(error.path.missing),WrappedArray())))))"
-      //FIXME: ScalikeJackson throws an exception with unexpected message: "No MissingRequiredFields ScalaJacksonFormat found for json input"
-      //benchmark.scalikeJackson() shouldBe
-      //  "???"
+      benchmark.playJson() should include("JsResultException")
       benchmark.sprayJson() shouldBe
         "Object is missing required member 's'"
       benchmark.uPickle() shouldBe

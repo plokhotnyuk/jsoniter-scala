@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
+import com.fasterxml.jackson.module.scala.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import org.openjdk.jmh.annotations.{Param, Setup}
 

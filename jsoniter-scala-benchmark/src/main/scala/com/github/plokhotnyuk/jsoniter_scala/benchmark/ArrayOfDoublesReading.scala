@@ -6,7 +6,6 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -40,13 +39,6 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def playJson(): Array[Double] = Json.parse(jsonBytes).as[Array[Double]]
-
-  @Benchmark
-  def scalikeJackson(): Array[Double] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[Array[Double]]
-  }
 
   @Benchmark
   def sprayJson(): Array[Double] = JsonParser(jsonBytes).convertTo[Array[Double]]

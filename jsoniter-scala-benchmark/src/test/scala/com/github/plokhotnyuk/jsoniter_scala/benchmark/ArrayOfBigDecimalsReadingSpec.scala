@@ -14,7 +14,6 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj
       benchmark.playJson() shouldBe benchmark.sourceObj
-      benchmark.scalikeJackson() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
     }

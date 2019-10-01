@@ -6,11 +6,10 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.FlatSprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.FlatSprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -45,14 +44,7 @@ class AnyValsReading extends AnyValsBenchmark {
   def playJson(): AnyVals = Json.parse(jsonBytes).as[AnyVals]
 
   @Benchmark
-  def scalikeJackson(): AnyVals = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[AnyVals]
-  }
-
-  @Benchmark
-  def sprayJson(): AnyVals = JsonParser(jsonBytes).convertTo[AnyVals](anyValsJsonFormat)
+  def sprayJson(): AnyVals = JsonParser(jsonBytes).convertTo[AnyVals]
 
   @Benchmark
   def uPickle(): AnyVals = read[AnyVals](jsonBytes)

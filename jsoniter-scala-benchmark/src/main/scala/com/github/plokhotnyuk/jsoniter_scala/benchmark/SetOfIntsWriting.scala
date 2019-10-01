@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
@@ -24,7 +23,7 @@ class SetOfIntsWriting extends SetOfIntsBenchmark {
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
@@ -43,13 +42,6 @@ class SetOfIntsWriting extends SetOfIntsBenchmark {
 
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
-
-  @Benchmark
-  def scalikeJackson(): Array[Byte] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    obj.write.getBytes(UTF_8)
-  }
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

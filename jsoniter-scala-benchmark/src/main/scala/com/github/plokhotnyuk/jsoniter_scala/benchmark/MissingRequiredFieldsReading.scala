@@ -8,15 +8,14 @@ import com.avsystem.commons.serialization.json._
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import io.circe.generic.auto._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
@@ -97,18 +96,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     } catch {
       case ex: JsResultException => ex.getMessage
     }
-/* FIXME: ScalikeJackson throws an exception with unexpected message: "No MissingRequiredFields ScalaJacksonFormat found for json input"
-  @Benchmark
-  def scalikeJackson(): String = {
-    import reug.scalikejackson.ScalaJacksonImpl._
 
-    try {
-      new String(jsonBytes, UTF_8).read[MissingRequiredFields].toString // toString() should not be called
-    } catch {
-      case ex: Exception => ex.getMessage
-    }
-  }
-*/
   @Benchmark
   def sprayJson(): String =
     try {

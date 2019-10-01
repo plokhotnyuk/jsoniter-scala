@@ -8,7 +8,7 @@ import java.time._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Gen
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 object GenUtils {
@@ -99,8 +99,8 @@ object GenUtils {
     genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("UTC", zo)),
     genZoneOffset.map(zo => ZoneId.ofOffset("GMT", zo)),
-    Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toList).map(ZoneId.of),
-    Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toList).map(ZoneId.of))
+    Gen.oneOf(ZoneId.getAvailableZoneIds.asScala.toSeq).map(ZoneId.of),
+    Gen.oneOf(ZoneId.SHORT_IDS.values().asScala.toSeq).map(ZoneId.of))
   val genZonedDateTime: Gen[ZonedDateTime] = for {
     localDateTime <- genLocalDateTime
     zoneId <- genZoneId
@@ -111,4 +111,19 @@ object GenUtils {
   val genNonFiniteFloat: Gen[Float] = Gen.oneOf(
     Gen.oneOf(java.lang.Float.NaN, java.lang.Float.NEGATIVE_INFINITY, java.lang.Float.POSITIVE_INFINITY),
     Gen.choose(0, 0x003FFFFF).map(x => java.lang.Float.intBitsToFloat(x | 0x7FC00000))) // Float.NaN with error code
+
+  def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'
+
+  def toEscaped(ch: Char): String = ch match {
+    case '"' => """\""""
+    case '\\' => """\\"""
+    case '\b' => """\b"""
+    case '\f' => """\f"""
+    case '\n' => """\n"""
+    case '\r' => """\r"""
+    case '\t' => """\t"""
+    case _ => toHexEscaped(ch)
+  }
+
+  def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
 }

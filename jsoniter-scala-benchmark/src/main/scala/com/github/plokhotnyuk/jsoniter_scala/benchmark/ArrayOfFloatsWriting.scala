@@ -25,14 +25,14 @@ class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-/* FIXME: PreciseFloatSupport.enable() doesn't work sometime and Jsoniter Java serializes values rounded to 6 digits
+/* FIXME: Jsoniter Java serializes values rounded to 6 digits because PreciseFloatSupport.enable() doesn't work sometime
   @Benchmark
   def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 */
@@ -45,12 +45,6 @@ class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
-  @Benchmark
-  def scalikeJackson(): Array[Byte] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    obj.write.getBytes(UTF_8)
-  }
 /* FIXME: Spray-JSON serializes double values instead of float
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)

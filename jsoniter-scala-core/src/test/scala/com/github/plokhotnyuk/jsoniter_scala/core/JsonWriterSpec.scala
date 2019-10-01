@@ -34,7 +34,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and and JsonWriter.writeKey for boolean" should {
     "write valid true and false values" in {
-      def check(value: Boolean, excpectedOut: String): Unit = {
+      def check(value: Boolean): Unit = {
         val s = value.toString
         withWriter(_.writeVal(value)) shouldBe s
         withWriter(_.writeValAsString(value)) shouldBe s""""$s""""
@@ -42,8 +42,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(WriterConfig(indentionStep = 2))(_.writeKey(value)) shouldBe s""""$s": """
       }
 
-      check(value = true, "true")
-      check(value = false, "false")
+      check(value = true)
+      check(value = false)
     }
   }
   "JsonWriter.writeNonEscapedAsciiVal and JsonWriter.writeNonEscapedAsciiKey" should {
@@ -490,12 +490,14 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write finite float values" in {
       def check(n: Float): Unit = {
         val s = withWriter(_.writeVal(n))
+        val l = s.length
         val i = s.indexOf('.')
-        i should be > 0 // has '.' character
-        Character.isDigit(s.charAt(i - 1)) shouldBe true // has digit before '.'
-        Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
-        s.toFloat shouldBe n // no data loss
-        s.length should be <= n.toString.length // rounding isn't worse than in JDK
+        s.toFloat shouldBe n // no data loss when parsing by JDK
+        l should be <= n.toString.length // rounding isn't worse than in JDK
+        i should be > 0 // has the '.' character inside
+        i should be < l - 1
+        Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
+        Character.isDigit(s.charAt(i + 1)) shouldBe true // has a digit after the '.' character
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
@@ -590,12 +592,14 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write finite double values" in {
       def check(n: Double): Unit = {
         val s = withWriter(_.writeVal(n))
+        val l = s.length
         val i = s.indexOf('.')
-        i should be > 0 // has '.' character
-        Character.isDigit(s.charAt(i - 1)) shouldBe true // has digit before '.'
-        Character.isDigit(s.charAt(i + 1)) shouldBe true // has digit after '.'
-        s.toDouble shouldBe n // no data loss
-        s.length should be <= n.toString.length // rounding isn't worse than in JDK
+        s.toDouble shouldBe n // no data loss when parsing by JDK
+        l should be <= n.toString.length // rounding isn't worse than in JDK
+        i should be > 0 // has the '.' character inside
+        i should be < l - 1
+        Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
+        Character.isDigit(s.charAt(i + 1)) shouldBe true // has a digit after the '.' character
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
@@ -737,8 +741,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeValAsString(2L)
         w.writeValAsString(true)
+        w.writeRawVal(Array[Byte](51))
         w.writeArrayEnd()
-      } shouldBe "[1,\"VVV\",\"2\",\"true\"]"
+      } shouldBe "[1,\"VVV\",\"2\",\"true\",3]"
     }
     "allow to write a prettified JSON array with values separated by comma" in {
       withWriter(WriterConfig(indentionStep = 2)) { w =>
@@ -747,13 +752,15 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeValAsString(2L)
         w.writeValAsString(true)
+        w.writeRawVal(Array[Byte](51))
         w.writeArrayEnd()
       } shouldBe
         """[
            |  1,
            |  "VVV",
            |  "2",
-           |  "true"
+           |  "true",
+           |  3
            |]""".stripMargin
     }
   }
@@ -771,8 +778,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeKey(true)
         w.writeVal("WWW")
+        w.writeKey(2)
+        w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
-      } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\"}"
+      } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\",\"2\":3}"
     }
     "allow to write a prettified JSON array with key/value pairs separated by comma" in {
       withWriter(WriterConfig(indentionStep = 2)) { w =>
@@ -781,11 +790,14 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeKey(true)
         w.writeVal("WWW")
+        w.writeKey(2)
+        w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
       } shouldBe
         """{
           |  "1": "VVV",
-          |  "true": "WWW"
+          |  "true": "WWW",
+          |  "2": 3
           |}""".stripMargin
     }
   }
@@ -803,19 +815,4 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       override val nullValue: String = ""
     }, "", cfg), "UTF-8")
   }
-
-  def isEscapedAscii(ch: Char): Boolean = ch < ' ' || ch == '\\' || ch == '"' || ch == '\u007f'
-
-  def toEscaped(ch: Char): String = ch match {
-    case '"' => """\""""
-    case '\\' => """\\"""
-    case '\b' => """\b"""
-    case '\f' => """\f"""
-    case '\n' => """\n"""
-    case '\r' => """\r"""
-    case '\t' => """\t"""
-    case _ => toHexEscaped(ch)
-  }
-
-  def toHexEscaped(ch: Char): String = f"\\u$ch%04x"
 }

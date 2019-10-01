@@ -8,8 +8,7 @@ class IntMapOfBooleansReadingSpec extends BenchmarkSpecBase {
   "IntMapOfBooleansReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
-      //FIXME: Circe doesn't support IntMap
-      //benchmark.circe() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
       //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson throws java.lang.IllegalArgumentException: Need exactly 2 type parameters for map like types (scala.collection.immutable.IntMap)

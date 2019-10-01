@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -34,17 +33,10 @@ class BigIntReading extends BigIntBenchmark {
 
   @Benchmark
   def jsoniterScala(): BigInt = readFromArray[BigInt](jsonBytes)(bigIntCodec)
-/* FIXME: PlayJson looses significant digits in big values
+/* FIXME: Play-JSON looses significant digits in BigInt values
   @Benchmark
-  def readPlayJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
+  def playJson(): BigInt = Json.parse(jsonBytes).as[BigInt]
 */
-  @Benchmark
-  def scalikeJackson(): BigInt = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[BigInt]
-  }
-
   @Benchmark
   def sprayJson(): BigInt = JsonParser(jsonBytes, jsonParserSettings).convertTo[BigInt]
 

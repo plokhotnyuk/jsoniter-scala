@@ -1,15 +1,10 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-//import java.lang.reflect.{ParameterizedType, Type}
 import java.time._
 import java.util.UUID
-
 import com.dslplatform.json._
-//import com.dslplatform.json.runtime.ScalaMapEncoder
 import com.dslplatform.json.runtime.Settings
-
 import scala.collection.immutable.{BitSet, Seq}
-//import scala.collection.immutable.IntMap
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
 
@@ -18,22 +13,6 @@ object DslPlatformJson {
     .limitDigitsBuffer(Int.MaxValue /*WARNING: don't do this for open-systems*/)
     .limitStringBuffer(Int.MaxValue /*WARNING: don't do this for open-systems*/)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
-/*
-  dslJson.registerWriterFactory(primitiveMapWriter)
-
-  private[this] def primitiveMapWriter(manifest: Type, dslJson: DslJson[_]): ScalaMapEncoder[Int, Any] = {
-    manifest match {
-      case pt: ParameterizedType if pt.getRawType == classOf[IntMap[_]] =>
-        val valueWriter = dslJson.tryFindWriter(pt.getActualTypeArguments.head)
-        val encoder = new ScalaMapEncoder[Int, Any](dslJson,true,
-          Some(NumberConverter.INT_WRITER.asInstanceOf[JsonWriter.WriteObject[Int]]),
-          Some(valueWriter.asInstanceOf[JsonWriter.WriteObject[Any]]))
-        dslJson.registerWriter(manifest, encoder)
-        encoder
-      case _ => null
-    }
-  }
-*/
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter
   }
@@ -68,7 +47,7 @@ object DslPlatformJson {
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = codec[GoogleMapsAPI.DistanceMatrix]
   implicit val (intEncoder, intDecoder) = codec[Int]
 /* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
-  implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = dslJson.encoder[IntMap[Boolean]]
+  implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = codec[IntMap[Boolean]]
 */
   implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = codec[List[Boolean]]
   implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = codec[Map[Int, Boolean]]
@@ -81,12 +60,8 @@ object DslPlatformJson {
   implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingRequiredFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]
-/* FIXME: DSL-JSON throws NPE at com.dslplatform.json.runtime.Generics.getTypeNameCompat(Generics.java:200)
-  implicit val (openHashMapOfIntsToBooleansEncoder, openHashMapOfIntsToBooleansDecoder) =
-    codec[mutable.OpenHashMap[Int, Boolean]]
-*/
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
-  implicit val (primitivesEncoder, primitivesDecoder) = setupCodecs[Primitives]
+/* FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+  implicit val (primitivesEncoder, primitivesDecoder) = codec[Primitives]
 */
   implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = codec[Seq[TwitterAPI.Tweet]]
   implicit val (setOfIntsEncoder, setOfIntsDecoder) = codec[Set[Int]]
@@ -107,13 +82,4 @@ object DslPlatformJson {
 
   private[this] def codec[T](implicit tag: TypeTag[T]): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
     dslJson.encoder[T] -> dslJson.decoder[T]
-
-/*
-  private[this] def stringCodec[T](f: String => T): (JsonWriter.WriteObject[T], JsonReader.ReadObject[T]) =
-    new JsonWriter.WriteObject[T] {
-      override def write(writer: JsonWriter, value: T): Unit = writer.writeString(value.toString)
-    } -> new JsonReader.ReadObject[T] {
-      override def read(reader: JsonReader[_]): T = f(reader.readString())
-    }
-*/
 }

@@ -4,13 +4,13 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import io.circe.parser._
-//import io.circe.syntax._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 //import upickle.default._
@@ -18,10 +18,9 @@ import play.api.libs.json.Json
 class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
-/* FIXME: Circe doesn't support mutable.LongMap
+
   @Benchmark
-  def circe(): Array[Byte] = printer.pretty(obj.asJson).getBytes(UTF_8)
-*/
+  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

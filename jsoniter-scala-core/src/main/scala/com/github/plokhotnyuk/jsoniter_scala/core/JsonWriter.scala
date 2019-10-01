@@ -114,7 +114,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeKey(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
-    writeBigInteger(x.bigInteger)
+    writeBigInteger(x.bigInteger, null)
     writeParenthesesWithColon()
   }
 
@@ -237,7 +237,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBigInteger(x.bigInteger)
+    writeBigInteger(x.bigInteger, null)
   }
 
   def writeVal(x: UUID): Unit = {
@@ -375,7 +375,7 @@ final class JsonWriter private[jsoniter_scala](
   def writeValAsString(x: BigInt): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
-    writeBigInteger(x.bigInteger)
+    writeBigInteger(x.bigInteger, null)
     writeBytes('"')
   }
 
@@ -428,23 +428,9 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
-  def writeRawVal(bs: Array[Byte]): Unit = count = {
-    val len = bs.length
-    val preferredBufSize = config.preferredBufSize
-    var buf = this.buf
-    var pos = count
-    var offset, step = 0
-    do {
-      step = Math.min(preferredBufSize, len - offset)
-      if (pos + step > limit) {
-        pos = flushAndGrowBuf(step, pos)
-        buf = this.buf
-      }
-      System.arraycopy(bs, offset, buf, pos, step)
-      pos += step
-      offset += step
-    } while (offset < len)
-    pos
+  def writeRawVal(bs: Array[Byte]): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeRawBytes(bs)
   }
 
   def writeNull(): Unit = {
@@ -643,6 +629,25 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 2) = b3
     buf(pos + 3) = b4
     pos + 4
+  }
+
+  private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
+    val len = bs.length
+    val preferredBufSize = config.preferredBufSize
+    var buf = this.buf
+    var pos = count
+    var offset, step = 0
+    do {
+      step = Math.min(preferredBufSize, len - offset)
+      if (pos + step > limit) {
+        pos = flushAndGrowBuf(step, pos)
+        buf = this.buf
+      }
+      System.arraycopy(bs, offset, buf, pos, step)
+      pos += step
+      offset += step
+    } while (offset < len)
+    pos
   }
 
   private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {
@@ -866,25 +871,28 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def illegalSurrogateError(): Nothing = encodeError("illegal char sequence of surrogate pair")
 
-  private[this] def writeBigInteger(x: BigInteger): Unit =
+  private[this] def writeBigInteger(x: BigInteger, ss: Array[BigInteger]): Unit =
     if (x.bitLength < 64) writeLong(x.longValue)
     else {
       val n = calculateTenPow18SquareNumber(x)
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
-      writeBigInteger(qr(0))
-      writeBigIntegerReminder(qr(1), n - 1)
+      val ss1 =
+        if (ss eq null) getTenPow18Squares(n)
+        else ss
+      val qr = x.divideAndRemainder(ss1(n))
+      writeBigInteger(qr(0), ss1)
+      writeBigIntegerReminder(qr(1), n - 1, ss1)
     }
 
-  private[this] def writeBigIntegerReminder(x: BigInteger, n: Int): Unit =
+  private[this] def writeBigIntegerReminder(x: BigInteger, n: Int, ss: Array[BigInteger]): Unit =
     if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
     else {
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
-      writeBigIntegerReminder(qr(0), n - 1)
-      writeBigIntegerReminder(qr(1), n - 1)
+      val qr = x.divideAndRemainder(ss(n))
+      writeBigIntegerReminder(qr(0), n - 1, ss)
+      writeBigIntegerReminder(qr(1), n - 1, ss)
     }
 
   private[this] def writeBigDecimal(x: java.math.BigDecimal): Unit = {
-    val exp = writeBigDecimal(x.unscaledValue, x.scale, 0)
+    val exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null)
     if (exp != 0) {
       if (exp > 0) writeBytes('E', '+')
       else writeBytes('E')
@@ -892,7 +900,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int): Int =
+  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Int =
     if (x.bitLength < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(28) // == Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
@@ -910,21 +918,25 @@ final class JsonWriter private[jsoniter_scala](
       }
     } else {
       val n = calculateTenPow18SquareNumber(x)
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
-      val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n))
-      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
+      val ss1 =
+        if (ss eq null) getTenPow18Squares(n)
+        else ss
+      val qr = x.divideAndRemainder(ss1(n))
+      val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n), ss1)
+      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1, ss1)
       exp
     }
 
-  private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, blockScale: Int, n: Int): Unit =
+  private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
+                                            ss: Array[BigInteger]): Unit =
     if (n < 0) {
       count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 19 == 18 digits and a place for optional dot
       val dotOff = scale - blockScale
       if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
     } else {
-      val qr = x.divideAndRemainder(tenPow18Squares(n))
-      writeBigDecimalReminder(qr(0), scale, blockScale + (18 << n), n - 1)
-      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1)
+      val qr = x.divideAndRemainder(ss(n))
+      writeBigDecimalReminder(qr(0), scale, blockScale + (18 << n), n - 1, ss)
+      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1, ss)
     }
 
   private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
@@ -2230,8 +2242,23 @@ object JsonWriter {
     }
     ss
   }
-  private final val tenPow18Squares: Stream[BigInteger] =
-    BigInteger.valueOf(1000000000000000000L) #:: tenPow18Squares.map(p => p.multiply(p))
+  @volatile private[this] var tenPow18Squares: Array[BigInteger] = Array(BigInteger.valueOf(1000000000000000000L))
+
+  final private def getTenPow18Squares(n: Int): Array[BigInteger] = {
+    var ss = tenPow18Squares
+    var i = ss.length
+    if (n >= i) {
+      var s = ss(i - 1)
+      ss = java.util.Arrays.copyOf(ss, n + 1)
+      do {
+        s = s.multiply(s)
+        ss(i) = s
+        i += 1
+      } while (i <= n)
+      tenPow18Squares = ss
+    }
+    ss
+  }
 
   final def isNonEscapedAscii(ch: Char): Boolean = ch < 0x80 && escapedChars(ch) == 0
 }
