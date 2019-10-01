@@ -428,24 +428,9 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
-  def writeRawVal(bs: Array[Byte]): Unit = count = {
+  def writeRawVal(bs: Array[Byte]): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    val len = bs.length
-    val preferredBufSize = config.preferredBufSize
-    var buf = this.buf
-    var pos = count
-    var offset, step = 0
-    do {
-      step = Math.min(preferredBufSize, len - offset)
-      if (pos + step > limit) {
-        pos = flushAndGrowBuf(step, pos)
-        buf = this.buf
-      }
-      System.arraycopy(bs, offset, buf, pos, step)
-      pos += step
-      offset += step
-    } while (offset < len)
-    pos
+    writeRawBytes(bs)
   }
 
   def writeNull(): Unit = {
@@ -644,6 +629,25 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 2) = b3
     buf(pos + 3) = b4
     pos + 4
+  }
+
+  private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
+    val len = bs.length
+    val preferredBufSize = config.preferredBufSize
+    var buf = this.buf
+    var pos = count
+    var offset, step = 0
+    do {
+      step = Math.min(preferredBufSize, len - offset)
+      if (pos + step > limit) {
+        pos = flushAndGrowBuf(step, pos)
+        buf = this.buf
+      }
+      System.arraycopy(bs, offset, buf, pos, step)
+      pos += step
+      offset += step
+    } while (offset < len)
+    pos
   }
 
   private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {

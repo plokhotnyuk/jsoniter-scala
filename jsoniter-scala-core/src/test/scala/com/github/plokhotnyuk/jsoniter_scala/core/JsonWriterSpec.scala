@@ -741,8 +741,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeValAsString(2L)
         w.writeValAsString(true)
+        w.writeRawVal(Array[Byte](51))
         w.writeArrayEnd()
-      } shouldBe "[1,\"VVV\",\"2\",\"true\"]"
+      } shouldBe "[1,\"VVV\",\"2\",\"true\",3]"
     }
     "allow to write a prettified JSON array with values separated by comma" in {
       withWriter(WriterConfig(indentionStep = 2)) { w =>
@@ -751,13 +752,15 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeValAsString(2L)
         w.writeValAsString(true)
+        w.writeRawVal(Array[Byte](51))
         w.writeArrayEnd()
       } shouldBe
         """[
            |  1,
            |  "VVV",
            |  "2",
-           |  "true"
+           |  "true",
+           |  3
            |]""".stripMargin
     }
   }
@@ -775,8 +778,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeKey(true)
         w.writeVal("WWW")
+        w.writeKey(2)
+        w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
-      } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\"}"
+      } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\",\"2\":3}"
     }
     "allow to write a prettified JSON array with key/value pairs separated by comma" in {
       withWriter(WriterConfig(indentionStep = 2)) { w =>
@@ -785,11 +790,14 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         w.writeVal("VVV")
         w.writeKey(true)
         w.writeVal("WWW")
+        w.writeKey(2)
+        w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
       } shouldBe
         """{
           |  "1": "VVV",
-          |  "true": "WWW"
+          |  "true": "WWW",
+          |  "2": 3
           |}""".stripMargin
     }
   }
