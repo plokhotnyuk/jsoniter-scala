@@ -16,15 +16,15 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "ReaderConfig.<init>" should {
     "have safe and handy defaults" in {
-      ReaderConfig().throwReaderExceptionWithStackTrace shouldBe false
-      ReaderConfig().appendHexDumpToParseException shouldBe true
-      ReaderConfig().preferredBufSize shouldBe 16384
-      ReaderConfig().preferredCharBufSize shouldBe 1024
+      ReaderConfig.throwReaderExceptionWithStackTrace shouldBe false
+      ReaderConfig.appendHexDumpToParseException shouldBe true
+      ReaderConfig.preferredBufSize shouldBe 16384
+      ReaderConfig.preferredCharBufSize shouldBe 1024
     }
     "throw exception in case for unsupported values of params" in {
-      assert(intercept[IllegalArgumentException](ReaderConfig(preferredBufSize = 11))
+      assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredBufSize(11))
         .getMessage.contains("'preferredBufSize' should be not less than 12"))
-      assert(intercept[IllegalArgumentException](ReaderConfig(preferredCharBufSize = -1))
+      assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredCharBufSize(-1))
         .getMessage.contains("'preferredCharBufSize' should be not less than 0"))
     }
   }
@@ -2814,5 +2814,5 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   def reader2(jsonBytes: Array[Byte], totalRead: Long = 0): JsonReader =
     new JsonReader(new Array[Byte](12), // a minimal allowed length
       0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(jsonBytes), totalRead,
-      ReaderConfig(throwReaderExceptionWithStackTrace = true))
+      ReaderConfig.withThrowReaderExceptionWithStackTrace(true))
 }

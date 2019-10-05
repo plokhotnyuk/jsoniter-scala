@@ -27,7 +27,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
       def streamWithError = getClass.getResourceAsStream("user_api_response_with_error.json")
 
-      readFromStream(streamWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      readFromStream(streamWithError, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromStream(streamWithError)(codec)).getMessage ==
         """expected end of input, offset: 0x00000094, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -61,7 +61,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
       val compactJsonWithError = compactJson ++ "}}}}}".getBytes(UTF_8)
 
-      readFromArray(compactJsonWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      readFromArray(compactJsonWithError, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromArray(compactJsonWithError)(codec)).getMessage ==
         """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -95,7 +95,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
       val msgWithError = httpMessage ++ "}}}}}".getBytes(UTF_8)
 
-      readFromSubArray(msgWithError, 66, msgWithError.length, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      readFromSubArray(msgWithError, 66, msgWithError.length, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromSubArray(msgWithError, 66, msgWithError.length)(codec)).getMessage ==
         """expected end of input, offset: 0x00000097, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -180,7 +180,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
         bbuf
       }
 
-      readFromByteBuffer(bbufWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      readFromByteBuffer(bbufWithError, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromByteBuffer(bbufWithError)(codec)).getMessage ==
         """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -190,7 +190,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
           || 00000040 | 6d 6f 64 65 6c 22 3a 22 69 50 68 6f 6e 65 20 58 | model":"iPhone X |
           || 00000050 | 22 7d 5d 7d 7d 7d 7d 7d 7d                      | "}]}}}}}}        |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
-      readFromByteBuffer(directBbufWithError, ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      readFromByteBuffer(directBbufWithError, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromByteBuffer(directBbufWithError)(codec)).getMessage ==
         """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -267,7 +267,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       def inputStreamWithError: InputStream = getClass.getResourceAsStream("user_api_array_with_error.json")
 
       scanJsonArrayFromStream[User](inputStreamWithError)(_ => false)(codec)
-      scanJsonArrayFromStream[User](inputStreamWithError, ReaderConfig(checkForEndOfInput = false))(_ => true)(codec)
+      scanJsonArrayFromStream[User](inputStreamWithError, ReaderConfig.withCheckForEndOfInput(false))(_ => true)(codec)
       assert(intercept[JsonReaderException](scanJsonArrayFromStream[User](inputStreamWithError)(_ => true)(codec)).getMessage ==
         """expected end of input, offset: 0x00000193, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -318,7 +318,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
       val compactJsonWithError = compactJson ++ "}}}}}".getBytes(UTF_8)
 
-      readFromString(new String(compactJsonWithError, UTF_8), ReaderConfig(checkForEndOfInput = false))(codec) shouldBe user
+      readFromString(new String(compactJsonWithError, UTF_8), ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromString(new String(compactJsonWithError, UTF_8))(codec)).getMessage ==
         """expected end of input, offset: 0x00000054, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -340,7 +340,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       writeToStream(user, out1)(codec)
       out1.toString("UTF-8") shouldBe toString(compactJson)
       val out2 = new ByteArrayOutputStream()
-      writeToStream(user, out2, WriterConfig(indentionStep = 2))(codec)
+      writeToStream(user, out2, WriterConfig.withIndentionStep(2))(codec)
       out2.toString("UTF-8") shouldBe toString(prettyJson)
     }
     "throw NullPointerException in case of the provided params are null" in {
@@ -352,7 +352,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "writeToArray" should {
     "serialize an object to a new instance of byte array" in {
       toString(writeToArray(user)(codec)) shouldBe toString(compactJson)
-      toString(writeToArray(user, WriterConfig(indentionStep = 2))(codec)) shouldBe toString(prettyJson)
+      toString(writeToArray(user, WriterConfig.withIndentionStep(2))(codec)) shouldBe toString(prettyJson)
     }
     "throw NullPointerException in case of the provided params are null" in {
       intercept[NullPointerException](writeToArray(user)(null))
@@ -367,7 +367,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       val to1 = writeToSubArray(user, buf, from1, buf.length - 10)(codec)
       new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
       val from2 = 0
-      val to2 = writeToSubArray(user, buf, from2, buf.length, WriterConfig(indentionStep = 2))(codec)
+      val to2 = writeToSubArray(user, buf, from2, buf.length, WriterConfig.withIndentionStep(2))(codec)
       new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
     }
     "throw ArrayIndexOutOfBoundsException in case of the provided byte array is overflown during serialization" in {
@@ -398,7 +398,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       bbuf.limit() shouldBe 150
       val from2 = 0
       bbuf.position(from2)
-      writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
+      writeToByteBuffer(user, bbuf, WriterConfig.withIndentionStep(2))(codec)
       val to2 = bbuf.position()
       bbuf.position(from2)
       bbuf.get(buf, from2, to2 - from2)
@@ -420,7 +420,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       bbuf.arrayOffset() shouldBe offset
       val from2 = 0
       bbuf.position(from2)
-      writeToByteBuffer(user, bbuf, WriterConfig(indentionStep = 2))(codec)
+      writeToByteBuffer(user, bbuf, WriterConfig.withIndentionStep(2))(codec)
       val to2 = bbuf.position()
       new String(buf, from2 + offset, to2 - from2, UTF_8) shouldBe toString(prettyJson)
       bbuf.limit() shouldBe buf.length - offset
@@ -458,7 +458,7 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
     "writeToString" should {
       "serialize an object to a string" in {
         writeToString(user)(codec) shouldBe toString(compactJson)
-        writeToString(user, WriterConfig(indentionStep = 2))(codec) shouldBe toString(prettyJson)
+        writeToString(user, WriterConfig.withIndentionStep(2))(codec) shouldBe toString(prettyJson)
       }
       "throw NullPointerException in case of the provided params are null" in {
         intercept[NullPointerException](writeToArray(user)(null))

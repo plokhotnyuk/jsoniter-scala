@@ -41,15 +41,50 @@ import scala.{specialized => sp}
   * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
   *                           successful parsing of the value
   */
-case class ReaderConfig(
-    throwReaderExceptionWithStackTrace: Boolean = false,
-    appendHexDumpToParseException: Boolean = true,
-    preferredBufSize: Int = 16384,
-    preferredCharBufSize: Int = 1024,
-    checkForEndOfInput: Boolean = true) {
-  if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
-  if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
+class ReaderConfig private (
+    val throwReaderExceptionWithStackTrace: Boolean,
+    val appendHexDumpToParseException: Boolean,
+    val preferredBufSize: Int,
+    val preferredCharBufSize: Int,
+    val checkForEndOfInput: Boolean) {
+  def withThrowReaderExceptionWithStackTrace(throwReaderExceptionWithStackTrace: Boolean): ReaderConfig =
+    copy(throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace)
+
+  def withAppendHexDumpToParseException(appendHexDumpToParseException: Boolean): ReaderConfig =
+    copy(appendHexDumpToParseException = appendHexDumpToParseException)
+
+  def withPreferredBufSize(preferredBufSize: Int): ReaderConfig = {
+    if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
+    copy(preferredBufSize = preferredBufSize)
+  }
+
+  def withPreferredCharBufSize(preferredCharBufSize: Int): ReaderConfig = {
+    if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
+    copy(preferredCharBufSize = preferredCharBufSize)
+  }
+
+  def withCheckForEndOfInput(checkForEndOfInput: Boolean): ReaderConfig =
+    copy(checkForEndOfInput = checkForEndOfInput)
+
+  private[this] def copy(throwReaderExceptionWithStackTrace: Boolean = throwReaderExceptionWithStackTrace,
+                         appendHexDumpToParseException: Boolean = appendHexDumpToParseException,
+                         preferredBufSize: Int = preferredBufSize,
+                         preferredCharBufSize: Int = preferredCharBufSize,
+                         checkForEndOfInput: Boolean = checkForEndOfInput): ReaderConfig =
+    new ReaderConfig(
+      throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace,
+      appendHexDumpToParseException = appendHexDumpToParseException,
+      preferredBufSize = preferredBufSize,
+      preferredCharBufSize = preferredCharBufSize,
+      checkForEndOfInput = checkForEndOfInput)
 }
+
+object ReaderConfig extends ReaderConfig(
+    throwReaderExceptionWithStackTrace = false,
+    appendHexDumpToParseException = true,
+    preferredBufSize = 16384,
+    preferredCharBufSize = 1024,
+    checkForEndOfInput = true)
 
 class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)

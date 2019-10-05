@@ -13,15 +13,15 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
   "WriterConfig.<init>" should {
     "have handy defaults" in {
-      WriterConfig().throwWriterExceptionWithStackTrace shouldBe false
-      WriterConfig().indentionStep shouldBe 0
-      WriterConfig().escapeUnicode shouldBe false
-      WriterConfig().preferredBufSize shouldBe 16384
+      WriterConfig.throwWriterExceptionWithStackTrace shouldBe false
+      WriterConfig.indentionStep shouldBe 0
+      WriterConfig.escapeUnicode shouldBe false
+      WriterConfig.preferredBufSize shouldBe 16384
     }
     "throw exception in case for unsupported values of params" in {
-      assert(intercept[IllegalArgumentException](WriterConfig(indentionStep = -1))
+      assert(intercept[IllegalArgumentException](WriterConfig.withIndentionStep(-1))
         .getMessage.contains("'indentionStep' should be not less than 0"))
-      assert(intercept[IllegalArgumentException](WriterConfig(preferredBufSize = 0))
+      assert(intercept[IllegalArgumentException](WriterConfig.withPreferredBufSize(0))
         .getMessage.contains("'preferredBufSize' should be not less than 1"))
     }
   }
@@ -39,7 +39,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeVal(value)) shouldBe s
         withWriter(_.writeValAsString(value)) shouldBe s""""$s""""
         withWriter(_.writeKey(value)) shouldBe s""""$s":"""
-        withWriter(WriterConfig(indentionStep = 2))(_.writeKey(value)) shouldBe s""""$s": """
+        withWriter(WriterConfig.withIndentionStep(2))(_.writeKey(value)) shouldBe s""""$s": """
       }
 
       check(value = true)
@@ -336,8 +336,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write strings with chars that should be escaped" in {
       def check(s: String, escapeUnicode: Boolean, f: String => String = _.flatMap(toEscaped(_))): Unit = {
-        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)) shouldBe s""""${f(s)}""""
-        withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
+        withWriter(WriterConfig.withEscapeUnicode(escapeUnicode))(_.writeVal(s)) shouldBe s""""${f(s)}""""
+        withWriter(WriterConfig.withEscapeUnicode(escapeUnicode))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
       }
 
       check("Oó!", escapeUnicode = true, _ => "O\\u00f3!")
@@ -349,8 +349,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "write strings with escaped Unicode chars if it is specified by provided writer config" in {
       def check(s: String, f: String => String = _.flatMap(toEscaped(_))): Unit = {
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe s""""${f(s)}""""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
+        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(s)) shouldBe s""""${f(s)}""""
+        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
       }
 
       forAll(minSuccessful(100000)) { (s: String) =>
@@ -363,8 +363,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       def check(s: String): Unit = {
         withWriter(_.writeVal(s)) shouldBe s""""$s""""
         withWriter(_.writeKey(s)) shouldBe s""""$s":"""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(s)) shouldBe s""""${s.flatMap(toEscaped(_))}""""
-        withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(s)) shouldBe s""""${s.flatMap(toEscaped(_))}":"""
+        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(s)) shouldBe s""""${s.flatMap(toEscaped(_))}""""
+        withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${s.flatMap(toEscaped(_))}":"""
       }
 
       forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (ch1: Char, ch2: Char) =>
@@ -372,8 +372,8 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
     }
     "write string with mixed Latin-1 characters when escaping of Unicode chars is turned on" in {
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeVal("a\bc")) shouldBe "\"a\\bc\""
-      withWriter(WriterConfig(escapeUnicode = true))(_.writeKey("a\bc")) shouldBe "\"a\\bc\":"
+      withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal("a\bc")) shouldBe "\"a\\bc\""
+      withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey("a\bc")) shouldBe "\"a\\bc\":"
     }
     "write string with mixed UTF-8 characters when escaping of Unicode chars is turned off" in {
       withWriter(_.writeVal("ї\bc\u0000")) shouldBe "\"ї\\bc\\u0000\""
@@ -381,9 +381,9 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw i/o exception in case of illegal character surrogate pair" in {
       def checkError(s: String, escapeUnicode: Boolean): Unit = {
-        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(s)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig.withEscapeUnicode(escapeUnicode))(_.writeVal(s)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
-        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(s)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig.withEscapeUnicode(escapeUnicode))(_.writeKey(s)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
       }
 
@@ -413,24 +413,24 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
       forAll(genNonAsciiChar, minSuccessful(10000)) { (ch: Char) =>
         whenever(!Character.isSurrogate(ch)) {
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
+          withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
+          withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
         }
       }
     }
     "write string with escaped Unicode chars if it is specified by provided writer config" in {
       forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(isEscapedAscii(ch) || ch >= 128) {
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
-          withWriter(WriterConfig(escapeUnicode = true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
+          withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
+          withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
         }
       }
     }
     "throw i/o exception in case of surrogate pair character" in {
       forAll(genSurrogateChar, Gen.oneOf(true, false)) { (ch: Char, escapeUnicode: Boolean) =>
-        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeVal(ch)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig.withEscapeUnicode(escapeUnicode))(_.writeVal(ch)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
-        assert(intercept[JsonWriterException](withWriter(WriterConfig(escapeUnicode = escapeUnicode))(_.writeKey(ch)))
+        assert(intercept[JsonWriterException](withWriter(WriterConfig.withEscapeUnicode(escapeUnicode))(_.writeKey(ch)))
           .getMessage.contains("illegal char sequence of surrogate pair"))
       }
     }
@@ -746,7 +746,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       } shouldBe "[1,\"VVV\",\"2\",\"true\",3]"
     }
     "allow to write a prettified JSON array with values separated by comma" in {
-      withWriter(WriterConfig(indentionStep = 2)) { w =>
+      withWriter(WriterConfig.withIndentionStep(2)) { w =>
         w.writeArrayStart()
         w.writeVal(1)
         w.writeVal("VVV")
@@ -784,7 +784,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\",\"2\":3}"
     }
     "allow to write a prettified JSON array with key/value pairs separated by comma" in {
-      withWriter(WriterConfig(indentionStep = 2)) { w =>
+      withWriter(WriterConfig.withIndentionStep(2)) { w =>
         w.writeObjectStart()
         w.writeKey(1)
         w.writeVal("VVV")
@@ -803,7 +803,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
 
   def withWriter(f: JsonWriter => Unit): String =
-    withWriter(WriterConfig(preferredBufSize = 1, throwWriterExceptionWithStackTrace = true))(f)
+    withWriter(WriterConfig.withPreferredBufSize(1).withThrowWriterExceptionWithStackTrace(true))(f)
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
     val writer = new JsonWriter(new Array[Byte](0), 0, 0, 0, false, false, null, null, cfg)
