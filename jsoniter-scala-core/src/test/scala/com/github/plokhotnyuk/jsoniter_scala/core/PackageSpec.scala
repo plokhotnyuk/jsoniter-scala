@@ -170,9 +170,9 @@ class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
       bbuf.position() shouldBe 11
     }
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
-      def bbufWithError = ByteBuffer.wrap(compactJson ++ "}}}}}".getBytes(UTF_8))
+      def bbufWithError: ByteBuffer = ByteBuffer.wrap(compactJson ++ "}}}}}".getBytes(UTF_8))
 
-      def directBbufWithError = {
+      def directBbufWithError: ByteBuffer = {
         val compactJsonWithError = compactJson ++ "}}}}}".getBytes(UTF_8)
         val bbuf = ByteBuffer.allocateDirect(compactJsonWithError.length)
         bbuf.put(compactJsonWithError)

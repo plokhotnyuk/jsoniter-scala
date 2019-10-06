@@ -19,8 +19,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       WriterConfig.preferredBufSize shouldBe 16384
     }
     "throw exception in case for unsupported values of params" in {
+      WriterConfig.withIndentionStep(0)
       assert(intercept[IllegalArgumentException](WriterConfig.withIndentionStep(-1))
         .getMessage.contains("'indentionStep' should be not less than 0"))
+      WriterConfig.withPreferredBufSize(1)
       assert(intercept[IllegalArgumentException](WriterConfig.withPreferredBufSize(0))
         .getMessage.contains("'preferredBufSize' should be not less than 1"))
     }
@@ -72,7 +74,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
-      forAll(Gen.uuid, minSuccessful(100000))(check)
+      forAll(Gen.uuid, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Duration" should {
@@ -90,7 +92,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(Duration.ofSeconds(-60, -1), "PT-1M-0.000000001S")
       check(Duration.ofSeconds(-60, 1), "PT-59.999999999S")
       check(Duration.ofSeconds(-60, 20000000000L), "PT-40S")
-      forAll(genDuration, minSuccessful(100000))(x => check(x, x.toString))
+      forAll(genDuration, minSuccessful(10000))(x => check(x, x.toString))
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Instant" should {
@@ -107,7 +109,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(Instant.MAX)
       check(Instant.MIN)
-      forAll(genInstant, minSuccessful(100000))(check)
+      forAll(genInstant, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDate" should {
@@ -124,7 +126,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(LocalDate.MAX)
       check(LocalDate.MIN)
-      forAll(genLocalDate, minSuccessful(100000))(check)
+      forAll(genLocalDate, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalDateTime" should {
@@ -141,7 +143,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(LocalDateTime.MAX)
       check(LocalDateTime.MIN)
-      forAll(genLocalDateTime, minSuccessful(100000))(check)
+      forAll(genLocalDateTime, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for LocalTime" should {
@@ -158,7 +160,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(LocalTime.MAX)
       check(LocalTime.MIN)
-      forAll(genLocalTime, minSuccessful(100000))(check)
+      forAll(genLocalTime, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for MonthDay" should {
@@ -175,7 +177,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(MonthDay.of(12, 31))
       check(MonthDay.of(1, 1))
-      forAll(genMonthDay, minSuccessful(100000))(check)
+      forAll(genMonthDay, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetDateTime" should {
@@ -192,7 +194,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(OffsetDateTime.MAX)
       check(OffsetDateTime.MIN)
-      forAll(genOffsetDateTime, minSuccessful(100000))(check)
+      forAll(genOffsetDateTime, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for OffsetTime" should {
@@ -209,7 +211,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(OffsetTime.MAX)
       check(OffsetTime.MIN)
-      forAll(genOffsetTime, minSuccessful(100000))(check)
+      forAll(genOffsetTime, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Period" should {
@@ -225,7 +227,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
 
       check(Period.ZERO)
-      forAll(genPeriod, minSuccessful(100000))(check)
+      forAll(genPeriod, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Year" should {
@@ -244,7 +246,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(Year.of(Year.MAX_VALUE))
       check(Year.of(Year.MIN_VALUE))
-      forAll(genYear, minSuccessful(100000))(check)
+      forAll(genYear, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for YearMonth" should {
@@ -262,7 +264,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(YearMonth.of(Year.MAX_VALUE, 12))
       check(YearMonth.of(Year.MIN_VALUE, 1))
-      forAll(genYearMonth, minSuccessful(100000))(check)
+      forAll(genYearMonth, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZonedDateTime" should {
@@ -279,7 +281,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(ZonedDateTime.of(LocalDateTime.MAX, ZoneOffset.MAX))
       check(ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN))
-      forAll(genZonedDateTime, minSuccessful(100000))(check)
+      forAll(genZonedDateTime, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneOffset" should {
@@ -296,7 +298,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(ZoneOffset.MAX)
       check(ZoneOffset.MIN)
-      forAll(genZoneOffset, minSuccessful(100000))(check)
+      forAll(genZoneOffset, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for ZoneId" should {
@@ -313,7 +315,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(ZoneOffset.MAX)
       check(ZoneOffset.MIN)
-      forAll(genZoneId, minSuccessful(100000))(check)
+      forAll(genZoneId, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for string" should {
@@ -328,7 +330,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
 
       check("Oó!")
-      forAll(minSuccessful(100000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { (s: String) =>
         whenever(s.forall(ch => !Character.isSurrogate(ch) && !isEscapedAscii(ch))) {
           check(s)
         }
@@ -353,7 +355,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
       }
 
-      forAll(minSuccessful(100000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { (s: String) =>
         whenever(s.forall(ch => isEscapedAscii(ch) || ch >= 128)) {
           check(s)
         }
@@ -464,7 +466,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         check(n)
       }
     }
@@ -478,10 +480,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         check(n.toLong)
       }
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         check(n)
       }
     }
@@ -547,15 +549,15 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(200f)
       check(3.3554432E7f)
       //(1 to 16777216).par.foreach { n =>
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         check(n.toFloat)
       }
       //(1 to Int.MaxValue).par.foreach { n =>
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) check(x)
       }
-      forAll(minSuccessful(100000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { (n: Float) =>
         if (java.lang.Float.isFinite(n)) check(n)
       }
     }
@@ -628,14 +630,14 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check(1.9430376160308388E16)
       check(-6.9741824662760956E19)
       check(4.3816050601147837E18)
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         check(n.toDouble)
       }
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) check(x)
       }
-      forAll(minSuccessful(100000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { (n: Double) =>
         if (java.lang.Double.isFinite(n)) check(n)
       }
     }
@@ -682,10 +684,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         check(BigInt(n))
       }
-      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
         check(n)
       }
     }
@@ -704,10 +706,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(100000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { (n: Double) =>
         check(BigDecimal(n))
       }
-      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
         check(n)
       }
     }

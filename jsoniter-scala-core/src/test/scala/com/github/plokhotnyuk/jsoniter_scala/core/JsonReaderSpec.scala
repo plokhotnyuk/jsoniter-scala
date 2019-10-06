@@ -22,20 +22,22 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       ReaderConfig.preferredCharBufSize shouldBe 1024
     }
     "throw exception in case for unsupported values of params" in {
+      ReaderConfig.withPreferredBufSize(12)
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredBufSize(11))
         .getMessage.contains("'preferredBufSize' should be not less than 12"))
+      ReaderConfig.withPreferredCharBufSize(0)
       assert(intercept[IllegalArgumentException](ReaderConfig.withPreferredCharBufSize(-1))
         .getMessage.contains("'preferredCharBufSize' should be not less than 0"))
     }
   }
   "JsonReader.toHashCode" should {
     "produce the same hash value for strings as JDK by default" in {
-      forAll(minSuccessful(100000)) { (x: String) =>
+      forAll(minSuccessful(10000)) { (x: String) =>
         assert(JsonReader.toHashCode(x.toCharArray, x.length) == x.hashCode)
       }
     }
     "produce 0 hash value when the provided 'len' isn't greater than 0" in {
-      forAll(minSuccessful(100000)) { (x: Int) =>
+      forAll(minSuccessful(10000)) { (x: Int) =>
         whenever(x <= 0) {
           assert(JsonReader.toHashCode("VVV".toCharArray, x) == 0)
         }
@@ -446,7 +448,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         reader(s""""${s.toUpperCase}":""").readKeyAsUUID() shouldBe x
       }
 
-      forAll(Gen.uuid, minSuccessful(100000))(check)
+      forAll(Gen.uuid, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
       def checkError(json: String, error: String): Unit = {
@@ -561,7 +563,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check("P0D", Duration.ZERO)
       check("PT0S", Duration.ZERO)
-      forAll(genDuration, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genDuration, minSuccessful(10000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken Duration string" in {
       def checkError(json: String, error: String): Unit = {
@@ -632,7 +634,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(Instant.MAX)
       check(Instant.MIN)
-      forAll(genInstant, minSuccessful(100000))(check)
+      forAll(genInstant, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(json: String, error: String): Unit = {
@@ -726,7 +728,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(LocalDate.MAX)
       check(LocalDate.MIN)
-      forAll(genLocalDate, minSuccessful(100000))(check)
+      forAll(genLocalDate, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDate string" in {
       def checkError(json: String, error: String): Unit = {
@@ -799,7 +801,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(LocalDateTime.MAX)
       check(LocalDateTime.MIN)
-      forAll(genLocalDateTime, minSuccessful(100000))(check)
+      forAll(genLocalDateTime, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -886,7 +888,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(LocalTime.MAX)
       check(LocalTime.MIN)
-      forAll(genLocalTime, minSuccessful(100000))(check)
+      forAll(genLocalTime, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -932,7 +934,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check(MonthDay.of(12, 31))
       check(MonthDay.of(1, 1))
-      forAll(genMonthDay, minSuccessful(100000))(check)
+      forAll(genMonthDay, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken LocalDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -989,7 +991,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check("2018-01-01T00:00:00.000Z", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
       check("2018-01-01T00:00:00.000000000Z", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
       check("2018-01-01T00:00:00.000000000+00", OffsetDateTime.of(2018, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
-      forAll(genOffsetDateTime, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genOffsetDateTime, minSuccessful(10000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken OffsetDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1098,7 +1100,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check("00:00:00.000Z", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
       check("00:00:00.000000000Z", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
       check("00:00:00.000000000+00", OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC))
-      forAll(genOffsetTime, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genOffsetTime, minSuccessful(10000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken OffsetTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1164,8 +1166,8 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
 
       check("P0D", Period.ZERO)
-      forAll(genPeriod, minSuccessful(100000))(x => check(x.toString, x))
-      forAll(minSuccessful(100000)) { (x: Int, y: Int) =>
+      forAll(genPeriod, minSuccessful(10000))(x => check(x.toString, x))
+      forAll(minSuccessful(10000)) { (x: Int, y: Int) =>
         check(s"P${x}Y", Period.of(x, 0, 0))
         check(s"P${x}M", Period.of(0, x, 0))
         check(s"P${x}D", Period.of(0, 0, x))
@@ -1173,12 +1175,12 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         check(s"P${x}M${y}D", Period.of(0, x, y))
         check(s"P${x}Y${y}D", Period.of(x, 0, y))
       }
-      forAll(Gen.choose(-1000000, 1000000), minSuccessful(100000)) { (w: Int) =>
+      forAll(Gen.choose(-1000000, 1000000), minSuccessful(10000)) { (w: Int) =>
         check(s"P${w}W", Period.of(0, 0, w * 7))
         check(s"P1Y${w}W", Period.of(1, 0, w * 7))
         check(s"P1Y1M${w}W", Period.of(1, 1, w * 7))
       }
-      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(100000)) { (w: Int, d: Int) =>
+      forAll(Gen.choose(-1000000, 1000000), Gen.choose(-1000000, 1000000), minSuccessful(10000)) { (w: Int, d: Int) =>
         check(s"P${w}W${d}D", Period.of(0, 0, w * 7 + d))
         check(s"P1Y${w}W${d}D", Period.of(1, 0, w * 7 + d))
         check(s"P1Y1M${w}W${d}D", Period.of(1, 1, w * 7 + d))
@@ -1263,7 +1265,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check("-999999999", Year.of(Year.MIN_VALUE))
       check("+999999999", Year.of(Year.MAX_VALUE))
-      forAll(genYear, minSuccessful(100000)) { (x: Year) =>
+      forAll(genYear, minSuccessful(10000)) { (x: Year) =>
         check(x.format(yearFormatter), x)
       }
     }
@@ -1313,7 +1315,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
       check("+999999999-12", YearMonth.of(Year.MAX_VALUE, 12))
       check("-999999999-01", YearMonth.of(Year.MIN_VALUE, 1))
-      forAll(genYearMonth, minSuccessful(100000)) { (x: YearMonth) =>
+      forAll(genYearMonth, minSuccessful(10000)) { (x: YearMonth) =>
         val s = x.toString
         val fixed =
           if (x.getYear < 0 && !s.startsWith("-")) s"-$s"
@@ -1395,7 +1397,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         check("2018-10-28T02:30+02:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+02:00[Europe/Warsaw]"))
         check("2018-10-28T02:30+03:00[Europe/Warsaw]", ZonedDateTime.parse("2018-10-28T02:30+03:00[Europe/Warsaw]"))
       }
-      forAll(genZonedDateTime, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genZonedDateTime, minSuccessful(10000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZonedDateTime string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1499,7 +1501,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         reader(s""""$s":""").readKeyAsZoneId() shouldBe x
       }
 
-      forAll(genZoneId, minSuccessful(100000))(check)
+      forAll(genZoneId, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken ZoneId string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1575,7 +1577,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check("+18:00", ZoneOffset.MAX)
       check("-18", ZoneOffset.MIN)
       check("-18:00", ZoneOffset.MIN)
-      forAll(genZoneOffset, minSuccessful(100000))(x => check(x.toString, x))
+      forAll(genZoneOffset, minSuccessful(10000))(x => check(x.toString, x))
     }
     "throw parsing exception for empty input and illegal or broken ZoneOffset string" in {
       def checkError(json: String, error: String): Unit = {
@@ -1612,7 +1614,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       check("x", "")
       check("", "x")
       check("x", "x")
-      forAll(minSuccessful(100000)) { (s1: String, s2: String) =>
+      forAll(minSuccessful(10000)) { (s1: String, s2: String) =>
         whenever(s1.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s1, s2)
         }
@@ -1670,14 +1672,14 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader("null").readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
-      forAll(minSuccessful(100000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { (s: String) =>
         whenever(s.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s)
         }
       }
     }
     "parse string with valid surrogate pairs" in {
-      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(100000)) { (hi: Char, lo: Char) =>
+      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (hi: Char, lo: Char) =>
         whenever(Character.isSurrogatePair(hi, lo)) {
           check(new String(Array(hi, lo)))
         }
@@ -1687,14 +1689,14 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkEscaped("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\")
     }
     "parse string with hexadecimal escaped chars which are non-surrogate" in {
-      forAll(minSuccessful(100000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { (s: String) =>
         whenever(s.forall(ch => !Character.isSurrogate(ch))) {
           checkEscaped(s.map((ch: Char) => toHexEscaped(ch)).mkString, s)
         }
       }
     }
     "parse string with hexadecimal escaped chars which are valid surrogate pairs" in {
-      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(100000)) { (hi: Char, lo: Char) =>
+      forAll(genHighSurrogateChar, genLowSurrogateChar, minSuccessful(10000)) { (hi: Char, lo: Char) =>
         whenever(Character.isSurrogatePair(hi, lo)) {
           val s = new String(Array(hi, lo))
           checkEscaped(s.map((ch: Char) => toHexEscaped(ch)).mkString, s)
@@ -1830,7 +1832,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkEscaped("""\\""", '\\')
     }
     "parse hexadecimal escaped chars which are non-surrogate" in {
-      forAll(minSuccessful(100000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(!Character.isSurrogate(ch)) {
           checkEscaped(toHexEscaped(ch), ch)
         }
@@ -2061,7 +2063,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid int values" in {
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         check(n)
       }
     }
@@ -2126,7 +2128,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid long values" in {
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         check(n)
       }
     }
@@ -2225,17 +2227,17 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkFloat("1.000000178813934326171875")
       checkFloat("1.00000017881393432617187501")
       checkFloat("36028797018963967") // 2^n - 1 integer regression
-      forAll(minSuccessful(100000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { (n: Float) =>
         checkFloat(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { (n: Double) =>
         checkFloat(n.toString)
       }
       //(1 to Int.MaxValue).par.foreach { n =>
       //  val x = java.lang.Float.intBitsToFloat(n)
       //  if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       //}
-      forAll(minSuccessful(100000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { (n: Int) =>
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
@@ -2247,13 +2249,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       //    checkFloat(s"${m | (1L << 31)}e$e")
       //  }
       //}
-      forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), minSuccessful(100000)) { (m: Long, e: Int) =>
+      forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), minSuccessful(10000)) { (m: Long, e: Int) =>
         checkFloat(s"${m}e$e")
       }
-      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
         checkFloat(n.toString)
       }
-      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
         checkFloat(n.toString)
       }
     }
@@ -2372,26 +2374,26 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkDouble("9223372036854776833") // Round-up, above halfway
       checkDouble("11417981541647680316116887983825362587765178369")
       checkDouble("36028797018963967") // 2^n - 1 integer regression
-      forAll(minSuccessful(100000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { (n: Double) =>
         checkDouble(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { (n: Float) =>
         checkDouble(n.toString)
       }
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
       }
-      forAll(minSuccessful(100000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { (n: Long) =>
         checkDouble(n.toString)
       }
-      forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 37), minSuccessful(100000)) { (m: Long, e: Int) =>
+      forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 37), minSuccessful(10000)) { (m: Long, e: Int) =>
         checkDouble(s"${m}e$e")
       }
-      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
         checkDouble(n.toString)
       }
-      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
         checkDouble(n.toString)
       }
     }
@@ -2484,7 +2486,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid number values" in {
-      forAll(genBigInt, minSuccessful(100000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
         check(n)
       }
     }
@@ -2577,7 +2579,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "parse valid number values with scale less than specified maximum" in {
-      forAll(genBigDecimal, minSuccessful(100000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
         check(n.toString, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
       }
     }
