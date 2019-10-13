@@ -41,15 +41,50 @@ import scala.{specialized => sp}
   * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
   *                           successful parsing of the value
   */
-case class ReaderConfig(
-    throwReaderExceptionWithStackTrace: Boolean = false,
-    appendHexDumpToParseException: Boolean = true,
-    preferredBufSize: Int = 16384,
-    preferredCharBufSize: Int = 1024,
-    checkForEndOfInput: Boolean = true) {
-  if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
-  if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
+class ReaderConfig private (
+    val throwReaderExceptionWithStackTrace: Boolean,
+    val appendHexDumpToParseException: Boolean,
+    val preferredBufSize: Int,
+    val preferredCharBufSize: Int,
+    val checkForEndOfInput: Boolean) {
+  def withThrowReaderExceptionWithStackTrace(throwReaderExceptionWithStackTrace: Boolean): ReaderConfig =
+    copy(throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace)
+
+  def withAppendHexDumpToParseException(appendHexDumpToParseException: Boolean): ReaderConfig =
+    copy(appendHexDumpToParseException = appendHexDumpToParseException)
+
+  def withPreferredBufSize(preferredBufSize: Int): ReaderConfig = {
+    if (preferredBufSize < 12) throw new IllegalArgumentException("'preferredBufSize' should be not less than 12")
+    copy(preferredBufSize = preferredBufSize)
+  }
+
+  def withPreferredCharBufSize(preferredCharBufSize: Int): ReaderConfig = {
+    if (preferredCharBufSize < 0) throw new IllegalArgumentException("'preferredCharBufSize' should be not less than 0")
+    copy(preferredCharBufSize = preferredCharBufSize)
+  }
+
+  def withCheckForEndOfInput(checkForEndOfInput: Boolean): ReaderConfig =
+    copy(checkForEndOfInput = checkForEndOfInput)
+
+  private[this] def copy(throwReaderExceptionWithStackTrace: Boolean = throwReaderExceptionWithStackTrace,
+                         appendHexDumpToParseException: Boolean = appendHexDumpToParseException,
+                         preferredBufSize: Int = preferredBufSize,
+                         preferredCharBufSize: Int = preferredCharBufSize,
+                         checkForEndOfInput: Boolean = checkForEndOfInput): ReaderConfig =
+    new ReaderConfig(
+      throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace,
+      appendHexDumpToParseException = appendHexDumpToParseException,
+      preferredBufSize = preferredBufSize,
+      preferredCharBufSize = preferredCharBufSize,
+      checkForEndOfInput = checkForEndOfInput)
 }
+
+object ReaderConfig extends ReaderConfig(
+    throwReaderExceptionWithStackTrace = false,
+    appendHexDumpToParseException = true,
+    preferredBufSize = 16384,
+    preferredCharBufSize = 1024,
+    checkForEndOfInput = true)
 
 class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)
@@ -295,7 +330,9 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readKeyAsBigInt(digitsLimit: Int = bigIntDigitsLimit): BigInt = {
+  def readKeyAsBigInt(): BigInt = readKeyAsBigInt(bigIntDigitsLimit)
+
+  def readKeyAsBigInt(digitsLimit: Int): BigInt = {
     nextTokenOrError('"', head)
     val x = parseBigInt(isToken = false, null, digitsLimit)
     nextByteOrError('"', head)
@@ -303,8 +340,10 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readKeyAsBigDecimal(mc: MathContext = bigDecimalMathContext, scaleLimit: Int = bigDecimalScaleLimit,
-                          digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal = {
+  def readKeyAsBigDecimal(): BigDecimal =
+    readKeyAsBigDecimal(bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+
+  def readKeyAsBigDecimal(mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal = {
     nextTokenOrError('"', head)
     val x = parseBigDecimal(isToken = false, null, mc, scaleLimit, digitsLimit)
     nextByteOrError('"', head)
@@ -338,11 +377,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readFloat(): Float = parseFloat(isToken = true)
 
-  def readBigInt(default: BigInt, digitsLimit: Int = bigIntDigitsLimit): BigInt =
-    parseBigInt(isToken = true, default, digitsLimit)
+  def readBigInt(default: BigInt): BigInt = parseBigInt(isToken = true, default, bigIntDigitsLimit)
 
-  def readBigDecimal(default: BigDecimal, mc: MathContext = bigDecimalMathContext,
-                     scaleLimit: Int = bigDecimalScaleLimit, digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
+  def readBigInt(default: BigInt, digitsLimit: Int): BigInt = parseBigInt(isToken = true, default, digitsLimit)
+
+  def readBigDecimal(default: BigDecimal): BigDecimal =
+    parseBigDecimal(isToken = true, default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+
+  def readBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
     parseBigDecimal(isToken = true, default, mc, scaleLimit, digitsLimit)
 
   def readString(default: String): String =
@@ -460,16 +502,19 @@ final class JsonReader private[jsoniter_scala](
     x
   }
 
-  def readStringAsBigInt(default: BigInt, digitsLimit: Int = bigIntDigitsLimit): BigInt =
+  def readStringAsBigInt(default: BigInt): BigInt = readStringAsBigInt(default, bigIntDigitsLimit)
+
+  def readStringAsBigInt(default: BigInt, digitsLimit: Int): BigInt =
     if (isNextToken('"', head)) {
       val x = parseBigInt(isToken = false, default, digitsLimit)
       nextByteOrError('"', head)
       x
     } else readNullOrTokenError(default, '"')
 
-  def readStringAsBigDecimal(default: BigDecimal, mc: MathContext = bigDecimalMathContext,
-                             scaleLimit: Int = bigDecimalScaleLimit,
-                             digitsLimit: Int = bigDecimalDigitsLimit): BigDecimal =
+  def readStringAsBigDecimal(default: BigDecimal): BigDecimal =
+    readStringAsBigDecimal(default, bigDecimalMathContext, bigDecimalScaleLimit, bigDecimalDigitsLimit)
+
+  def readStringAsBigDecimal(default: BigDecimal, mc: MathContext, scaleLimit: Int, digitsLimit: Int): BigDecimal =
     if (isNextToken('"', head)) {
       val x = parseBigDecimal(isToken = false, default, mc, scaleLimit, digitsLimit)
       nextByteOrError('"', head)

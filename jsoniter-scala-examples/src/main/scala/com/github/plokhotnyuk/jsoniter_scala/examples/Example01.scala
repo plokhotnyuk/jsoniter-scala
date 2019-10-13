@@ -11,7 +11,7 @@ object Example01 {
 
   case class User(name: String, devices: Seq[Device])
 
-  implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig())
+  implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig)
 
   def main(args: Array[String]): Unit = {
     val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))

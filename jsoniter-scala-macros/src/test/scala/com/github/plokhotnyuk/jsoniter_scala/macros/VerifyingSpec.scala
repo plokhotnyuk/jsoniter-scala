@@ -10,12 +10,12 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.language.higherKinds
 
 class VerifyingSpec extends WordSpec with Matchers {
-  def verifySerDeser[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig()): Unit = {
+  def verifySerDeser[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)
   }
 
-  def verifySer[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig()): Unit = {
+  def verifySer[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig): Unit = {
     val len = json.getBytes(UTF_8).length
     verifyDirectByteBufferSer(codec, obj, len, cfg, json)
     verifyHeapByteBufferSer(codec, obj, len, cfg, json)

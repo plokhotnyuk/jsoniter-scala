@@ -63,24 +63,122 @@ final class stringified extends StaticAnnotation
   * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default)
   * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default)
   */
-case class CodecMakerConfig(
-  fieldNameMapper: PartialFunction[String, String] = JsonCodecMaker.partialIdentity,
-  adtLeafClassNameMapper: String => String = JsonCodecMaker.simpleClassName,
-  discriminatorFieldName: Option[String] = Some("type"),
-  isStringified: Boolean = false,
-  mapAsArray: Boolean = false,
-  skipUnexpectedFields: Boolean = true,
-  transientDefault: Boolean = true,
-  transientEmpty: Boolean = true,
-  transientNone: Boolean = true,
-  bigDecimalPrecision: Int = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
-  bigDecimalScaleLimit: Int = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
-  bigDecimalDigitsLimit: Int = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
-  bigIntDigitsLimit: Int = 308, // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
-  bitSetValueLimit: Int = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
-  mapMaxInsertNumber: Int = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
-  setMaxInsertNumber: Int = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
-  allowRecursiveTypes: Boolean = false) // to avoid stack overflow errors with untrusted input
+class CodecMakerConfig private (
+    val fieldNameMapper: PartialFunction[String, String],
+    val adtLeafClassNameMapper: String => String,
+    val discriminatorFieldName: Option[String],
+    val isStringified: Boolean,
+    val mapAsArray: Boolean,
+    val skipUnexpectedFields: Boolean,
+    val transientDefault: Boolean,
+    val transientEmpty: Boolean,
+    val transientNone: Boolean,
+    val bigDecimalPrecision: Int,
+    val bigDecimalScaleLimit: Int,
+    val bigDecimalDigitsLimit: Int,
+    val bigIntDigitsLimit: Int,
+    val bitSetValueLimit: Int,
+    val mapMaxInsertNumber: Int,
+    val setMaxInsertNumber: Int,
+    val allowRecursiveTypes: Boolean) {
+  def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
+    copy(fieldNameMapper = fieldNameMapper)
+
+  def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
+    copy(adtLeafClassNameMapper = adtLeafClassNameMapper)
+
+  def withDiscriminatorFieldName(discriminatorFieldName: Option[String]): CodecMakerConfig =
+    copy(discriminatorFieldName = discriminatorFieldName)
+
+  def withIsStringified(isStringified: Boolean): CodecMakerConfig = copy(isStringified = isStringified)
+
+  def withMapAsArray(mapAsArray: Boolean): CodecMakerConfig = copy(mapAsArray = mapAsArray)
+
+  def withSkipUnexpectedFields(skipUnexpectedFields: Boolean): CodecMakerConfig =
+    copy(skipUnexpectedFields = skipUnexpectedFields)
+
+  def withTransientDefault(transientDefault: Boolean): CodecMakerConfig = copy(transientDefault = transientDefault)
+
+  def withTransientEmpty(transientEmpty: Boolean): CodecMakerConfig = copy(transientEmpty = transientEmpty)
+
+  def withTransientNone(transientNone: Boolean): CodecMakerConfig = copy(transientNone = transientNone)
+
+  def withBigDecimalPrecision(bigDecimalPrecision: Int): CodecMakerConfig =
+    copy(bigDecimalPrecision = bigDecimalPrecision)
+
+  def withBigDecimalScaleLimit(bigDecimalScaleLimit: Int): CodecMakerConfig =
+    copy(bigDecimalScaleLimit = bigDecimalScaleLimit)
+
+  def withBigDecimalDigitsLimit(bigDecimalDigitsLimit: Int): CodecMakerConfig =
+    copy(bigDecimalDigitsLimit = bigDecimalDigitsLimit)
+
+  def withBigIntDigitsLimit(bigIntDigitsLimit: Int): CodecMakerConfig = copy(bigIntDigitsLimit = bigIntDigitsLimit)
+
+  def withBitSetValueLimit(bitSetValueLimit: Int): CodecMakerConfig = copy(bitSetValueLimit = bitSetValueLimit)
+
+  def withMapMaxInsertNumber(mapMaxInsertNumber: Int): CodecMakerConfig = copy(mapMaxInsertNumber = mapMaxInsertNumber)
+
+  def withSetMaxInsertNumber(setMaxInsertNumber: Int): CodecMakerConfig = copy(setMaxInsertNumber = setMaxInsertNumber)
+
+  def withAllowRecursiveTypes(allowRecursiveTypes: Boolean): CodecMakerConfig =
+    copy(allowRecursiveTypes = allowRecursiveTypes)
+
+
+  private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
+                         adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
+                         discriminatorFieldName: Option[String] = discriminatorFieldName,
+                         isStringified: Boolean = isStringified,
+                         mapAsArray: Boolean = mapAsArray,
+                         skipUnexpectedFields: Boolean = skipUnexpectedFields,
+                         transientDefault: Boolean = transientDefault,
+                         transientEmpty: Boolean = transientEmpty,
+                         transientNone: Boolean = transientNone,
+                         bigDecimalPrecision: Int = bigDecimalPrecision,
+                         bigDecimalScaleLimit: Int = bigDecimalScaleLimit,
+                         bigDecimalDigitsLimit: Int = bigDecimalDigitsLimit,
+                         bigIntDigitsLimit: Int = bigIntDigitsLimit,
+                         bitSetValueLimit: Int = bitSetValueLimit,
+                         mapMaxInsertNumber: Int = mapMaxInsertNumber,
+                         setMaxInsertNumber: Int = setMaxInsertNumber,
+                         allowRecursiveTypes: Boolean = allowRecursiveTypes): CodecMakerConfig =
+    new CodecMakerConfig(
+      fieldNameMapper = fieldNameMapper,
+      adtLeafClassNameMapper = adtLeafClassNameMapper,
+      discriminatorFieldName = discriminatorFieldName,
+      isStringified = isStringified,
+      mapAsArray= mapAsArray,
+      skipUnexpectedFields = skipUnexpectedFields,
+      transientDefault = transientDefault,
+      transientEmpty = transientEmpty,
+      transientNone = transientNone,
+      bigDecimalPrecision = bigDecimalPrecision,
+      bigDecimalScaleLimit = bigDecimalScaleLimit,
+      bigDecimalDigitsLimit = bigDecimalDigitsLimit,
+      bigIntDigitsLimit = bigIntDigitsLimit,
+      bitSetValueLimit = bitSetValueLimit,
+      mapMaxInsertNumber = mapMaxInsertNumber,
+      setMaxInsertNumber = setMaxInsertNumber,
+      allowRecursiveTypes = allowRecursiveTypes)
+}
+
+object CodecMakerConfig extends CodecMakerConfig(
+  fieldNameMapper = JsonCodecMaker.partialIdentity,
+  adtLeafClassNameMapper = JsonCodecMaker.simpleClassName,
+  discriminatorFieldName = Some("type"),
+  isStringified = false,
+  mapAsArray = false,
+  skipUnexpectedFields = true,
+  transientDefault = true,
+  transientEmpty = true,
+  transientNone = true,
+  bigDecimalPrecision = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
+  bigDecimalScaleLimit = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
+  bigDecimalDigitsLimit = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
+  bigIntDigitsLimit = 308, // 128 bytes: (BigInt("9" * 307)).underlying.toByteArray.length
+  bitSetValueLimit = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
+  mapMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
+  setMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
+  allowRecursiveTypes = false) // to avoid stack overflow errors with untrusted input
 
 object JsonCodecMaker {
   /**
