@@ -36,7 +36,8 @@ package object core {
   }
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type.
+    * Deserialize JSON content encoded in UTF-8 from an input stream into a value of given `A` type using default
+    * parsing configuration.
     *
     * @tparam A type of the value to parse
     * @param in the input stream to parse from
@@ -75,7 +76,8 @@ package object core {
   }
 
   /**
-    * Deserialize JSON of streaming values encoded in UTF-8 from an input stream into values of given `A` type.
+    * Deserialize JSON of streaming values encoded in UTF-8 from an input stream into values of given `A` type using
+    * default parsing configuration.
     *
     * All parsed values will be passed to consuming function `f`.
     *
@@ -119,7 +121,8 @@ package object core {
   }
 
   /**
-    * Deserialize JSON array encoded in UTF-8 from an input stream into its values of given `A` type.
+    * Deserialize JSON array encoded in UTF-8 from an input stream into its values of given `A` type using default
+    * parsing configuration.
     *
     * All parsed values will be passed to consuming function `f`.
     *
@@ -139,8 +142,7 @@ package object core {
     scanJsonArrayFromStream(in, ReaderConfig)(f)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
-    * with specified parsing options.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
     *
     * @tparam A type of the value to parse
     * @param buf the byte array to parse from
@@ -156,8 +158,8 @@ package object core {
     readerPool.get.read(codec, buf, 0, buf.length, config)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type
-    * with specified parsing options.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type using default parsing
+    * configuration.
     *
     * @tparam A type of the value to parse
     * @param buf the byte array to parse from
@@ -171,8 +173,7 @@ package object core {
   def readFromArray[@sp A](buf: Array[Byte])(implicit codec: JsonValueCodec[A]): A = readFromArray(buf, ReaderConfig)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
     *
     * @tparam A type of the value to parse
     * @param buf the byte array to parse from
@@ -198,8 +199,8 @@ package object core {
   }
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error.
+    * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type using default parsing
+    * configuration.
     *
     * @tparam A type of the value to parse
     * @param buf the byte array to parse from
@@ -218,8 +219,7 @@ package object core {
     readFromSubArray(buf, from, to, ReaderConfig)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error.
+    * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type.
     *
     * Parsing will start from the current position and will continue until the limit of the provided byte buffer or the
     * value will be parsed before reaching of the limit. In any case the buffer position will be set to the next
@@ -239,8 +239,8 @@ package object core {
     readerPool.get.read(codec, bbuf, config)
 
   /**
-    * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error.
+    * Deserialize JSON content encoded in UTF-8 from a byte buffer into a value of given `A` type using default parsing
+    * configuration.
     *
     * Parsing will start from the current position and will continue until the limit of the provided byte buffer or the
     * value will be parsed before reaching of the limit. In any case the buffer position will be set to the next
@@ -259,8 +259,7 @@ package object core {
     readFromByteBuffer(bbuf, ReaderConfig)
 
   /**
-    * Deserialize JSON content from a string into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error.
+    * Deserialize JSON content from a string into a value of given `A` type.
     *
     * While it much less efficient than parsing from a byte array using pooled readers but it can be safely used
     * internally in custom codecs.
@@ -285,8 +284,7 @@ package object core {
   }
 
   /**
-    * Deserialize JSON content from a string into a value of given `A` type with
-    * specified parsing options or with defaults that maximize description of error.
+    * Deserialize JSON content from a string into a value of given `A` type using default parsing configuration.
     *
     * While it much less efficient than parsing from a byte array using pooled readers but it can be safely used
     * internally in custom codecs.
@@ -303,8 +301,7 @@ package object core {
   def readFromString[A](s: String)(implicit codec: JsonValueCodec[A]): A = readFromString(s, ReaderConfig)
 
   /**
-    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
-    * that specified by provided configuration options.
+    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -322,8 +319,8 @@ package object core {
   }
 
   /**
-    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format
-    * that specified by provided configuration options.
+    * Serialize the `x` argument to the provided output stream in UTF-8 encoding of JSON format using default
+    * serialization configuration.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -338,8 +335,7 @@ package object core {
     writeToStream(x, out, WriterConfig)
 
   /**
-    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format,
-    * that specified by provided configuration options.
+    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -354,8 +350,8 @@ package object core {
     writerPool.get.write(codec, x, config)
 
   /**
-    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format,
-    * that specified by provided configuration options.
+    * Serialize the `x` argument to a new allocated instance of byte array in UTF-8 encoding of JSON format using
+    * default serialization configuration.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -368,8 +364,7 @@ package object core {
   def writeToArray[@sp A](x: A)(implicit codec: JsonValueCodec[A]): Array[Byte] = writeToArray(x, WriterConfig)
 
   /**
-    * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format
-    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
+    * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -395,8 +390,8 @@ package object core {
   }
 
   /**
-    * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format
-    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
+    * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format using default
+    * serialization configuration.
     *
     * @tparam A type of value to serialize
     * @param x the value to serialize
@@ -415,8 +410,7 @@ package object core {
     writeToSubArray(x, buf, from, to, WriterConfig)
 
   /**
-    * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format
-    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
+    * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format.
     *
     * Serialization will start from the current position up to the provided byte buffer limit.
     * On return the byte buffer will has position set to the next position after the last written byte.
@@ -436,8 +430,8 @@ package object core {
     writerPool.get.write(codec, x, bbuf, config)
 
   /**
-    * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format
-    * that specified by provided configuration options or defaults that minimizes output size & time to serialize.
+    * Serialize the `x` argument to the given instance of byte buffer in UTF-8 encoding of JSON format using default
+    * serialization configuration.
     *
     * Serialization will start from the current position up to the provided byte buffer limit.
     * On return the byte buffer will has position set to the next position after the last written byte.
@@ -456,7 +450,7 @@ package object core {
     writeToByteBuffer(x, bbuf, WriterConfig)
 
   /**
-    * Serialize the `x` argument to a string in JSON format, that specified by provided configuration options.
+    * Serialize the `x` argument to a string in JSON format.
     *
     * While it much less efficient than serialization to a byte array using pooled writers but it can be safely used
     * internally in custom codecs.
@@ -474,7 +468,7 @@ package object core {
     new JsonWriter(buf = new Array[Byte](16), limit = 16).writeStringWithoutBufReallocation(codec, x, config)
 
   /**
-    * Serialize the `x` argument to a string in JSON format, that specified by provided configuration options.
+    * Serialize the `x` argument to a string in JSON format using default serialization configuration.
     *
     * While it much less efficient than serialization to a byte array using pooled writers but it can be safely used
     * internally in custom codecs.
