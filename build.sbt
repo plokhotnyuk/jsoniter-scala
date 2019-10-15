@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import sbt._
 import scala.sys.process._
 
@@ -69,14 +70,17 @@ lazy val publishSettings = Seq(
   },
   mimaPreviousArtifacts := {
     def isCheckingRequired: Boolean = {
-      val Array(newMajor, newMinor, _) = version.value.split('.')
-      val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
-      newMajor == oldMajor && (newMajor != "0" || newMinor == oldMinor)
+      val Array(newMajor, _, _) = version.value.split('.')
+      val Array(oldMajor, _, _) = oldVersion.split('.')
+      newMajor == oldMajor
     }
 
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
-  }
+  },
+  mimaBinaryIssueFilters := Seq( // internal API to ignore
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
+  )
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))

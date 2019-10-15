@@ -783,6 +783,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       parsedObj.aa shouldBe arrays.aa
       parsedObj.a shouldBe arrays.a
     }
+    "throw parse exception for missing array field when the requireCollectionFields flag is on" in {
+      verifyDeserError(make[Arrays](CodecMakerConfig.withRequireCollectionFields(true)),
+        "{}", "missing required field \"aa\", offset: 0x00000001")
+    }
     "throw parse exception in case of JSON array is not properly started/closed or with leading/trailing comma" in {
       verifyDeserError(codecOfArrays, """{"aa":[{1,2,3]],"a":[]}""", "expected '[' or null, offset: 0x00000007")
       verifyDeserError(codecOfArrays, """{"aa":[[,1,2,3]],"a":[]}""", "illegal number, offset: 0x00000008")
@@ -834,6 +838,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[EmptyIterables](CodecMakerConfig.withTransientEmpty(false)),
         EmptyIterables(List("VVV"), _root_.scala.collection.mutable.ArrayBuffer(1)), """{"l":["VVV"],"a":[1]}""")
     }
+    "throw parse exception for missing collection field when the requireCollectionFields flag is on" in {
+      verifyDeserError(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true)),
+        "{}", "missing required field \"l\", offset: 0x00000001")
+    }
     "serialize and deserialize top-level Iterables" in {
       verifySerDeser(make[_root_.scala.collection.mutable.Set[List[BigDecimal]]](CodecMakerConfig),
         _root_.scala.collection.mutable.Set(List[BigDecimal](1.1, 2.2)), """[[1.1,2.2]]""")
@@ -882,6 +890,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[EmptyMaps](CodecMakerConfig.withTransientEmpty(false)),
         EmptyMaps(Map("VVV" -> 1), _root_.scala.collection.mutable.Map(2L -> 3)),
         """{"im":{"VVV":1},"mm":{"2":3}}""")
+    }
+    "throw parse exception for missing map field when the requireCollectionFields flag is on" in {
+      verifyDeserError(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true)),
+        "{}", "missing required field \"im\", offset: 0x00000001")
     }
     "serialize and deserialize top-level maps" in {
       verifySerDeser(make[_root_.scala.collection.mutable.LinkedHashMap[Int, Map[Char, _root_.scala.Boolean]]](CodecMakerConfig),
