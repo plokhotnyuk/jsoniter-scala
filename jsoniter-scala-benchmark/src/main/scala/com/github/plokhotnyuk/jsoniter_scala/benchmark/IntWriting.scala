@@ -43,13 +43,6 @@ class IntWriting extends IntBenchmark {
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def scalikeJackson(): Array[Byte] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    obj.write.getBytes(UTF_8)
-  }
-
-  @Benchmark
   def sprayJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark

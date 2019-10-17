@@ -34,14 +34,43 @@ import scala.{specialized => sp}
   * @param preferredBufSize a preferred size (in bytes) of an internal byte buffer when writing to
   *                         [[java.io.OutputStream]] or [[java.nio.DirectByteBuffer]]
   */
-case class WriterConfig(
-    throwWriterExceptionWithStackTrace: Boolean = false,
-    indentionStep: Int = 0,
-    escapeUnicode: Boolean = false,
-    preferredBufSize: Int = 16384) {
-  if (indentionStep < 0) throw new IllegalArgumentException("'indentionStep' should be not less than 0")
-  if (preferredBufSize < 1) throw new IllegalArgumentException("'preferredBufSize' should be not less than 1")
+class WriterConfig private (
+    val throwWriterExceptionWithStackTrace: Boolean,
+    val indentionStep: Int,
+    val escapeUnicode: Boolean,
+    val preferredBufSize: Int) {
+  def withThrowWriterExceptionWithStackTrace(throwWriterExceptionWithStackTrace: Boolean): WriterConfig =
+    copy(throwWriterExceptionWithStackTrace = throwWriterExceptionWithStackTrace)
+
+  def withIndentionStep(indentionStep: Int): WriterConfig = {
+    if (indentionStep < 0) throw new IllegalArgumentException("'indentionStep' should be not less than 0")
+    copy(indentionStep = indentionStep)
+  }
+
+  def withEscapeUnicode(escapeUnicode: Boolean): WriterConfig =
+    copy(escapeUnicode = escapeUnicode)
+
+  def withPreferredBufSize(preferredBufSize: Int): WriterConfig = {
+    if (preferredBufSize < 1) throw new IllegalArgumentException("'preferredBufSize' should be not less than 1")
+    copy(preferredBufSize = preferredBufSize)
+  }
+
+  private[this] def copy(throwWriterExceptionWithStackTrace: Boolean = throwWriterExceptionWithStackTrace,
+                         indentionStep: Int = indentionStep,
+                         escapeUnicode: Boolean = escapeUnicode,
+                         preferredBufSize: Int = preferredBufSize): WriterConfig =
+    new WriterConfig(
+      throwWriterExceptionWithStackTrace = throwWriterExceptionWithStackTrace,
+      indentionStep = indentionStep,
+      escapeUnicode = escapeUnicode,
+      preferredBufSize = preferredBufSize)
 }
+
+object WriterConfig extends WriterConfig(
+  throwWriterExceptionWithStackTrace = false,
+  indentionStep = 0,
+  escapeUnicode = false,
+  preferredBufSize = 16384)
 
 class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
   extends RuntimeException(msg, cause, true, withStackTrace)
@@ -428,23 +457,9 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
-  def writeRawVal(bs: Array[Byte]): Unit = count = {
-    val len = bs.length
-    val preferredBufSize = config.preferredBufSize
-    var buf = this.buf
-    var pos = count
-    var offset, step = 0
-    do {
-      step = Math.min(preferredBufSize, len - offset)
-      if (pos + step > limit) {
-        pos = flushAndGrowBuf(step, pos)
-        buf = this.buf
-      }
-      System.arraycopy(bs, offset, buf, pos, step)
-      pos += step
-      offset += step
-    } while (offset < len)
-    pos
+  def writeRawVal(bs: Array[Byte]): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeRawBytes(bs)
   }
 
   def writeNull(): Unit = {
@@ -643,6 +658,25 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 2) = b3
     buf(pos + 3) = b4
     pos + 4
+  }
+
+  private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
+    val len = bs.length
+    val preferredBufSize = config.preferredBufSize
+    var buf = this.buf
+    var pos = count
+    var offset, step = 0
+    do {
+      step = Math.min(preferredBufSize, len - offset)
+      if (pos + step > limit) {
+        pos = flushAndGrowBuf(step, pos)
+        buf = this.buf
+      }
+      System.arraycopy(bs, offset, buf, pos, step)
+      pos += step
+      offset += step
+    } while (offset < len)
+    pos
   }
 
   private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {

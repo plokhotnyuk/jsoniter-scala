@@ -4,11 +4,10 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -20,10 +19,10 @@ import spray.json._
 class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def avSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8), jsonOptions)
-/* FIXME: Borer doesn't allow BigDecimal mantissas longer than 200 decimal digits
+
   @Benchmark
   def borerJson(): BigDecimal = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[BigDecimal].value
-*/
+
   @Benchmark
   def circe(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
@@ -39,13 +38,6 @@ class BigDecimalReading extends BigDecimalBenchmark {
   @Benchmark
   def playJson(): BigDecimal = Json.parse(jsonBytes).as[BigDecimal]
 */
-  @Benchmark
-  def scalikeJackson(): BigDecimal = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[BigDecimal]
-  }
-
   @Benchmark
   def sprayJson(): BigDecimal = JsonParser(jsonBytes, jsonParserSettings).convertTo[BigDecimal]
 

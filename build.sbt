@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  resolvers += "Sonatype OSS Staging" at "https://oss.sonatype.org/content/repositories/staging",
+  resolvers += Resolver.sonatypeRepo("staging"),
   scalaVersion := "2.13.0",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
@@ -39,26 +39,25 @@ lazy val commonSettings = Seq(
     )
     case _ => Seq()
   }),
-  testOptions in Test += Tests.Argument("-oDF")
-)
-
-lazy val noPublishSettings = Seq(
-  skip in publish := true,
-  publishTo := sonatypePublishToBundle.value,
-  mimaPreviousArtifacts := Set()  
-)
-
-lazy val publishSettings = Seq(
-  publishTo := sonatypePublishToBundle.value,
+  testOptions in Test += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
+  publishTo := sonatypePublishToBundle.value,
+  publishMavenStyle := true,
+  pomIncludeRepository := { _ => false },
   scmInfo := Some(
     ScmInfo(
       url("https://github.com/plokhotnyuk/jsoniter-scala"),
       "scm:git@github.com:plokhotnyuk/jsoniter-scala.git"
     )
-  ),
-  publishMavenStyle := true,
-  pomIncludeRepository := { _ => false },
+  )
+)
+
+lazy val noPublishSettings = Seq(
+  skip in publish := true,
+  mimaPreviousArtifacts := Set()
+)
+
+lazy val publishSettings = Seq(
   mimaCheckDirection := {
     def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
@@ -93,7 +92,7 @@ lazy val `jsoniter-scala-core` = project
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.1" % Provided,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2" % Test,
-      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalacheck" %% "scalacheck" % "1.14.2" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )
@@ -107,7 +106,7 @@ lazy val `jsoniter-scala-macros` = project
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+      "org.scalacheck" %% "scalacheck" % "1.14.2" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )
   )
@@ -122,22 +121,21 @@ lazy val `jsoniter-scala-benchmark` = project
     resolvers += Resolver.bintrayRepo("reug", "maven"),
     crossScalaVersions := Seq("2.13.0", "2.12.10"),
     libraryDependencies ++= Seq(
-      "reug" %% "scalikejackson" % "0.5.6",
-      "io.bullet" %% "borer-derivation" % "0.11.1",
+      "io.bullet" %% "borer-derivation" % "1.0.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
-      "com.avsystem.commons" %% "commons-core" % "2.0.0-M2",
-      "com.lihaoyi" %% "upickle" % "0.7.5",
+      "com.avsystem.commons" %% "commons-core" % "2.0.0-M3",
+      "com.lihaoyi" %% "upickle" % "0.8.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.3",
       "com.jsoniter" % "jsoniter" % "0.9.23",
-      "org.javassist" % "javassist" % "3.25.0-GA", // required for Jsoniter Java
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.0.pr2",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.0.pr2",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.0.pr2",
-      "io.circe" %% "circe-generic" % "0.12.1",
+      "org.javassist" % "javassist" % "3.26.0-GA", // required for Jsoniter Java
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.0",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.0",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.0",
+      "io.circe" %% "circe-generic" % "0.12.2",
       "io.circe" %% "circe-generic-extras" % "0.12.2",
-      "io.circe" %% "circe-parser" % "0.12.1",
-      "com.typesafe.play" %% "play-json" % "2.8.0-M6",
+      "io.circe" %% "circe-parser" % "0.12.2",
+      "com.typesafe.play" %% "play-json" % "2.8.0-M7",
       "org.julienrf" %% "play-json-derived-codecs" % "6.0.0",
       "ai.x" %% "play-json-extensions" % "0.40.2",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",

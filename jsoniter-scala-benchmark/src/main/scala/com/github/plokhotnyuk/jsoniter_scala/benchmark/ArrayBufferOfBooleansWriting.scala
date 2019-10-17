@@ -41,13 +41,6 @@ class ArrayBufferOfBooleansWriting extends ArrayBufferOfBooleansBenchmark {
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def scalikeJackson(): Array[Byte] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    obj.toSeq.write.getBytes(UTF_8)
-  }
-
-  @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
   @Benchmark

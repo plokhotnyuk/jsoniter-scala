@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.jsoniter.output.JsoniterJavaSerializer
@@ -44,13 +43,6 @@ class ArrayOfShortsWriting extends ArrayOfShortsBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-
-  @Benchmark
-  def scalikeJackson(): Array[Byte] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    obj.write.getBytes(UTF_8)
-  }
 
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)

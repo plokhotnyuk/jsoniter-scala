@@ -18,7 +18,6 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
       //sameOrBetter(toString(benchmark.playJson()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.scalikeJackson()), benchmark.jsonString)
       //FIXME: Spray-JSON serializes double values instead of float
       //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)

@@ -11,14 +11,13 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
+import com.fasterxml.jackson.module.scala.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 
 object JacksonSerDesers {
   def createJacksonMapper: ObjectMapper with ScalaObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
-      .configure(JsonFactory.Feature.CANONICALIZE_FIELD_NAMES, false)
       .build()
     new ObjectMapper(jsonFactory) with ScalaObjectMapper {
       registerModule(DefaultScalaModule)
@@ -34,6 +33,7 @@ object JacksonSerDesers {
       configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
       configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
+      configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false)
       configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
       configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
       setSerializationInclusion(Include.NON_EMPTY)

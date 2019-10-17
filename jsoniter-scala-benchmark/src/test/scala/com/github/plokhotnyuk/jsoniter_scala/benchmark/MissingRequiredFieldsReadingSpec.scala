@@ -15,7 +15,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         "Mandatory properties (s, i) not found at position: 1, following: `{`, before: `}`"
       benchmark.jacksonScala() shouldBe
         """Missing required creator property 's' (index 0)
-          | at [Source: (byte[])"{}"; line: 1, column: 2]""".stripMargin
+          | at [Source: (byte[])"{}"; line: 1, column: 2] (through reference chain: com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields["s"])""".stripMargin
       benchmark.jsoniterScala() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -33,9 +33,6 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       benchmark.playJson() should include("JsResultException")
-      //FIXME: ScalikeJackson throws an exception with unexpected message: "No MissingRequiredFields ScalaJacksonFormat found for json input"
-      //benchmark.scalikeJackson() shouldBe
-      //  "???"
       benchmark.sprayJson() shouldBe
         "Object is missing required member 's'"
       benchmark.uPickle() shouldBe

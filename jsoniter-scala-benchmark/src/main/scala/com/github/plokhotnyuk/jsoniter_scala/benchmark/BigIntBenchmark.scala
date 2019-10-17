@@ -4,7 +4,7 @@ import org.openjdk.jmh.annotations.{Param, Setup}
 
 abstract class BigIntBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
-  var size: Int = 300
+  var size: Int = 128
   var jsonBytes: Array[Byte] = _
   var jsonString: String = _
   var obj: BigInt = _

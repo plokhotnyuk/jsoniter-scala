@@ -47,7 +47,7 @@ object DslPlatformJson {
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = codec[GoogleMapsAPI.DistanceMatrix]
   implicit val (intEncoder, intDecoder) = codec[Int]
 /* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
-  implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = dslJson.encoder[IntMap[Boolean]]
+  implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = codec[IntMap[Boolean]]
 */
   implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = codec[List[Boolean]]
   implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = codec[Map[Int, Boolean]]
@@ -60,8 +60,8 @@ object DslPlatformJson {
   implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingRequiredFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
-  implicit val (primitivesEncoder, primitivesDecoder) = setupCodecs[Primitives]
+/* FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+  implicit val (primitivesEncoder, primitivesDecoder) = codec[Primitives]
 */
   implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = codec[Seq[TwitterAPI.Tweet]]
   implicit val (setOfIntsEncoder, setOfIntsDecoder) = codec[Set[Int]]

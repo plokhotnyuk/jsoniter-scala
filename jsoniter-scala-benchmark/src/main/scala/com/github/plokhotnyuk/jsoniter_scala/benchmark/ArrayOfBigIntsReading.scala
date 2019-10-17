@@ -8,7 +8,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ScalikeJacksonFormatters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -39,12 +38,6 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   @Benchmark
   def playJson(): Array[BigInt] = Json.parse(jsonBytes).as[Array[BigInt]](bigIntArrayFormat)
 */
-  @Benchmark
-  def scalikeJackson(): Array[BigInt] = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[Array[BigInt]]
-  }
 
   @Benchmark
   def sprayJson(): Array[BigInt] = JsonParser(jsonBytes).convertTo[Array[BigInt]]

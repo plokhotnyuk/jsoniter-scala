@@ -20,7 +20,6 @@ class SetOfIntsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.playJson()) shouldBe benchmark.jsonString
-      toString(benchmark.scalikeJackson()) shouldBe benchmark.jsonString
       readFromArray[Set[Int]](benchmark.sprayJson()) shouldBe benchmark.obj
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
     }

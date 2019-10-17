@@ -41,13 +41,6 @@ class IntReading extends IntBenchmark {
   def playJson(): Int = Json.parse(jsonBytes).as[Int]
 
   @Benchmark
-  def scalikeJackson(): Int = {
-    import reug.scalikejackson.ScalaJacksonImpl._
-
-    new String(jsonBytes, UTF_8).read[Int]
-  }
-
-  @Benchmark
   def sprayJson(): Int = JsonParser(jsonBytes).convertTo[Int]
 
   @Benchmark
