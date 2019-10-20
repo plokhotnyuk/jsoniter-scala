@@ -1651,15 +1651,33 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'Any'."""
       })
     }
-    "serialize and deserialize array of a generic type" in {
-      sealed trait Bar[A] extends Product with Serializable
+    "serialize and deserialize arrays of generic types" in {
+      sealed trait GADT[A] extends Product with Serializable
 
-      case object Baz extends Bar[Int]
+      case object Foo extends GADT[_root_.scala.Boolean]
 
-      case object Qux extends Bar[String]
+      case object Bar extends GADT[_root_.scala.Unit]
 
-      verifySerDeser(make[Array[Bar[_]]](CodecMakerConfig),
-        _root_.scala.Array[Bar[_]](Qux, Baz), """[{"type":"Qux"},{"type":"Baz"}]""")
+      case object Baz extends GADT[Int]
+
+      case object Qux extends GADT[String]
+
+      verifySerDeser(make[Array[GADT[_]]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
+        _root_.scala.Array[GADT[_]](Foo, Bar, Baz, Qux), """["Foo","Bar","Baz","Qux"]""")
+
+      sealed trait GADT2[A] extends Product with Serializable
+
+      case class IsDir(path: String) extends GADT2[_root_.scala.Boolean]
+
+      case class Exists(path: String) extends GADT2[_root_.scala.Boolean]
+
+      case class ReadBytes(path: String) extends GADT2[_root_.scala.Array[_root_.scala.Byte]]
+
+      case class CopyOver(src: Seq[_root_.scala.Byte], path: String) extends GADT2[Int]
+
+      verifySerDeser(make[Array[GADT2[_]]](CodecMakerConfig),
+        _root_.scala.Array[GADT2[_]](Exists("WWW"), ReadBytes("QQQ"), CopyOver("AAA".getBytes.toSeq, "OOO")),
+        """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
       import _root_.scala.language.higherKinds
