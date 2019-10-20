@@ -40,6 +40,7 @@ object DslPlatformJson {
   implicit val (arrayOfShortsEncoder, arrayOfShortsDecoder) = codec[Array[Short]]
   implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = codec[Array[UUID]]
   implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = codec[Array[ZonedDateTime]]
+  implicit val (base64Encoder, base64Decoder) = codec[Array[Byte]]
   implicit val (bigIntgEncoder, bigIntgDecoder) = codec[BigInt]
   implicit val (bigDecimalEncoder, bigDecimalDecoder) = codec[BigDecimal]
   implicit val (bitSetEncoder, bitSetDecoder) = codec[BitSet]

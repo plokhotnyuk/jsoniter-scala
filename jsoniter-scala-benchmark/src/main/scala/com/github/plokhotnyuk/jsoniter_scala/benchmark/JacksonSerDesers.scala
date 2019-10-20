@@ -22,7 +22,6 @@ object JacksonSerDesers {
     new ObjectMapper(jsonFactory) with ScalaObjectMapper {
       registerModule(DefaultScalaModule)
       registerModule(new SimpleModule()
-        .addSerializer(classOf[Array[Byte]], new ByteArraySerializer)
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
         .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
