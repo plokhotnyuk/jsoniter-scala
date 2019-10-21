@@ -39,6 +39,7 @@ lazy val commonSettings = Seq(
     )
     case _ => Seq()
   }),
+  compileOrder := CompileOrder.JavaThenScala,
   testOptions in Test += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   publishTo := sonatypePublishToBundle.value,
