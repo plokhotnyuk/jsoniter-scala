@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.time._
 import java.time.format.DateTimeFormatter
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import org.scalacheck.Arbitrary.arbitrary
@@ -714,12 +714,40 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
     }
   }
+  "JsonWriter.writeBase64Val" should {
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = true)))
+      intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = false)))
+    }
+    "write bytes as base64 string" in {
+      def check(bs: Array[Byte]): Unit = {
+        withWriter(_.writeBase64Val(bs, doPadding = true)) shouldBe "\"" + Base64.getEncoder.encodeToString(bs) + "\""
+        withWriter(_.writeBase64Val(bs, doPadding = false)) shouldBe "\"" + Base64.getEncoder.withoutPadding().encodeToString(bs) + "\""
+      }
+
+      forAll(arbitrary[String], minSuccessful(10000))((s: String) => check(s.getBytes))
+    }
+  }
+  "JsonWriter.writeBase64UrlVal" should {
+    "don't write null value" in {
+      intercept[NullPointerException](withWriter(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = true)))
+      intercept[NullPointerException](withWriter(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = false)))
+    }
+    "write bytes as base64 string" in {
+      def check(bs: Array[Byte]): Unit = {
+        withWriter(_.writeBase64UrlVal(bs, doPadding = true)) shouldBe "\"" + Base64.getUrlEncoder.encodeToString(bs) + "\""
+        withWriter(_.writeBase64UrlVal(bs, doPadding = false)) shouldBe "\"" + Base64.getUrlEncoder.withoutPadding().encodeToString(bs) + "\""
+      }
+
+      forAll(arbitrary[String], minSuccessful(10000))((s: String) => check(s.getBytes))
+    }
+  }
   "JsonWriter.writeRawVal" should {
     "don't write null value" in {
       intercept[NullPointerException](withWriter(_.writeRawVal(null.asInstanceOf[Array[Byte]])))
     }
     "write raw bytes as is" in {
-      def check(s: String): Unit = withWriter(_.writeRawVal(s.getBytes())) shouldBe s
+      def check(s: String): Unit = withWriter(_.writeRawVal(s.getBytes)) shouldBe s
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
     }

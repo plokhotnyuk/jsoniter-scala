@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.time._
 import java.util.{Base64, UUID}
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, ReaderConfig, WriterConfig}
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
@@ -25,14 +25,7 @@ object JsoniterScalaCodecs {
         Base64.getDecoder.decode(java.nio.ByteBuffer.wrap(arr, 1, arr.length - 2)).array()
       }
 
-      override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = {
-        val arr = Base64.getEncoder.encode(x)
-        val rawVal = new Array[Byte](arr.length + 2)
-        System.arraycopy(arr, 0, rawVal, 1, arr.length)
-        rawVal(0) = '"'
-        rawVal(arr.length + 1 ) = '"'
-        out.writeRawVal(rawVal)
-      }
+      override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase64Val(x, doPadding = true)
 
       override val nullValue: Array[Byte] = new Array[Byte](0)
     }

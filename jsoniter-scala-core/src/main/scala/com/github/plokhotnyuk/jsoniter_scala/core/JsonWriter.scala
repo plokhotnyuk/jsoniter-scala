@@ -457,6 +457,16 @@ final class JsonWriter private[jsoniter_scala](
     writeBytes('"')
   }
 
+  def writeBase64Val(bs: Array[Byte], doPadding: Boolean): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeBase64Bytes(bs, base64Digits, doPadding)
+  }
+
+  def writeBase64UrlVal(bs: Array[Byte], doPadding: Boolean): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeBase64Bytes(bs, base64UrlDigits, doPadding)
+  }
+
   def writeRawVal(bs: Array[Byte]): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
     writeRawBytes(bs)
@@ -658,6 +668,60 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 2) = b3
     buf(pos + 3) = b4
     pos + 4
+  }
+
+  private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], doPadding: Boolean): Unit = count = {
+    var lim = limit - 6
+    var pos = count
+    if (pos >= lim) {
+      pos = flushAndGrowBuf(6, pos)
+      lim = limit - 5
+    }
+    var buf = this.buf
+    buf(pos) = '"'
+    pos += 1
+    var remaining = bs.length
+    var offset = 0
+    while (remaining >= 3) {
+      val p = (bs(offset) & 0xff) << 16 | (bs(offset + 1) & 0xff) << 8 | (bs(offset + 2) & 0xff)
+      buf(pos) = ds(p >> 18)
+      buf(pos + 1) = ds((p >> 12) & 0x3f)
+      buf(pos + 2) = ds((p >> 6) & 0x3f)
+      buf(pos + 3) = ds(p & 0x3f)
+      pos += 4
+      remaining -= 3
+      offset += 3
+      if (pos >= lim) {
+        pos = flushAndGrowBuf(5, pos)
+        buf = this.buf
+        lim = limit - 5
+      }
+    }
+    if (remaining > 0) {
+      if (remaining > 1) {
+        val p = (bs(offset) & 0xff) << 10 | (bs(offset + 1) & 0xff) << 2
+        buf(pos) = ds(p >> 12)
+        buf(pos + 1) = ds((p >> 6) & 0x3f)
+        buf(pos + 2) = ds(p & 0x3f)
+        pos +=
+          (if (doPadding) {
+            buf(pos + 3) = '='
+            4
+          } else 3)
+      } else {
+        val p = bs(offset) & 0xff;
+        buf(pos) = ds(p >> 2)
+        buf(pos + 1) = ds((p << 4) & 0x3f)
+        pos +=
+          (if (doPadding) {
+            buf(pos + 2) = '='
+            buf(pos + 3) = '='
+            4
+          } else 2)
+      }
+    }
+    buf(pos) = '"'
+    pos + 1
   }
 
   private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
@@ -2227,6 +2291,10 @@ object JsonWriter {
     } while (j < 16)
     ds
   }
+  private final val base64Digits: Array[Byte] =
+    eval("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes)
+  private final val base64UrlDigits: Array[Byte] =
+    eval("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".getBytes)
   private final val f32Pow5InvSplit: Array[Long] = eval {
     val ss = new Array[Long](31)
     var pow5 = BigInt(1)
