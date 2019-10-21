@@ -1,5 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.util.Base64
+
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import io.circe.Decoder._
 import io.circe.Encoder._
@@ -29,6 +31,9 @@ object CirceEncodersDecoders {
 
     (deriveConfiguredDecoder[AnyVals], deriveConfiguredEncoder[AnyVals])
   }
+  val (base64D5r: Decoder[Array[Byte]], base64E5r: Encoder[Array[Byte]]) =
+    (Decoder.decodeString.map[Array[Byte]](Base64.getDecoder.decode),
+      Encoder.encodeString.contramap[Array[Byte]](Base64.getEncoder.encodeToString))
   implicit val (bidRequestD5r: Decoder[OpenRTB.BidRequest], bidRequestE5r: Encoder[OpenRTB.BidRequest]) = {
     import io.circe.generic.extras.auto._
 

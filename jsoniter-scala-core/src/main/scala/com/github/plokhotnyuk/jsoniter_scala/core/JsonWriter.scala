@@ -661,21 +661,24 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
-    val len = bs.length
-    val preferredBufSize = config.preferredBufSize
     var buf = this.buf
     var pos = count
-    var offset, step = 0
+    val preferredStep = Math.max(config.preferredBufSize, limit - pos)
+    var remaining = bs.length
+    var offset = 0
     do {
-      step = Math.min(preferredBufSize, len - offset)
+      val step =
+        if (preferredStep < remaining) preferredStep
+        else remaining
       if (pos + step > limit) {
         pos = flushAndGrowBuf(step, pos)
         buf = this.buf
       }
+      remaining -= step
       System.arraycopy(bs, offset, buf, pos, step)
-      pos += step
       offset += step
-    } while (offset < len)
+      pos += step
+    } while (remaining > 0)
     pos
   }
 
