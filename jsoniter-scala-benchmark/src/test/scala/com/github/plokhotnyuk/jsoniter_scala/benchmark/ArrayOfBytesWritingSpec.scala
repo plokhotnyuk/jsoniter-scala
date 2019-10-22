@@ -8,8 +8,7 @@ class ArrayOfBytesWritingSpec extends BenchmarkSpecBase {
   "ArrayOfBytesWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      //FIXME: Borer serializes a byte array to the base64 string
-      //toString(benchmark.borerJson()) shouldBe benchmark.jsonString
+      toString(benchmark.borerJson()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: DSL-JSON serializes a byte array to the base64 string
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString

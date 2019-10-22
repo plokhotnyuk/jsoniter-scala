@@ -15,6 +15,8 @@ object BorerJsonEncodersDecoders {
     maxNumberMantissaDigits = 200,
     maxNumberAbsExponent = 999,
     readDecimalNumbersOnlyAsNumberStrings = true)
+  val (byteArrayEnc: Encoder[Array[Byte]], byteArrayDec: Decoder[Array[Byte]]) =
+    (Encoder.forArray[Byte], Decoder.forArray[Byte])
   implicit val bigIntDec: Decoder[BigInt] =
     Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(x => new BigInt(x)) /*WARNING: don't do this for open-systems*/
   implicit val bigDecimalDec: Decoder[BigDecimal] =
