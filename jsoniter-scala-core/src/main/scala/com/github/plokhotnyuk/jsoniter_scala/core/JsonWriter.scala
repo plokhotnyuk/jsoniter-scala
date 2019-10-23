@@ -671,18 +671,18 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeBase64Bytes(bs: Array[Byte], ds: Array[Byte], doPadding: Boolean): Unit = count = {
-    var lim = limit - 6
+    var posLim = limit - 6
     var pos = count
-    if (pos >= lim) {
+    if (pos >= posLim) {
       pos = flushAndGrowBuf(6, pos)
-      lim = limit - 5
+      posLim = limit - 5
     }
     var buf = this.buf
     buf(pos) = '"'
     pos += 1
     var remaining = bs.length
     var offset = 0
-    while (remaining >= 3) {
+    while (remaining > 2) {
       val p = (bs(offset) & 0xff) << 16 | (bs(offset + 1) & 0xff) << 8 | (bs(offset + 2) & 0xff)
       buf(pos) = ds(p >> 18)
       buf(pos + 1) = ds((p >> 12) & 0x3f)
@@ -691,10 +691,10 @@ final class JsonWriter private[jsoniter_scala](
       pos += 4
       remaining -= 3
       offset += 3
-      if (pos >= lim) {
+      if (pos >= posLim) {
         pos = flushAndGrowBuf(5, pos)
         buf = this.buf
-        lim = limit - 5
+        posLim = limit - 5
       }
     }
     if (remaining > 0) {
