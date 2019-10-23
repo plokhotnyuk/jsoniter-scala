@@ -25,6 +25,6 @@ matrix:
         - echo PATH = ${PATH}
         - ls ${JAVA_HOME}
 script:
-  - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION clean coverage test coverageAggregate mimaReportBinaryIssues
+  - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION clean coverage test coverageAggregate mimaReportBinaryIssues < /dev/null
 after_success:
   - bash <(curl -s https://codecov.io/bash)

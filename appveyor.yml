@@ -14,6 +14,6 @@ install:
   - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
   - cmd: SET SBT_OPTS=-Dsbt.supershell=false
 build_script:
-  - sbt -batch clean +compile
+  - sbt -batch clean +compile < /dev/null
 test_script:
-  - sbt -batch +test +mimaReportBinaryIssues
+  - sbt -batch +test +mimaReportBinaryIssues < /dev/null
