@@ -421,6 +421,10 @@ object JsonCodecMaker {
             "Use a separated submodule of the project to compile all such dependencies before their usage for " +
             "generation of codecs.")
         }
+      if (cfg.requireCollectionFields && cfg.transientEmpty) {
+        fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+      }
+
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 

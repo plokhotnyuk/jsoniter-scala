@@ -784,7 +784,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       parsedObj.a shouldBe arrays.a
     }
     "throw parse exception for missing array field when the requireCollectionFields flag is on" in {
-      val codecOfArrays2 = make[Arrays](CodecMakerConfig.withRequireCollectionFields(true))
+      val codecOfArrays2 = make[Arrays](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false))
       verifyDeserError(codecOfArrays2, "{}", "missing required field \"aa\", offset: 0x00000001")
       verifyDeserError(codecOfArrays2, """{"aa":[[],[]]}""", "missing required field \"a\", offset: 0x0000000d")
     }
@@ -840,15 +840,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         EmptyIterables(List("VVV"), _root_.scala.collection.mutable.ArrayBuffer(1)), """{"l":["VVV"],"a":[1]}""")
     }
     "throw parse exception for missing collection field when the requireCollectionFields flag is on" in {
-      verifyDeserError(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true)),
+      verifyDeserError(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
         "{}", "missing required field \"l\", offset: 0x00000001")
 
       case class NestedIterables(lessi: List[Either[String, Set[Int]]])
 
-      val codecOfNestedIterables = make[NestedIterables](CodecMakerConfig.withRequireCollectionFields(true).withFieldNameMapper {
+      val codecOfNestedIterables = make[NestedIterables](CodecMakerConfig.withFieldNameMapper {
         case "b" => "value"
         case "a" => "value"
-      })
+      }.withRequireCollectionFields(true).withTransientEmpty(false))
       verifyDeserError(codecOfNestedIterables, """{"lessi":[{"type":"Left"}]}""",
         "missing required field \"value\", offset: 0x00000018")
       verifyDeserError(codecOfNestedIterables, """{"lessi":[{"type":"Right"}]}""",
@@ -857,7 +857,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize case classes with collection fields that has default values when the requireCollectionFields flag is on" in {
       case class IterablesWithDefaults(l: List[Int] = _root_.scala.collection.immutable.Nil, s: Set[Option[String]] = Set())
 
-      verifySerDeser(make[IterablesWithDefaults](CodecMakerConfig.withRequireCollectionFields(true)),
+      verifySerDeser(make[IterablesWithDefaults](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
         IterablesWithDefaults(), "{}")
     }
     "serialize and deserialize case classes with empty Iterables when the requireCollectionFields flag is on and transientEmpty is off" in {
@@ -867,7 +867,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "deserialize null values as empty Iterables for fields with collection types" in {
       verifyDeser(make[EmptyIterables](CodecMakerConfig),
         EmptyIterables(List(), _root_.scala.collection.mutable.ArrayBuffer()), """{"l":null,"a":null}""")
-      verifyDeser(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true)),
+      verifyDeser(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
         EmptyIterables(List(), _root_.scala.collection.mutable.ArrayBuffer()), """{"l":null,"a":null}""")
     }
     "serialize and deserialize top-level Iterables" in {
@@ -920,7 +920,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"im":{"VVV":1},"mm":{"2":3}}""")
     }
     "throw parse exception for missing map field when the requireCollectionFields flag is on" in {
-      verifyDeserError(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true)),
+      verifyDeserError(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
         "{}", "missing required field \"im\", offset: 0x00000001")
     }
     "serialize and deserialize case classes with empty maps when the requireCollectionFields flag is on and transientEmpty is off" in {
@@ -930,7 +930,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "deserialize null values as empty maps for fields with map types" in {
       verifyDeser(make[EmptyMaps](CodecMakerConfig),
         EmptyMaps(Map(), _root_.scala.collection.mutable.Map()), """{"im":null,"mm":null}""")
-      verifyDeser(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true)),
+      verifyDeser(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
         EmptyMaps(Map(), _root_.scala.collection.mutable.Map()), """{"im":null,"mm":null}""")
     }
     "serialize and deserialize top-level maps" in {
@@ -1750,9 +1750,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "don't generate codecs for classes without a primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration](CodecMakerConfig)""".stripMargin
+        "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration](CodecMakerConfig)"
       }).getMessage.contains {
-        """Cannot find a primary constructor for 'Infinite.this.<local child>'"""
+        "Cannot find a primary constructor for 'Infinite.this.<local child>'"
       })
     }
     "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
@@ -1816,17 +1816,24 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
       })
     }
+    "don't generate codecs that cannot parse own output" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[Arrays](CodecMakerConfig.withRequireCollectionFields(true))"
+      }).getMessage.contains {
+        "'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously"
+      })
+    }
     "don't generate codecs for unsupported classes like abstract non-sealed case classes or java.util.Date" in {
       assert(intercept[TestFailedException](assertCompiles {
         """abstract case class AbstractCaseClass(i: Int)
           |JsonCodecMaker.make[AbstractCaseClass](CodecMakerConfig)""".stripMargin
       }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'AbstractCaseClass'."""
+        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'AbstractCaseClass'."
       })
       assert(intercept[TestFailedException](assertCompiles {
-        """JsonCodecMaker.make[_root_.java.util.Date](CodecMakerConfig)"""
+        "JsonCodecMaker.make[_root_.java.util.Date](CodecMakerConfig)"
       }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."""
+        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."
       })
     }
   }
