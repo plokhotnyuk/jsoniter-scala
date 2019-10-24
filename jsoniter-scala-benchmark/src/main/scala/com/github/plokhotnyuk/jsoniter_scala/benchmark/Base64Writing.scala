@@ -2,6 +2,8 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
+import com.avsystem.commons.serialization.json.JsonStringOutput
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -11,6 +13,9 @@ import org.openjdk.jmh.annotations.Benchmark
 import io.circe.syntax._
 
 class Base64Writing extends Base64Benchmark {
+  @Benchmark
+  def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj)(base64GenCodec).getBytes(UTF_8)
+
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 

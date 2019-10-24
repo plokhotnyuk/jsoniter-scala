@@ -4,7 +4,7 @@ import java.math.MathContext
 import java.time._
 import java.util.UUID
 
-import com.avsystem.commons.serialization.GenCodec
+import com.avsystem.commons.serialization.{Base64, GenCodec}
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
 import com.avsystem.commons.serialization.json.JsonOptions
@@ -18,6 +18,8 @@ object AVSystemCodecs {
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materializeRecursively
+  val base64GenCodec: GenCodec[Array[Byte]] =
+    transformed(a => Base64.encode(a, withoutPadding = false, urlSafe = false), s => Base64.decode(s, urlSafe = false))
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
   implicit val instantGenCodec: GenCodec[Instant] = transformed(_.toString, Instant.parse)
@@ -52,7 +54,7 @@ object AVSystemCodecs {
       (m: Map[Int, Boolean]) => m.foldLeft(IntMap.empty[Boolean])((im, p) => im.updated(p._1, p._2)))
   implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] =
-    transformed(_.toArray, (arr: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */)))
+    transformed(_.toArray, (a: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(a, Int.MaxValue /* WARNING: don't do this for open-systems */)))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed(m => (m: mutable.Map[Long, Boolean]),
       (m: mutable.Map[Long, Boolean]) => m.foldLeft(new mutable.LongMap[Boolean])((lm, p) => lm += (p._1, p._2)))
