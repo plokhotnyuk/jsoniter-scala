@@ -73,6 +73,7 @@ class CodecMakerConfig private (
     val transientDefault: Boolean,
     val transientEmpty: Boolean,
     val transientNone: Boolean,
+    val requireCollectionFields: Boolean,
     val bigDecimalPrecision: Int,
     val bigDecimalScaleLimit: Int,
     val bigDecimalDigitsLimit: Int,
@@ -102,6 +103,9 @@ class CodecMakerConfig private (
   def withTransientEmpty(transientEmpty: Boolean): CodecMakerConfig = copy(transientEmpty = transientEmpty)
 
   def withTransientNone(transientNone: Boolean): CodecMakerConfig = copy(transientNone = transientNone)
+
+  def withRequireCollectionFields(requireCollectionFields: Boolean): CodecMakerConfig =
+    copy(requireCollectionFields = requireCollectionFields)
 
   def withBigDecimalPrecision(bigDecimalPrecision: Int): CodecMakerConfig =
     copy(bigDecimalPrecision = bigDecimalPrecision)
@@ -133,6 +137,7 @@ class CodecMakerConfig private (
                          transientDefault: Boolean = transientDefault,
                          transientEmpty: Boolean = transientEmpty,
                          transientNone: Boolean = transientNone,
+                         requireCollectionFields: Boolean = requireCollectionFields,
                          bigDecimalPrecision: Int = bigDecimalPrecision,
                          bigDecimalScaleLimit: Int = bigDecimalScaleLimit,
                          bigDecimalDigitsLimit: Int = bigDecimalDigitsLimit,
@@ -151,6 +156,7 @@ class CodecMakerConfig private (
       transientDefault = transientDefault,
       transientEmpty = transientEmpty,
       transientNone = transientNone,
+      requireCollectionFields = requireCollectionFields,
       bigDecimalPrecision = bigDecimalPrecision,
       bigDecimalScaleLimit = bigDecimalScaleLimit,
       bigDecimalDigitsLimit = bigDecimalDigitsLimit,
@@ -171,6 +177,7 @@ object CodecMakerConfig extends CodecMakerConfig(
   transientDefault = true,
   transientEmpty = true,
   transientNone = true,
+  requireCollectionFields = false,
   bigDecimalPrecision = 34, // precision for decimal128: java.math.MathContext.DECIMAL128.getPrecision
   bigDecimalScaleLimit = 6178, // limit for scale for decimal128: BigDecimal("0." + "0" * 33 + "1e-6143", java.math.MathContext.DECIMAL128).scale + 1
   bigDecimalDigitsLimit = 308, // 128 bytes: (BigDecimal(BigInt("9" * 307))).underlying.unscaledValue.toByteArray.length
@@ -414,6 +421,10 @@ object JsonCodecMaker {
             "Use a separated submodule of the project to compile all such dependencies before their usage for " +
             "generation of codecs.")
         }
+      if (cfg.requireCollectionFields && cfg.transientEmpty) {
+        fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+      }
+
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
@@ -931,8 +942,12 @@ object JsonCodecMaker {
           if (discriminator.isEmpty) names
           else names :+ n
         })
-        val required = classInfo.fields.collect {
-          case f if !f.symbol.isParamWithDefault && !isContainer(f.resolvedTpe) => f.mappedName
+        val required: Seq[String] = classInfo.fields.flatMap { f =>
+          if (f.symbol.isParamWithDefault || f.resolvedTpe <:< typeOf[Option[_]]) None
+          else if (f.resolvedTpe <:< typeOf[Iterable[_]] || f.resolvedTpe <:< typeOf[Array[_]]) {
+            if (cfg.requireCollectionFields) Some(f.mappedName)
+            else None
+          } else Some(f.mappedName)
         }
         val paramVarNum = classInfo.fields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
