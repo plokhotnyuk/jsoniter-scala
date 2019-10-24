@@ -5,10 +5,11 @@ import java.math.MathContext
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.time.format.DateTimeFormatter
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -534,12 +535,36 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkError("\"00000000-0000-0000-0000-000000000000x", "expected '\"', offset: 0x00000025")
     }
   }
-  "JsonReader.readKeyAsInstant" should {
-    "throw parsing exception for missing ':' in the end" in {
-      assert(intercept[JsonReaderException](reader("\"2008-01-20T07:24:33Z\"").readKeyAsInstant())
-        .getMessage.contains("unexpected end of input, offset: 0x00000016"))
-      assert(intercept[JsonReaderException](reader("\"2008-01-20T07:24:33Z\"x").readKeyAsInstant())
-        .getMessage.contains("expected ':', offset: 0x00000016"))
+  "JsonReader.readBase64AsBytes and JsonReader.readBase64UrlAsBytes" should {
+    "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBase64AsBytes(null))
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+      assert(intercept[JsonReaderException](reader("null").readBase64UrlAsBytes(null))
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = new Array[Byte](0)
+      reader("null").readBase64AsBytes(default) shouldBe default
+      reader("null").readBase64UrlAsBytes(default) shouldBe default
+    }
+    "parse base64 from a string representation according to format that defined in RFC4648" in {
+      def check(s: String): Unit = {
+        val base64 = "\"" + Base64.getEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
+        val base64Url = "\"" + Base64.getUrlEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
+        "\"" + Base64.getEncoder.encodeToString(reader(base64).readBase64AsBytes(null)) + "\"" shouldBe base64
+        "\"" + Base64.getUrlEncoder.encodeToString(reader(base64Url).readBase64UrlAsBytes(null)) + "\"" shouldBe base64Url
+      }
+
+      forAll(arbitrary[String], minSuccessful(10000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken base64 string" in {
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonReaderException](reader(json).readBase64AsBytes(null)).getMessage.contains(error))
+        assert(intercept[JsonReaderException](reader(json).readBase64UrlAsBytes(null)).getMessage.contains(error))
+      }
+
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"1", "unexpected end of input, offset: 0x00000002")
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
-import java.util.{Base64, UUID}
+import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -19,11 +19,7 @@ object JsoniterScalaCodecs {
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
   val base64Codec: JsonValueCodec[Array[Byte]] = // don't define implicit for supported types
     new JsonValueCodec[Array[Byte]] {
-      override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = {
-        val arr = in.readRawValAsBytes()
-        if (arr(0) != '"' || arr(arr.length - 1) != '"') in.decodeError("Expected string value")
-        Base64.getDecoder.decode(java.nio.ByteBuffer.wrap(arr, 1, arr.length - 2)).array()
-      }
+      override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase64AsBytes(default)
 
       override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase64Val(x, doPadding = true)
 

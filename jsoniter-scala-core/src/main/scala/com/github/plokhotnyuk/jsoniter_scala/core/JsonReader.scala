@@ -4,12 +4,13 @@ import java.io.InputStream
 import java.math.MathContext
 import java.nio.ByteBuffer
 import java.time._
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 import com.github.plokhotnyuk.expression_evaluator.eval
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
+import scala.util.control.NonFatal
 import scala.{specialized => sp}
 
 /**
@@ -451,6 +452,14 @@ final class JsonReader private[jsoniter_scala](
 
   def readUUID(default: UUID): UUID =
     if (isNextToken('"', head)) parseUUID(head)
+    else readNullOrTokenError(default, '"')
+
+  def readBase64AsBytes(default: Array[Byte]): Array[Byte] =
+    if (isNextToken('"', head)) parseBase64(base64Bytes)
+    else readNullOrTokenError(default, '"')
+
+  def readBase64UrlAsBytes(default: Array[Byte]): Array[Byte] =
+    if (isNextToken('"', head)) parseBase64(base64UrlBytes)
     else readNullOrTokenError(default, '"')
 
   def readBoolean(): Boolean = parseBoolean(isToken = true, head)
@@ -2622,6 +2631,22 @@ final class JsonReader private[jsoniter_scala](
     x.toChar
   }
 
+  private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
+    val mark = this.mark
+    this.mark = Math.min(mark, head)
+    try {
+      head =
+        if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, head)
+        else skipString(evenBackSlashes = true, head)
+      val from = this.mark
+      val bb = java.nio.ByteBuffer.wrap(buf, from, head - from - 1)
+      (if (ds eq base64Bytes) Base64.getDecoder.decode(bb)
+      else Base64.getUrlDecoder.decode(bb)).array()
+    } catch {
+      case NonFatal(x) => decodeError(x.getMessage)
+    } finally this.mark = mark
+  }
+
   @tailrec
   private[this] def hexDigitError(pos: Int): Nothing = {
     if (nibbles(buf(pos) & 0xFF) < 0) decodeError("expected hex digit", pos)
@@ -3055,6 +3080,28 @@ object JsonReader {
     ns('e') = 14
     ns('f') = 15
     ns
+  }
+  private final val base64Bytes: Array[Byte] = eval {
+    val bs = new Array[Byte](256)
+    java.util.Arrays.fill(bs, -1: Byte)
+    val ds = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    var i = 0
+    while (i < ds.length) {
+      bs(ds.charAt(i).toInt) = i.toByte
+      i += 1
+    }
+    bs
+  }
+  private final val base64UrlBytes: Array[Byte] = eval {
+    val bs = new Array[Byte](256)
+    java.util.Arrays.fill(bs, -1: Byte)
+    val ds = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    var i = 0
+    while (i < ds.length) {
+      bs(ds.charAt(i).toInt) = i.toByte
+      i += 1
+    }
+    bs
   }
   private final lazy val zoneOffsets: Array[ZoneOffset] = {
     val zos = new Array[ZoneOffset](145)
