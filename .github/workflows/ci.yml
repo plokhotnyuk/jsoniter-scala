@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - 'jsoniter-scala-examples/**'
+      - '**.md'
+    branches-ignore:
+      - "gh-pages"
+  pull_request:
+    paths-ignore:
+      - 'jsoniter-scala-examples/**'
+      - '**.md'
+    branches-ignore:
+      - "gh-pages"
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        java:
+          - graalvm@
+          - amazon-corretto@1.8
+          - amazon-corretto@1.11
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+      fail-fast: false
+    steps:
+      - name: Configure git
+        run: "git config --global core.autocrlf false"
+        shell: bash
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 100
+      - uses: olafurpg/setup-scala@v5
+        with:
+          java-version: ${{matrix.java}}
+      - name: Compile, test and check binary compatibility
+        run: "sbt -batch clean +test +mimaReportBinaryIssues"
+        shell: bash
