@@ -1,5 +1,5 @@
 # Jsoniter Scala 
-
+[![Actions build](https://github.com/plokhotnyuk/jsoniter-scala/workflows/build/badge.svg)](https://github.com/plokhotnyuk/jsoniter-scala/actions)
 [![AppVeyor build](https://ci.appveyor.com/api/projects/status/17frw06h8rjwuc6g/branch/master?svg=true)](https://ci.appveyor.com/project/plokhotnyuk/jsoniter-scala/branch/master)
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![Code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
