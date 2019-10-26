@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.{Base64, UUID}
@@ -739,7 +740,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         withWriter(_.writeBase64UrlVal(bs, doPadding = false)) shouldBe "\"" + Base64.getUrlEncoder.withoutPadding().encodeToString(bs) + "\""
       }
 
-      forAll(arbitrary[String], minSuccessful(10000))((s: String) => check(s.getBytes))
+      forAll(arbitrary[String], minSuccessful(10000))((s: String) => check(s.getBytes(UTF_8)))
     }
   }
   "JsonWriter.writeRawVal" should {
@@ -747,7 +748,7 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       intercept[NullPointerException](withWriter(_.writeRawVal(null.asInstanceOf[Array[Byte]])))
     }
     "write raw bytes as is" in {
-      def check(s: String): Unit = withWriter(_.writeRawVal(s.getBytes)) shouldBe s
+      def check(s: String): Unit = withWriter(_.writeRawVal(s.getBytes(UTF_8))) shouldBe s
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
     }

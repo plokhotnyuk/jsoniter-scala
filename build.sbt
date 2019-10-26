@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
     )
   ),
   resolvers += Resolver.sonatypeRepo("staging"),
-  scalaVersion := "2.13.0",
+  scalaVersion := "2.13.1",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -93,7 +93,7 @@ lazy val `jsoniter-scala-core` = project
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0", "2.12.10", "2.11.12"),
+    crossScalaVersions := Seq("2.13.1", "2.12.10", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.1" % Provided,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2" % Test,
@@ -107,7 +107,7 @@ lazy val `jsoniter-scala-macros` = project
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.0", "2.12.10", "2.11.12"),
+    crossScalaVersions := Seq("2.13.1", "2.12.10", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -124,7 +124,7 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     resolvers += Resolver.bintrayRepo("reug", "maven"),
-    crossScalaVersions := Seq("2.13.0", "2.12.10"),
+    crossScalaVersions := Seq("2.13.1", "2.12.10"),
     libraryDependencies ++= Seq(
       "io.bullet" %% "borer-derivation" % "1.1.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
