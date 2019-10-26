@@ -2694,11 +2694,24 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "JsonReader.setMark and JsonReader.rollbackToMark" should {
     "store current position of parsing and return back to it" in {
-      val jsonReader = reader("{}")
-      jsonReader.setMark()
-      jsonReader.skip()
-      jsonReader.rollbackToMark()
-      jsonReader.nextToken() shouldBe '{'
+      def check[A](n: Int, s2: String)(f: JsonReader => A): Unit = {
+        val jsonReader = reader("{}" + " " * n + s2)
+        jsonReader.skip()
+        jsonReader.setMark()
+        f(jsonReader)
+        jsonReader.rollbackToMark()
+        jsonReader.nextToken().toChar shouldBe s2.charAt(0)
+      }
+
+      forAll(Gen.size, minSuccessful(10000)) { (n: Int) =>
+        check(n, "123456")(_.readBigInt(null))
+        check(n, "\"UTC\"")(_.readZoneId(null))
+        check(n, "[true]")(_.readRawValAsBytes())
+        check(n, "123.456")(_.readBigDecimal(null))
+        check(n, "\"AA==\"")(_.readBase64AsBytes(null))
+        check(n, "9223372036854776832")(_.readDouble())
+        check(n, "1.00000017881393432617187499")(_.readFloat())
+      }
     }
     "throw exception in case of rollbackToMark was called before setMark" in {
       val jsonReader = reader("{}")
@@ -2840,6 +2853,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
 
   def reader2(jsonBytes: Array[Byte], totalRead: Long = 0): JsonReader =
     new JsonReader(new Array[Byte](12), // a minimal allowed length
-      0, 0, 2147483647, new Array[Char](0), null, new ByteArrayInputStream(jsonBytes), totalRead,
+      0, 0, -1, new Array[Char](0), null, new ByteArrayInputStream(jsonBytes), totalRead,
       ReaderConfig.withThrowReaderExceptionWithStackTrace(true))
 }

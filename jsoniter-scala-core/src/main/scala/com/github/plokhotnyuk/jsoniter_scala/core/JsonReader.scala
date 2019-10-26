@@ -94,7 +94,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
-    private[this] var mark: Int = 2147483647,
+    private[this] var mark: Int = -1,
     private[this] var charBuf: Array[Char] = new Array[Char](1024),
     private[this] var bbuf: ByteBuffer = null,
     private[this] var in: InputStream = null,
@@ -150,9 +150,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def rollbackToMark(): Unit = {
-    if (mark == 2147483647) illegalMarkOperation()
+    if (mark < 0) illegalMarkOperation()
     head = mark
-    mark = 2147483647
+    mark = -1
   }
 
   def readKeyAsCharBuf(): Int = {
@@ -538,16 +538,20 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def readRawValAsBytes(): Array[Byte] = {
-    val mark = this.mark
-    this.mark = Math.min(mark, head)
+    var from = head
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
     try {
       skip()
-      val from = this.mark
+      if (mark == 0) from -= newMark
       val len = head - from
       val x = new Array[Byte](len)
       System.arraycopy(buf, from, x, 0, len)
       x
-    } finally this.mark = mark
+    } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
 
   def readNullOrError[@sp A](default: A, msg: String): A =
@@ -625,7 +629,7 @@ final class JsonReader private[jsoniter_scala](
       head = from
       tail = to
       totalRead = 0
-      mark = 2147483647
+      mark = -1
       val x = codec.decodeValue(this, codec.nullValue)
       if (head != to && config.checkForEndOfInput) endOfInputOrError()
       x
@@ -642,7 +646,7 @@ final class JsonReader private[jsoniter_scala](
       head = 0
       tail = 0
       totalRead = 0
-      mark = 2147483647
+      mark = -1
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       val x = codec.decodeValue(this, codec.nullValue)
       if (config.checkForEndOfInput) endOfInputOrError()
@@ -664,7 +668,7 @@ final class JsonReader private[jsoniter_scala](
         head = offset + bbuf.position()
         tail = to
         totalRead = 0
-        mark = 2147483647
+        mark = -1
         val x = codec.decodeValue(this, codec.nullValue)
         if (head != to && config.checkForEndOfInput) endOfInputOrError()
         x
@@ -681,7 +685,7 @@ final class JsonReader private[jsoniter_scala](
         head = 0
         tail = 0
         totalRead = 0
-        mark = 2147483647
+        mark = -1
         if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
         val x = codec.decodeValue(this, codec.nullValue)
         if (config.checkForEndOfInput) endOfInputOrError()
@@ -702,7 +706,7 @@ final class JsonReader private[jsoniter_scala](
       head = 0
       tail = 0
       totalRead = 0
-      mark = 2147483647
+      mark = -1
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       while (f(codec.decodeValue(this, codec.nullValue)) && skipWhitespaces()) ()
     } finally {
@@ -719,7 +723,7 @@ final class JsonReader private[jsoniter_scala](
       head = 0
       tail = 0
       totalRead = 0
-      mark = 2147483647
+      mark = -1
       if (buf.length < config.preferredBufSize) reallocateBufToPreferredSize()
       var continue = true
       if (isNextToken('[')) {
@@ -981,12 +985,17 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseZoneIdUntilToken(t: Byte): String = {
-    val mark = this.mark
-    this.mark = Math.min(mark, head)
+    var from = head
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
     try {
-      head = scanUntilToken(t, head)
-      new String(buf, 0, this.mark, head - this.mark - 1)
-    } finally this.mark = mark
+      head = scanUntilToken(t, from)
+      if (mark == 0) from -= newMark
+      new String(buf, 0, from, head - from - 1)
+    } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
 
   @tailrec
@@ -1225,8 +1234,12 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val mark = this.mark
-    this.mark = Math.min(mark, head - 1)
+    var from = head - 1
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
     try {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
@@ -1313,14 +1326,17 @@ final class JsonReader private[jsoniter_scala](
           val pow10 = pow10Doubles
           val slop = 15 - digits.toInt
           toSignedDouble(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
-        } else toDouble(pos, isNeg, isExact, posMant, exp)
+        } else {
+          if (mark == 0) from -= newMark
+          toDouble(from, pos, isNeg, isExact, posMant, exp)
+        }
       }
-    } finally this.mark = mark
+    } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Double =
+  private[this] def toDouble(from: Int, pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Double =
     if (posMant == 0 || exponent < -343) toSignedDouble(isNeg, 0.0)
     else if (exponent >= 310) toSignedDouble(isNeg, Double.PositiveInfinity)
     else {
@@ -1359,7 +1375,7 @@ final class JsonReader private[jsoniter_scala](
           val mantBits = mant & 0x000FFFFFFFFFFFFFL
           java.lang.Double.longBitsToDouble(signBit | expBits | mantBits)
         }
-      } else java.lang.Double.parseDouble(new String(buf, 0, mark, pos - mark))
+      } else java.lang.Double.parseDouble(new String(buf, 0, from, pos - from))
     }
 
   private[this] def toSignedDouble(isNeg: Boolean, posX: Double): Double =
@@ -1370,8 +1386,12 @@ final class JsonReader private[jsoniter_scala](
     var b =
       if (isToken) nextToken(head)
       else nextByte(head)
-    val mark = this.mark
-    this.mark = Math.min(mark, head - 1)
+    var from = head - 1
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
     try {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
@@ -1451,14 +1471,17 @@ final class JsonReader private[jsoniter_scala](
         val isSmall = posMant < 4294967296L // max mantissa that can be converted w/o rounding error by double mul or div
         if (isSmall && exp >= -22 + digits && exp < 0) toSignedFloat(isNeg, (posMant / pow10Doubles(-exp)).toFloat)
         else if (isSmall && exp >= 0 && exp <= 18 - digits) toSignedFloat(isNeg, (posMant * pow10Doubles(exp)).toFloat)
-        else toFloat(pos, isNeg, isExact, posMant, exp)
+        else {
+          if (mark == 0) from -= newMark
+          toFloat(from, pos, isNeg, isExact, posMant, exp)
+        }
       }
-    } finally this.mark = mark
+    } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Float =
+  private[this] def toFloat(from: Int, pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Float =
     if (posMant == 0 || exponent < -64) toSignedFloat(isNeg, 0.0f)
     else if (exponent >= 39) toSignedFloat(isNeg, Float.PositiveInfinity)
     else {
@@ -1497,7 +1520,7 @@ final class JsonReader private[jsoniter_scala](
           val mantBits = mant.toInt & 0x007FFFFF
           java.lang.Float.intBitsToFloat(signBit | expBits | mantBits)
         }
-      } else java.lang.Float.parseFloat(new String(buf, 0, mark, pos - mark))
+      } else java.lang.Float.parseFloat(new String(buf, 0, from, pos - from))
     }
 
   private[this] def toSignedFloat(isNeg: Boolean, posX: Float): Float =
@@ -1543,8 +1566,12 @@ final class JsonReader private[jsoniter_scala](
     else {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
-      val mark = this.mark
-      this.mark = Math.min(mark, head - 1)
+      var from = head - 1
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
       try {
         if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
@@ -1566,8 +1593,9 @@ final class JsonReader private[jsoniter_scala](
         }
         head = pos
         if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-        new BigInt(toBigDecimal(buf, this.mark, pos, isNeg, 0).unscaledValue)
-      } finally this.mark = mark
+        if (mark == 0) from -= newMark
+        new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
+      } finally if (mark != 0 || oldMark< 0) mark = oldMark
     }
   }
 
@@ -1580,8 +1608,12 @@ final class JsonReader private[jsoniter_scala](
     else {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
-      val mark = this.mark
-      this.mark = Math.min(mark, head - 1)
+      var from = head - 1
+      val oldMark = mark
+      val newMark =
+        if (oldMark < 0) from
+        else oldMark
+      mark = newMark
       try {
         if (b < '0' || b > '9') numberError()
         val isZeroFirst = isToken && b == '0'
@@ -1622,7 +1654,9 @@ final class JsonReader private[jsoniter_scala](
           }
         }
         fracLen = digits - fracLen
-        var numLen = pos - this.mark
+        var numLen = pos -
+          (if (mark == 0) from - newMark
+          else from)
         var exp = 0
         if ((b | 0x20) == 'e') {
           b = nextByte(pos + 1)
@@ -1651,20 +1685,20 @@ final class JsonReader private[jsoniter_scala](
           }
         }
         head = pos
-        val numPos = this.mark
-        val limit = numPos + numLen
+        if (mark == 0) from -= newMark
+        val limit = from + numLen
         var x =
-          if (fracLen == 0) toBigDecimal(buf, numPos, limit, isNeg, -exp)
+          if (fracLen == 0) toBigDecimal(buf, from, limit, isNeg, -exp)
           else {
             numLen -= 1
             val fracPos = limit - fracLen
-            toBigDecimal(buf, numPos, fracPos - 1, isNeg, -exp)
+            toBigDecimal(buf, from, fracPos - 1, isNeg, -exp)
               .add(toBigDecimal(buf, fracPos, limit, isNeg, fracLen - exp))
           }
         if (numLen > mc.getPrecision) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
-      } finally this.mark = mark
+      } finally if (mark != 0 || oldMark< 0) mark = oldMark
     }
   }
 
@@ -2632,19 +2666,23 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
-    val mark = this.mark
-    this.mark = Math.min(mark, head)
+    var from = head
+    val oldMark = mark
+    val newMark =
+      if (oldMark < 0) from
+      else oldMark
+    mark = newMark
     try {
       head =
-        if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, head)
-        else skipString(evenBackSlashes = true, head)
-      val from = this.mark
+        if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, from)
+        else skipString(evenBackSlashes = true, from)
+      if (mark == 0) from -= newMark
       val bb = java.nio.ByteBuffer.wrap(buf, from, head - from - 1)
       (if (ds eq base64Bytes) Base64.getDecoder.decode(bb)
       else Base64.getUrlDecoder.decode(bb)).array()
     } catch {
       case NonFatal(x) => decodeError(x.getMessage)
-    } finally this.mark = mark
+    } finally if (mark == 0 || oldMark < 0) mark = oldMark
   }
 
   @tailrec
@@ -3005,7 +3043,9 @@ final class JsonReader private[jsoniter_scala](
     } else pos
 
   private[this] def ensureBufCapacity(pos: Int): Int = {
-    val minPos = Math.min(mark, pos)
+    val minPos =
+      if (mark < 0) pos
+      else mark
     if (minPos > 0) {
       val newPos = pos - minPos
       val remaining = tail - minPos
@@ -3014,7 +3054,7 @@ final class JsonReader private[jsoniter_scala](
         buf(i) = buf(i + minPos)
         i += 1
       }
-      if (mark != 2147483647) mark = 0
+      if (mark > 0) mark = 0
       tail = remaining
       head = newPos
       newPos
