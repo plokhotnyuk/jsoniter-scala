@@ -109,8 +109,8 @@ lazy val `jsoniter-scala-macros` = project
   .settings(
     crossScalaVersions := Seq("2.13.1", "2.12.10", "2.11.12"),
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % Provided,
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
       "org.scalacheck" %% "scalacheck" % "1.14.2" % Test,
       "org.scalatest" %% "scalatest" % "3.0.8" % Test
     )

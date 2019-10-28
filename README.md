@@ -143,16 +143,15 @@ and [Issues page](https://github.com/plokhotnyuk/jsoniter-scala/issues).
 
 ## How to use
 
-Add the core library with a "compile" scope and the macros library with a "provided" scope to your dependencies list:
+Add the library to your dependencies list:
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "1.1.1" % Compile,
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "1.1.1" % Provided // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "1.1.1"
 )
 ```
 
-Generate codecs for your Scala classes and collections:
+Generate codecs for top-level types of your data structures:
 
 ```scala
 import com.github.plokhotnyuk.jsoniter_scala.macros._
@@ -165,9 +164,7 @@ case class User(name: String, devices: Seq[Device])
 implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make[User](CodecMakerConfig)
 ```
 
-That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec`.
-
-Now you can use it for parsing and serialization:
+That's it! You have generated an instance of codec, and now you can use it for parsing and serialization:
 
 ```scala
 val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))
