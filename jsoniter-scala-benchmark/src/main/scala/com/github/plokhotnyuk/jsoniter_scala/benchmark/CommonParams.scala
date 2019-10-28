@@ -16,9 +16,12 @@ import org.openjdk.jmh.annotations._
   "-XX:InitialCodeCacheSize=512m",
   "-XX:ReservedCodeCacheSize=512m",
   "-XX:+UseParallelGC",
+  "-XX:-UseAdaptiveSizePolicy",
   "-XX:MaxInlineLevel=18",
   "-XX:-UseBiasedLocking",
-  "-XX:+AlwaysPreTouch"
+  "-XX:+AlwaysPreTouch",
+  "-XX:+UseNUMA",
+  "-XX:-UseAdaptiveNUMAChunkSizing"
 ))
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
