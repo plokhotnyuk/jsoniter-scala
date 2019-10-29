@@ -4,13 +4,12 @@ import java.io.InputStream
 import java.math.MathContext
 import java.nio.ByteBuffer
 import java.time._
-import java.util.{Base64, UUID}
+import java.util.UUID
 
 import com.github.plokhotnyuk.expression_evaluator.eval
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import scala.annotation.{switch, tailrec}
-import scala.util.control.NonFatal
 import scala.{specialized => sp}
 
 /**
@@ -2666,23 +2665,75 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
-    var from = head
-    val oldMark = mark
-    val newMark =
-      if (oldMark < 0) from
-      else oldMark
-    mark = newMark
-    try {
-      head =
-        if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, from)
-        else skipString(evenBackSlashes = true, from)
-      if (mark == 0) from -= newMark
-      val bb = java.nio.ByteBuffer.wrap(buf, from, head - from - 1)
-      (if (ds eq base64Bytes) Base64.getDecoder.decode(bb)
-      else Base64.getUrlDecoder.decode(bb)).array()
-    } catch {
-      case NonFatal(x) => decodeError(x.getMessage)
-    } finally if (mark == 0 || oldMark < 0) mark = oldMark
+    var charBuf = this.charBuf
+    var lenM2 = charBuf.length - 2
+    var pos = head
+    var buf = this.buf
+    var i, p = 0
+    while (p >= 0 && (pos + 3 < tail || {
+      pos = loadMore(pos)
+      buf = this.buf
+      pos + 3 < tail
+    })) {
+      if (i >= lenM2) {
+        lenM2 = growCharBuf(i + 2) - 2
+        charBuf = this.charBuf
+      }
+      val lim = Math.min(((tail - pos + 3) >> 2) * 3 + i, lenM2)
+      while (i < lim && {
+        p = ds(buf(pos) & 0xff) << 18 | ds(buf(pos + 1) & 0xff) << 12 |
+          ds(buf(pos + 2) & 0xff) << 6 | ds(buf(pos + 3) & 0xff)
+        p >= 0
+      }) {
+        charBuf(i) = (p >> 16).toChar
+        charBuf(i + 1) = (p >> 8).toChar
+        charBuf(i + 2) = p.toChar
+        pos += 4
+        i += 3
+      }
+    }
+    head = pos
+    val b0 = nextByte()
+    if (b0 != '"') {
+      if (i > lenM2) {
+        growCharBuf(i + 1)
+        charBuf = this.charBuf
+      }
+      p = ds(b0 & 0xff).toInt
+      if (p < 0) decodeError("expected '\"' or base64 digit")
+      val b1 = nextByte()
+      p = (p << 6) | ds(b1 & 0xff)
+      if (p < 0) decodeError("expected base64 digit")
+      val b2 = nextByte()
+      if (b2 == '"' || b2 == '=') {
+        if (b2 == '=') {
+          val b3 = nextByte()
+          if (b3 != '=') tokenError('=')
+          val b4 = nextByte()
+          if (b4 != '"') tokenError('"')
+        }
+        charBuf(i) = (p >> 4).toChar
+        i += 1
+      } else {
+        p = (p << 6) | ds(b2 & 0xff)
+        if (p < 0) decodeError("expected '\"' or '=' or base64 digit")
+        val b3 = nextByte()
+        if (b3 == '=') {
+          val b4 = nextByte()
+          if (b4 != '"') tokenError('"')
+        } else if (b3 != '"') tokenError('"')
+        charBuf(i) = (p >> 10).toChar
+        charBuf(i + 1) = (p >> 2).toChar
+        i += 2
+      }
+    }
+    val bs = new Array[Byte](i)
+    var j = 0
+    while (j < i) {
+      bs(j) = charBuf(j).toByte
+      j += 1
+    }
+    bs
   }
 
   @tailrec

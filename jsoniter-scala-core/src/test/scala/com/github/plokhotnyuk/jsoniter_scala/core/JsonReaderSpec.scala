@@ -550,9 +550,13 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse base64 from a string representation according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val base64 = "\"" + Base64.getEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
+        val base64WithoutPadding = "\"" + Base64.getEncoder.withoutPadding.encodeToString(s.getBytes(UTF_8)) + "\""
         val base64Url = "\"" + Base64.getUrlEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
+        val base64UrlWithoutPadding = "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(s.getBytes(UTF_8)) + "\""
         "\"" + Base64.getEncoder.encodeToString(reader(base64).readBase64AsBytes(null)) + "\"" shouldBe base64
+        "\"" + Base64.getEncoder.withoutPadding.encodeToString(reader(base64).readBase64AsBytes(null)) + "\"" shouldBe base64WithoutPadding
         "\"" + Base64.getUrlEncoder.encodeToString(reader(base64Url).readBase64UrlAsBytes(null)) + "\"" shouldBe base64Url
+        "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(reader(base64Url).readBase64UrlAsBytes(null)) + "\"" shouldBe base64UrlWithoutPadding
       }
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
@@ -564,7 +568,17 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }
 
       checkError("\"", "unexpected end of input, offset: 0x00000001")
-      checkError("\"1", "unexpected end of input, offset: 0x00000002")
+      checkError("\"0", "unexpected end of input, offset: 0x00000002")
+      checkError("\"00", "unexpected end of input, offset: 0x00000003")
+      checkError("\"000", "unexpected end of input, offset: 0x00000004")
+      checkError("\"0000", "unexpected end of input, offset: 0x00000005")
+      checkError("\"!000\"", "expected '\"' or base64 digit, offset: 0x00000001")
+      checkError("\"0!00\"", "expected base64 digit, offset: 0x00000002")
+      checkError("\"00!0\"", "expected '\"' or '=' or base64 digit, offset: 0x00000003")
+      checkError("\"000!\"", "expected '\"', offset: 0x00000004")
+      checkError("\"00=!\"", "expected '=', offset: 0x00000004")
+      checkError("\"00==!", "expected '\"', offset: 0x00000005")
+      checkError("\"000=!", "expected '\"', offset: 0x00000005")
     }
   }
   "JsonReader.readDuration and JsonReader.readKeyAsDuration" should {
