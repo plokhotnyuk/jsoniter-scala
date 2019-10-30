@@ -535,6 +535,42 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkError("\"00000000-0000-0000-0000-000000000000x", "expected '\"', offset: 0x00000025")
     }
   }
+  "JsonReader.readBase16AsBytes" should {
+    "don't parse null value" in {
+      assert(intercept[JsonReaderException](reader("null").readBase16AsBytes(null))
+        .getMessage.contains("expected '\"', offset: 0x00000000"))
+    }
+    "return supplied default value instead of null value" in {
+      val default = new Array[Byte](0)
+      reader("null").readBase16AsBytes(default) shouldBe default
+    }
+    "parse Base16 representation according to format that defined in RFC4648" in {
+      def check(s: String): Unit = {
+        val bs = s.getBytes(UTF_8)
+        val base16UpperCase = bs.map("%02X" format _).mkString("\"", "", "\"")
+        reader(base16UpperCase).readBase16AsBytes(null).map("%02X" format _).mkString("\"", "", "\"")  shouldBe base16UpperCase
+        val base16LowerCase = bs.map("%02x" format _).mkString("\"", "", "\"")
+        reader(base16LowerCase).readBase16AsBytes(null).map("%02x" format _).mkString("\"", "", "\"")  shouldBe base16LowerCase
+      }
+
+      forAll(arbitrary[String], minSuccessful(10000))(check)
+    }
+    "throw parsing exception for empty input and illegal or broken Base16 string" in {
+      def checkError(json: String, error: String): Unit = {
+        assert(intercept[JsonReaderException](reader(json).readBase16AsBytes(null)).getMessage.contains(error))
+      }
+
+      checkError("\"", "unexpected end of input, offset: 0x00000001")
+      checkError("\"0", "unexpected end of input, offset: 0x00000002")
+      checkError("\"00", "unexpected end of input, offset: 0x00000003")
+      checkError("\"000", "unexpected end of input, offset: 0x00000004")
+      checkError("\"0000", "unexpected end of input, offset: 0x00000005")
+      checkError("\"!000\"", "expected '\"' or hex digit, offset: 0x00000001")
+      checkError("\"0!00\"", "expected hex digit, offset: 0x00000002")
+      checkError("\"00!0\"", "expected '\"' or hex digit, offset: 0x00000003")
+      checkError("\"000!\"", "expected hex digit, offset: 0x00000004")
+    }
+  }
   "JsonReader.readBase64AsBytes and JsonReader.readBase64UrlAsBytes" should {
     "don't parse null value" in {
       assert(intercept[JsonReaderException](reader("null").readBase64AsBytes(null))
@@ -547,7 +583,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       reader("null").readBase64AsBytes(default) shouldBe default
       reader("null").readBase64UrlAsBytes(default) shouldBe default
     }
-    "parse base64 from a string representation according to format that defined in RFC4648" in {
+    "parse Base64 representation according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val base64 = "\"" + Base64.getEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
         val base64WithoutPadding = "\"" + Base64.getEncoder.withoutPadding.encodeToString(s.getBytes(UTF_8)) + "\""

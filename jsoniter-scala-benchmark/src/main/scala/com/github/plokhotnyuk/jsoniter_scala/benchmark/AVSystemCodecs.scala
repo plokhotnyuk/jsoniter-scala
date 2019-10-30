@@ -7,6 +7,7 @@ import java.util.UUID
 import com.avsystem.commons.serialization.{Base64, GenCodec}
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
+import com.avsystem.commons.serialization.json.JsonBinaryFormat.HexString
 import com.avsystem.commons.serialization.json.JsonOptions
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 
@@ -15,6 +16,7 @@ import scala.collection.mutable
 
 object AVSystemCodecs {
   val jsonOptions: JsonOptions = JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /*WARNING: don't do this for open-systems*/)
+  val jsonBase16Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = HexString)
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materializeRecursively
