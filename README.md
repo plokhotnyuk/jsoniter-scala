@@ -74,7 +74,10 @@ Support of Scala.js and Scala Native is not a goal for the moment.
   `java.util.UUID`, `java.time.*`, literal types, and value classes for any of them
 - Codecs for sorted maps and sets can be customized by implicit `Ordering[K]` instances for keys that are available at
   the scope of the `make` macro call
-- Parsing of escaped characters is not supported for strings which are mapped to numeric and `java.time.*` types
+- Core module support reading and writing byte arrays from/to Base16 and Base64 representations (RFC 4648) for using in 
+  custom codecs    
+- Parsing of escaped characters is not supported for strings which are mapped to byte arrays, numeric and `java.time.*` 
+  types
 - Support of first-order and higher-kind types
 - Support of 2 representations of ADTs with a sealed trait or a Scala class as a base type and non-abstract Scala 
   classes or objects as leaf classes: 1st representation uses discriminator field with string type of value, 2nd one 

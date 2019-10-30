@@ -17,6 +17,14 @@ object JsoniterScalaCodecs {
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredBufSize(1024 * 1024)
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
+  val base16Codec: JsonValueCodec[Array[Byte]] = // don't define implicit for supported types
+    new JsonValueCodec[Array[Byte]] {
+      override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase16AsBytes(default)
+
+      override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase16Val(x, lowerCase = true)
+
+      override val nullValue: Array[Byte] = new Array[Byte](0)
+    }
   val base64Codec: JsonValueCodec[Array[Byte]] = // don't define implicit for supported types
     new JsonValueCodec[Array[Byte]] {
       override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase64AsBytes(default)

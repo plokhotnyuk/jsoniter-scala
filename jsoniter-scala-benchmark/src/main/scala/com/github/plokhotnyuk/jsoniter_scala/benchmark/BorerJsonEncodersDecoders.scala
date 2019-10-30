@@ -9,6 +9,7 @@ import io.bullet.borer.Borer.Error._
 import io.bullet.borer.Json.DecodingConfig
 import io.bullet.borer.derivation.ArrayBasedCodecs
 import io.bullet.borer.derivation.MapBasedCodecs._
+import io.bullet.borer.encodings.Base16
 
 object BorerJsonEncodersDecoders {
   val decodingConfig = DecodingConfig(
@@ -17,6 +18,8 @@ object BorerJsonEncodersDecoders {
     readDecimalNumbersOnlyAsNumberStrings = true)
   val (byteArrayEnc: Encoder[Array[Byte]], byteArrayDec: Decoder[Array[Byte]]) =
     (Encoder.forArray[Byte], Decoder.forArray[Byte])
+  val (base16Enc: Encoder[Array[Byte]], base16Dec: Decoder[Array[Byte]]) =
+    (Encoder.forByteArray(Base16), Decoder.forByteArray(Base16))
   implicit val bigIntDec: Decoder[BigInt] =
     Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(x => new BigInt(x)) /*WARNING: don't do this for open-systems*/
   implicit val bigDecimalDec: Decoder[BigDecimal] =
