@@ -2758,7 +2758,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
         check(n, "\"UTC\"")(_.readZoneId(null))
         check(n, "[true]")(_.readRawValAsBytes())
         check(n, "123.456")(_.readBigDecimal(null))
-        check(n, "\"AA==\"")(_.readBase64AsBytes(null))
         check(n, "9223372036854776832")(_.readDouble())
         check(n, "1.00000017881393432617187499")(_.readFloat())
       }
