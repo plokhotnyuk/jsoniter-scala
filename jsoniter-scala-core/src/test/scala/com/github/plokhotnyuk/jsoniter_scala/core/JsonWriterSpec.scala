@@ -723,8 +723,10 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "write bytes as Base16 string according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val bs = s.getBytes
-        withWriter(_.writeBase16Val(bs, lowerCase = true)) shouldBe bs.map("%02x" format _).mkString("\"", "", "\"")
-        withWriter(_.writeBase16Val(bs, lowerCase = false)) shouldBe bs.map("%02X" format _).mkString("\"", "", "\"")
+        val base16LowerCase = bs.map("%02x" format _).mkString("\"", "", "\"")
+        val base16UpperCase = base16LowerCase.toUpperCase
+        withWriter(_.writeBase16Val(bs, lowerCase = true)) shouldBe base16LowerCase
+        withWriter(_.writeBase16Val(bs, lowerCase = false)) shouldBe base16UpperCase
       }
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
@@ -733,17 +735,17 @@ class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
   "JsonWriter.writeBase64Val and JsonWriter.writeBase64UrlVal" should {
     "don't write null value" in {
       intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = true)))
-      intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = false)))
       intercept[NullPointerException](withWriter(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = true)))
+      intercept[NullPointerException](withWriter(_.writeBase64Val(null.asInstanceOf[Array[Byte]], doPadding = false)))
       intercept[NullPointerException](withWriter(_.writeBase64UrlVal(null.asInstanceOf[Array[Byte]], doPadding = false)))
     }
     "write bytes as Base64 string according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val bs = s.getBytes(UTF_8)
         withWriter(_.writeBase64Val(bs, doPadding = true)) shouldBe "\"" + Base64.getEncoder.encodeToString(bs) + "\""
-        withWriter(_.writeBase64Val(bs, doPadding = false)) shouldBe "\"" + Base64.getEncoder.withoutPadding().encodeToString(bs) + "\""
         withWriter(_.writeBase64UrlVal(bs, doPadding = true)) shouldBe "\"" + Base64.getUrlEncoder.encodeToString(bs) + "\""
-        withWriter(_.writeBase64UrlVal(bs, doPadding = false)) shouldBe "\"" + Base64.getUrlEncoder.withoutPadding().encodeToString(bs) + "\""
+        withWriter(_.writeBase64Val(bs, doPadding = false)) shouldBe "\"" + Base64.getEncoder.withoutPadding.encodeToString(bs) + "\""
+        withWriter(_.writeBase64UrlVal(bs, doPadding = false)) shouldBe "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(bs) + "\""
       }
 
       forAll(arbitrary[String], minSuccessful(10000))(check)

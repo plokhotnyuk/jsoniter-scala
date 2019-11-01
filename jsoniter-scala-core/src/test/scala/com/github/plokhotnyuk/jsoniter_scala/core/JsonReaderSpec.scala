@@ -547,10 +547,10 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "parse Base16 representation according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val bs = s.getBytes(UTF_8)
-        val base16UpperCase = bs.map("%02X" format _).mkString("\"", "", "\"")
-        reader(base16UpperCase).readBase16AsBytes(null).map("%02X" format _).mkString("\"", "", "\"")  shouldBe base16UpperCase
         val base16LowerCase = bs.map("%02x" format _).mkString("\"", "", "\"")
-        reader(base16LowerCase).readBase16AsBytes(null).map("%02x" format _).mkString("\"", "", "\"")  shouldBe base16LowerCase
+        val base16UpperCase = base16LowerCase.toUpperCase
+        reader(base16LowerCase).readBase16AsBytes(null).map("%02x" format _).mkString("\"", "", "\"") shouldBe base16LowerCase
+        reader(base16UpperCase).readBase16AsBytes(null).map("%02X" format _).mkString("\"", "", "\"") shouldBe base16UpperCase
       }
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
@@ -585,14 +585,15 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "parse Base64 representation according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
-        val base64 = "\"" + Base64.getEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
-        val base64WithoutPadding = "\"" + Base64.getEncoder.withoutPadding.encodeToString(s.getBytes(UTF_8)) + "\""
-        val base64Url = "\"" + Base64.getUrlEncoder.encodeToString(s.getBytes(UTF_8)) + "\""
-        val base64UrlWithoutPadding = "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(s.getBytes(UTF_8)) + "\""
+        val bs = s.getBytes(UTF_8)
+        val base64 = "\"" + Base64.getEncoder.encodeToString(bs) + "\""
+        val base64Url = "\"" + Base64.getUrlEncoder.encodeToString(bs) + "\""
+        val base64WithoutPadding = "\"" + Base64.getEncoder.withoutPadding.encodeToString(bs) + "\""
+        val base64UrlWithoutPadding = "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(bs) + "\""
         "\"" + Base64.getEncoder.encodeToString(reader(base64).readBase64AsBytes(null)) + "\"" shouldBe base64
-        "\"" + Base64.getEncoder.withoutPadding.encodeToString(reader(base64).readBase64AsBytes(null)) + "\"" shouldBe base64WithoutPadding
         "\"" + Base64.getUrlEncoder.encodeToString(reader(base64Url).readBase64UrlAsBytes(null)) + "\"" shouldBe base64Url
-        "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(reader(base64Url).readBase64UrlAsBytes(null)) + "\"" shouldBe base64UrlWithoutPadding
+        "\"" + Base64.getEncoder.withoutPadding.encodeToString(reader(base64WithoutPadding).readBase64AsBytes(null)) + "\"" shouldBe base64WithoutPadding
+        "\"" + Base64.getUrlEncoder.withoutPadding.encodeToString(reader(base64UrlWithoutPadding).readBase64UrlAsBytes(null)) + "\"" shouldBe base64UrlWithoutPadding
       }
 
       forAll(arbitrary[String], minSuccessful(10000))(check)
