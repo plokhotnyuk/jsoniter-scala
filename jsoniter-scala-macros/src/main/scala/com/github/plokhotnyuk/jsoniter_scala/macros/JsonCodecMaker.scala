@@ -965,7 +965,8 @@ object JsonCodecMaker {
             val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
             val reqSet = required.toSet
             val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
-              acc | (if (reqSet(f.mappedName)) 1 << i else 0)
+              if (reqSet(f.mappedName)) acc | (1 << i)
+              else acc
             })
             paramVarNames.zipWithIndex.map { case (n, i) =>
               val m = reqMasks(i)
@@ -1203,9 +1204,10 @@ object JsonCodecMaker {
             q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.result()")
         } else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)
-          genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]",
-            if (isScala213) q"x.addOne($readVal)" else q"x += $readVal", q"x.toList")
+          val readVal =
+            if (isScala213) q"x.addOne(${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)})"
+            else q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}"
+          genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]", readVal, q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.11.x/2.12.x
           val tpe1 = typeArg1(tpe)
