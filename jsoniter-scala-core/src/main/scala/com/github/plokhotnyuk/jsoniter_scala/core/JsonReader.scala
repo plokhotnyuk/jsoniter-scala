@@ -2694,20 +2694,19 @@ final class JsonReader private[jsoniter_scala](
         i += 1
       }
     }
-    head = pos
-    val b0 = nextByte()
     val i2 = i << 1
+    val b0 = nextByte(pos)
     val bs =
       if (b0 != '"') {
         p = ns(b0 & 0xff).toInt
         if (p < 0) decodeError("expected '\"' or hex digit")
-        val b1 = nextByte()
+        val b1 = nextByte(head)
         p = (p << 4) | ns(b1 & 0xff)
         if (p < 0) decodeError("expected hex digit")
-        val b2 = nextByte()
+        val b2 = nextByte(head)
         if (b2 != '"') {
           if (ns(b2 & 0xff) < 0) decodeError("expected '\"' or hex digit")
-          nextByte()
+          nextByte(head)
           decodeError("expected hex digit")
         }
         val bs = new Array[Byte](i2 + 1)
@@ -2753,8 +2752,7 @@ final class JsonReader private[jsoniter_scala](
         i += 3
       }
     }
-    head = pos
-    val b0 = nextByte()
+    val b0 = nextByte(pos)
     if (b0 != '"') {
       if (i > lenM2) {
         growCharBuf(i + 1)
@@ -2762,27 +2760,24 @@ final class JsonReader private[jsoniter_scala](
       }
       p = ds(b0 & 0xff).toInt
       if (p < 0) decodeError("expected '\"' or base64 digit")
-      val b1 = nextByte()
+      val b1 = nextByte(head)
       p = (p << 6) | ds(b1 & 0xff)
       if (p < 0) decodeError("expected base64 digit")
-      val b2 = nextByte()
-      if (b2 == '"' || b2 == '=') {
-        if (b2 == '=') {
-          val b3 = nextByte()
-          if (b3 != '=') tokenError('=')
-          val b4 = nextByte()
-          if (b4 != '"') tokenError('"')
-        }
+      val b2 = nextByte(head)
+      if (b2 == '"') {
+        charBuf(i) = (p >> 4).toChar
+        i += 1
+      } else if (b2 == '=') {
+        nextByteOrError('=', head)
+        nextByteOrError('"', head)
         charBuf(i) = (p >> 4).toChar
         i += 1
       } else {
         p = (p << 6) | ds(b2 & 0xff)
         if (p < 0) decodeError("expected '\"' or '=' or base64 digit")
-        val b3 = nextByte()
-        if (b3 == '=') {
-          val b4 = nextByte()
-          if (b4 != '"') tokenError('"')
-        } else if (b3 != '"') tokenError('"')
+        val b3 = nextByte(head)
+        if (b3 == '=') nextByteOrError('"', head)
+        else if (b3 != '"') tokensError('"', '=')
         charBuf(i) = (p >> 10).toChar
         charBuf(i + 1) = (p >> 2).toChar
         i += 2

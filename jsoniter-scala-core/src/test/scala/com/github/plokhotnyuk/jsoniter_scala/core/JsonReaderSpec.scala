@@ -612,7 +612,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       checkError("\"!000\"", "expected '\"' or base64 digit, offset: 0x00000001")
       checkError("\"0!00\"", "expected base64 digit, offset: 0x00000002")
       checkError("\"00!0\"", "expected '\"' or '=' or base64 digit, offset: 0x00000003")
-      checkError("\"000!\"", "expected '\"', offset: 0x00000004")
+      checkError("\"000!\"", "expected '\"' or '=', offset: 0x00000004")
       checkError("\"00=!\"", "expected '=', offset: 0x00000004")
       checkError("\"00==!", "expected '\"', offset: 0x00000005")
       checkError("\"000=!", "expected '\"', offset: 0x00000005")
