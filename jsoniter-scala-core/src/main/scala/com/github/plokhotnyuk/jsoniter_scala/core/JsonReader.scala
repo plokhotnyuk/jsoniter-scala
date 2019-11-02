@@ -83,7 +83,7 @@ object ReaderConfig extends ReaderConfig(
     throwReaderExceptionWithStackTrace = false,
     appendHexDumpToParseException = true,
     preferredBufSize = 16384,
-    preferredCharBufSize = 1024,
+    preferredCharBufSize = 4096,
     checkForEndOfInput = true)
 
 class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
@@ -94,7 +94,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
     private[this] var mark: Int = -1,
-    private[this] var charBuf: Array[Char] = new Array[Char](1024),
+    private[this] var charBuf: Array[Char] = new Array[Char](4096),
     private[this] var bbuf: ByteBuffer = null,
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
@@ -2685,8 +2685,11 @@ final class JsonReader private[jsoniter_scala](
       }
       val lim = Math.min(((tail - pos) >> 2) + i, len)
       while (i < lim && {
-        p = ns(buf(pos) & 0xff) << 12 | ns(buf(pos + 1) & 0xff) << 8 |
-          ns(buf(pos + 2) & 0xff) << 4 | ns(buf(pos + 3) & 0xff)
+        p =
+          ns(buf(pos) & 0xFF) << 12 |
+          ns(buf(pos + 1) & 0xFF) << 8 |
+          ns(buf(pos + 2) & 0xFF) << 4 |
+          ns(buf(pos + 3) & 0xFF)
         p >= 0
       }) {
         charBuf(i) = p.toChar
@@ -2694,39 +2697,40 @@ final class JsonReader private[jsoniter_scala](
         i += 1
       }
     }
-    val i2 = i << 1
+    val bLen = i << 1
     val b0 = nextByte(pos)
     val bs =
       if (b0 != '"') {
-        p = ns(b0 & 0xff).toInt
+        p = ns(b0 & 0xFF).toInt
         if (p < 0) decodeError("expected '\"' or hex digit")
         val b1 = nextByte(head)
-        p = (p << 4) | ns(b1 & 0xff)
+        p = (p << 4) | ns(b1 & 0xFF)
         if (p < 0) decodeError("expected hex digit")
         val b2 = nextByte(head)
         if (b2 != '"') {
-          if (ns(b2 & 0xff) < 0) decodeError("expected '\"' or hex digit")
+          if (ns(b2 & 0xFF) < 0) decodeError("expected '\"' or hex digit")
           nextByte(head)
           decodeError("expected hex digit")
         }
-        val bs = new Array[Byte](i2 + 1)
-        bs(i2) = p.toByte
+        val bs = new Array[Byte](bLen + 1)
+        bs(bLen) = p.toByte
         bs
-      } else new Array[Byte](i2)
-    var j, k = 0
-    while (k < i2) {
-      val ch = charBuf(j)
-      bs(k) = (ch >> 8).toByte
-      bs(k + 1) = ch.toByte
-      k += 2
-      j += 1
+      } else new Array[Byte](bLen)
+    i = 0
+    var j = 0
+    while (j < bLen) {
+      val ch = charBuf(i)
+      bs(j) = (ch >> 8).toByte
+      bs(j + 1) = ch.toByte
+      i += 1
+      j += 2
     }
     bs
   }
 
   private[this] def parseBase64(ds: Array[Byte]): Array[Byte] = {
     var charBuf = this.charBuf
-    var lenM2 = charBuf.length - 2
+    var lenM1 = charBuf.length - 1
     var pos = head
     var buf = this.buf
     var i, p = 0
@@ -2735,59 +2739,64 @@ final class JsonReader private[jsoniter_scala](
       buf = this.buf
       pos + 3 < tail
     })) {
-      if (i >= lenM2) {
-        lenM2 = growCharBuf(i + 2) - 2
+      if (i >= lenM1) {
+        lenM1 = growCharBuf(i + 1) - 1
         charBuf = this.charBuf
       }
-      val lim = Math.min(((tail - pos + 3) >> 2) * 3 + i, lenM2)
+      val lim = Math.min(((tail - pos + 1) >> 1) + i, lenM1)
       while (i < lim && {
-        p = ds(buf(pos) & 0xff) << 18 | ds(buf(pos + 1) & 0xff) << 12 |
-          ds(buf(pos + 2) & 0xff) << 6 | ds(buf(pos + 3) & 0xff)
+        p =
+          ds(buf(pos) & 0xFF) << 18 |
+          ds(buf(pos + 1) & 0xFF) << 12 |
+          ds(buf(pos + 2) & 0xFF) << 6 |
+          ds(buf(pos + 3) & 0xFF)
         p >= 0
       }) {
-        charBuf(i) = (p >> 16).toChar
-        charBuf(i + 1) = (p >> 8).toChar
-        charBuf(i + 2) = p.toChar
+        charBuf(i) = (p >> 8).toChar
+        charBuf(i + 1) = p.toChar
         pos += 4
-        i += 3
-      }
-    }
-    val b0 = nextByte(pos)
-    if (b0 != '"') {
-      if (i > lenM2) {
-        growCharBuf(i + 1)
-        charBuf = this.charBuf
-      }
-      p = ds(b0 & 0xff).toInt
-      if (p < 0) decodeError("expected '\"' or base64 digit")
-      val b1 = nextByte(head)
-      p = (p << 6) | ds(b1 & 0xff)
-      if (p < 0) decodeError("expected base64 digit")
-      val b2 = nextByte(head)
-      if (b2 == '"') {
-        charBuf(i) = (p >> 4).toChar
-        i += 1
-      } else if (b2 == '=') {
-        nextByteOrError('=', head)
-        nextByteOrError('"', head)
-        charBuf(i) = (p >> 4).toChar
-        i += 1
-      } else {
-        p = (p << 6) | ds(b2 & 0xff)
-        if (p < 0) decodeError("expected '\"' or '=' or base64 digit")
-        val b3 = nextByte(head)
-        if (b3 == '=') nextByteOrError('"', head)
-        else if (b3 != '"') tokensError('"', '=')
-        charBuf(i) = (p >> 10).toChar
-        charBuf(i + 1) = (p >> 2).toChar
         i += 2
       }
     }
-    val bs = new Array[Byte](i)
+    val bLen = i + (i >> 1)
+    val b0 = nextByte(pos)
+    val bs =
+      if (b0 != '"') {
+        p = ds(b0 & 0xFF).toInt
+        if (p < 0) decodeError("expected '\"' or base64 digit")
+        val b1 = nextByte(head)
+        p = (p << 6) | ds(b1 & 0xFF)
+        if (p < 0) decodeError("expected base64 digit")
+        val b2 = nextByte(head)
+        if (b2 == '"' || b2 == '=') {
+          if (b2 == '=') {
+            nextByteOrError('=', head)
+            nextByteOrError('"', head)
+          }
+          val bs = new Array[Byte](bLen + 1)
+          bs(bLen) = (p >> 4).toByte
+          bs
+        } else {
+          p = (p << 6) | ds(b2 & 0xFF)
+          if (p < 0) decodeError("expected '\"' or '=' or base64 digit")
+          val b3 = nextByte(head)
+          if (b3 == '=') nextByteOrError('"', head)
+          else if (b3 != '"') tokensError('"', '=')
+          val bs = new Array[Byte](bLen + 2)
+          bs(bLen) = (p >> 10).toByte
+          bs(bLen + 1) = (p >> 2).toByte
+          bs
+        }
+      } else new Array[Byte](bLen)
+    i = 0
     var j = 0
-    while (j < i) {
-      bs(j) = charBuf(j).toByte
-      j += 1
+    while (j < bLen) {
+      val ch = charBuf(i)
+      bs(j) = (ch >> 8).toByte
+      bs(j + 1) = ch.toByte
+      bs(j + 2) = charBuf(i + 1).toByte
+      i += 2
+      j += 3
     }
     bs
   }
