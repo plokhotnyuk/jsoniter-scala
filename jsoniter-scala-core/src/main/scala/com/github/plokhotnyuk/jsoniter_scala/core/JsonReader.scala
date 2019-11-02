@@ -2743,7 +2743,7 @@ final class JsonReader private[jsoniter_scala](
         lenM1 = growCharBuf(i + 1) - 1
         charBuf = this.charBuf
       }
-      val lim = Math.min(((tail - pos + 1) >> 1) + i, lenM1)
+      val lim = Math.min(((tail - pos) >> 1) + i, lenM1)
       while (i < lim && {
         p =
           ds(buf(pos) & 0xFF) << 18 |
