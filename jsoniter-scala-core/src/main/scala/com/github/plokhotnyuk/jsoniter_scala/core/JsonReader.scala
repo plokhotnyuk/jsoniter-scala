@@ -14,8 +14,8 @@ import scala.{specialized => sp}
 
 /**
   * Configuration for [[com.github.plokhotnyuk.jsoniter_scala.core.JsonReader]] that contains flags for tuning of
-  * parsing exceptions and preferred sizes for internal buffers that created on the reader instantiation and reused in
-  * runtime for parsing of messages.
+  * parsing exceptions and preferred sizes for internal buffers that are created on the reader instantiation and reused
+  * in runtime for parsing of messages.
   * <br/>
   * All configuration params already initialized by recommended default values, but in some cases they should be altered
   * for performance reasons:
@@ -24,12 +24,13 @@ import scala.{specialized => sp}
   * can be not exceptional (e.g. under DoS attacks over open to the world systems), see more details here:
   * [[https://shipilev.net/blog/2014/exceptional-performance/]]</li>
   * <li>turn off appending of hex dump to minimize length of exception message</li>
-  * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
-  * buffers when large (>1Kb) string instances need to be parsed</li>
   * <li>increase preferred size of an internal byte buffer for parsing from [[java.io.InputStream]] or
   * [[java.nio.DirectByteBuffer]] to reduce allocation rate of grown and then reduced buffers during parsing of large
-  * (>16Kb) [[scala.math.BigDecimal]], [[scala.math.BigInt]] or ADT instances with the discriminator field doesn't
+  * (>16Kb) numbers (including stringified), raw values, or ADT instances with the discriminator field doesn't
   * appear in the beginning of the JSON object</li>
+  * <li>increase preferred size of an internal char buffer to reduce allocation rate of grown and then reduced
+  * buffers when large (>4Kb) string instances need to be parsed including those one which use Base16 or Base64
+  * encodings</li>
   * </ul>
   * @param throwReaderExceptionWithStackTrace a flag that allows to turn on a stack traces for debugging purposes in
   *                                           development
