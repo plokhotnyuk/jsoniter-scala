@@ -414,12 +414,12 @@ object JsonCodecMaker {
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
       val rootTpe = weakTypeOf[A].dealias
-      val cfg = // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
-        try eval[CodecMakerConfig](config.tree) catch { case _: Throwable =>
+      val cfg =
+        try eval[CodecMakerConfig](config.tree) catch { case ex: Throwable =>
           fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
             "It should not depend on code from the same compilation module where the 'make' macro is called. " +
             "Use a separated submodule of the project to compile all such dependencies before their usage for " +
-            "generation of codecs.")
+            "generation of codecs. Cause:\n" + ex.toString)
         }
       if (cfg.requireCollectionFields && cfg.transientEmpty) {
         fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
@@ -751,11 +751,11 @@ object JsonCodecMaker {
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
             val partiallyMappedName = named.headOption.map { a =>
-              try eval[named](a.tree).name catch { case _: Throwable => // FIXME: scalac can throw the stack overflow error here, see: https://github.com/scala/bug/issues/11157
+              try eval[named](a.tree).name catch { case ex: Throwable =>
                 fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
                   "It should not depend on code from the same compilation module where the 'make' macro is called. " +
                   "Use a separated submodule of the project to compile all such dependencies before their usage " +
-                  "for generation of codecs.")
+                  "for generation of codecs. Cause:\n" + ex.toString)
               }
             }.getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))

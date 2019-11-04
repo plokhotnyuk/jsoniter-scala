@@ -1802,7 +1802,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.A.B'.
           |It should not depend on code from the same compilation module where the 'make' macro is called.
           |Use a separated submodule of the project to compile all such dependencies before their usage for
-          |generation of codecs.""".stripMargin.replace('\n', ' ')
+          |generation of codecs. Cause:""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs when a parameter of the '@named' annotation depends on not yet compiled code" in {
@@ -1817,7 +1817,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.A.B'.
           |It should not depend on code from the same compilation module where the 'make' macro is called.
           |Use a separated submodule of the project to compile all such dependencies before their usage for
-          |generation of codecs.""".stripMargin.replace('\n', ' ')
+          |generation of codecs. Cause:""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs when all generic type parameters cannot be resolved" in {
