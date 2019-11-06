@@ -11,8 +11,8 @@ before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
 matrix:
   include:
-    - os: osx
-      osx_image: xcode10.1 # macOS 10.13, JDK 11.0.1+13
+    - os: linux
+      jdk: oraclejdk11
       scala: 2.13.0
     - os: linux
       scala: 2.12.10
