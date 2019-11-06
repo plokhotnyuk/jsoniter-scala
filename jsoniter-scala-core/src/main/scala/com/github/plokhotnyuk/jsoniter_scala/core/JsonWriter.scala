@@ -693,8 +693,8 @@ final class JsonWriter private[jsoniter_scala](
     while (offset < lenM1) {
       val offsetLim = Math.min(((posLim - pos + 1) >> 1) + offset, lenM1)
       while (offset < offsetLim) {
-        val d1 = ds(bs(offset) & 0xff)
-        val d2 = ds(bs(offset + 1) & 0xff)
+        val d1 = ds(bs(offset) & 0xFF)
+        val d2 = ds(bs(offset + 1) & 0xFF)
         buf(pos) = d1.toByte
         buf(pos + 1) = (d1 >> 8).toByte
         buf(pos + 2) = d2.toByte
@@ -709,7 +709,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     if (offset == lenM1) {
-      val d1 = ds(bs(offset) & 0xff)
+      val d1 = ds(bs(offset) & 0xFF)
       buf(pos) = d1.toByte
       buf(pos + 1) = (d1 >> 8).toByte
       pos +=2
@@ -733,11 +733,11 @@ final class JsonWriter private[jsoniter_scala](
     while (offset < lenM2) {
       val offsetLim = Math.min(((posLim - pos + 3) >> 2) * 3 + offset, lenM2)
       while (offset < offsetLim) {
-        val p = (bs(offset) & 0xff) << 16 | (bs(offset + 1) & 0xff) << 8 | (bs(offset + 2) & 0xff)
+        val p = (bs(offset) & 0xFF) << 16 | (bs(offset + 1) & 0xFF) << 8 | (bs(offset + 2) & 0xFF)
         buf(pos) = ds(p >> 18)
-        buf(pos + 1) = ds((p >> 12) & 0x3f)
-        buf(pos + 2) = ds((p >> 6) & 0x3f)
-        buf(pos + 3) = ds(p & 0x3f)
+        buf(pos + 1) = ds((p >> 12) & 0x3F)
+        buf(pos + 2) = ds((p >> 6) & 0x3F)
+        buf(pos + 3) = ds(p & 0x3F)
         pos += 4
         offset += 3
       }
@@ -749,19 +749,19 @@ final class JsonWriter private[jsoniter_scala](
     }
     if (offset < lenM2 + 2) {
       if (offset < lenM2 + 1) {
-        val p = (bs(offset) & 0xff) << 10 | (bs(offset + 1) & 0xff) << 2
+        val p = (bs(offset) & 0xFF) << 10 | (bs(offset + 1) & 0xFF) << 2
         buf(pos) = ds(p >> 12)
-        buf(pos + 1) = ds((p >> 6) & 0x3f)
-        buf(pos + 2) = ds(p & 0x3f)
+        buf(pos + 1) = ds((p >> 6) & 0x3F)
+        buf(pos + 2) = ds(p & 0x3F)
         pos +=
           (if (doPadding) {
             buf(pos + 3) = '='
             4
           } else 3)
       } else {
-        val p = bs(offset) & 0xff;
+        val p = bs(offset) & 0xFF;
         buf(pos) = ds(p >> 2)
-        buf(pos + 1) = ds((p << 4) & 0x3f)
+        buf(pos + 1) = ds((p << 4) & 0x3F)
         pos +=
           (if (doPadding) {
             buf(pos + 2) = '='
