@@ -1,5 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
@@ -16,6 +17,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
+import org.typelevel.jawn.{ByteBufferParser, Parser}
+import org.typelevel.jawn.ast.JValue
+import org.typelevel.jawn.ast.JawnFacade
 import play.api.libs.json.Json
 import spray.json._
 
@@ -36,6 +40,15 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
   @Benchmark
   def jacksonScala(): Seq[Tweet] = jacksonMapper.readValue[Seq[Tweet]](jsonBytes)
+
+  @Benchmark
+  def jawnByteBufferParser(): JValue = new ByteBufferParser(ByteBuffer.wrap(jsonBytes)).parse()(JawnFacade)
+
+  @Benchmark
+  def jawnStringParser(): JValue = Parser.parseUnsafe(new String(jsonBytes, UTF_8))(JawnFacade)
+
+  @Benchmark
+  def jawnJsoniterScala(): JValue = readFromArray[JValue](jsonBytes)
 
   @Benchmark
   def jsoniterScala(): Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)

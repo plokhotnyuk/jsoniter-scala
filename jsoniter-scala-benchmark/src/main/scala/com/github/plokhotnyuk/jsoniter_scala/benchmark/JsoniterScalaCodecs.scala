@@ -7,7 +7,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
+import org.typelevel.jawn.ast.{DeferLong, DeferNum, DoubleNum, JArray, JAtom, JFalse, JNull, JNum, JObject, JString, JTrue, JValue, LongNum}
 
+import scala.annotation.switch
 import scala.collection.immutable.{BitSet, IntMap, Map, Seq, Set}
 import scala.collection.mutable
 
@@ -98,4 +100,81 @@ object JsoniterScalaCodecs {
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig)
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make(CodecMakerConfig)
   implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig)
+  implicit val jawnASTCodec: JsonValueCodec[JValue] = new JsonValueCodec[JValue] {
+    import scala.jdk.CollectionConverters._
+
+    override def decodeValue(in: JsonReader, default: JValue): JValue = {
+      var b = in.nextToken()
+      if (b =='"') {
+        in.rollbackToken()
+        new JString(in.readString(null))
+      } else if (b == 'f' || b == 't') {
+        in.rollbackToken()
+        if (in.readBoolean()) JTrue
+        else JFalse
+      } else if (b == 'n') {
+        in.readNullOrError(default, "expected `null` value")
+        JNull
+      } else if ((b >= '0' && b <= '9') || b == '-') {
+        in.rollbackToken()
+        in.setMark()
+        val bs = in.readRawValAsBytes()
+        val l = bs.length
+        var i = 0
+        while (i < l && {
+          b = bs(i)
+          b >= '0' && b <= '9'
+        }) i += 1
+        in.rollbackToMark()
+        if (i == l) new LongNum(in.readLong())
+        else new DoubleNum(in.readDouble())
+      } else if (b == '{') {
+        val obj = new java.util.LinkedHashMap[String, JValue]
+        if (!in.isNextToken('}')) {
+          in.rollbackToken()
+          do obj.put(in.readKeyAsString(), decodeValue(in, default))
+          while (in.isNextToken(','))
+          if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
+        }
+        new JObject(obj.asScala)
+      } else if (b == '[') {
+        val arr = new mutable.ArrayBuffer[JValue]
+        if (!in.isNextToken(']')) {
+          in.rollbackToken()
+          do arr += decodeValue(in, default)
+          while (in.isNextToken(','))
+          if (!in.isCurrentToken(']')) in.arrayEndOrCommaError()
+        }
+        new JArray(arr.toArray)
+      } else in.decodeError("expected JSON value")
+    }
+
+    override def encodeValue(x: JValue, out: JsonWriter): Unit = x match {
+      case _: JAtom => x match {
+        case JString(str) => out.writeVal(str)
+        case JTrue => out.writeVal(true)
+        case JFalse => out.writeVal(false)
+        case JNull => out.writeNull()
+        case _: JNum => x match {
+          case LongNum(n) => out.writeVal(n)
+          case DoubleNum(d) => out.writeVal(d)
+          case DeferLong(str) => out.writeRawVal(str.getBytes)
+          case DeferNum(str) => out.writeRawVal(str.getBytes)
+        }
+      }
+      case JObject(obj) =>
+        out.writeObjectStart()
+        obj.foreach { case (k, v) =>
+          out.writeKey(k)
+          encodeValue(v, out)
+        }
+        out.writeObjectEnd()
+      case JArray(arr) =>
+        out.writeArrayStart()
+        arr.foreach(v => encodeValue(v, out))
+        out.writeArrayEnd()
+    }
+
+    override val nullValue: JValue = JNull
+  }
 }

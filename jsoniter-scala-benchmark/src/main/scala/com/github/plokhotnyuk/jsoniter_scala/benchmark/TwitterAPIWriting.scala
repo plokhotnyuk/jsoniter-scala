@@ -12,6 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
+import org.typelevel.jawn.ast.FastRenderer
 //import spray.json._
 
 class TwitterAPIWriting extends TwitterAPIBenchmark {
@@ -31,6 +32,15 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 */
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+
+  @Benchmark
+  def jawnCompact(): Array[Byte] = FastRenderer.render(jValue).getBytes(UTF_8)
+
+  @Benchmark
+  def jawnJsoniterScalaCompact(): Array[Byte] = writeToArray(jValue)
+
+  @Benchmark
+  def jawnJsoniterScalaPretty(): Array[Byte] = writeToArray(jValue, WriterConfig.withIndentionStep(2))
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj)

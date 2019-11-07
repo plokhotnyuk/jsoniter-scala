@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.transientDefault
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import org.typelevel.jawn.ast.JValue
 
 import scala.collection.immutable.Seq
 import scala.reflect.io.Streamable
@@ -141,5 +142,6 @@ object TwitterAPI {
 
 abstract class TwitterAPIBenchmark extends CommonParams {
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
+  var jValue: JValue = readFromArray[JValue](jsonBytes)
   var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + 100/*to avoid possible out of bounds error*/)
 }

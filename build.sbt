@@ -124,8 +124,12 @@ lazy val `jsoniter-scala-benchmark` = project
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     resolvers += Resolver.bintrayRepo("reug", "maven"),
+    resolvers += Resolver.sonatypeRepo("releases"),
     crossScalaVersions := Seq("2.13.1", "2.12.10"),
     libraryDependencies ++= Seq(
+      "org.typelevel" %% "jawn-parser" % "1.0.0-RC1",
+      "org.typelevel" %% "jawn-ast" % "1.0.0-RC1",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
       "io.bullet" %% "borer-derivation" % "1.1.0",
       "pl.iterators" %% "kebs-spray-json" % "1.6.3",
       "io.spray" %%  "spray-json" % "1.3.5",
