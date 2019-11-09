@@ -35,8 +35,8 @@ final class stringified extends StaticAnnotation
   * `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`. Or their composition like:
   * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
   *
-  * @param fieldNameMapper        the partial function of mapping from string of case class field name to JSON key (an identity
-  *                               function by default)
+  * @param fieldNameMapper        the partial function of mapping from string of case class field name to JSON key
+  *                               (an identity function by default)
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
   *                               discriminator field (a function that truncate to simple class name by default)
   * @param discriminatorFieldName an optional name of discriminator field, where None can be used for alternative
@@ -56,8 +56,10 @@ final class stringified extends StaticAnnotation
   *                               options (turned on by default)
   * @param bigDecimalPrecision    a precision in 'BigDecimal' values (34 by default)
   * @param bigDecimalScaleLimit   an exclusive limit for accepted scale in 'BigDecimal' values (6178 by default)
-  * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of decimal digits in 'BigDecimal' values (308 by default)
-  * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values (308 by default)
+  * @param bigDecimalDigitsLimit  an exclusive limit for accepted number of mantissa digits of to be parsed before
+  *                               rounding with the precision specified for 'BigDecimal' values (308 by default)
+  * @param bigIntDigitsLimit      an exclusive limit for accepted number of decimal digits in 'BigInt' values
+  *                               (308 by default)
   * @param bitSetValueLimit       an exclusive limit for accepted numeric values in bit sets (1024 by default)
   * @param mapMaxInsertNumber     a max number of inserts into maps (1024 by default)
   * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default)
