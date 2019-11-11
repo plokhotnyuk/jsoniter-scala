@@ -17,5 +17,5 @@ class Base16Reading extends Base16Benchmark {
   def borerJson(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]](base16Dec).value
 
   @Benchmark
-  def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes)(base16Codec)
+  def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes, tooLongStringConfig)(base16Codec)
 }

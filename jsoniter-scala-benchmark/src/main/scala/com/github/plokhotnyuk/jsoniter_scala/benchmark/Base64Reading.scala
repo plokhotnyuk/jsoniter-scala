@@ -29,5 +29,5 @@ class Base64Reading extends Base64Benchmark {
   def jacksonScala(): Array[Byte] = jacksonMapper.readValue[Array[Byte]](jsonBytes)
 
   @Benchmark
-  def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes)(base64Codec)
+  def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes, tooLongStringConfig)(base64Codec)
 }
