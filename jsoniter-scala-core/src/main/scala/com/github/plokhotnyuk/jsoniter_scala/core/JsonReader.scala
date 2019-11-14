@@ -1250,7 +1250,8 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError()
       var posMant: Long = b - '0'
       val isZeroFirst = isToken && posMant == 0
-      var posExp, mantExp, digits = 0L
+      var posExp, mantExp = 0L
+      var digits = 1
       var isNegExp = false
       var pos = head
       var buf = this.buf
@@ -1270,9 +1271,9 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       if (b == '.') {
+        mantExp += digits
         b = nextByte(pos + 1)
         if (b < '0' || b > '9') numberError()
-        mantExp += digits
         if (posMant < 922337203685477580L) {
           posMant = posMant * 10 + (b - '0')
           digits += 1
@@ -1326,11 +1327,13 @@ final class JsonReader private[jsoniter_scala](
             if (exp < 0) posMant / pow10Doubles(-exp)
             else posMant * pow10Doubles(exp)
           toSignedDouble(isNeg, x)
-        } else if (isSmall && exp > 22 && exp + digits <= 37) {
+        } else if (isSmall && exp > 22 && exp + digits <= 38) {
           val pow10 = pow10Doubles
-          val slop = 15 - digits.toInt
+          val slop = 16 - digits
           toSignedDouble(isNeg, (posMant * pow10(slop)) * pow10(exp - slop))
-        } else {
+        } else if (posMant == 0 || exp < -343) toSignedDouble(isNeg, 0.0)
+        else if (exp >= 310) toSignedDouble(isNeg, Double.PositiveInfinity)
+        else {
           if (mark == 0) from -= newMark
           toDouble(from, pos, isNeg, isExact, posMant, exp)
         }
@@ -1340,47 +1343,40 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(from: Int, pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Double =
-    if (posMant == 0 || exponent < -343) toSignedDouble(isNeg, 0.0)
-    else if (exponent >= 310) toSignedDouble(isNeg, Double.PositiveInfinity)
-    else {
-      var shift = java.lang.Long.numberOfLeadingZeros(posMant)
-      var mant = mulMant(posMant << shift, exponent)
-      var exp = addExp(-shift, exponent)
-      shift = java.lang.Long.numberOfLeadingZeros(mant)
-      mant <<= shift
-      exp -= shift
-      val roundingError =
-        (if (isExact) 2
-        else 20) << shift
-      val truncatedBitNum = Math.max(-1074 - exp, 11)
-      val savedBitNum = 64 - truncatedBitNum
-      val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
-      if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
-        if (savedBitNum <= 0) mant = 0
-        else mant >>>= truncatedBitNum
-        exp += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mant < 0x001FFFFFFFFFFFFFL) mant += 1
-          else {
-            mant = 0x0010000000000000L
-            exp += 1
-          }
-        }
-        if (mant == 0 || exp < -1074) toSignedDouble(isNeg,0.0)
-        else if (exp >= 972) toSignedDouble(isNeg, Double.PositiveInfinity)
-        else {
-          val signBit =
-            if (isNeg) 0x8000000000000000L
-            else 0
-          val expBits =
-            if (exp == -1074 && (mant & 0x0010000000000000L) == 0) 0
-            else (exp + 1075L) << 52
-          val mantBits = mant & 0x000FFFFFFFFFFFFFL
-          java.lang.Double.longBitsToDouble(signBit | expBits | mantBits)
-        }
-      } else java.lang.Double.parseDouble(new String(buf, 0, from, pos - from))
-    }
+  private[this] def toDouble(from: Int, pos: Int, isNeg: Boolean, isExact: Boolean, m: Long, e: Int): Double = {
+    var shift = java.lang.Long.numberOfLeadingZeros(m)
+    var mant = mulMant(m << shift, e)
+    var exp = addExp(-shift, e)
+    shift = java.lang.Long.numberOfLeadingZeros(mant)
+    mant <<= shift
+    exp -= shift
+    val roundingError =
+      (if (isExact) 2
+      else 20) << shift
+    val truncatedBitNum = Math.max(-1074 - exp, 11)
+    val savedBitNum = 64 - truncatedBitNum
+    val mask = -1L >>> Math.max(savedBitNum, 0)
+    val halfwayDiff = (mant & mask) - (mask >>> 1)
+    if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
+      if (savedBitNum <= 0) mant = 0
+      mant >>>= truncatedBitNum
+      exp += truncatedBitNum
+      if (savedBitNum >= 0 && halfwayDiff > 0) {
+        if (mant == 0x001FFFFFFFFFFFFFL) {
+          mant = 0x0010000000000000L
+          exp += 1
+        } else mant += 1
+      }
+      if (exp < -1074) toSignedDouble(isNeg, 0.0)
+      else if (exp >= 972) toSignedDouble(isNeg, Double.PositiveInfinity)
+      else {
+        var bits = mant & 0x000FFFFFFFFFFFFFL
+        if (exp != -1074 || mant >= 0x0010000000000000L) bits |= (exp + 1075L) << 52
+        if (isNeg) bits |= 0x8000000000000000L
+        java.lang.Double.longBitsToDouble(bits)
+      }
+    } else java.lang.Double.parseDouble(new String(buf, 0, from, pos - from))
+  }
 
   private[this] def toSignedDouble(isNeg: Boolean, posX: Double): Double =
     if (isNeg) -posX
@@ -1402,7 +1398,8 @@ final class JsonReader private[jsoniter_scala](
       if (b < '0' || b > '9') numberError()
       var posMant: Long = b - '0'
       val isZeroFirst = isToken && posMant == 0
-      var posExp, mantExp, digits = 0L
+      var posExp, mantExp = 0L
+      var digits = 1
       var isNegExp = false
       var pos = head
       var buf = this.buf
@@ -1422,9 +1419,9 @@ final class JsonReader private[jsoniter_scala](
         pos += 1
       }
       if (b == '.') {
+        mantExp += digits
         b = nextByte(pos + 1)
         if (b < '0' || b > '9') numberError()
-        mantExp += digits
         if (posMant < 922337203685477580L) {
           posMant = posMant * 10 + (b - '0')
           digits += 1
@@ -1473,8 +1470,10 @@ final class JsonReader private[jsoniter_scala](
       if (isExact && exp == 0) toSignedFloat(isNeg, posMant)
       else {
         val isSmall = posMant < 4294967296L // max mantissa that can be converted w/o rounding error by double mul or div
-        if (isSmall && exp >= -22 + digits && exp < 0) toSignedFloat(isNeg, (posMant / pow10Doubles(-exp)).toFloat)
-        else if (isSmall && exp >= 0 && exp <= 18 - digits) toSignedFloat(isNeg, (posMant * pow10Doubles(exp)).toFloat)
+        if (isSmall && exp < 0 && exp >= digits - 23) toSignedFloat(isNeg, (posMant / pow10Doubles(-exp)).toFloat)
+        else if (isSmall && exp >= 0 && exp <= 19 - digits) toSignedFloat(isNeg, (posMant * pow10Doubles(exp)).toFloat)
+        else if (posMant == 0 || exp < -64) toSignedFloat(isNeg, 0.0f)
+        else if (exp >= 39) toSignedFloat(isNeg, Float.PositiveInfinity)
         else {
           if (mark == 0) from -= newMark
           toFloat(from, pos, isNeg, isExact, posMant, exp)
@@ -1485,47 +1484,40 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(from: Int, pos: Int, isNeg: Boolean, isExact: Boolean, posMant: Long, exponent: Int): Float =
-    if (posMant == 0 || exponent < -64) toSignedFloat(isNeg, 0.0f)
-    else if (exponent >= 39) toSignedFloat(isNeg, Float.PositiveInfinity)
-    else {
-      var shift = java.lang.Long.numberOfLeadingZeros(posMant)
-      var mant = mulMant(posMant << shift, exponent)
-      var exp = addExp(-shift, exponent)
-      shift = java.lang.Long.numberOfLeadingZeros(mant)
-      mant <<= shift
-      exp -= shift
-      val roundingError =
-        (if (isExact) 2
-        else 20) << shift
-      val truncatedBitNum = Math.max(-149 - exp, 40)
-      val savedBitNum = 64 - truncatedBitNum
-      val halfwayDiff = getHalfwayDiff(mant, savedBitNum)
-      if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
-        if (savedBitNum <= 0) mant = 0
-        else mant >>>= truncatedBitNum
-        exp += truncatedBitNum
-        if (savedBitNum >= 0 && halfwayDiff > 0) {
-          if (mant < 0x00FFFFFF) mant += 1
-          else {
-            mant = 0x00800000
-            exp += 1
-          }
-        }
-        if (mant == 0 || exp < -149) toSignedFloat(isNeg,0.0f)
-        else if (exp >= 105) toSignedFloat(isNeg, Float.PositiveInfinity)
-        else {
-          val signBit =
-            if (isNeg) 0x80000000
-            else 0
-          val expBits =
-            if (exp == -149 && (mant & 0x00800000) == 0) 0
-            else (exp + 150) << 23
-          val mantBits = mant.toInt & 0x007FFFFF
-          java.lang.Float.intBitsToFloat(signBit | expBits | mantBits)
-        }
-      } else java.lang.Float.parseFloat(new String(buf, 0, from, pos - from))
-    }
+  private[this] def toFloat(from: Int, pos: Int, isNeg: Boolean, isExact: Boolean, m: Long, e: Int): Float = {
+    var shift = java.lang.Long.numberOfLeadingZeros(m)
+    var mant = mulMant(m << shift, e)
+    var exp = addExp(-shift, e)
+    shift = java.lang.Long.numberOfLeadingZeros(mant)
+    mant <<= shift
+    exp -= shift
+    val roundingError =
+      (if (isExact) 2
+      else 20) << shift
+    val truncatedBitNum = Math.max(-149 - exp, 40)
+    val savedBitNum = 64 - truncatedBitNum
+    val mask = -1L >>> Math.max(savedBitNum, 0)
+    val halfwayDiff = (mant & mask) - (mask >>> 1)
+    if (savedBitNum <= 0 || Math.abs(halfwayDiff) > roundingError) {
+      if (savedBitNum <= 0) mant = 0
+      mant >>>= truncatedBitNum
+      exp += truncatedBitNum
+      if (savedBitNum >= 0 && halfwayDiff > 0) {
+        if (mant == 0x00FFFFFF) {
+          mant = 0x00800000
+          exp += 1
+        } else mant += 1
+      }
+      if (exp < -149) toSignedFloat(isNeg, 0.0f)
+      else if (exp >= 105) toSignedFloat(isNeg, Float.PositiveInfinity)
+      else {
+        var bits = mant.toInt & 0x007FFFFF
+        if (exp != -149 || mant >= 0x00800000) bits |= (exp + 150) << 23
+        if (isNeg) bits |= 0x80000000
+        java.lang.Float.intBitsToFloat(bits)
+      }
+    } else java.lang.Float.parseFloat(new String(buf, 0, from, pos - from))
+  }
 
   private[this] def toSignedFloat(isNeg: Boolean, posX: Float): Float =
     if (isNeg) -posX
@@ -1556,11 +1548,6 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def addExp(e2: Int, e10: Int): Int =
     (e10 * 14267572527L >> 32).toInt + e2 + 1 // == (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
-
-  private[this] def getHalfwayDiff(mant: Long, savedBitNum: Int): Long = {
-    val mask = -1L >>> Math.max(savedBitNum, 0)
-    (mant & mask) - (mask >>> 1)
-  }
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -1735,8 +1722,8 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toBigDecimal37(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                    scale: Int): java.math.BigDecimal = {
-    var pos = offset
     val firstBlockLimit = limit - 18
+    var pos = offset
     var x1 = 0L
     while (pos < firstBlockLimit) {
       x1 = x1 * 10 + (buf(pos) - '0')
@@ -1772,9 +1759,9 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toBigDecimal285(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
+    val len = limit - offset
+    val firstBlockLimit = (len % 9) + offset
     var pos = offset
-    val len = limit - pos
-    val firstBlockLimit = pos + len - 9 * ((len * 954437177L) >> 33).toInt // divide positive int by module of 9
     var x = 0L
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
