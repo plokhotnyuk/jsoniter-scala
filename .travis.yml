@@ -13,7 +13,7 @@ matrix:
   include:
     - os: linux
       jdk: oraclejdk11
-      scala: 2.13.0
+      scala: 2.13.1
     - os: linux
       scala: 2.12.10
       env: JDK=graalvm-ce-19.2.1
