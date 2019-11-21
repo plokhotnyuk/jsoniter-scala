@@ -15,9 +15,9 @@ performance of Jsoniter Scala with [Borer](https://github.com/sirthias/borer), [
 [Jackson](https://github.com/FasterXML/jackson-module-scala), [uPickle](https://github.com/lihaoyi/upickle),
 [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), [DSL-JSON](https://github.com/ngs-doo/dsl-json)
 and [Jsoniter Java](https://github.com/json-iterator/java) libraries using different JDK and GraalVM versions on the
-following environment: Intel® Core™ i7-7700 CPU @ 3.6GHz (max 4.2GHz), RAM 16Gb DDR4-2400, Ubuntu 18.04, and latest
-versions of OpenJDK 8/11/[13](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
-OpenJDK 13 + Graal, and GraalVM CE/EE
+following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
+latest versions of Amazon Corretto 8/11, [OpenJDK 13](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+, and GraalVM CE/EE for Java 8/11
 
 ## Acknowledgments
 
