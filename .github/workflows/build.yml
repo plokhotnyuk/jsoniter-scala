@@ -16,7 +16,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         java:
@@ -34,10 +34,19 @@ jobs:
         shell: bash
       - uses: actions/checkout@v1
         with:
+          ref: ${{ github.ref }}
           fetch-depth: 100
+      - uses: actions/cache@v1
+        with:
+          path: ~/.ivy2
+          key: ${{ runner.os }}-ivy2-${{ hashFiles('**/build.sbt') }}
+      - uses: actions/cache@v1
+        with:
+          path: ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.properties') }}
       - uses: olafurpg/setup-scala@v5
         with:
-          java-version: ${{matrix.java}}
+          java-version: ${{ matrix.java }}
       - name: Compile, test and check binary compatibility
         run: "sbt -batch clean +test +mimaReportBinaryIssues"
         shell: bash
