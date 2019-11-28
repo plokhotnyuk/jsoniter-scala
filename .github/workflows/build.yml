@@ -36,14 +36,6 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 100
-      - uses: actions/cache@v1
-        with:
-          path: ~/.ivy2
-          key: ${{ runner.os }}-ivy2-${{ hashFiles('**/build.sbt') }}
-      - uses: actions/cache@v1
-        with:
-          path: ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.properties') }}
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: ${{ matrix.java }}
