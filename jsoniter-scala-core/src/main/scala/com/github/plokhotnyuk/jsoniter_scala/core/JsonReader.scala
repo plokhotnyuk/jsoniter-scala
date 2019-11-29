@@ -3257,11 +3257,11 @@ object JsonReader {
     zos
   }
   private final lazy val zoneIds: java.util.HashMap[String, ZoneId] = {
-    val zs = new java.util.HashMap[String, ZoneId](1024)
+    val zs = new java.util.HashMap[String, ZoneId](2048)
     val azs = ZoneId.getAvailableZoneIds.iterator()
     while (azs.hasNext) {
-      val id = azs.next()
-      zs.put(id, ZoneId.of(id))
+      val z = ZoneId.of(azs.next())
+      zs.put(z.getId, z)
     }
     val zos = zoneOffsets
     val l = zos.length
