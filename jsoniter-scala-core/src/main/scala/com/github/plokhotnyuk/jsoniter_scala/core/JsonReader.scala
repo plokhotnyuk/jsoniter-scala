@@ -1557,18 +1557,18 @@ final class JsonReader private[jsoniter_scala](
     else {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
-      var from = head - 1
+      if (b < '0' || b > '9') numberError()
+      val isZeroFirst = isToken && b == '0'
+      var digits = 1
+      var pos = head
+      var buf = this.buf
+      var from = pos - digits
       val oldMark = mark
       val newMark =
         if (oldMark < 0) from
         else oldMark
       mark = newMark
       try {
-        if (b < '0' || b > '9') numberError()
-        val isZeroFirst = isToken && b == '0'
-        var digits = 1
-        var pos = head
-        var buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
           buf = this.buf
@@ -1599,18 +1599,18 @@ final class JsonReader private[jsoniter_scala](
     else {
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
-      var from = head - 1
+      if (b < '0' || b > '9') numberError()
+      val isZeroFirst = isToken && b == '0'
+      var digits = 1
+      var pos = head
+      var buf = this.buf
+      var from = pos - digits
       val oldMark = mark
       val newMark =
         if (oldMark < 0) from
         else oldMark
       mark = newMark
       try {
-        if (b < '0' || b > '9') numberError()
-        val isZeroFirst = isToken && b == '0'
-        var digits = 1
-        var pos = head
-        var buf = this.buf
         while ((pos < tail || {
           pos = loadMore(pos)
           buf = this.buf
@@ -1712,7 +1712,7 @@ final class JsonReader private[jsoniter_scala](
         else x
       }, scale)
     } else if (len < 37) toBigDecimal37(buf, offset, limit, isNeg, scale)
-    else if (len < 285) toBigDecimal285(buf, offset, limit, isNeg, scale)
+    else if (len < 280) toBigDecimal280(buf, offset, limit, isNeg, scale)
     else {
       val mid = len >> 1
       val midPos = limit - mid
@@ -1757,7 +1757,7 @@ final class JsonReader private[jsoniter_scala](
     }, scale))
   }
 
-  private[this] def toBigDecimal285(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal280(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - offset
     val firstBlockLimit = (len % 9) + offset
