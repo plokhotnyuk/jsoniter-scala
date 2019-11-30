@@ -1108,29 +1108,30 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
-    val isZeroFirst = isToken && x == 0
-    var pos = head
-    var buf = this.buf
-    while ((pos < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos < tail
-    }) && {
-      b = buf(pos)
-      b >= '0' && b <= '9'
-    }) {
-      if (isZeroFirst) leadingZeroError(pos - 1)
-      x = x * 10 + ('0' - b)
-      if (x < -128) byteOverflowError(pos)
-      pos += 1
-    }
-    head = pos
-    if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-    if (isNeg) x.toByte
+    if (isToken && x == 0) ensureNotLeadingZero()
     else {
-      if (x == -128) byteOverflowError(pos - 1)
-      (-x).toByte
+      var pos = head
+      var buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        x = x * 10 + ('0' - b)
+        if (x < -128) byteOverflowError(pos)
+        pos += 1
+      }
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
+      if (!isNeg) {
+        if (x == -128) byteOverflowError(pos - 1)
+        x = -x
+      }
+      head = pos
     }
+    x.toByte
   }
 
   private[this] def parseShort(isToken: Boolean): Short = {
@@ -1141,29 +1142,30 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
-    val isZeroFirst = isToken && x == 0
-    var pos = head
-    var buf = this.buf
-    while ((pos < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos < tail
-    }) && {
-      b = buf(pos)
-      b >= '0' && b <= '9'
-    }) {
-      if (isZeroFirst) leadingZeroError(pos - 1)
-      x = x * 10 + ('0' - b)
-      if (x < -32768) shortOverflowError(pos)
-      pos += 1
-    }
-    head = pos
-    if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-    if (isNeg) x.toShort
+    if (isToken && x == 0) ensureNotLeadingZero()
     else {
-      if (x == -32768) shortOverflowError(pos - 1)
-      (-x).toShort
+      var pos = head
+      var buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        x = x * 10 + ('0' - b)
+        if (x < -32768) shortOverflowError(pos)
+        pos += 1
+      }
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
+      if (!isNeg) {
+        if (x == -32768) shortOverflowError(pos - 1)
+        x = -x
+      }
+      head = pos
     }
+    x.toShort
   }
 
   private[this] def parseInt(isToken: Boolean): Int = {
@@ -1174,30 +1176,31 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var x = '0' - b
-    val isZeroFirst = isToken && x == 0
-    var pos = head
-    var buf = this.buf
-    while ((pos < tail || {
-      pos = loadMore(pos)
-      buf = this.buf
-      pos < tail
-    }) && {
-      b = buf(pos)
-      b >= '0' && b <= '9'
-    }) {
-      if (isZeroFirst) leadingZeroError(pos - 1)
-      if (x < -214748364) intOverflowError(pos)
-      x = x * 10 + ('0' - b)
-      if (x > 0) intOverflowError(pos)
-      pos += 1
-    }
-    head = pos
-    if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-    if (isNeg) x
+    if (isToken && x == 0) ensureNotLeadingZero()
     else {
-      if (x == -2147483648) intOverflowError(pos - 1)
-      -x
+      var pos = head
+      var buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (x < -214748364) intOverflowError(pos)
+        x = x * 10 + ('0' - b)
+        if (x > 0) intOverflowError(pos)
+        pos += 1
+      }
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
+      if (!isNeg) {
+        if (x == -2147483648) intOverflowError(pos - 1)
+        x = -x
+      }
+      head = pos
     }
+    x
   }
 
   private[this] def parseLong(isToken: Boolean): Long = {
@@ -1208,30 +1211,42 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var x: Long = '0' - b
-    val isZeroFirst = isToken && x == 0
+    if (isToken && x == 0) ensureNotLeadingZero()
+    else {
+      var pos = head
+      var buf = this.buf
+      while ((pos < tail || {
+        pos = loadMore(pos)
+        buf = this.buf
+        pos < tail
+      }) && {
+        b = buf(pos)
+        b >= '0' && b <= '9'
+      }) {
+        if (x < -922337203685477580L) longOverflowError(pos)
+        x = x * 10 + ('0' - b)
+        if (x > 0) longOverflowError(pos)
+        pos += 1
+      }
+      if ((b | 0x20) == 'e' || b == '.') numberError(pos)
+      if (!isNeg) {
+        if (x == -9223372036854775808L) longOverflowError(pos - 1)
+        x = -x
+      }
+      head = pos
+    }
+    x
+  }
+
+  private[this] def ensureNotLeadingZero(): Unit = {
     var pos = head
-    var buf = this.buf
-    while ((pos < tail || {
+    if ((pos < tail || {
       pos = loadMore(pos)
-      buf = this.buf
       pos < tail
     }) && {
-      b = buf(pos)
+      val b = buf(pos)
       b >= '0' && b <= '9'
-    }) {
-      if (isZeroFirst) leadingZeroError(pos - 1)
-      if (x < -922337203685477580L) longOverflowError(pos)
-      x = x * 10 + ('0' - b)
-      if (x > 0) longOverflowError(pos)
-      pos += 1
-    }
-    head = pos
-    if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-    if (isNeg) x
-    else {
-      if (x == -9223372036854775808L) longOverflowError(pos - 1)
-      -x
-    }
+    }) leadingZeroError(pos - 1)
   }
 
   private[this] def parseDouble(isToken: Boolean): Double = {
@@ -1558,35 +1573,38 @@ final class JsonReader private[jsoniter_scala](
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
       if (b < '0' || b > '9') numberError()
-      val isZeroFirst = isToken && b == '0'
-      var digits = 1
-      var pos = head
-      var buf = this.buf
-      var from = pos - digits
-      val oldMark = mark
-      val newMark =
-        if (oldMark < 0) from
-        else oldMark
-      mark = newMark
-      try {
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (isZeroFirst) leadingZeroError(pos - 1)
-          digits += 1
-          if (digits >= digitsLimit) digitsLimitError(pos)
-          pos += 1
-        }
-        head = pos
-        if (b == '.' || (b | 0x20) == 'e') numberError(pos)
-        if (mark == 0) from -= newMark
-        new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
-      } finally if (mark != 0 || oldMark< 0) mark = oldMark
+      if (isToken && b == '0') {
+        ensureNotLeadingZero()
+        BigInt(0)
+      } else {
+        var pos = head
+        var buf = this.buf
+        var digits = 1
+        var from = pos - digits
+        val oldMark = mark
+        val newMark =
+          if (oldMark < 0) from
+          else oldMark
+        mark = newMark
+        try {
+          while ((pos < tail || {
+            pos = loadMore(pos)
+            buf = this.buf
+            pos < tail
+          }) && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) {
+            digits += 1
+            if (digits >= digitsLimit) digitsLimitError(pos)
+            pos += 1
+          }
+          head = pos
+          if (b == '.' || (b | 0x20) == 'e') numberError(pos)
+          if (mark == 0) from -= newMark
+          new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
+        } finally if (mark != 0 || oldMark< 0) mark = oldMark
+      }
     }
   }
 
@@ -1601,9 +1619,9 @@ final class JsonReader private[jsoniter_scala](
       if (isNeg) b = nextByte(head)
       if (b < '0' || b > '9') numberError()
       val isZeroFirst = isToken && b == '0'
-      var digits = 1
       var pos = head
       var buf = this.buf
+      var digits = 1
       var from = pos - digits
       val oldMark = mark
       val newMark =
