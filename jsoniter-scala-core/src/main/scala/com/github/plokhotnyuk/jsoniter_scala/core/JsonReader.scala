@@ -141,7 +141,10 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  def setMark(): Unit = mark = head
+  def setMark(): Unit = {
+    if (mark >= 0) duplicatedSetMarkOperation()
+    mark = head
+  }
 
   @tailrec
   def skipToKey(key: String): Boolean = isCharBufEqualsTo(readKeyAsCharBuf(), key) || {
@@ -150,7 +153,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def rollbackToMark(): Unit = {
-    if (mark < 0) illegalMarkOperation()
+    if (mark < 0) missingSetMarkOperation()
     head = mark
     mark = -1
   }
@@ -871,10 +874,13 @@ final class JsonReader private[jsoniter_scala](
     } else scanUntilToken(t, loadMoreOrError(pos))
 
   private[this] def illegalTokenOperation(): Nothing =
-    throw new ArrayIndexOutOfBoundsException("expected preceding call of 'nextToken()' or 'isNextToken()'")
+    throw new IllegalStateException("expected preceding call of 'nextToken()' or 'isNextToken()'")
 
-  private[this] def illegalMarkOperation(): Nothing =
-    throw new ArrayIndexOutOfBoundsException("expected preceding call of 'setMark()'")
+  private[this] def missingSetMarkOperation(): Nothing =
+    throw new IllegalStateException("expected preceding call of 'setMark()'")
+
+  private[this] def duplicatedSetMarkOperation(): Nothing =
+    throw new IllegalStateException("expected preceding call of 'rollbackToMark()'")
 
   @tailrec
   private[this] def next2Digits(pos: Int): Int =

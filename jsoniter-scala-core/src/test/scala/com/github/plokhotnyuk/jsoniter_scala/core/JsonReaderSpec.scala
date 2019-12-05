@@ -333,7 +333,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }.getMessage.contains("expected null, offset: 0x00000003"))
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader("null").readNullOrError("default", "error"))
+      assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
         .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
@@ -371,7 +371,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       }.getMessage.contains("expected 'x' or null, offset: 0x00000003"))
     }
     "throw array index out of bounds exception in case of call without preceding call of 'nextToken()' or 'isNextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader("null").readNullOrError("default", "error"))
+      assert(intercept[IllegalStateException](reader("null").readNullOrError("default", "error"))
         .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
@@ -386,7 +386,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       assert(r.nextToken() == '"')
     }
     "throw array index out of bounds exception in case of missing preceding call of 'nextToken()' or 'isNextToken()'" in {
-      assert(intercept[ArrayIndexOutOfBoundsException](reader("{}").rollbackToken())
+      assert(intercept[IllegalStateException](reader("{}").rollbackToken())
         .getMessage.contains("expected preceding call of 'nextToken()' or 'isNextToken()'"))
     }
   }
@@ -2766,8 +2766,14 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "throw exception in case of rollbackToMark was called before setMark" in {
       val jsonReader = reader("{}")
       jsonReader.skip()
-      assert(intercept[ArrayIndexOutOfBoundsException](jsonReader.rollbackToMark())
+      assert(intercept[IllegalStateException](jsonReader.rollbackToMark())
         .getMessage.contains("expected preceding call of 'setMark()'"))
+    }
+    "throw exception in case of setMark was called after setMark without rollbackToMark between them" in {
+      val jsonReader = reader("{}")
+      jsonReader.setMark()
+      assert(intercept[IllegalStateException](jsonReader.setMark())
+        .getMessage.contains("expected preceding call of 'rollbackToMark()'"))
     }
   }
   "JsonReader.skipToKey" should {
