@@ -2101,7 +2101,7 @@ final class JsonReader private[jsoniter_scala](
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
       if (b < '0' || b > '9') durationOrPeriodDigitError(isNegX, state < 1)
-      var x = '0' - b
+      var x: Long = '0' - b
       var pos = head
       var buf = this.buf
       while ((pos < tail || {
@@ -2112,9 +2112,8 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (x < -214748364) periodError(pos)
         x = x * 10 + ('0' - b)
-        if (x > 0) periodError(pos)
+        if (x < -2147483648) periodError(pos)
         pos += 1
       }
       if (!(isNeg ^ isNegX)) {
@@ -2122,18 +2121,18 @@ final class JsonReader private[jsoniter_scala](
         x = -x
       }
       if (state < 1 && b == 'Y') {
-        years = x
+        years = x.toInt
         state = 1
       } else if (state < 2 && b == 'M') {
-        months = x
+        months = x.toInt
         state = 2
       } else if (state < 3 && b == 'W') {
-        val ds = x * 7L
+        val ds = x * 7
         if (ds != ds.toInt) periodError(pos)
         days = ds.toInt
         state = 3
       } else if (b == 'D') {
-        val ds = x + days.toLong
+        val ds = x + days
         if (ds != ds.toInt) periodError(pos)
         days = ds.toInt
         state = 4
