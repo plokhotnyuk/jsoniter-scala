@@ -2747,6 +2747,7 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
     "store current position of parsing and return back to it" in {
       def check[A](n: Int, s2: String)(f: JsonReader => A): Unit = {
         val jsonReader = reader("{}" + " " * n + s2)
+        jsonReader.setMark()
         jsonReader.skip()
         jsonReader.setMark()
         f(jsonReader)
@@ -2768,12 +2769,6 @@ class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyCheck
       jsonReader.skip()
       assert(intercept[IllegalStateException](jsonReader.rollbackToMark())
         .getMessage.contains("expected preceding call of 'setMark()'"))
-    }
-    "throw exception in case of setMark was called after setMark without rollbackToMark between them" in {
-      val jsonReader = reader("{}")
-      jsonReader.setMark()
-      assert(intercept[IllegalStateException](jsonReader.setMark())
-        .getMessage.contains("expected preceding call of 'rollbackToMark()'"))
     }
   }
   "JsonReader.skipToKey" should {

@@ -141,10 +141,7 @@ final class JsonReader private[jsoniter_scala](
     decodeError(i, head - 1, null)
   }
 
-  def setMark(): Unit = {
-    if (mark >= 0) duplicatedSetMarkOperation()
-    mark = head
-  }
+  def setMark(): Unit = mark = head
 
   @tailrec
   def skipToKey(key: String): Boolean = isCharBufEqualsTo(readKeyAsCharBuf(), key) || {
@@ -878,9 +875,6 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def missingSetMarkOperation(): Nothing =
     throw new IllegalStateException("expected preceding call of 'setMark()'")
-
-  private[this] def duplicatedSetMarkOperation(): Nothing =
-    throw new IllegalStateException("expected preceding call of 'rollbackToMark()'")
 
   @tailrec
   private[this] def next2Digits(pos: Int): Int =
