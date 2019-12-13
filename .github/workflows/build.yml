@@ -32,10 +32,11 @@ jobs:
       - name: Configure git
         run: "git config --global core.autocrlf false"
         shell: bash
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
         with:
-          ref: ${{ github.ref }}
           fetch-depth: 100
+      - name: Fetch tags
+        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: ${{ matrix.java }}
