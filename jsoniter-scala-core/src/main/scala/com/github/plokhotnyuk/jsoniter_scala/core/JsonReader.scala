@@ -951,12 +951,12 @@ final class JsonReader private[jsoniter_scala](
       yearDigits += 1
       pos += 1
     }
+    head = pos + 1
     if (b != t) {
       if (!yearNeg && yearDigits == 4) digitError(pos)
       if (yearDigits == maxDigits) tokenError(t, pos)
       tokenOrDigitError(t, pos)
     }
-    head = pos + 1
     if (yearNeg) {
       if (year == 0) 2147483647
       else -year
@@ -982,8 +982,8 @@ final class JsonReader private[jsoniter_scala](
         nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide positive int by 10
         pos += 1
       }
-      if (b != t) nanoError(nanoDigitWeight, t, pos)
       head = pos + 1
+      if (b != t) nanoError(nanoDigitWeight, t, pos)
     } else if (b != t) tokensError('.', t)
     nano
   }
@@ -1124,12 +1124,12 @@ final class JsonReader private[jsoniter_scala](
         if (x < -128) byteOverflowError(pos)
         pos += 1
       }
+      head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (!isNeg) {
         if (x == -128) byteOverflowError(pos - 1)
         x = -x
       }
-      head = pos
     }
     x.toByte
   }
@@ -1158,12 +1158,12 @@ final class JsonReader private[jsoniter_scala](
         if (x < -32768) shortOverflowError(pos)
         pos += 1
       }
+      head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (!isNeg) {
         if (x == -32768) shortOverflowError(pos - 1)
         x = -x
       }
-      head = pos
     }
     x.toShort
   }
@@ -1192,12 +1192,12 @@ final class JsonReader private[jsoniter_scala](
         if (x < -2147483648) intOverflowError(pos)
         pos += 1
       }
+      head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (!isNeg) {
         if (x == -2147483648) intOverflowError(pos - 1)
         x = -x
       }
-      head = pos
     }
     x.toInt
   }
@@ -1227,12 +1227,12 @@ final class JsonReader private[jsoniter_scala](
         if (x > 0) longOverflowError(pos)
         pos += 1
       }
+      head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
       if (!isNeg) {
         if (x == -9223372036854775808L) longOverflowError(pos - 1)
         x = -x
       }
-      head = pos
     }
     x
   }
@@ -1581,7 +1581,7 @@ final class JsonReader private[jsoniter_scala](
             pos += 1
           }
           head = pos
-          if (b == '.' || (b | 0x20) == 'e') numberError(pos)
+          if ((b | 0x20) == 'e' || b == '.') numberError(pos)
           if (mark == 0) from -= newMark
           new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
         } finally if (mark != 0 || oldMark< 0) mark = oldMark
