@@ -5,10 +5,11 @@ import java.nio.{BufferOverflowException, ByteBuffer, ReadOnlyBufferException}
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class PackageSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
+class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "readFromStream" should {
     "parse JSON from the provided input stream" in {
       readFromStream(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user

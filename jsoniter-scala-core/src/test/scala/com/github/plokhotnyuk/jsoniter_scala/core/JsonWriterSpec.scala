@@ -8,10 +8,11 @@ import java.util.{Base64, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class JsonWriterSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
+class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "WriterConfig.<init>" should {
     "have handy defaults" in {
       WriterConfig.throwWriterExceptionWithStackTrace shouldBe false

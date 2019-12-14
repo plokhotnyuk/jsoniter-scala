@@ -5,11 +5,12 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.language.higherKinds
 
-class VerifyingSpec extends WordSpec with Matchers {
+class VerifyingSpec extends AnyWordSpec with Matchers {
   def verifySerDeser[T](codec: JsonValueCodec[T], obj: T, json: String, cfg: WriterConfig = WriterConfig): Unit = {
     verifySer(codec, obj, json, cfg)
     verifyDeser(codec, obj, json)

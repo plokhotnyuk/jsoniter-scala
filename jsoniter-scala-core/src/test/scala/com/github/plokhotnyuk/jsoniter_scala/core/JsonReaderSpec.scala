@@ -11,10 +11,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class JsonReaderSpec extends WordSpec with Matchers with ScalaCheckPropertyChecks {
+class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "ReaderConfig.<init>" should {
     "have safe and handy defaults" in {
       ReaderConfig.throwReaderExceptionWithStackTrace shouldBe false
