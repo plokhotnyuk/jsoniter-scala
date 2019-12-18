@@ -1060,6 +1060,10 @@ object JsonCodecMaker {
         case _ => cannotFindValueCodecError(tpe)
       }
 
+      def genReadValForGrowable(types: List[Type], isStringified: Boolean): Tree =
+          if (isScala213) q"x.addOne(${genReadVal(types, nullValue(types), isStringified)})"
+          else q"x += ${genReadVal(types, nullValue(types), isStringified)}"
+
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree = EmptyTree): Tree = {
         val tpe = types.head
         val implCodec = findImplicitCodec(types, isValueCodec = true)
@@ -1199,26 +1203,24 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
-            q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}")
+            genReadValForGrowable(tpe1 :: types, isStringified))
         } else if (tpe <:< typeOf[collection.Set[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"val x = ${collectionCompanion(tpe)}.newBuilder[$tpe1]",
-            q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.result()")
+            genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
         } else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val readVal =
-            if (isScala213) q"x.addOne(${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)})"
-            else q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}"
-          genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]", readVal, q"x.toList")
+          genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]",
+            genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.11.x/2.12.x
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = if (default.isEmpty) default else ${collectionCompanion(tpe)}.empty[$tpe1]",
-            q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}")
+            genReadValForGrowable(tpe1 :: types, isStringified))
         } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = ${collectionCompanion(tpe)}.newBuilder[$tpe1]",
-            q"x += ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)}", q"x.result()")
+            genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val growArray =
