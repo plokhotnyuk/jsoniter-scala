@@ -30,12 +30,14 @@ final class stringified extends StaticAnnotation
   * BEWARE: a parameter of the `make` macro should not depend on code from the same compilation module where it is called.
   * Use a separated submodule of the project to compile all such dependencies before their usage for generation of codecs.
   *
-  * Examples of `fieldNameMapper` and `adtLeafClassNameMapper` functions that have no dependencies in the same
-  * compilation module are: `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`,
+  * Examples of `fieldNameMapper`, `javaEnumValueNameMapper`, and `adtLeafClassNameMapper` functions that have no
+  * dependencies in the same compilation module are: `JsonCodecMaker.enforceCamelCase`, `JsonCodecMaker.enforce_snake_case`,
   * `JsonCodecMaker.enforce-kebab-case`, and `JsonCodecMaker.simpleClassName`. Or their composition like:
   * `s => JsonCodecMaker.enforce_snake_case(JsonCodecMaker.simpleClassName(s))`
   *
   * @param fieldNameMapper        the partial function of mapping from string of case class field name to JSON key
+  *                               (an identity function by default)
+  * @param javaEnumValueNameMapper the partial function of mapping from string of Java enum name to JSON key
   *                               (an identity function by default)
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
   *                               discriminator field (a function that truncate to simple class name by default)
@@ -67,6 +69,7 @@ final class stringified extends StaticAnnotation
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
+    val javaEnumValueNameMapper: PartialFunction[String, String],
     val adtLeafClassNameMapper: String => String,
     val discriminatorFieldName: Option[String],
     val isStringified: Boolean,
@@ -86,6 +89,9 @@ class CodecMakerConfig private (
     val allowRecursiveTypes: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
+
+  def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig =
+    copy(javaEnumValueNameMapper = javaEnumValueNameMapper)
 
   def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
     copy(adtLeafClassNameMapper = adtLeafClassNameMapper)
@@ -131,6 +137,7 @@ class CodecMakerConfig private (
 
 
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
+                         javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
                          discriminatorFieldName: Option[String] = discriminatorFieldName,
                          isStringified: Boolean = isStringified,
@@ -150,6 +157,7 @@ class CodecMakerConfig private (
                          allowRecursiveTypes: Boolean = allowRecursiveTypes): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
+      javaEnumValueNameMapper = javaEnumValueNameMapper,
       adtLeafClassNameMapper = adtLeafClassNameMapper,
       discriminatorFieldName = discriminatorFieldName,
       isStringified = isStringified,
@@ -171,6 +179,7 @@ class CodecMakerConfig private (
 
 object CodecMakerConfig extends CodecMakerConfig(
   fieldNameMapper = JsonCodecMaker.partialIdentity,
+  javaEnumValueNameMapper = JsonCodecMaker.partialIdentity,
   adtLeafClassNameMapper = JsonCodecMaker.simpleClassName,
   discriminatorFieldName = Some("type"),
   isStringified = false,
@@ -468,19 +477,35 @@ object JsonCodecMaker {
           Ident(mathContextName)
         }
 
-      case class EnumValueInfo(value: Tree, name: String)
+      case class EnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
-      def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = {
-        val values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
+      val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
+
+      def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
+        val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
+        var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
           val n = s.fullName
-          EnumValueInfo(q"$s", n.substring(n.lastIndexOf('.') + 1))
+          val name = n.substring(n.lastIndexOf('.') + 1)
+          val transformedName = javaEnumValueNameMapper(name)
+          EnumValueInfo(q"$s", transformedName, name != transformedName)
         }
         if (values.isEmpty) { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
-          eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
-            case (className, name) => EnumValueInfo(q"$className.${TermName(name)}", name)
-          }
-        } else values
-      }
+          values =
+            eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
+              case (className, name) =>
+                val transformedName = javaEnumValueNameMapper(name)
+                EnumValueInfo(q"$className.${TermName(name)}", transformedName, name != transformedName)
+            }
+        }
+        val nameCollisions = duplicated(values.map(_.name))
+        if (nameCollisions.nonEmpty) {
+          val formattedCollisions = nameCollisions.mkString("'", "', '", "'")
+          fail(s"Duplicated JSON value(s) defined for '$tpe': $formattedCollisions. Values are derived from value " +
+            s"names of the enum that are mapped by the '${typeOf[CodecMakerConfig]}.javaEnumValueNameMapper' function. " +
+            s"Result values should be unique per enum class.")
+        }
+        values
+      })
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
         val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
@@ -658,8 +683,16 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
         else if (tpe <:< typeOf[java.lang.Enum[_]]) {
           val es = javaEnumValues(tpe)
-          if (es.exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
-          else q"out.writeNonEscapedAsciiKey($x.name)"
+          val encodingRequired = es.exists(e => isEncodingRequired(e.name))
+          if (es.exists(_.transformed)) {
+            val cases = es.map(e => cq"${e.value} => ${e.name}") :+
+              cq"""_ => out.encodeError("illegal enum value: " + $x)"""
+            if (encodingRequired) q"out.writeKey($x match { case ..$cases})"
+            else q"out.writeNonEscapedAsciiKey($x match { case ..$cases})"
+          } else {
+            if (encodingRequired) q"out.writeKey($x.name)"
+            else q"out.writeNonEscapedAsciiKey($x.name)"
+          }
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(_: String)) => q"out.writeKey($x)"
@@ -767,8 +800,8 @@ object JsonCodecMaker {
             val annotationOption = annotations.get(name)
             if (annotationOption.fold(false)(_.transient)) None
             else {
-              val fieldNameMapperFunction: String => String = n => cfg.fieldNameMapper.lift(n).getOrElse(n)
-              val mappedName = annotationOption.fold(fieldNameMapperFunction(name))(_.partiallyMappedName)
+              val fieldNameMapper: String => String = n => cfg.fieldNameMapper.lift(n).getOrElse(n)
+              val mappedName = annotationOption.fold(fieldNameMapper(name))(_.partiallyMappedName)
               val tmpName = TermName("_" + symbol.name)
               val getter = getters.find(_.name == symbol.name).getOrElse {
                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
@@ -1540,8 +1573,16 @@ object JsonCodecMaker {
           q"out.writeVal(x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
           val es = javaEnumValues(tpe)
-          if (es.exists(x => isEncodingRequired(x.name))) q"out.writeVal(x.name)"
-          else q"out.writeNonEscapedAsciiVal(x.name)"
+          val encodingRequired = es.exists(e => isEncodingRequired(e.name))
+          if (es.exists(_.transformed)) {
+            val cases = es.map(e => cq"${e.value} => ${e.name}") :+
+              cq"""_ => out.encodeError("illegal enum value: " + x)"""
+            if (encodingRequired) q"out.writeVal(x match { case ..$cases})"
+            else q"out.writeNonEscapedAsciiVal(x match { case ..$cases})"
+          } else {
+            if (encodingRequired) q"out.writeVal(x.name)"
+            else q"out.writeNonEscapedAsciiVal(x.name)"
+          }
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""out.writeObjectStart()
               ..$discriminator

@@ -368,6 +368,27 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize Java enumerations" in {
       verifySerDeser(codecOfJavaEnums, JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"LOW","il":"HIGH"}""")
     }
+    "serialize and deserialize Java enumerations with renamed value" in {
+      verifySerDeser(make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.enforce_snake_case)),
+        JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"low","il":"high"}""")
+      verifySerDeser(make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.enforce_snake_case
+        .andThen(JsonCodecMaker.EnforcePascalCase))),
+        JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"Low","il":"High"}""")
+      verifySerDeser(make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper {
+        case "LOW" => "lo"
+        case "HIGH" => "hi"
+      }), JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"lo","il":"hi"}""")
+    }
+    "don't generate codecs for Java enumerations when duplicated transformed names detected" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper { case _ => "dup" })"""
+      }).getMessage.contains {
+        """Duplicated JSON value(s) defined for 'com.github.plokhotnyuk.jsoniter_scala.macros.Levels.InnerLevel': 'dup'.
+          |Values are derived from value names of the enum that are mapped by the
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.javaEnumValueNameMapper' function.
+          |Result values should be unique per enum class.""".stripMargin.replace('\n', ' ')
+      })
+    }
     "throw parse exception in case of illegal value of Java enumeration" in {
       verifyDeserError(codecOfJavaEnums, """{"l":null,"il":"HIGH"}""", "expected '\"', offset: 0x00000005")
       verifyDeserError(codecOfJavaEnums, """{"l":"LO","il":"HIGH"}""", "illegal enum value \"LO\", offset: 0x00000008")
@@ -1026,7 +1047,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(make[_root_.scala.collection.mutable.BitSet](CodecMakerConfig),
         """[1,2,-1]""", "illegal value for bit set, offset: 0x00000006")
     }
-    "don't generate codec for maps with not supported types of keys" in {
+    "don't generate codecs for maps with not supported types of keys" in {
       assert(intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[Map[_root_.java.util.Date,String]](CodecMakerConfig)"""
       }).getMessage.contains {
@@ -1082,7 +1103,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfNameOverridden, """{"oldName":"VVV"}""",
         "missing required field \"new_name\", offset: 0x00000010")
     }
-    "don't generate codec for case classes with field that have duplicated @named annotation" in {
+    "don't generate codecs for case classes with field that have duplicated @named annotation" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class DuplicatedNamed(@named("x") @named("y") z: Int)
           |JsonCodecMaker.make[DuplicatedNamed](CodecMakerConfig)""".stripMargin
@@ -1090,7 +1111,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'z' of 'DuplicatedNamed'."""
       })
     }
-    "don't generate codec for case classes with fields that have duplicated JSON names" in {
+    "don't generate codecs for case classes with fields that have duplicated JSON names" in {
       val expectedError =
         """Duplicated JSON key(s) defined for 'DuplicatedJsonName': 'x'. Keys are derived from field names of the class
           |that are mapped by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.fieldNameMapper'
@@ -1479,7 +1500,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(codecOfADTList2, """[{{"a":1}}]""", """expected '"', offset: 0x00000002""")
       verifyDeserError(codecOfADTList2, """[{"aaa":{"a":1}}]""", """illegal discriminator, offset: 0x00000007""")
     }
-    "don't generate codec for non sealed traits or abstract classes as an ADT base" in {
+    "don't generate codecs for non sealed traits or abstract classes as an ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {
         """trait X
           |case class A(i: Int) extends X
@@ -1497,7 +1518,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'X'."""
       })
     }
-    "don't generate codec for ADT base without leaf classes" in {
+    "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X extends Product with Serializable
           |JsonCodecMaker.make[X](CodecMakerConfig)""".stripMargin
@@ -1513,7 +1534,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
     }
-    "don't generate codec for case objects which are mapped to the same discriminator value" in {
+    "don't generate codecs for case objects which are mapped to the same discriminator value" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X extends Product with Serializable
           |case object A extends X
@@ -1533,7 +1554,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "Data1" //FIXME: an error message with Scala 2.11.12 is "Data1 is already defined as (compiler-generated) case class companion object Data1"
       })
     }
-    "don't generate codec for case classes with fields that the same name as discriminator name" in {
+    "don't generate codecs for case classes with fields that the same name as discriminator name" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait DuplicatedJsonName extends Product with Serializable
           |case class A(x: Int) extends DuplicatedJsonName
