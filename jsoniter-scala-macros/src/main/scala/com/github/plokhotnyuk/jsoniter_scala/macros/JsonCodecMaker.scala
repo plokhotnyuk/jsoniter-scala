@@ -470,11 +470,17 @@ object JsonCodecMaker {
 
       case class EnumValueInfo(value: Tree, name: String)
 
-      def javaEnumValues(tpe: Type): Seq[EnumValueInfo] =
-        tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
+      def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = {
+        val values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
           val n = s.fullName
           EnumValueInfo(q"$s", n.substring(n.lastIndexOf('.') + 1))
-        } // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+        }
+        if (values.isEmpty) { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+          eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
+            case (className, name) => EnumValueInfo(q"$className.${TermName(name)}", name)
+          }
+        } else values
+      }
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
         val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
@@ -534,16 +540,8 @@ object JsonCodecMaker {
               ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
                 .getOrElse(in.enumValueError(len))"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
-          val es = javaEnumValues(tpe)
-          if (es.isEmpty) {
-            q"""val v = in.readKeyAsString()
-                try ${companion(tpe)}.valueOf(v) catch {
-                  case _: IllegalArgumentException => in.enumValueError(v)
-                }"""
-          } else {
-            q"""val l = in.readKeyAsCharBuf()
-                ${genReadEnumValue(es, q"in.enumValueError(l)")}"""
-          }
+          q"""val l = in.readKeyAsCharBuf()
+              ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
         } else if (isConstType(tpe)) {
           tpe match {
             case ConstantType(Constant(v: String)) =>
@@ -660,7 +658,7 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
         else if (tpe <:< typeOf[java.lang.Enum[_]]) {
           val es = javaEnumValues(tpe)
-          if (es.isEmpty || es.exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
+          if (es.exists(x => isEncodingRequired(x.name))) q"out.writeKey($x.name)"
           else q"out.writeNonEscapedAsciiKey($x.name)"
         } else if (isConstType(tpe)) {
           tpe match {
@@ -1250,22 +1248,11 @@ object JsonCodecMaker {
                   .getOrElse(in.enumValueError(l))
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
-          val es = javaEnumValues(tpe)
-          if (es.isEmpty) {
-            q"""if (in.isNextToken('"')) {
-                  in.rollbackToken()
-                  val v = in.readString(null)
-                  try ${companion(tpe)}.valueOf(v) catch {
-                    case _: IllegalArgumentException => in.enumValueError(v)
-                  }
-                } else in.readNullOrTokenError(default, '"')"""
-          } else {
-            q"""if (in.isNextToken('"')) {
-                  in.rollbackToken()
-                  val l = in.readStringAsCharBuf()
-                  ${genReadEnumValue(es, q"in.enumValueError(l)")}
-                } else in.readNullOrTokenError(default, '"')"""
-          }
+          q"""if (in.isNextToken('"')) {
+                in.rollbackToken()
+                val l = in.readStringAsCharBuf()
+                ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}
+              } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe.typeSymbol.isModuleClass) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('{')) {
                 in.rollbackToken()
@@ -1553,7 +1540,7 @@ object JsonCodecMaker {
           q"out.writeVal(x.toString)"
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
           val es = javaEnumValues(tpe)
-          if (es.isEmpty || es.exists(x => isEncodingRequired(x.name))) q"out.writeVal(x.name)"
+          if (es.exists(x => isEncodingRequired(x.name))) q"out.writeVal(x.name)"
           else q"out.writeNonEscapedAsciiVal(x.name)"
         } else if (tpe.typeSymbol.isModuleClass) withEncoderFor(methodKey, m) {
           q"""out.writeObjectStart()
