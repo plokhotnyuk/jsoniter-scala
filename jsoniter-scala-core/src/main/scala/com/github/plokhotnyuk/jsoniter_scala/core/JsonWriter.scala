@@ -747,7 +747,7 @@ final class JsonWriter private[jsoniter_scala](
         posLim = limit - 5
       }
     }
-    if (offset < lenM2 + 1) {
+    if (offset == lenM2) {
       val p = (bs(offset) & 0xFF) << 10 | (bs(offset + 1) & 0xFF) << 2
       buf(pos) = ds(p >> 12)
       buf(pos + 1) = ds((p >> 6) & 0x3F)
@@ -757,7 +757,7 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '='
           pos += 1
       }
-    } else if (offset < lenM2 + 2) {
+    } else if (offset == lenM2 + 1) {
       val p = bs(offset) & 0xFF
       buf(pos) = ds(p >> 2)
       buf(pos + 1) = ds((p << 4) & 0x3F)
@@ -1233,7 +1233,7 @@ final class JsonWriter private[jsoniter_scala](
         if (nano != 0) {
           if (totalSecs < 0) nano = 1000000000 - nano
           val dotPos = pos
-          pos = writeSignificantFractionDigits(nano, pos + 9, pos, 0, buf, ds)
+          pos = writeSignificantFractionDigits(nano, 0, pos + 9, pos, buf, ds)
           buf(dotPos) = '.'
         }
         buf(pos) = 'S'
@@ -1245,21 +1245,17 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def writeSignificantFractionDigits(q0: Int, pos: Int, posLim: Int, lastPos: Int, buf: Array[Byte], ds: Array[Short]): Int =
+  private[this] def writeSignificantFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (pos > posLim) {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
       val r1 = q0 - q1 * 100
-      if (lastPos != 0 || r1 != 0) {
-        val d = ds(r1)
+      val d = ds(r1)
+      if ((lastPos | r1) == 0 || {
         buf(pos - 1) = d.toByte
         buf(pos) = (d >> 8).toByte
-        if (lastPos == 0) {
-          val newLastPos =
-            if ((d >> 8) == '0') pos
-            else pos + 1
-          writeSignificantFractionDigits(q1, pos - 2, posLim, newLastPos, buf, ds)
-        } else writeSignificantFractionDigits(q1, pos - 2, posLim, lastPos, buf, ds)
-      } else writeSignificantFractionDigits(q1, pos - 2, posLim, lastPos, buf, ds)
+        lastPos != 0
+      }) writeSignificantFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
+      else writeSignificantFractionDigits(q1, pos + ((12345 - d) >>> 31), pos - 2, posLim, buf, ds) // 12345 == ('0' << 8) | '9'
     } else lastPos
 
   private[this] def writeInstant(x: Instant): Unit = count = {
@@ -1515,7 +1511,7 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(x.getMinute, pos + 1, buf, ds)
     val second = x.getSecond
     val nano = x.getNano
-    if (second != 0 || nano != 0) {
+    if ((second | nano) != 0) {
       buf(pos) = ':'
       pos = write2Digits(second, pos + 1, buf, ds)
       if (nano != 0) {
@@ -1529,7 +1525,7 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = d.toByte
         pos += 1
         val b = (d >> 8).toByte
-        if (r2 != 0 || b != '0') {
+        if ((r2 | b - '0') != 0) {
           buf(pos) = b
           val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
           val r3 = r2 - q3 * 1000
@@ -1558,7 +1554,7 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = d.toByte
       pos += 1
       val b = (d >> 8).toByte
-      if (r2 != 0 || b != '0') {
+      if ((r2 | b - '0') != 0) {
         buf(pos) = b
         val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
         val r3 = r2 - q3 * 1000
