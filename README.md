@@ -121,8 +121,9 @@ There are configurable options that can be set in compile-time:
 - Skipping of serialization of fields that have empty optional values can be turned off to force serialization of them
 - Skipping of serialization of fields which values are matched with defaults that are defined in the primary constructor
   can be turned off to force serialization of that values
-- Mapping function for property names between classes and JSON, including predefined functions which enforce snake_case,
-  kebab-case, camelCase or PascalCase names for all fields in the generated codec
+- Mapping functions from names of classes and their fields to JSON keys or from names of Java enumeration values to 
+  JSON strings and back, including predefined functions which enforce snake_case, kebab-case, camelCase or 
+  PascalCase names for all fields in the generated codec
 - An optional name of the discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
 - Ability to set precision, scale limit, and the max number of significant digits when parsing `BigDecimal` values
