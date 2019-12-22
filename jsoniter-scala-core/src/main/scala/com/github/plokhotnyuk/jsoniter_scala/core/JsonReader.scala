@@ -952,11 +952,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     head = pos + 1
-    if (b != t) {
-      if (!yearNeg && yearDigits == 4) digitError(pos)
-      if (yearDigits == maxDigits) tokenError(t, pos)
-      tokenOrDigitError(t, pos)
-    }
+    if (b != t) yearError(t, maxDigits, pos, yearNeg, yearDigits)
     if (yearNeg) {
       if (year == 0) 2147483647
       else -year
@@ -1222,9 +1218,10 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (x < -922337203685477580L) longOverflowError(pos)
-        x = x * 10 + ('0' - b)
-        if (x > 0) longOverflowError(pos)
+        if (x < -922337203685477580L || {
+          x = x * 10 + ('0' - b)
+          x > 0
+        }) longOverflowError(pos)
         pos += 1
       }
       head = pos
@@ -1660,9 +1657,10 @@ final class JsonReader private[jsoniter_scala](
             b = buf(pos)
             b >= '0' && b <= '9'
           }) {
-            if (exp < -214748364) numberError(pos)
-            exp = exp * 10 + ('0' - b)
-            if (exp > 0) numberError(pos)
+            if (exp < -214748364 || {
+              exp = exp * 10 + ('0' - b)
+              exp > 0
+            }) numberError(pos)
             pos += 1
           }
           if (!isNegExp) {
@@ -1855,9 +1853,10 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (x < -922337203685477580L) durationError(pos)
-        x = x * 10 + ('0' - b)
-        if (x > 0) durationError(pos)
+        if (x < -922337203685477580L || {
+          x = x * 10 + ('0' - b)
+          x > 0
+        }) durationError(pos)
         pos += 1
       }
       if (!(isNeg ^ isNegX)) {
@@ -2192,11 +2191,7 @@ final class JsonReader private[jsoniter_scala](
       zone = parseZoneIdUntilToken(']')
       b = nextByte(head)
     }
-    if (b != '"') {
-      if (zone ne null) tokenError('"')
-      if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
-      decodeError("expected ':' or '[' or '\"'")
-    }
+    if (b != '"') zonedDateTimeError(zone, hasOffsetHour, hasOffsetSecond)
     val localDateTime = LocalDateTime.of(toLocalDate(year, month, day), toLocalTime(hour, minute, second, nano))
     val zoneOffset =
       if (hasOffsetHour) toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
@@ -2348,6 +2343,12 @@ final class JsonReader private[jsoniter_scala](
     case 3 => "expected 'S or '.' or digit"
   }, pos)
 
+  private[this] def yearError(t: Byte, maxDigits: Int, pos: Int, yearNeg: Boolean, yearDigits: Int): Nothing = {
+    if (!yearNeg && yearDigits == 4) digitError(pos)
+    if (yearDigits == maxDigits) tokenError(t, pos)
+    tokenOrDigitError(t, pos)
+  }
+
   private[this] def yearError(): Nothing = decodeError("illegal year")
 
   private[this] def monthError(): Nothing = decodeError("illegal month")
@@ -2382,6 +2383,12 @@ final class JsonReader private[jsoniter_scala](
   private[this] def timezoneOffsetMinuteError(): Nothing = decodeError("illegal timezone offset minute")
 
   private[this] def timezoneOffsetSecondError(): Nothing = decodeError("illegal timezone offset second")
+
+  private[this] def zonedDateTimeError(zone: String, hasOffsetHour: Boolean, hasOffsetSecond: Boolean): Nothing = {
+    if (zone ne null) tokenError('"')
+    if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
+    decodeError("expected ':' or '[' or '\"'")
+  }
 
   @tailrec
   private[this] def parseUUID(pos: Int): UUID =
