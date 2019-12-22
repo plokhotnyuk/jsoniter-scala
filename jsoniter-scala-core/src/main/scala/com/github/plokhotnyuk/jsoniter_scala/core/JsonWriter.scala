@@ -1384,10 +1384,10 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 1) = 'D'
       pos += 2
     } else {
-      val ds = digits
       val years = x.getYears
       val months = x.getMonths
       val days = x.getDays
+      val ds = digits
       if (years != 0) pos = writePeriod(years, pos, buf, ds, 'Y')
       if (months != 0) pos = writePeriod(months, pos, buf, ds, 'M')
       if (days != 0) pos = writePeriod(days, pos, buf, ds, 'D')
@@ -1868,11 +1868,11 @@ final class JsonWriter private[jsoniter_scala](
       }
       var pos = ensureBufCapacity(15)
       val buf = this.buf
+      val ds = digits
       if (bits < 0) {
         buf(pos) = '-'
         pos += 1
       }
-      val ds = digits
       if (decimalNotation) {
         if (exp < 0) {
           buf(pos) = '0'
@@ -2068,11 +2068,11 @@ final class JsonWriter private[jsoniter_scala](
       }
       var pos = ensureBufCapacity(24)
       val buf = this.buf
+      val ds = digits
       if (bits < 0) {
         buf(pos) = '-'
         pos += 1
       }
-      val ds = digits
       if (decimalNotation) {
         if (exp < 0) {
           buf(pos) = '0'
