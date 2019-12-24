@@ -2902,13 +2902,11 @@ final class JsonReader private[jsoniter_scala](
     if (i + 16 >= charBuf.length) growCharBuf(i + 16)
     val ds = hexDigits
     var j = i
-    val hd = (d >>> 32).toInt
-    if (hd != 0) {
-      var shift = 4
-      while (shift < 32 && (hd >>> shift) != 0) shift += 4
-      while (shift > 0) {
+    if (d.toInt != d) {
+      var shift = (64 - java.lang.Long.numberOfLeadingZeros(d)) & 0x3C
+      while (shift >= 32) {
+        charBuf(j) = ds((d >>> shift).toInt & 0xF)
         shift -= 4
-        charBuf(j) = ds((hd >>> shift) & 0xF)
         j += 1
       }
     }
