@@ -14,7 +14,7 @@ import org.openjdk.jmh.annotations.Benchmark
 
 class Base64Reading extends Base64Benchmark {
   @Benchmark
-  def avSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8))(base64GenCodec)
+  def avSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8), jsonBase64Options)
 
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]].value

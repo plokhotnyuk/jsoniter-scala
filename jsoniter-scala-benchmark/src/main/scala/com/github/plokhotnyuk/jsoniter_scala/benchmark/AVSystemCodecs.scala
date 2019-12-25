@@ -4,10 +4,10 @@ import java.math.MathContext
 import java.time._
 import java.util.UUID
 
-import com.avsystem.commons.serialization.{Base64, GenCodec}
+import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
-import com.avsystem.commons.serialization.json.JsonBinaryFormat.HexString
+import com.avsystem.commons.serialization.json.JsonBinaryFormat.{Base64, HexString}
 import com.avsystem.commons.serialization.json.JsonOptions
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 
@@ -17,11 +17,10 @@ import scala.collection.mutable
 object AVSystemCodecs {
   val jsonOptions: JsonOptions = JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /*WARNING: don't do this for open-systems*/)
   val jsonBase16Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = HexString)
+  val jsonBase64Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = Base64())
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materializeRecursively
-  val base64GenCodec: GenCodec[Array[Byte]] =
-    transformed(a => Base64.encode(a, withoutPadding = false, urlSafe = false), s => Base64.decode(s, urlSafe = false))
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
   implicit val instantGenCodec: GenCodec[Instant] = transformed(_.toString, Instant.parse)

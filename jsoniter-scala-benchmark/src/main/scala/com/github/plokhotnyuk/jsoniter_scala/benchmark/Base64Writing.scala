@@ -14,7 +14,7 @@ import io.circe.syntax._
 
 class Base64Writing extends Base64Benchmark {
   @Benchmark
-  def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj)(base64GenCodec).getBytes(UTF_8)
+  def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, jsonBase64Options).getBytes(UTF_8)
 
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
