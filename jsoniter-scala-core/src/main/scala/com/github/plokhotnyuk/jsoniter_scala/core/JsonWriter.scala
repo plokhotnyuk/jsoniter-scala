@@ -1888,9 +1888,9 @@ final class JsonWriter private[jsoniter_scala](
           pos + 2
         } else {
           val lastPos = pos + len
-          val dotPos = pos + exp + 1
+          val beforeDotPos = pos + exp
           writePositiveIntStartingFromLastPosition(dv, lastPos, buf, ds)
-          while (pos < dotPos) {
+          while (pos <= beforeDotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
           }
@@ -2088,9 +2088,9 @@ final class JsonWriter private[jsoniter_scala](
           pos + 2
         } else {
           val lastPos = pos + len
-          val dotPos = pos + exp + 1
+          val beforeDotPos = pos + exp
           writeSmallPositiveLongStartingFromLastPosition(dv, lastPos, buf, ds)
-          while (pos < dotPos) {
+          while (pos <= beforeDotPos) {
             buf(pos) = buf(pos + 1)
             pos += 1
           }
