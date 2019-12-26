@@ -1215,7 +1215,7 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if ((seconds | nano) != 0) {
-        if (totalSecs < 0 && seconds == 0 && nano != 0) {
+        if (totalSecs < 0 && seconds == 0) {
           buf(pos) = '-'
           buf(pos + 1) = '0'
           pos += 2
@@ -2217,7 +2217,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def growBuf(required: Int): Unit =
-    setBuf(java.util.Arrays.copyOf(buf, Integer.highestOneBit(limit | required) << 1))
+    setBuf(java.util.Arrays.copyOf(buf, (-1 >>> Integer.numberOfLeadingZeros(limit | required)) + 1))
 
   private[this] def reallocateBufToPreferredSize(): Unit = setBuf(new Array[Byte](config.preferredBufSize))
 

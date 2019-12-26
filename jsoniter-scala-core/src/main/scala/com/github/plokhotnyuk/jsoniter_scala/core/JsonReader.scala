@@ -559,14 +559,13 @@ final class JsonReader private[jsoniter_scala](
   }
 
   def readNullOrError[@sp A](default: A, msg: String): A =
-    if (default == null) decodeError(msg)
-    else if (isCurrentToken('n', head)) parseNullOrError(default, msg, head)
+    if (default != null && isCurrentToken('n', head)) parseNullOrError(default, msg, head)
     else decodeError(msg)
 
   def readNullOrTokenError[@sp A](default: A, b: Byte): A =
-    if (default == null) tokenError(b)
-    else if (isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
-    else tokenOrNullError(b)
+    if (default != null && isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
+    else if (default != null) tokenOrNullError(b)
+    else tokenError(b)
 
   def nextByte(): Byte = nextByte(head)
 
@@ -1802,8 +1801,8 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
-    if (default == null) numberError(pos - 1)
-    else parseNullOrError(default, "expected number or null", pos)
+    if (default != null) parseNullOrError(default, "expected number or null", pos)
+    else numberError(pos - 1)
 
   private[this] def numberError(pos: Int = head - 1): Nothing = decodeError("illegal number", pos)
 
@@ -2933,7 +2932,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def growCharBuf(required: Int): Int = {
-    val newLim = Integer.highestOneBit(charBuf.length | required) << 1
+    val newLim = (-1 >>> Integer.numberOfLeadingZeros(charBuf.length | required)) + 1
     charBuf = java.util.Arrays.copyOf(charBuf, newLim)
     newLim
   }
