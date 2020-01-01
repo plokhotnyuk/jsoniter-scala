@@ -595,19 +595,13 @@ final class JsonReader private[jsoniter_scala](
 
   def skip(): Unit = head = {
     val b = nextToken(head)
-    if (b == '"') {
-      if (isGraalVM) skipStringUnrolled(evenBackSlashes = true, head)
-      else skipString(evenBackSlashes = true, head)
-    } else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
+    if (b == '"') skipString(evenBackSlashes = true, head)
+    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
     else if (b == 'n' || b == 't') skipFixedBytes(3, head)
     else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') {
-      if (isGraalVM) skipArrayUnrolled(0, head)
-      else skipArray(0, head)
-    } else if (b == '{') {
-      if (isGraalVM) skipObjectUnrolled(0, head)
-      else skipObject(0, head)
-    } else decodeError("expected value")
+    else if (b == '[') skipArray(0, head)
+    else if (b == '{') skipObject(0, head)
+    else decodeError("expected value")
   }
 
   def commaError(): Nothing = tokenError(',')
@@ -2945,35 +2939,6 @@ final class JsonReader private[jsoniter_scala](
       else skipString(b != '\\' || !evenBackSlashes, pos + 1)
     } else skipString(evenBackSlashes, loadMoreOrError(pos))
 
-  @tailrec
-  private[this] def skipStringUnrolled(evenBackSlashes: Boolean, pos: Int): Int =
-    if (pos + 3 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      val b4 = buf(pos + 3)
-      var ebs = evenBackSlashes
-      if (b1 == '"' && ebs) pos + 1
-      else {
-        ebs = b1 != '\\' || !ebs
-        if (b2 == '"' && ebs) pos + 2
-        else {
-          ebs = b2 != '\\' || !ebs
-          if (b3 == '"' && ebs) pos + 3
-          else {
-            ebs = b3 != '\\' || !ebs
-            if (b4 == '"' && ebs) pos + 4
-            else skipStringUnrolled(b4 != '\\' || !ebs, pos + 4)
-          }
-        }
-      }
-    } else if (pos < tail) {
-        val b = buf(pos)
-        if (b == '"' && evenBackSlashes) pos + 1
-        else skipStringUnrolled(b != '\\' || !evenBackSlashes, pos + 1)
-    } else skipStringUnrolled(evenBackSlashes, loadMoreOrError(pos))
-
   private[this] def skipNumber(p: Int): Int = {
     var pos = p
     var buf = this.buf
@@ -3001,48 +2966,6 @@ final class JsonReader private[jsoniter_scala](
     } else skipObject(level, loadMoreOrError(pos))
 
   @tailrec
-  private[this] def skipObjectUnrolled(level: Int, pos: Int): Int =
-    if (pos + 3 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      val b4 = buf(pos + 3)
-      var l = level
-      if (b1 == '}') l -= 1
-      else if (b1 == '{') l += 1
-      if (b1 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 1))
-      else if (l < 0) pos + 1
-      else {
-        if (b2 == '}') l -= 1
-        else if (b2 == '{') l += 1
-        if (b2 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 2))
-        else if (l < 0) pos + 2
-        else {
-          if (b3 == '}') l -= 1
-          else if (b3 == '{') l += 1
-          if (b3 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 3))
-          else if (l < 0) pos + 3
-          else {
-            if (b4 == '}') l -= 1
-            else if (b4 == '{') l += 1
-            if (b4 == '"') skipObjectUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 4))
-            else if (l < 0) pos + 4
-            else skipObjectUnrolled(l, pos + 4)
-          }
-        }
-      }
-    } else if (pos < tail) {
-      val b = buf(pos)
-      if (b == '"') skipObjectUnrolled(level, skipStringUnrolled(evenBackSlashes = true, pos + 1))
-      else if (b == '}') {
-        if (level == 0) pos + 1
-        else skipObjectUnrolled(level - 1, pos + 1)
-      } else if (b == '{') skipObjectUnrolled(level + 1, pos + 1)
-      else skipObjectUnrolled(level, pos + 1)
-    } else skipObjectUnrolled(level, loadMoreOrError(pos))
-
-  @tailrec
   private[this] def skipArray(level: Int, pos: Int): Int =
     if (pos < tail) {
       val b = buf(pos)
@@ -3053,48 +2976,6 @@ final class JsonReader private[jsoniter_scala](
       } else if (b == '[') skipArray(level + 1, pos + 1)
       else skipArray(level, pos + 1)
     } else skipArray(level, loadMoreOrError(pos))
-
-  @tailrec
-  private[this] def skipArrayUnrolled(level: Int, pos: Int): Int =
-    if (pos + 3 < tail) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      val b2 = buf(pos + 1)
-      val b3 = buf(pos + 2)
-      val b4 = buf(pos + 3)
-      var l = level
-      if (b1 == ']') l -= 1
-      else if (b1 == '[') l += 1
-      if (b1 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 1))
-      else if (l < 0) pos + 1
-      else {
-        if (b2 == ']') l -= 1
-        else if (b2 == '[') l += 1
-        if (b2 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 2))
-        else if (l < 0) pos + 2
-        else {
-          if (b3 == ']') l -= 1
-          else if (b3 == '[') l += 1
-          if (b3 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 3))
-          else if (l < 0) pos + 3
-          else {
-            if (b4 == ']') l -= 1
-            else if (b4 == '[') l += 1
-            if (b4 == '"') skipArrayUnrolled(l, skipStringUnrolled(evenBackSlashes = true, pos + 4))
-            else if (l < 0) pos + 4
-            else skipArrayUnrolled(l, pos + 4)
-          }
-        }
-      }
-    } else if (pos < tail) {
-      val b = buf(pos)
-      if (b == '"') skipArrayUnrolled(level, skipStringUnrolled(evenBackSlashes = true, pos + 1))
-      else if (b == ']') {
-        if (level == 0) pos + 1
-        else skipArrayUnrolled(level - 1, pos + 1)
-      } else if (b == '[') skipArrayUnrolled(level + 1, pos + 1)
-      else skipArrayUnrolled(level, pos + 1)
-    } else skipArrayUnrolled(level, loadMoreOrError(pos))
 
   @tailrec
   private[this] def skipFixedBytes(n: Int, pos: Int): Int = {
@@ -3174,7 +3055,8 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val isGraalVM: Boolean = System.getProperty("java.vm.name").contains("GraalVM")
+  private final val isGraalVM: Boolean =
+    Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM")
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
