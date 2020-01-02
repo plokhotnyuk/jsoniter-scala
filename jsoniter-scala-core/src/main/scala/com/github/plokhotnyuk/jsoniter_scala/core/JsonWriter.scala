@@ -51,7 +51,7 @@ class WriterConfig private (
     copy(escapeUnicode = escapeUnicode)
 
   def withPreferredBufSize(preferredBufSize: Int): WriterConfig = {
-    if (preferredBufSize < 1) throw new IllegalArgumentException("'preferredBufSize' should be not less than 1")
+    if (preferredBufSize <= 0) throw new IllegalArgumentException("'preferredBufSize' should be not less than 1")
     copy(preferredBufSize = preferredBufSize)
   }
 
@@ -2197,8 +2197,8 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
-    if (pos + required > limit) flushAndGrowBuf(required, pos)
-    else pos
+    if (pos + required <= limit) pos
+    else flushAndGrowBuf(required, pos)
   }
 
   private[this] def flushAndGrowBuf(required: Int, pos: Int): Int =

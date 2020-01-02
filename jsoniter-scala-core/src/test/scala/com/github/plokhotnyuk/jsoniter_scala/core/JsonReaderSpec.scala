@@ -15,6 +15,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
+import scala.util.Random
+
 class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "ReaderConfig.<init>" should {
     "have safe and handy defaults" in {
@@ -636,6 +638,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         reader(s""""$s":""").readKeyAsDuration() shouldBe x
         reader(s""""-$s"""").readDuration(null) shouldBe x.negated()
         reader(s""""-$s":""").readKeyAsDuration() shouldBe x.negated()
+        val rnd = Random.nextInt() & 0xFF
+        reader(" " * rnd + s""""$s"""").readDuration(null) shouldBe x
       }
 
       check("P0D", Duration.ZERO)
@@ -1169,6 +1173,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String, x: OffsetTime): Unit = {
         reader(s""""$s"""").readOffsetTime(null) shouldBe x
         reader(s""""$s":""").readKeyAsOffsetTime() shouldBe x
+        val rnd = Random.nextInt() & 0xFF
+        reader(" " * rnd + s""""$s"""").readOffsetTime(null) shouldBe x
       }
 
       check("23:59:59.999999999-18:00", OffsetTime.MAX)
@@ -1338,6 +1344,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       def check(s: String, x: Year): Unit = {
         reader(s""""$s"""").readYear(null) shouldBe x
         reader(s""""$s":""").readKeyAsYear() shouldBe x
+        val rnd = Random.nextInt() & 0xFF
+        reader(" " * rnd + s""""$s"""").readYear(null) shouldBe x
       }
 
       check("-999999999", Year.of(Year.MIN_VALUE))
