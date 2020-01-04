@@ -803,19 +803,19 @@ final class JsonReader private[jsoniter_scala](
     throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
   }
 
-  private[this] def nextByte(p: Int): Byte = {
-    var pos = p
-    if (pos >= tail) pos = loadMoreOrError(pos)
-    head = pos + 1
-    buf(pos)
-  }
+  @tailrec
+  private[this] def nextByte(pos: Int): Byte =
+    if (pos < tail) {
+      head = pos + 1
+      buf(pos)
+    } else nextByte(loadMoreOrError(pos))
 
-  private[this] def nextByteOrError(t: Byte, p: Int): Unit = {
-    var pos = p
-    if (pos >= tail) pos = loadMoreOrError(pos)
-    if (buf(pos) != t) tokenError(t, pos)
-    head = pos + 1
-  }
+  @tailrec
+  private[this] def nextByteOrError(t: Byte, pos: Int): Unit =
+    if (pos < tail) {
+      if (buf(pos) != t) tokenError(t, pos)
+      head = pos + 1
+    } else nextByteOrError(t, loadMoreOrError(pos))
 
   @tailrec
   private[this] def nextToken(pos: Int): Byte =
@@ -828,21 +828,21 @@ final class JsonReader private[jsoniter_scala](
       }
     } else nextToken(loadMoreOrError(pos))
 
-  private[this] def nextTokenOrError(t: Byte, p: Int): Unit = {
-    var pos = p
-    if (pos >= tail) pos = loadMoreOrError(pos)
-    val b = buf(pos)
-    head = pos + 1
-    if (b != t && ((b != ' ' && b != '\n' && b != '\t' && b != '\r') || nextToken(pos + 1) != t)) tokenError(t, head - 1)
-  }
+  @tailrec
+  private[this] def nextTokenOrError(t: Byte, pos: Int): Unit =
+    if (pos < tail) {
+      val b = buf(pos)
+      head = pos + 1
+      if (b != t && ((b != ' ' && b != '\n' && b != '\t' && b != '\r') || nextToken(pos + 1) != t)) tokenError(t, head - 1)
+    } else nextTokenOrError(t, loadMoreOrError(pos))
 
-  private[this] def isNextToken(t: Byte, p: Int): Boolean = {
-    var pos = p
-    if (pos >= tail) pos = loadMoreOrError(pos)
-    val b = buf(pos)
-    head = pos + 1
-    b == t || ((b == ' ' || b == '\n' || b == '\t' || b == '\r') && nextToken(pos + 1) == t)
-  }
+  @tailrec
+  private[this] def isNextToken(t: Byte, pos: Int): Boolean =
+    if (pos < tail) {
+      val b = buf(pos)
+      head = pos + 1
+      b == t || ((b == ' ' || b == '\n' || b == '\t' || b == '\r') && nextToken(pos + 1) == t)
+    } else isNextToken(t, loadMoreOrError(pos))
 
   private[this] def isCurrentToken(t: Byte, pos: Int): Boolean = {
     if (pos == 0) illegalTokenOperation()
