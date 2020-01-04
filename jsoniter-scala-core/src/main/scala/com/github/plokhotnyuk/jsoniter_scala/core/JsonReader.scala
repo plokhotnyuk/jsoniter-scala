@@ -562,18 +562,18 @@ final class JsonReader private[jsoniter_scala](
     if (default != null && isCurrentToken('n', head)) parseNullOrError(default, msg, head)
     else decodeError(msg)
 
-  def readNullOrTokenError[@sp A](default: A, b: Byte): A =
-    if (default != null && isCurrentToken('n', head)) parseNullOrTokenError(default, b, head)
-    else if (default != null) tokenOrNullError(b)
-    else tokenError(b)
+  def readNullOrTokenError[@sp A](default: A, t: Byte): A =
+    if (default != null && isCurrentToken('n', head)) parseNullOrTokenError(default, t, head)
+    else if (default != null) tokenOrNullError(t)
+    else tokenError(t)
 
   def nextByte(): Byte = nextByte(head)
 
   def nextToken(): Byte = nextToken(head)
 
-  def isNextToken(b: Byte): Boolean = isNextToken(b, head)
+  def isNextToken(t: Byte): Boolean = isNextToken(t, head)
 
-  def isCurrentToken(b: Byte): Boolean = isCurrentToken(b, head)
+  def isCurrentToken(t: Byte): Boolean = isCurrentToken(t, head)
 
   def rollbackToken(): Unit = {
     val pos = head
@@ -757,32 +757,32 @@ final class JsonReader private[jsoniter_scala](
     pos != tail
   }
 
-  private[this] def tokenOrDigitError(b: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokenOrDigitError(t: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
-    i = appendChar(b.toChar, i)
+    i = appendChar(t.toChar, i)
     i = appendString("' or digit", i)
     decodeError(i, pos, null)
   }
 
-  private[this] def tokensError(b1: Byte, b2: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokensError(t1: Byte, t2: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
-    i = appendChar(b1.toChar, i)
+    i = appendChar(t1.toChar, i)
     i = appendString("' or '", i)
-    i = appendChar(b2.toChar, i)
+    i = appendChar(t2.toChar, i)
     i = appendChar('\'', i)
     decodeError(i, pos, null)
   }
 
-  private[this] def tokenOrNullError(b: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokenOrNullError(t: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
-    i = appendChar(b.toChar, i)
+    i = appendChar(t.toChar, i)
     i = appendString("' or null", i)
     decodeError(i, pos, null)
   }
 
-  private[this] def tokenError(b: Byte, pos: Int = head - 1): Nothing = {
+  private[this] def tokenError(t: Byte, pos: Int = head - 1): Nothing = {
     var i = appendString("expected '", 0)
-    i = appendChar(b.toChar, i)
+    i = appendChar(t.toChar, i)
     i = appendChar('\'', i)
     decodeError(i, pos, null)
   }
@@ -1006,18 +1006,18 @@ final class JsonReader private[jsoniter_scala](
     } else parseNullOrError(default, error, loadMoreOrError(pos))
 
   @tailrec
-  private[this] def parseNullOrTokenError[@sp A](default: A, b: Byte, pos: Int): A =
+  private[this] def parseNullOrTokenError[@sp A](default: A, t: Byte, pos: Int): A =
     if (pos + 2 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
       val b2 = buf(pos + 1)
       val b3 = buf(pos + 2)
-      if (b1 != 'u') tokenOrNullError(b, pos)
-      if (b2 != 'l') tokenOrNullError(b, pos + 1)
-      if (b3 != 'l') tokenOrNullError(b, pos + 2)
+      if (b1 != 'u') tokenOrNullError(t, pos)
+      if (b2 != 'l') tokenOrNullError(t, pos + 1)
+      if (b3 != 'l') tokenOrNullError(t, pos + 2)
       head = pos + 3
       default
-    } else parseNullOrTokenError(default, b, loadMoreOrError(pos))
+    } else parseNullOrTokenError(default, t, loadMoreOrError(pos))
 
   private[this] def appendChar(ch: Char, i: Int): Int = {
     if (i >= charBuf.length) growCharBuf(i + 1)
