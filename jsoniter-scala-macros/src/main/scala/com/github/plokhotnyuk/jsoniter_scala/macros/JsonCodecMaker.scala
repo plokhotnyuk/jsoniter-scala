@@ -742,6 +742,24 @@ object JsonCodecMaker {
             }
             out.writeArrayEnd()"""
 
+      def genWriteMapScala213(x: Tree, writeKey: Tree, writeVal: Tree): Tree =
+        q"""out.writeObjectStart()
+            $x.foreachEntry { (k, v) =>
+              ..$writeKey
+              ..$writeVal
+            }
+            out.writeObjectEnd()"""
+
+      def genWriteMapAsArrayScala213(x: Tree, writeKey: Tree, writeVal: Tree): Tree =
+        q"""out.writeArrayStart()
+            $x.foreachEntry { (k, v) =>
+              out.writeArrayStart()
+              ..$writeKey
+              ..$writeVal
+              out.writeArrayEnd()
+            }
+            out.writeArrayEnd()"""
+
       def cannotFindKeyCodecError(tpe: Type): Nothing =
         fail(s"No implicit '${typeOf[JsonKeyCodec[_]]}' defined for '$tpe'.")
 
@@ -1523,20 +1541,37 @@ object JsonCodecMaker {
               }"""
         } else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[mutable.LongMap[_]] ||
             tpe <:< typeOf[immutable.LongMap[_]]) withEncoderFor(methodKey, m) {
-          val writeVal2 = genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified)
-          if (cfg.mapAsArray) {
-            val writeVal1 =
-              if (isStringified) q"out.writeValAsString(kv._1)"
-              else q"out.writeVal(kv._1)"
-            genWriteMapAsArray(q"x", writeVal1, writeVal2)
-          } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
+          if (isScala213) {
+            val writeVal2 = genWriteVal(q"v", typeArg1(tpe) :: types, isStringified)
+            if (cfg.mapAsArray) {
+              val writeVal1 =
+                if (isStringified) q"out.writeValAsString(k)"
+                else q"out.writeVal(k)"
+              genWriteMapAsArrayScala213(q"x", writeVal1, writeVal2)
+            } else genWriteMapScala213(q"x", q"out.writeKey(k)", writeVal2)
+          } else {
+            val writeVal2 = genWriteVal(q"kv._2", typeArg1(tpe) :: types, isStringified)
+            if (cfg.mapAsArray) {
+              val writeVal1 =
+                if (isStringified) q"out.writeValAsString(kv._1)"
+                else q"out.writeVal(kv._1)"
+              genWriteMapAsArray(q"x", writeVal1, writeVal2)
+            } else genWriteMap(q"x", q"out.writeKey(kv._1)", writeVal2)
+          }
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withEncoderFor(methodKey, m) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val writeVal2 = genWriteVal(q"kv._2", tpe2 :: types, isStringified)
-          if (cfg.mapAsArray) {
-            genWriteMapAsArray(q"x", genWriteVal(q"kv._1", tpe1 :: types, isStringified), writeVal2)
-          } else genWriteMap(q"x", genWriteKey(q"kv._1", tpe1 :: types), writeVal2)
+          if (isScala213) {
+            val writeVal2 = genWriteVal(q"v", tpe2 :: types, isStringified)
+            if (cfg.mapAsArray) {
+              genWriteMapAsArrayScala213(q"x", genWriteVal(q"k", tpe1 :: types, isStringified), writeVal2)
+            } else genWriteMapScala213(q"x", genWriteKey(q"k", tpe1 :: types), writeVal2)
+          } else {
+            val writeVal2 = genWriteVal(q"kv._2", tpe2 :: types, isStringified)
+            if (cfg.mapAsArray) {
+              genWriteMapAsArray(q"x", genWriteVal(q"kv._1", tpe1 :: types, isStringified), writeVal2)
+            } else genWriteMap(q"x", genWriteKey(q"kv._1", tpe1 :: types), writeVal2)
+          }
         } else if (tpe <:< typeOf[BitSet]) withEncoderFor(methodKey, m) {
           genWriteArray(q"x",
             if (isStringified) q"out.writeValAsString(x)"
