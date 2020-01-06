@@ -1690,14 +1690,12 @@ object JsonCodecMaker {
     i != len
   }
 
-  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] = {
-    val m = mutable.LinkedHashMap.empty[K, collection.Seq[A]].withDefault(_ => new ArrayBuffer[A])
-    xs.foreach { x =>
+  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] =
+    xs.foldLeft(mutable.LinkedHashMap.empty[K, ArrayBuffer[A]]) { (m, x) =>
       val k = f(x)
-      m(k) = m(k) :+ x
-    }
-    m.toSeq
-  }
+      m.getOrElseUpdate(k, new ArrayBuffer[A]) += x
+      m
+    }.toSeq
 
   private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] =
     xs.filter {
