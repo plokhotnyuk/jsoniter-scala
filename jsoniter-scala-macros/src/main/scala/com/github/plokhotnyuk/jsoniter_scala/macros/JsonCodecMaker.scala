@@ -1223,19 +1223,20 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${collectionCompanion(tpe)}.empty[$tpe1,$tpe2]")}"
+          val newBuilder = q"var x = ${collectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2]"
           val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2 :: types), isStringified)
           if (cfg.mapAsArray) {
             val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)
-            genReadMapAsArray(newBuilder,
-              if (tpe <:< typeOf[Map[_, _]]) {
-                q"x = x.updated($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
-              } else q"x = x + (($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))")
+            val readKV =
+              if (isScala213) q"x.addOne($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
+              else q"x += (($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
+            genReadMapAsArray(newBuilder, readKV,q"x.result()")
           } else {
             val readKey = genReadKey(tpe1 :: types)
-            genReadMap(newBuilder,
-              if (tpe <:< typeOf[Map[_, _]]) q"x = x.updated($readKey, $readVal2)"
-              else q"x = x + (($readKey, $readVal2))")
+            val readKV =
+              if (isScala213) q"x.addOne($readKey, $readVal2)"
+              else q"x += (($readKey, $readVal2))"
+            genReadMap(newBuilder, readKV,q"x.result()")
           }
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
