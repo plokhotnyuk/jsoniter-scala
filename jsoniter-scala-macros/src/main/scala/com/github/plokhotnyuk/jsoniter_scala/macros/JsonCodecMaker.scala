@@ -1228,13 +1228,13 @@ object JsonCodecMaker {
           if (cfg.mapAsArray) {
             val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)
             val readKV =
-              if (isScala213) q"x.addOne($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })"
+              if (isScala213) q"x.addOne(($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
               else q"x += (($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
             genReadMapAsArray(newBuilder, readKV,q"x.result()")
           } else {
             val readKey = genReadKey(tpe1 :: types)
             val readKV =
-              if (isScala213) q"x.addOne($readKey, $readVal2)"
+              if (isScala213) q"x.addOne(($readKey, $readVal2))"
               else q"x += (($readKey, $readVal2))"
             genReadMap(newBuilder, readKV,q"x.result()")
           }
