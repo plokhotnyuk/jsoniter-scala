@@ -16,7 +16,7 @@ performance of Jsoniter Scala with [Borer](https://github.com/sirthias/borer), [
 [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), [DSL-JSON](https://github.com/ngs-doo/dsl-json)
 and [Jsoniter Java](https://github.com/json-iterator/java) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
-latest versions of Amazon Corretto 8/11, [OpenJDK 13](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+latest versions of Amazon Corretto 8/11, [OpenJDK 15 (early-access build)](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
 and GraalVM CE/EE for Java 8/11
 
 ## Acknowledgments
@@ -32,12 +32,12 @@ Other Scala macros features were peeped in
 
 ## Goals
 
-1. **Safety**: validate JSON format, UTF-8 encoding of strings, and mapped values safely with the fail-fast approach and 
-clear reporting, provide configurable limits for suboptimal data structures with safe defaults to be resilient for DoS 
-attacks, generate codecs that create instances of a _fixed_ set of classes during parsing to avoid RCE attacks
-2. **Correctness**: parse and serialize numbers without loosing of precision doing half even rounding for too long JSON
-numbers when they bounded to floats or doubles, do not replace illegally encoded characters of string values by 
-placeholder characters
+1. **Safety**: validate parsed values safely with the fail-fast approach and clear reporting, provide configurable 
+limits for suboptimal data structures with safe defaults to be resilient for DoS attacks, generate codecs that create
+instances of a _fixed_ set of classes during parsing to avoid RCE attacks
+2. **Correctness**: support the latest JSON format (RFC-8259), parse and serialize numbers without loosing of precision
+doing half even rounding for too long JSON numbers when they bounded to floats or doubles, do not replace illegally 
+encoded characters of string values by placeholder characters
 3. **Speed**: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back, do it 
 crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
 copying
