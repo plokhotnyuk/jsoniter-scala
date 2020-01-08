@@ -751,7 +751,7 @@ final class JsonReader private[jsoniter_scala](
       pos < tail
     }) && {
       val b = buf(pos)
-      b == ' ' || b == '\n' || b == '\t' || b == '\r'
+      b == ' ' || b == '\n' || (b | 0x4) == '\r'
     }) pos += 1
     head = pos
     pos != tail
@@ -821,7 +821,7 @@ final class JsonReader private[jsoniter_scala](
   private[this] def nextToken(pos: Int): Byte =
     if (pos < tail) {
       val b = buf(pos)
-      if (b == ' ' || b == '\n' || b == '\t' || b == '\r') nextToken(pos + 1)
+      if (b == ' ' || b == '\n' || (b | 0x4) == '\r') nextToken(pos + 1)
       else {
         head = pos + 1
         b
@@ -833,7 +833,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       head = pos + 1
-      if (b != t && ((b != ' ' && b != '\n' && b != '\t' && b != '\r') || nextToken(pos + 1) != t)) tokenError(t, head - 1)
+      if (b != t && ((b != ' ' && b != '\n' && (b | 0x4) != '\r') || nextToken(pos + 1) != t)) tokenError(t, head - 1)
     } else nextTokenOrError(t, loadMoreOrError(pos))
 
   @tailrec
@@ -841,7 +841,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos < tail) {
       val b = buf(pos)
       head = pos + 1
-      b == t || ((b == ' ' || b == '\n' || b == '\t' || b == '\r') && nextToken(pos + 1) == t)
+      b == t || ((b == ' ' || b == '\n' || (b | 0x4) == '\r') && nextToken(pos + 1) == t)
     } else isNextToken(t, loadMoreOrError(pos))
 
   private[this] def isCurrentToken(t: Byte, pos: Int): Boolean = {
@@ -1083,7 +1083,7 @@ final class JsonReader private[jsoniter_scala](
           head = pos + 5
           false
         } else parseBoolean(isToken, loadMoreOrError(pos))
-      } else if (isToken && (b1 == ' ' || b1 == '\n' || b1 == '\t' || b1 == '\r')) parseBoolean(isToken, pos + 1)
+      } else if (isToken && (b1 == ' ' || b1 == '\n' || (b1 | 0x4) == '\r')) parseBoolean(isToken, pos + 1)
       else booleanError(pos)
     } else parseBoolean(isToken, loadMoreOrError(pos))
 
