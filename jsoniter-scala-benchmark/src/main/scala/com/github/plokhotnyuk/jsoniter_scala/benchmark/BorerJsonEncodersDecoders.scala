@@ -12,7 +12,7 @@ import io.bullet.borer.derivation.MapBasedCodecs._
 import io.bullet.borer.encodings.Base16
 
 object BorerJsonEncodersDecoders {
-  val decodingConfig = DecodingConfig(
+  val decodingConfig: DecodingConfig = DecodingConfig(
     maxNumberMantissaDigits = 200,
     maxNumberAbsExponent = 999,
     readDecimalNumbersOnlyAsNumberStrings = true)
@@ -34,14 +34,14 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(anyRefsEnc: Encoder[AnyRefs], anyRefsDec: Decoder[AnyRefs]) = deriveCodec[AnyRefs]
   implicit val Codec(anyValsEnc: Encoder[AnyVals], anyValsDec: Decoder[AnyVals]) = {
-    implicit val c1: Codec[ByteVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c2: Codec[ShortVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c3: Codec[IntVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c4: Codec[LongVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c5: Codec[BooleanVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c6: Codec[CharVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c7: Codec[DoubleVal] = ArrayBasedCodecs.deriveUnaryCodec
-    implicit val c8: Codec[FloatVal] = ArrayBasedCodecs.deriveUnaryCodec
+    implicit val c1: Codec[ByteVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c2: Codec[ShortVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c3: Codec[IntVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c4: Codec[LongVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c5: Codec[BooleanVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c6: Codec[CharVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c7: Codec[DoubleVal] = ArrayBasedCodecs.deriveCodec
+    implicit val c8: Codec[FloatVal] = ArrayBasedCodecs.deriveCodec
     deriveCodec[AnyVals]
   }
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
