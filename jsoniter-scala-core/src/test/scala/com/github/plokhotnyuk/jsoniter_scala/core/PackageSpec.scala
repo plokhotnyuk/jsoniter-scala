@@ -215,7 +215,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
 
     "scan JSON values from the provided input stream" in {
       var users: Seq[User] = Seq.empty
-      scanJsonValuesFromStream(inputStream) { (u: User) =>
+      scanJsonValuesFromStream(inputStream) { u: User =>
         users = users :+ u
         true
       }(codec)
@@ -223,7 +223,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "scanning of JSON values can be interrupted by returning `false` from the consumer" in {
       var users: Seq[User] = Seq.empty
-      scanJsonValuesFromStream(inputStream) { (u: User) =>
+      scanJsonValuesFromStream(inputStream) { u: User =>
         users = users :+ u
         false
       }(codec)
@@ -242,7 +242,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
 
     "scan values of JSON array from the provided input stream" in {
       var users: Seq[User] = Seq.empty
-      scanJsonArrayFromStream(inputStream) { (u: User) =>
+      scanJsonArrayFromStream(inputStream) { u: User =>
         users = users :+ u
         true
       }(codec)
@@ -250,7 +250,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "scanning of JSON array values can be interrupted by returning `false` from the consumer" in {
       var users: Seq[User] = Seq.empty
-      scanJsonArrayFromStream(inputStream) { (u: User) =>
+      scanJsonArrayFromStream(inputStream) { u: User =>
         users = users :+ u
         false
       }(codec)
@@ -258,7 +258,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "scan null value from the provided input stream" in {
       var users: Seq[User] = Seq.empty
-      scanJsonArrayFromStream(new ByteArrayInputStream("null".getBytes("UTF-8"))) { (u: User) =>
+      scanJsonArrayFromStream(new ByteArrayInputStream("null".getBytes("UTF-8"))) { u: User =>
         users = users :+ u
         true
       }(codec)
@@ -281,14 +281,14 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "throw a parse exception in case of JSON array is not closed properly" in {
       assert(intercept[JsonReaderException] {
-        scanJsonArrayFromStream(new ByteArrayInputStream("""[{"name":"x"}y""".getBytes("UTF-8"))) { (_: User) =>
+        scanJsonArrayFromStream(new ByteArrayInputStream("""[{"name":"x"}y""".getBytes("UTF-8"))) { _: User =>
           true
         }(codec)
       }.getMessage.contains("expected ']' or ',', offset: 0x0000000d"))
     }
     "throw a parse exception in case of input isn't JSON array or null" in {
       assert(intercept[JsonReaderException] {
-        scanJsonArrayFromStream(new ByteArrayInputStream("""{}""".getBytes("UTF-8"))) { (_: User) =>
+        scanJsonArrayFromStream(new ByteArrayInputStream("""{}""".getBytes("UTF-8"))) { _: User =>
           true
         }(codec)
       }.getMessage.contains("expected '[' or null, offset: 0x00000000"))

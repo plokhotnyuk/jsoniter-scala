@@ -36,12 +36,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.toHashCode" should {
     "produce the same hash value for strings as JDK by default" in {
-      forAll(minSuccessful(10000)) { (x: String) =>
+      forAll(minSuccessful(10000)) { x: String =>
         assert(JsonReader.toHashCode(x.toCharArray, x.length) == x.hashCode)
       }
     }
     "produce 0 hash value when the provided 'len' isn't greater than 0" in {
-      forAll(minSuccessful(10000)) { (x: Int) =>
+      forAll(minSuccessful(10000)) { x: Int =>
         whenever(x <= 0) {
           assert(JsonReader.toHashCode("VVV".toCharArray, x) == 0)
         }
@@ -1254,7 +1254,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check(s"P${x}M${y}D", Period.of(0, x, y))
         check(s"P${x}Y${y}D", Period.of(x, 0, y))
       }
-      forAll(Gen.choose(-1000000, 1000000), minSuccessful(10000)) { (w: Int) =>
+      forAll(Gen.choose(-1000000, 1000000), minSuccessful(10000)) { w: Int =>
         check(s"P${w}W", Period.of(0, 0, w * 7))
         check(s"P1Y${w}W", Period.of(1, 0, w * 7))
         check(s"P1Y1M${w}W", Period.of(1, 1, w * 7))
@@ -1344,7 +1344,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check("-999999999", Year.of(Year.MIN_VALUE))
       check("+999999999", Year.of(Year.MAX_VALUE))
-      forAll(genYear, minSuccessful(10000)) { (x: Year) =>
+      forAll(genYear, minSuccessful(10000)) { x: Year =>
         check(x.format(yearFormatter), x)
       }
     }
@@ -1394,7 +1394,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check("+999999999-12", YearMonth.of(Year.MAX_VALUE, 12))
       check("-999999999-01", YearMonth.of(Year.MIN_VALUE, 1))
-      forAll(genYearMonth, minSuccessful(10000)) { (x: YearMonth) =>
+      forAll(genYearMonth, minSuccessful(10000)) { x: YearMonth =>
         val s = x.toString
         val fixed =
           if (x.getYear < 0 && !s.startsWith("-")) s"-$s"
@@ -1751,7 +1751,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readString("VVV") shouldBe "VVV"
     }
     "parse string with Unicode chars which are not escaped and are non-surrogate" in {
-      forAll(minSuccessful(10000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { s: String =>
         whenever(s.forall(ch => ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch))) {
           check(s)
         }
@@ -1768,7 +1768,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkEscaped("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\")
     }
     "parse string with hexadecimal escaped chars which are non-surrogate" in {
-      forAll(minSuccessful(10000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { s: String =>
         whenever(s.forall(ch => !Character.isSurrogate(ch))) {
           checkEscaped(s.map((ch: Char) => toHexEscaped(ch)).mkString, s)
         }
@@ -1783,7 +1783,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for control chars that must be escaped" in {
-      forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
+      forAll(genControlChar, minSuccessful(1000)) { ch: Char =>
         checkError(s""""${ch.toString}"""", "unescaped control character, offset: 0x00000001")
       }
     }
@@ -1895,7 +1895,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse Unicode char that is not escaped and is non-surrogate from string with length == 1" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { ch: Char =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           check(ch)
         }
@@ -1911,14 +1911,14 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkEscaped("""\\""", '\\')
     }
     "parse hexadecimal escaped chars which are non-surrogate" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { ch: Char =>
         whenever(!Character.isSurrogate(ch)) {
           checkEscaped(toHexEscaped(ch), ch)
         }
       }
     }
     "throw parsing exception for string with length > 1" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { ch: Char =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           checkError((s""""$ch$ch""""), "expected '\"'") // offset can differs for non-ASCII characters
         }
@@ -1930,7 +1930,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         assert(intercept[JsonReaderException](reader2(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
-      forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
+      forAll(genControlChar, minSuccessful(1000)) { ch: Char =>
         checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
@@ -2010,7 +2010,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid byte values" in {
-      forAll(minSuccessful(1000)) { (n: Byte) =>
+      forAll(minSuccessful(1000)) { n: Byte =>
         check(n)
       }
     }
@@ -2061,7 +2061,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid short values" in {
-      forAll(minSuccessful(10000)) { (n: Short) =>
+      forAll(minSuccessful(10000)) { n: Short =>
         check(n)
       }
     }
@@ -2112,7 +2112,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid int values" in {
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { n: Int =>
         check(n)
       }
     }
@@ -2167,7 +2167,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid long values" in {
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         check(n)
       }
     }
@@ -2253,17 +2253,17 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkFloat("1.000000178813934326171875")
       checkFloat("1.00000017881393432617187501")
       checkFloat("36028797018963967") // 2^n - 1 integer regression
-      forAll(minSuccessful(10000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { n: Float =>
         checkFloat(n.toString)
       }
-      forAll(minSuccessful(10000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { n: Double =>
         checkFloat(n.toString)
       }
-      //(1 to Int.MaxValue).par.foreach { n =>
+      //(1 to Int.MaxValue).par.foreach { n: Int =>
       //  val x = java.lang.Float.intBitsToFloat(n)
       //  if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       //}
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { n: Int =>
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
       }
@@ -2278,10 +2278,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), minSuccessful(10000)) { (m: Long, e: Int) =>
         checkFloat(s"${m}e$e")
       }
-      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { n: BigInt =>
         checkFloat(n.toString)
       }
-      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { n: BigDecimal =>
         checkFloat(n.toString)
       }
     }
@@ -2316,6 +2316,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(".1", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
@@ -2387,26 +2388,26 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkDouble("9223372036854776833") // Round-up, above halfway
       checkDouble("11417981541647680316116887983825362587765178369")
       checkDouble("36028797018963967") // 2^n - 1 integer regression
-      forAll(minSuccessful(10000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { n: Double =>
         checkDouble(n.toString)
       }
-      forAll(minSuccessful(10000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { n: Float =>
         checkDouble(n.toString)
       }
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
       }
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         checkDouble(n.toString)
       }
       forAll(Gen.choose(0L, (1L << 53) - 1), Gen.choose(-22, 37), minSuccessful(10000)) { (m: Long, e: Int) =>
         checkDouble(s"${m}e$e")
       }
-      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { n: BigInt =>
         checkDouble(n.toString)
       }
-      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { n: BigDecimal =>
         checkDouble(n.toString)
       }
     }
@@ -2441,6 +2442,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(".1", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
@@ -2489,7 +2491,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid number values" in {
-      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { n: BigInt =>
         check(n)
       }
     }
@@ -2566,7 +2568,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "parse valid number values with scale less than specified maximum" in {
-      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { n: BigDecimal =>
         check(n.toString, MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue)
       }
     }
@@ -2633,6 +2635,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(" ", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-", "unexpected end of input, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("$", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
+      checkError(".1", "illegal number, offset: 0x00000000", "illegal number, offset: 0x00000001")
       checkError(" $", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000001")
       checkError("-$", "illegal number, offset: 0x00000001", "illegal number, offset: 0x00000002")
       checkError("0e$", "illegal number, offset: 0x00000002", "illegal number, offset: 0x00000003")
@@ -2666,7 +2669,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         jsonReader.nextToken().toChar shouldBe s2.charAt(0)
       }
 
-      forAll(Gen.size, minSuccessful(10000)) { (n: Int) =>
+      forAll(Gen.size, minSuccessful(10000)) { n: Int =>
         check(n, "123456")(_.readBigInt(null))
         check(n, "\"UTC\"")(_.readZoneId(null))
         check(n, "[true]")(_.readRawValAsBytes())

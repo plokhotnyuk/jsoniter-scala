@@ -31,7 +31,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.isNonEscapedAscii" should {
     "return false for all escaped ASCII or non-ASCII chars" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { ch: Char =>
         JsonWriter.isNonEscapedAscii(ch) shouldBe !isEscapedAscii(ch) && ch < 128
       }
     }
@@ -332,7 +332,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
 
       check("Oó!")
-      forAll(minSuccessful(10000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { s: String =>
         whenever(s.forall(ch => !Character.isSurrogate(ch) && !isEscapedAscii(ch))) {
           check(s)
         }
@@ -357,7 +357,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
       }
 
-      forAll(minSuccessful(10000)) { (s: String) =>
+      forAll(minSuccessful(10000)) { s: String =>
         whenever(s.forall(ch => isEscapedAscii(ch) || ch >= 128)) {
           check(s)
         }
@@ -403,7 +403,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for char" should {
     "write string with Unicode chars which are non-surrogate or should not be escaped" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { ch: Char =>
         whenever(!Character.isSurrogate(ch) && !isEscapedAscii(ch)) {
           withWriter(_.writeVal(ch)) shouldBe s""""$ch""""
           withWriter(_.writeKey(ch)) shouldBe s""""$ch":"""
@@ -411,11 +411,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "write string with chars that should be escaped" in {
-      forAll(genEscapedAsciiChar, minSuccessful(10000)) { (ch: Char) =>
+      forAll(genEscapedAsciiChar, minSuccessful(10000)) { ch: Char =>
         withWriter(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
         withWriter(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
       }
-      forAll(genNonAsciiChar, minSuccessful(10000)) { (ch: Char) =>
+      forAll(genNonAsciiChar, minSuccessful(10000)) { ch: Char =>
         whenever(!Character.isSurrogate(ch)) {
           withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
           withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
@@ -423,7 +423,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "write string with escaped Unicode chars if it is specified by provided writer config" in {
-      forAll(minSuccessful(10000)) { (ch: Char) =>
+      forAll(minSuccessful(10000)) { ch: Char =>
         whenever(isEscapedAscii(ch) || ch >= 128) {
           withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
           withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(ch)) shouldBe s""""${toEscaped(ch)}":"""
@@ -441,7 +441,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for byte" should {
     "write any short values" in {
-      forAll(minSuccessful(1000)) { (n: Byte) =>
+      forAll(minSuccessful(1000)) { n: Byte =>
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
@@ -451,7 +451,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for short" should {
     "write any short values" in {
-      forAll(minSuccessful(10000)) { (n: Short) =>
+      forAll(minSuccessful(10000)) { n: Short =>
         val s = n.toString
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
@@ -468,7 +468,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { n: Int =>
         check(n)
       }
     }
@@ -482,10 +482,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      forAll(minSuccessful(10000)) { n: Int =>
         check(n.toLong)
       }
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         check(n)
       }
     }
@@ -550,16 +550,16 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(1.00014165E-36f)
       check(200f)
       check(3.3554432E7f)
-      //(1 to 16777216).par.foreach { n =>
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      //(1 to 16777216).par.foreach { n: Int =>
+      forAll(minSuccessful(10000)) { n: Int =>
         check(n.toFloat)
       }
-      //(1 to Int.MaxValue).par.foreach { n =>
-      forAll(minSuccessful(10000)) { (n: Int) =>
+      //(1 to Int.MaxValue).par.foreach { n: Int =>
+      forAll(minSuccessful(10000)) { n: Int =>
         val x = java.lang.Float.intBitsToFloat(n)
         if (java.lang.Float.isFinite(x)) check(x)
       }
-      forAll(minSuccessful(10000)) { (n: Float) =>
+      forAll(minSuccessful(10000)) { n: Float =>
         if (java.lang.Float.isFinite(n)) check(n)
       }
     }
@@ -585,7 +585,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(0.0063476562f)
     }
     "throw i/o exception on non-finite numbers" in {
-      forAll(genNonFiniteFloat) { (n: Float) =>
+      forAll(genNonFiniteFloat) { n: Float =>
         assert(intercept[JsonWriterException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
         assert(intercept[JsonWriterException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
         assert(intercept[JsonWriterException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
@@ -632,14 +632,14 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(1.9430376160308388E16)
       check(-6.9741824662760956E19)
       check(4.3816050601147837E18)
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         check(n.toDouble)
       }
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         val x = java.lang.Double.longBitsToDouble(n)
         if (java.lang.Double.isFinite(x)) check(x)
       }
-      forAll(minSuccessful(10000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { n: Double =>
         if (java.lang.Double.isFinite(n)) check(n)
       }
     }
@@ -665,7 +665,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(5.724294694832342E14)
     }
     "throw i/o exception on non-finite numbers" in {
-      forAll(genNonFiniteDouble) { (n: Double) =>
+      forAll(genNonFiniteDouble) { n: Double =>
         assert(intercept[JsonWriterException](withWriter(_.writeVal(n))).getMessage.contains("illegal number"))
         assert(intercept[JsonWriterException](withWriter(_.writeValAsString(n))).getMessage.contains("illegal number"))
         assert(intercept[JsonWriterException](withWriter(_.writeKey(n))).getMessage.contains("illegal number"))
@@ -686,10 +686,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(10000)) { (n: Long) =>
+      forAll(minSuccessful(10000)) { n: Long =>
         check(BigInt(n))
       }
-      forAll(genBigInt, minSuccessful(10000)) { (n: BigInt) =>
+      forAll(genBigInt, minSuccessful(10000)) { n: BigInt =>
         check(n)
       }
     }
@@ -708,10 +708,10 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      forAll(minSuccessful(10000)) { (n: Double) =>
+      forAll(minSuccessful(10000)) { n: Double =>
         check(BigDecimal(n))
       }
-      forAll(genBigDecimal, minSuccessful(10000)) { (n: BigDecimal) =>
+      forAll(genBigDecimal, minSuccessful(10000)) { n: BigDecimal =>
         check(n)
       }
     }
