@@ -9,7 +9,8 @@ class ArrayOfLocalTimesWritingSpec extends BenchmarkSpecBase {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
-      toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
+      //FIXME DSL-JSON sometime throws: java.lang.ArrayIndexOutOfBoundsException: Index 13638 out of bounds for length 13638
+      //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
