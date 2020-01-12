@@ -2639,8 +2639,8 @@ final class JsonReader private[jsoniter_scala](
     var len = charBuf.length
     var pos = head
     var buf = this.buf
-    var i, p = 0
-    while (p >= 0 && (pos + 3 < tail || {
+    var i, bits = 0
+    while (bits >= 0 && (pos + 3 < tail || {
       pos = loadMore(pos)
       buf = this.buf
       pos + 3 < tail
@@ -2651,14 +2651,14 @@ final class JsonReader private[jsoniter_scala](
       }
       val posLim = Math.min(tail - 3, ((len - i) << 2) + pos)
       while (pos < posLim && {
-        p =
+        bits =
           ns(buf(pos) & 0xFF) << 12 |
           ns(buf(pos + 1) & 0xFF) << 8 |
           ns(buf(pos + 2) & 0xFF) << 4 |
           ns(buf(pos + 3) & 0xFF)
-        charBuf(i) = p.toChar
-        p >= 0
+        bits >= 0
       }) {
+        charBuf(i) = bits.toChar
         i += 1
         pos += 4
       }
@@ -2667,11 +2667,11 @@ final class JsonReader private[jsoniter_scala](
     val b0 = nextByte(pos)
     val bs =
       if (b0 != '"') {
-        p = ns(b0 & 0xFF).toInt
-        if (p < 0) decodeError("expected '\"' or hex digit")
+        bits = ns(b0 & 0xFF).toInt
+        if (bits < 0) decodeError("expected '\"' or hex digit")
         val b1 = nextByte(head)
-        p = (p << 4) | ns(b1 & 0xFF)
-        if (p < 0) decodeError("expected hex digit")
+        bits = (bits << 4) | ns(b1 & 0xFF)
+        if (bits < 0) decodeError("expected hex digit")
         val b2 = nextByte(head)
         if (b2 != '"') {
           if (ns(b2 & 0xFF) < 0) decodeError("expected '\"' or hex digit")
@@ -2679,7 +2679,7 @@ final class JsonReader private[jsoniter_scala](
           decodeError("expected hex digit")
         }
         val bs = new Array[Byte](bLen + 1)
-        bs(bLen) = p.toByte
+        bs(bLen) = bits.toByte
         bs
       } else new Array[Byte](bLen)
     i = 0
@@ -2699,8 +2699,8 @@ final class JsonReader private[jsoniter_scala](
     var lenM1 = charBuf.length - 1
     var pos = head
     var buf = this.buf
-    var i, p = 0
-    while (p >= 0 && (pos + 3 < tail || {
+    var i, bits = 0
+    while (bits >= 0 && (pos + 3 < tail || {
       pos = loadMore(pos)
       buf = this.buf
       pos + 3 < tail
@@ -2711,15 +2711,15 @@ final class JsonReader private[jsoniter_scala](
       }
       val posLim = Math.min(tail - 3, ((lenM1 - i) << 1) + pos)
       while (pos < posLim && {
-        p =
+        bits =
           ds(buf(pos) & 0xFF) << 18 |
           ds(buf(pos + 1) & 0xFF) << 12 |
           ds(buf(pos + 2) & 0xFF) << 6 |
           ds(buf(pos + 3) & 0xFF)
-        charBuf(i) = (p >> 8).toChar
-        charBuf(i + 1) = p.toChar
-        p >= 0
+        bits >= 0
       }) {
+        charBuf(i) = (bits >> 8).toChar
+        charBuf(i + 1) = bits.toChar
         i += 2
         pos += 4
       }
@@ -2728,11 +2728,11 @@ final class JsonReader private[jsoniter_scala](
     val b0 = nextByte(pos)
     val bs =
       if (b0 != '"') {
-        p = ds(b0 & 0xFF).toInt
-        if (p < 0) decodeError("expected '\"' or base64 digit")
+        bits = ds(b0 & 0xFF).toInt
+        if (bits < 0) decodeError("expected '\"' or base64 digit")
         val b1 = nextByte(head)
-        p = (p << 6) | ds(b1 & 0xFF)
-        if (p < 0) decodeError("expected base64 digit")
+        bits = (bits << 6) | ds(b1 & 0xFF)
+        if (bits < 0) decodeError("expected base64 digit")
         val b2 = nextByte(head)
         if (b2 == '"' || b2 == '=') {
           if (b2 == '=') {
@@ -2740,17 +2740,17 @@ final class JsonReader private[jsoniter_scala](
             nextByteOrError('"', head)
           }
           val bs = new Array[Byte](bLen + 1)
-          bs(bLen) = (p >> 4).toByte
+          bs(bLen) = (bits >> 4).toByte
           bs
         } else {
-          p = (p << 6) | ds(b2 & 0xFF)
-          if (p < 0) decodeError("expected '\"' or '=' or base64 digit")
+          bits = (bits << 6) | ds(b2 & 0xFF)
+          if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
           val b3 = nextByte(head)
           if (b3 == '=') nextByteOrError('"', head)
           else if (b3 != '"') tokensError('"', '=')
           val bs = new Array[Byte](bLen + 2)
-          bs(bLen) = (p >> 10).toByte
-          bs(bLen + 1) = (p >> 2).toByte
+          bs(bLen) = (bits >> 10).toByte
+          bs(bLen + 1) = (bits >> 2).toByte
           bs
         }
       } else new Array[Byte](bLen)
