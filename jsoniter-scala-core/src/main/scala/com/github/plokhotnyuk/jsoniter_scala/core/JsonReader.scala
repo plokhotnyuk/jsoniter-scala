@@ -2659,8 +2659,8 @@ final class JsonReader private[jsoniter_scala](
         charBuf(i) = p.toChar
         p >= 0
       }) {
-        pos += 4
         i += 1
+        pos += 4
       }
     }
     val bLen = i << 1
@@ -2720,8 +2720,8 @@ final class JsonReader private[jsoniter_scala](
         charBuf(i + 1) = p.toChar
         p >= 0
       }) {
-        pos += 4
         i += 2
+        pos += 4
       }
     }
     val bLen = i + (i >> 1)
