@@ -9,6 +9,7 @@ class ArrayOfOffsetTimesReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
+      benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj

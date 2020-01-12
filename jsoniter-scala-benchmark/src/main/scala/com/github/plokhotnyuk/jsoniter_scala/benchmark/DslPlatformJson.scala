@@ -30,13 +30,18 @@ object DslPlatformJson {
   implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = codec[Array[BigInt]]
   implicit val (arrayOfBooleansEncoder, arrayOfBooleansDecoder) = codec[Array[Boolean]]
   implicit val (arrayOfDoublesEncoder, arrayOfDoublesDecoder) = codec[Array[Double]]
+  implicit val (arrayOfEnumADTsEncoder, arrayOfEnumADTsDecoder) = codec[Array[SuitADT]]
   implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = codec[Array[Float]]
   implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = codec[Array[Int]]
+/* FIXME: DSL-JSON throws java.lang.ArrayIndexOutOfBoundsException: 0
   implicit val (arrayOfJavaEnumsEncoder, arrayOfJavaEnumsDecoder) = codec[Array[Suit]]
+*/
   implicit val (arrayOfLocalDatesEncoder, arrayOfLocalDatesDecoder) = codec[Array[LocalDate]]
   implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = codec[Array[LocalDateTime]]
+  implicit val (arrayOfLocalTimesEncoder, arrayOfLocalTimesDecoder) = codec[Array[LocalTime]]
   implicit val (arrayOfLongsEncoder, arrayOfLongsDecoder) = codec[Array[Long]]
   implicit val (arrayOfOffsetDateTimesEncoder, arrayOfOffsetDateTimesDecoder) = codec[Array[OffsetDateTime]]
+  implicit val (arrayOfOffsetTimesEncoder, arrayOfOffsetTimesDecoder) = codec[Array[OffsetTime]]
   implicit val (arrayOfShortsEncoder, arrayOfShortsDecoder) = codec[Array[Short]]
   implicit val (arrayOfUUIDsEncoder, arrayOfUUIDsDecoder) = codec[Array[UUID]]
   implicit val (arrayOfZonedDateTimesEncoder, arrayOfZonedDateTimesDecoder) = codec[Array[ZonedDateTime]]

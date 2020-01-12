@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -27,10 +27,10 @@ class ArrayOfJavaEnumsWriting extends ArrayOfJavaEnumsBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
-
+/* FIXME: DSL-JSON throws java.lang.ArrayIndexOutOfBoundsException: 0
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
-
+*/
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

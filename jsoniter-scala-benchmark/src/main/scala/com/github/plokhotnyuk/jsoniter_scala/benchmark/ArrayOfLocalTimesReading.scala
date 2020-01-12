@@ -5,6 +5,7 @@ import java.time.LocalTime
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -21,6 +22,9 @@ class ArrayOfLocalTimesReading extends ArrayOfLocalTimesBenchmark {
 
   @Benchmark
   def circe(): Array[LocalTime] = decode[Array[LocalTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def dslJsonScala(): Array[LocalTime] = dslJsonDecode[Array[LocalTime]](jsonBytes)
 
   @Benchmark
   def jacksonScala(): Array[LocalTime] = jacksonMapper.readValue[Array[LocalTime]](jsonBytes)

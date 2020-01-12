@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-import java.time.LocalDateTime
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
@@ -25,7 +24,7 @@ class ArrayOfLocalDateTimesWriting extends ArrayOfLocalDateTimesBenchmark {
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def dslJsonScala(): Array[Byte] = dslJsonEncode[Array[LocalDateTime]](obj)
+  def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

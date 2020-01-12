@@ -5,6 +5,7 @@ import java.time._
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -22,6 +23,9 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
 
   @Benchmark
   def circe(): Array[OffsetTime] = decode[Array[OffsetTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def dslJsonScala(): Array[OffsetTime] = dslJsonDecode[Array[OffsetTime]](jsonBytes)
 
   @Benchmark
   def jacksonScala(): Array[OffsetTime] = jacksonMapper.readValue[Array[OffsetTime]](jsonBytes)
