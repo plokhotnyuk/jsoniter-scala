@@ -33,9 +33,7 @@ object DslPlatformJson {
   implicit val (arrayOfEnumADTsEncoder, arrayOfEnumADTsDecoder) = codec[Array[SuitADT]]
   implicit val (arrayOfFloatsEncoder, arrayOfFloatsDecoder) = codec[Array[Float]]
   implicit val (arrayOfIntsEncoder, arrayOfIntsDecoder) = codec[Array[Int]]
-/* FIXME: DSL-JSON throws java.lang.ArrayIndexOutOfBoundsException: 0
   implicit val (arrayOfJavaEnumsEncoder, arrayOfJavaEnumsDecoder) = codec[Array[Suit]]
-*/
   implicit val (arrayOfLocalDatesEncoder, arrayOfLocalDatesDecoder) = codec[Array[LocalDate]]
   implicit val (arrayOfLocalDateTimesEncoder, arrayOfLocalDateTimesDecoder) = codec[Array[LocalDateTime]]
   implicit val (arrayOfLocalTimesEncoder, arrayOfLocalTimesDecoder) = codec[Array[LocalTime]]
