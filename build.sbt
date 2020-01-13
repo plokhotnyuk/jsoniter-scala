@@ -18,7 +18,10 @@ lazy val commonSettings = Seq(
       url = url("https://twitter.com/aplokhotnyuk")
     )
   ),
-  resolvers += Resolver.sonatypeRepo("staging"),
+  resolvers ++= Seq(
+    Resolver.mavenLocal,
+    Resolver.sonatypeRepo("staging")
+  ),
   scalaVersion := "2.13.1",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
@@ -129,7 +132,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M4",
       "com.lihaoyi" %% "upickle" % "0.9.7",
-      "com.dslplatform" %% "dsl-json-scala" % "1.9.4",
+      "com.dslplatform" %% "dsl-json-scala" % "1.9.5",
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.26.0-GA", // required for Jsoniter Java
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.2",
