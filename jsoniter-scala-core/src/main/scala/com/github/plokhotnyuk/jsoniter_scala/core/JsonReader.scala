@@ -1265,13 +1265,13 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (isZeroFirst) leadingZeroError(pos - 1)
         if (posMant < 922337203685477580L) {
           posMant = posMant * 10 + (b - '0')
           digits += 1
         } else mantExp += 1
         pos += 1
       }
+      if (isZeroFirst && digits > 1) leadingZeroError(pos - digits)
       if (b == '.') {
         pos += 1
         mantExp += digits
@@ -1399,13 +1399,13 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        if (isZeroFirst) leadingZeroError(pos - 1)
         if (posMant < 922337203685477580L) {
           posMant = posMant * 10 + (b - '0')
           digits += 1
         } else mantExp += 1
         pos += 1
       }
+      if (isZeroFirst && digits > 1) leadingZeroError(pos - digits)
       if (b == '.') {
         pos += 1
         mantExp += digits
@@ -1590,6 +1590,7 @@ final class JsonReader private[jsoniter_scala](
       mark = newMark
       try {
         var digits = 1
+        var fracLen = 0
         while ((pos < tail || {
           pos = loadMore(pos)
           buf = this.buf
@@ -1598,12 +1599,11 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (isZeroFirst) leadingZeroError(pos - 1)
           digits += 1
           if (digits >= digitsLimit) digitsLimitError(pos)
           pos += 1
         }
-        var fracLen = 0
+        if (isZeroFirst && digits > 1) leadingZeroError(pos - digits)
         if (b == '.') {
           pos += 1
           val fracLenLimit = digitsLimit - digits
