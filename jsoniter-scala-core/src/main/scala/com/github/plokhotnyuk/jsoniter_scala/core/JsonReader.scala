@@ -1244,7 +1244,6 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var posMant: Long = b - '0'
-    val isZeroFirst = isToken && posMant == 0
     var posExp, mantExp = 0L
     var digits = 1
     var isNegExp = false
@@ -1257,21 +1256,31 @@ final class JsonReader private[jsoniter_scala](
       else oldMark
     mark = newMark
     try {
-      while ((pos < tail || {
-        pos = loadMore(pos)
-        buf = this.buf
-        pos < tail
-      }) && {
-        b = buf(pos)
-        b >= '0' && b <= '9'
-      }) {
-        if (posMant < 922337203685477580L) {
-          posMant = posMant * 10 + (b - '0')
-          digits += 1
-        } else mantExp += 1
-        pos += 1
+      if (isToken && posMant == 0) {
+        if ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) leadingZeroError(pos - 1)
+      } else {
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (posMant < 922337203685477580L) {
+            posMant = posMant * 10 + (b - '0')
+            digits += 1
+          } else mantExp += 1
+          pos += 1
+        }
       }
-      if (isZeroFirst && digits > 1) leadingZeroError(pos - digits)
       if (b == '.') {
         pos += 1
         mantExp += digits
@@ -1378,7 +1387,6 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var posMant: Long = b - '0'
-    val isZeroFirst = isToken && posMant == 0
     var posExp, mantExp = 0L
     var digits = 1
     var isNegExp = false
@@ -1391,21 +1399,31 @@ final class JsonReader private[jsoniter_scala](
       else oldMark
     mark = newMark
     try {
-      while ((pos < tail || {
-        pos = loadMore(pos)
-        buf = this.buf
-        pos < tail
-      }) && {
-        b = buf(pos)
-        b >= '0' && b <= '9'
-      }) {
-        if (posMant < 922337203685477580L) {
-          posMant = posMant * 10 + (b - '0')
-          digits += 1
-        } else mantExp += 1
-        pos += 1
+      if (isToken && posMant == 0) {
+        if ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) leadingZeroError(pos - 1)
+      } else {
+        while ((pos < tail || {
+          pos = loadMore(pos)
+          buf = this.buf
+          pos < tail
+        }) && {
+          b = buf(pos)
+          b >= '0' && b <= '9'
+        }) {
+          if (posMant < 922337203685477580L) {
+            posMant = posMant * 10 + (b - '0')
+            digits += 1
+          } else mantExp += 1
+          pos += 1
+        }
       }
-      if (isZeroFirst && digits > 1) leadingZeroError(pos - digits)
       if (b == '.') {
         pos += 1
         mantExp += digits
@@ -1579,7 +1597,6 @@ final class JsonReader private[jsoniter_scala](
       val isNeg = b == '-'
       if (isNeg) b = nextByte(head)
       if (b < '0' || b > '9') numberError()
-      val isZeroFirst = isToken && b == '0'
       var pos = head
       var buf = this.buf
       var from = pos - 1
@@ -1591,19 +1608,29 @@ final class JsonReader private[jsoniter_scala](
       try {
         var digits = 1
         var fracLen = 0
-        while ((pos < tail || {
-          pos = loadMore(pos)
-          buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          digits += 1
-          if (digits >= digitsLimit) digitsLimitError(pos)
-          pos += 1
+        if (isToken && b == '0') {
+          if ((pos < tail || {
+            pos = loadMore(pos)
+            buf = this.buf
+            pos < tail
+          }) && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) leadingZeroError(pos - 1)
+        } else {
+          while ((pos < tail || {
+            pos = loadMore(pos)
+            buf = this.buf
+            pos < tail
+          }) && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) {
+            digits += 1
+            if (digits >= digitsLimit) digitsLimitError(pos)
+            pos += 1
+          }
         }
-        if (isZeroFirst && digits > 1) leadingZeroError(pos - digits)
         if (b == '.') {
           pos += 1
           val fracLenLimit = digitsLimit - digits
