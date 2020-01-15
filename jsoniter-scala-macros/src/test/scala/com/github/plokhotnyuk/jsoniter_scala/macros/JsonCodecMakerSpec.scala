@@ -1275,6 +1275,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfTransient = make[Transient](CodecMakerConfig)
       verifySer(codecOfTransient, Transient(required = "VVV"), """{"required":"VVV"}""")
       verifyDeser(codecOfTransient, Transient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
+      verifySer(codecOfTransient, Transient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
+      val codecOfTransient2 = make[Transient](CodecMakerConfig.withTransientDefault(false))
+      verifySer(codecOfTransient2, Transient(required = "VVV"), """{"required":"VVV"}""")
+      verifyDeser(codecOfTransient2, Transient(required = "VVV"), """{"transient":"XXX","required":"VVV"}""")
+      verifySer(codecOfTransient2, Transient(required = "VVV", transient = "non-default"), """{"required":"VVV"}""")
     }
     "don't serialize case class fields with 'None' values" in {
       case class NoneValues(opt: Option[String])
