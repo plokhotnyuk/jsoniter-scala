@@ -1558,7 +1558,6 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var pos = head
         var buf = this.buf
-        var digits = 1
         var from = pos - 1
         val oldMark = mark
         val newMark =
@@ -1573,14 +1572,11 @@ final class JsonReader private[jsoniter_scala](
           }) && {
             b = buf(pos)
             b >= '0' && b <= '9'
-          }) {
-            digits += 1
-            if (digits >= digitsLimit) digitsLimitError(pos)
-            pos += 1
-          }
+          }) pos += 1
           head = pos
           if ((b | 0x20) == 'e' || b == '.') numberError(pos)
           if (mark == 0) from -= newMark
+          if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
           new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
         } finally if (mark != 0 || oldMark< 0) mark = oldMark
       }
@@ -1607,7 +1603,6 @@ final class JsonReader private[jsoniter_scala](
       mark = newMark
       try {
         var digits = 1
-        var fracLen = 0
         if (isToken && b == '0') {
           if ((pos < tail || {
             pos = loadMore(pos)
@@ -1618,40 +1613,39 @@ final class JsonReader private[jsoniter_scala](
             b >= '0' && b <= '9'
           }) leadingZeroError(pos - 1)
         } else {
+          digits -= pos
           while ((pos < tail || {
+            digits += pos
             pos = loadMore(pos)
+            digits -= pos
             buf = this.buf
             pos < tail
           }) && {
             b = buf(pos)
             b >= '0' && b <= '9'
-          }) {
-            digits += 1
-            if (digits >= digitsLimit) digitsLimitError(pos)
-            pos += 1
-          }
+          }) pos += 1
+          digits += pos
         }
+        var fracLen, scale = 0
+        if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
         if (b == '.') {
           pos += 1
-          val fracLenLimit = digitsLimit - digits
+          fracLen -= pos
           while ((pos < tail || {
+            fracLen += pos
             pos = loadMore(pos)
+            fracLen -= pos
             buf = this.buf
             pos < tail
           }) && {
             b = buf(pos)
             b >= '0' && b <= '9'
-          }) {
-            fracLen += 1
-            if (fracLen >= fracLenLimit) digitsLimitError(pos)
-            pos += 1
-          }
+          }) pos += 1
+          fracLen += pos
+          digits += fracLen
           if (fracLen == 0) numberError(pos)
+          if (digits >= digitsLimit) digitsLimitError(pos + digitsLimit - digits - 1)
         }
-        var numLen = pos -
-          (if (mark == 0) from - newMark
-          else from)
-        var scale = 0
         if ((b | 0x20) == 'e') {
           b = nextByte(pos + 1)
           val isNegExp = b == '-'
@@ -1672,21 +1666,21 @@ final class JsonReader private[jsoniter_scala](
             if (exp > 2147483648L) numberError(pos)
             pos += 1
           }
-          if (isNegExp) exp = -exp
-          else if (exp == 2147483648L) numberError(pos - 1)
-          scale = -exp.toInt
+          scale =
+            if (isNegExp) exp.toInt
+            else if (exp == 2147483648L) numberError(pos - 1)
+            else -exp.toInt
         }
         head = pos
         if (mark == 0) from -= newMark
-        val limit = from + numLen
         var x =
           if (fracLen != 0) {
-            numLen -= 1
+            val limit = from + digits + 1
             val fracPos = limit - fracLen
             toBigDecimal(buf, from, fracPos - 1, isNeg, scale)
               .add(toBigDecimal(buf, fracPos, limit, isNeg, scale + fracLen))
-          } else toBigDecimal(buf, from, limit, isNeg, scale)
-        if (numLen > mc.getPrecision) x = x.plus(mc)
+          } else toBigDecimal(buf, from, from + digits, isNeg, scale)
+        if (digits > mc.getPrecision) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
       } finally if (mark != 0 || oldMark< 0) mark = oldMark
@@ -1699,18 +1693,18 @@ final class JsonReader private[jsoniter_scala](
   private[this] def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                  scale: Int): java.math.BigDecimal = {
     val len = limit - offset
-    if (len == 1 && buf(offset) == '0') java.math.BigDecimal.ZERO.setScale(scale)
-    else if (len < 19) {
-      var x = 0L
+    if (len < 19) {
       var pos = offset
+      var x: Long = buf(pos) - '0'
+      pos += 1
       while (pos < limit) {
-        x = x * 10 + (buf(pos) - '0')
+        x += x << 2
+        x <<= 1
+        x += buf(pos) - '0'
         pos += 1
       }
-      java.math.BigDecimal.valueOf({
-        if (isNeg) -x
-        else x
-      }, scale)
+      if (isNeg) x = -x
+      java.math.BigDecimal.valueOf(x, scale)
     } else if (len < 37) toBigDecimal37(buf, offset, limit, isNeg, scale)
     else if (len < 280) toBigDecimal280(buf, offset, limit, isNeg, scale)
     else {
@@ -1724,47 +1718,41 @@ final class JsonReader private[jsoniter_scala](
                                    scale: Int): java.math.BigDecimal = {
     val firstBlockLimit = limit - 18
     var pos = offset
-    var x1 = 0L
+    var x1: Long = buf(pos) - '0'
+    pos += 1
     while (pos < firstBlockLimit) {
-      x1 = x1 * 10 + (buf(pos) - '0')
+      x1 += x1 << 2
+      x1 <<= 1
+      x1 += buf(pos) - '0'
       pos += 1
     }
-    val x2 =
-      buf(pos) * 100000000000000000L +
-      buf(pos + 1) * 10000000000000000L +
-      buf(pos + 2) * 1000000000000000L +
-      buf(pos + 3) * 100000000000000L +
-      buf(pos + 4) * 10000000000000L +
-      buf(pos + 5) * 1000000000000L +
-      buf(pos + 6) * 100000000000L +
-      buf(pos + 7) * 10000000000L +
-      buf(pos + 8) * 1000000000L +
-      buf(pos + 9) * 100000000L +
-      buf(pos + 10) * 10000000L +
-      buf(pos + 11) * 1000000 +
-      buf(pos + 12) * 100000 +
-      buf(pos + 13) * 10000 +
-      buf(pos + 14) * 1000 +
-      buf(pos + 15) * 100 +
-      buf(pos + 16) * 10 +
-      buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
-    java.math.BigDecimal.valueOf({
-      if (isNeg) -x1
-      else x1
-    }, scale - 18).add(java.math.BigDecimal.valueOf({
-      if (isNeg) -x2
-      else x2
-    }, scale))
+    var x2 =
+      (buf(pos) * 10 + buf(pos + 1)) * 10000000000000000L +
+      (buf(pos + 2) * 10 + buf(pos + 3)) * 100000000000000L +
+      (buf(pos + 4) * 10 + buf(pos + 5)) * 1000000000000L +
+      (buf(pos + 6) * 10 + buf(pos + 7)) * 10000000000L +
+      (buf(pos + 8) * 10 + buf(pos + 9)) * 100000000L +
+      (buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
+      (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
+      (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
+      buf(pos + 16) * 10 + buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
+    if (isNeg) {
+      x1 = -x1
+      x2 = -x2
+    }
+    java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
   private[this] def toBigDecimal280(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - offset
+    var x = 0L
     val firstBlockLimit = (len % 9) + offset
     var pos = offset
-    var x = 0L
     while (pos < firstBlockLimit) {
-      x = x * 10 + (buf(pos) - '0')
+      x += x << 2
+      x <<= 1
+      x += buf(pos) - '0'
       pos += 1
     }
     val lastWord = ((len * 445861642L) >>> 32).toInt // == (len * log(10) / log (1L << 32)).toInt
@@ -1773,14 +1761,10 @@ final class JsonReader private[jsoniter_scala](
     magWords(lastWord) = x.toInt
     while (pos < limit) {
       x =
-        buf(pos) * 100000000L +
-        buf(pos + 1) * 10000000L +
-        buf(pos + 2) * 1000000 +
-        buf(pos + 3) * 100000 +
-        buf(pos + 4) * 10000 +
-        buf(pos + 5) * 1000 +
-        buf(pos + 6) * 100 +
-        buf(pos + 7) * 10 +
+        (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
+        (buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
+        (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
+        (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
         buf(pos + 8) - 5333333328L // == '0' * 111111111L
       var i = lastWord
       while (i >= 0) {

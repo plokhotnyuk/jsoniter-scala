@@ -2599,6 +2599,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError(s"0.${"0" * 307}",
         "value exceeds limit for number of digits, offset: 0x00000134",
         "value exceeds limit for number of digits, offset: 0x00000135")
+      checkError(s"${"9" * 308}.${"0" * 307}",
+        "value exceeds limit for number of digits, offset: 0x00000133",
+        "value exceeds limit for number of digits, offset: 0x00000134")
     }
     "throw number format exception for too big scale" in {
       check(s"1e${bigDecimalScaleLimit - 1}")
