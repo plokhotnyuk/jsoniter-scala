@@ -1223,7 +1223,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val newBuilder = q"var x = ${collectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2]"
+          val newBuilder = q"val x = ${collectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2]"
           val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2 :: types), isStringified)
           if (cfg.mapAsArray) {
             val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified)
