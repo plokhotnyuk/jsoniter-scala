@@ -21,8 +21,8 @@ jobs:
       matrix:
         java:
           - graalvm@
-          - amazon-corretto@1.8
-          - amazon-corretto@1.11
+          - zulu@1.8
+          - zulu@1.11
         os:
           - ubuntu-latest
           - macOS-latest
