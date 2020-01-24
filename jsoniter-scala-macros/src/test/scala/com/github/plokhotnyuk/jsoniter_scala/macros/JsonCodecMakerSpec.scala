@@ -1381,6 +1381,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[List[Weapon]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
         List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""")
     }
+    "serialize and deserialize product types without discriminators if their codecs are derived not from the base ADT type" in {
+      verifySerDeser(make[AAA](CodecMakerConfig), AAA(1), """{"a":1}""")
+      verifySerDeser(make[BBB](CodecMakerConfig), BBB(BigInt(1)), """{"a":1}""")
+      verifySerDeser(make[CCC](CodecMakerConfig), CCC(1, "VVV"), """{"a":1,"b":"VVV"}""")
+      verifySerDeser(make[DDD.type](CodecMakerConfig), DDD, """{}""")
+    }
     "deserialize ADTs when discriminator field was serialized in far away last position" in {
       val longStr = "W" * 100000
       verifyDeser(codecOfADTList, List(CCC(2, longStr), CCC(1, "VVV")),
