@@ -1244,9 +1244,8 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var posMant: Long = b - '0'
-    var posExp, mantExp = 0L
+    var mantExp = 0L
     var digits = 1
-    var isNegExp = false
     var pos = head
     var buf = this.buf
     val from = pos - 1
@@ -1303,28 +1302,31 @@ final class JsonReader private[jsoniter_scala](
         mantExp -= digits
         if (noFracDigits) numberError(pos)
       }
-      if ((b | 0x20) == 'e') {
-        b = nextByte(pos + 1)
-        isNegExp = b == '-'
-        if (isNegExp || b == '+') b = nextByte(head)
-        if (b < '0' || b > '9') numberError()
-        posExp = b - '0'
-        pos = head
-        buf = this.buf
-        while ((pos < tail || {
-          pos = loadMore(pos)
+      val exp = Math.max(Math.min({
+        if ((b | 0x20) == 'e') {
+          b = nextByte(pos + 1)
+          val isNegExp = b == '-'
+          if (isNegExp || b == '+') b = nextByte(head)
+          if (b < '0' || b > '9') numberError()
+          var posExp: Long = b - '0'
+          pos = head
           buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posExp < 922337203685477580L) posExp = posExp * 10 + (b - '0')
-          pos += 1
-        }
-      }
+          while ((pos < tail || {
+            pos = loadMore(pos)
+            buf = this.buf
+            pos < tail
+          }) && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) {
+            if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
+            pos += 1
+          }
+          if (isNegExp) posExp = -posExp
+          mantExp + posExp
+        } else mantExp
+      }, 2147483647), -2147483648).toInt
       head = pos
-      val exp = sumExp(mantExp, posExp, isNegExp)
       var x: Double =
         if (exp == 0 && posMant < 922337203685477580L) posMant
         else if (posMant < 4503599627370496L && Math.abs(exp) <= 22) {
@@ -1387,9 +1389,8 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
     var posMant: Long = b - '0'
-    var posExp, mantExp = 0L
+    var mantExp = 0L
     var digits = 1
-    var isNegExp = false
     var pos = head
     var buf = this.buf
     val from = pos - 1
@@ -1446,28 +1447,31 @@ final class JsonReader private[jsoniter_scala](
         mantExp -= digits
         if (noFracDigits) numberError(pos)
       }
-      if ((b | 0x20) == 'e') {
-        b = nextByte(pos + 1)
-        isNegExp = b == '-'
-        if (isNegExp || b == '+') b = nextByte(head)
-        if (b < '0' || b > '9') numberError()
-        posExp = b - '0'
-        pos = head
-        buf = this.buf
-        while ((pos < tail || {
-          pos = loadMore(pos)
+      val exp = Math.max(Math.min({
+        if ((b | 0x20) == 'e') {
+          b = nextByte(pos + 1)
+          val isNegExp = b == '-'
+          if (isNegExp || b == '+') b = nextByte(head)
+          if (b < '0' || b > '9') numberError()
+          var posExp: Long = b - '0'
+          pos = head
           buf = this.buf
-          pos < tail
-        }) && {
-          b = buf(pos)
-          b >= '0' && b <= '9'
-        }) {
-          if (posExp < 922337203685477580L) posExp = posExp * 10 + (b - '0')
-          pos += 1
-        }
-      }
+          while ((pos < tail || {
+            pos = loadMore(pos)
+            buf = this.buf
+            pos < tail
+          }) && {
+            b = buf(pos)
+            b >= '0' && b <= '9'
+          }) {
+            if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
+            pos += 1
+          }
+          if (isNegExp) posExp = -posExp
+          mantExp + posExp
+        } else mantExp
+      }, 2147483647), -2147483648).toInt
       head = pos
-      val exp = sumExp(mantExp, posExp, isNegExp)
       var x: Float =
         if (exp == 0 && posMant < 922337203685477580L) posMant
         else if (posMant < 4294967296L && exp < 0 && exp >= digits - 23) (posMant / pow10Doubles(-exp)).toFloat
@@ -1516,16 +1520,6 @@ final class JsonReader private[jsoniter_scala](
         java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
       }
     }
-
-  private[this] def sumExp(e1: Long, posExp: Long, isNegExp: Boolean): Int = {
-    val e2 =
-      if (isNegExp) -posExp
-      else posExp
-    val e = e1 + e2
-    if (((e1 ^ e) & (e2 ^ e)) >= 0) Math.max(Math.min(e, 2147483647), -2147483648).toInt
-    else if (isNegExp) -2147483648
-    else 2147483647
-  }
 
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
