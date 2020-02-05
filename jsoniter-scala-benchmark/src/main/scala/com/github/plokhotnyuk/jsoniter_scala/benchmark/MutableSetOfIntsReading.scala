@@ -7,6 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -38,4 +40,7 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
 
   @Benchmark
   def uPickle(): mutable.Set[Int] = read[mutable.Set[Int]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): mutable.Set[Int] = FromJson(jsonBytes).transform(ToScala[mutable.Set[Int]])
 }

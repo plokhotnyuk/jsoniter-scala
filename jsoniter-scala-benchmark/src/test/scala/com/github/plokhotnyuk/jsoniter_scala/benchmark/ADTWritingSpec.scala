@@ -14,6 +14,7 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe benchmark.jsonString1
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString1
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString1
     }
   }
 }

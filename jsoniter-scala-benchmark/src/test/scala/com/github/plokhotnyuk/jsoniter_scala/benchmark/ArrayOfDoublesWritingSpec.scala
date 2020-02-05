@@ -22,6 +22,7 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
       //FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879
       //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.weePickle()), benchmark.jsonString)
     }
   }
 

@@ -9,6 +9,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core.{writeToArray, writeToSubArray}
+import com.rallyhealth.weejson.v1.jackson.ToJson
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import org.openjdk.jmh.annotations.Benchmark
 import io.circe.syntax._
 
@@ -33,4 +35,7 @@ class Base64Writing extends Base64Benchmark {
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(base64Codec)
+
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
 }

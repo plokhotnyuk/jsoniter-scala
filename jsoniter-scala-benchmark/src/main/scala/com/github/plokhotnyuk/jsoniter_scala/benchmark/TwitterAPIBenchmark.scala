@@ -6,6 +6,7 @@ import com.avsystem.commons.serialization.transientDefault
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weepickle.v1.implicits.dropDefault
 
 import scala.collection.immutable.Seq
 import scala.reflect.io.Streamable
@@ -15,9 +16,9 @@ object TwitterAPI {
     url: String,
     expanded_url: String,
     display_url: String,
-    @transientDefault indices: Seq[Int] = Nil)
+    @transientDefault @dropDefault indices: Seq[Int] = Nil)
 
-  case class Url(@transientDefault urls: Seq[Urls] = Nil)
+  case class Url(@transientDefault @dropDefault urls: Seq[Urls] = Nil)
 
   case class UserEntities(
     url: Url,
@@ -68,10 +69,10 @@ object TwitterAPI {
     translator_type: String)
 
   case class Entities(
-    @transientDefault hashtags: Seq[String] = Nil,
-    @transientDefault symbols: Seq[String] = Nil,
-    @transientDefault user_mentions: Seq[UserMentions] = Nil,
-    @transientDefault urls: Seq[Urls] = Nil)
+    @transientDefault @dropDefault hashtags: Seq[String] = Nil,
+    @transientDefault @dropDefault symbols: Seq[String] = Nil,
+    @transientDefault @dropDefault user_mentions: Seq[UserMentions] = Nil,
+    @transientDefault @dropDefault urls: Seq[Urls] = Nil)
 
   case class RetweetedStatus(
     created_at: String,
@@ -81,16 +82,16 @@ object TwitterAPI {
     truncated: Boolean,
     entities: Entities,
     source: String,
-    @transientDefault in_reply_to_status_id: Option[String] = None,
-    @transientDefault in_reply_to_status_id_str: Option[String] = None,
-    @transientDefault in_reply_to_user_id: Option[String] = None,
-    @transientDefault in_reply_to_user_id_str: Option[String] = None,
-    @transientDefault in_reply_to_screen_name: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_status_id: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_status_id_str: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_user_id: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_user_id_str: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_screen_name: Option[String] = None,
     user: User,
-    @transientDefault geo: Option[String] = None,
-    @transientDefault coordinates: Option[String] = None,
-    @transientDefault place: Option[String] = None,
-    @transientDefault contributors: Option[String] = None,
+    @transientDefault @dropDefault geo: Option[String] = None,
+    @transientDefault @dropDefault coordinates: Option[String] = None,
+    @transientDefault @dropDefault place: Option[String] = None,
+    @transientDefault @dropDefault contributors: Option[String] = None,
     is_quote_status: Boolean,
     retweet_count: Int,
     favorite_count: Int,
@@ -104,7 +105,7 @@ object TwitterAPI {
     name: String,
     id: Long,
     id_str: String,
-    @transientDefault indices: Seq[Int] = Nil)
+    @transientDefault @dropDefault indices: Seq[Int] = Nil)
 
   case class Tweet(
     created_at: String,
@@ -114,16 +115,16 @@ object TwitterAPI {
     truncated: Boolean,
     entities: Entities,
     source: String,
-    @transientDefault in_reply_to_status_id: Option[String] = None,
-    @transientDefault in_reply_to_status_id_str: Option[String] = None,
-    @transientDefault in_reply_to_user_id: Option[String] = None,
-    @transientDefault in_reply_to_user_id_str: Option[String] = None,
-    @transientDefault in_reply_to_screen_name: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_status_id: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_status_id_str: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_user_id: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_user_id_str: Option[String] = None,
+    @transientDefault @dropDefault in_reply_to_screen_name: Option[String] = None,
     user: User,
-    @transientDefault geo: Option[String] = None,
-    @transientDefault coordinates: Option[String] = None,
-    @transientDefault place: Option[String] = None,
-    @transientDefault contributors: Option[String] = None,
+    @transientDefault @dropDefault geo: Option[String] = None,
+    @transientDefault @dropDefault coordinates: Option[String] = None,
+    @transientDefault @dropDefault place: Option[String] = None,
+    @transientDefault @dropDefault contributors: Option[String] = None,
     retweeted_status: RetweetedStatus,
     is_quote_status: Boolean,
     retweet_count: Int,

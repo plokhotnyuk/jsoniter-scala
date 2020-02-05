@@ -15,6 +15,8 @@ class AnyRefsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe benchmark.jsonString1
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString1
+      //FIXME: weePickle writes BigDecimal as JSON strings by default
+      //toString(benchmark.weePickle()) shouldBe benchmark.jsonString1
     }
   }
 }

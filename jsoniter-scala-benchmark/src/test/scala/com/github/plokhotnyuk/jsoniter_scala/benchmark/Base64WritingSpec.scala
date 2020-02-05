@@ -14,6 +14,7 @@ class Base64WritingSpec extends BenchmarkSpecBase {
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
     }
   }
 }

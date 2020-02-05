@@ -16,6 +16,8 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
+      //FIXME: weePickle rounds mantissa to 16 digits
+      //benchmark.weePickle() shouldBe benchmark.sourceObj
     }
   }
 }

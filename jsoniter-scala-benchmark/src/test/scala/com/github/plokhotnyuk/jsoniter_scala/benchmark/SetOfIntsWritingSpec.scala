@@ -22,6 +22,7 @@ class SetOfIntsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe benchmark.jsonString
       readFromArray[Set[Int]](benchmark.sprayJson()) shouldBe benchmark.obj
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
     }
   }
 }

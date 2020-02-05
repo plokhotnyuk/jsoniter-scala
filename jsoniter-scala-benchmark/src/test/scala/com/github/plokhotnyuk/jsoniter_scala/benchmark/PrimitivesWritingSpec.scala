@@ -16,6 +16,7 @@ class PrimitivesWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe benchmark.jsonString3
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString1
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString1
     }
   }
 }

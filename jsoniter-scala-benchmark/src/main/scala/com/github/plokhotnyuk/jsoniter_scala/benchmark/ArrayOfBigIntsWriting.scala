@@ -7,6 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+//import com.rallyhealth.weejson.v1.jackson.ToJson
+//import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -47,4 +49,8 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+/* FIXME: weePickle writes BigDecimal as JSON strings by default
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
+*/
 }

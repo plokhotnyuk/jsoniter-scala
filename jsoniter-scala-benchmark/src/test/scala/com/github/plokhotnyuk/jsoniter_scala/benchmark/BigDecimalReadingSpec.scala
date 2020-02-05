@@ -17,6 +17,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
       //benchmark.playJson() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
+      benchmark.weePickle() shouldBe benchmark.sourceObj
     }
   }
 }

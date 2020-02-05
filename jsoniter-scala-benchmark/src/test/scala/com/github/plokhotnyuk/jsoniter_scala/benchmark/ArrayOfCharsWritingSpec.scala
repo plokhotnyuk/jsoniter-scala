@@ -17,7 +17,7 @@ class ArrayOfCharsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       toString(benchmark.playJson()) shouldBe benchmark.jsonString
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
     }
   }
 }

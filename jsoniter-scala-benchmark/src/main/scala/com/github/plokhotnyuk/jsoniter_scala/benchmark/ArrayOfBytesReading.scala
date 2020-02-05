@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -24,7 +26,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/*FIXME: DSL-JSON expects a base64 string for the byte array
+/* FIXME: DSL-JSON expects a base64 string for the byte array
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonDecode[Array[Byte]](jsonBytes)
 */
@@ -45,4 +47,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = read[Array[Byte]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Array[Byte] = FromJson(jsonBytes).transform(ToScala[Array[Byte]])
 }

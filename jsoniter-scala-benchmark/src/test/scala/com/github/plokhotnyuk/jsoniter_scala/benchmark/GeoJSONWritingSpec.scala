@@ -14,6 +14,7 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe GeoJSON.jsonString1
       toString(benchmark.sprayJson()) shouldBe GeoJSON.jsonString4
       toString(benchmark.uPickle()) shouldBe GeoJSON.jsonString1
+      toString(benchmark.weePickle()) shouldBe GeoJSON.jsonString1
     }
   }
 }

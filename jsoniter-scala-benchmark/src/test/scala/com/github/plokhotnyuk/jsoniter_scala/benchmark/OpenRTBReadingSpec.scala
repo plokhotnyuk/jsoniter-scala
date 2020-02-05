@@ -14,6 +14,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
       //benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.weePickle() shouldBe benchmark.obj
     }
   }
 }

@@ -15,6 +15,8 @@ class AnyValsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      //FIXME: weePickle doesn't derive for AnyVal types?
+      //benchmark.weePickle() shouldBe benchmark.obj
     }
   }
 }

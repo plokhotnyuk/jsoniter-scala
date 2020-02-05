@@ -8,6 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -43,4 +45,7 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def uPickle(): Set[Int] = read[Set[Int]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Set[Int] = FromJson(jsonBytes).transform(ToScala[Set[Int]])
 }

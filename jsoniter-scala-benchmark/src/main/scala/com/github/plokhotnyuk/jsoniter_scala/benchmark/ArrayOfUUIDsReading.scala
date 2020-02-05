@@ -11,6 +11,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -44,4 +46,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
 
   @Benchmark
   def uPickle(): Array[UUID] = read[Array[UUID]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Array[UUID] = FromJson(jsonBytes).transform(ToScala[Array[UUID]])
 }
