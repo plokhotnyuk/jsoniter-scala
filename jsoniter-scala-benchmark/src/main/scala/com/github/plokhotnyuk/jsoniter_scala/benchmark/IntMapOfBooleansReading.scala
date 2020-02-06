@@ -13,7 +13,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 import scala.collection.immutable.IntMap
 
@@ -36,8 +35,4 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
 
   @Benchmark
   def playJson(): IntMap[Boolean] = Json.parse(jsonBytes).as[IntMap[Boolean]]
-/* FIXME: uPickle doesn't support IntMap
-  @Benchmark
-  def uPickle(): IntMap[Boolean] = read[IntMap[Boolean]](jsonBytes)
-*/
 }

@@ -35,8 +35,4 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
   @Benchmark
   def playJson(): mutable.Map[Int, Boolean] =
     Json.parse(jsonBytes).as[mutable.Map[Int, Boolean]](mutableMapOfIntsToBooleansFormat)
-/* FIXME: uPickle doesn't support mutable maps
-  @Benchmark
-  def uPickle(): mutable.Map[Int, Boolean] = read[mutable.Map[Int, Boolean]](jsonBytes)
-*/
 }

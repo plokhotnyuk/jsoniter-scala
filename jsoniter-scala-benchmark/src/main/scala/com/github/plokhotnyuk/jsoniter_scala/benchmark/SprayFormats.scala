@@ -2,9 +2,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 import java.util.UUID
+
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import pl.iterators.kebs.json.KebsSpray
 import spray.json._
+
 import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.util.control.NonFatal

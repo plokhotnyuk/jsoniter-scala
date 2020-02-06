@@ -13,7 +13,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 import scala.collection.mutable
 
@@ -36,8 +35,4 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
 
   @Benchmark
   def playJson(): mutable.LongMap[Boolean] = Json.parse(jsonBytes).as[mutable.LongMap[Boolean]]
-/* FIXME: uPickle doesn't support mutable.LongMap
-  @Benchmark
-  def uPickle(): mutable.LongMap[Boolean] = read[mutable.LongMap[Boolean]](jsonBytes)
-*/
 }

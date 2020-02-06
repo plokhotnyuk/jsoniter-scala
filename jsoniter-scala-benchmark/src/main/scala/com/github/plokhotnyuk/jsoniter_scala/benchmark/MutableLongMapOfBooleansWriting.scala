@@ -13,7 +13,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-//import upickle.default._
 
 class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark {
   @Benchmark
@@ -36,8 +35,4 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: uPickle doesn't support mutable.LongMap
-  @Benchmark
-  def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-*/
 }

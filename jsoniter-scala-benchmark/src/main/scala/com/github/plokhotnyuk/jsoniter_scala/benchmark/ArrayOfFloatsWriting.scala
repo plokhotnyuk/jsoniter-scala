@@ -7,12 +7,12 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-import com.rallyhealth.weejson.v1.jackson.ToJson
-import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import com.jsoniter.output.JsoniterJavaSerializer
+import com.rallyhealth.weejson.v1.jackson.ToJson
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark

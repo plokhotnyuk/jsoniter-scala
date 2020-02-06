@@ -15,8 +15,6 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       //benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
-      //FIXME: uPickle doesn't support mutable.LongMap
-      //benchmark.uPickle() shouldBe benchmark.obj
     }
   }
 }

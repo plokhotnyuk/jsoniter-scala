@@ -10,7 +10,6 @@ import com.rallyhealth.weepickle.v1.implicits.dropDefault
 
 import scala.reflect.io.Streamable
 
-
 object OpenRTB {
   case class BidRequest (
     id: String,

@@ -13,8 +13,6 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
-      //FIXME: uPickle doesn't support mutable maps
-      //benchmark.uPickle() shouldBe benchmark.obj
     }
   }
 }

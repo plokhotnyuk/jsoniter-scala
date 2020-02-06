@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.transparent
 import com.fasterxml.jackson.annotation.JsonValue
-//import pl.iterators.kebs.json.noflat
 
 import scala.annotation.meta.getter
 
@@ -24,7 +23,7 @@ import scala.annotation.meta.getter
 
 @transparent case class FloatVal(@(JsonValue @getter) a: Float) extends AnyVal
 
-/*@noflat*/ case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
+case class AnyVals(b: ByteVal, s: ShortVal, i: IntVal, l: LongVal, bl: BooleanVal, ch: CharVal, dbl: DoubleVal, f: FloatVal)
 
 abstract class AnyValsBenchmark extends CommonParams {
   var obj: AnyVals = AnyVals(ByteVal(1), ShortVal(2), IntVal(3), LongVal(4), BooleanVal(true), CharVal('x'), DoubleVal(5), FloatVal(6))
