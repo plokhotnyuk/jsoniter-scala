@@ -33,6 +33,8 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      //FIXME: weePickle parses 1.199999988079071 as 1.2f instead of 1.1999999f
+      //benchmark.weePickle() shouldBe benchmark.obj
     }
   }
 }

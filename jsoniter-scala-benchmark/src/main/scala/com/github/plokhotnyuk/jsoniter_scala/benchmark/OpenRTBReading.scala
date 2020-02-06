@@ -12,7 +12,10 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB.BidRequest
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 //import spray.json.JsonParser
 
 import io.circe.parser._
@@ -39,4 +42,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
 */
   @Benchmark
   def uPickle(): BidRequest = read[BidRequest](jsonBytes)
+
+  @Benchmark
+  def weePickle(): BidRequest = FromJson(jsonBytes).transform(ToScala[BidRequest])
 }

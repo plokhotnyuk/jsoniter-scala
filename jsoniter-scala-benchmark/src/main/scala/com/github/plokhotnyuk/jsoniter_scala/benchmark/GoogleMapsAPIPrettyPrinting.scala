@@ -10,7 +10,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -44,4 +46,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj, 2).getBytes(UTF_8)
+
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToPrettyJson.bytes)
 }

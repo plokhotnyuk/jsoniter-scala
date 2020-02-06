@@ -18,6 +18,8 @@ class BigIntWritingSpec extends BenchmarkSpecBase {
       //toString(benchmark.playJson()) shouldBe benchmark.jsonString
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
+      //FIXME: weePickle serializes BigInt values as JSON strings
+      //toString(benchmark.weePickle()) shouldBe benchmark.jsonString
     }
   }
 }

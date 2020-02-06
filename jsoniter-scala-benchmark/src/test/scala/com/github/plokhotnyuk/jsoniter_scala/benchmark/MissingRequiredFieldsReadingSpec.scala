@@ -37,6 +37,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         "Object is missing required member 's'"
       benchmark.uPickle() shouldBe
         "missing keys in dictionary: s, i at index 1"
+      benchmark.weePickle() shouldBe
+        "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"
     }
   }
 }

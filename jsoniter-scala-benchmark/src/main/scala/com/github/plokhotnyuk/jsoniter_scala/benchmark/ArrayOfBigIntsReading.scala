@@ -7,6 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -44,4 +46,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
 
   @Benchmark
   def uPickle(): Array[BigInt] = read[Array[BigInt]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Array[BigInt] = FromJson(jsonBytes).transform(ToScala[Array[BigInt]])
 }

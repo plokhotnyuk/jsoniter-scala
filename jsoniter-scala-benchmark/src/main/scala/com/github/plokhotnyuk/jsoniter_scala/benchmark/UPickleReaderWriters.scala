@@ -34,7 +34,8 @@ object UPickleReaderWriters extends AttributeTagged {
       macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon])
   implicit val geometryReadWriter: ReadWriter[GeoJSON.Geometry] =
     ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
-      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon], macroRW[GeoJSON.GeometryCollection])
+      macroRW[GeoJSON.MultiLineString], macroRW[GeoJSON.Polygon], macroRW[GeoJSON.MultiPolygon],
+      macroRW[GeoJSON.GeometryCollection])
   implicit val simpleGeoJsonReadWriter: ReadWriter[GeoJSON.SimpleGeoJSON] =
     ReadWriter.merge(macroRW[GeoJSON.Feature])
   implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
@@ -43,7 +44,7 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v1: ReadWriter[GoogleMapsAPI.Value] = macroRW
     implicit val v2: ReadWriter[GoogleMapsAPI.Elements] = macroRW
     implicit val v3: ReadWriter[GoogleMapsAPI.Rows] = macroRW
-    macroRW[GoogleMapsAPI.DistanceMatrix]
+    macroRW
   }
   implicit val nestedStructsReadWriter: ReadWriter[NestedStructs] = macroRW
   implicit val missingRequiredFieldsReadWriter: ReadWriter[MissingRequiredFields] = macroRW
@@ -78,7 +79,7 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v19: ReadWriter[OpenRTB.User] = macroRW
     implicit val v20: ReadWriter[OpenRTB.Source] = macroRW
     implicit val v21: ReadWriter[OpenRTB.Reqs] = macroRW
-    macroRW[OpenRTB.BidRequest]
+    macroRW
   }
   implicit val (periodReader, periodWriter) = (strReader(Period.parse), strWriter[Period])
   implicit val (suiteADTReader: Reader[SuitADT], suiteADTWriter: Writer[SuitADT]) = {
@@ -104,7 +105,7 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v5: ReadWriter[TwitterAPI.UserEntities] = macroRW
     implicit val v6: ReadWriter[TwitterAPI.User] = macroRW
     implicit val v7: ReadWriter[TwitterAPI.RetweetedStatus] = macroRW
-    macroRW[TwitterAPI.Tweet]
+    macroRW
   }
 
   override def annotate[V](rw: CaseR[V], n: String): TaggedReader.Leaf[V] =

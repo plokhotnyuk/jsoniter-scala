@@ -15,6 +15,7 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe GoogleMapsAPI.jsonString1
       toString(benchmark.sprayJson()) shouldBe GoogleMapsAPI.jsonString2
       toString(benchmark.uPickle()) shouldBe GoogleMapsAPI.jsonString2
+      toString(benchmark.weePickle()) shouldBe GoogleMapsAPI.jsonString2
     }
   }
 }

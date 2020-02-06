@@ -13,6 +13,8 @@ class Base64ReadingSpec extends BenchmarkSpecBase {
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      //FIXME: weePickle throws com.rallyhealth.weepickle.v1.core.Abort: expected sequence got string
+      //benchmark.weePickle() shouldBe benchmark.obj
     }
   }
 }

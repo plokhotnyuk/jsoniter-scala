@@ -8,6 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -41,4 +43,7 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
 
   @Benchmark
   def uPickle(): List[Boolean] = read[List[Boolean]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): List[Boolean] = FromJson(jsonBytes).transform(ToScala[List[Boolean]])
 }

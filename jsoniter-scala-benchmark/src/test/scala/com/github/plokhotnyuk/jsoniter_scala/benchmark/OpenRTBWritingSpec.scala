@@ -16,6 +16,7 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       //FIXME: Spray-JSON serializes fields with default values
       //toString(benchmark.sprayJson()) shouldBe OpenRTB.jsonString
       toString(benchmark.uPickle()) shouldBe OpenRTB.jsonString
+      toString(benchmark.weePickle()) shouldBe OpenRTB.jsonString
     }
   }
 }

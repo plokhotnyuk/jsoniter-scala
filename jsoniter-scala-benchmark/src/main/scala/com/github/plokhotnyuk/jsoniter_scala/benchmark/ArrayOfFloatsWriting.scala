@@ -7,6 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.rallyhealth.weejson.v1.jackson.ToJson
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -51,4 +53,7 @@ class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
 */
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
 }

@@ -21,6 +21,7 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
       //FIXME: Spray-JSON serializes double values instead of float
       //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)
+      sameOrBetter(toString(benchmark.weePickle()), benchmark.jsonString)
     }
   }
 

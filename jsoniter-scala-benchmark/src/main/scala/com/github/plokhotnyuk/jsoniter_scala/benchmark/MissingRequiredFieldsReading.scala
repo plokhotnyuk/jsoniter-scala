@@ -15,7 +15,10 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
@@ -111,5 +114,13 @@ class MissingRequiredFieldsReading extends CommonParams {
       read[MissingRequiredFields](jsonBytes).toString // toString() should not be called
     } catch {
       case ex: upickle.core.AbortException => ex.getMessage
+    }
+
+  @Benchmark
+  def weePickle(): String =
+    try {
+      FromJson(jsonBytes).transform(ToScala[MissingRequiredFields]).toString // toString() should not be called
+    } catch {
+      case ex: com.rallyhealth.weepickle.v1.core.TransformException => ex.getMessage
     }
 }

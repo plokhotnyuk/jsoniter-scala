@@ -16,6 +16,8 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.playJson()) shouldBe benchmark.jsonString3
       toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString1
+      //FIXME: weePickle doesn't derive for AnyVal types?
+      //toString(benchmark.weePickle()) shouldBe benchmark.jsonString1
     }
   }
 }

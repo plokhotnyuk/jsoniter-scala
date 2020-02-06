@@ -18,6 +18,7 @@ class ArrayOfBytesReadingSpec extends BenchmarkSpecBase {
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.weePickle() shouldBe benchmark.obj
     }
   }
 }

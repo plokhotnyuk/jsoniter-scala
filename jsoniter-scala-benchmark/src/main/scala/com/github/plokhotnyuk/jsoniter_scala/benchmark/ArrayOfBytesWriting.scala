@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+//import com.rallyhealth.weejson.v1.jackson.ToJson
+//import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -49,4 +51,8 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+/* FIXME: weePickle serializes a byte array to the base64 string
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
+*/
 }

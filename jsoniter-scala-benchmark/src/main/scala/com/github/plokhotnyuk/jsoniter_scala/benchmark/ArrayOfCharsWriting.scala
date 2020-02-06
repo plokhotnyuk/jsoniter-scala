@@ -10,6 +10,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.ToJson
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import com.jsoniter.output.JsoniterJavaSerializer
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
@@ -48,4 +50,7 @@ class ArrayOfCharsWriting extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
 }
