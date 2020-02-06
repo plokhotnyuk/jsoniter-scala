@@ -19,6 +19,7 @@ class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
       //FIXME: Spray-JSON doesn't support escaping of non-ASCII characters
       //toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
       toString(benchmark.uPickle()) shouldBe benchmark.jsonString
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString2
     }
   }
 }

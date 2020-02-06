@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
@@ -17,6 +17,8 @@ object WeePickleFromTos {
         .withObjectIndenter(indenter)
         .withArrayIndenter(indenter)))
   }
+
+  object ToEscapedNonAsciiJson extends JsonGeneratorOps(new JsonFactory().enable(JsonGenerator.Feature.ESCAPE_NON_ASCII))
 
   implicit val adtFromTos: FromTo[ADTBase] =
     FromTo.merge(macroFromTo[X], macroFromTo[Y], macroFromTo[Z])
