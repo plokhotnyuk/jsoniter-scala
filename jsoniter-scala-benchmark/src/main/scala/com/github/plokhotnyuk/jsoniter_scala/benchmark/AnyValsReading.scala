@@ -51,8 +51,7 @@ class AnyValsReading extends AnyValsBenchmark {
 
   @Benchmark
   def uPickle(): AnyVals = read[AnyVals](jsonBytes)
-/* FIXME: weePickle doesn't derive for AnyVal types?
+
   @Benchmark
   def weePickle(): AnyVals = FromJson(jsonBytes).transform(ToScala[AnyVals])
-*/
 }
