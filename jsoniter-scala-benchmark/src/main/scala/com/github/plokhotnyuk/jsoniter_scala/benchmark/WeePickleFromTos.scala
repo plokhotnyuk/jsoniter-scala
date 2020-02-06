@@ -6,6 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMat
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
 import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
 import com.rallyhealth.weepickle.v1.WeePickle._
+import com.rallyhealth.weepickle.v1.core.Visitor
 
 object WeePickleFromTos {
   object ToPrettyJson extends JsonGeneratorOps {
@@ -20,11 +21,17 @@ object WeePickleFromTos {
   implicit val adtFromTos: FromTo[ADTBase] =
     FromTo.merge(macroFromTo[X], macroFromTo[Y], macroFromTo[Z])
   implicit val anyRefsFromTos: FromTo[AnyRefs] = macroFromTo
-/* FIXME: weePickle doesn't derive for AnyVal types?
-  implicit val anyValsFromTos: FromTo[AnyVals] = {
-    macroFromTo[AnyVals]
+  implicit val anyValsFromTo: FromTo[AnyVals] = {
+    implicit val ft1: FromTo[ByteVal] = fromTo[Byte].bimap(_.a, ByteVal.apply)
+    implicit val ft2: FromTo[ShortVal] = fromTo[Short].bimap(_.a, ShortVal.apply)
+    implicit val ft3: FromTo[IntVal] = fromTo[Int].bimap(_.a, IntVal.apply)
+    implicit val ft4: FromTo[LongVal] = fromTo[Long].bimap(_.a, LongVal.apply)
+    implicit val ft5: FromTo[BooleanVal] = fromTo[Boolean].bimap(_.a, BooleanVal.apply)
+    implicit val ft6: FromTo[DoubleVal] = fromTo[Double].bimap(_.a, DoubleVal.apply)
+    implicit val ft7: FromTo[CharVal] = fromTo[Char].bimap(_.a, CharVal.apply)
+    implicit val ft8: FromTo[FloatVal] = fromTo[Float].bimap(_.a, FloatVal.apply)
+    macroFromTo
   }
-*/
   implicit val simpleGeometryReadFromTos: FromTo[GeoJSON.SimpleGeometry] =
     FromTo.merge(macroFromTo[GeoJSON.Point], macroFromTo[GeoJSON.MultiPoint], macroFromTo[GeoJSON.LineString],
       macroFromTo[GeoJSON.MultiLineString], macroFromTo[GeoJSON.Polygon], macroFromTo[GeoJSON.MultiPolygon])
@@ -80,4 +87,11 @@ object WeePickleFromTos {
     implicit val ft7: FromTo[TwitterAPI.RetweetedStatus] = macroFromTo
     macroFromTo
   }
+
+  val fromNonBinaryByteArray: From[Array[Byte]] = ArrayFrom[Byte](new From[Byte] {
+    // Force encoding as [0,1,255] rather than base64, e.g. Visitor.visitBinary().
+    // Otherwise, WeePickle defaults to jackson.JsonGenerator.writeBinary()'s default.
+    // Hack: Trick the `ArrayFrom` impl with a arg that does not eq `FromByte`.
+    def transform0[R](v: Byte, out: Visitor[_, R]): R = out.visitInt32(v)
+  })
 }

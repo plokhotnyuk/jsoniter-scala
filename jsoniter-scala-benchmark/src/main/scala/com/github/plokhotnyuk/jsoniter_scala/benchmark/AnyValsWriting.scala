@@ -54,8 +54,7 @@ class AnyValsWriting extends AnyValsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
-/* FIXME: weePickle doesn't derive for AnyVal types?
+
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
-*/
 }
