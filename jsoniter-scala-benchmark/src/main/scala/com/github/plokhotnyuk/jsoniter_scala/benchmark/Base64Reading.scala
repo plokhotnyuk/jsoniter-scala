@@ -9,8 +9,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
-//import com.rallyhealth.weejson.v1.jackson.FromJson
-//import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser.decode
 import org.openjdk.jmh.annotations.Benchmark
 
@@ -32,8 +32,7 @@ class Base64Reading extends Base64Benchmark {
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes, tooLongStringConfig)(base64Codec)
-/* FIXME: weePickle throws com.rallyhealth.weepickle.v1.core.Abort: expected sequence got string
+
   @Benchmark
   def weePickle(): Array[Byte] = FromJson(jsonBytes).transform(ToScala[Array[Byte]])
-*/
 }
