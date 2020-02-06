@@ -20,11 +20,17 @@ object WeePickleFromTos {
   implicit val adtFromTos: FromTo[ADTBase] =
     FromTo.merge(macroFromTo[X], macroFromTo[Y], macroFromTo[Z])
   implicit val anyRefsFromTos: FromTo[AnyRefs] = macroFromTo
-/* FIXME: weePickle doesn't derive for AnyVal types?
-  implicit val anyValsFromTos: FromTo[AnyVals] = {
-    macroFromTo[AnyVals]
+  implicit val anyValsFromTo: FromTo[AnyVals] = {
+    implicit val v1: FromTo[ByteVal] = fromTo[Byte].bimap(_.a, ByteVal.apply)
+    implicit val v2: FromTo[ShortVal] = fromTo[Short].bimap(_.a, ShortVal.apply)
+    implicit val v3: FromTo[IntVal] = fromTo[Int].bimap(_.a, IntVal.apply)
+    implicit val v4: FromTo[LongVal] = fromTo[Long].bimap(_.a, LongVal.apply)
+    implicit val v5: FromTo[BooleanVal] = fromTo[Boolean].bimap(_.a, BooleanVal.apply)
+    implicit val v6: FromTo[DoubleVal] = fromTo[Double].bimap(_.a, DoubleVal.apply)
+    implicit val v7: FromTo[CharVal] = fromTo[Char].bimap(_.a, CharVal.apply)
+    implicit val v8: FromTo[FloatVal] = fromTo[Float].bimap(_.a, FloatVal.apply)
+    macroFromTo
   }
-*/
   implicit val simpleGeometryReadFromTos: FromTo[GeoJSON.SimpleGeometry] =
     FromTo.merge(macroFromTo[GeoJSON.Point], macroFromTo[GeoJSON.MultiPoint], macroFromTo[GeoJSON.LineString],
       macroFromTo[GeoJSON.MultiLineString], macroFromTo[GeoJSON.Polygon], macroFromTo[GeoJSON.MultiPolygon])
