@@ -11,6 +11,8 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       //FIXME: Jackson parses nulls in case of missing fields for lists
       //benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      //FIXME: Play-JSON requires fields for lists with default values
+      //benchmark.playJson() shouldBe benchmark.obj
       //FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
       //benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj

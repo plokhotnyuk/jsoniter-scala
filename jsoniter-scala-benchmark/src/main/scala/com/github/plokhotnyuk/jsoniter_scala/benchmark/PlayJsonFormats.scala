@@ -17,6 +17,8 @@ import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
+  import ai.x.play.json.Encoders._
+
   private[this] val prettyPrintMapper = new ObjectMapper {
     registerModule(new PlayJsonModule(JsonParserSettings.settings))
     configure(SerializationFeature.INDENT_OUTPUT, true)
@@ -57,7 +59,7 @@ object PlayJsonFormats {
     implicit val v6: Format[CharVal] = Jsonx.formatInline
     implicit val v7: Format[DoubleVal] = Jsonx.formatInline
     implicit val v8: Format[FloatVal] = Jsonx.formatInline
-    Json.format[AnyVals]
+    Json.format
   }
   implicit val bitSetFormat: Format[BitSet] = Format(
     Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: don't do this for open-systems */)))),
@@ -107,7 +109,31 @@ object PlayJsonFormats {
     implicit val v1: OFormat[GoogleMapsAPI.Value] = Json.format
     implicit val v2: OFormat[GoogleMapsAPI.Elements] = Json.format
     implicit val v3: OFormat[GoogleMapsAPI.Rows] = Json.format
-    Json.format[GoogleMapsAPI.DistanceMatrix]
+    Json.format
+  }
+  implicit val openRTBBidRequestFormat: OFormat[OpenRTB.BidRequest] = {
+    implicit val v1: Format[OpenRTB.Segment] = Jsonx.formatCaseClassUseDefaults
+    implicit val v2: Format[OpenRTB.Format] = Jsonx.formatCaseClassUseDefaults
+    implicit val v3: Format[OpenRTB.Deal] = Jsonx.formatCaseClassUseDefaults
+    implicit val v4: Format[OpenRTB.Metric] = Jsonx.formatCaseClassUseDefaults
+    implicit val v5: Format[OpenRTB.Banner] = Jsonx.formatCaseClassUseDefaults
+    implicit val v6: Format[OpenRTB.Audio] = Jsonx.formatCaseClassUseDefaults
+    implicit val v7: Format[OpenRTB.Video] = Jsonx.formatCaseClassUseDefaults
+    implicit val v8: Format[OpenRTB.Native] = Jsonx.formatCaseClassUseDefaults
+    implicit val v9: Format[OpenRTB.Pmp] = Jsonx.formatCaseClassUseDefaults
+    implicit val v10: Format[OpenRTB.Producer] = Jsonx.formatCaseClassUseDefaults
+    implicit val v11: Format[OpenRTB.Data] = Jsonx.formatCaseClassUseDefaults
+    implicit val v12: Format[OpenRTB.Content] = Jsonx.formatCaseClassUseDefaults
+    implicit val v13: Format[OpenRTB.Publisher] = Jsonx.formatCaseClassUseDefaults
+    implicit val v14: Format[OpenRTB.Geo] = Jsonx.formatCaseClassUseDefaults
+    implicit val v15: Format[OpenRTB.Imp] = Jsonx.formatCaseClassUseDefaults
+    implicit val v16: Format[OpenRTB.Site] = Jsonx.formatCaseClassUseDefaults
+    implicit val v17: Format[OpenRTB.App] = Jsonx.formatCaseClassUseDefaults
+    implicit val v18: Format[OpenRTB.Device] = Jsonx.formatCaseClassUseDefaults
+    implicit val v19: Format[OpenRTB.User] = Jsonx.formatCaseClassUseDefaults
+    implicit val v20: Format[OpenRTB.Source] = Jsonx.formatCaseClassUseDefaults
+    implicit val v21: Format[OpenRTB.Reqs] = Jsonx.formatCaseClassUseDefaults
+    Json.format
   }
   implicit val twitterAPIFormat: Format[Seq[TwitterAPI.Tweet]] = {
     implicit val v1: OFormat[TwitterAPI.Urls] = Json.format
