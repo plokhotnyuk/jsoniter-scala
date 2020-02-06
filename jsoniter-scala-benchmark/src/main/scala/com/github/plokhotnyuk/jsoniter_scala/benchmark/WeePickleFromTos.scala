@@ -6,6 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMat
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
 import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
 import com.rallyhealth.weepickle.v1.WeePickle._
+import com.rallyhealth.weepickle.v1.core.Visitor
 
 object WeePickleFromTos {
   object ToPrettyJson extends JsonGeneratorOps {
@@ -85,5 +86,17 @@ object WeePickleFromTos {
     implicit val ft6: FromTo[TwitterAPI.User] = macroFromTo
     implicit val ft7: FromTo[TwitterAPI.RetweetedStatus] = macroFromTo
     macroFromTo
+  }
+
+  val fromNonBinaryByteArray: From[Array[Byte]] = {
+    // Not an implicit val, since this isn't default behavior.
+    // Force encoding as [0,1,255] rather than base64, e.g. Visitor.visitBinary().
+    // Otherwise, WeePickle defaults to jackson.JsonGenerator.writeBinary()'s default.
+    // Hack: Trick the `ArrayFrom` impl with a arg that does not eq `FromByte`.
+    ArrayFrom[Byte](
+      new From[Byte] {
+        def transform0[R](v: Byte, out: Visitor[_, R]): R = out.visitInt32(v)
+      }
+    )
   }
 }
