@@ -31,14 +31,14 @@ object AVSystemCodecs {
   implicit val offsetDateTimeGenCodec: GenCodec[OffsetDateTime] = transformed(_.toString, OffsetDateTime.parse)
   implicit val offsetTimeGenCodec: GenCodec[OffsetTime] = transformed(_.toString, OffsetTime.parse)
   implicit val periodGenCodec: GenCodec[Period] = transformed(_.toString, Period.parse)
-  implicit val suitADTGenCodec: GenCodec[SuitADT] = {
+  implicit val suitADTGenCodec: GenCodec[SuitADT] = transformed[SuitADT, String](_.toString, {
     val suite = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    transformed[SuitADT, String](_.toString, s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT")))
-  }
+    s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+  })
   implicit val uuidGenCodec: GenCodec[UUID] = transformed(_.toString, UUID.fromString)
   implicit val yearGenCodec: GenCodec[Year] = transformed(_.toString, Year.parse)
   implicit val yearMonthGenCodec: GenCodec[YearMonth] = transformed(_.toString, YearMonth.parse)

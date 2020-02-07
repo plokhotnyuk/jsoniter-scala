@@ -154,16 +154,17 @@ object PlayJsonFormats {
       Reads(js => JsSuccess(js.as[Array[JsString]].map(_.as[SuitEnum]))),
       Writes(es => JsArray(es.map(t => Json.toJson(t)))))
   }
-  implicit val enumADTArrayFormat: Format[Array[SuitADT]] = {
-    val suite = Map(
-      "Hearts" -> Hearts,
-      "Spades" -> Spades,
-      "Diamonds" -> Diamonds,
-      "Clubs" -> Clubs)
+  implicit val enumADTArrayFormat: Format[Array[SuitADT]] =
     Format(
-      Reads(js => Try(js.as[Array[JsString]].map(s => suite(s.value))).fold[JsResult[Array[SuitADT]]](_ => JsError("SuitADT"), s => JsSuccess(s))),
+      Reads(js => Try(js.as[Array[JsString]].map {
+        val suite = Map(
+          "Hearts" -> Hearts,
+          "Spades" -> Spades,
+          "Diamonds" -> Diamonds,
+          "Clubs" -> Clubs)
+        s => suite(s.value)
+      }).fold[JsResult[Array[SuitADT]]](_ => JsError("SuitADT"), s => JsSuccess(s))),
       Writes(es => JsArray(es.map(v => JsString(v.toString)))))
-  }
   implicit val javaEnumArrayFormat: Format[Array[Suit]] = Format(
     Reads(js => JsSuccess(js.as[Array[JsString]].map(js => Suit.valueOf(js.value)))),
     Writes(es => JsArray(es.map(v => JsString(v.name)))))

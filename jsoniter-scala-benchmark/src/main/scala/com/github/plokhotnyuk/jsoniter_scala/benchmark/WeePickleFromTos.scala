@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrinter
 import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
 import com.rallyhealth.weepickle.v1.WeePickle._
@@ -34,6 +35,16 @@ object WeePickleFromTos {
     implicit val ft8: FromTo[FloatVal] = fromTo[Float].bimap(_.a, FloatVal.apply)
     macroFromTo
   }
+  implicit val enumADTFromTo: FromTo[SuitADT] = fromTo[String].bimap(_.toString, {
+    val suite = Map(
+      "Hearts" -> Hearts,
+      "Spades" -> Spades,
+      "Diamonds" -> Diamonds,
+      "Clubs" -> Clubs)
+    s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
+  })
+  implicit val enumFromTo: FromTo[SuitEnum] = fromTo[String].bimap(_.toString, SuitEnum.withName)
+  implicit val javaEnumFromTo: FromTo[Suit] = fromTo[String].bimap(_.toString, Suit.valueOf)
   implicit val simpleGeometryReadFromTos: FromTo[GeoJSON.SimpleGeometry] =
     FromTo.merge(macroFromTo[GeoJSON.Point], macroFromTo[GeoJSON.MultiPoint], macroFromTo[GeoJSON.LineString],
       macroFromTo[GeoJSON.MultiLineString], macroFromTo[GeoJSON.Polygon], macroFromTo[GeoJSON.MultiPolygon])

@@ -82,14 +82,14 @@ object UPickleReaderWriters extends AttributeTagged {
     macroRW
   }
   implicit val (periodReader, periodWriter) = (strReader(Period.parse), strWriter[Period])
-  implicit val (suiteADTReader: Reader[SuitADT], suiteADTWriter: Writer[SuitADT]) = {
+  implicit val (suiteADTReader: Reader[SuitADT], suiteADTWriter: Writer[SuitADT]) = (strReader {
     val suite = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    (strReader(s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))), strWriter[SuitADT])
-  }
+    s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
+  }, strWriter[SuitADT])
   implicit val (suitEnumReader, suitEnumWriter) = (strReader(s => SuitEnum.withName(s.toString)), strWriter[SuitEnum])
   implicit val (suitReader, suitWriter) = (strReader(s => Suit.valueOf(s.toString)), strWriter[Suit])
   implicit val (yearReader, yearWriter) = (strReader(Year.parse), strWriter[Year])

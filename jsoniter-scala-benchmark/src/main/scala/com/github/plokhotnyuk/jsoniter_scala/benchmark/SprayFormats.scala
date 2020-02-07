@@ -163,13 +163,13 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   implicit val offsetTimeJsonFormat: RootJsonFormat[OffsetTime] = stringJsonFormat(OffsetTime.parse)
   implicit val periodJsonFormat: RootJsonFormat[Period] = stringJsonFormat(Period.parse)
   implicit val primitivesJsonFormat: RootJsonFormat[Primitives] = jsonFormatN
-  implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = {
+  implicit val suitEnumADTJsonFormat: RootJsonFormat[SuitADT] = stringJsonFormat {
     val suite = Map(
       "Hearts" -> Hearts,
       "Spades" -> Spades,
       "Diamonds" -> Diamonds,
       "Clubs" -> Clubs)
-    stringJsonFormat(suite.apply)
+    s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   }
   implicit val suitEnumJsonFormat: RootJsonFormat[SuitEnum] = EnumJsonFormat(SuitEnum)
   implicit val suitJavaEnumJsonFormat: RootJsonFormat[Suit] = stringJsonFormat(Suit.valueOf)
