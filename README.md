@@ -10,19 +10,21 @@ Scala macros that generate codecs for case classes, standard types, and collecti
 parsing and serialization.
 
 [**Latest results of benchmarks**](https://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
-performance of Jsoniter Scala with [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe),
-[Play-JSON](https://github.com/playframework/play-json), [Spray-JSON](https://github.com/spray/spray-json),
-[Jackson](https://github.com/FasterXML/jackson-module-scala), [uPickle](https://github.com/lihaoyi/upickle),
-[AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), [DSL-JSON](https://github.com/ngs-doo/dsl-json)
-and [Jsoniter Java](https://github.com/json-iterator/java) libraries using different JDK and GraalVM versions on the
+performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
+[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), 
+[DSL-JSON](https://github.com/ngs-doo/dsl-json), [Jackson](https://github.com/FasterXML/jackson-module-scala),
+[jsoniter (json-iterator) for Java](https://github.com/json-iterator/java), [Play-JSON](https://github.com/playframework/play-json), 
+[Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
+and [weePickle](https://github.com/rallyhealth/weePickle) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
 latest versions of Amazon Corretto 8/11, [OpenJDK 15 (early-access build)](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
-GraalVM CE for Java 8/11 (dev build with `-Dgraal.UseBranchesWithin32ByteBoundary=true`) and GraalVM EE for Java 8/11
+GraalVM 20.1 CE for Java 8/11 (dev build with `-Dgraal.UseBranchesWithin32ByteBoundary=true`) and GraalVM 19.3 EE for 
+Java 8/11
 
 ## Acknowledgments
 
-This library started from macros that reused [Jsoniter Java](https://github.com/json-iterator/java) reader & writer and
-generated codecs for them but then evolved to have own core of mechanics for parsing and serialization.
+This library started from macros that reused [jsoniter (json-iterator) for Java](https://github.com/json-iterator/java) 
+reader & writer and generated codecs for them but then evolved to have own core of mechanics for parsing and serialization.
 
 The idea to generate codecs by Scala macros and main details was borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of the JSON domain.
