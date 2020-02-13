@@ -25,20 +25,15 @@ object GenUtils {
     precision <- Gen.choose(0, 10000)
     rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
   } yield new MathContext(precision, rounding)
-  val genBigInt: Gen[BigInt] = Gen.frequency(
-    (100, arbitrary[BigInt]),
-    (1, for {
-      size <- Gen.choose(1, 10000)
-      digits <- Gen.containerOfN[Array, Byte](size, arbitrary[Byte])
-    } yield BigInt(digits)))
-  val genBigDecimal: Gen[BigDecimal] = Gen.frequency(
-    (100, arbitrary[BigDecimal]),
-    (1, for {
-      size <- Gen.choose(1, 10000)
-      digits <- Gen.containerOfN[Array, Byte](size, arbitrary[Byte])
-      scale <- Gen.choose(-10000, 10000)
-      mc <- genMathContext
-    } yield Try(BigDecimal(BigInt(digits), scale, mc)).getOrElse(BigDecimal(BigInt(digits), scale, UNLIMITED))))
+  val genBigInt: Gen[BigInt] = for {
+    size <- Gen.frequency((100, Gen.choose(1, 100)), (1, Gen.choose(1, 10000)))
+    digits <- Gen.containerOfN[Array, Byte](size, arbitrary[Byte])
+  } yield BigInt(digits)
+  val genBigDecimal: Gen[BigDecimal] = for {
+    unscaled <- genBigInt
+    scale <- Gen.choose(-10000, 10000)
+    mc <- genMathContext
+  } yield Try(BigDecimal(unscaled, scale, mc)).getOrElse(BigDecimal(unscaled, scale, UNLIMITED))
   val genZoneOffset: Gen[ZoneOffset] = Gen.oneOf(
     Gen.choose(-18, 18).map(ZoneOffset.ofHours),
     Gen.choose(-18 * 60, 18 * 60).map(x => ZoneOffset.ofHoursMinutes(x / 60, x % 60)),
