@@ -15,6 +15,7 @@ import play.api.libs.json.jackson.PlayJsonModule
 import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.Try
+import scala.util.control.NonFatal
 
 object PlayJsonFormats {
   import ai.x.play.json.Encoders._
@@ -33,6 +34,10 @@ object PlayJsonFormats {
 
   def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
 
+  implicit val intKeyReads: KeyReads[Int] = s => try JsSuccess(s.toInt) catch { case NonFatal(x) => JsError(x.getMessage) }
+  implicit val intKeyWrites: KeyWrites[Int] = _.toString
+  implicit def mutableReads[A, B](implicit aReads: Reads[Map[A, B]]): Reads[mutable.Map[A, B]] =
+    Reads[mutable.Map[A, B]](js => JsSuccess(js.as[Map[A, B]].foldLeft(mutable.Map.empty[A, B])((m, p) => m += ((p._1, p._2)))))
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
   implicit def tuple2Reads[A, B](implicit aReads: Reads[A], bReads: Reads[B]): Reads[Tuple2[A, B]] =
@@ -70,15 +75,9 @@ object PlayJsonFormats {
   implicit val intMapOfBooleansFormat: OFormat[IntMap[Boolean]] = OFormat(
     Reads[IntMap[Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].foldLeft(IntMap.empty[Boolean])((m, p) => m.updated(p._1.toInt, p._2)))),
     OWrites[IntMap[Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
-  val mapOfIntsToBooleansFormat: OFormat[Map[Int, Boolean]] = OFormat(
-    Reads[Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].map(e => (e._1.toInt, e._2)))),
-    OWrites[Map[Int, Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
   implicit val mutableLongMapOfBooleansFormat: OFormat[mutable.LongMap[Boolean]] = OFormat(
     Reads[mutable.LongMap[Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].foldLeft(new mutable.LongMap[Boolean])((m, p) => m += (p._1.toLong, p._2)))),
     OWrites[mutable.LongMap[Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
-  val mutableMapOfIntsToBooleansFormat: OFormat[mutable.Map[Int, Boolean]] = OFormat(
-    Reads[mutable.Map[Int, Boolean]](js => JsSuccess(js.as[Map[String, Boolean]].foldLeft(mutable.Map.empty[Int, Boolean])((m, p) => m += ((p._1.toInt, p._2))))),
-    OWrites[mutable.Map[Int, Boolean]](m => Json.toJsObject(m.foldLeft(mutable.LinkedHashMap.empty[String, Boolean])((m, p) => m += ((p._1.toString, p._2))))))
   implicit val primitivesFormat: OFormat[Primitives] = Json.format
   implicit val extractFieldsFormat: OFormat[ExtractFields] = Json.format
   val adtFormat: OFormat[ADTBase] = {

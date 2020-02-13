@@ -33,5 +33,5 @@ class MutableMapOfIntsToBooleansWriting extends MutableMapOfIntsToBooleansBenchm
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj)(mutableMapOfIntsToBooleansFormat))
+  def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 }
