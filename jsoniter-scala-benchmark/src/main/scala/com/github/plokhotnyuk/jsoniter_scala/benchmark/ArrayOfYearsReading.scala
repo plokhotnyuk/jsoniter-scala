@@ -30,7 +30,7 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
   def jsoniterScala(): Array[Year] = readFromArray[Array[Year]](jsonBytes)
 
   @Benchmark
-  def playJson(): Array[Year] = Json.parse(jsonBytes).as[Array[Year]](yearArrayFormat)
+  def playJson(): Array[Year] = Json.parse(jsonBytes).as[Array[Year]]
 
   @Benchmark
   def sprayJson(): Array[Year] = JsonParser(jsonBytes).convertTo[Array[Year]]
