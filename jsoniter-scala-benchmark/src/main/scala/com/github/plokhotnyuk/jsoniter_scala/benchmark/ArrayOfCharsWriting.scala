@@ -31,7 +31,6 @@ class ArrayOfCharsWriting extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
 /* FIXME: Jsoniter Java serializes chars as ints
   @Benchmark
   def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)

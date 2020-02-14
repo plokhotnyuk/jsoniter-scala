@@ -30,7 +30,6 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Char] = jacksonMapper.readValue[Array[Char]](jsonBytes)
-
 /* FIXME: Jsoniter Java parsers chars as ints
   @Benchmark
   def jsoniterJava(): Array[Char] = JsoniterJavaParser.parse[Array[Char]](jsonBytes, classOf[Array[Char]])

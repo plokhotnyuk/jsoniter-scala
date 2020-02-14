@@ -20,10 +20,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = escapingPrinter.print(obj.asJson).getBytes
-/* FIXME: DSL-JSON doesn't support escaping of non-ASCII characters
-  @Benchmark
-  def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)(stringEncoder)
-*/
+
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
@@ -38,14 +35,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = Json.asciiStringify(Json.toJson(obj)).getBytes
-/* FIXME: Spray-JSON doesn't support escaping of non-ASCII characters
-  @Benchmark
-  def sprayJson(): Array[Byte] = {
-    import spray.json._
 
-    obj.toJson.compactPrint.getBytes(UTF_8)
-  }
-*/
   @Benchmark
   def uPickle(): Array[Byte] = write(obj, escapeUnicode = true).getBytes(UTF_8)
 

@@ -25,7 +25,6 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
-
 /*FIXME: DSL-JSON serializes doubles in a plain representation
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

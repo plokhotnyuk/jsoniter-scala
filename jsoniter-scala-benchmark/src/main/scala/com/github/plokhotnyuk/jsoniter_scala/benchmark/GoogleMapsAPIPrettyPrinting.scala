@@ -24,10 +24,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = prettyPrinter.print(obj.asJson).getBytes(UTF_8)
-/* FIXME: DSL-JSON doesn't support pretty printing
-  @Benchmark
-  def prettyPrintDslJsonScala(): Array[Byte] = dslJsonEncode(obj)
-*/
+
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonPrettyMapper.writeValueAsBytes(obj)
 
@@ -35,8 +32,7 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def jsoniterScala(): Array[Byte] = writeToArray(obj, prettyConfig)
 
   @Benchmark
-  def jsoniterScalaPrealloc(): Int =
-    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, prettyConfig)
+  def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, prettyConfig)
 
   @Benchmark
   def playJson(): Array[Byte] = prettyPrintBytes(Json.toJson(obj))
