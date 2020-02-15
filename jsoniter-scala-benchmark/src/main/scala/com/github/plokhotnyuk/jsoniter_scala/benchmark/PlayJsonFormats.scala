@@ -101,10 +101,10 @@ object PlayJsonFormats {
     Json.format
   }
   implicit val bitSetFormat: Format[BitSet] = Format(
-    Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: don't do this for open-systems */)))),
+    Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is unsafe an option for open systems */)))),
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
-    Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: don't do this for open-systems */)))),
+    Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is unsafe an option for open systems */)))),
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val primitivesFormat: Format[Primitives] = Json.format
   implicit val extractFieldsFormat: Format[ExtractFields] = Json.format

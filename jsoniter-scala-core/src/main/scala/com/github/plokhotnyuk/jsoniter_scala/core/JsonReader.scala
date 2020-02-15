@@ -726,9 +726,10 @@ final class JsonReader private[jsoniter_scala](
       if (isNextToken('[', head)) {
         if (!isNextToken(']', head)) {
           head -= 1
-          do {
+          while ({
             continue = f(codec.decodeValue(this, codec.nullValue))
-          } while (continue && isNextToken(',', head))
+            continue && isNextToken(',', head)
+          }) ()
           if (continue && !isCurrentToken(']', head)) arrayEndOrCommaError()
         }
       } else readNullOrTokenError((), '[')
@@ -1814,7 +1815,7 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
-    do {
+    while ({
       if (state == 0) {
         if (b == 'T') {
           b = nextByte(head)
@@ -1884,7 +1885,8 @@ final class JsonReader private[jsoniter_scala](
         state = 4
       } else durationError(state, pos)
       b = nextByte(pos + 1)
-    } while (b != '"')
+      b != '"'
+    }) ()
     Duration.ofSeconds(seconds, nanos)
   }
 
@@ -2074,7 +2076,7 @@ final class JsonReader private[jsoniter_scala](
     if (isNeg) b = nextByte(head)
     if (b != 'P') durationOrPeriodStartError(isNeg)
     b = nextByte(head)
-    do {
+    while ({
       if (state == 4) tokenError('"')
       val isNegX = b == '-'
       if (isNegX) b = nextByte(head)
@@ -2114,7 +2116,8 @@ final class JsonReader private[jsoniter_scala](
         state = 4
       } else periodError(state, pos)
       b = nextByte(pos + 1)
-    } while (b != '"')
+      b != '"'
+    }) ()
     Period.of(years, months, days)
   }
 

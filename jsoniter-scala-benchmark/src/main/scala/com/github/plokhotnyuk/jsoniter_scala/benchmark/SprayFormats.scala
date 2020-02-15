@@ -56,7 +56,7 @@ object FlatSprayFormats extends DefaultJsonProtocol with KebsSpray {
 
 object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
   val jsonParserSettings: JsonParserSettings = JsonParserSettings.default
-    .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /*WARNING: don't do this for open-systems*/
+    .withMaxDepth(Int.MaxValue).withMaxNumberCharacters(Int.MaxValue) /* WARNING: It is unsafe an option for open systems */
   val adtBaseJsonFormat: RootJsonFormat[ADTBase] = {
     implicit lazy val jf1: RootJsonFormat[X] = jsonFormatN
     implicit lazy val jf2: RootJsonFormat[Y] = jsonFormatN

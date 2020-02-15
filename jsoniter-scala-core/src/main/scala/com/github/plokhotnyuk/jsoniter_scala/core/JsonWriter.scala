@@ -505,7 +505,7 @@ final class JsonWriter private[jsoniter_scala](
       codec.encodeValue(x, this)
       out.write(buf, 0, count)
     } finally {
-      this.out = null // do not close output stream
+      this.out = null // don't close output stream
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
@@ -778,7 +778,7 @@ final class JsonWriter private[jsoniter_scala](
     val preferredStep = Math.max(config.preferredBufSize, limit - pos)
     var remaining = bs.length
     var offset = 0
-    do {
+    while ({
       val step =
         if (preferredStep < remaining) preferredStep
         else remaining
@@ -786,11 +786,12 @@ final class JsonWriter private[jsoniter_scala](
         pos = flushAndGrowBuf(step, pos)
         buf = this.buf
       }
-      remaining -= step
       System.arraycopy(bs, offset, buf, pos, step)
       offset += step
       pos += step
-    } while (remaining > 0)
+      remaining -= step
+      remaining > 0
+    }) ()
     pos
   }
 
@@ -2244,55 +2245,55 @@ object JsonWriter {
   private final val digits: Array[Short] = eval {
     val ds = new Array[Short](100)
     var i, j = 0
-    do {
+    while (j < 10) {
       var k = 0
-      do {
+      while (k < 10) {
         ds(i) = (((k + '0') << 8) + (j + '0')).toShort
         i += 1
         k += 1
-      } while (k < 10)
+      }
       j += 1
-    } while (j < 10)
+    }
     ds
   }
   private final val lowerCaseHexDigits: Array[Short] = eval {
     val ds = new Array[Short](256)
     var i, j = 0
-    do {
+    while (j < 16) {
       val d1 =
         if (j <= 9) j + '0'
         else j + 'a' - 10
       var k = 0
-      do {
+      while (k < 16) {
         val d2 =
           if (k <= 9) k + '0'
           else k + 'a' - 10
         ds(i) = ((d2 << 8) + d1).toShort
         i += 1
         k += 1
-      } while (k < 16)
+      }
       j += 1
-    } while (j < 16)
+    }
     ds
   }
   private final val upperCaseHexDigits: Array[Short] = eval {
     val ds = new Array[Short](256)
     var i, j = 0
-    do {
+    while (j < 16) {
       val d1 =
         if (j <= 9) j + '0'
         else j + 'A' - 10
       var k = 0
-      do {
+      while (k < 16) {
         val d2 =
           if (k <= 9) k + '0'
           else k + 'A' - 10
         ds(i) = ((d2 << 8) + d1).toShort
         i += 1
         k += 1
-      } while (k < 16)
+      }
       j += 1
-    } while (j < 16)
+    }
     ds
   }
   private final val base64Digits: Array[Byte] =
@@ -2354,11 +2355,12 @@ object JsonWriter {
     if (n >= i) {
       var s = ss(i - 1)
       ss = java.util.Arrays.copyOf(ss, n + 1)
-      do {
+      while ({
         s = s.multiply(s)
         ss(i) = s
         i += 1
-      } while (i <= n)
+        i <= n
+      }) ()
       tenPow18Squares = ss
     }
     ss

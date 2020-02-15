@@ -641,9 +641,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
             val kvs = _root_.scala.collection.immutable.List.newBuilder[(String, Int)]
             if (!in.isNextToken('}')) {
               in.rollbackToken()
-              do  {
+              while ({
                 kvs.+=((in.readKeyAsString(), in.readInt()))
-              } while (in.isNextToken(','))
+                in.isNextToken(',')
+              }) ()
               if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
             }
             kvs.result()
@@ -788,7 +789,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val parsedObj = readFromArray(json.getBytes(UTF_8))(codecOfStringifiedArrayOfArray)
       parsedObj shouldBe arrayOfArray
     }
-    "do not serialize fields of case classes with empty arrays" in {
+    "don't serialize fields of case classes with empty arrays" in {
       val json = """{"aa":[[],[]]}"""
       val arrays = Arrays(_root_.scala.Array(_root_.scala.Array(), _root_.scala.Array()), _root_.scala.Array())
       verifySer(codecOfArrays, arrays, json)

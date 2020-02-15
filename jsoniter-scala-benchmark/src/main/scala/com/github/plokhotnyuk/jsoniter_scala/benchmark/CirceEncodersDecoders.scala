@@ -38,10 +38,10 @@ object CirceEncodersDecoders {
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
   implicit val (bitSetD5r: Decoder[BitSet], bitSetE5r: Encoder[BitSet]) =
-    (Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */))),
+    (Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is unsafe an option for open systems */))),
       Encoder.encodeSet[Int].contramapArray((m: BitSet) => m))
   implicit val (mutableBitSetD5r: Decoder[mutable.BitSet], mutableBitSetE5r: Encoder[mutable.BitSet]) =
-    (Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: don't do this for open-systems */))),
+    (Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is unsafe an option for open systems */))),
       Encoder.encodeSeq[Int].contramapArray((m: mutable.BitSet) => m.toVector))
   implicit val distanceMatrixC3c: Codec[GoogleMapsAPI.DistanceMatrix] = {
     import io.circe.generic.auto._

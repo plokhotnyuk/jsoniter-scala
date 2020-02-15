@@ -21,9 +21,9 @@ object BorerJsonEncodersDecoders {
   val (base16Enc: Encoder[Array[Byte]], base16Dec: Decoder[Array[Byte]]) =
     (Encoder.forByteArray(Base16), Decoder.forByteArray(Base16))
   implicit val bigIntDec: Decoder[BigInt] =
-    Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(x => new BigInt(x)) /*WARNING: don't do this for open-systems*/
+    Decoder.forJBigInteger(maxJsonNumberStringLength = 1000000).map(x => new BigInt(x)) /* WARNING: It is unsafe an option for open systems */
   implicit val bigDecimalDec: Decoder[BigDecimal] =
-    Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /*WARNING: don't do this for open-systems*/
+    Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /* WARNING: It is unsafe an option for open systems */
   implicit val flatAdtEncoding: AdtEncodingStrategy = AdtEncodingStrategy.flat(typeMemberName = "type")
   implicit val Codec(charEnc: Encoder[Char], charDec: Decoder[Char]) = stringCodec(_.charAt(0))
   implicit val Codec(adtEnc: Encoder[ADTBase], adtDec: Decoder[ADTBase]) = {

@@ -53,8 +53,10 @@ object UserAPI {
         else {
           in.rollbackToken()
           val x = Seq.newBuilder[Device]
-          do x += d2(in, null)
-          while (in.isNextToken(','))
+          while ({
+            x += d2(in, null)
+            in.isNextToken(',')
+          }) ()
           if (in.isCurrentToken(']')) x.result()
           else in.arrayEndOrCommaError()
         }

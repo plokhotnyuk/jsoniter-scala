@@ -598,9 +598,10 @@ object JsonCodecMaker {
               else {
                 in.rollbackToken()
                 ..$newBuilder
-                do {
+                while ({
                   ..$readVal
-                } while (in.isNextToken(','))
+                  in.isNextToken(',')
+                }) ()
                 if (in.isCurrentToken(']')) $result
                 else in.arrayEndOrCommaError()
               }
@@ -613,11 +614,12 @@ object JsonCodecMaker {
                 in.rollbackToken()
                 ..$newBuilder
                 var i = 0
-                do {
+                while ({
                   ..$readVal
                   i += 1
                   if (i > ${cfg.setMaxInsertNumber}) in.decodeError("too many set inserts")
-                } while (in.isNextToken(','))
+                  in.isNextToken(',')
+                }) ()
                 if (in.isCurrentToken(']')) $result
                 else in.arrayEndOrCommaError()
               }
@@ -630,11 +632,12 @@ object JsonCodecMaker {
                 in.rollbackToken()
                 ..$newBuilder
                 var i = 0
-                do {
+                while ({
                   ..$readKV
                   i += 1
                   if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
-                } while (in.isNextToken(','))
+                  in.isNextToken(',')
+                }) ()
                 if (in.isCurrentToken('}')) $result
                 else in.objectEndOrCommaError()
               }
@@ -647,14 +650,15 @@ object JsonCodecMaker {
                 in.rollbackToken()
                 ..$newBuilder
                 var i = 0
-                do {
+                while ({
                   if (in.isNextToken('[')) {
                     ..$readKV
                     i += 1
                     if (i > ${cfg.mapMaxInsertNumber}) in.decodeError("too many map inserts")
                     if (!in.isNextToken(']')) in.arrayEndError()
                   } else in.readNullOrTokenError(default, '[')
-                } while (in.isNextToken(','))
+                  in.isNextToken(',')
+                }) ()
                 if (in.isCurrentToken(']')) $result
                 else in.objectEndOrCommaError()
               }
@@ -1323,7 +1327,7 @@ object JsonCodecMaker {
                   if (in.isNextToken(',')) ${genReadVal(t :: types, nullValue(t :: types), isStringified)}
                   else in.commaError()"""
           }
-          val vals = indexedTypes.map { case (t, i) => TermName("_" + (i + 1)) }
+          val vals = indexedTypes.map { case (_, i) => TermName("_" + (i + 1)) }
           q"""if (in.isNextToken('[')) {
                 ..$readFields
                 if (in.isNextToken(']')) new $tpe(..$vals)

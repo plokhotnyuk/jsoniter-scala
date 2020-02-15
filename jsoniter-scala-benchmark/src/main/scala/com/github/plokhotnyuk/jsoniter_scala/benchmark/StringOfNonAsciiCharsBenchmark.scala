@@ -22,10 +22,11 @@ abstract class StringOfNonAsciiCharsBenchmark extends CommonParams {
       while (i < cs.length) {
         cs(i) = {
           var ch: Char = 0
-          do {
+          while ({
             ch = (j * 1498724053).toChar
             j += 1
-          } while (ch < 128 || isSurrogate(ch))
+            ch < 128 || isSurrogate(ch)
+          }) ()
           ch
         }
         i += 1
