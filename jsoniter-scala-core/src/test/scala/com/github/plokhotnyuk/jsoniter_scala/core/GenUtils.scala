@@ -21,17 +21,20 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
+  val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)), (1, Gen.choose(1, 1000)))
   val genMathContext: Gen[MathContext] = for {
-    precision <- Gen.choose(0, 10000)
+    precision <- genSize
     rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
   } yield new MathContext(precision, rounding)
   val genBigInt: Gen[BigInt] = for {
-    size <- Gen.frequency((100, Gen.choose(1, 100)), (1, Gen.choose(1, 10000)))
+    size <- genSize
     digits <- Gen.containerOfN[Array, Byte](size, arbitrary[Byte])
   } yield BigInt(digits)
   val genBigDecimal: Gen[BigDecimal] = for {
     unscaled <- genBigInt
-    scale <- Gen.choose(-10000, 10000)
+    posScale <- genSize
+    isPositive <- arbitrary[Boolean]
+    scale = if (isPositive) posScale else -posScale
     mc <- genMathContext
   } yield Try(BigDecimal(unscaled, scale, mc)).getOrElse(BigDecimal(unscaled, scale, UNLIMITED))
   val genZoneOffset: Gen[ZoneOffset] = Gen.oneOf(
@@ -52,11 +55,13 @@ object GenUtils {
     nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)
     fallbackInstant <- Gen.oneOf(Instant.MIN, Instant.EPOCH, Instant.MAX)
   } yield Try(Instant.ofEpochSecond(epochSecond, nanoAdjustment)).getOrElse(fallbackInstant)
+  val genYear: Gen[Year] =
+    Gen.frequency((3, Gen.choose(-9999, 9999)), (1, Gen.choose(-999999999, 999999999))).map(Year.of)
   val genLocalDate: Gen[LocalDate] = for {
-    year <- Gen.choose(-999999999, 999999999)
+    year <- genYear
     month <- Gen.choose(1, 12)
-    day <- Gen.choose(1, Month.of(month).length(Year.of(year).isLeap))
-  } yield LocalDate.of(year, month, day)
+    day <- Gen.choose(1, Month.of(month).length(year.isLeap))
+  } yield LocalDate.of(year.getValue, month, day)
   val genLocalTime: Gen[LocalTime] = for {
     hour <- Gen.choose(0, 23)
     minute <- Gen.choose(0, 59)
@@ -84,11 +89,10 @@ object GenUtils {
     month <- arbitrary[Int]
     day <- arbitrary[Int]
   } yield Period.of(year, month, day)
-  val genYear: Gen[Year] = Gen.choose(-999999999, 999999999).map(Year.of)
   val genYearMonth: Gen[YearMonth] = for {
-    year <- Gen.choose(-999999999, 999999999)
+    year <- genYear
     month <- Gen.choose(1, 12)
-  } yield YearMonth.of(year, month)
+  } yield YearMonth.of(year.getValue, month)
   val genZoneId: Gen[ZoneId] = Gen.oneOf(
     genZoneOffset,
     genZoneOffset.map(zo => ZoneId.ofOffset("UT", zo)),
