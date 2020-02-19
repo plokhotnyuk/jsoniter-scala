@@ -143,8 +143,12 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.typesafe.play" %% "play-json" % "2.8.1",
       "org.julienrf" %% "play-json-derived-codecs" % "7.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",
-      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+      "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
+      "org.openjdk.jmh" % "jmh-core" % "1.23",
+      "org.openjdk.jmh" % "jmh-generator-asm" % "1.23",
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.23",
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.23",
       "org.scalatest" %% "scalatest" % "3.1.0" % Test
     )
   )
