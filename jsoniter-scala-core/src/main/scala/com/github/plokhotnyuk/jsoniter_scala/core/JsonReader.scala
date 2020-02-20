@@ -2249,18 +2249,18 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
-    val offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
+    var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
     if (offsetHour > 18) timezoneOffsetHourError()
     if (offsetMinute > 59) timezoneOffsetMinuteError()
     if (offsetSecond > 59) timezoneOffsetSecondError()
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-    val q1 = (offsetTotal * 2443359173L >> 41).toInt // div positive int by 900
-    if (q1 * 900 == offsetTotal) zoneOffsets {
-      if (isNeg) 72 - q1
-      else 72 + q1
-    } else ZoneOffset.ofTotalSeconds {
-      if (isNeg) -offsetTotal
-      else offsetTotal
+    var q1 = (offsetTotal * 2443359173L >> 41).toInt // div positive int by 900
+    if (q1 * 900 == offsetTotal) {
+      if (isNeg) q1 = -q1
+      zoneOffsets(q1 + 72)
+    } else {
+      if (isNeg) offsetTotal = -offsetTotal
+      ZoneOffset.ofTotalSeconds(offsetTotal)
     }
   }
 
