@@ -13,6 +13,9 @@ class ArrayOfUUIDsReadingSpec extends BenchmarkSpecBase {
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.javaCopy() shouldBe benchmark.obj
+      benchmark.javaOrig() shouldBe benchmark.obj
+      benchmark.javaFast() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
