@@ -36,40 +36,40 @@ object PlayJsonFormats {
   def stringFormat[A](name: String)(f: String => A): Format[A] =
     new Format[A] {
       override def reads(js: JsValue): JsResult[A] =
-        Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(JsonValidationError(s"error.expected.${name}string")))
+        Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
 
       override def writes(v: A): JsValue = JsString(v.toString)
     }
 
   implicit val intKeyReads: KeyReads[Int] = (s: String) =>
-    Try(JsSuccess(s.toInt)).getOrElse(JsError(JsonValidationError(s"error.expected.intstring")))
+    Try(JsSuccess(s.toInt)).getOrElse(JsError(s"expected.intstring"))
   implicit val intKeyWrites: KeyWrites[Int] = _.toString
   implicit val longKeyReads: KeyReads[Long] = (s: String) =>
-    Try(JsSuccess(s.toLong)).getOrElse(JsError(JsonValidationError(s"error.expected.longstring")))
+    Try(JsSuccess(s.toLong)).getOrElse(JsError(s"expected.longstring"))
 
   implicit def mutableMapReads[A, B](implicit mapReads: Reads[Map[A, B]]): Reads[mutable.Map[A, B]] =
     Reads[mutable.Map[A, B]](js => JsSuccess(js.as[Map[A, B]].foldLeft(mutable.Map.empty[A, B]) {
       (m, p) => m += ((p._1, p._2))
     }))
 
-  implicit def mutableLongMapFormat[A](implicit mapFormat: Format[Map[Long, A]], aFormat: Format[A]): Format[mutable.LongMap[A]] =
+  implicit def mutableLongMapFormat[A](implicit mapReads: Reads[Map[Long, A]], aWrites: Writes[A]): Format[mutable.LongMap[A]] =
     new Format[mutable.LongMap[A]] {
       override def reads(js: JsValue): JsResult[mutable.LongMap[A]] =
         JsSuccess(js.as[Map[Long, A]].foldLeft(mutable.LongMap.empty[A])((m, p) => m += (p._1, p._2)))
 
       override def writes(v: mutable.LongMap[A]): JsValue =
         Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
-          (m, p) => m += ((p._1.toString, aFormat.writes(p._2)))
+          (m, p) => m += ((p._1.toString, aWrites.writes(p._2)))
         })
     }
 
-  implicit def intMapFormat[A](implicit mapFormat: Format[Map[Int, A]], aFormat: Format[A]): Format[IntMap[A]] =
+  implicit def intMapFormat[A](implicit mapReads: Reads[Map[Int, A]], aWrites: Writes[A]): Format[IntMap[A]] =
     new Format[IntMap[A]] {
       override def reads(js: JsValue): JsResult[IntMap[A]] =
         JsSuccess(js.as[Map[Int, A]].foldLeft(IntMap.empty[A])((m, p) => m.updated(p._1, p._2)))
 
       override def writes(v: IntMap[A]): JsValue = Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
-        (m, p) => m += ((p._1.toString, aFormat.writes(p._2)))
+        (m, p) => m += ((p._1.toString, aWrites.writes(p._2)))
       })
     }
 
