@@ -76,7 +76,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }
 
-      forAll(Gen.uuid, minSuccessful(10000))(check)
+      forAll(genUUID, minSuccessful(10000))(check)
     }
   }
   "JsonWriter.writeVal and JsonWriter.writeKey for Duration" should {

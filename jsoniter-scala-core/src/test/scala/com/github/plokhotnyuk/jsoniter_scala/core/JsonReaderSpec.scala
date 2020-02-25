@@ -452,7 +452,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         reader(s"""$ws"${s.toUpperCase}":""").readKeyAsUUID() shouldBe x
       }
 
-      forAll(Gen.uuid, minSuccessful(10000))(check)
+      forAll(genUUID, minSuccessful(10000))(check)
     }
     "throw parsing exception for empty input and illegal or broken UUID string" in {
       def checkError(json: String, error: String): Unit = {

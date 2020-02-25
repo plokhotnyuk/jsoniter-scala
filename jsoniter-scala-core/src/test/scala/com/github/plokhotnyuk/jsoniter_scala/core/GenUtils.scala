@@ -4,6 +4,7 @@ import java.math.MathContext
 import java.math.MathContext._
 import java.math.RoundingMode._
 import java.time._
+import java.util.UUID
 
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Gen
@@ -104,6 +105,10 @@ object GenUtils {
     localDateTime <- genLocalDateTime
     zoneId <- genZoneId
   } yield ZonedDateTime.of(localDateTime, zoneId)
+  val genUUID: Gen[UUID] = for {
+    msb <- arbitrary[Long]
+    lsb <- arbitrary[Long]
+  } yield new UUID(msb, lsb)
   val genNonFiniteDouble: Gen[Double] = Gen.oneOf(
     Gen.oneOf(java.lang.Double.NaN, java.lang.Double.NEGATIVE_INFINITY, java.lang.Double.POSITIVE_INFINITY),
     Gen.choose(0, 0x0007FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
