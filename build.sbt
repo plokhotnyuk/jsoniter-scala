@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import sbt._
 import scala.sys.process._
 
@@ -79,9 +78,7 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
-  )
+  mimaReportSignatureProblems := true
 )
 
 lazy val `jsoniter-scala` = project.in(file("."))
