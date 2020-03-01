@@ -88,7 +88,6 @@ object PlayJsonFormats {
   implicit val charFormat: Format[Char] = stringFormat("char") { case s if s.length == 1 => s.charAt(0) }
   implicit val missingReqFieldsFormat: Format[MissingRequiredFields] = Json.format
   implicit val nestedStructsFormat: Format[NestedStructs] = Json.format
-  implicit val anyRefsFormat: Format[AnyRefs] = Json.format
   implicit val anyValsFormat: Format[AnyVals] = {
     implicit val v1: Format[ByteVal] = Jsonx.formatInline
     implicit val v2: Format[ShortVal] = Jsonx.formatInline

@@ -41,7 +41,6 @@ object JsoniterScalaCodecs {
   val stringCodec: JsonValueCodec[String] = make(CodecMakerConfig) // don't define implicit for supported types
   implicit val adtCodec: JsonValueCodec[ADTBase] =
     make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is unsafe an option for open systems
-  implicit val anyRefsCodec: JsonValueCodec[AnyRefs] = make(CodecMakerConfig)
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make(CodecMakerConfig)
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make(CodecMakerConfig)
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make(CodecMakerConfig)
@@ -57,6 +56,7 @@ object JsoniterScalaCodecs {
   implicit val enumADTArrayCodec: JsonValueCodec[Array[SuitADT]] = make(CodecMakerConfig.withDiscriminatorFieldName(None))
   implicit val floatArrayCodec: JsonValueCodec[Array[Float]] = make(CodecMakerConfig)
   implicit val geoJSONCodec: JsonValueCodec[GeoJSON.GeoJSON] = make(CodecMakerConfig)
+  implicit val gitHubActionsAPICodec: JsonValueCodec[GitHubActionsAPI.Response] = make(CodecMakerConfig)
   implicit val instantArrayCodec: JsonValueCodec[Array[Instant]] = make(CodecMakerConfig)
   implicit val intArrayCodec: JsonValueCodec[Array[Int]] = make(CodecMakerConfig)
   implicit val javaEnumArrayCodec: JsonValueCodec[Array[Suit]] = make(CodecMakerConfig)

@@ -68,6 +68,11 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
   override def isEmpty(provider: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
 }
 
+class StringifiedBooleanSerializer extends JsonSerializer[Boolean] {
+  override def serialize(value: Boolean, jgen: JsonGenerator, provider: SerializerProvider): Unit =
+    jgen.writeString(value.toString)
+}
+
 class SuitEnumSerializer extends JsonSerializer[SuitEnum] {
   override def serialize(value: SuitEnum, jgen: JsonGenerator, provider: SerializerProvider): Unit =
     jgen.writeString(value.toString)

@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.math.MathContext
+import java.time.Instant
 import java.util.UUID
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -32,7 +33,6 @@ object BorerJsonEncodersDecoders {
     implicit val c3: Codec[Z] = deriveCodec
     deriveCodec[ADTBase]
   }
-  implicit val Codec(anyRefsEnc: Encoder[AnyRefs], anyRefsDec: Decoder[AnyRefs]) = deriveCodec[AnyRefs]
   implicit val Codec(anyValsEnc: Encoder[AnyVals], anyValsDec: Decoder[AnyVals]) = {
     implicit val c1: Codec[ByteVal] = ArrayBasedCodecs.deriveCodec
     implicit val c2: Codec[ShortVal] = ArrayBasedCodecs.deriveCodec
@@ -60,6 +60,13 @@ object BorerJsonEncodersDecoders {
     implicit val c11: Codec[GeoJSON.SimpleGeoJSON] = deriveCodec
     implicit val c12: Codec[GeoJSON.FeatureCollection] = deriveCodec
     deriveCodec[GeoJSON.GeoJSON]
+  }
+  implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response],
+  gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
+    implicit val c1: Codec[Boolean] = stringCodec(_.toBoolean)
+    implicit val c2: Codec[Instant] = stringCodec(Instant.parse)
+    implicit val c3: Codec[GitHubActionsAPI.Artifact] = deriveCodec
+    deriveCodec[GitHubActionsAPI.Response]
   }
   implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix],
   googleMapsAPIDec: Decoder[GoogleMapsAPI.DistanceMatrix]) = {

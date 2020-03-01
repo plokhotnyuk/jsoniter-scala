@@ -20,7 +20,6 @@ object AVSystemCodecs {
   val jsonBase64Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = Base64())
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
-  implicit val anyRefsGenCodec: GenCodec[AnyRefs] = materializeRecursively
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
   implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
   implicit val instantGenCodec: GenCodec[Instant] = transformed(_.toString, Instant.parse)

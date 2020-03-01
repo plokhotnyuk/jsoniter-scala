@@ -24,7 +24,6 @@ object DslPlatformJson {
   }
 
   val (stringEncoder, stringDecoder) = codec[String]
-  implicit val (anyRefEncoder, anyRefDecoder) = codec[AnyRefs]
 /* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
   implicit val (anyValsEncoder, anyValsDecoder) = codec[AnyVals]
 */

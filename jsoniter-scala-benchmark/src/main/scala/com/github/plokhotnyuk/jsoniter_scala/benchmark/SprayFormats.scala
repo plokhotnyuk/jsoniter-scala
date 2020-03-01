@@ -76,7 +76,6 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
     }
     jf4
   }
-  implicit val anyRefsJsonFormat: RootJsonFormat[AnyRefs] = jsonFormatN
   implicit val durationJsonFormat: RootJsonFormat[Duration] = stringJsonFormat(Duration.parse)
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormatN
   val geoJSONJsonFormat: RootJsonFormat[GeoJSON.GeoJSON] = {
@@ -150,6 +149,36 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
       }
     }
     jf14
+  }
+  implicit val gitHubActionsAPIJsonFormat: RootJsonFormat[GitHubActionsAPI.Response] = {
+    implicit val jf1: RootJsonFormat[GitHubActionsAPI.Artifact] = new RootJsonFormat[GitHubActionsAPI.Artifact] {
+      override def read(json: JsValue): GitHubActionsAPI.Artifact = {
+        val x = json.asJsObject
+        new GitHubActionsAPI.Artifact(
+          x.fields("id").convertTo[Int],
+          x.fields("node_id").convertTo[String],
+          x.fields("name").convertTo[String],
+          x.fields("size_in_bytes").convertTo[Int],
+          x.fields("url").convertTo[String],
+          x.fields("archive_download_url").convertTo[String],
+          x.fields("expired").convertTo[String].toBoolean,
+          Instant.parse(x.fields("created_at").convertTo[String]),
+          Instant.parse(x.fields("expires_at").convertTo[String])
+        )
+      }
+
+      override def write(obj: GitHubActionsAPI.Artifact): JsValue = JsObject(
+        "id" -> JsNumber(obj.id),
+        "node_id" -> JsString(obj.node_id),
+        "name" -> JsString(obj.name),
+        "size_in_bytes" -> JsNumber(obj.size_in_bytes),
+        "url" -> JsString(obj.url),
+        "archive_download_url" -> JsString(obj.archive_download_url),
+        "expired" -> JsString(obj.expired.toString),
+        "created_at" -> JsString(obj.created_at.toString),
+        "expires_at" -> JsString(obj.expires_at.toString))
+    }
+    jsonFormatN
   }
   implicit val googleMapsAPIJsonFormat: RootJsonFormat[GoogleMapsAPI.DistanceMatrix] = jsonFormatN
   implicit val instantJsonFormat: RootJsonFormat[Instant] = stringJsonFormat(Instant.parse)

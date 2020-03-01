@@ -19,7 +19,6 @@ object CirceEncodersDecoders {
   val escapingPrinter: Printer = printer.copy(escapeNonAscii = true)
   implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val adtC3c: Codec[ADTBase] = deriveConfiguredCodec[ADTBase]
-  implicit val anyRefsC3c: Codec[AnyRefs] = deriveConfiguredCodec[AnyRefs]
   implicit val anyValsC3c: Codec[AnyVals] = {
     implicit def valueClassEncoder[A <: AnyVal : UnwrappedEncoder]: Encoder[A] = implicitly
 
@@ -50,9 +49,9 @@ object CirceEncodersDecoders {
   }
   implicit val extractFieldsC3c: Codec[ExtractFields] = deriveConfiguredCodec[ExtractFields]
   implicit val geoJSONC3c: Codec[GeoJSON.GeoJSON] = {
-    implicit val simpleGeometryC3c: Codec[GeoJSON.SimpleGeometry] = deriveConfiguredCodec[GeoJSON.SimpleGeometry]
-    implicit val geometryC3c: Codec[GeoJSON.Geometry] = deriveConfiguredCodec[GeoJSON.Geometry]
-    implicit val simpleGeoJSONC3c: Codec[GeoJSON.SimpleGeoJSON] = deriveConfiguredCodec[GeoJSON.SimpleGeoJSON]
+    implicit val c1: Codec[GeoJSON.SimpleGeometry] = deriveConfiguredCodec[GeoJSON.SimpleGeometry]
+    implicit val c2: Codec[GeoJSON.Geometry] = deriveConfiguredCodec[GeoJSON.Geometry]
+    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveConfiguredCodec[GeoJSON.SimpleGeoJSON]
     deriveConfiguredCodec[GeoJSON.GeoJSON]
   }
   implicit val (intMapD5r: Decoder[IntMap[Boolean]], intMapE5r: Encoder[IntMap[Boolean]]) =

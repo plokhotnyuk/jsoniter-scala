@@ -16,7 +16,6 @@ object UPickleReaderWriters extends AttributeTagged {
   implicit val floatWriter: Writer[Float] = numWriter[Float]
   implicit val longWriter: Writer[Long] = numWriter[Long]
   implicit val adtReadWriter: ReadWriter[ADTBase] = ReadWriter.merge(macroRW[X], macroRW[Y], macroRW[Z])
-  implicit val anyRefsReadWriter: ReadWriter[AnyRefs] = macroRW
   implicit val anyValsReadWriter: ReadWriter[AnyVals] = {
     implicit val v1: ReadWriter[ByteVal] = readwriter[Byte].bimap(_.a, ByteVal.apply)
     implicit val v2: ReadWriter[ShortVal] = readwriter[Short].bimap(_.a, ShortVal.apply)

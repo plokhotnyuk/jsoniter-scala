@@ -23,7 +23,6 @@ object WeePickleFromTos {
 
   implicit val adtFromTos: FromTo[ADTBase] =
     FromTo.merge(macroFromTo[X], macroFromTo[Y], macroFromTo[Z])
-  implicit val anyRefsFromTos: FromTo[AnyRefs] = macroFromTo
   implicit val anyValsFromTo: FromTo[AnyVals] = {
     implicit val ft1: FromTo[ByteVal] = fromTo[Byte].bimap(_.a, ByteVal.apply)
     implicit val ft2: FromTo[ShortVal] = fromTo[Short].bimap(_.a, ShortVal.apply)
@@ -56,6 +55,11 @@ object WeePickleFromTos {
     FromTo.merge(macroFromTo[GeoJSON.Feature])
   implicit val geoJsonFromTos: FromTo[GeoJSON.GeoJSON] =
     FromTo.merge(macroFromTo[GeoJSON.Feature], macroFromTo[GeoJSON.FeatureCollection])
+  implicit val gitHubActionsAPIFromTos: FromTo[GitHubActionsAPI.Response] = {
+    implicit val ft1: FromTo[Boolean] = fromTo[String].bimap(_.toString, _.toBoolean)
+    implicit val ft2: FromTo[GitHubActionsAPI.Artifact] = macroFromTo
+    macroFromTo
+  }
   implicit val googleMapsAPIDistanceMatrixFromTos: FromTo[DistanceMatrix] = {
     implicit val ft1: FromTo[GoogleMapsAPI.Value] = macroFromTo
     implicit val ft2: FromTo[GoogleMapsAPI.Elements] = macroFromTo
