@@ -63,9 +63,11 @@ object BorerJsonEncodersDecoders {
   }
   implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response],
   gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
-    implicit val c1: Codec[Boolean] = stringCodec(_.toBoolean)
-    implicit val c2: Codec[Instant] = stringCodec(Instant.parse)
-    implicit val c3: Codec[GitHubActionsAPI.Artifact] = deriveCodec
+    import Decoder.StringBooleans._
+    import Encoder.StringBooleans._
+
+    implicit val c1: Codec[Instant] = stringCodec(Instant.parse)
+    implicit val c2: Codec[GitHubActionsAPI.Artifact] = deriveCodec
     deriveCodec[GitHubActionsAPI.Response]
   }
   implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix],

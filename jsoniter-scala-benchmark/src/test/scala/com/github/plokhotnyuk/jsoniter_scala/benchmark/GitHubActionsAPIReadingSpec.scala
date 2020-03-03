@@ -5,8 +5,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
   
   "GitHubActionsAPIReading" should {
     "read properly" in {
-      //FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Bool but got Chars (input position 361)
-      //benchmark.borerJson() shouldBe benchmark.obj
+      benchmark.borerJson() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj

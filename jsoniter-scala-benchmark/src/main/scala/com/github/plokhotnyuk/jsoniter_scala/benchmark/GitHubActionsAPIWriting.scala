@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -14,10 +14,9 @@ import org.openjdk.jmh.annotations.Benchmark
 import spray.json._
 
 class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
-/* FIXME: Borer doesn't allow overriding of encoders for primitives
   @Benchmark
   def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
-*/
+
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 

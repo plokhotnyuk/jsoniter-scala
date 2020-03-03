@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GitHubActionsAPI._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -13,11 +13,10 @@ import org.openjdk.jmh.annotations.Benchmark
 import spray.json.JsonParser
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
-/* FIXME: Borer throws io.bullet.borer.Borer$Error$InvalidInputData: Expected Bool but got Chars (input position 361)
   @Benchmark
   def borerJson(): GitHubActionsAPI.Response =
     io.bullet.borer.Json.decode(jsonBytes).to[GitHubActionsAPI.Response].value
-*/
+
   @Benchmark
   def jacksonScala(): GitHubActionsAPI.Response = jacksonMapper.readValue[GitHubActionsAPI.Response](jsonBytes)
 
