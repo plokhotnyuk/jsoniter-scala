@@ -132,7 +132,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.jsoniter" % "jsoniter" % "0.9.23",
       "org.javassist" % "javassist" % "3.26.0-GA", // required for Jsoniter Java
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.2",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.2",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.3",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.3",
       "io.circe" %% "circe-generic-extras" % "0.13.0",
       "io.circe" %% "circe-generic" % "0.13.0",
