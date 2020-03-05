@@ -1174,9 +1174,7 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        x += x << 2
-        x <<= 1
-        x += b - '0'
+        x = x * 10 + (b - '0')
         if (x > 2147483648L) intOverflowError(pos)
         pos += 1
       }
@@ -1209,9 +1207,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9'
       }) {
         if (x < -922337203685477580L || {
-          x += x << 2
-          x <<= 1
-          x += '0' - b
+          x = x * 10 + ('0' - b)
           x > 0
         }) longOverflowError(pos)
         pos += 1
@@ -1693,9 +1689,7 @@ final class JsonReader private[jsoniter_scala](
       var x: Long = buf(pos) - '0'
       pos += 1
       while (pos < limit) {
-        x += x << 2
-        x <<= 1
-        x += buf(pos) - '0'
+        x = x * 10 + (buf(pos) - '0')
         pos += 1
       }
       if (isNeg) x = -x
@@ -1716,9 +1710,7 @@ final class JsonReader private[jsoniter_scala](
     var x1: Long = buf(pos) - '0'
     pos += 1
     while (pos < firstBlockLimit) {
-      x1 += x1 << 2
-      x1 <<= 1
-      x1 += buf(pos) - '0'
+      x1 = x1 * 10 + (buf(pos) - '0')
       pos += 1
     }
     var x2 =
@@ -1745,9 +1737,7 @@ final class JsonReader private[jsoniter_scala](
     val firstBlockLimit = (len % 9) + offset
     var pos = offset
     while (pos < firstBlockLimit) {
-      x += x << 2
-      x <<= 1
-      x += buf(pos) - '0'
+      x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
     val lastWord = ((len * 445861642L) >>> 32).toInt // == (len * log(10) / log (1L << 32)).toInt
