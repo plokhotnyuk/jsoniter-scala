@@ -6,6 +6,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
   "GitHubActionsAPIReading" should {
     "read properly" in {
       benchmark.borerJson() shouldBe benchmark.obj
+      benchmark.circe() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
