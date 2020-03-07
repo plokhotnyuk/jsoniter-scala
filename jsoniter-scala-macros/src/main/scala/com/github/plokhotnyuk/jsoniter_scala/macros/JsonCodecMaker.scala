@@ -135,7 +135,6 @@ class CodecMakerConfig private (
   def withAllowRecursiveTypes(allowRecursiveTypes: Boolean): CodecMakerConfig =
     copy(allowRecursiveTypes = allowRecursiveTypes)
 
-
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,

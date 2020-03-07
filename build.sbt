@@ -34,6 +34,7 @@ lazy val commonSettings = Seq(
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, x)) if x == 11 => Seq(
+      "-language:higherKinds",
       "-Ybackend:GenBCode",
       "-Ydelambdafy:inline"
     )

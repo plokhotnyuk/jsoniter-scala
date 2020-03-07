@@ -10,7 +10,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 import org.scalatest.exceptions.TestFailedException
 
 import scala.annotation.{switch, tailrec}
-import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 
 case class UserId(id: String) extends AnyVal
@@ -1765,8 +1764,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
-      import _root_.scala.language.higherKinds
-
       sealed trait Foo[A[_]] extends Product with Serializable
 
       case class Bar[A[_]](a: A[Int]) extends Foo[A]
@@ -1855,8 +1852,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "don't generate codecs when all generic type parameters cannot be resolved" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """import _root_.scala.language.higherKinds
-          |sealed trait Foo[F[_]] extends Product with Serializable
+        """sealed trait Foo[F[_]] extends Product with Serializable
           |case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
           |sealed trait Bar[A] extends Product with Serializable
           |case object Baz extends Bar[Int]

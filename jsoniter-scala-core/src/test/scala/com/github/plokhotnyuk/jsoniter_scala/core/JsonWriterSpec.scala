@@ -351,7 +351,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           check(s, escapeUnicode)
       }
     }
-    "write strings with escaped Unicode chars if it is specified by provided writer config" in {
+    "write strings with escaped Unicode chars when it is specified by provided writer config" in {
       def check(s: String, f: String => String = _.flatMap(toEscaped(_))): Unit = {
         withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(s)) shouldBe s""""${f(s)}""""
         withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey(s)) shouldBe s""""${f(s)}":"""
@@ -422,7 +422,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         }
       }
     }
-    "write string with escaped Unicode chars if it is specified by provided writer config" in {
+    "write string with escaped Unicode chars when it is specified by provided writer config" in {
       forAll(minSuccessful(10000)) { ch: Char =>
         whenever(isEscapedAscii(ch) || ch >= 128) {
           withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal(ch)) shouldBe s""""${toEscaped(ch)}""""
@@ -557,10 +557,14 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       //(1 to Int.MaxValue).par.foreach { n: Int =>
       forAll(minSuccessful(10000)) { n: Int =>
         val x = java.lang.Float.intBitsToFloat(n)
-        if (java.lang.Float.isFinite(x)) check(x)
+        whenever(java.lang.Float.isFinite(x)) {
+          check(x)
+        }
       }
       forAll(minSuccessful(10000)) { n: Float =>
-        if (java.lang.Float.isFinite(n)) check(n)
+        whenever(java.lang.Float.isFinite(n)) {
+          check(n)
+        }
       }
     }
     "write float values exactly as expected" in {
@@ -601,7 +605,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         s.toDouble shouldBe n // no data loss when parsing by JDK
         l should be <= n.toString.length // rounding isn't worse than in JDK
         i should be > 0 // has the '.' character inside
-        i should be < l - 1
+        i should be < l - 1 // '.' is not the last character
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has a digit after the '.' character
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
@@ -637,10 +641,14 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(minSuccessful(10000)) { n: Long =>
         val x = java.lang.Double.longBitsToDouble(n)
-        if (java.lang.Double.isFinite(x)) check(x)
+        whenever(java.lang.Double.isFinite(x)) {
+          check(x)
+        }
       }
       forAll(minSuccessful(10000)) { n: Double =>
-        if (java.lang.Double.isFinite(n)) check(n)
+        whenever(java.lang.Double.isFinite(n)) {
+          check(n)
+        }
       }
     }
     "write double values exactly as expected" in {

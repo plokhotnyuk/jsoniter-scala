@@ -1683,7 +1683,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
   }
   "JsonReader.isCharBufEqualsTo" should {
-    "return true if content of internal char buffer for the specified length is equal to the provided string" in {
+    "return true when content of internal char buffer for the specified length is equal to the provided string" in {
       def check(s1: String, s2: String): Unit = {
         val r = reader(s""""$s1"""")
         r.isCharBufEqualsTo(r.readStringAsCharBuf(), s2) shouldBe s1 == s2
@@ -2265,7 +2265,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       //}
       forAll(minSuccessful(10000)) { n: Int =>
         val x = java.lang.Float.intBitsToFloat(n)
-        if (java.lang.Float.isFinite(x)) checkFloat(x.toString)
+        whenever(java.lang.Float.isFinite(x)) {
+          checkFloat(x.toString)
+        }
       }
       //(-22 to 18).foreach { e =>
       //  println(e)
@@ -2396,7 +2398,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(minSuccessful(10000)) { n: Long =>
         val x = java.lang.Double.longBitsToDouble(n)
-        if (java.lang.Double.isFinite(x)) checkDouble(x.toString)
+        whenever(java.lang.Double.isFinite(x)) {
+          checkDouble(x.toString)
+        }
       }
       forAll(minSuccessful(10000)) { n: Long =>
         checkDouble(n.toString)
@@ -2826,5 +2830,5 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
   def ws: String = whitespaces(Random.nextInt(whitespaces.length)) * Random.nextInt(32)
 
-  val whitespaces = Array(" ", "\n", "\t", "\r")
+  val whitespaces: Array[String] = Array(" ", "\n", "\t", "\r")
 }
