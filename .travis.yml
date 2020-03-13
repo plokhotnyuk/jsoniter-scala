@@ -14,9 +14,11 @@ matrix:
     - os: linux
       jdk: oraclejdk11
       scala: 2.13.1
+      arch: arm64
     - os: linux
       scala: 2.12.10
       env: JDK=graalvm-ce-19.3.1
+      arch: amd64
       before_script:
         - unset -v _JAVA_OPTIONS
         - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
