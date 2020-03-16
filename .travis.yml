@@ -15,12 +15,12 @@ matrix:
       jdk: oraclejdk11
       scala: 2.13.1
     - os: linux
-      scala: 2.12.10
-      env: JDK=graalvm-ce-19.3.1
+      scala: 2.12.11
+      env: JDK=graalvm-ce-20.0.0
       before_script:
         - unset -v _JAVA_OPTIONS
         - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
-        - source install-jdk.sh --url https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.1/graalvm-ce-java8-linux-amd64-19.3.1.tar.gz
+        - source install-jdk.sh --url https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.0.0/graalvm-ce-java8-linux-amd64-20.0.0.tar.gz
         - echo JAVA_HOME = ${JAVA_HOME}
         - echo PATH = ${PATH}
         - ls ${JAVA_HOME}
