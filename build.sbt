@@ -19,7 +19,8 @@ lazy val commonSettings = Seq(
   ),
   resolvers ++= Seq(
     Resolver.mavenLocal,
-    Resolver.sonatypeRepo("staging")
+    Resolver.sonatypeRepo("staging"),
+    "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
   scalaVersion := "2.13.1",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
