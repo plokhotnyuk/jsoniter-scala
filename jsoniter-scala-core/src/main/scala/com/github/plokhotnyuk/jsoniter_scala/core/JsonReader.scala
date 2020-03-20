@@ -2172,7 +2172,7 @@ final class JsonReader private[jsoniter_scala](
     val zoneOffset =
       if (hasOffsetHour) toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
       else ZoneOffset.UTC
-    if (zone eq null) ZonedDateTime.of(localDateTime, zoneOffset)
+    if (zone eq null) ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else ZonedDateTime.ofInstant(localDateTime, zoneOffset, toZoneId(zone))
   }
 
