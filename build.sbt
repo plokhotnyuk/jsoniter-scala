@@ -132,7 +132,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.lihaoyi" %% "upickle" % "1.0.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.5",
       "com.jsoniter" % "jsoniter" % "0.9.23",
-      "org.javassist" % "javassist" % "3.26.0-GA", // required for Jsoniter Java
+      "org.javassist" % "javassist" % "3.27.0-GA", // required for Jsoniter Java
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.3",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.10.3",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.10.3",
