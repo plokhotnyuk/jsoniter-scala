@@ -91,4 +91,11 @@ object CirceEncodersDecoders {
 
     deriveConfiguredCodec[TwitterAPI.Tweet]
   }
+  implicit val weatherAPIC3c: Codec[WeatherAPI.Forecast] = {
+    import io.circe.generic.auto._
+
+    implicit val c1: Codec[WeatherAPI.SimpleGeometry] = deriveConfiguredCodec[WeatherAPI.SimpleGeometry]
+    implicit val c2: Codec[WeatherAPI.Geometry] = deriveConfiguredCodec[WeatherAPI.Geometry]
+    deriveConfiguredCodec[WeatherAPI.Forecast]
+  }
 }

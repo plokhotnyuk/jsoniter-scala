@@ -98,4 +98,5 @@ object JsoniterScalaCodecs {
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make(CodecMakerConfig)
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make(CodecMakerConfig)
   implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make(CodecMakerConfig)
+  implicit val weatherAPICodec: JsonValueCodec[WeatherAPI.Forecast] = make(CodecMakerConfig.withTransientDefault(false))
 }
