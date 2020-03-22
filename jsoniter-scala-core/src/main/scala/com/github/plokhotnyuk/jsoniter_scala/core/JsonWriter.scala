@@ -1676,7 +1676,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeInt(x: Int): Unit = count = {
-    var pos = ensureBufCapacity(11) // minIntBytes.length
+    var pos = ensureBufCapacity(11) // Int.MinValue.toString.length
     val buf = this.buf
     val q0 =
       if (x >= 0) x
@@ -1694,7 +1694,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeLong(x: Long): Unit = count = {
-    var pos = ensureBufCapacity(20) // minLongBytes.length
+    var pos = ensureBufCapacity(20) // Long.MinValue.toString.length
     val buf = this.buf
     val ds = digits
     val q0 =

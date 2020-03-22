@@ -255,7 +255,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsZoneId(): ZoneId = {
     nextTokenOrError('"', head)
-    val x = toZoneId(parseZoneIdUntilToken('"'))
+    val x = parseZoneIdUntilToken('"')
     nextTokenOrError(':', head)
     x
   }
@@ -443,7 +443,7 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readZoneId(default: ZoneId): ZoneId =
-    if (isNextToken('"', head)) toZoneId(parseZoneIdUntilToken('"'))
+    if (isNextToken('"', head)) parseZoneIdUntilToken('"')
     else readNullOrTokenError(default, '"')
 
   def readZoneOffset(default: ZoneOffset): ZoneOffset =
@@ -850,20 +850,6 @@ final class JsonReader private[jsoniter_scala](
     buf(pos - 1) == t
   }
 
-  @tailrec
-  private[this] def scanUntilToken(t: Byte, pos: Int): Int =
-    if (pos + 3 < tail) {
-      val buf = this.buf
-      if (buf(pos) == t) pos + 1
-      else if (buf(pos + 1) == t) pos + 2
-      else if (buf(pos + 2) == t) pos + 3
-      else if (buf(pos + 3) == t) pos + 4
-      else scanUntilToken(t, pos + 4)
-    } else if (pos < tail) {
-      if (buf(pos) == t) pos + 1
-      else scanUntilToken(t, pos + 1)
-    } else scanUntilToken(t, loadMoreOrError(pos))
-
   private[this] def illegalTokenOperation(): Nothing =
     throw new IllegalStateException("expected preceding call of 'nextToken()' or 'isNextToken()'")
 
@@ -1085,7 +1071,7 @@ final class JsonReader private[jsoniter_scala](
       offsetSecond
     } else parseOffsetSecondWithByte(t, loadMoreOrError(pos))
 
-  private[this] def parseZoneIdUntilToken(t: Byte): String = {
+  private[this] def parseZoneIdUntilToken(t: Byte): ZoneId = {
     var from = head
     val oldMark = mark
     val newMark =
@@ -1095,9 +1081,28 @@ final class JsonReader private[jsoniter_scala](
     try {
       head = scanUntilToken(t, from)
       if (mark == 0) from -= newMark
-      new String(buf, 0, from, head - from - 1)
+      val s = new String(buf, 0, from, head - from - 1)
+      val zoneId = zoneIds.get(s)
+      if (zoneId ne null) zoneId
+      else try ZoneId.of(s)
+    } catch {
+      case ex: DateTimeException => timezoneError(ex)
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
+
+  @tailrec
+  private[this] def scanUntilToken(t: Byte, pos: Int): Int =
+    if (pos + 3 < tail) {
+      val buf = this.buf
+      if (buf(pos) == t) pos + 1
+      else if (buf(pos + 1) == t) pos + 2
+      else if (buf(pos + 2) == t) pos + 3
+      else if (buf(pos + 3) == t) pos + 4
+      else scanUntilToken(t, pos + 4)
+    } else if (pos < tail) {
+      if (buf(pos) == t) pos + 1
+      else scanUntilToken(t, pos + 1)
+    } else scanUntilToken(t, loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
@@ -2288,7 +2293,7 @@ final class JsonReader private[jsoniter_scala](
       }
     var zone: ZoneId = null
     if (b == '[') {
-      zone = toZoneId(parseZoneIdUntilToken(']'))
+      zone = parseZoneIdUntilToken(']')
       b = nextByte(head)
     }
     if (b != '"') zonedDateTimeError(zone, hasOffsetHour, hasOffsetSecond)
@@ -2304,8 +2309,8 @@ final class JsonReader private[jsoniter_scala](
     } else {
       val offsetNeg = b == '-' || (b != '+' && decodeError("expected '+' or '-' or 'Z'"))
       val offsetHour = parseOffsetHour(head)
-      b = nextByte(head)
       var offsetMinute, offsetSecond = 0
+      b = nextByte(head)
       if (b == ':' && {
         offsetMinute = parseOffsetMinute(head)
         b = nextByte(head)
@@ -2326,14 +2331,6 @@ final class JsonReader private[jsoniter_scala](
     } else {
       if (isNeg) offsetTotal = -offsetTotal
       ZoneOffset.ofTotalSeconds(offsetTotal)
-    }
-  }
-
-  private[this] def toZoneId(zone: String): ZoneId = {
-    val x = zoneIds.get(zone)
-    if (x ne null) x
-    else try ZoneId.of(zone) catch {
-      case ex: DateTimeException => timezoneError(ex)
     }
   }
 
