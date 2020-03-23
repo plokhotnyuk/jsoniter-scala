@@ -153,7 +153,7 @@ Add the core library with a "compile" scope and the macros library with a "provi
 ```sbt
 libraryDependencies ++= Seq(
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.1.8",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.1.8" % "compile-internal" // required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.1.8" % "compile-internal" // or "provided", but it required only in compile-time
 )
 ```
 
