@@ -5,6 +5,7 @@ import java.math.MathContext
 import java.nio.ByteBuffer
 import java.time._
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.expression_evaluator.eval
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
@@ -1079,30 +1080,33 @@ final class JsonReader private[jsoniter_scala](
       else oldMark
     mark = newMark
     try {
-      head = scanUntilToken(t, from)
+      var pos = head
+      var buf = this.buf
+      var hash, b = 0
+      while ({
+        if (pos >= tail) {
+          pos = loadMoreOrError(pos)
+          buf = this.buf
+        }
+        b = buf(pos)
+        b != t
+      }) {
+        hash = (hash << 5) - hash + b
+        pos += 1
+      }
+      head = pos + 1
       if (mark == 0) from -= newMark
-      val s = new String(buf, 0, from, head - from - 1)
-      val zoneId = zoneIds.get(s)
-      if (zoneId ne null) zoneId
-      else try ZoneId.of(s)
+      val k = new Key(hash, buf, from, pos)
+      var zoneId = zoneIds.get(k)
+      if (zoneId eq null) {
+        zoneId = ZoneId.of(k.toString)
+        zoneIds.putIfAbsent(k.copy, zoneId)
+      }
+      zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex)
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
-
-  @tailrec
-  private[this] def scanUntilToken(t: Byte, pos: Int): Int =
-    if (pos + 3 < tail) {
-      val buf = this.buf
-      if (buf(pos) == t) pos + 1
-      else if (buf(pos + 1) == t) pos + 2
-      else if (buf(pos + 2) == t) pos + 3
-      else if (buf(pos + 3) == t) pos + 4
-      else scanUntilToken(t, pos + 4)
-    } else if (pos < tail) {
-      if (buf(pos) == t) pos + 1
-      else scanUntilToken(t, pos + 1)
-    } else scanUntilToken(t, loadMoreOrError(pos))
 
   @tailrec
   private[this] def parseNullOrError[@sp A](default: A, error: String, pos: Int): A =
@@ -3157,7 +3161,7 @@ object JsonReader {
     }
     bs
   }
-  private final lazy val zoneOffsets: Array[ZoneOffset] = {
+  private final val zoneOffsets: Array[ZoneOffset] = {
     val zos = new Array[ZoneOffset](145)
     var i = 0
     while (i < 145) {
@@ -3166,29 +3170,7 @@ object JsonReader {
     }
     zos
   }
-  private final lazy val zoneIds: java.util.HashMap[String, ZoneId] = {
-    val zs = new java.util.HashMap[String, ZoneId](2048)
-    val azs = ZoneId.getAvailableZoneIds.iterator()
-    while (azs.hasNext) {
-      val z = ZoneId.of(azs.next())
-      zs.put(z.getId, z)
-    }
-    val zos = zoneOffsets
-    val l = zos.length
-    var i = 0
-    while (i < l) {
-      val z1 = zos(i)
-      zs.put(z1.getId, z1)
-      val z2 = ZoneId.ofOffset("UT", z1)
-      zs.put(z2.getId, z2)
-      val z3 = ZoneId.ofOffset("UTC", z1)
-      zs.put(z3.getId, z3)
-      val z4 = ZoneId.ofOffset("GMT", z1)
-      zs.put(z4.getId, z4)
-      i += 1
-    }
-    zs
-  }
+  private final val zoneIds: ConcurrentHashMap[Key, ZoneId] = new ConcurrentHashMap(256)
   private final val hexDigits: Array[Char] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
   private final val dumpBorder: Array[Char] =
@@ -3218,4 +3200,30 @@ object JsonReader {
     }
     h
   }
+}
+
+private class Key(var hash: Int, var bs: Array[Byte], var from: Int, var to: Int) {
+  def copy: Key = {
+    val len = to - from
+    val bs1 = new Array[Byte](len)
+    System.arraycopy(bs, from, bs1, 0, len)
+    new Key(hash, bs1, 0, len)
+  }
+
+  override def hashCode: Int = hash
+
+  override def equals(obj: Any): Boolean = {
+    val len = to - from
+    val k = obj.asInstanceOf[Key]
+    val koff = k.from
+    k.to - koff == len && {
+      val kbs = k.bs
+      val off = from
+      var i = 0
+      while (i < len && kbs(i + koff) == bs(i + off)) i += 1
+      i == len
+    }
+  }
+
+  override def toString: String = new String(bs, 0, from, to - from)
 }
