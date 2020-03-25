@@ -1784,7 +1784,22 @@ final class JsonReader private[jsoniter_scala](
           if (fracLen != 0) {
             val limit = from + digits + 1
             val fracPos = limit - fracLen
-            toBigDecimal(buf, from, fracPos - 1, isNeg, scale)
+            val fracLimit = fracPos - 1
+            if (digits < 19) {
+              var x: Long = buf(from) - '0'
+              from += 1
+              while (from < fracLimit) {
+                x = x * 10 + (buf(from) - '0')
+                from += 1
+              }
+              from += 1
+              while (from < limit) {
+                x = x * 10 + (buf(from) - '0')
+                from += 1
+              }
+              if (isNeg) x = -x
+              java.math.BigDecimal.valueOf(x, scale + fracLen)
+            } else toBigDecimal(buf, from, fracLimit, isNeg, scale)
               .add(toBigDecimal(buf, fracPos, limit, isNeg, scale + fracLen))
           } else toBigDecimal(buf, from, from + digits, isNeg, scale)
         if (digits > mc.getPrecision) x = x.plus(mc)
