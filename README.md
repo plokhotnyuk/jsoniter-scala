@@ -23,10 +23,11 @@ and Graal compilers, GraalVM 20 CE for Java 8/11 (dev build) and GraalVM 20 EE f
 ## Acknowledgments
 
 This library started from macros that reused [jsoniter (json-iterator) for Java](https://github.com/json-iterator/java) 
-reader & writer and generated codecs for them but then evolved to have own core of mechanics for parsing and serialization.
+reader & writer and generated codecs for them but then the library was evolved to have its own core of mechanics for 
+parsing and serialization.
 
 The idea to generate codecs by Scala macros and main details was borrowed from
-[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for needs of the JSON domain.
+[Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
   
 Other Scala macros features were peeped in
 [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros)
@@ -153,7 +154,7 @@ Add the core library with a "compile" scope and the macros library with a "provi
 ```sbt
 libraryDependencies ++= Seq(
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.1.8",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.1.8" % "compile-internal" // or "provided", but it required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.1.8" % "compile-internal" // or "provided", but it is required only in compile-time
 )
 ```
 
@@ -179,7 +180,7 @@ val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
-If you don't know-how to make your data structures from scratch but have a JSON sample then use on-line services
+If you don't know how to make your data structures from scratch but have a JSON sample then use on-line services
 [1](https://json2caseclass.cleverapps.io/) [2](https://transform.now.sh/json-to-scala-case-class/) to generate an initial
 version of them.
 
@@ -205,18 +206,18 @@ Samples for integration with different web frameworks:
 - [http4s](https://github.com/TechEmpower/FrameworkBenchmarks/blob/d1f960b2d4d6ea7b5c30a3ef2a8b47670f346f1c/frameworks/Scala/http4s/src/main/scala/WebServer.scala)
 
 For all dependent projects it is recommended to use [sbt-updates plugin](https://github.com/rtimush/sbt-updates) or
-[Scala steward service](https://github.com/scala-steward) to keep up with using of latest releases.
+[Scala steward service](https://github.com/scala-steward) to keep up with using of the latest releases.
 
 ## Known issues
 
 1. Scalac has a bug that affects case classes which have 2 fields where the name of one is a prefix for another name
-that contains a character which should be encoded immediately after the prefix (like `o` and `o-o`). You will get 
+that contains a character that should be encoded immediately after the prefix (like `o` and `o-o`). You will get 
 compilation or runtime error, depending on the version of the compiler, see details [here](https://github.com/scala/bug/issues/11212).
 
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
 affected by the exception (after the `o` field)
 
-2. A configuration parameter for the `make` macro is evaluated in compile-time only that require no dependency on other
+2. A configuration parameter for the `make` macro is evaluated in compile-time only that requires no dependency on other
 code that uses a result of the macro's call. In that case the following compilation error will be reported:
 
 ```
@@ -294,7 +295,7 @@ Learn how to write benchmarks in [JMH samples](https://hg.openjdk.java.net/code-
  and JMH articles posted in [Aleksey Shipilёv’s](https://shipilev.net/) and [Nitsan Wakart’s](https://psy-lob-saw.blogspot.com/p/jmh-related-posts.html)
  blogs.
 
-List of available option can be printed by:
+List of available options can be printed by:
 
 ```sh
 sbt 'jsoniter-scala-benchmark/jmh:run -h'
@@ -312,7 +313,7 @@ password):
 sbt 'jsoniter-scala-benchmark/jmh:run -lprof'
 ```
 
-Help for profiler options can be printed by following command (`<profiler_name>` should be replaced by name of the
+Help for profiler options can be printed by following command (`<profiler_name>` should be replaced by the name of the
 supported profiler from the command above):
 
 ```sh
@@ -325,7 +326,8 @@ For parametrized benchmarks the constant value(s) for parameter(s) can be set by
 sbt clean 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,1000 ArrayOf.*'
 ```
 
-To see throughput with allocation rate of generated codecs run benchmarks with GC profiler using the following command:
+To see throughput with the allocation rate of generated codecs run benchmarks with GC profiler using the following
+command:
 
 ```sh
 sbt clean 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
@@ -399,10 +401,11 @@ additional library to make PrintAssembly feature enabled](https://psy-lob-saw.bl
 sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
 ```
 
-More info about extras, options and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
+More info about extras, options, and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
 
 Other benchmarks with results for jsoniter-scala:
-- [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parser for Scala mostly on samples from real APIs 
+- [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parsers for Scala mostly on samples from real
+  APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java8 only
 - [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializers for Scala
 - [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for Scala
 - [comparison](https://github.com/tkrs/json-bench) with JSON serializers for Scala on synthetic samples
@@ -436,7 +439,7 @@ are required):
 sbt release
 ```
 
-Do not push changes to github until promoted artifacts for the new version are not available for download on
+Do not push changes to GitHub until promoted artifacts for the new version are not available for download on
 [Maven Central Repository](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds.
 
