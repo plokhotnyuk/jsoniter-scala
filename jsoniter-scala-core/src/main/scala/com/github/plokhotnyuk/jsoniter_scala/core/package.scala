@@ -269,5 +269,5 @@ package object core {
     * @throws java.lang.NullPointerException if the `codec` or `config` is null
     */
   def writeToString[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String =
-    new JsonWriter(buf = new Array[Byte](16), limit = 16).writeStringWithoutBufReallocation(codec, x, config)
+    new JsonWriter(buf = new Array[Byte](32), limit = 32).writeStringWithoutBufReallocation(codec, x, config)
 }
