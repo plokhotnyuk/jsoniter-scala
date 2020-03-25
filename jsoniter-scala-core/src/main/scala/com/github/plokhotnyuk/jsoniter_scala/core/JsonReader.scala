@@ -2274,8 +2274,11 @@ final class JsonReader private[jsoniter_scala](
       }
     }
     val localDateTime = LocalDateTime.of(year, month, day, hour, minute, second, nano)
-    val zoneOffset: ZoneOffset =
-      if (b != 'Z') {
+    val zoneOffset =
+      if (b == 'Z') {
+        b = nextByte(head)
+        ZoneOffset.UTC
+      } else {
         hasOffsetHour = true
         val offsetNeg = b == '-' || (b != '+' && timeError(hasSecond, hasNano, nanoDigitWeight))
         val offsetHour = parseOffsetHour(head)
@@ -2291,9 +2294,6 @@ final class JsonReader private[jsoniter_scala](
           }
         }
         toZoneOffset(offsetNeg, offsetHour, offsetMinute, offsetSecond)
-      } else {
-        b = nextByte(head)
-        ZoneOffset.UTC
       }
     if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
     else if (b == '[') {
@@ -2329,7 +2329,14 @@ final class JsonReader private[jsoniter_scala](
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if (q1 * 900 == offsetTotal) {
       if (isNeg) q1 = -q1
-      zoneOffsets(q1 + 72)
+      var zoneOffset = zoneOffsets(q1 + 72)
+      if (zoneOffset ne null) zoneOffset
+      else {
+        if (isNeg) offsetTotal = -offsetTotal
+        zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
+        zoneOffsets(q1 + 72) = zoneOffset
+        zoneOffset
+      }
     } else {
       if (isNeg) offsetTotal = -offsetTotal
       ZoneOffset.ofTotalSeconds(offsetTotal)
@@ -3158,15 +3165,7 @@ object JsonReader {
     }
     bs
   }
-  private final val zoneOffsets: Array[ZoneOffset] = {
-    val zos = new Array[ZoneOffset](145)
-    var i = 0
-    while (i < 145) {
-      zos(i) = ZoneOffset.ofTotalSeconds((i - 72) * 900)
-      i += 1
-    }
-    zos
-  }
+  private final val zoneOffsets: Array[ZoneOffset] = new Array(145)
   private final val zoneIds: ConcurrentHashMap[Key, ZoneId] = new ConcurrentHashMap(256)
   private final val hexDigits: Array[Char] =
     Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
