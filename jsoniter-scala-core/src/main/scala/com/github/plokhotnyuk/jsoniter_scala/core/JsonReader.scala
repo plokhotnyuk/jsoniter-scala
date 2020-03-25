@@ -256,7 +256,7 @@ final class JsonReader private[jsoniter_scala](
 
   def readKeyAsZoneId(): ZoneId = {
     nextTokenOrError('"', head)
-    val x = parseZoneIdUntilToken('"')
+    val x = parseZoneIdWithByte('"')
     nextTokenOrError(':', head)
     x
   }
@@ -444,7 +444,7 @@ final class JsonReader private[jsoniter_scala](
     else readNullOrTokenError(default, '"')
 
   def readZoneId(default: ZoneId): ZoneId =
-    if (isNextToken('"', head)) parseZoneIdUntilToken('"')
+    if (isNextToken('"', head)) parseZoneIdWithByte('"')
     else readNullOrTokenError(default, '"')
 
   def readZoneOffset(default: ZoneOffset): ZoneOffset =
@@ -1072,7 +1072,7 @@ final class JsonReader private[jsoniter_scala](
       offsetSecond
     } else parseOffsetSecondWithByte(t, loadMoreOrError(pos))
 
-  private[this] def parseZoneIdUntilToken(t: Byte): ZoneId = {
+  private[this] def parseZoneIdWithByte(t: Byte): ZoneId = {
     var from = head
     val oldMark = mark
     val newMark =
@@ -2295,14 +2295,12 @@ final class JsonReader private[jsoniter_scala](
         b = nextByte(head)
         ZoneOffset.UTC
       }
-    var zone: ZoneId = null
-    if (b == '[') {
-      zone = parseZoneIdUntilToken(']')
-      b = nextByte(head)
-    }
-    if (b != '"') zonedDateTimeError(zone, hasOffsetHour, hasOffsetSecond)
-    if (zone eq null) ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
-    else ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
+    if (b == '"') ZonedDateTime.ofLocal(localDateTime, zoneOffset, null)
+    else if (b == '[') {
+      val zone = parseZoneIdWithByte(']')
+      nextByteOrError('"', head)
+      ZonedDateTime.ofInstant(localDateTime, zoneOffset, zone)
+    } else zonedDateTimeError(hasOffsetHour, hasOffsetSecond)
   }
 
   private[this] def parseZoneOffset(): ZoneOffset = {
@@ -2439,8 +2437,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def timezoneOffsetSecondError(pos: Int): Nothing = decodeError("illegal timezone offset second", pos)
 
-  private[this] def zonedDateTimeError(zone: ZoneId, hasOffsetHour: Boolean, hasOffsetSecond: Boolean): Nothing = {
-    if (zone ne null) tokenError('"')
+  private[this] def zonedDateTimeError(hasOffsetHour: Boolean, hasOffsetSecond: Boolean): Nothing = {
     if (hasOffsetSecond || !hasOffsetHour) tokensError('[', '"')
     decodeError("expected ':' or '[' or '\"'")
   }
@@ -3213,9 +3210,9 @@ private class Key(var hash: Int, var bs: Array[Byte], var from: Int, var to: Int
   override def hashCode: Int = hash
 
   override def equals(obj: Any): Boolean = {
-    val len = to - from
     val k = obj.asInstanceOf[Key]
     val koff = k.from
+    val len = to - from
     k.to - koff == len && {
       val kbs = k.bs
       val off = from
