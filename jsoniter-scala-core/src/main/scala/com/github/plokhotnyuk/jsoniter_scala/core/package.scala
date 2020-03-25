@@ -165,7 +165,8 @@ package object core {
   def readFromString[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A = {
     val buf = s.getBytes(UTF_8)
     val len = buf.length
-    val reader = new JsonReader(buf = buf, charBuf = new Array[Char](len >> 2), tail = len, config = config)
+    val charBufLen = Math.min(config.preferredCharBufSize, len >> 2)
+    val reader = new JsonReader(buf = buf, charBuf = new Array[Char](charBufLen), tail = len, config = config)
     val x = codec.decodeValue(reader, codec.nullValue)
     if (config.checkForEndOfInput) reader.endOfInputOrError()
     x

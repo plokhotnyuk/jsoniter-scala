@@ -6,9 +6,9 @@ val `jsoniter-scala-examples` = project.in(file("."))
     mainClass in assembly := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "latest.integration",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "compile-internal" // or "provided", but it required only in compile-time
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "compile-internal" // or "provided", but it is required only in compile-time
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 13)) => Seq("org.graalvm.nativeimage" % "svm" % "20.0.0" % "compile-internal") // or "provided", but it required only for compilation to GraalVM native-image
+      case Some((2, 13)) => Seq("org.graalvm.nativeimage" % "svm" % "20.0.0" % "compile-internal") // or "provided", but it is required only in compile-time
       case _ => Seq()
     }),
     assemblyShadeRules in assembly := Seq(
