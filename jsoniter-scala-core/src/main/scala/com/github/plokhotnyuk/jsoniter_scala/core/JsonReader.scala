@@ -1472,7 +1472,7 @@ final class JsonReader private[jsoniter_scala](
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
       val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
+      if (Math.abs(halfwayDiff) >= roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
         if (savedBitNum <= 0) mant = 0
         mant >>>= truncatedBitNum
         exp += truncatedBitNum
@@ -1610,7 +1610,7 @@ final class JsonReader private[jsoniter_scala](
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
       val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
+      if (Math.abs(halfwayDiff) >= roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
         if (savedBitNum <= 0) mant = 0
         mant >>>= truncatedBitNum
         exp += truncatedBitNum
