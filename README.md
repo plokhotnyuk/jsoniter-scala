@@ -409,6 +409,8 @@ Other benchmarks with results for jsoniter-scala:
 - [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializers for Scala
 - [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for Scala
 - [comparison](https://github.com/tkrs/json-bench) with JSON serializers for Scala on synthetic samples
+- [comparison](https://github.com/yanns/scala-json-parsers-performance) with JSON parsers for Scala when parsing from/to
+  a string representation
 - [comparison](https://github.com/guillaumebort/mison/pull/1) with a state of the art filter that by "building
   structural indices converts control flow into data flow, thereby largely eliminating inherently unpredictable branches
   in the program and exploiting the parallelism available in modern processors"
