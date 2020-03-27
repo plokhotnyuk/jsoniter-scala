@@ -8,8 +8,7 @@ class OpenRTBReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
-      //FIXME: Jackson parses nulls in case of missing fields for lists
-      //benchmark.jacksonScala() shouldBe benchmark.obj
+      benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       //FIXME: Play-JSON requires fields for lists with default values
       //benchmark.playJson() shouldBe benchmark.obj

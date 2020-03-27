@@ -6,7 +6,7 @@ import com.avsystem.commons.serialization.json.JsonStringInput
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB.BidRequest
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB._
@@ -32,10 +32,10 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
   @Benchmark
   def circe(): BidRequest = decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: Jackson parses nulls in case of missing fields for lists
+
   @Benchmark
   def jacksonScala(): BidRequest = jacksonMapper.readValue[BidRequest](jsonBytes)
-*/
+
   @Benchmark
   def jsoniterScala(): BidRequest = readFromArray[BidRequest](jsonBytes)
 /* FIXME: Play-JSON requires fields for lists with default values
