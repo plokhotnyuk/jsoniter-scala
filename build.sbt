@@ -1,4 +1,6 @@
+import com.typesafe.tools.mima.core.{MissingClassProblem, ProblemFilters}
 import sbt._
+
 import scala.sys.process._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
@@ -80,6 +82,9 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
+  mimaBinaryIssueFilters := Seq( // internal API to ignore
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key")
+  ),
   mimaReportSignatureProblems := true
 )
 

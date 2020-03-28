@@ -1080,7 +1080,7 @@ final class JsonReader private[jsoniter_scala](
       else oldMark
     mark = newMark
     try {
-      var pos = head
+      var pos = from
       var buf = this.buf
       var hash, b = 0
       while ({
