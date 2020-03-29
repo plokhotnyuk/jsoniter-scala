@@ -1098,10 +1098,10 @@ final class JsonReader private[jsoniter_scala](
       if (mark == 0) from -= newMark
       val k = new Key(hash, buf, from, pos)
       var zoneId = zoneIds.get(k)
-      if (zoneId eq null) {
+      if ((zoneId eq null) && {
         zoneId = ZoneId.of(k.toString)
-        zoneIds.putIfAbsent(k.copy, zoneId)
-      }
+        !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
+      }) zoneIds.putIfAbsent(k.copy, zoneId)
       zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex)
