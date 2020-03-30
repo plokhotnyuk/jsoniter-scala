@@ -10,10 +10,17 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Gen
 
 import scala.jdk.CollectionConverters._
-import scala.util.Try
+import scala.util.{Random, Try}
 
 object GenUtils {
   val isJDK8: Boolean = System.getProperty("java.version").startsWith("1.8")
+  val whitespaces: Seq[String] = (0 to 99).map {
+    val ws = Array(' '.toByte, '\n'.toByte, '\t'.toByte, '\r'.toByte)
+    size =>
+      val bs = new Array[Byte](size)
+      java.util.Arrays.fill(bs, ws(Random.nextInt(ws.length)))
+      new String(bs, 0, 0, bs.length)
+  }
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
   val genSurrogateChar: Gen[Char] = Gen.oneOf(genHighSurrogateChar, genLowSurrogateChar)
@@ -22,10 +29,7 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
-  val genIndentation: Gen[String] = for {
-    string <- Gen.oneOf(" ", "\n", "\t", "\r")
-    size <- Gen.choose(0, ReaderConfig.preferredBufSize)
-  } yield string * size
+  val genWhitespaces: Gen[String] = Gen.choose(0, 99).map(whitespaces)
   val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)), (1, Gen.choose(1, 1000)))
   val genMathContext: Gen[MathContext] = for {
     precision <- genSize
@@ -113,6 +117,8 @@ object GenUtils {
     msb <- arbitrary[Long]
     lsb <- arbitrary[Long]
   } yield new UUID(msb, lsb)
+  val genFiniteDouble: Gen[Double] = arbitrary[Double].filter(java.lang.Double.isFinite)
+  val genFiniteFloat: Gen[Float] = arbitrary[Float].filter(java.lang.Float.isFinite)
   val genNonFiniteDouble: Gen[Double] = Gen.oneOf(
     Gen.oneOf(java.lang.Double.NaN, java.lang.Double.NEGATIVE_INFINITY, java.lang.Double.POSITIVE_INFINITY),
     Gen.choose(0, 0x0007FFFFFFFFFFFFL).map(x => java.lang.Double.longBitsToDouble(x | 0x7FF8000000000000L))) // Double.NaN with error code
