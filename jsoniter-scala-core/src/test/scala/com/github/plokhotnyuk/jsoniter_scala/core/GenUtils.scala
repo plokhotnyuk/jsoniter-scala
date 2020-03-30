@@ -22,6 +22,10 @@ object GenUtils {
   val genMustBeEscapedAsciiChar: Gen[Char] = Gen.oneOf(genControlChar, Gen.oneOf('\\', '"'))
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
+  val genIndentation: Gen[String] = for {
+    string <- Gen.oneOf(" ", "\n", "\t", "\r")
+    size <- Gen.choose(0, ReaderConfig.preferredBufSize)
+  } yield string * size
   val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)), (1, Gen.choose(1, 1000)))
   val genMathContext: Gen[MathContext] = for {
     precision <- genSize

@@ -3055,9 +3055,8 @@ final class JsonReader private[jsoniter_scala](
   @tailrec
   private[this] def skipFixedBytes(n: Int, pos: Int): Int = {
     val newPos = pos + n
-    val diff = newPos - tail
-    if (diff <= 0) newPos
-    else skipFixedBytes(diff, loadMoreOrError(pos))
+    if (newPos <= tail) newPos
+    else skipFixedBytes(n, loadMoreOrError(pos))
   }
 
   private[this] def loadMoreOrError(pos: Int): Int = {

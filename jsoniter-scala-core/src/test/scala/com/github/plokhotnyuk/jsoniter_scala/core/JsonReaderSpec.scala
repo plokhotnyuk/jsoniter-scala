@@ -55,15 +55,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
   }
   "JsonReader.skip" should {
-    def validateSkip(s: String): Unit = {
+    def validateSkip(s: String, indentation: String = ""): Unit = {
       def checkWithSuffix(s: String, suffix: Char): Unit = {
-        val r = reader(s + suffix)
+        val r = reader(indentation + s + suffix)
         r.skip()
         r.nextToken().toChar shouldBe suffix
       }
 
       def check(s: String): Unit = {
-        val r = reader(s)
+        val r = reader(indentation + s)
         r.skip()
         assert(intercept[JsonReaderException](r.nextToken()).getMessage.contains("unexpected end of input"))
       }
@@ -75,14 +75,15 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     "skip string values" in {
-      validateSkip("\"\"")
-      validateSkip("\" \"")
-      validateSkip(" \n\t\r\" \"")
-      validateSkip("\"[\"")
-      validateSkip("\"{\"")
-      validateSkip("\"0\"")
-      validateSkip("\"9\"")
-      validateSkip("\"-\"")
+      forAll(genIndentation) { s =>
+        validateSkip("\"\"", s)
+        validateSkip("\" \"", s)
+        validateSkip("\"[\"", s)
+        validateSkip("\"{\"", s)
+        validateSkip("\"0\"", s)
+        validateSkip("\"9\"", s)
+        validateSkip("\"-\"", s)
+      }
     }
     "throw parsing exception when skipping string that is not closed by parentheses" in {
       assert(intercept[JsonReaderException](validateSkip("\""))
@@ -91,25 +92,25 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.contains("unexpected end of input, offset: 0x00000005"))
     }
     "skip string values with escaped characters" in {
-      validateSkip(""""\\"""")
-      validateSkip(""""\\\"\\"""")
+      forAll(genIndentation) { s =>
+        validateSkip(""""\\"""", s)
+        validateSkip(""""\\\"\\"""", s)
+      }
     }
     "skip number values" in {
-      validateSkip("0")
-      validateSkip("-0.0")
-      validateSkip("1.1")
-      validateSkip("2.1")
-      validateSkip(" 3.1")
-      validateSkip("\n4.1")
-      validateSkip("\t5.1")
-      validateSkip("\r6.1")
-      validateSkip("7.1e+123456789")
-      validateSkip("8.1E-123456789")
-      validateSkip("987654321.0E+10")
+      forAll(genIndentation) { s =>
+        validateSkip("0", s)
+        validateSkip("-0.0", s)
+        validateSkip("7.1e+123456789", s)
+        validateSkip("8.1E-123456789", s)
+        validateSkip("987654321.0E+10", s)
+      }
     }
     "skip boolean values" in {
-      validateSkip("true")
-      validateSkip(" \n\t\rfalse")
+      forAll(genIndentation) { s =>
+        validateSkip("true", s)
+        validateSkip("false", s)
+      }
     }
     "throw parsing exception when skipping truncated boolean value" in {
       assert(intercept[JsonReaderException](validateSkip("t"))
@@ -118,49 +119,56 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
     }
     "skip null values" in {
-      validateSkip("null")
-      validateSkip(" \n\t\rnull")
+      forAll(genIndentation) { s =>
+        validateSkip("null", s)
+      }
     }
     "skip object values" in {
-      validateSkip("{}")
-      validateSkip(" \n\t\r{{{{{}}}}{{{}}}}")
-      validateSkip("{\"{\"}")
+      forAll(genIndentation) { s =>
+        validateSkip("{}", s)
+        validateSkip("{{{{{}}}}{{{}}}}", s)
+        validateSkip("{\"{\"}", s)
+      }
     }
     "throw parsing exception when skipping not closed object" in {
       assert(intercept[JsonReaderException](validateSkip("{{}"))
         .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip array values" in {
-      validateSkip("[]")
-      validateSkip(" \n\t\r[[[[[]]]][[[]]]]")
-      validateSkip("[\"[\"]")
+      forAll(genIndentation) { s =>
+        validateSkip("[]", s)
+        validateSkip("[[[[[]]]][[[]]]]", s)
+        validateSkip("[\"[\"]", s)
+      }
     }
     "throw parsing exception when skipping not closed array" in {
       assert(intercept[JsonReaderException](validateSkip("[[]"))
         .getMessage.contains("unexpected end of input, offset: 0x00000004"))
     }
     "skip mixed values" in {
-      validateSkip(
-        """
-          |{
-          |  "x": {
-          |    "xx": [
-          |      -1.0,
-          |      1,
-          |      4.0E20
-          |    ],
-          |    "yy": {
-          |      "xxx": true,
-          |      "yyy": false,
-          |      "zzz": null
-          |    }
-          |  },
-          |  "y": [
-          |    [1, 2, 3],
-          |    [4, 5, 6],
-          |    [7, 8, 9]
-          |  ]
-          |}""".stripMargin)
+      forAll(genIndentation) { s =>
+        validateSkip(
+          """
+            |{
+            |  "x": {
+            |    "xx": [
+            |      -1.0,
+            |      1,
+            |      4.0E20
+            |    ],
+            |    "yy": {
+            |      "xxx": true,
+            |      "yyy": false,
+            |      "zzz": null
+            |    }
+            |  },
+            |  "y": [
+            |    [1, 2, 3],
+            |    [4, 5, 6],
+            |    [7, 8, 9]
+            |  ]
+            |}""".stripMargin, s)
+      }
     }
     "throw parsing exception when skipping not from start of JSON value" in {
       def checkError(invalidInput: String): Unit =
