@@ -772,6 +772,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeArrayStart()
         w.writeVal(1)
         w.writeVal("VVV")
+        w.writeNonEscapedAsciiVal("WWW")
         w.writeValAsString(2L)
         w.writeValAsString(true)
         w.writeRawVal(Array[Byte](51))
@@ -780,6 +781,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         """[
            |  1,
            |  "VVV",
+           |  "WWW",
            |  "2",
            |  "true",
            |  3
@@ -798,9 +800,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeObjectStart()
         w.writeKey(1)
         w.writeVal("VVV")
-        w.writeKey(true)
-        w.writeVal("WWW")
-        w.writeKey(2)
+        w.writeKey("true")
+        w.writeNonEscapedAsciiVal("WWW")
+        w.writeNonEscapedAsciiKey("2")
         w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
       } shouldBe "{\"1\":\"VVV\",\"true\":\"WWW\",\"2\":3}"
@@ -810,9 +812,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         w.writeObjectStart()
         w.writeKey(1)
         w.writeVal("VVV")
-        w.writeKey(true)
-        w.writeVal("WWW")
-        w.writeKey(2)
+        w.writeKey("true")
+        w.writeNonEscapedAsciiVal("WWW")
+        w.writeNonEscapedAsciiKey("2")
         w.writeRawVal(Array[Byte](51))
         w.writeObjectEnd()
       } shouldBe
