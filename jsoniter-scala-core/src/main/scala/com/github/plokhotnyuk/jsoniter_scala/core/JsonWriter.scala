@@ -773,25 +773,18 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeRawBytes(bs: Array[Byte]): Unit = count = {
-    var buf = this.buf
     var pos = count
-    val preferredStep = Math.max(config.preferredBufSize, limit - pos)
+    var step = Math.max(config.preferredBufSize, limit - pos)
     var remaining = bs.length
     var offset = 0
-    while ({
-      val step =
-        if (preferredStep < remaining) preferredStep
-        else remaining
-      if (pos + step > limit) {
-        pos = flushAndGrowBuf(step, pos)
-        buf = this.buf
-      }
+    while (remaining > 0) {
+      step = Math.min(step, remaining)
+      if (pos + step > limit) pos = flushAndGrowBuf(step, pos)
       System.arraycopy(bs, offset, buf, pos, step)
       offset += step
       pos += step
       remaining -= step
-      remaining > 0
-    }) ()
+    }
     pos
   }
 
@@ -808,7 +801,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeUUID(mostSigBits: Long, leastSigBits: Long): Unit = count = {
-    val pos = ensureBufCapacity(38)
+    val pos = ensureBufCapacity(38) // 38 == (new java.util.UUID(0, 0)).toString.length + 2
     val buf = this.buf
     val ds = lowerCaseHexDigits
     val mostSigBits1 = (mostSigBits >>> 32).toInt
@@ -873,7 +866,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeString(s: String): Unit = count = {
-    var pos = ensureBufCapacity(2)
+    var pos = ensureBufCapacity(2) // 2 bytes for parentheses at this scope
     buf(pos) = '"'
     pos = writeString(s, 0, s.length, pos + 1, limit - 1, escapedChars)
     buf(pos) = '"'
@@ -1048,7 +1041,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Int =
     if (x.bitLength < 64) {
       val v = x.longValue
-      val pos = ensureBufCapacity(28) // == Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
+      val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
       writeLong(v)
       val blockLen = count - pos + (v >> 63).toInt
       val dotOff = scale - blockScale
@@ -1075,7 +1068,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
                                             ss: Array[BigInteger]): Unit =
     if (n < 0) {
-      count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 19 == 18 digits and a place for optional dot
+      count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 18 digits and a place for optional dot
       val dotOff = scale - blockScale
       if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
     } else {
@@ -1085,7 +1078,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
-    val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // == Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+    val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 
@@ -1109,8 +1102,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def insertDot(dotPos: Int): Unit = count = {
-    val buf = this.buf
     var pos = count
+    val buf = this.buf
     while (pos > dotPos) {
       buf(pos) = buf(pos - 1)
       pos -= 1
@@ -1120,7 +1113,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
-    val pos = ensureBufCapacity(5)
+    val pos = ensureBufCapacity(5) // false.toString.length
     val buf = this.buf
     if (x) {
       buf(pos) = 't'
@@ -1278,12 +1271,12 @@ final class JsonWriter private[jsoniter_scala](
       marchDayOfYear = toMarchDayOfYear(marchZeroDay, yearEst)
     }
     yearEst += adjustYear // reset any negative year
-    val marchMonth = ((marchDayOfYear * 17965876275L + 7186350510L) >> 39).toInt // == (marchDayOfYear * 5 + 2) / 153
-    val year = yearEst + (marchMonth * 3435973837L >> 35).toInt // == yearEst + marchMonth / 10 (convert march-based values back to january-based)
+    val marchMonth = ((marchDayOfYear * 17965876275L + 7186350510L) >> 39).toInt // (marchDayOfYear * 5 + 2) / 153
+    val year = yearEst + (marchMonth * 3435973837L >> 35).toInt // yearEst + marchMonth / 10 (convert march-based values back to january-based)
     val month = marchMonth +
       (if (marchMonth < 10) 3
       else -9)
-    val day = marchDayOfYear - ((marchMonth * 1051407994122L - 17179869183L) >> 35).toInt // == marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val day = marchDayOfYear - ((marchMonth * 1051407994122L - 17179869183L) >> 35).toInt // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
     val hour = (secsOfDay * 2443359173L >> 43).toInt // divide positive int by 3600
     val secsOfHour = secsOfDay - hour * 3600
@@ -1775,9 +1768,9 @@ final class JsonWriter private[jsoniter_scala](
         var dp, dm = 0
         var dvIsTrailingZeros, dmIsTrailingZeros = false
         if (e2 >= 0) {
-          val q = (e2 * 1292913986L >> 32).toInt // == (e2 * Math.log10(2)).toInt
+          val q = (e2 * 1292913986L >> 32).toInt // (e2 * Math.log10(2)).toInt
           val s = f32Pow5InvSplit(q)
-          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 28 // == -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 28
+          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 28 // -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 28
           exp = q
           dv = mulPow5DivPow2(mv, s, j)
           dp = mulPow5DivPow2(mp, s, j)
@@ -1789,10 +1782,10 @@ final class JsonWriter private[jsoniter_scala](
             else if (multiplePowOf5(mp, q)) dp -= 1
           }
         } else {
-          val q = (-e2 * 3002053309L >> 32).toInt // == (-e2 * Math.log10(5)).toInt
+          val q = (-e2 * 3002053309L >> 32).toInt // (-e2 * Math.log10(5)).toInt
           val i = -e2 - q
           val s = f32Pow5Split(i)
-          val j = q - (i * 9972605231L >> 32).toInt + 29 // == q - (i * Math.log(5) / Math.log(2)).toInt + 29
+          val j = q - (i * 9972605231L >> 32).toInt + 29 // q - (i * Math.log(5) / Math.log(2)).toInt + 29
           exp = -i
           dv = mulPow5DivPow2(mv, s, j)
           dp = mulPow5DivPow2(mp, s, j)
@@ -1970,11 +1963,11 @@ final class JsonWriter private[jsoniter_scala](
         var dvIsTrailingZeros, dmIsTrailingZeros = false
         if (e2 >= 0) {
           val ss = f64Pow5InvSplit
-          val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // == Math.max(0, (e2 * Math.log10(2)).toInt - 1)
+          val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // Math.max(0, (e2 * Math.log10(2)).toInt - 1)
           val idx = q << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 8 // == -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 8
+          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 8 // -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 8
           exp = q
           dv = fullMulPow5DivPow2(mv, s0, s1, j)
           dp = fullMulPow5DivPow2(mp, s0, s1, j)
@@ -1987,12 +1980,12 @@ final class JsonWriter private[jsoniter_scala](
           }
         } else {
           val ss = f64Pow5Split
-          val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // == Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
+          val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
           val i = -e2 - q
           val idx = i << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          val j = q - (i * 9972605231L >> 32).toInt + 6 // == q - (i * Math.log(5) / Math.log(2)).toInt + 6
+          val j = q - (i * 9972605231L >> 32).toInt + 6 // q - (i * Math.log(5) / Math.log(2)).toInt + 6
           exp = -i
           dv = fullMulPow5DivPow2(mv, s0, s1, j)
           dp = fullMulPow5DivPow2(mp, s0, s1, j)
@@ -2355,12 +2348,11 @@ object JsonWriter {
     if (n >= i) {
       var s = ss(i - 1)
       ss = java.util.Arrays.copyOf(ss, n + 1)
-      while ({
+      while (i <= n) {
         s = s.multiply(s)
         ss(i) = s
         i += 1
-        i <= n
-      }) ()
+      }
       tenPow18Squares = ss
     }
     ss
