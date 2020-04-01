@@ -160,16 +160,64 @@ final class JsonWriter private[jsoniter_scala](
     writeColon()
   }
 
-  def writeKey(x: String): Unit = {
-    writeOptionalCommaAndIndentionBeforeKey()
-    writeString(x)
-    writeColon()
+  def writeKey(x: String): Unit = count = {
+    val indention = this.indention
+    var pos = ensureBufCapacity(indention + 3)
+    var buf = this.buf
+    if (comma) {
+      comma = false
+      buf(pos) = ','
+      pos += 1
+      if (indention != 0) {
+        buf(pos) = '\n'
+        pos += 1
+        pos = writeNBytes(indention, ' ', pos, buf)
+      }
+    }
+    buf(pos) = '"'
+    pos += 1
+    pos = writeString(x, 0, x.length, pos, limit - 1, escapedChars)
+    if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
+    buf = this.buf
+    buf(pos) = '"'
+    pos += 1
+    buf(pos) = ':'
+    pos += 1
+    if (config.indentionStep > 0) {
+      buf(pos) = ' '
+      pos += 1
+    }
+    pos
   }
 
-  def writeNonEscapedAsciiKey(x: String): Unit = {
-    writeOptionalCommaAndIndentionBeforeKey()
-    writeNonEscapedAsciiString(x)
-    writeColon()
+  def writeNonEscapedAsciiKey(x: String): Unit = count = {
+    val len = x.length
+    val indention = this.indention
+    var pos = ensureBufCapacity(indention + len + 6)
+    val buf = this.buf
+    if (comma) {
+      comma = false
+      buf(pos) = ','
+      pos += 1
+      if (indention != 0) {
+        buf(pos) = '\n'
+        pos += 1
+        pos = writeNBytes(indention, ' ', pos, buf)
+      }
+    }
+    buf(pos) = '"'
+    pos += 1
+    x.getBytes(0, len, buf, pos)
+    pos += len
+    buf(pos) = '"'
+    pos += 1
+    buf(pos) = ':'
+    pos += 1
+    if (config.indentionStep > 0) {
+      buf(pos) = ' '
+      pos += 1
+    }
+    pos
   }
 
   def writeKey(x: Duration): Unit = {
@@ -246,7 +294,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeKey(x: ZoneId): Unit = {
     writeOptionalCommaAndIndentionBeforeKey()
-    writeNonEscapedAsciiString(x.getId)
+    writeZoneId(x)
     writeColon()
   }
 
@@ -274,14 +322,43 @@ final class JsonWriter private[jsoniter_scala](
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
   }
 
-  def writeVal(x: String): Unit = {
-    writeOptionalCommaAndIndentionBeforeValue()
-    writeString(x)
+  def writeVal(x: String): Unit = count = {
+    val indention = this.indention
+    var pos = ensureBufCapacity(indention + 4)
+    if (comma) {
+      buf(pos) = ','
+      pos += 1
+      if (indention != 0) {
+        buf(pos) = '\n'
+        pos += 1
+        pos = writeNBytes(indention, ' ', pos, buf)
+      }
+    } else comma = true
+    buf(pos) = '"'
+    pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
+    buf(pos) = '"'
+    pos + 1
   }
 
-  def writeNonEscapedAsciiVal(x: String): Unit = {
-    writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiString(x)
+  def writeNonEscapedAsciiVal(x: String): Unit =  count = {
+    val len = x.length
+    val indention = this.indention
+    var pos = ensureBufCapacity(indention + len + 4)
+    if (comma) {
+      buf(pos) = ','
+      pos += 1
+      if (indention != 0) {
+        buf(pos) = '\n'
+        pos += 1
+        pos = writeNBytes(indention, ' ', pos, buf)
+      }
+    } else comma = true
+    buf(pos) = '"'
+    pos += 1
+    x.getBytes(0, len, buf, pos)
+    pos += len
+    buf(pos) = '"'
+    pos + 1
   }
 
   def writeVal(x: Duration): Unit = {
@@ -346,7 +423,7 @@ final class JsonWriter private[jsoniter_scala](
 
   def writeVal(x: ZoneId): Unit = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeNonEscapedAsciiString(x.getId)
+    writeZoneId(x)
   }
 
   def writeVal(x: ZoneOffset): Unit = {
@@ -788,7 +865,8 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
-  private[this] def writeNonEscapedAsciiString(s: String): Unit = count = {
+  private[this] def writeZoneId(x: ZoneId): Unit = count = {
+    val s = x.getId
     val len = s.length
     var pos = ensureBufCapacity(len + 2)
     val buf = this.buf
@@ -863,14 +941,6 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 36) = (d16 >> 8).toByte
     buf(pos + 37) = '"'
     pos + 38
-  }
-
-  private[this] def writeString(s: String): Unit = count = {
-    var pos = ensureBufCapacity(2) // 2 bytes for parentheses at this scope
-    buf(pos) = '"'
-    pos = writeString(s, 0, s.length, pos + 1, limit - 1, escapedChars)
-    buf(pos) = '"'
-    pos + 1
   }
 
   @tailrec
