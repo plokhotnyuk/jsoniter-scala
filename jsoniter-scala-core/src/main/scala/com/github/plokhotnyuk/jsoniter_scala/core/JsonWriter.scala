@@ -167,27 +167,21 @@ final class JsonWriter private[jsoniter_scala](
     if (comma) {
       comma = false
       buf(pos) = ','
-      pos += 1
       if (indention != 0) {
-        buf(pos) = '\n'
-        pos += 1
-        pos = writeNBytes(indention, ' ', pos, buf)
-      }
+        buf(pos + 1) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 2, buf)
+      } else pos += 1
     }
     buf(pos) = '"'
-    pos += 1
-    pos = writeString(x, 0, x.length, pos, limit - 1, escapedChars)
+    pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
     if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
-    pos += 1
-    buf(pos) = ':'
-    pos += 1
+    buf(pos + 1) = ':'
     if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    pos
+      buf(pos + 2) = ' '
+      pos + 3
+    } else pos + 2
   }
 
   def writeNonEscapedAsciiKey(x: String): Unit = count = {
@@ -198,26 +192,21 @@ final class JsonWriter private[jsoniter_scala](
     if (comma) {
       comma = false
       buf(pos) = ','
-      pos += 1
       if (indention != 0) {
-        buf(pos) = '\n'
-        pos += 1
-        pos = writeNBytes(indention, ' ', pos, buf)
-      }
+        buf(pos + 1) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 2, buf)
+      } else pos += 1
     }
     buf(pos) = '"'
     pos += 1
     x.getBytes(0, len, buf, pos)
     pos += len
     buf(pos) = '"'
-    pos += 1
-    buf(pos) = ':'
-    pos += 1
+    buf(pos + 1) = ':'
     if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    pos
+      buf(pos + 2) = ' '
+      pos + 3
+    } else pos + 2
   }
 
   def writeKey(x: Duration): Unit = {
@@ -327,12 +316,10 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(indention + 4)
     if (comma) {
       buf(pos) = ','
-      pos += 1
       if (indention != 0) {
-        buf(pos) = '\n'
-        pos += 1
-        pos = writeNBytes(indention, ' ', pos, buf)
-      }
+        buf(pos + 1) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 2, buf)
+      } else pos += 1
     } else comma = true
     buf(pos) = '"'
     pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
@@ -346,12 +333,10 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(indention + len + 4)
     if (comma) {
       buf(pos) = ','
-      pos += 1
       if (indention != 0) {
-        buf(pos) = '\n'
-        pos += 1
-        pos = writeNBytes(indention, ' ', pos, buf)
-      }
+        buf(pos + 1) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 2, buf)
+      } else pos += 1
     } else comma = true
     buf(pos) = '"'
     pos += 1
@@ -829,21 +814,19 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = ds(p >> 12)
       buf(pos + 1) = ds((p >> 6) & 0x3F)
       buf(pos + 2) = ds(p & 0x3F)
-      pos += 3
       if (doPadding) {
-          buf(pos) = '='
-          pos += 1
-      }
+        buf(pos + 3) = '='
+        pos += 4
+      } else pos += 3
     } else if (offset == lenM2 + 1) {
       val p = bs(offset) & 0xFF
       buf(pos) = ds(p >> 2)
       buf(pos + 1) = ds((p << 4) & 0x3F)
-      pos += 2
       if (doPadding) {
-        buf(pos) = '='
-        buf(pos + 1) = '='
-        pos += 2
-      }
+        buf(pos + 2) = '='
+        buf(pos + 3) = '='
+        pos += 4
+      } else pos += 2
     }
     buf(pos) = '"'
     pos + 1
@@ -1941,12 +1924,13 @@ final class JsonWriter private[jsoniter_scala](
         if (exp < 0) {
           buf(pos) = '0'
           buf(pos + 1) = '.'
-          pos = writeNBytes(-1 - exp, '0', pos + 2, buf)
-          writePositiveIntStartingFromLastPosition(dv, pos + len - 1, buf, ds)
-          pos + len
+          pos = writeNBytes(-1 - exp, '0', pos + 2, buf) + len
+          writePositiveIntStartingFromLastPosition(dv, pos - 1, buf, ds)
+          pos
         } else if (exp + 1 >= len) {
-          writePositiveIntStartingFromLastPosition(dv, pos + len - 1, buf, ds)
-          pos = writeNBytes(exp - len + 1, '0', pos + len, buf)
+          pos += len
+          writePositiveIntStartingFromLastPosition(dv, pos - 1, buf, ds)
+          pos = writeNBytes(exp - len + 1, '0', pos, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
           pos + 2
@@ -1964,8 +1948,9 @@ final class JsonWriter private[jsoniter_scala](
       } else {
         writePositiveIntStartingFromLastPosition(dv, pos + len, buf, ds)
         buf(pos) = buf(pos + 1)
-        buf(pos + 1) = '.'
-        pos += len + 1
+        pos += 1
+        buf(pos) = '.'
+        pos += len
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
@@ -2141,12 +2126,13 @@ final class JsonWriter private[jsoniter_scala](
         if (exp < 0) {
           buf(pos) = '0'
           buf(pos + 1) = '.'
-          pos = writeNBytes(-1 - exp, '0', pos + 2, buf)
-          writeSmallPositiveLongStartingFromLastPosition(dv, pos + len - 1, buf, ds)
-          pos + len
+          pos = writeNBytes(-1 - exp, '0', pos + 2, buf) + len
+          writeSmallPositiveLongStartingFromLastPosition(dv, pos - 1, buf, ds)
+          pos
         } else if (exp + 1 >= len) {
-          writeSmallPositiveLongStartingFromLastPosition(dv, pos + len - 1, buf, ds)
-          pos = writeNBytes(exp - len + 1, '0', pos + len, buf)
+          pos += len
+          writeSmallPositiveLongStartingFromLastPosition(dv, pos - 1, buf, ds)
+          pos = writeNBytes(exp - len + 1, '0', pos, buf)
           buf(pos) = '.'
           buf(pos + 1) = '0'
           pos + 2
@@ -2164,8 +2150,9 @@ final class JsonWriter private[jsoniter_scala](
       } else {
         writeSmallPositiveLongStartingFromLastPosition(dv, pos + len, buf, ds)
         buf(pos) = buf(pos + 1)
-        buf(pos + 1) = '.'
-        pos += len + 1
+        pos += 1
+        buf(pos) = '.'
+        pos += len
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
