@@ -1639,7 +1639,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def addExp(e2: Int, e10: Int): Int =
-    (e10 * 14267572527L >> 32).toInt + e2 + 1 // == (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
+    (e10 * 14267572527L >> 32).toInt + e2 + 1 // (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -1844,7 +1844,7 @@ final class JsonReader private[jsoniter_scala](
       (buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
       (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
       (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
-      buf(pos + 16) * 10 + buf(pos + 17) - 5333333333333333328L // == '0' * 111111111111111111L
+      buf(pos + 16) * 10 + buf(pos + 17) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
     if (isNeg) {
       x1 = -x1
       x2 = -x2
@@ -1862,7 +1862,7 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = ((len * 445861642L) >>> 32).toInt // == (len * log(10) / log (1L << 32)).toInt
+    val lastWord = ((len * 445861642L) >>> 32).toInt // (len * log(10) / log (1L << 32)).toInt
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
     magWords(lastWord) = x.toInt
@@ -1872,7 +1872,7 @@ final class JsonReader private[jsoniter_scala](
         (buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
         (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
         (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-        buf(pos + 8) - 5333333328L // == '0' * 111111111L
+        buf(pos + 8) - 5333333328L // 5333333328L == '0' * 111111111L
       var i = lastWord
       while (i >= 0) {
         val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
@@ -2331,7 +2331,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    var q1 = (offsetTotal * 2443359173L >> 41).toInt // div positive int by 900
+    var q1 = (offsetTotal * 2443359173L >> 41).toInt // divide positive int by 900
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if (q1 * 900 == offsetTotal) {
       if (isNeg) q1 = -q1
@@ -2352,13 +2352,13 @@ final class JsonReader private[jsoniter_scala](
   private[this] def epochDayForYear(year: Int): Long =
     365L * year + (((year + 3) >> 2) - {
       if (year < 0) {
-        val century = year * 1374389535L >> 37 // divide int by 100 (x sign correction is not required)
+        val century = year * 1374389535L >> 37 // divide positive int by 100
         century - (century >> 2)
-      } else ((year + 99) * 1374389535L >> 37) - ((year + 399) * 1374389535L >> 39) // divide int by 100 and by 400 accordingly (x sign correction is not required)
+      } else ((year + 99) * 1374389535L >> 37) - ((year + 399) * 1374389535L >> 39) // divide positive int by 100 and by 400 accordingly
     })
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 1050835331877L - 1036518774222L) >> 35).toInt - // == (367 * month - 362) / 12
+    ((month * 1050835331877L - 1036518774222L) >> 35).toInt - // (367 * month - 362) / 12
       (if (month <= 2) 0
       else if (isLeap(year)) 1
       else 2)
