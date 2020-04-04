@@ -1799,12 +1799,12 @@ final class JsonWriter private[jsoniter_scala](
         exp += len
         len += 1
         decimalNotation = (exp < 7) || {
-          var newDv = 0
-          while ((dv >= 100) && {
-            newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-            newDv * 10 == dv
+          var p = 0L
+          while (dv >= 100 && {
+            p = dv * 3435973837L
+            (p & 0x780000000L) == 0 // test if reminder of division by 10 is zero
           }) {
-            dv = newDv
+            dv = (p >> 35).toInt // divide positive int by 10
             len -= 1
           }
           false
@@ -1855,13 +1855,15 @@ final class JsonWriter private[jsoniter_scala](
         decimalNotation = exp >= -3 && exp < 7
         if (dmIsTrailingZeros || dvIsTrailingZeros) {
           var newDp, newDm, lastRemovedDigit = 0
+          var p, s = 0L
           while ((decimalNotation || dp >= 100) && {
             newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-            newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
+            p = dm * 3435973837L
+            newDm = (p >> 35).toInt // divide positive int by 10
             newDp > newDm
           }) {
             dp = newDp
-            dmIsTrailingZeros &= newDm * 10 == dm
+            s |= p
             dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
@@ -1869,13 +1871,14 @@ final class JsonWriter private[jsoniter_scala](
             dv = newDv
             len -= 1
           }
+          dmIsTrailingZeros &= (s & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
           if (dmIsTrailingZeros && even) {
             while ((decimalNotation || dp >= 100) && {
-              newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-              newDm * 10 == dm
+              p = dm * 3435973837L
+              (p & 0x780000000L) == 0 // test if reminder of division by 10 is zero
             }) {
-              dp = (dp * 3435973837L >> 35).toInt
-              dm = newDm
+              dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
+              dm = (p >> 35).toInt // divide positive int by 10
               dvIsTrailingZeros &= lastRemovedDigit == 0
               val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
               lastRemovedDigit = dv - newDv * 10
@@ -1996,7 +1999,7 @@ final class JsonWriter private[jsoniter_scala](
         len += 1
         decimalNotation = (exp < 7) || {
           var newDv = 0L
-          while ((dv >= 100) && {
+          while (dv >= 100 && {
             newDv = dv / 10
             newDv * 10 == dv
           }) {
