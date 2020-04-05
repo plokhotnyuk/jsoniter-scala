@@ -4,7 +4,7 @@
 [![TravisCI build](https://travis-ci.org/plokhotnyuk/jsoniter-scala.svg?branch=master)](https://travis-ci.org/plokhotnyuk/jsoniter-scala) 
 [![Code coverage](https://codecov.io/gh/plokhotnyuk/jsoniter-scala/branch/master/graph/badge.svg)](https://codecov.io/gh/plokhotnyuk/jsoniter-scala)
 [![Gitter chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://img.shields.io/badge/maven--central-2.1.11-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
+[![Maven Central](https://img.shields.io/badge/maven--central-2.1.12-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
 
 Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
 parsing and serialization.
@@ -153,8 +153,8 @@ Add the core library with a "compile" scope and the macros library with a "provi
 
 ```sbt
 libraryDependencies ++= Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.1.11",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.1.11" % "compile-internal" // or "provided", but it is required only in compile-time
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.1.12",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.1.12" % "compile-internal" // or "provided", but it is required only in compile-time
 )
 ```
 
