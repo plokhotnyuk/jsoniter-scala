@@ -1862,8 +1862,8 @@ final class JsonWriter private[jsoniter_scala](
             newDm = (p >> 35).toInt // divide positive int by 10
             newDp > newDm
           }) {
-            dp = newDp
             s |= p
+            dp = newDp
             dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
@@ -2065,8 +2065,8 @@ final class JsonWriter private[jsoniter_scala](
             newDm = dm / 10
             newDp > newDm
           }) {
+            if (dmIsTrailingZeros) dmIsTrailingZeros = newDm * 10 == dm
             dp = newDp
-            dmIsTrailingZeros &= newDm * 10 == dm
             dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = dv / 10
