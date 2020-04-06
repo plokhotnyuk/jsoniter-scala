@@ -594,16 +594,21 @@ final class JsonReader private[jsoniter_scala](
     true
   }
 
-  def skip(): Unit = head = {
-    val b = nextToken(head)
-    if (b == '"') skipString(evenBackSlashes = true, head)
-    else if ((b >= '0' && b <= '9') || b == '-') skipNumber(head)
-    else if (b == 'n' || b == 't') skipFixedBytes(3, head)
-    else if (b == 'f') skipFixedBytes(4, head)
-    else if (b == '[') skipArray(0, head)
-    else if (b == '{') skipObject(0, head)
-    else decodeError("expected value")
-  }
+  def skip(): Unit = head = skip(head)
+
+  @tailrec
+  private[this] def skip(pos: Int): Int =
+    if (pos < tail) {
+      val b = buf(pos)
+      if (b == '"') skipString(evenBackSlashes = true, pos + 1)
+      else if ((b >= '0' && b <= '9') || b == '-') skipNumber(pos + 1)
+      else if (b == 'n' || b == 't') skipFixedBytes(3, pos + 1)
+      else if (b == 'f') skipFixedBytes(4, pos + 1)
+      else if (b == '[') skipArray(0, pos + 1)
+      else if (b == '{') skipObject(0, pos + 1)
+      else if (b == ' ' || b == '\n' || (b | 0x4) == '\r') skip(pos + 1)
+      else decodeError("expected value", pos)
+    } else skip(loadMoreOrError(pos))
 
   def commaError(): Nothing = decodeError("expected ','")
 
