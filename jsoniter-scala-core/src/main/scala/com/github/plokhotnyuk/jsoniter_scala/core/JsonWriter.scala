@@ -1873,16 +1873,10 @@ final class JsonWriter private[jsoniter_scala](
           }
           dmIsTrailingZeros &= (s & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
           if (dmIsTrailingZeros && even) {
-            while ((decimalNotation || dp >= 100) && {
-              p = dm * 3435973837L
-              (p & 0x780000000L) == 0 // test if reminder of division by 10 is zero
-            }) {
-              dp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-              dm = (p >> 35).toInt // divide positive int by 10
-              dvIsTrailingZeros &= lastRemovedDigit == 0
-              val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-              lastRemovedDigit = dv - newDv * 10
-              dv = newDv
+            while ((decimalNotation || dv >= 99) && (p & 0x780000000L) == 0) {  // test if reminder of division by 10 is zero
+              dv = (p >> 35).toInt // divide positive int by 10
+              p = dv * 3435973837L
+              lastRemovedDigit = 0 // disable rounding up
               len -= 1
             }
           }
@@ -2075,16 +2069,11 @@ final class JsonWriter private[jsoniter_scala](
             len -= 1
           }
           if (dmIsTrailingZeros && even) {
-            while ((decimalNotation || dp >= 100) && {
-              newDm = dm / 10
-              newDm * 10 == dm
-            }) {
-              dp /= 10
+            while ((decimalNotation || dv >= 99) && newDm * 10 == dm) {
+              dv /= 10
               dm = newDm
-              dvIsTrailingZeros &= lastRemovedDigit == 0
-              val newDv = dv / 10
-              lastRemovedDigit = dv - newDv * 10
-              dv = newDv
+              newDm = dv
+              lastRemovedDigit = 0 // disable rounding up
               len -= 1
             }
           }
