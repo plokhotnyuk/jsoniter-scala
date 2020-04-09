@@ -1853,38 +1853,39 @@ final class JsonWriter private[jsoniter_scala](
         exp += len
         len += 1
         decimalNotation = exp >= -3 && exp < 7
+        var newDp, newDm, oldDv = 0
         if (dmIsTrailingZeros || dvIsTrailingZeros) {
-          var newDp, newDm, lastRemovedDigit = 0
-          var p, s = 0L
+          var pm, sm, pv, sv = 0L
           while ((decimalNotation || dp >= 100) && {
             newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-            p = dm * 3435973837L
-            newDm = (p >> 35).toInt // divide positive int by 10
+            pm = dm * 3435973837L
+            newDm = (pm >> 35).toInt // divide positive int by 10
             newDp > newDm
           }) {
-            s |= p
+            sv |= pv
+            sm |= pm
             dp = newDp
             dm = newDm
-            dvIsTrailingZeros &= lastRemovedDigit == 0
-            val newDv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
-            lastRemovedDigit = dv - newDv * 10
-            dv = newDv
+            oldDv = dv
+            pv = dv * 3435973837L
+            dv = (pv >> 35).toInt // divide positive int by 10
             len -= 1
           }
-          dmIsTrailingZeros &= (s & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
+          dmIsTrailingZeros &= (sm & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
+          dvIsTrailingZeros &= (sv & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
           if (dmIsTrailingZeros && even) {
-            while ((decimalNotation || dv >= 99) && (p & 0x780000000L) == 0) {  // test if reminder of division by 10 is zero
-              dv = (p >> 35).toInt // divide positive int by 10
-              p = dv * 3435973837L
-              lastRemovedDigit = 0 // disable rounding up
+            while ((decimalNotation || dv >= 99) && (pm & 0x780000000L) == 0) {  // test if reminder of division by 10 is zero
+              dv = (pm >> 35).toInt // divide positive int by 10
+              pm = dv * 3435973837L
+              oldDv = 0 // disable rounding up
               len -= 1
             }
           }
+          var lastRemovedDigit = 0
+          if (oldDv != 0) lastRemovedDigit = oldDv - dv * 10
           if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
         } else {
-          var newDp, newDm = 0
-          var oldDv = dv
           while ((decimalNotation || dp >= 1000) && {
             newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
             newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
@@ -2080,8 +2081,7 @@ final class JsonWriter private[jsoniter_scala](
           if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
             (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
         } else {
-          var newDp, newDm = 0L
-          var oldDv = dv
+          var newDp, newDm, oldDv = 0L
           while ((decimalNotation || dp >= 1000) && {
             newDp = dp / 100
             newDm = dm / 100
