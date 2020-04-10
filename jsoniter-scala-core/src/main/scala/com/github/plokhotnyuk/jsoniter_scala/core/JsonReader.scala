@@ -1096,7 +1096,7 @@ final class JsonReader private[jsoniter_scala](
       if ((zoneId eq null) && {
         zoneId = ZoneId.of(k.toString)
         !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
-      }) zoneIds.putIfAbsent(k.copy, zoneId)
+      }) zoneIds.put(k.copy, zoneId)
       zoneId
     } catch {
       case ex: DateTimeException => timezoneError(ex)
