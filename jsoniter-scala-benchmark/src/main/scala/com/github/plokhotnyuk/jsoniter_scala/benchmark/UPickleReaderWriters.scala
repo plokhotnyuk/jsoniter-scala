@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
+import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import upickle.AttributeTagged
@@ -89,7 +90,18 @@ object UPickleReaderWriters extends AttributeTagged {
       "Clubs" -> Clubs)
     s => suite.getOrElse(s.toString, throw new IllegalArgumentException("SuitADT"))
   }, strWriter[SuitADT])
-  implicit val (suitEnumReader, suitEnumWriter) = (strReader(s => SuitEnum.withName(s.toString)), strWriter[SuitEnum])
+  implicit val (suitEnumReader: SimpleReader[SuitEnum], suitEnumWriter: Writer[SuitEnum]) = (strReader[SuitEnum]({
+    val ec = new ConcurrentHashMap[String, SuitEnum]
+    (cs: CharSequence) => {
+      val s = cs.toString
+      var x = ec.get(s)
+      if (x eq null) {
+        x = SuitEnum.withName(s)
+        ec.put(s, x)
+      }
+      x
+    }
+  }), strWriter[SuitEnum])
   implicit val (suitReader, suitWriter) = (strReader(s => Suit.valueOf(s.toString)), strWriter[Suit])
   implicit val (yearReader, yearWriter) = (strReader(Year.parse), strWriter[Year])
   implicit val (yearMonthReader, yearMonthWriter) = (strReader(YearMonth.parse), strWriter[YearMonth])

@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.math.MathContext
 import java.time._
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.GenCodec._
@@ -21,7 +22,17 @@ object AVSystemCodecs {
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
   implicit val anyValsGenCodec: GenCodec[AnyVals] = materializeRecursively
   implicit val durationGenCodec: GenCodec[Duration] = transformed(_.toString, Duration.parse)
-  implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, SuitEnum.withName)
+  implicit val suitEnumGenCodec: GenCodec[SuitEnum] = transformed(_.toString, {
+    val ec = new ConcurrentHashMap[String, SuitEnum]
+    (s: String) => {
+      var x = ec.get(s)
+      if (x eq null) {
+        x = SuitEnum.withName(s)
+        ec.put(s, x)
+      }
+      x
+    }
+  })
   implicit val instantGenCodec: GenCodec[Instant] = transformed(_.toString, Instant.parse)
   implicit val localDateGenCodec: GenCodec[LocalDate] = transformed(_.toString, LocalDate.parse)
   implicit val localDateTimeGenCodec: GenCodec[LocalDateTime] = transformed(_.toString, LocalDateTime.parse)

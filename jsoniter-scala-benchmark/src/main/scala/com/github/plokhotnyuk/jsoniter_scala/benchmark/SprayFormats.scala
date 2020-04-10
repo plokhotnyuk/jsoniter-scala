@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import pl.iterators.kebs.json.KebsSpray
@@ -9,14 +10,22 @@ import spray.json._
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
+import scala.util.Try
 import scala.util.control.NonFatal
 
 // Based on the code found: https://github.com/spray/spray-json/issues/200
 case class EnumJsonFormat[T <: scala.Enumeration](e: T) extends RootJsonFormat[T#Value] {
-  override def read(json: JsValue): T#Value =
-    e.values.iterator.find { ev =>
-      json.isInstanceOf[JsString] && json.asInstanceOf[JsString].value == ev.toString
-    }.getOrElse(deserializationError(s"Expected JSON string of value from enum $e, but got $json"))
+  private[this] val ec = new ConcurrentHashMap[String, T#Value]
+
+  override def read(json: JsValue): T#Value = Try {
+    val s = json.asInstanceOf[JsString].value
+    var x = ec.get(s)
+    if (x eq null) {
+      x = e.values.iterator.find(_.toString == s).get
+      ec.put(s, x)
+    }
+    x
+  }.getOrElse(deserializationError(s"Expected JSON string of value from enum $e, but got $json"))
 
   override def write(ev: T#Value): JsValue = new JsString(ev.toString)
 }

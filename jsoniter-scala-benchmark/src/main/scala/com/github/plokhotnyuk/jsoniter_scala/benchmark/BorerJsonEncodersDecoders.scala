@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.math.MathContext
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.bullet.borer.{AdtEncodingStrategy, Codec, Decoder, Encoder, Reader, Writer}
@@ -132,11 +133,18 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(uuidEnc: Encoder[UUID], uuidDec: Decoder[UUID]) = stringCodec(UUID.fromString)
 
   def enumCodec[T <: scala.Enumeration](e: T): Codec[T#Value] = Codec(
-    (w: Writer, value: T#Value) => w.writeString(value.toString),
-    (r: Reader) => {
-      val v = r.readString()
-      e.values.iterator.find(_.toString == v)
-        .getOrElse(throw new InvalidInputData(r.position, s"Expected [String] from enum $e, but got $v"))
+    (w: Writer, value: T#Value) => w.writeString(value.toString), {
+      val ec = new ConcurrentHashMap[String, T#Value]
+      (r: Reader) => {
+        val s = r.readString()
+        var v = ec.get(s)
+        if (v eq null) {
+          v = e.values.iterator.find(_.toString == s)
+            .getOrElse(throw new InvalidInputData(r.position, s"Expected [String] from enum $e, but got $s"))
+          ec.put(s, v)
+        }
+        v
+      }
     })
 
   def stringCodec[T](f: String => T): Codec[T] = Codec(
