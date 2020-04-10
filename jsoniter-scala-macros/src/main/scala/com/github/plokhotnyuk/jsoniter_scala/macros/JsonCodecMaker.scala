@@ -476,6 +476,17 @@ object JsonCodecMaker {
           Ident(mathContextName)
         }
 
+      val scalaEnumCacheNames = mutable.LinkedHashMap.empty[Type, TermName]
+      val scalaEnumCacheTries = mutable.LinkedHashMap.empty[Type, Tree]
+
+      def withScalaEnumCacheFor(tpe: Type): Tree = {
+        val ec = q"new _root_.java.util.concurrent.ConcurrentHashMap[String, $tpe]"
+        val enumCacheName = scalaEnumCacheNames.getOrElseUpdate(tpe, TermName("ec" + scalaEnumCacheNames.size))
+        scalaEnumCacheTries.getOrElseUpdate(tpe,
+          q"private[this] val $enumCacheName: _root_.java.util.concurrent.ConcurrentHashMap[String, $tpe] = $ec")
+        Ident(enumCacheName)
+      }
+
       case class EnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
       val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
@@ -560,9 +571,14 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZoneId]) q"in.readKeyAsZoneId()"
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
         else if (tpe <:< typeOf[Enumeration#Value]) {
-          q"""val len = in.readKeyAsCharBuf()
-              ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(len, e.toString))
-                .getOrElse(in.enumValueError(len))"""
+          val ec = withScalaEnumCacheFor(tpe)
+          q"""val s = in.readKeyAsString()
+              var x = $ec.get(s)
+              if (x eq null) {
+                x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
+                $ec.put(s, x)
+              }
+              x"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
           q"""val l = in.readKeyAsCharBuf()
               ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
@@ -1296,11 +1312,16 @@ object JsonCodecMaker {
                 i += 1""",
             q"if (i == x.length) x else $shrinkArray")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
+          val ec = withScalaEnumCacheFor(tpe)
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
-                val l = in.readStringAsCharBuf()
-                ${enumSymbol(tpe)}.values.iterator.find(e => in.isCharBufEqualsTo(l, e.toString))
-                  .getOrElse(in.enumValueError(l))
+                val s = in.readString(null)
+                var x = $ec.get(s)
+                if (x eq null) {
+                  x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
+                  $ec.put(s, x)
+                }
+                x
               } else in.readNullOrTokenError(default, '"')"""
         } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
@@ -1679,6 +1700,7 @@ object JsonCodecMaker {
               ..${equalsMethodTrees.values}
               ..${nullValueTrees.values}
               ..${mathContextTrees.values}
+              ..${scalaEnumCacheTries.values}
             }"""
       if (c.settings.contains("print-codecs")) {
         c.info(c.enclosingPosition, s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}", force = true)
