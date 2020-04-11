@@ -53,9 +53,10 @@ case class JavaTypes(uuid: UUID)
 
 object LocationType extends Enumeration {
   type LocationType = Value
-  val GPS: LocationType = Value(1, "GPS") // always set the name explicitly in your Enumeration definition, if you still not sure, then
-  val IP: LocationType = Value(2, "IP") // please look and check that the following synchronized block will not affect your code in run-time:
-  val UserProvided: LocationType = Value(3, "UserProvided") // https://github.com/scala/scala/blob/1692ae306dc9a5ff3feebba6041348dfdee7cfb5/src/library/scala/Enumeration.scala#L203
+
+  val IP, GPS: LocationType = Value
+
+  def extra(name: String): LocationType = Value(nextId, name)
 }
 
 case class Enums(lt: LocationType.LocationType)
@@ -354,10 +355,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize enumerations" in {
       verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""")
+      verifySerDeser(codecOfEnums, Enums(LocationType.extra("Galileo")), """{"lt":"Galileo"}""")
     }
     "throw parse exception in case of illegal value of enumeration" in {
       verifyDeserError(codecOfEnums, """{"lt":null}""", "expected '\"', offset: 0x00000006")
-      verifyDeserError(codecOfEnums, """{"lt":"Galileo"}""", "illegal enum value \"Galileo\", offset: 0x0000000e")
+      verifyDeserError(codecOfEnums, """{"lt":"GLONASS"}""", "illegal enum value \"GLONASS\", offset: 0x0000000e")
     }
     "serialize and deserialize top-level enumerations" in {
       verifySerDeser(make[LocationType.LocationType](CodecMakerConfig), LocationType.GPS, "\"GPS\"")

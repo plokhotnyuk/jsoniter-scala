@@ -2749,7 +2749,7 @@ final class JsonReader private[jsoniter_scala](
     val bs = {
       var b = nextByte(pos)
       if (b != '"') {
-        bits = ns(b & 0xFF).toInt
+        bits = ns(b & 0xFF)
         if (bits < 0) decodeError("expected '\"' or hex digit")
         b = nextByte(head)
         bits = (bits << 4) | ns(b & 0xFF)
@@ -2811,7 +2811,7 @@ final class JsonReader private[jsoniter_scala](
     val bs = {
       var b = nextByte(pos)
       if (b != '"') {
-        bits = ds(b & 0xFF).toInt
+        bits = ds(b & 0xFF)
         if (bits < 0) decodeError("expected '\"' or base64 digit")
         b = nextByte(head)
         bits = (bits << 6) | ds(b & 0xFF)

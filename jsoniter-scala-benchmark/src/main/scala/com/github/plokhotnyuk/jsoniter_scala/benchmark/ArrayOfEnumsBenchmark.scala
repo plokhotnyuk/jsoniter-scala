@@ -7,11 +7,11 @@ import org.openjdk.jmh.annotations.{Param, Setup}
 
 object SuitEnum extends Enumeration {
   type SuitEnum = Value
-  //FIXME: setting of ids & names save from locking at synchronized block during withName() or toString() calls
-  val Hearts: SuitEnum = Value(0, "Hearts")
-  val Spades: SuitEnum = Value(1, "Spades")
-  val Diamonds: SuitEnum = Value(2, "Diamonds")
-  val Clubs: SuitEnum = Value(3, "Clubs")
+
+  val Hearts: SuitEnum = Value(0, "Hearts") // Always set the name explicitly in your Scala enumeration definition.
+  val Spades: SuitEnum = Value(1, "Spades") // If you still not sure, then please look and check that the following
+  val Diamonds: SuitEnum = Value(2, "Diamonds") // synchronized block will not affect your code in run-time:
+  val Clubs: SuitEnum = Value(3, "Clubs") // https://github.com/scala/scala/blob/1692ae306dc9a5ff3feebba6041348dfdee7cfb5/src/library/scala/Enumeration.scala#L203
 }
 
 abstract class ArrayOfEnumsBenchmark extends CommonParams {

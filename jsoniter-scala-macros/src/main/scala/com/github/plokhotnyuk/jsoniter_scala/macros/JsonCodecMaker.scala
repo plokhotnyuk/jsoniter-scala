@@ -1003,8 +1003,7 @@ object JsonCodecMaker {
         } else q"null.asInstanceOf[$tpe]"
       }
 
-      def genReadNonAbstractScalaClass(types: List[Type], default: Tree, isStringified: Boolean,
-                                       discriminator: Tree): Tree = {
+      def genReadNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
@@ -1054,7 +1053,7 @@ object JsonCodecMaker {
         val length: FieldInfo => Int = _.mappedName.length
         val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
           if (discriminator.isEmpty) classInfo.fields
-          else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, true)
+          else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true)
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo]): Tree =
@@ -1364,7 +1363,7 @@ object JsonCodecMaker {
             .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
 
           def genReadLeafClass(subTpe: Type): Tree =
-            if (subTpe == tpe) genReadNonAbstractScalaClass(types, default, isStringified, skipDiscriminatorField)
+            if (subTpe == tpe) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
             else genReadVal(subTpe :: types, nullValue(subTpe :: types), isStringified, skipDiscriminatorField)
 
           def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
@@ -1430,12 +1429,12 @@ object JsonCodecMaker {
                   } else in.readNullOrTokenError(default, '{')"""
           }
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
-          genReadNonAbstractScalaClass(types, default, isStringified, discriminator)
+          genReadNonAbstractScalaClass(types, discriminator)
         } else if (isConstType(tpe)) genReadConstType(tpe, isStringified)
         else cannotFindValueCodecError(tpe)
       }
 
-      def genWriteNonAbstractScalaClass(types: List[Type], isStringified: Boolean, discriminator: Tree): Tree = {
+      def genWriteNonAbstractScalaClass(types: List[Type], discriminator: Tree): Tree = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         val writeFields = classInfo.fields.map { f =>
@@ -1657,7 +1656,7 @@ object JsonCodecMaker {
         } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m) {
           def genWriteLeafClass(subTpe: Type, discriminator: Tree): Tree =
             if (subTpe != tpe) genWriteVal(q"x", subTpe :: types, isStringified, discriminator)
-            else genWriteNonAbstractScalaClass(types, isStringified, discriminator)
+            else genWriteNonAbstractScalaClass(types, discriminator)
 
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = (cfg.discriminatorFieldName match {
@@ -1682,7 +1681,7 @@ object JsonCodecMaker {
                 case ..$writeSubclasses
               }"""
         } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m) {
-          genWriteNonAbstractScalaClass(types, isStringified, discriminator)
+          genWriteNonAbstractScalaClass(types, discriminator)
         } else if (isConstType(tpe)) getWriteConstType(tpe, m, isStringified)
         else cannotFindValueCodecError(tpe)
       }
