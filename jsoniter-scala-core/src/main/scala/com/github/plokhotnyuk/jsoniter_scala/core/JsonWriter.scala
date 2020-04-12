@@ -1810,42 +1810,41 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
-        val even = (m & 0x1) == 0
+        e -= 2
         val mv = m << 2
         val mp = mv + 2
         val mmShift =
           if (ieeeMantissa != 0 || ieeeExponent <= 1) 2
           else 1
         val mm = mv - mmShift
-        val e2 = e - 2
         var dp, dm = 0
         var dvIsTrailingZeros, dmIsTrailingZeros = false
-        if (e2 >= 0) {
-          val q = (e2 * 1292913986L >> 32).toInt // (e2 * Math.log10(2)).toInt
+        if (e >= 0) {
+          val q = (e * 1292913986L >> 32).toInt // (e * Math.log10(2)).toInt
+          val j = (q * 9972605231L >> 32).toInt - e + q + 28 // (q * Math.log(5) / Math.log(2)).toInt - e + q + 28
           val s = f32Pow5InvSplit(q)
-          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 28 // -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 28
-          exp = q
           dv = mulPow5DivPow2(mv, s, j)
           dp = mulPow5DivPow2(mp, s, j)
           dm = mulPow5DivPow2(mm, s, j)
+          exp = q
           if (q <= 9) {
             val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
             if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
-            else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
+            else if ((mv & 0x7) == 0) dmIsTrailingZeros = multiplePowOf5(mm, q)
             else if (multiplePowOf5(mp, q)) dp -= 1
           }
         } else {
-          val q = (-e2 * 3002053309L >> 32).toInt // (-e2 * Math.log10(5)).toInt
-          val i = -e2 - q
-          val s = f32Pow5Split(i)
+          val q = (-e * 3002053309L >> 32).toInt // (-e * Math.log10(5)).toInt
+          val i = -e - q
           val j = q - (i * 9972605231L >> 32).toInt + 29 // q - (i * Math.log(5) / Math.log(2)).toInt + 29
-          exp = -i
+          val s = f32Pow5Split(i)
           dv = mulPow5DivPow2(mv, s, j)
           dp = mulPow5DivPow2(mp, s, j)
           dm = mulPow5DivPow2(mm, s, j)
+          exp = -i
           if (q <= 1) {
             dvIsTrailingZeros = true
-            if (even) dmIsTrailingZeros = mmShift != 1
+            if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
             else dp -= 1
           } else if (q < 31) dvIsTrailingZeros = multiplePowOf2(mv, q)
         }
@@ -1871,9 +1870,9 @@ final class JsonWriter private[jsoniter_scala](
             dv = (pv >> 35).toInt // divide positive int by 10
             len -= 1
           }
-          dmIsTrailingZeros &= (sm & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
-          dvIsTrailingZeros &= (sv & 0x780000000L) == 0 // test if all reminders of divisions by 10 are zeros
-          if (dmIsTrailingZeros && even) {
+          if ((sm & 0x780000000L) != 0) dmIsTrailingZeros = false // test if all reminders of divisions by 10 are zeros
+          if ((sv & 0x780000000L) != 0) dvIsTrailingZeros = false // test if all reminders of divisions by 10 are zeros
+          if (dmIsTrailingZeros) {
             while ((decimalNotation || dv >= 99) && (pm & 0x780000000L) == 0) {  // test if reminder of division by 10 is zero
               dv = (pm >> 35).toInt // divide positive int by 10
               pm = dv * 3435973837L
@@ -1884,7 +1883,7 @@ final class JsonWriter private[jsoniter_scala](
           var lastRemovedDigit = 0
           if (oldDv != 0) lastRemovedDigit = oldDv - dv * 10
           if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros)))) dv += 1
         } else {
           while ((decimalNotation || dp >= 1000) && {
             newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
@@ -2004,48 +2003,47 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
-        val even = (m & 0x1) == 0
+        e -= 2
         val mv = m << 2
         val mp = mv + 2
         val mmShift =
           if (ieeeMantissa != 0 || ieeeExponent <= 1) 2
           else 1
         val mm = mv - mmShift
-        val e2 = e - 2
         var dp, dm = 0L
         var dvIsTrailingZeros, dmIsTrailingZeros = false
-        if (e2 >= 0) {
+        if (e >= 0) {
           val ss = f64Pow5InvSplit
-          val q = Math.max(0, (e2 * 1292913986L >> 32).toInt - 1) // Math.max(0, (e2 * Math.log10(2)).toInt - 1)
+          val q = Math.max(0, (e * 1292913986L >> 32).toInt - 1) // Math.max(0, (e * Math.log10(2)).toInt - 1)
+          val j = (q * 9972605231L >> 32).toInt - e + q + 8 // (q * Math.log(5) / Math.log(2)).toInt - e + q + 8
           val idx = q << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          val j = -e2 + q + (q * 9972605231L >> 32).toInt + 8 // -e2 + q + (q * Math.log(5) / Math.log(2)).toInt + 8
-          exp = q
           dv = fullMulPow5DivPow2(mv, s0, s1, j)
           dp = fullMulPow5DivPow2(mp, s0, s1, j)
           dm = fullMulPow5DivPow2(mm, s0, s1, j)
+          exp = q
           if (q <= 21) {
             val mv5 = mv / 5
             if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
-            else if (even) dmIsTrailingZeros = multiplePowOf5(mm, q)
+            else if ((mv & 0x7) == 0) dmIsTrailingZeros = multiplePowOf5(mm, q)
             else if (multiplePowOf5(mp, q)) dp -= 1
           }
         } else {
           val ss = f64Pow5Split
-          val q = Math.max(0, (-e2 * 3002053309L >> 32).toInt - 1) // Math.max(0, (-e2 * Math.log10(5)).toInt - 1)
-          val i = -e2 - q
+          val q = Math.max(0, (-e * 3002053309L >> 32).toInt - 1) // Math.max(0, (-e * Math.log10(5)).toInt - 1)
+          val i = -e - q
+          val j = q - (i * 9972605231L >> 32).toInt + 6 // q - (i * Math.log(5) / Math.log(2)).toInt + 6
           val idx = i << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          val j = q - (i * 9972605231L >> 32).toInt + 6 // q - (i * Math.log(5) / Math.log(2)).toInt + 6
-          exp = -i
           dv = fullMulPow5DivPow2(mv, s0, s1, j)
           dp = fullMulPow5DivPow2(mp, s0, s1, j)
           dm = fullMulPow5DivPow2(mm, s0, s1, j)
+          exp = -i
           if (q <= 1) {
             dvIsTrailingZeros = true
-            if (even) dmIsTrailingZeros = mmShift != 1
+            if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
             else dp -= 1
           } else if (q < 63) dvIsTrailingZeros = multiplePowOf2(mv, q)
         }
@@ -2069,7 +2067,7 @@ final class JsonWriter private[jsoniter_scala](
             dv = newDv
             len -= 1
           }
-          if (dmIsTrailingZeros && even) {
+          if (dmIsTrailingZeros) {
             while ((decimalNotation || dv >= 99) && newDm * 10 == dm) {
               dv /= 10
               dm = newDm
@@ -2079,7 +2077,7 @@ final class JsonWriter private[jsoniter_scala](
             }
           }
           if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros && even)))) dv += 1
+            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros)))) dv += 1
         } else {
           var newDp, newDm, oldDv = 0L
           while ((decimalNotation || dp >= 1000) && {
