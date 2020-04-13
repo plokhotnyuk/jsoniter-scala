@@ -1071,15 +1071,15 @@ final class JsonWriter private[jsoniter_scala](
         else ss
       val qr = x.divideAndRemainder(ss1(n))
       writeBigInteger(qr(0), ss1)
-      writeBigIntegerReminder(qr(1), n - 1, ss1)
+      writeBigIntegerRemainder(qr(1), n - 1, ss1)
     }
 
-  private[this] def writeBigIntegerReminder(x: BigInteger, n: Int, ss: Array[BigInteger]): Unit =
+  private[this] def writeBigIntegerRemainder(x: BigInteger, n: Int, ss: Array[BigInteger]): Unit =
     if (n < 0) count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(18), buf, digits)
     else {
       val qr = x.divideAndRemainder(ss(n))
-      writeBigIntegerReminder(qr(0), n - 1, ss)
-      writeBigIntegerReminder(qr(1), n - 1, ss)
+      writeBigIntegerRemainder(qr(0), n - 1, ss)
+      writeBigIntegerRemainder(qr(1), n - 1, ss)
     }
 
   private[this] def writeBigDecimal(x: java.math.BigDecimal): Unit = {
@@ -1114,11 +1114,11 @@ final class JsonWriter private[jsoniter_scala](
         else ss
       val qr = x.divideAndRemainder(ss1(n))
       val exp = writeBigDecimal(qr(0), scale, blockScale + (18 << n), ss1)
-      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1, ss1)
+      writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss1)
       exp
     }
 
-  private[this] def writeBigDecimalReminder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
+  private[this] def writeBigDecimalRemainder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
                                             ss: Array[BigInteger]): Unit =
     if (n < 0) {
       count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 18 digits and a place for optional dot
@@ -1126,8 +1126,8 @@ final class JsonWriter private[jsoniter_scala](
       if (dotOff > 0 && dotOff <= 18) insertDot(count - dotOff)
     } else {
       val qr = x.divideAndRemainder(ss(n))
-      writeBigDecimalReminder(qr(0), scale, blockScale + (18 << n), n - 1, ss)
-      writeBigDecimalReminder(qr(1), scale, blockScale, n - 1, ss)
+      writeBigDecimalRemainder(qr(0), scale, blockScale + (18 << n), n - 1, ss)
+      writeBigDecimalRemainder(qr(1), scale, blockScale, n - 1, ss)
     }
 
   private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
@@ -1799,12 +1799,12 @@ final class JsonWriter private[jsoniter_scala](
         exp += len
         len += 1
         decimalNotation = (exp < 7) || {
-          var p = 0L
+          var pv = 0L
           while (dv >= 100 && {
-            p = dv * 3435973837L
-            (p & 0x780000000L) == 0 // test if reminder of division by 10 is zero
+            pv = dv * 3435973837L
+            (pv & 0x780000000L) == 0 // test if remainder of division by 10 is zero
           }) {
-            dv = (p >> 35).toInt // divide positive int by 10
+            dv = (pv >> 35).toInt // divide positive int by 10
             len -= 1
           }
           false
@@ -1823,13 +1823,15 @@ final class JsonWriter private[jsoniter_scala](
           val q = (e * 1292913986L >> 32).toInt // (e * Math.log10(2)).toInt
           val j = (q * 9972605231L >> 32).toInt - e + q + 28 // (q * Math.log(5) / Math.log(2)).toInt - e + q + 28
           val s = f32Pow5InvSplit(q)
-          dv = mulPow5DivPow2(mv, s, j)
-          dp = mulPow5DivPow2(mp, s, j)
-          dm = mulPow5DivPow2(mm, s, j)
+          val s0 = s >>> 31
+          val s1 = s & 0x7FFFFFFF
+          dv = mulPow5DivPow2(mv, s0, s1, j)
+          dp = mulPow5DivPow2(mp, s0, s1, j)
+          dm = mulPow5DivPow2(mm, s0, s1, j)
           exp = q
           if (q <= 9) {
-            val mv5 = (mv * 3435973837L >> 34).toInt // divide positive int by 5
-            if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
+            val pv = mv * 3435973837L
+            if ((pv & 0x380000000L) == 0) dvIsTrailingZeros = multiplePowOf5((pv >> 34).toInt, q - 1) // test if a remainder of divisions by 5 is zero
             else if ((mv & 0x7) == 0) dmIsTrailingZeros = multiplePowOf5(mm, q)
             else if (multiplePowOf5(mp, q)) dp -= 1
           }
@@ -1838,9 +1840,11 @@ final class JsonWriter private[jsoniter_scala](
           val i = -e - q
           val j = q - (i * 9972605231L >> 32).toInt + 29 // q - (i * Math.log(5) / Math.log(2)).toInt + 29
           val s = f32Pow5Split(i)
-          dv = mulPow5DivPow2(mv, s, j)
-          dp = mulPow5DivPow2(mp, s, j)
-          dm = mulPow5DivPow2(mm, s, j)
+          val s0 = s >>> 31
+          val s1 = s & 0x7FFFFFFF
+          dv = mulPow5DivPow2(mv, s0, s1, j)
+          dp = mulPow5DivPow2(mp, s0, s1, j)
+          dm = mulPow5DivPow2(mm, s0, s1, j)
           exp = -i
           if (q <= 1) {
             dvIsTrailingZeros = true
@@ -1852,7 +1856,7 @@ final class JsonWriter private[jsoniter_scala](
         exp += len
         len += 1
         decimalNotation = exp >= -3 && exp < 7
-        var newDp, newDm, oldDv = 0
+        var newDp, newDm = 0
         if (dmIsTrailingZeros || dvIsTrailingZeros) {
           var pm, sm, pv, sv = 0L
           while ((decimalNotation || dp >= 100) && {
@@ -1865,26 +1869,25 @@ final class JsonWriter private[jsoniter_scala](
             sm |= pm
             dp = newDp
             dm = newDm
-            oldDv = dv
             pv = dv * 3435973837L
             dv = (pv >> 35).toInt // divide positive int by 10
             len -= 1
           }
-          if ((sm & 0x780000000L) != 0) dmIsTrailingZeros = false // test if all reminders of divisions by 10 are zeros
-          if ((sv & 0x780000000L) != 0) dvIsTrailingZeros = false // test if all reminders of divisions by 10 are zeros
+          if ((sm & 0x780000000L) != 0) dmIsTrailingZeros = false // test if all remainders of divisions by 10 are zeros
+          if ((sv & 0x780000000L) != 0) dvIsTrailingZeros = false // test if all remainders of divisions by 10 are zeros
           if (dmIsTrailingZeros) {
-            while ((decimalNotation || dv >= 99) && (pm & 0x780000000L) == 0) {  // test if reminder of division by 10 is zero
+            while ((decimalNotation || dv >= 99) && (pm & 0x780000000L) == 0) {  // test if remainder of division by 10 is zero
               dv = (pm >> 35).toInt // divide positive int by 10
               pm = dv * 3435973837L
-              oldDv = 0 // disable rounding up
+              pv = 0 // disable rounding up
               len -= 1
             }
           }
-          var lastRemovedDigit = 0
-          if (oldDv != 0) lastRemovedDigit = oldDv - dv * 10
-          if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros)))) dv += 1
+          pv &= 0x780000000L // get the last removed digit
+          if (!(dvIsTrailingZeros && pv == 0x400000000L /* is 5 */ && (dv & 0x1) == 0 ||
+            (pv < 0x400000000L /* is less than 5 */ && (dv != dm || dmIsTrailingZeros)))) dv += 1
         } else {
+          var oldDv = 0
           while ((decimalNotation || dp >= 1000) && {
             newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
             newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
@@ -1963,8 +1966,7 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def mulPow5DivPow2(m: Long, s: Long, j: Int): Int =
-    ((m * (s >> 31) + (m * (s & 0x7FFFFFFF) >> 31)) >> j).toInt
+  private[this] def mulPow5DivPow2(m: Int, s0: Long, s1: Long, j: Int): Int = ((m * s0 + (m * s1 >>> 31)) >>> j).toInt
 
   // Based on a great work of Ulf Adams:
   // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
@@ -2019,9 +2021,9 @@ final class JsonWriter private[jsoniter_scala](
           val idx = q << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          dv = fullMulPow5DivPow2(mv, s0, s1, j)
-          dp = fullMulPow5DivPow2(mp, s0, s1, j)
-          dm = fullMulPow5DivPow2(mm, s0, s1, j)
+          dv = mulPow5DivPow2(mv, s0, s1, j)
+          dp = mulPow5DivPow2(mp, s0, s1, j)
+          dm = mulPow5DivPow2(mm, s0, s1, j)
           exp = q
           if (q <= 21) {
             val mv5 = mv / 5
@@ -2037,9 +2039,9 @@ final class JsonWriter private[jsoniter_scala](
           val idx = i << 1
           val s0 = ss(idx)
           val s1 = ss(idx + 1)
-          dv = fullMulPow5DivPow2(mv, s0, s1, j)
-          dp = fullMulPow5DivPow2(mp, s0, s1, j)
-          dm = fullMulPow5DivPow2(mm, s0, s1, j)
+          dv = mulPow5DivPow2(mv, s0, s1, j)
+          dp = mulPow5DivPow2(mp, s0, s1, j)
+          dm = mulPow5DivPow2(mm, s0, s1, j)
           exp = -i
           if (q <= 1) {
             dvIsTrailingZeros = true
@@ -2167,7 +2169,7 @@ final class JsonWriter private[jsoniter_scala](
     (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
   }
 
-  private[this] def fullMulPow5DivPow2(m: Long, s0: Long, s1: Long, j: Int): Long = {
+  private[this] def mulPow5DivPow2(m: Long, s0: Long, s1: Long, j: Int): Long = {
     val ml = m & 0x7FFFFFFF
     val mh = m >>> 31
     val s0l = s0 & 0x7FFFFFFF
@@ -2224,8 +2226,8 @@ final class JsonWriter private[jsoniter_scala](
 
   @tailrec
   private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q <= 0 || {
-    val q1 = (q0 * 3435973837L >> 34).toInt // divide positive int by 5
-    (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
+    val p = q0 * 3435973837L
+    (p & 0x380000000L) == 0 && multiplePowOf5((p >> 34).toInt, q - 1) // test if a remainder of divisions by 5 is zero
   }
 
   @tailrec
