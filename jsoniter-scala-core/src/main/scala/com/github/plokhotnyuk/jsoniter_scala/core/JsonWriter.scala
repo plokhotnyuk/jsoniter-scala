@@ -1810,12 +1810,12 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
+        val mmShift =
+          if (ieeeMantissa == 0 && ieeeExponent > 1) 1
+          else 2
         e -= 2
         val mv = m << 2
         val mp = mv + 2
-        val mmShift =
-          if (ieeeMantissa != 0 || ieeeExponent <= 1) 2
-          else 1
         val mm = mv - mmShift
         var dvIsTrailingZeros, dmIsTrailingZeros = false
         var dp, dm, i, j = 0
@@ -1885,14 +1885,14 @@ final class JsonWriter private[jsoniter_scala](
           if (!(dvIsTrailingZeros && pv == 0x400000000L /* is 5 */ && (dv & 0x1) == 0 ||
             (pv < 0x400000000L /* is less than 5 */ && (dv != dm || dmIsTrailingZeros)))) dv += 1
         } else {
-          var oldDv = 0
+          var pv = 0L
           while ((decimalNotation || dp >= 1000) && {
             newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
             newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
             newDp > newDm
           }) {
-            oldDv = dv
-            dv = (dv * 1374389535L >> 37).toInt // divide positive int by 100
+            pv = dv * 1374389535L
+            dv = (pv >> 37).toInt // divide positive int by 100
             dm = newDm
             dp = newDp
             len -= 2
@@ -1902,12 +1902,12 @@ final class JsonWriter private[jsoniter_scala](
               newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
               (dp * 3435973837L >> 35).toInt > newDm // divide positive int by 10
             }) {
-              oldDv = dv
-              dv = (dv * 3435973837L >> 35).toInt // divide positive int by 10
+              pv = dv * 3435973837L
+              dv = (pv >> 35).toInt // divide positive int by 10
               dm = newDm
               len -= 1
-              oldDv - dv * 10 >= 5
-            } else oldDv - dv * 100 >= 50
+              (pv & 0x780000000L) >= 0x400000000L // test if the last removed digit is 5 or greater
+            } else (pv & 0x1fc0000000L) >= 0x1000000000L // test if the last removed digit is 5 or greater
           if (roundUp || dv == dm) dv += 1
         }
       }
@@ -2003,12 +2003,12 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
+        val mmShift =
+          if (ieeeMantissa == 0 && ieeeExponent > 1) 1
+          else 2
         e -= 2
         val mv = m << 2
         val mp = mv + 2
-        val mmShift =
-          if (ieeeMantissa != 0 || ieeeExponent <= 1) 2
-          else 1
         val mm = mv - mmShift
         var dvIsTrailingZeros, dmIsTrailingZeros = false
         var dp, dm = 0L
