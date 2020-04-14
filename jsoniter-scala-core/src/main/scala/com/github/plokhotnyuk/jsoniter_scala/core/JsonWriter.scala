@@ -1865,10 +1865,10 @@ final class JsonWriter private[jsoniter_scala](
           }) {
             sv |= pv
             sm |= pm
-            dp = newDp
-            dm = newDm
             pv = dv * 3435973837L
             dv = (pv >> 35).toInt // divide positive int by 10
+            dp = newDp
+            dm = newDm
             len -= 1
           }
           if ((sm & 0x780000000L) != 0) dmIsTrailingZeros = false // test if all remainders of divisions by 10 are zeros
@@ -1881,7 +1881,7 @@ final class JsonWriter private[jsoniter_scala](
               len -= 1
             }
           }
-          pv &= 0x780000000L // get the last removed digit
+          pv &= 0x780000000L // mask the last removed digit
           if (!(dvIsTrailingZeros && pv == 0x400000000L /* is 5 */ && (dv & 0x1) == 0 ||
             (pv < 0x400000000L /* is less than 5 */ && (dv != dm || dmIsTrailingZeros)))) dv += 1
         } else {
@@ -1893,8 +1893,8 @@ final class JsonWriter private[jsoniter_scala](
           }) {
             pv = dv * 1374389535L
             dv = (pv >> 37).toInt // divide positive int by 100
-            dm = newDm
             dp = newDp
+            dm = newDm
             len -= 2
           }
           val roundUp =
@@ -2060,12 +2060,12 @@ final class JsonWriter private[jsoniter_scala](
             newDp > newDm
           }) {
             if (dmIsTrailingZeros) dmIsTrailingZeros = newDm * 10 == dm
-            dp = newDp
-            dm = newDm
             dvIsTrailingZeros &= lastRemovedDigit == 0
             val newDv = dv / 10
             lastRemovedDigit = dv - newDv * 10
             dv = newDv
+            dp = newDp
+            dm = newDm
             len -= 1
           }
           if (dmIsTrailingZeros) {
