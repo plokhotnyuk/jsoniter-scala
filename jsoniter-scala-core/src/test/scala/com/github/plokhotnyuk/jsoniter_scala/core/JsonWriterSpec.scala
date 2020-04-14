@@ -626,6 +626,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(-6.9741824662760956E19)
       check(4.3816050601147837E18)
       check(7.1202363472230444E-307)
+      check(3.67301024534615E16)
+      check(5.9604644775390625E-8)
       forAll(arbitrary[Long], minSuccessful(10000))(n => check(n.toDouble))
       forAll(arbitrary[Long], minSuccessful(10000)) { n =>
         val x = java.lang.Double.longBitsToDouble(n)

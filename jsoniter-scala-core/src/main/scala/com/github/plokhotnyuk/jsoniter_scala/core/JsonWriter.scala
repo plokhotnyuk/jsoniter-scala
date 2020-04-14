@@ -1876,14 +1876,15 @@ final class JsonWriter private[jsoniter_scala](
           if (dmIsTrailingZeros) {
             while ((decimalNotation || dv >= 99) && (pm & 0x780000000L) == 0) {  // test if remainder of division by 10 is zero
               dv = (pm >> 35).toInt // divide positive int by 10
+              dm = dv
               pm = dv * 3435973837L
-              pv = 0 // disable rounding up
+              pv = 0
               len -= 1
             }
           }
           pv &= 0x780000000L // mask the last removed digit
-          if (!(dvIsTrailingZeros && pv == 0x400000000L /* is 5 */ && (dv & 0x1) == 0 ||
-            (pv < 0x400000000L /* is less than 5 */ && (dv != dm || dmIsTrailingZeros)))) dv += 1
+          if (pv == 0x400000000L /* == 5 */ && dvIsTrailingZeros && (dv & 0x1) == 0) pv = 0
+          if (pv >= 0x400000000L /* >= 5 */ || dv == dm && !dmIsTrailingZeros) dv += 1
         } else {
           var pv = 0L
           while ((decimalNotation || dp >= 1000) && {
@@ -2070,15 +2071,15 @@ final class JsonWriter private[jsoniter_scala](
           }
           if (dmIsTrailingZeros) {
             while ((decimalNotation || dv >= 99) && newDm * 10 == dm) {
-              dv /= 10
+              dv = newDm
               dm = newDm
-              newDm = dv
-              lastRemovedDigit = 0 // disable rounding up
+              newDm /= 10
+              lastRemovedDigit = 0
               len -= 1
             }
           }
-          if (!(dvIsTrailingZeros && lastRemovedDigit == 5 && (dv & 0x1) == 0 ||
-            (lastRemovedDigit < 5 && (dv != dm || dmIsTrailingZeros)))) dv += 1
+          if (lastRemovedDigit == 5 && dvIsTrailingZeros && (dv & 0x1) == 0) lastRemovedDigit = 0
+          if (lastRemovedDigit >= 5 || dv == dm && !dmIsTrailingZeros) dv += 1
         } else {
           var newDp, newDm, oldDv = 0L
           while ((decimalNotation || dp >= 1000) && {
