@@ -1965,6 +1965,18 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
+  private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
+
+  @tailrec
+  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q match {
+    case 0 => true
+    case 1 => (q0 * 3435973837L & 0x380000000L) == 0 // q0 % 5 == 0
+    case 2 => (q0 * 1374389535L & 0x7c0000000L) == 0 // q0 % 25 == 0
+    case _ =>
+      val p = q0 * 274877907L
+      (p & 0x7fe000000L) == 0 /* q0 % 125 == 0 */ && multiplePowOf5((p >> 35).toInt /* q0 / 125 */, q - 3)
+  }
+
   private[this] def mulPow5DivPow2(m: Int, sl: Long, sh: Long, j: Int): Int = ((m * sl >>> 31) + m * sh >>> j).toInt
 
   // Based on a great work of Ulf Adams:
@@ -2164,9 +2176,17 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def multiplePowOf2(q0: Long, q: Int): Boolean = (q0 & ((1L << q) - 1)) == 0
 
   @tailrec
-  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q <= 0 || {
-    val q1 = q0 / 5
-    (q1 << 2) + q1 == q0 && multiplePowOf5(q1, q - 1)
+  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q match {
+    case 0 => true
+    case 1 => q0 % 5 == 0
+    case 2 => q0 % 25 == 0
+    case 3 => q0 % 125 == 0
+    case 4 => q0 % 625 == 0
+    case 5 => q0 % 3125 == 0
+    case 6 => q0 % 15625 == 0
+    case _ =>
+      val q1 = q0 / 78125
+      q1 * 78125 == q0 && multiplePowOf5(q1, q - 7)
   }
 
   // Getting higher bits of 64-bit by 128-bit multiplication with shift using the great Karatsuba's technique:
@@ -2225,14 +2245,6 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = (d >> 8).toByte
       writePositiveIntStartingFromLastPosition(q1, pos - 2, buf, ds)
     }
-
-  private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
-
-  @tailrec
-  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q <= 0 || {
-    val p = q0 * 3435973837L
-    (p & 0x380000000L) == 0 && multiplePowOf5((p >> 34).toInt, q - 1) // test if a remainder of divisions by 5 is zero
-  }
 
   @tailrec
   private[this] def writeNBytes(n: Int, b: Byte, pos: Int, buf: Array[Byte]): Int =
