@@ -558,12 +558,15 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "write float values exactly as expected" in {
       def check(n: Float, s: String): Unit = {
+        n shouldBe s.toFloat
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(2.4414062E-4f, "2.4414062E-4")
+      check(2.4414063E-4f, "2.4414062E-4")
+      check(1.10000005E10f, "1.1E10") // moreover, Java serializes 1.1E10f to "1.10000005E10"
+      check(4.7223665E21f, "4.7223664E21") // differs from the result produced by Java or by the original Ryu implementation
     }
     "write round-even float values" in {
       def check(n: Float): Unit = {
@@ -639,12 +642,15 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "write double values exactly as expected" in {
       def check(n: Double, s: String): Unit = {
+        n shouldBe s.toDouble
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
       check(2.98023223876953125E-8, "2.9802322387695312E-8")
+      check(-8.9903423895340006E17, "-8.990342389534E17") // moreover, Java serializes -8.990342389534E17 to "-8.9903423895340006E17"
+      check(java.lang.Double.longBitsToDouble(0x44688ce73510bf08L), "3.623E21") // Java serializes it to "3.6230000000000003E21"
     }
     "write round-even double values" in {
       def check(n: Double): Unit = {
