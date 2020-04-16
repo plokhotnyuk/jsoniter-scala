@@ -2189,19 +2189,11 @@ final class JsonWriter private[jsoniter_scala](
       q1 * 78125 == q0 && multiplePowOf5(q1, q - 7)
   }
 
-  // Getting higher bits of 64-bit by 128-bit multiplication with shift using the great Karatsuba's technique:
-  // https://www.quantamagazine.org/the-math-behind-a-faster-multiplication-algorithm-20190923/
   private[this] def mulPow5DivPow2(m: Long, s0l: Long, s0h: Long, s1l: Long, s1h: Long, j: Int): Long = {
     val ml = m & 0x7FFFFFFF
-    val l0 = ml * s0l
     val mh = m >>> 31
-    val h0 = mh * s0h
-    val ms = mh + ml
-    val l1 = ml * s1l
-    val s0s = s0h + s0l
-    val h1 = mh * s1h
-    val s1s = s1h + s1l
-    (((((l0 >>> 31) - l0 - h0 + s0s * ms >>> 31) + h0 + l1 >>> 31) - l1 - h1 + s1s * ms >>> 21) + (h1 << 10)) >>> j
+    (((((ml * s0l >>> 31) + ml * s0h + mh * s0l >>> 31) + ml * s1l + mh * s0h >>> 31) + ml * s1h + mh * s1l >>> 21) +
+      (mh * s1h << 10)) >>> j
   }
 
   private[this] def offset(q0: Long): Int = {
