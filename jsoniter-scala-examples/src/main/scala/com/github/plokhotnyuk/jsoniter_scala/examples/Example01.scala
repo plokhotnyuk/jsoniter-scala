@@ -36,10 +36,16 @@ object Example01 {
           StringLeaf(in.readString(null))
         case _ =>
           in.rollbackToken()
-          val d = in.readDouble() // use in.readBigDecimal(null) for exact precision
-          val i = d.toInt
-          if (d == i) IntLeaf(i)
-          else FloatLeaf(d.toFloat) // possible 1 ULP rounding error here
+          in.setMark()
+          var b = 0
+          try {
+            do b = in.nextByte()
+            while (b == '-' || b >= '0' && b <= '9')
+          } catch {
+            case _: JsonReaderException => /* ignore end of input error here */
+          } finally in.rollbackToMark()
+          if (b == '.' || b == 'e' || b == 'E') FloatLeaf(in.readFloat())
+          else IntLeaf(in.readInt())
       }
 
     def encodeValue(x: Leaf, out: JsonWriter): Unit = x match {
@@ -58,7 +64,7 @@ object Example01 {
         |    "name": "TEMP",
         |    "state": "NIGHT",
         |    "timestamp": 1587216049012,
-        |    "value": 0.05
+        |    "value": 0.0
         |},
         |{
         |    "name": "ID",
