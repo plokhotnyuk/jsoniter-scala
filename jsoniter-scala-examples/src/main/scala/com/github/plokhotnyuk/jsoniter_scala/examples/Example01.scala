@@ -11,6 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
   */
 object Example01 {
   case class Input(nextDate: LocalDate, days: Int)
+  case class Parent(fullName: String, anotherField: String, days: Seq[Input])
 
   implicit val inputCodec: JsonValueCodec[Input] =
     new JsonValueCodec[Input] {
@@ -56,11 +57,14 @@ object Example01 {
       }
     }
 
-  implicit val inputsCodec: JsonValueCodec[Seq[Input]] = JsonCodecMaker.make[Seq[Input]](CodecMakerConfig)
+  implicit val parentCodec: JsonValueCodec[Parent] = JsonCodecMaker.make[Parent](CodecMakerConfig)
 
   def main(args: Array[String]): Unit = {
-    val inputs = readFromArray[Seq[Input]](
-      """[
+    val inputs = readFromArray[Parent](
+      """{
+        |  "fullName": "fullName value",
+        |  "anotherField": "anotherField value",
+        |  "days": [
         |    {
         |        "next_date": "2019-10-10",
         |        "days": 2
@@ -69,7 +73,8 @@ object Example01 {
         |        "nextDate": "2019-10-10",
         |        "days": 2
         |    }
-        |]""".stripMargin.getBytes("UTF-8"))
+        |  ]
+        |}""".stripMargin.getBytes("UTF-8"))
 
     println(inputs)
     println(new String(writeToArray(inputs), StandardCharsets.UTF_8))
