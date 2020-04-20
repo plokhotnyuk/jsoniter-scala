@@ -100,7 +100,7 @@ lazy val `jsoniter-scala-core` = project
     crossScalaVersions := Seq("2.13.1", "2.12.11", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.5" % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6" % Test,
       "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % Test,
       "org.scalatest" %% "scalatest" % "3.1.1" % Test
     )
@@ -147,7 +147,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.typesafe.play" %% "play-json" % "2.8.1",
       "org.julienrf" %% "play-json-derived-codecs" % "7.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.5",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
       "pl.project13.scala" % "sbt-jmh-extras" % "0.3.7",
       "org.openjdk.jmh" % "jmh-core" % "1.23",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.23",
