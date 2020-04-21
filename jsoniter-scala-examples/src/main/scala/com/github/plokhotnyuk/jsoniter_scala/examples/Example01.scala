@@ -18,6 +18,7 @@ object Example01 {
   final object NIGHT extends StateEnum
 
   sealed trait Leaf
+  final case class LongLeaf(value: Long) extends Leaf
   final case class IntLeaf(value: Int) extends Leaf
   final case class StringLeaf(value: String) extends Leaf
   final case class FloatLeaf(value: Float) extends Leaf
@@ -45,10 +46,16 @@ object Example01 {
             case _: JsonReaderException => /* ignore end of input error here */
           } finally in.rollbackToMark()
           if (b == '.' || b == 'e' || b == 'E') FloatLeaf(in.readFloat())
-          else IntLeaf(in.readInt())
+          else {
+            val l = in.readLong()
+            val i = l.toInt
+            if (l == i) IntLeaf(i)
+            else LongLeaf(l)
+          }
       }
 
     def encodeValue(x: Leaf, out: JsonWriter): Unit = x match {
+      case LongLeaf(v) => out.writeVal(v)
       case IntLeaf(v) => out.writeVal(v)
       case StringLeaf(v) => out.writeVal(v)
       case FloatLeaf(v) => out.writeVal(v)
@@ -65,6 +72,18 @@ object Example01 {
         |    "state": "NIGHT",
         |    "timestamp": 1587216049012,
         |    "value": 0.0
+        |},
+        |{
+        |    "name": "TEMP",
+        |    "state": "NIGHT",
+        |    "timestamp": 1587216049012,
+        |    "value": 2147483647
+        |},
+        |{
+        |    "name": "TEMP",
+        |    "state": "NIGHT",
+        |    "timestamp": 1587216049012,
+        |    "value": 2147483648
         |},
         |{
         |    "name": "ID",
