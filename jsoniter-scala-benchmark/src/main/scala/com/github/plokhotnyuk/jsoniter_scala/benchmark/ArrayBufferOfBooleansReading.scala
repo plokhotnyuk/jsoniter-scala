@@ -51,4 +51,11 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
 
   @Benchmark
   def weePickle(): mutable.ArrayBuffer[Boolean] = FromJson(jsonBytes).transform(ToScala[mutable.ArrayBuffer[Boolean]])
+
+  @Benchmark
+  def sjson(): mutable.ArrayBuffer[Boolean] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[mutable.ArrayBuffer[Boolean]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

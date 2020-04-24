@@ -34,4 +34,11 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def playJson(): mutable.Map[Int, Boolean] = Json.parse(jsonBytes).as[mutable.Map[Int, Boolean]]
+
+  @Benchmark
+  def sjson(): mutable.Map[Int, Boolean] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[mutable.Map[Int, Boolean]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

@@ -47,4 +47,11 @@ class ADTReading extends ADTBenchmark {
 
   @Benchmark
   def weePickle(): ADTBase = FromJson(jsonBytes).transform(ToScala[ADTBase])
+
+  @Benchmark
+  def sjson(): ADTBase = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[ADTBase](Parser.parseFromByteArray(jsonBytes).get)
+  } 
 }

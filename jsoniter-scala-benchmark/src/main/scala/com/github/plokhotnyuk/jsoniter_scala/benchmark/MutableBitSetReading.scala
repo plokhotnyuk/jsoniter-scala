@@ -33,4 +33,11 @@ class MutableBitSetReading extends MutableBitSetBenchmark {
 
   @Benchmark
   def playJson(): mutable.BitSet = Json.parse(jsonBytes).as[mutable.BitSet]
+
+  @Benchmark
+  def sjson(): mutable.BitSet = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[mutable.BitSet](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

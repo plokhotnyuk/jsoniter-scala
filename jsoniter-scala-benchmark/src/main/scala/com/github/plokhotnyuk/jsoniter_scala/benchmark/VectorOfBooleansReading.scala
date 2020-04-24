@@ -46,4 +46,11 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
 
   @Benchmark
   def weePickle(): Vector[Boolean] = FromJson(jsonBytes).transform(ToScala[Vector[Boolean]])
+
+  @Benchmark
+  def sjson(): Vector[Boolean] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Vector[Boolean]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

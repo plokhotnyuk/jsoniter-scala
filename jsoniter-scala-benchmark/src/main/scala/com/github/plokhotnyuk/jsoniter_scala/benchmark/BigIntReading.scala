@@ -47,4 +47,11 @@ class BigIntReading extends BigIntBenchmark {
 
   @Benchmark
   def weePickle(): BigInt = FromJson(jsonBytes).transform(ToScala[BigInt])
+
+  @Benchmark
+  def sjson(): BigInt = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[BigInt](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

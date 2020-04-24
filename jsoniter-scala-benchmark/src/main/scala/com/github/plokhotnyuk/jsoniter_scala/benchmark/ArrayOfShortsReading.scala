@@ -50,4 +50,11 @@ class ArrayOfShortsReading extends ArrayOfShortsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Short] = FromJson(jsonBytes).transform(ToScala[Array[Short]])
+
+  @Benchmark
+  def sjson(): Array[Short] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Short]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

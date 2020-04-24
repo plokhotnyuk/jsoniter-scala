@@ -41,4 +41,11 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Instant] = FromJson(jsonBytes).transform(ToScala[Array[Instant]])
+
+  @Benchmark
+  def sjson(): Array[Instant] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Instant]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

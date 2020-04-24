@@ -33,4 +33,11 @@ class BitSetReading extends BitSetBenchmark {
 
   @Benchmark
   def playJson(): BitSet = Json.parse(jsonBytes).as[BitSet](bitSetFormat)
+
+  @Benchmark
+  def sjson(): BitSet = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[BitSet](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

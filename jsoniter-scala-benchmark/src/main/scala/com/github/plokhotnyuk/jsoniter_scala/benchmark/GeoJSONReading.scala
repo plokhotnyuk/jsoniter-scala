@@ -48,4 +48,11 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
   @Benchmark
   def weePickle(): GeoJSON = FromJson(jsonBytes).transform(ToScala[GeoJSON])
+
+  @Benchmark
+  def sjson(): GeoJSON = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[GeoJSON](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

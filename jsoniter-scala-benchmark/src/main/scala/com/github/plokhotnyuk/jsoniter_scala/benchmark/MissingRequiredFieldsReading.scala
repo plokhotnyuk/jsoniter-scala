@@ -123,4 +123,15 @@ class MissingRequiredFieldsReading extends CommonParams {
     } catch {
       case ex: com.rallyhealth.weepickle.v1.core.TransformException => ex.getMessage
     }
+
+  @Benchmark
+  def sjson(): String = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    try {
+      Converter.fromJsonUnsafe[MissingRequiredFields](Parser.parseFromByteArray(jsonBytes).get).toString // toString() should not be called
+    } catch {
+      case ex: sjsonnew.DeserializationException => ex.getMessage
+    }
+  }
 }

@@ -48,4 +48,11 @@ class BigDecimalReading extends BigDecimalBenchmark {
 
   @Benchmark
   def weePickle(): BigDecimal = FromJson(jsonBytes).transform(ToScala[BigDecimal])
+
+  @Benchmark
+  def sjson(): BigDecimal = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[BigDecimal](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

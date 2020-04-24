@@ -50,4 +50,11 @@ class IntReading extends IntBenchmark {
 
   @Benchmark
   def weePickle(): Int = FromJson(jsonBytes).transform(ToScala[Int])
+
+  @Benchmark
+  def sjson(): Int = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Int](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

@@ -17,6 +17,7 @@ class ListOfBooleansReadingSpec extends BenchmarkSpecBase {
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
+      benchmark.sjson() shouldBe benchmark.obj
     }
   }
 }

@@ -129,6 +129,7 @@ lazy val `jsoniter-scala-benchmark` = project
     resolvers += "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
     crossScalaVersions := Seq("2.13.1", "2.12.11"),
     libraryDependencies ++= Seq(
+      "com.eed3si9n" %% "sjson-new-scalajson" % "0.8.3",
       "com.rallyhealth" %% "weepickle-v1" % "1.0.1",
       "io.bullet" %% "borer-derivation" % "1.5.0",
       "pl.iterators" %% "kebs-spray-json" % "1.7.1",
@@ -143,7 +144,7 @@ lazy val `jsoniter-scala-benchmark` = project
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.11.0.rc1",
       "io.circe" %% "circe-generic-extras" % "0.13.0",
       "io.circe" %% "circe-generic" % "0.13.0",
-      "io.circe" %% "circe-parser" % "0.13.0",
+      "io.circe" %% "circe-parser" % "0.13.0" exclude("org.typelevel", s"jawn-parser_${scalaBinaryVersion.value}"),
       "com.typesafe.play" %% "play-json" % "2.8.1",
       "org.julienrf" %% "play-json-derived-codecs" % "7.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",

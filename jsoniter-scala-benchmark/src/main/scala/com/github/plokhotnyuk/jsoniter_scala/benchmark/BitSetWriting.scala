@@ -35,4 +35,11 @@ class BitSetWriting extends BitSetBenchmark {
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+
+  @Benchmark
+  def sjson(): Array[Byte] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    CompactPrinter(Converter.toJsonUnsafe(obj)).getBytes(UTF_8)
+  }
 }

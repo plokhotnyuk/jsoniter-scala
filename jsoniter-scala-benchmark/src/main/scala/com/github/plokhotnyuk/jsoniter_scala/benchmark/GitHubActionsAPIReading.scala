@@ -36,4 +36,11 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
 
   @Benchmark
   def weePickle(): GitHubActionsAPI.Response = FromJson(jsonBytes).transform(ToScala[GitHubActionsAPI.Response])
+
+  @Benchmark
+  def sjson(): GitHubActionsAPI.Response = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[GitHubActionsAPI.Response](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

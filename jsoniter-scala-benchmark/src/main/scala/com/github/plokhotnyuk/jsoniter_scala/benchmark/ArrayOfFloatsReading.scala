@@ -53,4 +53,10 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   @Benchmark
   def weePickle(): Array[Float] = FromJson(jsonBytes).transform(ToScala[Array[Float]])
 */
+  @Benchmark
+  def sjson(): Array[Float] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Float]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

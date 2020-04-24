@@ -50,4 +50,11 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def weePickle(): Array[Double] = FromJson(jsonBytes).transform(ToScala[Array[Double]])
+
+  @Benchmark
+  def sjson(): Array[Double] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Double]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

@@ -51,4 +51,10 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
   @Benchmark
   def weePickle(): Array[BigDecimal] = FromJson(jsonBytes).transform(ToScala[Array[BigDecimal]])
 */
+  @Benchmark
+  def sjson(): Array[BigDecimal] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[BigDecimal]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

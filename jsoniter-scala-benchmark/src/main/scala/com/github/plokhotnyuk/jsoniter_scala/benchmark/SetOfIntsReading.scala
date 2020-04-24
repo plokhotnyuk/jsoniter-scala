@@ -48,4 +48,11 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def weePickle(): Set[Int] = FromJson(jsonBytes).transform(ToScala[Set[Int]])
+
+  @Benchmark
+  def sjson(): Set[Int] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Set[Int]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

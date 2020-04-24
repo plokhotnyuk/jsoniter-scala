@@ -51,4 +51,11 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
 
   @Benchmark
   def weePickle(): Array[SuitADT] = FromJson(jsonBytes).transform(ToScala[Array[SuitADT]])
+
+  @Benchmark
+  def sjson(): Array[SuitADT] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[SuitADT]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

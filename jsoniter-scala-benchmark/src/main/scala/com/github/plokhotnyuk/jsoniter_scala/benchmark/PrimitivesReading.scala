@@ -51,4 +51,11 @@ class PrimitivesReading extends PrimitivesBenchmark {
 
   @Benchmark
   def weePickle(): Primitives = FromJson(jsonBytes).transform(ToScala[Primitives])
+
+  @Benchmark
+  def sjson(): Primitives = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Primitives](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

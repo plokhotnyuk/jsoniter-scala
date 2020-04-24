@@ -50,4 +50,11 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Long] = FromJson(jsonBytes).transform(ToScala[Array[Long]])
+
+  @Benchmark
+  def sjson(): Array[Long] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Long]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

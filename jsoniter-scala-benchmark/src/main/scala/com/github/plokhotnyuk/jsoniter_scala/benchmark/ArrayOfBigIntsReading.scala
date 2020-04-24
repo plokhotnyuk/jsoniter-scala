@@ -49,4 +49,11 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
 
   @Benchmark
   def weePickle(): Array[BigInt] = FromJson(jsonBytes).transform(ToScala[Array[BigInt]])
+
+  @Benchmark
+  def sjson(): Array[BigInt] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[BigInt]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

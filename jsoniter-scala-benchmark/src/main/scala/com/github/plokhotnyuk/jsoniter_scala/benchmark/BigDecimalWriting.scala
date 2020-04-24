@@ -50,4 +50,10 @@ class BigDecimalWriting extends BigDecimalBenchmark {
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
 */
+  @Benchmark
+  def sjson(): Array[Byte] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    CompactPrinter(Converter.toJsonUnsafe(obj)).getBytes(UTF_8)
+  }
 }

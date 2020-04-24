@@ -48,4 +48,11 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Char] = FromJson(jsonBytes).transform(ToScala[Array[Char]])
+
+  @Benchmark
+  def sjson(): Array[Char] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Char]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

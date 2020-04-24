@@ -45,4 +45,11 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
+
+  @Benchmark
+  def sjson(): Array[Byte] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    CompactPrinter(Converter.toJsonUnsafe(obj)).getBytes(UTF_8)
+  }
 }

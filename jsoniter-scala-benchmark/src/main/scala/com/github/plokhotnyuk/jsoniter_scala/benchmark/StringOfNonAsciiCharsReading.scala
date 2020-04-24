@@ -49,4 +49,11 @@ class StringOfNonAsciiCharsReading extends StringOfNonAsciiCharsBenchmark {
 
   @Benchmark
   def weePickle(): String = FromJson(jsonBytes).transform(ToScala[String])
+
+  @Benchmark
+  def sjson(): String = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[String](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

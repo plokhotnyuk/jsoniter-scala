@@ -49,4 +49,11 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
 
   @Benchmark
   def weePickle(): Array[UUID] = FromJson(jsonBytes).transform(ToScala[Array[UUID]])
+
+  @Benchmark
+  def sjson(): Array[UUID] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[UUID]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

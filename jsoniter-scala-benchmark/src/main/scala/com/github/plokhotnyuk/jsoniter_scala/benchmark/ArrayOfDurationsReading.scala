@@ -36,4 +36,11 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Duration] = read[Array[Duration]](jsonBytes)
+
+  @Benchmark
+  def sjson(): Array[Duration] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Duration]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

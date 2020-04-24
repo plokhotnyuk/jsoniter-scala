@@ -43,4 +43,10 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   @Benchmark
   def uPickle(): Map[Int, Boolean] = read[Map[Int, Boolean]](jsonBytes)
 */
+  @Benchmark
+  def sjson(): Map[Int, Boolean] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Map[Int, Boolean]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

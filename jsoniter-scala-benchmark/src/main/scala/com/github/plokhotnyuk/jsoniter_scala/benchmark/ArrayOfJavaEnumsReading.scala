@@ -54,4 +54,11 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Suit] = FromJson(jsonBytes).transform(ToScala[Array[Suit]])
+
+  @Benchmark
+  def sjson(): Array[Suit] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[Array[Suit]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

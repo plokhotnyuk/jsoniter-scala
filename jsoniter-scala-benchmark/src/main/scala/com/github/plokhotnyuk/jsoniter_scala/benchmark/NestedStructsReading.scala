@@ -51,4 +51,11 @@ class NestedStructsReading extends NestedStructsBenchmark {
 
   @Benchmark
   def weePickle(): NestedStructs = FromJson(jsonBytes).transform(ToScala[NestedStructs])
+
+  @Benchmark
+  def sjson(): NestedStructs = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[NestedStructs](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }

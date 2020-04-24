@@ -35,4 +35,11 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
 
   @Benchmark
   def playJson(): mutable.LongMap[Boolean] = Json.parse(jsonBytes).as[mutable.LongMap[Boolean]]
+
+  @Benchmark
+  def sjson(): mutable.LongMap[Boolean] = {
+    import sjsonnew.support.scalajson.unsafe._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.SJsonEncodersDecoders._
+    Converter.fromJsonUnsafe[mutable.LongMap[Boolean]](Parser.parseFromByteArray(jsonBytes).get)
+  }
 }
