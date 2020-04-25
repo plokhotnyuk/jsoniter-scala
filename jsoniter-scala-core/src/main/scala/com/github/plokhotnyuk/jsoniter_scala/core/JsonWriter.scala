@@ -1790,7 +1790,7 @@ final class JsonWriter private[jsoniter_scala](
       if (ieeeExponent == 0) {
         e = -149
         m = ieeeMantissa
-      } else if (ieeeExponent == 255) encodeError("illegal number: " + x)
+      } else if (ieeeExponent == 255) illegalNumberError(x)
       var decimalNotation = false
       var dv, exp, len = 0
       if (e >= -23 && e <= 0 && multiplePowOf2(m, -e)) {
@@ -1995,7 +1995,7 @@ final class JsonWriter private[jsoniter_scala](
       if (ieeeExponent == 0) {
         e = -1074
         m = ieeeMantissa
-      } else if (ieeeExponent == 2047) encodeError("illegal number: " + x)
+      } else if (ieeeExponent == 2047) illegalNumberError(x)
       var decimalNotation = false
       var dv = 0L
       var exp, len = 0
@@ -2237,6 +2237,8 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = (d >> 8).toByte
       writePositiveIntStartingFromLastPosition(q1, pos - 2, buf, ds)
     }
+
+  private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
 
   @tailrec
   private[this] def writeNBytes(n: Int, b: Byte, pos: Int, buf: Array[Byte]): Int =
