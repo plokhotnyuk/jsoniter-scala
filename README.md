@@ -323,14 +323,14 @@ sbt 'jsoniter-scala-benchmark/jmh:run -prof <profiler_name>:help'
 For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,1000 ArrayOf.*'
+sbt 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,1000 ArrayOf.*'
 ```
 
 To see throughput with the allocation rate of generated codecs run benchmarks with GC profiler using the following
 command:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
+sbt 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
 ```
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](https://jmh.morethan.io/) by drugging & dropping
@@ -340,13 +340,25 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmark/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
+```
+
+Also, it can be run with a specified list of events: 
+
+```sh
+sbt 'jsoniter-scala-benchmark/jmh:run -prof "perfnorm:event=cycles,instructions,ld_blocks_partial.address_alias" TwitterAPIReading.jsoniterScala'
+```
+
+List of available events for the perf profiler can be retrieved by the following command:
+
+```sh
+perf list
 ```
 
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 
 Now you can open files from the `/tmp/profile-jfr` directory:
@@ -363,7 +375,7 @@ To run benchmarks with recordings by [Async profiler](https://github.com/jvm-pro
 repository and use command like this:
 
 ```sh
-sbt -no-colors 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
@@ -398,7 +410,7 @@ Following command can be used to profile and print assembly code of hottest meth
 additional library to make PrintAssembly feature enabled](https://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt clean 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
 ```
 
 More info about extras, options, and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)
