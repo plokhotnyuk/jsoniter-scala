@@ -30,7 +30,7 @@ object Example02 {
     override val nullValue: HttpProtocol = null
   }
 
-  implicit val requestCodec: JsonValueCodec[Request] = JsonCodecMaker.make(CodecMakerConfig)
+  implicit val requestCodec: JsonValueCodec[Request] = JsonCodecMaker.make
 
   def main(args: Array[String]): Unit = {
     val jsonHttp =

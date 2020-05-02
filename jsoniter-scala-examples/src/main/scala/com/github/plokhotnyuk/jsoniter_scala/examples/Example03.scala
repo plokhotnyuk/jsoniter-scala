@@ -14,7 +14,7 @@ object Example03 {
   case class Request(url: String, data: RequestData)
 
   implicit val requestDataCodec: JsonValueCodec[RequestData] = new JsonValueCodec[RequestData] {
-    val requestDataDirectCodec: JsonValueCodec[RequestData] = JsonCodecMaker.make(CodecMakerConfig)
+    val requestDataDirectCodec: JsonValueCodec[RequestData] = JsonCodecMaker.make
     val requestDataEncodedCodec: JsonValueCodec[RequestData] = new JsonValueCodec[RequestData] {
       override def decodeValue(in: JsonReader, default: RequestData): RequestData = {
         val json = in.readString(null)
@@ -42,7 +42,7 @@ object Example03 {
     override val nullValue: RequestData = null
   }
 
-  implicit val requestCodec: JsonValueCodec[Request] = JsonCodecMaker.make(CodecMakerConfig)
+  implicit val requestCodec: JsonValueCodec[Request] = JsonCodecMaker.make
 
   def main(args: Array[String]): Unit = {
     val normalJson =

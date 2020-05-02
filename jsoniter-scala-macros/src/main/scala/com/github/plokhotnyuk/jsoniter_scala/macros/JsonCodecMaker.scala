@@ -296,10 +296,37 @@ object JsonCodecMaker {
   def simpleClassName(fullClassName: String): String =
     fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
 
-  def make[A](config: CodecMakerConfig): JsonValueCodec[A] = macro Impl.make[A]
+  def make[A]: JsonValueCodec[A] = macro Impl.makeWithDefaultConfig[A]
+
+  def make[A](config: CodecMakerConfig): JsonValueCodec[A] = macro Impl.makeWithSpecifiedConfig[A]
 
   private object Impl {
-    def make[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] = {
+    def makeWithDefaultConfig[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig)
+
+    def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] = {
+      import c.universe._
+
+      def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
+
+      def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
+
+      make(c) {
+        val cfg =
+          try eval[CodecMakerConfig](config.tree) catch { case ex: Throwable =>
+            fail(s"Cannot evaluate a parameter of the 'make' macro call for type '${weakTypeOf[A].dealias}'. " +
+              "It should not depend on code from the same compilation module where the 'make' macro is called. " +
+              "Use a separated submodule of the project to compile all such dependencies before their usage for " +
+              "generation of codecs. Cause:\n" + ex.toString)
+          }
+        if (cfg.requireCollectionFields && cfg.transientEmpty) {
+          fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+        }
+        cfg
+      }
+    }
+
+    private[this] def make[A: c.WeakTypeTag](c: blackbox.Context)(cfg: CodecMakerConfig): c.Expr[JsonValueCodec[A]] = {
       import c.universe._
 
       def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
@@ -424,17 +451,6 @@ object JsonCodecMaker {
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
       val rootTpe = weakTypeOf[A].dealias
-      val cfg =
-        try eval[CodecMakerConfig](config.tree) catch { case ex: Throwable =>
-          fail(s"Cannot evaluate a parameter of the 'make' macro call for type '$rootTpe'. " +
-            "It should not depend on code from the same compilation module where the 'make' macro is called. " +
-            "Use a separated submodule of the project to compile all such dependencies before their usage for " +
-            "generation of codecs. Cause:\n" + ex.toString)
-        }
-      if (cfg.requireCollectionFields && cfg.transientEmpty) {
-        fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
-      }
-
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
