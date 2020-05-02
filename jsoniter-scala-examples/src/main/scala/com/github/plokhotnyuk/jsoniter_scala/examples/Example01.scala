@@ -7,17 +7,15 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
   * Example of basic usage from README.md
   */
 object Example01 {
-  case class Device(id: Int, model: String)
-
-  case class User(name: String, devices: Seq[Device])
-
-  implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make
-
   def main(args: Array[String]): Unit = {
-    val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))
-    val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
+    case class Category(id: Int, name: String)
 
-    println(user)
-    println(new String(json, "UTF-8"))
+    case class Categories(categories: Seq[Category])
+
+    implicit val codec: JsonValueCodec[Categories] = JsonCodecMaker.make
+
+    val cats = readFromStream(System.in)
+
+    cats.categories.foreach(c => println(c.productIterator.mkString(", ")))
   }
 }
