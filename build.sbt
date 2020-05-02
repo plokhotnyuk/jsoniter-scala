@@ -1,4 +1,4 @@
-import com.typesafe.tools.mima.core.{MissingClassProblem, ProblemFilters}
+import com.typesafe.tools.mima.core._
 import sbt._
 
 import scala.sys.process._
@@ -83,7 +83,8 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key")
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.make")
   ),
   mimaReportSignatureProblems := true
 )

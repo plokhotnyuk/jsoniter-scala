@@ -837,11 +837,13 @@ object JsonCodecMaker {
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
             val partiallyMappedName = named.headOption.map { a =>
-              try eval[named](a.tree).name catch { case ex: Throwable =>
-                fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
-                  "It should not depend on code from the same compilation module where the 'make' macro is called. " +
-                  "Use a separated submodule of the project to compile all such dependencies before their usage " +
-                  "for generation of codecs. Cause:\n" + ex.toString)
+              a.tree.children.tail.collectFirst { case Literal(Constant(s: String)) => s }.getOrElse {
+                try eval[named](a.tree).name catch { case ex: Throwable =>
+                  fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
+                    "It should not depend on code from the same compilation module where the 'make' macro is called. " +
+                    "Use a separated submodule of the project to compile all such dependencies before their usage " +
+                    "for generation of codecs. Cause:\n" + ex.toString)
+                }
               }
             }.getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
