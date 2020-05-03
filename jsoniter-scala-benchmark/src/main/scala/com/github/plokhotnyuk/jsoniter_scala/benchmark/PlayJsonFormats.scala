@@ -2,6 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 
+import ai.x.play.json.Encoders._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
@@ -17,18 +18,13 @@ import scala.collection.mutable
 import scala.util.Try
 
 object PlayJsonFormats {
-  import ai.x.play.json.Encoders._
-
   private[this] val prettyPrintMapper = new ObjectMapper {
     registerModule(new PlayJsonModule(JsonParserSettings.settings))
     configure(SerializationFeature.INDENT_OUTPUT, true)
-  }
-  prettyPrintMapper.setDefaultPrettyPrinter {
-    val indenter = new DefaultIndenter("  ", "\n")
-    val prettyPrinter = new DefaultPrettyPrinter()
-    prettyPrinter.indentArraysWith(indenter)
-    prettyPrinter.indentObjectsWith(indenter)
-    prettyPrinter
+    setDefaultPrettyPrinter {
+      val indenter = new DefaultIndenter("  ", "\n")
+      new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
+    }
   }
 
   def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
@@ -100,10 +96,10 @@ object PlayJsonFormats {
     Json.format
   }
   implicit val bitSetFormat: Format[BitSet] = Format(
-    Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is unsafe an option for open systems */)))),
+    Reads(js => JsSuccess(BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
     Writes((es: BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val mutableBitSetFormat: Format[mutable.BitSet] = Format(
-    Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is unsafe an option for open systems */)))),
+    Reads(js => JsSuccess(mutable.BitSet.fromBitMaskNoCopy(toBitMask(js.as[Array[Int]], Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))),
     Writes((es: mutable.BitSet) => JsArray(es.toArray.map(v => JsNumber(BigDecimal(v))))))
   implicit val primitivesFormat: Format[Primitives] = Json.format
   implicit val extractFieldsFormat: Format[ExtractFields] = Json.format

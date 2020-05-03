@@ -40,10 +40,7 @@ object JacksonSerDesers {
       setSerializationInclusion(Include.NON_EMPTY)
       setDefaultPrettyPrinter {
         val indenter = new DefaultIndenter("  ", "\n")
-        val prettyPrinter = new DefaultPrettyPrinter()
-        prettyPrinter.indentArraysWith(indenter)
-        prettyPrinter.indentObjectsWith(indenter)
-        prettyPrinter
+        new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
       }
     }
   }
@@ -67,17 +64,15 @@ class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]
     gen.writeEndArray()
   }
 
-  override def isEmpty(provider: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
+  override def isEmpty(spro: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
 }
 
 class StringifiedBooleanSerializer extends JsonSerializer[Boolean] {
-  override def serialize(value: Boolean, jgen: JsonGenerator, provider: SerializerProvider): Unit =
-    jgen.writeString(value.toString)
+  override def serialize(x: Boolean, jgen: JsonGenerator, spro: SerializerProvider): Unit = jgen.writeString(x.toString)
 }
 
 class SuitEnumSerializer extends JsonSerializer[SuitEnum] {
-  override def serialize(value: SuitEnum, jgen: JsonGenerator, provider: SerializerProvider): Unit =
-    jgen.writeString(value.toString)
+  override def serialize(x: SuitEnum, jg: JsonGenerator, spro: SerializerProvider): Unit = jg.writeString(x.toString)
 }
 
 class SuitEnumDeserializer extends JsonDeserializer[SuitEnum] {
@@ -97,8 +92,7 @@ class SuitEnumDeserializer extends JsonDeserializer[SuitEnum] {
 }
 
 class SuitADTSerializer extends JsonSerializer[SuitADT] {
-  override def serialize(value: SuitADT, jgen: JsonGenerator, provider: SerializerProvider): Unit =
-    jgen.writeString(value.toString)
+  override def serialize(x: SuitADT, jg: JsonGenerator, spro: SerializerProvider): Unit = jg.writeString(x.toString)
 }
 
 class SuitADTDeserializer extends JsonDeserializer[SuitADT] {

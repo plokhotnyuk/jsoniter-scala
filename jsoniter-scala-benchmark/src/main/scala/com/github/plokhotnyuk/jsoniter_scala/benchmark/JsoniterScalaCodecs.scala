@@ -8,7 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
 
-import scala.collection.immutable.{BitSet, IntMap, Map, Seq, Set}
+import scala.collection.immutable._
 import scala.collection.mutable
 
 object JsoniterScalaCodecs {
@@ -34,13 +34,13 @@ object JsoniterScalaCodecs {
       override val nullValue: Array[Byte] = new Array[Byte](0)
     }
   val bigDecimalCodec: JsonValueCodec[BigDecimal] =
-    make(CodecMakerConfig.withBigDecimalDigitsLimit(Int.MaxValue).withBigDecimalScaleLimit(Int.MaxValue).withBigDecimalPrecision(0)) /* WARNING: It is unsafe an option for open systems */
+    make(CodecMakerConfig.withBigDecimalDigitsLimit(Int.MaxValue).withBigDecimalScaleLimit(Int.MaxValue).withBigDecimalPrecision(0)) /* WARNING: It is an unsafe option for open systems */
   val bigIntCodec: JsonValueCodec[BigInt] =
-    make(CodecMakerConfig.withBigIntDigitsLimit(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withBigIntDigitsLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   val intCodec: JsonValueCodec[Int] = make // don't define implicit for supported types
   val stringCodec: JsonValueCodec[String] = make // don't define implicit for supported types
   implicit val adtCodec: JsonValueCodec[ADTBase] =
-    make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make
   implicit val bigDecimalArrayCodec: JsonValueCodec[Array[BigDecimal]] = make
   implicit val bigIntArrayCodec: JsonValueCodec[Array[BigInt]] = make
@@ -66,7 +66,7 @@ object JsoniterScalaCodecs {
   implicit val localTimeArrayCodec: JsonValueCodec[Array[LocalTime]] = make
   implicit val monthDayArrayCodec: JsonValueCodec[Array[MonthDay]] = make
   implicit val nestedStructsCodec: JsonValueCodec[NestedStructs] =
-    make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
   implicit val offsetDateTimeArrayCodec: JsonValueCodec[Array[OffsetDateTime]] = make
   implicit val offsetTimeArrayCodec: JsonValueCodec[Array[OffsetTime]] = make
   implicit val openRTB25Codec: JsonValueCodec[OpenRTB.BidRequest] = make
@@ -79,22 +79,22 @@ object JsoniterScalaCodecs {
   implicit val zoneIdArrayCodec: JsonValueCodec[Array[ZoneId]] = make
   implicit val zoneOffsetArrayCodec: JsonValueCodec[Array[ZoneOffset]] = make
   implicit val bitSetCodec: JsonValueCodec[BitSet] =
-    make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val extractFieldsCodec: JsonValueCodec[ExtractFields] = make
   implicit val intMapOfBooleansCodec: JsonValueCodec[IntMap[Boolean]] =
-    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val googleMapsAPICodec: JsonValueCodec[GoogleMapsAPI.DistanceMatrix] = make
   implicit val mapOfIntsToBooleansCodec: JsonValueCodec[Map[Int, Boolean]] =
-    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val missingReqFieldCodec: JsonValueCodec[MissingRequiredFields] = make
   implicit val mutableBitSetCodec: JsonValueCodec[mutable.BitSet] =
-    make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue /* WARNING: It is unsafe an option for open systems */))
+    make(CodecMakerConfig.withBitSetValueLimit(Int.MaxValue /* WARNING: It is an unsafe option for open systems */))
   implicit val mutableLongMapOfBooleansCodec: JsonValueCodec[mutable.LongMap[Boolean]] =
-    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val mutableMapOfIntsToBooleansCodec: JsonValueCodec[mutable.Map[Int, Boolean]] =
-    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withMapMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val mutableSetOfIntsCodec: JsonValueCodec[mutable.Set[Int]] =
-    make(CodecMakerConfig.withSetMaxInsertNumber(Int.MaxValue)) // WARNING: It is unsafe an option for open systems
+    make(CodecMakerConfig.withSetMaxInsertNumber(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
   implicit val primitivesCodec: JsonValueCodec[Primitives] = make
   implicit val setOfIntsCodec: JsonValueCodec[Set[Int]] = make
   implicit val twitterAPICodec: JsonValueCodec[Seq[TwitterAPI.Tweet]] = make

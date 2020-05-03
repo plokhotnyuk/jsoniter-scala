@@ -13,12 +13,11 @@ import com.rallyhealth.weepickle.v1.core.Visitor
 
 object WeePickleFromTos {
   object ToPrettyJson extends JsonGeneratorOps {
-    private[this] val indenter = new DefaultIndenter("  ", "\n")
-
     override protected def wrapGenerator(g: JsonGenerator): JsonGenerator =
-      g.setPrettyPrinter(new FieldSepPrettyPrinter(new DefaultPrettyPrinter()
-        .withObjectIndenter(indenter)
-        .withArrayIndenter(indenter)))
+      g.setPrettyPrinter(new FieldSepPrettyPrinter({
+        val indenter = new DefaultIndenter("  ", "\n")
+        new DefaultPrettyPrinter().withObjectIndenter(indenter).withArrayIndenter(indenter)
+      }))
   }
 
   object ToEscapedNonAsciiJson extends JsonGeneratorOps(new JsonFactory().enable(JsonGenerator.Feature.ESCAPE_NON_ASCII))

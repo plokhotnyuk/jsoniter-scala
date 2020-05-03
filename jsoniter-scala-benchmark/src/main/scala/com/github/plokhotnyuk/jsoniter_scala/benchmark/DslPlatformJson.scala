@@ -10,8 +10,8 @@ import scala.reflect.runtime.universe.TypeTag
 
 object DslPlatformJson {
   private[this] val dslJson = new DslJson[Any](Settings.withRuntime().`with`(new ConfigureScala)
-    .limitDigitsBuffer(Int.MaxValue /* WARNING: It is unsafe an option for open systems */)
-    .limitStringBuffer(Int.MaxValue /* WARNING: It is unsafe an option for open systems */)
+    .limitDigitsBuffer(Int.MaxValue /* WARNING: It is an unsafe option for open systems */)
+    .limitStringBuffer(Int.MaxValue /* WARNING: It is an unsafe option for open systems */)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
 
   dslJson.registerWriter(classOf[Array[SuitADT]], new ArrayEncoder(dslJson, dslJson.encoder[SuitADT]))

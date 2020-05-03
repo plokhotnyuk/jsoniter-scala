@@ -40,10 +40,10 @@ object CirceEncodersDecoders {
   implicit val bigIntE5r: Encoder[BigInt] = encodeJsonNumber
     .contramap(x => JsonNumber.fromDecimalStringUnsafe(new java.math.BigDecimal(x.bigInteger).toPlainString))
   implicit val (bitSetD5r: Decoder[BitSet], bitSetE5r: Encoder[BitSet]) =
-    (Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is unsafe an option for open systems */))),
+    (Decoder.decodeArray[Int].map(arr => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
       Encoder.encodeSet[Int].contramapArray((m: BitSet) => m))
   implicit val (mutableBitSetD5r: Decoder[mutable.BitSet], mutableBitSetE5r: Encoder[mutable.BitSet]) =
-    (Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is unsafe an option for open systems */))),
+    (Decoder.decodeArray[Int].map(arr => mutable.BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */))),
       Encoder.encodeSeq[Int].contramapArray((m: mutable.BitSet) => m.toVector))
   implicit val distanceMatrixC3c: Codec[GoogleMapsAPI.DistanceMatrix] = {
     import io.circe.generic.auto._
@@ -52,16 +52,16 @@ object CirceEncodersDecoders {
   }
   implicit val gitHubActionsAPIC3c: Codec[GitHubActionsAPI.Response] = {
     implicit val c1: Codec[GitHubActionsAPI.Artifact] =
-    Codec.forProduct9("id", "node_id", "name", "size_in_bytes", "url", "archive_download_url",
-      "expired", "created_at", "expires_at") {
-      (id: Long, node_id: String, name: String, size_in_bytes: Long, url: String, archive_download_url: String,
-      expired: String, created_at: Instant, expired_at: Instant) =>
-        GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url,
-          expired.toBoolean, created_at, expired_at)
-    } { a =>
-      (a.id, a.node_id, a.name, a.size_in_bytes, a.url, a.archive_download_url,
-      a.expired.toString, a.created_at, a.expires_at)
-    }
+      Codec.forProduct9("id", "node_id", "name", "size_in_bytes", "url", "archive_download_url",
+        "expired", "created_at", "expires_at") {
+        (id: Long, node_id: String, name: String, size_in_bytes: Long, url: String, archive_download_url: String,
+        expired: String, created_at: Instant, expires_at: Instant) =>
+          GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url,
+            expired.toBoolean, created_at, expires_at)
+      } { a =>
+        (a.id, a.node_id, a.name, a.size_in_bytes, a.url, a.archive_download_url,
+        a.expired.toString, a.created_at, a.expires_at)
+      }
     deriveConfiguredCodec[GitHubActionsAPI.Response]
   }
   implicit val extractFieldsC3c: Codec[ExtractFields] = deriveConfiguredCodec[ExtractFields]

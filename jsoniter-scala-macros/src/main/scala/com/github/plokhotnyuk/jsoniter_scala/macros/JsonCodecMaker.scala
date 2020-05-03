@@ -304,27 +304,26 @@ object JsonCodecMaker {
     def makeWithDefaultConfig[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig)
 
-    def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] = {
-      import c.universe._
-
-      def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
-
-      def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
-
+    def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] =
       make(c) {
+        import c.universe._
+
+        def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
+
+        def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
+
         val cfg =
           try eval[CodecMakerConfig](config.tree) catch { case ex: Throwable =>
             fail(s"Cannot evaluate a parameter of the 'make' macro call for type '${weakTypeOf[A].dealias}'. " +
               "It should not depend on code from the same compilation module where the 'make' macro is called. " +
               "Use a separated submodule of the project to compile all such dependencies before their usage for " +
-              "generation of codecs. Cause:\n" + ex.toString)
+              s"generation of codecs. Cause:\n$ex")
           }
         if (cfg.requireCollectionFields && cfg.transientEmpty) {
           fail("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
         }
         cfg
       }
-    }
 
     private[this] def make[A: c.WeakTypeTag](c: blackbox.Context)(cfg: CodecMakerConfig): c.Expr[JsonValueCodec[A]] = {
       import c.universe._
@@ -392,8 +391,8 @@ object JsonCodecMaker {
           } else Seq.empty
 
         val classes = collectRecursively(tpe).distinct
-        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. Please add them or " +
-          "provide a custom implicitly accessible codec for the ADT base.")
+        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. " +
+          "Please add them or provide a custom implicitly accessible codec for the ADT base.")
         classes
       }
 
@@ -441,9 +440,8 @@ object JsonCodecMaker {
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ident(tpe.typeSymbol.companion)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
 
-      def enumSymbol(tpe: Type): Symbol = {
-        val TypeRef(SingleType(_, enumSymbol), _, _) = tpe
-        enumSymbol
+      def enumSymbol(tpe: Type): Symbol = tpe match {
+        case TypeRef(SingleType(_, enumSymbol), _, _) => enumSymbol
       }
 
       def getType(typeTree: Tree): Type = c.typecheck(typeTree, c.TYPEmode).tpe
@@ -842,7 +840,7 @@ object JsonCodecMaker {
                   fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
                     "It should not depend on code from the same compilation module where the 'make' macro is called. " +
                     "Use a separated submodule of the project to compile all such dependencies before their usage " +
-                    "for generation of codecs. Cause:\n" + ex.toString)
+                    s"for generation of codecs. Cause:\n$ex")
                 }
               }
             }.getOrElse(name)
@@ -1041,7 +1039,8 @@ object JsonCodecMaker {
         val lastParamVarBits = -1 >>> -paramVarNum
         val paramVarNames = (0 to lastParamVarIndex).map(i => TermName("p" + i))
         val checkAndResetFieldPresenceFlags = classInfo.fields.zipWithIndex.map { case (f, i) =>
-          val (n, m) = (paramVarNames(i >> 5), 1 << i)
+          val n = paramVarNames(i >> 5)
+          val m = 1 << i
           (f.mappedName, q"if (($n & $m) != 0) $n ^= $m else in.duplicatedKeyError(l)")
         }.toMap
         val paramVars =
@@ -1364,10 +1363,10 @@ object JsonCodecMaker {
                   if (in.isNextToken(',')) ${genReadVal(t :: types, nullValue(t :: types), isStringified)}
                   else in.commaError()"""
           }
-          val vals = indexedTypes.map { case (_, i) => TermName("_" + (i + 1)) }
+          val params = indexedTypes.map { case (_, i) => TermName("_" + (i + 1)) }
           q"""if (in.isNextToken('[')) {
                 ..$readFields
-                if (in.isNextToken(']')) new $tpe(..$vals)
+                if (in.isNextToken(']')) new $tpe(..$params)
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {

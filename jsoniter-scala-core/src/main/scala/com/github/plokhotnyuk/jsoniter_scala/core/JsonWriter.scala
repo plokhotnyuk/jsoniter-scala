@@ -1242,7 +1242,7 @@ final class JsonWriter private[jsoniter_scala](
           if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
           else {
             val q1 = hours / 100000000
-            val r1 = (hours - 100000000 * q1).toInt
+            val r1 = (hours - q1 * 100000000).toInt
             write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
         buf(pos) = 'H'
@@ -1317,7 +1317,7 @@ final class JsonWriter private[jsoniter_scala](
       adjustYear = adjust400YearCycles * 400
       marchZeroDay -= adjust400YearCycles * 146097L
     }
-    var yearEst = to400YearCycle(400 * marchZeroDay + 591)
+    var yearEst = to400YearCycle(marchZeroDay * 400 + 591)
     var marchDayOfYear = toMarchDayOfYear(marchZeroDay, yearEst)
     if (marchDayOfYear < 0) { // fix estimate
       yearEst -= 1
@@ -1351,7 +1351,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, yearEst: Int): Int = {
     val centuryEst = yearEst / 100
-    (marchZeroDay - 365L * yearEst).toInt - (yearEst >> 2) + centuryEst - (centuryEst >> 2)
+    (marchZeroDay - yearEst * 365L).toInt - (yearEst >> 2) + centuryEst - (centuryEst >> 2)
   }
 
   private[this] def writeLocalDate(x: LocalDate): Unit = count = {
@@ -1564,10 +1564,10 @@ final class JsonWriter private[jsoniter_scala](
       if (nano != 0) {
         buf(pos) = '.'
         val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
-        val r1 = nano - 10000000 * q1
-        pos = write2Digits(q1, pos + 1, buf, ds)
+        val r1 = nano - q1 * 10000000
+          pos = write2Digits(q1, pos + 1, buf, ds)
         val q2 = (r1 * 175921861L >> 44).toInt // divide positive int by 100000
-        val r2 = r1 - 100000 * q2
+        val r2 = r1 - q2 * 100000
         val d = ds(q2)
         buf(pos) = d.toByte
         pos += 1
@@ -1593,10 +1593,10 @@ final class JsonWriter private[jsoniter_scala](
     if (nano != 0) {
       buf(pos) = '.'
       val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
-      val r1 = nano - 10000000 * q1
-      pos = write2Digits(q1, pos + 1, buf, ds)
+      val r1 = nano - q1 * 10000000
+        pos = write2Digits(q1, pos + 1, buf, ds)
       val q2 = (r1 * 175921861L >> 44).toInt // divide positive int by 100000
-      val r2 = r1 - 100000 * q2
+      val r2 = r1 - q2 * 100000
       val d = ds(q2)
       buf(pos) = d.toByte
       pos += 1
@@ -1650,7 +1650,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-    val d = ds(q0 - 100 * q1)
+    val d = ds(q0 - q1 * 100)
     buf(pos) = (q1 + '0').toByte
     buf(pos + 1) = d.toByte
     buf(pos + 2) = (d >> 8).toByte
@@ -1662,7 +1662,7 @@ final class JsonWriter private[jsoniter_scala](
     val d1 = ds(q1)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q0 - 100 * q1)
+    val d2 = ds(q0 - q1 * 100)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
     pos + 4
@@ -1674,15 +1674,15 @@ final class JsonWriter private[jsoniter_scala](
     val d1 = ds(q2)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q1 - 100 * q2)
+    val d2 = ds(q1 - q2 * 100)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
-    val r1 = q0 - 10000 * q1
+    val r1 = q0 - q1 * 10000
     val q3 = (r1 * 1374389535L >> 37).toInt // divide positive int by 100
     val d3 = ds(q3)
     buf(pos + 4) = d3.toByte
     buf(pos + 5) = (d3 >> 8).toByte
-    val d4 = ds(r1 - 100 * q3)
+    val d4 = ds(r1 - q3 * 100)
     buf(pos + 6) = d4.toByte
     buf(pos + 7) = (d4 >> 8).toByte
     pos + 8
@@ -1690,9 +1690,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 / 100000000
-    val r1 = (q0 - 100000000 * q1).toInt
+    val r1 = (q0 - q1 * 100000000).toInt
     val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
-    val r2 = (q1 - 100000000 * q2).toInt
+    val r2 = (q1 - q2 * 100000000).toInt
     write8Digits(r1, write8Digits(r2, write2Digits(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
   }
 
@@ -1758,11 +1758,11 @@ final class JsonWriter private[jsoniter_scala](
     if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
     else {
       val q1 = q0 / 100000000
-      val r1 = (q0 - 100000000 * q1).toInt
+      val r1 = (q0 - q1 * 100000000).toInt
       if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
       else {
         val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
-        val r2 = (q1 - 100000000 * q2).toInt
+        val r2 = (q1 - q2 * 100000000).toInt
         write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
       }
     }
@@ -2231,7 +2231,7 @@ final class JsonWriter private[jsoniter_scala](
     else {
       val q1 = q0 / 100000000
       writePositiveIntStartingFromLastPosition(q1.toInt, pos - 8, buf, ds)
-      write8Digits((q0 - 100000000 * q1).toInt, pos - 7, buf, ds)
+      write8Digits((q0 - q1 * 100000000).toInt, pos - 7, buf, ds)
     }
 
   @tailrec
@@ -2245,7 +2245,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     } else {
       val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-      val d = ds(q0 - 100 * q1)
+      val d = ds(q0 - q1 * 100)
       buf(pos - 1) = d.toByte
       buf(pos) = (d >> 8).toByte
       writePositiveIntStartingFromLastPosition(q1, pos - 2, buf, ds)

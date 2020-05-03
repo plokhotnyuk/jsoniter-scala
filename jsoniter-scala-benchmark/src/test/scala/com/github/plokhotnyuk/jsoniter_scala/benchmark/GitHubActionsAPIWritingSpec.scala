@@ -5,6 +5,7 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
   
   "GoogleMapsAPIWriting" should {
     "write properly" in {
+      toString(benchmark.avSystemGenCodec()) shouldBe GitHubActionsAPI.compactJsonString1
       toString(benchmark.borerJson()) shouldBe GitHubActionsAPI.compactJsonString1
       toString(benchmark.circe()) shouldBe GitHubActionsAPI.compactJsonString1
       toString(benchmark.jacksonScala()) shouldBe GitHubActionsAPI.compactJsonString1

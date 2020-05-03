@@ -16,7 +16,8 @@ import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 
 object AVSystemCodecs {
-  val jsonOptions: JsonOptions = JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /* WARNING: It is unsafe an option for open systems */)
+  val jsonOptions: JsonOptions =
+    JsonOptions.Default.copy(mathContext = MathContext.UNLIMITED /* WARNING: It is an unsafe option for open systems */)
   val jsonBase16Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = HexString)
   val jsonBase64Options: JsonOptions = JsonOptions.Default.copy(binaryFormat = Base64())
   implicit val adtGenCodec: GenCodec[ADTBase] = materializeRecursively
@@ -56,16 +57,31 @@ object AVSystemCodecs {
   implicit val zoneIdGenCodec: GenCodec[ZoneId] = transformed(_.toString, ZoneId.of)
   implicit val zoneOffsetGenCodec: GenCodec[ZoneOffset] = transformed(_.toString, ZoneOffset.of)
   implicit val bitSetGenCodec: GenCodec[BitSet] =
-    transformed(_.toArray, (arr: Array[Int]) => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is unsafe an option for open systems */)))
+    transformed(_.toArray, (arr: Array[Int]) => BitSet.fromBitMaskNoCopy(toBitMask(arr, Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))
   implicit val extractFieldsGenCodec: GenCodec[ExtractFields] = materializeRecursively
   implicit val geoJSONGenCodec: GenCodec[GeoJSON.GeoJSON] = materializeRecursively
+  implicit val gitHubActionAPIGenCodec: GenCodec[GitHubActionsAPI.Response] = {
+    object ArtifactBuilder {
+      def apply(id: Long, node_id: String, name: String, size_in_bytes: Long, url: String, archive_download_url: String,
+                expired: String, created_at: Instant, expires_at: Instant): GitHubActionsAPI.Artifact =
+        GitHubActionsAPI.Artifact(id, node_id, name, size_in_bytes, url, archive_download_url,
+          expired.toBoolean, created_at, expires_at)
+
+      def unapply(a: GitHubActionsAPI.Artifact): Option[(Long, String, String, Long, String, String, String, Instant, Instant)] =
+        Some((a.id, a.node_id, a.name, a.size_in_bytes, a.url, a.archive_download_url,
+          a.expired.toString, a.created_at, a.expires_at))
+    }
+
+    implicit val c1: GenCodec[GitHubActionsAPI.Artifact] = fromApplyUnapplyProvider(ArtifactBuilder)
+    materialize
+  }
   implicit val googleMapsAPIGenCodec: GenCodec[GoogleMapsAPI.DistanceMatrix] = materializeRecursively
   implicit val intMapOfBooleansGenCodec: GenCodec[IntMap[Boolean]] =
     transformed(m => (m: Map[Int, Boolean]),
       (m: Map[Int, Boolean]) => m.foldLeft(IntMap.empty[Boolean])((im, p) => im.updated(p._1, p._2)))
   implicit val missingReqFieldGenCodec: GenCodec[MissingRequiredFields] = materializeRecursively
   implicit val mutableBitSetGenCodec: GenCodec[mutable.BitSet] =
-    transformed(_.toArray, (a: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(a, Int.MaxValue /* WARNING: It is unsafe an option for open systems */)))
+    transformed(_.toArray, (a: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(a, Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed(m => (m: mutable.Map[Long, Boolean]),
       (m: mutable.Map[Long, Boolean]) => m.foldLeft(new mutable.LongMap[Boolean])((lm, p) => lm += (p._1, p._2)))
