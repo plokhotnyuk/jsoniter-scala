@@ -2018,7 +2018,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   }
 }
 
-case class NameOverridden(@named("new_" + "name") oldName: String) // intentionally declared after the `make` call
+case class NameOverridden(@named("new" + '_' + "Name".toLowerCase) oldName: String) // intentionally declared after the `make` call
 
 package object test {
   implicit def tup2[A: JsonValueCodec, B: JsonValueCodec]: JsonValueCodec[(A, B)] = make
