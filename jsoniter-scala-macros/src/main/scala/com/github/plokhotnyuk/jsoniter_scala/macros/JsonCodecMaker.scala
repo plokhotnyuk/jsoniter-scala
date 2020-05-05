@@ -373,7 +373,7 @@ object JsonCodecMaker {
         case _ => false
       }
 
-      def adtLeafClasses(tpe: Type): Seq[Type] = {
+      def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
         def collectRecursively(tpe: Type): Seq[Type] =
           if (tpe.typeSymbol.isClass) {
             val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.flatMap { s =>
@@ -383,15 +383,20 @@ object JsonCodecMaker {
                 else substituteTypes(classSymbol.toType, classSymbol.typeParams, tpe.typeArgs)
               if (isSealedClass(subTpe)) collectRecursively(subTpe)
               else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
-              else fail("Only Scala classes & objects are supported for ADT leaf classes. Please consider using of " +
-                s"them for ADT with base '$tpe' or provide a custom implicitly accessible codec for the ADT base.")
+              else fail(if (s.isAbstract) {
+                "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
+                  s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+              } else {
+                "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
+                  s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+              })
             }
             if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
             else leafTpes
           } else Seq.empty
 
-        val classes = collectRecursively(tpe).distinct
-        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$tpe'. " +
+        val classes = collectRecursively(adtBaseTpe).distinct
+        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
           "Please add them or provide a custom implicitly accessible codec for the ADT base.")
         classes
       }

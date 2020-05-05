@@ -1574,6 +1574,30 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'X'."""
       })
     }
+    "don't generate codecs for ADTs that have intermediate non-sealed traits or abstract classes" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X
+          |sealed abstract class AX extends X
+          |abstract class BX extends X
+          |case class A(i: Int) extends AX
+          |case object B extends BX
+          |JsonCodecMaker.make[X]""".stripMargin
+      }).getMessage.contains {
+        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+      })
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait X
+          |sealed trait AX extends X
+          |trait BX extends X
+          |case class A(i: Int) extends AX
+          |case object B extends BX
+          |JsonCodecMaker.make[X]""".stripMargin
+      }).getMessage.contains {
+        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+      })
+    }
     "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait X extends Product with Serializable
