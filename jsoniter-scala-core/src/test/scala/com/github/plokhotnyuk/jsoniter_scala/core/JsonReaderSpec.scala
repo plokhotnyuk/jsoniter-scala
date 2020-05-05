@@ -2309,7 +2309,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse positive and negative zeroes" in {
       forAll(genWhitespaces) { ws =>
         check2("0.0", ws)
-        check2("-0.0", ws)
+        check2("-0.0", ws) // compare strings here to avoid false positives when 0.0f == -0.0f returns true
       }
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
@@ -2437,7 +2437,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse positive and negative zeroes" in {
       forAll(genWhitespaces) { ws =>
         check2("0.0", ws)
-        check2("-0.0", ws)
+        check2("-0.0", ws) // compare strings here to avoid false positives when 0.0 == -0.0 returns true
       }
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
