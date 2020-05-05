@@ -163,6 +163,8 @@ case class Defaults2(
   bs: collection.immutable.BitSet = collection.immutable.BitSet(1),
   mbs: collection.mutable.BitSet = collection.mutable.BitSet(1))
 
+case class PolymorphicDefaults[A, B](i: A = 1, cs: List[B] = Nil)
+
 case class JavaTimeTypes(
   dow: DayOfWeek,
   d: Duration,
@@ -1297,6 +1299,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"st":null,"bi":null,"l":null,"oc":null,"e":null,"ab":null,"m":null,"mm":null,"im":null,"lm":null,"s":null,"ms":null,"bs":null,"mbs":null}""".stripMargin)
       verifyDeser(codecOfDefaults, Defaults2(),
         """{"l":[],"ab":[],"m":{},"mm":{},"im":{},"lm":{},"s":[],"ms":[],"bs":[],"mbs":[]}""")
+    }
+    "deserialize default values of polymorphic case classes that defined for fields" in {
+      val polymorphicDefaults: JsonValueCodec[PolymorphicDefaults[Int, String]] = make
+      verifyDeser(polymorphicDefaults, PolymorphicDefaults[Int, String](), """{}""")
+      verifyDeser(polymorphicDefaults, PolymorphicDefaults[Int, String](), """{"i":1,"s":[]}""")
+    }
+    "don't generate codecs for case classes that have ill-typed default values defined for fields" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[PolymorphicDefaults[String, Int]]"
+      }).getMessage.contains {
+        "polymorphic expression cannot be instantiated to expected type"
+      })
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
       case class Transient(@transient transient: String = "default", required: String) {
