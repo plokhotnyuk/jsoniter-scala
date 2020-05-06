@@ -92,23 +92,35 @@ lazy val publishSettings = Seq(
 lazy val `jsoniter-scala` = project.in(file("."))
   .settings(commonSettings)
   .settings(noPublishSettings)
-  .aggregate(`jsoniter-scala-core`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
+  .aggregate(`jsoniter-scala-coreJVM`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
 
-lazy val `jsoniter-scala-core` = project
+lazy val `jsoniter-scala-core` = crossProject(JVMPlatform)
+  .crossType(CrossType.Full)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("2.13.2", "2.12.11", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6" % Test,
-      "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % Test,
-      "org.scalatest" %% "scalatest" % "3.1.1" % Test
-    )
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.1.1" % Test,
+      "org.scalatest" %%% "scalatest" % "3.1.1" % Test
+    ),
+    // See https://github.com/portable-scala/sbt-crossproject/issues/74
+    Seq(Compile, Test).flatMap(inConfig(_) {
+      unmanagedResourceDirectories ++= {
+        unmanagedSourceDirectories.value
+          .map(src => (src / ".." / "resources").getCanonicalFile)
+          .filterNot(unmanagedResourceDirectories.value.contains)
+          .distinct
+      }
+    })
   )
 
+lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
+
 lazy val `jsoniter-scala-macros` = project
-  .dependsOn(`jsoniter-scala-core`)
+  .dependsOn(`jsoniter-scala-coreJVM`)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
