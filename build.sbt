@@ -92,9 +92,9 @@ lazy val publishSettings = Seq(
 lazy val `jsoniter-scala` = project.in(file("."))
   .settings(commonSettings)
   .settings(noPublishSettings)
-  .aggregate(`jsoniter-scala-coreJVM`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
+  .aggregate(`jsoniter-scala-coreJVM`, `jsoniter-scala-coreJS`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
 
-lazy val `jsoniter-scala-core` = crossProject(JVMPlatform)
+lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -116,8 +116,16 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform)
       }
     })
   )
+  .jsSettings(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.0.0"
+    ),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
+lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
 
 lazy val `jsoniter-scala-macros` = project
   .dependsOn(`jsoniter-scala-coreJVM`)
