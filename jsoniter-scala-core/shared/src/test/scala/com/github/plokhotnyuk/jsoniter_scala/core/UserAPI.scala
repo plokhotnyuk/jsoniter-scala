@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import scala.annotation.switch
-import scala.reflect.io.Streamable
 
 case class Device(id: Int, model: String)
 
@@ -11,9 +10,9 @@ object UserAPI {
   val user = User(name = "John", devices = Seq(Device(id = 1, model = "HTC One X"), Device(id = 2, model = "iPhone X")))
   val user1 = User(name = "Jon", devices = Seq(Device(id = 1, model = "HTC One X")))
   val user2 = User(name = "Joe", devices = Seq(Device(id = 2, model = "iPhone X")))
-  val prettyJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_response.json"))
-  val compactJson: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_compact_response.json"))
-  val httpMessage: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("user_api_http_response.txt"))
+  val prettyJson: Array[Byte] = TestUtils.bytes(TestUtils.getResourceAsStream("user_api_response.json"))
+  val compactJson: Array[Byte] = TestUtils.bytes(TestUtils.getResourceAsStream("user_api_compact_response.json"))
+  val httpMessage: Array[Byte] = TestUtils.bytes(TestUtils.getResourceAsStream("user_api_http_response.txt"))
   val codec: JsonValueCodec[User] = new JsonValueCodec[User] {
     val nullValue: User = null
 

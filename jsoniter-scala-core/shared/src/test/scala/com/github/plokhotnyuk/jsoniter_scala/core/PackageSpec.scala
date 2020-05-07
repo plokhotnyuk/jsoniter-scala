@@ -12,7 +12,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "readFromStream" should {
     "parse JSON from the provided input stream" in {
-      readFromStream(getClass.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
+      readFromStream(TestUtils.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromStream(new ByteArrayInputStream(httpMessage))(codec)).getMessage ==
@@ -26,7 +26,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
-      def streamWithError = getClass.getResourceAsStream("user_api_response_with_error.json")
+      def streamWithError = TestUtils.getResourceAsStream("user_api_response_with_error.json")
 
       readFromStream(streamWithError, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromStream(streamWithError)(codec)).getMessage ==
@@ -211,7 +211,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
   "scanValueStream" should {
-    def inputStream: InputStream = getClass.getResourceAsStream("user_api_value_stream.json")
+    def inputStream: InputStream = TestUtils.getResourceAsStream("user_api_value_stream.json")
 
     "scan JSON values from the provided input stream" in {
       var users: Seq[User] = Seq.empty
@@ -238,7 +238,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
   "scanArray" should {
-    def inputStream: InputStream = getClass.getResourceAsStream("user_api_array.json")
+    def inputStream: InputStream = TestUtils.getResourceAsStream("user_api_array.json")
 
     "scan values of JSON array from the provided input stream" in {
       var users: Seq[User] = Seq.empty
@@ -265,7 +265,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       users shouldBe Seq()
     }
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
-      def inputStreamWithError: InputStream = getClass.getResourceAsStream("user_api_array_with_error.json")
+      def inputStreamWithError: InputStream = TestUtils.getResourceAsStream("user_api_array_with_error.json")
 
       scanJsonArrayFromStream[User](inputStreamWithError)(_ => false)(codec)
       scanJsonArrayFromStream[User](inputStreamWithError, ReaderConfig.withCheckForEndOfInput(false))(_ => true)(codec)
