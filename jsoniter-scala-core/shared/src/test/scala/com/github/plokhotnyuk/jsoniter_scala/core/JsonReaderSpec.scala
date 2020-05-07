@@ -2230,9 +2230,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     def check2(s: String, ws: String): Unit = {
-      reader(ws + s).readFloat().toString shouldBe s
-      reader(s"""$ws"$s":""").readKeyAsFloat().toString shouldBe s
-      reader(s"""$ws"$s"""").readStringAsFloat().toString shouldBe s
+      // Format floats with `String.format` for consistency between JVM and JS.
+      // See https://www.scala-js.org/doc/semantics.html
+      String.format("%.1f", reader(ws + s).readFloat()) shouldBe s
+      String.format("%.1f", reader(s"""$ws"$s":""").readKeyAsFloat()) shouldBe s
+      String.format("%.1f", reader(s"""$ws"$s"""").readStringAsFloat()) shouldBe s
     }
 
     def checkFloat(s: String, ws: String): Unit = check(s, java.lang.Float.parseFloat(s), ws)
@@ -2353,9 +2355,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
 
     def check2(s: String, ws: String): Unit = {
-      reader(ws + s).readDouble().toString shouldBe s
-      reader(s"""$ws"$s":""").readKeyAsDouble().toString shouldBe s
-      reader(s"""$ws"$s"""").readStringAsDouble().toString shouldBe s
+      // Format doubles with `String.format` for consistency between JVM and JS.
+      // See https://www.scala-js.org/doc/semantics.html
+      String.format("%.1f", reader(ws + s).readDouble()) shouldBe s
+      String.format("%.1f", reader(s"""$ws"$s":""").readKeyAsDouble()) shouldBe s
+      String.format("%.1f", reader(s"""$ws"$s"""").readStringAsDouble()) shouldBe s
     }
 
     def checkDouble(s: String, ws: String): Unit = check(s, java.lang.Double.parseDouble(s), ws)
