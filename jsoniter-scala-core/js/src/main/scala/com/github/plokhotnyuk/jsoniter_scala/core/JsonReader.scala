@@ -88,9 +88,8 @@ object ReaderConfig extends ReaderConfig(
     preferredCharBufSize = 4096,
     checkForEndOfInput = true)
 
-// TODO restore this
 class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause)
+  extends RuntimeException(msg, cause) // FIXME: No constructor with the withStackTrace parameter
 
 final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
@@ -586,7 +585,7 @@ final class JsonReader private[jsoniter_scala](
   def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
 
   def isCharBufEqualsTo(len: Int, s: String): Boolean = {
-    assertNonNull(s)
+    if (s eq null) throw new NullPointerException
     s.length == len && {
       val charBuf = this.charBuf
       var i = 0
@@ -1586,7 +1585,7 @@ final class JsonReader private[jsoniter_scala](
         else if (posMant < 4294967296L && exp >= 0 && exp <= 19 - digits) (posMant * pow10Doubles(exp.toInt)).toFloat
         else toFloat(posMant, exp, from, newMark, pos)
       if (isNeg) {
-        // Workaround for https://github.com/scala-js/scala-js/issues/4034
+        // FIXME: Workaround for https://github.com/scala-js/scala-js/issues/4034
         if (x == 0f) x = -0f
         else if (x == -0f) x = 0f
         else x = -x
@@ -3199,7 +3198,7 @@ object JsonReader {
     * @throws ArrayIndexOutOfBoundsException if the length of `cs` is less than the provided `len`
     */
   final def toHashCode(cs: Array[Char], len: Int): Int = {
-    assertNonNull(cs)
+    if (cs eq null) throw new NullPointerException
     if (cs.length < len) throw new ArrayIndexOutOfBoundsException(len)
     var h, i = 0
     while (i < len) {
