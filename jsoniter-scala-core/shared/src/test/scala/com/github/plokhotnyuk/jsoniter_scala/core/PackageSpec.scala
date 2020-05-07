@@ -456,15 +456,15 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       intercept[NullPointerException](writeToByteBuffer(user, bbuf2)(null))
       intercept[NullPointerException](writeToByteBuffer(user, bbuf2, null)(codec))
     }
-    "writeToString" should {
-      "serialize an object to a string" in {
-        writeToString(user)(codec) shouldBe toString(compactJson)
-        writeToString(user, WriterConfig.withIndentionStep(2))(codec) shouldBe toString(prettyJson)
-      }
-      "throw NullPointerException in case of the provided params are null" in {
-        intercept[NullPointerException](writeToArray(user)(null))
-        intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
-      }
+  }
+  "writeToString" should {
+    "serialize an object to a string" in {
+      writeToString(user)(codec) shouldBe toString(compactJson)
+      writeToString(user, WriterConfig.withIndentionStep(2))(codec) shouldBe toString(prettyJson)
+    }
+    "throw NullPointerException in case of the provided params are null" in {
+      intercept[NullPointerException](writeToArray(user)(null))
+      intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
     }
   }
 
