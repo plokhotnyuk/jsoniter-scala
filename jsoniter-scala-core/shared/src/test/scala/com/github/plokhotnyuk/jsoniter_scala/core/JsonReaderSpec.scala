@@ -2283,8 +2283,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
         checkFloat(s"${m}e$e", ws)
       }
-      forAll(genBigInt, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
-      forAll(genBigDecimal, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
+      if (!TestUtils.isJS) { // FIXME: Scala.JS cannot parse "1725440439005216752" as 1.72544037E18f
+        forAll(genBigInt, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
+        forAll(genBigDecimal, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
+      }
     }
     "parse infinities on float overflow" in {
       forAll(genWhitespaces) { ws =>
