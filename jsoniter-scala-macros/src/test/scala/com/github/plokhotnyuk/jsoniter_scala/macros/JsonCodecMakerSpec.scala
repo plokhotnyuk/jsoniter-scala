@@ -1563,7 +1563,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object B extends X
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'X'."""
+        """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'X' or
+          |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
         """abstract class X
@@ -1571,7 +1572,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object B extends X
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'X'."""
+        """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'X' or
+          |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs for ADTs that have intermediate non-sealed traits or abstract classes" in {
@@ -1801,7 +1803,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """case class FirstOrder[A](a: A)
           |JsonCodecMaker.make[FirstOrder[_]]""".stripMargin
       }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'Any'."""
+        """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Any' or
+          |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
       })
     }
     "serialize and deserialize arrays of generic types" in {
@@ -1939,13 +1942,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously"
       })
     }
-    "don't generate codecs for unsupported classes like abstract non-sealed case classes or java.util.Date" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """abstract case class AbstractCaseClass(i: Int)
-          |JsonCodecMaker.make[AbstractCaseClass]""".stripMargin
-      }).getMessage.contains {
-        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'AbstractCaseClass'."
-      })
+    "don't generate codecs for unsupported classes like java.util.Date" in {
       assert(intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[_root_.java.util.Date]"
       }).getMessage.contains {

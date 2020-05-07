@@ -802,7 +802,10 @@ object JsonCodecMaker {
         fail(s"No implicit '${typeOf[JsonKeyCodec[_]]}' defined for '$tpe'.")
 
       def cannotFindValueCodecError(tpe: Type): Nothing =
-        fail(s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
+        fail(if (tpe.typeSymbol.isAbstract) {
+          "Only sealed traits or abstract classes are supported as an ADT base. " +
+            s"Please consider sealing the '$tpe' or provide a custom implicitly accessible codec for it."
+        } else s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
                            defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
