@@ -14,4 +14,6 @@ object TestUtils {
 
   def byteArrayToString(bytes: Array[Byte]): String =
     new String(bytes, 0, 0, bytes.length)
+
+  def jvmOnly(thunk: => Unit): Unit = thunk
 }
