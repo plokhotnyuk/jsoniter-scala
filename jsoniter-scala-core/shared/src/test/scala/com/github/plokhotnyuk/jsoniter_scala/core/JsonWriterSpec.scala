@@ -492,8 +492,11 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        s.toFloat shouldBe n // no data loss when parsing by JDK
-        l should be <= n.toString.length // rounding isn't worse than in JDK
+        s.toFloat shouldBe (n +- 1e-4f) // no significant data loss
+        TestUtils.jvmOnly {
+          s.toFloat shouldBe n // no data loss when parsing by JDK
+          l should be <= n.toString.length // rounding isn't worse than in JDK
+        }
         i should be > 0 // has the '.' character inside
         i should be < l - 1
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
@@ -569,16 +572,15 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(4.7223665E21f, "4.7223664E21") // differs from the result produced by Java or by the original Ryu implementation
     }
     "write round-even float values" in {
-      def check(n: Float): Unit = {
-        val s = n.toString
+      def check(n: Float, s: String): Unit = {
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(0.33007812f)
-      check(0.036132812f)
-      check(0.0063476562f)
+      check(0.33007812f, "0.33007812")
+      check(0.036132812f, "0.036132812")
+      check(0.0063476562f, "0.0063476562")
     }
     "throw i/o exception on non-finite numbers" in {
       forAll(genNonFiniteFloat) { n =>
@@ -595,7 +597,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val l = s.length
         val i = s.indexOf('.')
         s.toDouble shouldBe n // no data loss when parsing by JDK
-        l should be <= n.toString.length // rounding isn't worse than in JDK
+        TestUtils.jvmOnly {
+          l should be <= n.toString.length // rounding isn't worse than in JDK
+        }
         i should be > 0 // has the '.' character inside
         i should be < l - 1 // '.' is not the last character
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
@@ -653,16 +657,15 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(java.lang.Double.longBitsToDouble(0x44688ce73510bf08L), "3.623E21") // Java serializes it to "3.6230000000000003E21"
     }
     "write round-even double values" in {
-      def check(n: Double): Unit = {
-        val s = n.toString
+      def check(n: Double, s: String): Unit = {
         withWriter(_.writeVal(n)) shouldBe s
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(1.8557466319180092E15)
-      check(2.1454965803968662E14)
-      check(5.724294694832342E14)
+      check(1.8557466319180092E15, "1.8557466319180092E15")
+      check(2.1454965803968662E14, "2.1454965803968662E14")
+      check(5.724294694832342E14, "5.724294694832342E14")
     }
     "throw i/o exception on non-finite numbers" in {
       forAll(genNonFiniteDouble) { n =>
