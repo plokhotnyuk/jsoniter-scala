@@ -15,5 +15,11 @@ object TestUtils {
   def byteArrayToString(bytes: Array[Byte]): String =
     new String(bytes, 0, 0, bytes.length)
 
+  def lowercaseHex(b: Byte): String =
+    String.format("%02x", b)
+
+  def uppercaseHex(b: Byte): String =
+    String.format("%02X", b)
+
   def jvmOnly(thunk: => Unit): Unit = thunk
 }
