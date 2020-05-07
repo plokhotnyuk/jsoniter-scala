@@ -72,8 +72,9 @@ object WriterConfig extends WriterConfig(
   escapeUnicode = false,
   preferredBufSize = 16384)
 
+// TODO restore this
 class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause, true, withStackTrace)
+  extends RuntimeException(msg, cause)
 
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
@@ -199,7 +200,7 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    x.getBytes(0, len, buf, pos)
+    x.substring(0, len).getBytes.copyToArray(buf, pos)
     pos += len
     buf(pos) = '"'
     buf(pos + 1) = ':'
@@ -340,7 +341,7 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    x.getBytes(0, len, buf, pos)
+    x.substring(0, len).getBytes.copyToArray(buf, pos)
     pos += len
     buf(pos) = '"'
     pos + 1
@@ -855,7 +856,7 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos += 1
-    s.getBytes(0, len, buf, pos)
+    s.substring(0, len).getBytes.copyToArray(buf, pos)
     pos += len
     buf(pos) = '"'
     pos + 1
@@ -1499,7 +1500,7 @@ final class JsonWriter private[jsoniter_scala](
       }
       buf(pos) = '['
       pos += 1
-      zoneId.getBytes(0, len, buf, pos)
+      zoneId.substring(0, len).getBytes.copyToArray(buf, pos)
       pos += len
       buf(pos) = ']'
       pos += 1
@@ -1779,7 +1780,7 @@ final class JsonWriter private[jsoniter_scala](
   // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuFloat.java
   // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
   private[this] def writeFloat(x: Float): Unit = {
-    val bits = java.lang.Float.floatToRawIntBits(x)
+    val bits = java.lang.Float.floatToIntBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
     else if (bits == 0x80000000) writeBytes('-', '0', '.', '0')
     else count = {
@@ -1984,7 +1985,7 @@ final class JsonWriter private[jsoniter_scala](
   // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuDouble.java
   // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
   private[this] def writeDouble(x: Double): Unit = {
-    val bits = java.lang.Double.doubleToRawLongBits(x)
+    val bits = java.lang.Double.doubleToLongBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
     else if (bits == 0x8000000000000000L) writeBytes('-', '0', '.', '0')
     else count = {

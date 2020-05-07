@@ -13,13 +13,12 @@ import scala.jdk.CollectionConverters._
 import scala.util.{Random, Try}
 
 object GenUtils {
-  val isJDK8: Boolean = System.getProperty("java.version").startsWith("1.8")
   val whitespaces: Seq[String] = (0 to 99).map {
     val ws = Array(' '.toByte, '\n'.toByte, '\t'.toByte, '\r'.toByte)
     size =>
       val bs = new Array[Byte](size)
       java.util.Arrays.fill(bs, ws(Random.nextInt(ws.length)))
-      new String(bs, 0, 0, bs.length)
+      TestUtils.byteArrayToString(bs)
   }
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
@@ -57,8 +56,8 @@ object GenUtils {
     // FIXME: JDK 8 has bug in parsing and serialization of Duration with zero seconds and negative nanos,
     // see https://bugs.openjdk.java.net/browse/JDK-8054978
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
-    Gen.choose(if (isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
+    Gen.choose(if (TestUtils.isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
+    Gen.choose(if (TestUtils.isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
   val genInstant: Gen[Instant] = for {
     epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
     nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)

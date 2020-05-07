@@ -88,8 +88,9 @@ object ReaderConfig extends ReaderConfig(
     preferredCharBufSize = 4096,
     checkForEndOfInput = true)
 
+// TODO restore this
 class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause, true, withStackTrace)
+  extends RuntimeException(msg, cause)
 
 final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
@@ -1483,7 +1484,7 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
+        java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
       }
     }
 
@@ -1621,7 +1622,7 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
+        java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
       }
     }
 
@@ -2512,8 +2513,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def parseString(): Int = {
     val minLim = Math.min(charBuf.length, tail - head)
-    if (isGraalVM) parseStringUnrolled(0, minLim, charBuf, head)
-    else parseString(0, minLim, charBuf, head)
+    parseString(0, minLim, charBuf, head)
   }
 
   @tailrec
@@ -3097,9 +3097,6 @@ final class JsonReader private[jsoniter_scala](
 }
 
 object JsonReader {
-  private final val isGraalVM: Boolean =
-    Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM") ||
-      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.contains("-XX:+UseJVMCICompiler")
   private final val pow10Doubles: Array[Double] =
     Array(1, 1e+1, 1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10, 1e+11,
       1e+12, 1e+13, 1e+14, 1e+15, 1e+16, 1e+17, 1e+18, 1e+19, 1e+20, 1e+21, 1e+22)
@@ -3226,5 +3223,5 @@ private class Key(var hash: Int, var bs: Array[Byte], var from: Int, var to: Int
     }
   }
 
-  override def toString: String = new String(bs, 0, from, to - from)
+  override def toString: String = new String(bs, from, to - from)
 }

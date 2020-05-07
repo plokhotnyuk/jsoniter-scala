@@ -1482,7 +1482,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-999999999-01-01T00:00:00+18:00", ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MAX), ws)
         check("-999999999-01-01T00:00:00-18:00", ZonedDateTime.of(LocalDateTime.MIN, ZoneOffset.MIN), ws)
         check("2018-03-25T02:30+01:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+01:00[Europe/Warsaw]"), ws)
-        if (!isJDK8) {
+        if (!TestUtils.isJDK8) {
           //FIXME: Bug in JDK 8 at ZonedDateTime.parse, see https://bugs.openjdk.java.net/browse/JDK-8066982
           check("2018-03-25T02:30+00:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+00:00[Europe/Warsaw]"), ws)
           check("2018-03-25T02:30+02:00[Europe/Warsaw]", ZonedDateTime.parse("2018-03-25T02:30+02:00[Europe/Warsaw]"), ws)
