@@ -4,6 +4,7 @@ import java.io.{ByteArrayInputStream, InputStream}
 
 object TestUtils {
   val isJDK8: Boolean = false
+  val isJS: Boolean = true
 
   def getResourceAsStream(resource: String): java.io.InputStream = {
     val resourcePath = Path.join(
