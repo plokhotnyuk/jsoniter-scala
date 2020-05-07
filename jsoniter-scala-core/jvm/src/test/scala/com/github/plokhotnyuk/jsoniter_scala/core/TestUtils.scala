@@ -16,10 +16,10 @@ object TestUtils {
     new String(bytes, 0, 0, bytes.length)
 
   def lowercaseHex(b: Byte): String =
-    String.format("%02x", b)
+    "%02x".format(b)
 
   def uppercaseHex(b: Byte): String =
-    String.format("%02X", b)
+    "%02X".format(b)
 
   def jvmOnly(thunk: => Unit): Unit = thunk
 }

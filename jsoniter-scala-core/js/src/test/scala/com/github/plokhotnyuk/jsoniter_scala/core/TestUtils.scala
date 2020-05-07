@@ -28,12 +28,12 @@ object TestUtils {
 
   def lowercaseHex(b: Byte): String = {
     // In Scala.js, String.format takes Bytes to be Ints, so extra 0xff are added
-    String.format("%02x", b & 0xff)
+    "%02x".format(b & 0xff)
   }
 
   def uppercaseHex(b: Byte): String = {
     // In Scala.js, String.format takes Bytes to be Ints, so extra 0xff are added
-    String.format("%02X", b & 0xff)
+    "%02X".format(b & 0xff)
   }
 
   def jvmOnly(thunk: => Unit): Unit = {}
