@@ -178,7 +178,7 @@ lazy val `jsoniter-scala-benchmark` = project
     crossScalaVersions := Seq("2.13.2", "2.12.11"),
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.0.1",
-      "io.bullet" %% "borer-derivation" % "1.5.0",
+      "io.bullet" %% "borer-derivation" % "1.6.0",
       "pl.iterators" %% "kebs-spray-json" % "1.7.1",
       "io.spray" %%  "spray-json" % "1.3.5",
       "com.avsystem.commons" %% "commons-core" % "2.0.0-M6",
