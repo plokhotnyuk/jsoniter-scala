@@ -121,7 +121,10 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
       "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.0.0"
     ),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    // Coverage is not supported yet for Scala.js 1.0.
+    // See https://github.com/scoverage/scalac-scoverage-plugin/pull/287 for updates
+    coverageEnabled := false
   )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
