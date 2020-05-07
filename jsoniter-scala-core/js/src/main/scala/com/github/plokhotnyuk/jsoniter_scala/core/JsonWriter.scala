@@ -142,6 +142,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeKey(x: BigInt): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeBigInteger(x.bigInteger, null)
@@ -149,6 +150,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeKey(x: BigDecimal): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeBytes('"')
     writeBigDecimal(x.bigDecimal)
@@ -156,12 +158,14 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeKey(x: UUID): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
     writeColon()
   }
 
   def writeKey(x: String): Unit = count = {
+    assertNonNull(x)
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 3)
     var buf = this.buf
@@ -186,6 +190,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeNonEscapedAsciiKey(x: String): Unit = count = {
+    assertNonNull(x)
     val len = x.length
     val indention = this.indention
     var pos = ensureBufCapacity(indention + len + 6)
@@ -211,84 +216,98 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeKey(x: Duration): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeDuration(x)
     writeColon()
   }
 
   def writeKey(x: Instant): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeInstant(x)
     writeColon()
   }
 
   def writeKey(x: LocalDate): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDate(x)
     writeColon()
   }
 
   def writeKey(x: LocalDateTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalDateTime(x)
     writeColon()
   }
 
   def writeKey(x: LocalTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeLocalTime(x)
     writeColon()
   }
 
   def writeKey(x: MonthDay): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeMonthDay(x)
     writeColon()
   }
 
   def writeKey(x: OffsetDateTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetDateTime(x)
     writeColon()
   }
 
   def writeKey(x: OffsetTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeOffsetTime(x)
     writeColon()
   }
 
   def writeKey(x: Period): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writePeriod(x)
     writeColon()
   }
 
   def writeKey(x: Year): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeYear(x)
     writeColon()
   }
 
   def writeKey(x: YearMonth): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeYearMonth(x)
     writeColon()
   }
 
   def writeKey(x: ZonedDateTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeZonedDateTime(x)
     writeColon()
   }
 
   def writeKey(x: ZoneId): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeZoneId(x)
     writeColon()
   }
 
   def writeKey(x: ZoneOffset): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeKey()
     writeZoneOffset(x)
     writeColon()
@@ -298,21 +317,25 @@ final class JsonWriter private[jsoniter_scala](
     throw new JsonWriterException(msg, null, config.throwWriterExceptionWithStackTrace)
 
   def writeVal(x: BigDecimal): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeBigDecimal(x.bigDecimal)
   }
 
   def writeVal(x: BigInt): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeBigInteger(x.bigInteger, null)
   }
 
   def writeVal(x: UUID): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeUUID(x.getMostSignificantBits, x.getLeastSignificantBits)
   }
 
   def writeVal(x: String): Unit = count = {
+    assertNonNull(x)
     val indention = this.indention
     var pos = ensureBufCapacity(indention + 4)
     if (comma) {
@@ -329,6 +352,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeNonEscapedAsciiVal(x: String): Unit =  count = {
+    assertNonNull(x)
     val len = x.length
     val indention = this.indention
     var pos = ensureBufCapacity(indention + len + 4)
@@ -348,71 +372,85 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeVal(x: Duration): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeDuration(x)
   }
 
   def writeVal(x: Instant): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeInstant(x)
   }
 
   def writeVal(x: LocalDate): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDate(x)
   }
 
   def writeVal(x: LocalDateTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalDateTime(x)
   }
 
   def writeVal(x: LocalTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeLocalTime(x)
   }
 
   def writeVal(x: MonthDay): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeMonthDay(x)
   }
 
   def writeVal(x: OffsetDateTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetDateTime(x)
   }
 
   def writeVal(x: OffsetTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeOffsetTime(x)
   }
 
   def writeVal(x: Period): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writePeriod(x)
   }
 
   def writeVal(x: Year): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeYear(x)
   }
 
   def writeVal(x: YearMonth): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeYearMonth(x)
   }
 
   def writeVal(x: ZonedDateTime): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeZonedDateTime(x)
   }
 
   def writeVal(x: ZoneId): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeZoneId(x)
   }
 
   def writeVal(x: ZoneOffset): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeZoneOffset(x)
   }
@@ -458,6 +496,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeValAsString(x: BigDecimal): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeBigDecimal(x.bigDecimal)
@@ -465,6 +504,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeValAsString(x: BigInt): Unit = {
+    assertNonNull(x)
     writeOptionalCommaAndIndentionBeforeValue()
     writeBytes('"')
     writeBigInteger(x.bigInteger, null)
@@ -521,6 +561,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeBase16Val(bs: Array[Byte], lowerCase: Boolean): Unit = {
+    assertNonNull(bs)
     writeOptionalCommaAndIndentionBeforeValue()
     val ds =
       if (lowerCase) lowerCaseHexDigits
@@ -529,16 +570,19 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   def writeBase64Val(bs: Array[Byte], doPadding: Boolean): Unit = {
+    assertNonNull(bs)
     writeOptionalCommaAndIndentionBeforeValue()
     writeBase64Bytes(bs, base64Digits, doPadding)
   }
 
   def writeBase64UrlVal(bs: Array[Byte], doPadding: Boolean): Unit = {
+    assertNonNull(bs)
     writeOptionalCommaAndIndentionBeforeValue()
     writeBase64Bytes(bs, base64UrlDigits, doPadding)
   }
 
   def writeRawVal(bs: Array[Byte]): Unit = {
+    assertNonNull(bs)
     writeOptionalCommaAndIndentionBeforeValue()
     writeRawBytes(bs)
   }

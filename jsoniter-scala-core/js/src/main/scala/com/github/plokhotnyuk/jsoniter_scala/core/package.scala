@@ -7,6 +7,9 @@ import java.nio.charset.StandardCharsets.UTF_8
 import scala.{specialized => sp}
 
 package object core {
+  private[core] def assertNonNull(x: Any*): Unit =
+    if (x.contains(null)) throw new NullPointerException()
+
   private[this] final val readerPool: ThreadLocal[JsonReader] = new ThreadLocal[JsonReader] {
     override def initialValue(): JsonReader = new JsonReader
   }
@@ -30,7 +33,7 @@ package object core {
     */
   def readFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)
                            (implicit codec: JsonValueCodec[A]): A = {
-    if (in eq null) throw new NullPointerException
+    assertNonNull(codec, in, config)
     readerPool.get.read(codec, in, config)
   }
 
@@ -54,7 +57,7 @@ package object core {
     */
   def scanJsonValuesFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)(f: A => Boolean)
                                      (implicit codec: JsonValueCodec[A]): Unit = {
-    if ((in eq null) || (f eq null)) throw new NullPointerException
+    assertNonNull(codec, in, config, f)
     readerPool.get.scanValueStream(codec, in, config)(f)
   }
 
@@ -78,6 +81,7 @@ package object core {
     */
   def scanJsonArrayFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)(f: A => Boolean)
                                     (implicit codec: JsonValueCodec[A]): Unit = {
+    assertNonNull(codec, in, config, f)
     if ((in eq null) || (f eq null)) throw new NullPointerException
     readerPool.get.scanArray(codec, in, config)(f)
   }
@@ -96,8 +100,10 @@ package object core {
     * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
     */
   def readFromArray[@sp A](buf: Array[Byte], config: ReaderConfig = ReaderConfig)
-                          (implicit codec: JsonValueCodec[A]): A =
+                          (implicit codec: JsonValueCodec[A]): A = {
+    assertNonNull(buf, codec, config)
     readerPool.get.read(codec, buf, 0, buf.length, config)
+  }
 
   /**
     * Deserialize JSON content encoded in UTF-8 from a byte array into a value of given `A` type.
@@ -118,6 +124,7 @@ package object core {
     */
   def readFromSubArray[@sp A](buf: Array[Byte], from: Int, to: Int, config: ReaderConfig = ReaderConfig)
                              (implicit codec: JsonValueCodec[A]): A = {
+    assertNonNull(buf, codec, config)
     if (to > buf.length || to < 0)
       throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
     if (from > to || from < 0)
@@ -143,8 +150,10 @@ package object core {
     * @throws java.lang.NullPointerException if the `codec`, `bbuf` or `config` is null
     */
   def readFromByteBuffer[@sp A](bbuf: ByteBuffer, config: ReaderConfig = ReaderConfig)
-                               (implicit codec: JsonValueCodec[A]): A =
+                               (implicit codec: JsonValueCodec[A]): A = {
+    assertNonNull(bbuf, codec, config)
     readerPool.get.read(codec, bbuf, config)
+  }
 
   /**
     * Deserialize JSON content from a string into a value of given `A` type.
@@ -163,6 +172,7 @@ package object core {
     * @throws java.lang.NullPointerException if the `codec`, `s` or `config` is null
     */
   def readFromString[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A = {
+    assertNonNull(s, codec, config)
     val buf = s.getBytes(UTF_8)
     val len = buf.length
     val charBufLen = Math.min(config.preferredCharBufSize, len >> 2)
@@ -187,7 +197,7 @@ package object core {
     */
   def writeToStream[@sp A](x: A, out: OutputStream, config: WriterConfig = WriterConfig)
                           (implicit codec: JsonValueCodec[A]): Unit = {
-    if (out eq null) throw new NullPointerException
+    assertNonNull(out, codec, config)
     writerPool.get.write(codec, x, out, config)
   }
 
@@ -204,8 +214,10 @@ package object core {
     * @throws java.lang.NullPointerException if the `codec` or `config` is null
     */
   def writeToArray[@sp A](x: A, config: WriterConfig = WriterConfig)
-                         (implicit codec: JsonValueCodec[A]): Array[Byte] =
+                         (implicit codec: JsonValueCodec[A]): Array[Byte] = {
+    assertNonNull(codec, config)
     writerPool.get.write(codec, x, config)
+  }
 
   /**
     * Serialize the `x` argument to the given instance of byte array in UTF-8 encoding of JSON format.
@@ -226,6 +238,7 @@ package object core {
     */
   def writeToSubArray[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = WriterConfig)
                             (implicit codec: JsonValueCodec[A]): Int = {
+    assertNonNull(buf, codec, config)
     if (to > buf.length) // also checks that `buf` is not null before any serialization
       throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
     if (from > to || from < 0)
@@ -251,8 +264,10 @@ package object core {
     * @throws java.nio.BufferOverflowException if the `bbuf` limit was exceeded during serialization
     */
   def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = WriterConfig)
-                              (implicit codec: JsonValueCodec[A]): Unit =
+                              (implicit codec: JsonValueCodec[A]): Unit = {
+    assertNonNull(bbuf, codec, config)
     writerPool.get.write(codec, x, bbuf, config)
+  }
 
   /**
     * Serialize the `x` argument to a string in JSON format.
@@ -269,6 +284,8 @@ package object core {
     *                             properly encoded
     * @throws java.lang.NullPointerException if the `codec` or `config` is null
     */
-  def writeToString[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String =
+  def writeToString[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String = {
+    assertNonNull(codec, config)
     new JsonWriter(buf = new Array[Byte](32), limit = 32).writeStringWithoutBufReallocation(codec, x, config)
+  }
 }
