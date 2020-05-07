@@ -585,14 +585,17 @@ final class JsonReader private[jsoniter_scala](
 
   def charBufToHashCode(len: Int): Int = toHashCode(charBuf, len)
 
-  def isCharBufEqualsTo(len: Int, s: String): Boolean = s.length == len && {
-    val charBuf = this.charBuf
-    var i = 0
-    while (i < len) {
-      if (s.charAt(i) != charBuf(i)) return false
-      i += 1
+  def isCharBufEqualsTo(len: Int, s: String): Boolean = {
+    assertNonNull(s)
+    s.length == len && {
+      val charBuf = this.charBuf
+      var i = 0
+      while (i < len) {
+        if (s.charAt(i) != charBuf(i)) return false
+        i += 1
+      }
+      true
     }
-    true
   }
 
   def skip(): Unit = head = {
@@ -3191,6 +3194,8 @@ object JsonReader {
     * @throws ArrayIndexOutOfBoundsException if the length of `cs` is less than the provided `len`
     */
   final def toHashCode(cs: Array[Char], len: Int): Int = {
+    assertNonNull(cs)
+    if (cs.length < len) throw new ArrayIndexOutOfBoundsException(len)
     var h, i = 0
     while (i < len) {
       h = (h << 5) + (cs(i) - h)
