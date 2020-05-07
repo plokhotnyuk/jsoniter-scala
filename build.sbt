@@ -92,7 +92,12 @@ lazy val publishSettings = Seq(
 lazy val `jsoniter-scala` = project.in(file("."))
   .settings(commonSettings)
   .settings(noPublishSettings)
-  .aggregate(`jsoniter-scala-coreJVM`, `jsoniter-scala-coreJS`, `jsoniter-scala-macros`, `jsoniter-scala-benchmark`)
+  .aggregate(
+    `jsoniter-scala-coreJVM`,
+    `jsoniter-scala-coreJS`,
+    `jsoniter-scala-macrosJVM`,
+    `jsoniter-scala-macrosJS`,
+    `jsoniter-scala-benchmark`)
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -130,8 +135,9 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
 
-lazy val `jsoniter-scala-macros` = project
-  .dependsOn(`jsoniter-scala-coreJVM`)
+lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
@@ -140,12 +146,30 @@ lazy val `jsoniter-scala-macros` = project
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalatest" %% "scalatest" % "3.1.1" % Test
-    )
+    ),
+    // See https://github.com/portable-scala/sbt-crossproject/issues/74
+    Seq(Compile, Test).flatMap(inConfig(_) {
+      unmanagedSourceDirectories ++= {
+        unmanagedSourceDirectories.value
+          .map(src => (src / ".." / "java").getCanonicalFile)
+          .filterNot(unmanagedSourceDirectories.value.contains)
+          .distinct
+      }
+    })
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    // Coverage is not supported yet for Scala.js 1.0.
+    // See https://github.com/scoverage/scalac-scoverage-plugin/pull/287 for updates
+    coverageEnabled := false
+  )
+
+lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
+lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
 
 lazy val `jsoniter-scala-benchmark` = project
   .enablePlugins(JmhPlugin)
-  .dependsOn(`jsoniter-scala-macros`)
+  .dependsOn(`jsoniter-scala-macrosJVM`)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
