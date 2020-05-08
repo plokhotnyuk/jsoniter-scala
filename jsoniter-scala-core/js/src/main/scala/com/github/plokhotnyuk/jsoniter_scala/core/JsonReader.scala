@@ -1585,9 +1585,7 @@ final class JsonReader private[jsoniter_scala](
         else if (posMant < 4294967296L && exp >= 0 && exp <= 19 - digits) (posMant * pow10Doubles(exp.toInt)).toFloat
         else toFloat(posMant, exp, from, newMark, pos)
       if (isNeg) {
-        // FIXME: Workaround for https://github.com/scala-js/scala-js/issues/4034
-        if (x == 0f) x = -0f
-        else if (x == -0f) x = 0f
+        if (x == 0f) x = -0f // FIXME: Workaround for https://github.com/scala-js/scala-js/issues/4034
         else x = -x
       }
       x
