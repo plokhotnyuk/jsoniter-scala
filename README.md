@@ -24,11 +24,10 @@ and Graal compilers, GraalVM 20 CE for Java 8/11 (dev build) and GraalVM 20 EE f
 
 ## Acknowledgments
 
-This library started from macros that reused [jsoniter (json-iterator) for Java](https://github.com/json-iterator/java) 
-reader & writer and generated codecs for them but then the library was evolved to have its own core of mechanics for 
-parsing and serialization.
+This library had started from macros that reused [jsoniter (json-iterator) for Java](https://github.com/json-iterator/java) 
+reader and writer but then the library evolved to have its own core of mechanics for parsing and serialization.
 
-The idea to generate codecs by Scala macros and main details was borrowed from
+The idea to generate codecs by Scala macros and main details were borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
   
 Other Scala macros features were peeped in
@@ -51,7 +50,7 @@ proving safety and correctness or to be reused as a starting point for the imple
 serializing of `null` Scala values and parsing immediately to them in generated codecs
 5. **Ergonomics**: have preconfigured defaults for the safest and common usage that can be easily altered by compile- 
 and run-time configuration instances, combined with compile-time annotations and implicits, embrace the textual 
-representation of JSON providing a pretty printing option, provide a hex dump in the parse error message to speed up the
+representation of JSON providing a pretty printing option, provide a hex dump in the error message to speed up the
 view of an error context
 
 The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
@@ -72,7 +71,7 @@ Support of Scala Native is not a goal for the moment.
   `Either`, `java.util.UUID`, `java.time.*` (to/from ISO-8601 representation only), Scala collections, arrays, module
   classes, literal types, value classes, and case classes with values/fields having any of types listed here
 - Classes should be defined with a primary constructor that has one list of arguments for all non-transient fields
-- Non-case Scala classes also supported but they should have getter accessors for all arguments of a primary
+- Non-case Scala classes also supported, but they should have getter accessors for all arguments of a primary
   constructor
 - Types that supported as map keys are primitives, boxed primitives, enums, `String`, `BigInt`, `BigDecimal`,
   `java.util.UUID`, `java.time.*`, literal types, and value classes for any of them
@@ -89,7 +88,7 @@ Support of Scala Native is not a goal for the moment.
 - Implicitly resolvable value codecs for JSON values and key codecs for JSON object keys that are mapped to maps allows
   to inject your custom codecs for adding support of other types or for altering representation in JSON for already
   supported classes
-- Type aliases are also supported for all types mentioned above
+- Type aliases are supported for all types mentioned above
 - Only acyclic graphs of class instances are supported by generated codecs
 - Order of instance fields is preserved during serialization for generated codecs
 - Throws a parsing exception if duplicated keys were detected for a class instance (except maps)
@@ -106,9 +105,9 @@ Support of Scala Native is not a goal for the moment.
 - Field names can be overridden for serialization/parsing by field annotation in the primary constructor of classes
 - Reading and writing of any arbitrary bytes or raw values are possible by using custom codecs
 - Parsing exception always reports a hexadecimal offset of `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
-  where it occurs and an optional hex dump affected by error part of an internal byte buffer
+  where it occurs, and an optional hex dump affected by error part of an internal byte buffer
 - Configurable by field annotation ability to read/write numeric fields from/to string values
-- Both key and value codecs are specialized to be work with primitives efficiently without boxing/unboxing
+- Both key and value codecs are specialized to work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `java.io.InputStream` or serializing to `java.io.OutputStream`
 - Using black box macros only for codec generation ensures that your types will never be changed
 - Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs`
@@ -409,7 +408,7 @@ Perf events:
   trace:tracepoint
 ```
 
-Following command can be used to profile and print assembly code of hottest methods, but it requires [a setup of an 
+Following command can be used to profile and print assembly code of the hottest methods, but it requires [a setup of an 
 additional library to make PrintAssembly feature enabled](https://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
@@ -421,12 +420,12 @@ More info about extras, options, and ability to generate flame graphs see in [Sb
 Other benchmarks with results for jsoniter-scala:
 - [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parsers for Scala mostly on samples from real
   APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java8 only
-- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with best binary parsers and serializers for Scala
+- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with the best binary parsers and serializers for Scala
 - [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for Scala
 - [comparison](https://github.com/tkrs/json-bench) with JSON serializers for Scala on synthetic samples
 - [comparison](https://github.com/yanns/scala-json-parsers-performance) with JSON parsers for Scala when parsing from/to
   a string representation
-- [comparison](https://github.com/guillaumebort/mison/pull/1) with a state of the art filter that by "building
+- [comparison](https://github.com/guillaumebort/mison/pull/1) with a state-of-the-art filter that by "building
   structural indices converts control flow into data flow, thereby largely eliminating inherently unpredictable branches
   in the program and exploiting the parallelism available in modern processors"
 
@@ -456,7 +455,7 @@ are required):
 sbt release
 ```
 
-Do not push changes to GitHub until promoted artifacts for the new version are not available for download on
+Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
 [Maven Central Repository](https://repo1.maven.org/maven2/com/github/plokhotnyuk/jsoniter-scala)
 to avoid binary compatibility check failures in triggered Travis CI builds.
 
