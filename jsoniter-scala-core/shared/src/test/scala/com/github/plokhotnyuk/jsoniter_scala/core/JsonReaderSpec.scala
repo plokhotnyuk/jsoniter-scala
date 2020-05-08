@@ -2229,12 +2229,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsFloat() shouldBe n
     }
 
-    def check2(s: String, ws: String): Unit = {
-      // Format floats with `String.format` for consistency between JVM and JS.
-      // See https://www.scala-js.org/doc/semantics.html
-      "%.1f".format(reader(ws + s).readFloat()) shouldBe s
-      "%.1f".format(reader(s"""$ws"$s":""").readKeyAsFloat()) shouldBe s
-      "%.1f".format(reader(s"""$ws"$s"""").readStringAsFloat()) shouldBe s
+    def check2(s: String, n: Float, ws: String): Unit = {
+      assert(reader(ws + s).readFloat().equals(n)) // compare boxed values here to avoid false positives when 0.0f == -0.0f returns true
+      assert(reader(s"""$ws"$s":""").readKeyAsFloat().equals(n))
+      assert(reader(s"""$ws"$s"""").readStringAsFloat().equals(n))
     }
 
     def checkFloat(s: String, ws: String): Unit = check(s, java.lang.Float.parseFloat(s), ws)
@@ -2283,7 +2281,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       forAll(Gen.choose(0L, (1L << 32) - 1), Gen.choose(-22, 18), genWhitespaces, minSuccessful(10000)) { (m, e, ws) =>
         checkFloat(s"${m}e$e", ws)
       }
-      if (!TestUtils.isJS) { // FIXME: Scala.JS cannot parse "1725440439005216752" as 1.72544037E18f
+      if (!TestUtils.isJS) { // FIXME: Scala.JS cannot parse "1725440439005216752" as 1.72544037E18f, see https://github.com/scala-js/scala-js/issues/4035
         forAll(genBigInt, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
         forAll(genBigDecimal, genWhitespaces, minSuccessful(10000))((n, ws) => checkFloat(n.toString, ws))
       }
@@ -2312,8 +2310,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse positive and negative zeroes" in {
       forAll(genWhitespaces) { ws =>
-        check2("0.0", ws)
-        check2("-0.0", ws) // compare strings here to avoid false positives when 0.0f == -0.0f returns true
+        check2("0.0",0.0f,  ws)
+        check2("-0.0", -0.0f, ws)
       }
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
@@ -2356,12 +2354,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader(s"""$ws"$s"""").readStringAsDouble() shouldBe n
     }
 
-    def check2(s: String, ws: String): Unit = {
-      // Format doubles with `String.format` for consistency between JVM and JS.
-      // See https://www.scala-js.org/doc/semantics.html
-      "%.1f".format(reader(ws + s).readDouble()) shouldBe s
-      "%.1f".format(reader(s"""$ws"$s":""").readKeyAsDouble()) shouldBe s
-      "%.1f".format(reader(s"""$ws"$s"""").readStringAsDouble()) shouldBe s
+    def check2(s: String, n: Double, ws: String): Unit = {
+      assert(reader(ws + s).readDouble().equals(n)) // compare boxed values here to avoid false positives when 0.0 == -0.0 returns true
+      assert(reader(s"""$ws"$s":""").readKeyAsDouble().equals(n))
+      assert(reader(s"""$ws"$s"""").readStringAsDouble().equals(n))
     }
 
     def checkDouble(s: String, ws: String): Unit = check(s, java.lang.Double.parseDouble(s), ws)
@@ -2442,8 +2438,8 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     }
     "parse positive and negative zeroes" in {
       forAll(genWhitespaces) { ws =>
-        check2("0.0", ws)
-        check2("-0.0", ws) // compare strings here to avoid false positives when 0.0 == -0.0 returns true
+        check2("0.0", 0.0, ws)
+        check2("-0.0", -0.0, ws)
       }
     }
     "parse denormalized numbers with long mantissa and compensating exponent" in {
