@@ -204,8 +204,12 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    x.getBytes.copyToArray(buf, pos)
-    pos += len
+    var i = 0
+    while (i < len) {
+      buf(pos) = x.charAt(i).toByte
+      pos += 1
+      i += 1
+    }
     buf(pos) = '"'
     buf(pos + 1) = ':'
     if (config.indentionStep > 0) {
@@ -364,8 +368,12 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    x.getBytes.copyToArray(buf, pos)
-    pos += len
+    var i = 0
+    while (i < len) {
+      buf(pos) = x.charAt(i).toByte
+      pos += 1
+      i += 1
+    }
     buf(pos) = '"'
     pos + 1
   }
@@ -899,8 +907,12 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos += 1
-    s.getBytes.copyToArray(buf, pos)
-    pos += len
+    var i = 0
+    while (i < len) {
+      buf(pos) = s.charAt(i).toByte
+      pos += 1
+      i += 1
+    }
     buf(pos) = '"'
     pos + 1
   }
@@ -1543,8 +1555,12 @@ final class JsonWriter private[jsoniter_scala](
       }
       buf(pos) = '['
       pos += 1
-      zoneId.getBytes.copyToArray(buf, pos)
-      pos += len
+      var i = 0
+      while (i < len) {
+        buf(pos) = zoneId.charAt(i).toByte
+        pos += 1
+        i += 1
+      }
       buf(pos) = ']'
       pos += 1
     }
