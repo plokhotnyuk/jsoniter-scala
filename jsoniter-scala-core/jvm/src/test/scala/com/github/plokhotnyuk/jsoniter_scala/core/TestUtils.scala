@@ -6,20 +6,13 @@ object TestUtils {
   val isJDK8: Boolean = System.getProperty("java.version").startsWith("1.8")
   val isJS: Boolean = false
 
-  def getResourceAsStream(resource: String): java.io.InputStream =
-    getClass.getResourceAsStream(resource)
+  def getResourceAsStream(resource: String): java.io.InputStream = getClass.getResourceAsStream(resource)
 
-  def bytes(inputStream: InputStream): Array[Byte] =
-    scala.reflect.io.Streamable.bytes(inputStream)
+  def bytes(inputStream: InputStream): Array[Byte] = scala.reflect.io.Streamable.bytes(inputStream)
 
-  def byteArrayToString(bytes: Array[Byte]): String =
-    new String(bytes, 0, 0, bytes.length)
+  def byteArrayToString(bytes: Array[Byte]): String = new String(bytes, 0, 0, bytes.length)
 
-  def lowercaseHex(b: Byte): String =
-    "%02x".format(b)
+  def lowercaseHex(b: Byte): String = "%02x".format(b)
 
-  def uppercaseHex(b: Byte): String =
-    "%02X".format(b)
-
-  def jvmOnly(thunk: => Unit): Unit = thunk
+  def uppercaseHex(b: Byte): String = "%02X".format(b)
 }

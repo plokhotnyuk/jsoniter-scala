@@ -491,8 +491,9 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        s.toFloat shouldBe (n +- 1e-4f) // no significant data loss
-        TestUtils.jvmOnly {
+        if (TestUtils.isJS) { // FIXME: JS can loose 1 ULP when parses floats, see: https://github.com/scala-js/scala-js/issues/4035
+          java.lang.Float.floatToIntBits(s.toFloat).toLong shouldBe (java.lang.Float.floatToIntBits(n).toLong +- 1)
+        } else {
           s.toFloat shouldBe n // no data loss when parsing by JDK
           l should be <= n.toString.length // rounding isn't worse than in JDK
         }
@@ -595,8 +596,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        s.toDouble shouldBe n // no data loss when parsing by JDK
-        TestUtils.jvmOnly {
+        s.toDouble shouldBe n // no data loss when parsing by JDK or JS
+        if (!TestUtils.isJS) {
           l should be <= n.toString.length // rounding isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
