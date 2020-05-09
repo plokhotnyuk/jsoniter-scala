@@ -133,14 +133,13 @@ object TwitterAPI {
     retweeted: Boolean,
     possibly_sensitive: Boolean,
     lang: String)
-
-  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
-  var jsonString: String = new String(jsonBytes, UTF_8)
-  var compactJsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
-  var compactJsonString: String = new String(compactJsonBytes, UTF_8)
 }
 
 abstract class TwitterAPIBenchmark extends CommonParams {
+  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  var compactJsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
   var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + 100/*to avoid possible out of bounds error*/)
+  var jsonString: String = new String(jsonBytes, UTF_8)
+  var compactJsonString: String = new String(compactJsonBytes, UTF_8)
 }

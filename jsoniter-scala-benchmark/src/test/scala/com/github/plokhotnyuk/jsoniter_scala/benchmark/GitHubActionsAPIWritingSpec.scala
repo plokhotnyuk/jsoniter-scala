@@ -5,14 +5,14 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
   
   "GoogleMapsAPIWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe GitHubActionsAPI.compactJsonString1
-      toString(benchmark.borerJson()) shouldBe GitHubActionsAPI.compactJsonString1
-      toString(benchmark.circe()) shouldBe GitHubActionsAPI.compactJsonString1
-      toString(benchmark.jacksonScala()) shouldBe GitHubActionsAPI.compactJsonString1
-      toString(benchmark.jsoniterScala()) shouldBe GitHubActionsAPI.compactJsonString1
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe GitHubActionsAPI.compactJsonString1
-      toString(benchmark.sprayJson()) shouldBe GitHubActionsAPI.compactJsonString2
-      toString(benchmark.weePickle()) shouldBe GitHubActionsAPI.compactJsonString1
+      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.compactJsonString1
+      toString(benchmark.borerJson()) shouldBe benchmark.compactJsonString1
+      toString(benchmark.circe()) shouldBe benchmark.compactJsonString1
+      toString(benchmark.jacksonScala()) shouldBe benchmark.compactJsonString1
+      toString(benchmark.jsoniterScala()) shouldBe benchmark.compactJsonString1
+      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.compactJsonString1
+      toString(benchmark.sprayJson()) shouldBe benchmark.compactJsonString2
+      toString(benchmark.weePickle()) shouldBe benchmark.compactJsonString1
     }
   }
 }

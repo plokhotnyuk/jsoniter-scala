@@ -5,15 +5,15 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
   
   "GoogleMapsAPIPrettyPrinting" should {
     "pretty print properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe GoogleMapsAPI.jsonString2
-      toString(benchmark.circe()) shouldBe GoogleMapsAPI.jsonString1
-      toString(benchmark.jacksonScala()) shouldBe GoogleMapsAPI.jsonString1
-      toString(benchmark.jsoniterScala()) shouldBe GoogleMapsAPI.jsonString2
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe GoogleMapsAPI.jsonString2
-      toString(benchmark.playJson()) shouldBe GoogleMapsAPI.jsonString1
-      toString(benchmark.sprayJson()) shouldBe GoogleMapsAPI.jsonString2
-      toString(benchmark.uPickle()) shouldBe GoogleMapsAPI.jsonString2
-      toString(benchmark.weePickle()) shouldBe GoogleMapsAPI.jsonString2
+      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString2
+      toString(benchmark.circe()) shouldBe benchmark.jsonString1
+      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString1
+      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString2
+      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString2
+      toString(benchmark.playJson()) shouldBe benchmark.jsonString1
+      toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
+      toString(benchmark.uPickle()) shouldBe benchmark.jsonString2
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString2
     }
   }
 }

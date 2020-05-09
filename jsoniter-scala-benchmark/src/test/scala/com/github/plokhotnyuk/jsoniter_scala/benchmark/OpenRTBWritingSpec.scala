@@ -5,20 +5,20 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
 
   "OpenRTBWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe OpenRTB.jsonString
-      toString(benchmark.borerJson()) shouldBe OpenRTB.jsonString
+      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.borerJson()) shouldBe benchmark.jsonString
       //FIXME: Circe serializes fields with default values
-      //toString(benchmark.circe()) shouldBe OpenRTB.jsonString
+      //toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: Jackson serializes fields with default values
-      //toString(benchmark.jacksonScala()) shouldBe OpenRTB.jsonString
-      toString(benchmark.jsoniterScala()) shouldBe OpenRTB.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe OpenRTB.jsonString
+      //toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
+      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
+      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
       //FIXME: Play-JSON serializes lists with default values
-      //toString(benchmark.playJson()) shouldBe OpenRTB.jsonString
+      //toString(benchmark.playJson()) shouldBe benchmark.jsonString
       //FIXME: Spray-JSON serializes fields with default values
-      //toString(benchmark.sprayJson()) shouldBe OpenRTB.jsonString
-      toString(benchmark.uPickle()) shouldBe OpenRTB.jsonString
-      toString(benchmark.weePickle()) shouldBe OpenRTB.jsonString
+      //toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
+      toString(benchmark.uPickle()) shouldBe benchmark.jsonString
+      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
     }
   }
 }

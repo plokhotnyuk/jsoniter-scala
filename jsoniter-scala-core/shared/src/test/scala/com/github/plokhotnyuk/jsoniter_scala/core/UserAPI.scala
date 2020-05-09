@@ -1,5 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
+import java.io.InputStream
+import java.util
+
 import scala.annotation.switch
 
 case class Device(id: Int, model: String)
@@ -10,9 +13,9 @@ object UserAPI {
   val user = User(name = "John", devices = Seq(Device(id = 1, model = "HTC One X"), Device(id = 2, model = "iPhone X")))
   val user1 = User(name = "Jon", devices = Seq(Device(id = 1, model = "HTC One X")))
   val user2 = User(name = "Joe", devices = Seq(Device(id = 2, model = "iPhone X")))
-  val prettyJson: Array[Byte] = TestUtils.bytes(TestUtils.getResourceAsStream("user_api_response.json"))
-  val compactJson: Array[Byte] = TestUtils.bytes(TestUtils.getResourceAsStream("user_api_compact_response.json"))
-  val httpMessage: Array[Byte] = TestUtils.bytes(TestUtils.getResourceAsStream("user_api_http_response.txt"))
+  val prettyJson: Array[Byte] = bytes(TestUtils.getResourceAsStream("user_api_response.json"))
+  val compactJson: Array[Byte] = bytes(TestUtils.getResourceAsStream("user_api_compact_response.json"))
+  val httpMessage: Array[Byte] = bytes(TestUtils.getResourceAsStream("user_api_http_response.txt"))
   val codec: JsonValueCodec[User] = new JsonValueCodec[User] {
     val nullValue: User = null
 
@@ -125,4 +128,17 @@ object UserAPI {
       case 1 => "model"
     }
   }
+
+  private[this] def bytes(in: InputStream): Array[Byte] = try {
+    val step = 8192
+    var buf = new Array[Byte](step)
+    var pos, n = 0
+    while ({
+      if (pos + step > buf.length) buf = util.Arrays.copyOf(buf, buf.length << 1)
+      n = in.read(buf, pos, step)
+      n != -1
+    }) pos += n
+    if (pos != buf.length) buf = util.Arrays.copyOf(buf, pos)
+    buf
+  } finally in.close()
 }

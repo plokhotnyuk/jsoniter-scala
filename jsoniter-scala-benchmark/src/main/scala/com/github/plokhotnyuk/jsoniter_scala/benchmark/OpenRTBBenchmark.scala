@@ -313,12 +313,11 @@ object OpenRTB {
     @transientDefault @dropDefault name: Option[String] = None,
     @transientDefault @dropDefault value: Option[String] = None,
     /*@transientDefault @dropDefault ext: Option[DataExt] = None*/)
-
-  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("openrtb_bidrequest.json"))
-  var jsonString: String = new String(jsonBytes, UTF_8)
 }
 
 abstract class OpenRTBBenchmark extends CommonParams {
+  var jsonBytes: Array[Byte] = bytes(getClass.getResourceAsStream("openrtb_bidrequest.json"))
   var obj: BidRequest = readFromArray[BidRequest](jsonBytes)
   var preallocatedBuf: Array[Byte] = new Array(jsonBytes.length + 100/*to avoid possible out of bounds error*/)
+  var jsonString: String = new String(jsonBytes, UTF_8)
 }
