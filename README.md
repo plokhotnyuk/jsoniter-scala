@@ -175,16 +175,16 @@ implicit val codec: JsonValueCodec[User] = JsonCodecMaker.make[User]
 
 That's it! You have generated an instance of `com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec`.
 
-Now you can use it for parsing and serialization:
+Now use it for parsing and serialization:
 
 ```scala
 val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X"}]}""".getBytes("UTF-8"))
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
-If you don't know how to make your data structures from scratch but have a JSON sample then use on-line services
-[1](https://json2caseclass.cleverapps.io/) [2](https://transform.now.sh/json-to-scala-case-class/) to generate an initial
-version of them.
+Also, you can use the following on-line services to generate an initial version of your data structures from JSON 
+samples: [json2caseclass](https://json2caseclass.cleverapps.io/), [json-to-scala-case-class](https://transform.now.sh/json-to-scala-case-class/), 
+and [json2classes](https://chadselph.github.io/json2classes/). 
 
 To see generated code for codecs add the following line to your sbt build file
 
