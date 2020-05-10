@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import sbt._
 
 import scala.sys.process._
@@ -31,7 +32,6 @@ lazy val commonSettings = Seq(
     "-target:jvm-1.8",
     "-feature",
     "-unchecked",
-    "-Ywarn-dead-code",
     "-Xlint",
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -39,6 +39,9 @@ lazy val commonSettings = Seq(
       "-language:higherKinds",
       "-Ybackend:GenBCode",
       "-Ydelambdafy:inline"
+    )
+    case Some((2, 12)) => Seq(
+      "-language:higherKinds"
     )
     case _ => Seq()
   }),
@@ -81,6 +84,10 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
+  mimaBinaryIssueFilters := Seq( // internal API to ignore
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genReadVal$default$4$1"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genWriteVal$default$4$1")
+  ),
   mimaReportSignatureProblems := true
 )
 

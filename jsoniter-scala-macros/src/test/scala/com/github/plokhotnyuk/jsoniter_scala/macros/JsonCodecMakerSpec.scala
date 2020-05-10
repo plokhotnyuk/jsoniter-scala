@@ -714,7 +714,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(new _root_.java.lang.Long(2L))),
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L))),
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
       verifySerDeser(codecOfOptions,
         Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None),
@@ -722,7 +722,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize case classes with empty options as null when the transientNone flag is off" in {
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(new _root_.java.lang.Long(2L))),
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L))),
         """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
         Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None),

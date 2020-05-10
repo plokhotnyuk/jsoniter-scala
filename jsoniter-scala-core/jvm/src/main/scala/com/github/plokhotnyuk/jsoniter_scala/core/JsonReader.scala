@@ -2377,7 +2377,7 @@ final class JsonReader private[jsoniter_scala](
     century * 100 != year || (century & 0x3) == 0
   }
 
-  private[this] def digitError(pos: Int = head - 1): Nothing = decodeError("expected digit", pos)
+  private[this] def digitError(pos: Int): Nothing = decodeError("expected digit", pos)
 
   private[this] def periodError(pos: Int): Nothing = decodeError("illegal period", pos)
 
