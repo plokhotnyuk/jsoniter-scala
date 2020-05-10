@@ -1437,7 +1437,7 @@ final class JsonReader private[jsoniter_scala](
       }
       head = pos
       var x: Double =
-        if (exp == 0 && posMant < 922337203685477580L) posMant
+        if (exp == 0 && posMant < 922337203685477580L) posMant.toDouble
         else if (posMant < 4503599627370496L && Math.abs(exp) <= 22) {
           if (exp < 0) posMant / pow10Doubles(-exp.toInt)
           else posMant * pow10Doubles(exp.toInt)
@@ -1580,7 +1580,7 @@ final class JsonReader private[jsoniter_scala](
       }
       head = pos
       var x: Float =
-        if (exp == 0 && posMant < 922337203685477580L) posMant
+        if (exp == 0 && posMant < 922337203685477580L) posMant.toFloat
         else if (posMant < 4294967296L && exp < 0 && exp >= digits - 23) (posMant / pow10Doubles(-exp.toInt)).toFloat
         else if (posMant < 4294967296L && exp >= 0 && exp <= 19 - digits) (posMant * pow10Doubles(exp.toInt)).toFloat
         else toFloat(posMant, exp, from, newMark, pos)

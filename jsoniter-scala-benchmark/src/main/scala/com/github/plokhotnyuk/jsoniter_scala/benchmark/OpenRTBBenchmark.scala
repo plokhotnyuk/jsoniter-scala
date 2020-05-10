@@ -8,8 +8,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weepickle.v1.implicits.dropDefault
 
-import scala.reflect.io.Streamable
-
 object OpenRTB {
   case class BidRequest (
     id: String,

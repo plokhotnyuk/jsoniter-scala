@@ -139,15 +139,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalatest" %% "scalatest" % "3.1.1" % Test
-    ),
-    Seq(Test).flatMap(inConfig(_) { // FIXME: Shared java directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
-      unmanagedSourceDirectories ++= {
-        unmanagedSourceDirectories.value
-          .map(src => (src / ".." / "java").getCanonicalFile)
-          .filterNot(unmanagedSourceDirectories.value.contains)
-          .distinct
-      }
-    })
+    )
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),

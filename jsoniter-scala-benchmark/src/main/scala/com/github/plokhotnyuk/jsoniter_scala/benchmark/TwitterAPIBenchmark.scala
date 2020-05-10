@@ -9,7 +9,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weepickle.v1.implicits.dropDefault
 
 import scala.collection.immutable.Seq
-import scala.reflect.io.Streamable
 
 object TwitterAPI {
   case class Urls(
@@ -136,8 +135,8 @@ object TwitterAPI {
 }
 
 abstract class TwitterAPIBenchmark extends CommonParams {
-  var jsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_response.json"))
-  var compactJsonBytes: Array[Byte] = Streamable.bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
+  var jsonBytes: Array[Byte] = bytes(getClass.getResourceAsStream("twitter_api_response.json"))
+  var compactJsonBytes: Array[Byte] = bytes(getClass.getResourceAsStream("twitter_api_compact_response.json"))
   var obj: Seq[Tweet] = readFromArray[Seq[Tweet]](jsonBytes)
   var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes.length + 100/*to avoid possible out of bounds error*/)
   var jsonString: String = new String(jsonBytes, UTF_8)
