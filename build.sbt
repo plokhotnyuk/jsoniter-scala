@@ -104,7 +104,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6" % Test,
       "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.1.1" % Test,
-      "org.scalatest" %%% "scalatest" % "3.1.1" % Test
+      "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     ),
     Seq(Test).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
       unmanagedResourceDirectories ++= {
@@ -138,7 +138,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scalatest" %% "scalatest" % "3.1.1" % Test
+      "org.scalatest" %% "scalatest" % "3.1.2" % Test
     )
   )
   .jsSettings(
@@ -184,6 +184,6 @@ lazy val `jsoniter-scala-benchmark` = project
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.23",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.23",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.23",
-      "org.scalatest" %% "scalatest" % "3.1.1" % Test
+      "org.scalatest" %% "scalatest" % "3.1.2" % Test
     )
   )
