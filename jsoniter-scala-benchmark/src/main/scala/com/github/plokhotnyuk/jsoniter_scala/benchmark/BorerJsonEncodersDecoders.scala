@@ -28,12 +28,7 @@ object BorerJsonEncodersDecoders {
     Decoder.forJBigDecimal(maxJsonNumberStringLength = 1000000).map(x => new BigDecimal(x, MathContext.UNLIMITED)) /* WARNING: It is an unsafe option for open systems */
   implicit val flatAdtEncoding: AdtEncodingStrategy = AdtEncodingStrategy.flat(typeMemberName = "type")
   implicit val Codec(charEnc: Encoder[Char], charDec: Decoder[Char]) = stringCodec(_.charAt(0))
-  implicit val Codec(adtEnc: Encoder[ADTBase], adtDec: Decoder[ADTBase]) = {
-    implicit val c1: Codec[X] = deriveCodec
-    implicit val c2: Codec[Y] = deriveCodec
-    implicit val c3: Codec[Z] = deriveCodec
-    deriveCodec[ADTBase]
-  }
+  implicit val Codec(adtEnc: Encoder[ADTBase], adtDec: Decoder[ADTBase]) = deriveAllCodecs[ADTBase]
   implicit val Codec(anyValsEnc: Encoder[AnyVals], anyValsDec: Decoder[AnyVals]) = {
     implicit val c1: Codec[ByteVal] = ArrayBasedCodecs.deriveCodec
     implicit val c2: Codec[ShortVal] = ArrayBasedCodecs.deriveCodec
@@ -48,19 +43,10 @@ object BorerJsonEncodersDecoders {
   implicit val Codec(extractFieldsEnc: Encoder[ExtractFields], extractFieldsDec: Decoder[ExtractFields]) =
     deriveCodec[ExtractFields]
   implicit val Codec(geoJsonEnc: Encoder[GeoJSON.GeoJSON], geoJsonDec: Decoder[GeoJSON.GeoJSON]) = {
-    implicit val c1: Codec[GeoJSON.Point] = deriveCodec
-    implicit val c2: Codec[GeoJSON.MultiPoint] = deriveCodec
-    implicit val c3: Codec[GeoJSON.LineString] = deriveCodec
-    implicit val c4: Codec[GeoJSON.MultiLineString] = deriveCodec
-    implicit val c5: Codec[GeoJSON.Polygon] = deriveCodec
-    implicit val c6: Codec[GeoJSON.MultiPolygon] = deriveCodec
-    implicit val c7: Codec[GeoJSON.SimpleGeometry] = deriveCodec
-    implicit val c8: Codec[GeoJSON.GeometryCollection] = deriveCodec
-    implicit val c9: Codec[GeoJSON.Geometry] = deriveCodec
-    implicit val c10: Codec[GeoJSON.Feature] = deriveCodec
-    implicit val c11: Codec[GeoJSON.SimpleGeoJSON] = deriveCodec
-    implicit val c12: Codec[GeoJSON.FeatureCollection] = deriveCodec
-    deriveCodec[GeoJSON.GeoJSON]
+    implicit val c1: Codec[GeoJSON.SimpleGeometry] = deriveAllCodecs
+    implicit val c2: Codec[GeoJSON.Geometry] = deriveAllCodecs
+    implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveAllCodecs
+    deriveAllCodecs[GeoJSON.GeoJSON]
   }
   implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response],
   gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
@@ -78,12 +64,11 @@ object BorerJsonEncodersDecoders {
     implicit val c3: Codec[GoogleMapsAPI.Rows] = deriveCodec
     deriveCodec[GoogleMapsAPI.DistanceMatrix]
   }
-  implicit val Codec(missingRequiredFieldsEnc: Encoder[MissingRequiredFields],
-  missingRequiredFieldsDec: Decoder[MissingRequiredFields]) = deriveCodec[MissingRequiredFields]
-  implicit val Codec(nestedStructsEnc: Encoder[NestedStructs],
-  nestedStructsDec: Decoder[NestedStructs]) = deriveCodec[NestedStructs]
-  implicit val Codec(openRTBBidRequestEnc: Encoder[OpenRTB.BidRequest],
-  openRTBBidRequestDec: Decoder[OpenRTB.BidRequest]) = {
+  implicit val Codec(missingRequiredFieldsEnc: Encoder[MissingRequiredFields], missingRequiredFieldsDec: Decoder[MissingRequiredFields]) =
+    deriveCodec[MissingRequiredFields]
+  implicit val Codec(nestedStructsEnc: Encoder[NestedStructs], nestedStructsDec: Decoder[NestedStructs]) =
+    deriveCodec[NestedStructs]
+  implicit val Codec(openRTBBidRequestEnc: Encoder[OpenRTB.BidRequest], openRTBBidRequestDec: Decoder[OpenRTB.BidRequest]) = {
     implicit val c1: Codec[OpenRTB.Segment] = deriveCodec
     implicit val c2: Codec[OpenRTB.Format] = deriveCodec
     implicit val c3: Codec[OpenRTB.Deal] = deriveCodec
