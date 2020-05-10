@@ -233,8 +233,6 @@ object JsonCodecMaker {
     */
   val `enforce-kebab-case`: PartialFunction[String, String] = { case s => enforceSnakeOrKebabCase(s, '-') }
 
-  private[this] val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
-
   private[this] def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
       if (s.length == 0) s
@@ -453,6 +451,7 @@ object JsonCodecMaker {
 
       def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
+      val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
       val rootTpe = weakTypeOf[A].dealias
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty

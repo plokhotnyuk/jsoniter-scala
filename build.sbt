@@ -136,7 +136,7 @@ lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -145,7 +145,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scalatest" %% "scalatest" % "3.1.2" % Test
+      "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     )
   )
   .jsSettings(

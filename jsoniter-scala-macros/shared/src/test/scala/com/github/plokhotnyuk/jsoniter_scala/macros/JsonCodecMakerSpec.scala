@@ -1,6 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
@@ -9,7 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
 case class UserId(id: String) extends AnyVal
@@ -60,8 +59,6 @@ object LocationType extends Enumeration {
 }
 
 case class Enums(lt: LocationType.LocationType)
-
-case class JavaEnums(l: Level, il: Levels.InnerLevel)
 
 case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
@@ -134,7 +131,6 @@ case class Defaults(
   bi: BigInt = -1,
   oc: Option[Char] = Some('X'),
   l: List[Int] = collection.immutable.List(0),
-  e: Level = Level.HIGH,
   a: Array[Array[Int]] = Array(Array(1, 2), Array(3, 4)),
   ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
   m: Map[Int, Boolean] = Map(1 -> true),
@@ -152,7 +148,6 @@ case class Defaults2(
   bi: BigInt = -1,
   oc: Option[Char] = Some('X'),
   l: List[Int] = collection.immutable.List(0),
-  e: Level = Level.HIGH,
   ab: collection.mutable.ArrayBuffer[Int] = collection.mutable.ArrayBuffer(1, 2),
   m: Map[Int, Boolean] = Map(1 -> true),
   mm: collection.mutable.Map[String, Int] = collection.mutable.Map("VVV" -> 1),
@@ -204,7 +199,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make
   val codecOfJavaTypes: JsonValueCodec[JavaTypes] = make
   val codecOfEnums: JsonValueCodec[Enums] = make
-  val codecOfJavaEnums: JsonValueCodec[JavaEnums] = make
   val codecOfOptions: JsonValueCodec[Options] = make
   val codecOfTuples: JsonValueCodec[Tuples] = make
   val codecOfArrays: JsonValueCodec[Arrays] = make
@@ -369,40 +363,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize enumerations as key in maps" in {
       verifySerDeser(make[Map[LocationType.LocationType, Int]], Map(LocationType.GPS -> 0),
         """{"GPS":0}""")
-    }
-    "serialize and deserialize Java enumerations" in {
-      verifySerDeser(codecOfJavaEnums, JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"LOW","il":"HIGH"}""")
-    }
-    "serialize and deserialize Java enumerations with renamed value" in {
-      verifySerDeser(make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.enforce_snake_case)),
-        JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"low","il":"high"}""")
-      verifySerDeser(make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper(JsonCodecMaker.enforce_snake_case
-        .andThen(JsonCodecMaker.EnforcePascalCase))),
-        JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"Low","il":"High"}""")
-      verifySerDeser(make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper {
-        case "LOW" => "lo"
-        case "HIGH" => "hi"
-      }), JavaEnums(Level.LOW, Levels.InnerLevel.HIGH), """{"l":"lo","il":"hi"}""")
-    }
-    "don't generate codecs for Java enumerations when duplicated transformed names detected" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        """make[JavaEnums](CodecMakerConfig.withJavaEnumValueNameMapper { case _ => "dup" })"""
-      }).getMessage.contains {
-        """Duplicated JSON value(s) defined for 'com.github.plokhotnyuk.jsoniter_scala.macros.Levels.InnerLevel': 'dup'.
-          |Values are derived from value names of the enum that are mapped by the
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.javaEnumValueNameMapper' function.
-          |Result values should be unique per enum class.""".stripMargin.replace('\n', ' ')
-      })
-    }
-    "throw parse exception in case of illegal value of Java enumeration" in {
-      verifyDeserError(codecOfJavaEnums, """{"l":null,"il":"HIGH"}""", "expected '\"', offset: 0x00000005")
-      verifyDeserError(codecOfJavaEnums, """{"l":"LO","il":"HIGH"}""", "illegal enum value \"LO\", offset: 0x00000008")
-    }
-    "serialize and deserialize top-level Java enumerations" in {
-      verifySerDeser(make[Level], Level.HIGH, "\"HIGH\"")
-    }
-    "serialize and deserialize Java enumerations as key in maps" in {
-      verifySerDeser(make[Map[Level, Int]], Map(Level.HIGH -> 0), """{"HIGH":0}""")
     }
     "serialize and deserialize outer types using custom value codecs for primitive types" in {
       implicit val customCodecOfLong: JsonValueCodec[Long] = new JsonValueCodec[Long] {
@@ -589,55 +549,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         }
       verifySerDeser(customCodecOfStandardTypes, StandardTypes("VVV", 1, 1.1), """{"s":"VVV","bi":1,"bd":1.1}""")
       verifySerDeser(customCodecOfStandardTypes, StandardTypes("XXX", 1, 1.1), """"{\"s\":\"XXX\",\"bi\":1,\"bd\":1.1}"""")
-    }
-    "serialize and deserialize types using a custom key codec and a custom ordering for map keys" in {
-      implicit val codecOfLevel: JsonKeyCodec[Level] = new JsonKeyCodec[Level] {
-        override def decodeKey(in: JsonReader): Level = in.readKeyAsInt() match {
-          case 0 => Level.LOW
-          case 1 => Level.HIGH
-          case x => in.enumValueError(x.toString)
-        }
-
-        override def encodeKey(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
-          case Level.LOW => out.writeKey(0)
-          case Level.HIGH => out.writeKey(1)
-          case _ => out.encodeError("illegal enum value")
-        }
-      }
-      verifySerDeser(make[Map[Level, Int]], Map(Level.HIGH -> 100), """{"1":100}""")
-      implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
-        override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
-      }
-      val codecOfOrderedLevelTreeMap = make[_root_.scala.collection.immutable.TreeMap[Level, Int]]
-      verifySerDeser(codecOfOrderedLevelTreeMap,
-        _root_.scala.collection.immutable.TreeMap[Level, Int](Level.HIGH -> 100, Level.LOW -> 10), """{"0":10,"1":100}""")
-      verifyDeserByCheck(codecOfOrderedLevelTreeMap, """{"0":10,"1":100}""",
-        check = (actual: _root_.scala.collection.immutable.TreeMap[Level, Int]) => actual.ordering shouldBe levelOrdering)
-    }
-    "serialize and deserialize types using a custom value codec and a custom ordering for set values" in {
-      implicit val codecOfLevel: JsonValueCodec[Level] = new JsonValueCodec[Level] {
-        override def decodeValue(in: JsonReader, default: Level): Level = in.readInt() match {
-          case 0 => Level.LOW
-          case 1 => Level.HIGH
-          case x => in.enumValueError(x.toString)
-        }
-
-        override def encodeValue(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
-          case Level.LOW => out.writeVal(0)
-          case Level.HIGH => out.writeVal(1)
-          case _ => out.encodeError("illegal enum value")
-        }
-
-        override def nullValue: Level = null.asInstanceOf[Level]
-      }
-      implicit val levelOrdering: Ordering[Level] = new Ordering[Level] {
-        override def compare(x: Level, y: Level): Int = y.ordinal - x.ordinal
-      }
-      val codecOfOrderedLevelTreeSet = make[_root_.scala.collection.immutable.TreeSet[Level]]
-      verifySerDeser(codecOfOrderedLevelTreeSet,
-        _root_.scala.collection.immutable.TreeSet[Level](Level.HIGH, Level.LOW), """[0,1]""")
-      verifyDeserByCheck(codecOfOrderedLevelTreeSet, """[0,1]""",
-        check = (actual: _root_.scala.collection.immutable.TreeSet[Level]) => actual.ordering shouldBe levelOrdering)
     }
     "serialize and deserialize sequences of tuples as JSON object with duplicated keys using a custom codec" in {
       implicit val codecOfSeqOfTuples: JsonValueCodec[Seq[(String, Int)]] = new JsonValueCodec[Seq[(String, Int)]] {
@@ -1207,27 +1118,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
       })
     }
-    "serialize and deserialize recursive structures with an implicit codec using a minimal thread stack" in {
-      case class Nested(n: Option[Nested] = _root_.scala.None)
-
-      @tailrec
-      def construct(d: Int = 1000000, n: Nested = Nested()): Nested =
-        if (d <= 0) n
-        else construct(d - 1, Nested(Some(n)))
-
-      implicit val codecOfNestedStructs: JsonValueCodec[Nested] = make(CodecMakerConfig.withAllowRecursiveTypes(true))
-      val bytes = ("{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}").getBytes
-      val readStackTrace = new StringWriter
-      intercept[StackOverflowError](readFromArray[Nested](bytes)).printStackTrace(new PrintWriter(readStackTrace))
-      assert(readStackTrace.toString.contains(".d0("))
-      assert(!readStackTrace.toString.contains(".d1("))
-      assert(!readStackTrace.toString.contains(".decodeValue("))
-      val writeStackTrace = new StringWriter
-      intercept[StackOverflowError](writeToArray[Nested](construct())).printStackTrace(new PrintWriter(writeStackTrace))
-      assert(writeStackTrace.toString.contains(".e0("))
-      assert(!writeStackTrace.toString.contains(".e1("))
-      assert(!writeStackTrace.toString.contains(".encodeValue("))
-    }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfRecursive,
         Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
@@ -1280,7 +1170,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize default values of case classes that defined for fields when the transientDefault flag is off" in {
       verifySer(make[Defaults](CodecMakerConfig.withTransientDefault(false)), Defaults(),
-        """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"e":"HIGH","a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""")
+        """{"st":"VVV","i":1,"bi":-1,"oc":"X","l":[0],"a":[[1,2],[3,4]],"ab":[1,2],"m":{"1":true},"mm":{"VVV":1},"im":{"1":"VVV"},"lm":{"1":2},"s":["VVV"],"ms":[1],"bs":[1],"mbs":[1]}""")
     }
     "serialize empty of case classes that defined for fields when the transientEmpty and transientNone flags are off" in {
       verifySer(make[Defaults](CodecMakerConfig.withTransientEmpty(false).withTransientNone(false)),
@@ -1402,19 +1292,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """missing required field "f4", offset: 0x00000007""")
       verifyDeserError(codecOfRequiredAfterOptionalFields, """{"f1":1,"f2":2}""",
         """missing required field "f4", offset: 0x0000000e""")
-    }
-    "throw the stack overflow error in case of serialization of a cyclic graph" in {
-      case class Cyclic(var opt: Option[Cyclic])
-
-      val codecOfCyclic = make[Cyclic](CodecMakerConfig.withAllowRecursiveTypes(true))
-      val cyclic = Cyclic(_root_.scala.None)
-      cyclic.opt = Some(cyclic)
-      val len = 10000000
-      val cfg = WriterConfig.withPreferredBufSize(1)
-      intercept[StackOverflowError](verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      intercept[StackOverflowError](verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      intercept[StackOverflowError](verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
-      intercept[StackOverflowError](verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
       verifySerDeser(codecOfADTList, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
