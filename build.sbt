@@ -106,7 +106,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
       "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.1.1" % Test,
       "org.scalatest" %%% "scalatest" % "3.1.1" % Test
     ),
-    Seq(Compile, Test).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
+    Seq(Test).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
       unmanagedResourceDirectories ++= {
         unmanagedSourceDirectories.value
           .map(src => (src / ".." / "resources").getCanonicalFile)
@@ -140,7 +140,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalatest" %% "scalatest" % "3.1.1" % Test
     ),
-    Seq(Compile, Test).flatMap(inConfig(_) { // FIXME: Shared java directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
+    Seq(Test).flatMap(inConfig(_) { // FIXME: Shared java directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
       unmanagedSourceDirectories ++= {
         unmanagedSourceDirectories.value
           .map(src => (src / ".." / "java").getCanonicalFile)
@@ -155,6 +155,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
+
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
 
 lazy val `jsoniter-scala-benchmark` = project
