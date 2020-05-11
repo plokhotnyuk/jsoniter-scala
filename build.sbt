@@ -32,7 +32,6 @@ lazy val commonSettings = Seq(
     "-target:jvm-1.8",
     "-feature",
     "-unchecked",
-    "-Xlint",
     "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 11)) => Seq(
