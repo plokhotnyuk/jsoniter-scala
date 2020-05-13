@@ -1148,6 +1148,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         "{\r \"s\":\t\"VVV\",\n\t\"bd\":\t1.1,\r  \"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\n\t\t\"S\":\t{\r  \t\t\"s\":\t\t \t\"WWW\",\n\t\"bd\":\t2.2,\"l\":\t[\r\t\t4,\n\n\n5,\r\t\t6\r\t]\n}\r}\r}")
     }
+    "throw the stack overflow error in case of serialization of a cyclic graph" in {
+      case class Cyclic(opt: Option[Cyclic])
+
+      lazy val cyclic: Cyclic = Cyclic(Option(cyclic))
+      val codecOfCyclic = make[Cyclic](CodecMakerConfig.withAllowRecursiveTypes(true))
+      val len = 10000000
+      val cfg = WriterConfig.withPreferredBufSize(1)
+      AssertionUtils.assertStackOverflow(verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      AssertionUtils.assertStackOverflow(verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      AssertionUtils.assertStackOverflow(verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
+      AssertionUtils.assertStackOverflow(verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
+    }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""")
     }

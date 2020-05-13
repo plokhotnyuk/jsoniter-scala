@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.io.{PrintWriter, StringWriter}
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
@@ -109,28 +107,14 @@ class JsonCodecMakerJVMSpec extends VerifyingSpec {
 
       implicit val codecOfNestedStructs: JsonValueCodec[Nested] = make(CodecMakerConfig.withAllowRecursiveTypes(true))
       val bytes = ("{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}").getBytes
-      val readStackTrace = new StringWriter
-      intercept[StackOverflowError](readFromArray[Nested](bytes)).printStackTrace(new PrintWriter(readStackTrace))
-      assert(readStackTrace.toString.contains(".d0("))
-      assert(!readStackTrace.toString.contains(".d1("))
-      assert(!readStackTrace.toString.contains(".decodeValue("))
-      val writeStackTrace = new StringWriter
-      intercept[StackOverflowError](writeToArray[Nested](construct())).printStackTrace(new PrintWriter(writeStackTrace))
-      assert(writeStackTrace.toString.contains(".e0("))
-      assert(!writeStackTrace.toString.contains(".e1("))
-      assert(!writeStackTrace.toString.contains(".encodeValue("))
-    }
-    "throw the stack overflow error in case of serialization of a cyclic graph" in {
-      case class Cyclic(opt: Option[Cyclic])
-
-      lazy val cyclic: Cyclic = Cyclic(Option(cyclic))
-      val codecOfCyclic = make[Cyclic](CodecMakerConfig.withAllowRecursiveTypes(true))
-      val len = 10000000
-      val cfg = WriterConfig.withPreferredBufSize(1)
-      intercept[StackOverflowError](verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      intercept[StackOverflowError](verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      intercept[StackOverflowError](verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
-      intercept[StackOverflowError](verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
+      val readStackTrace = AssertionUtils.assertStackOverflow(readFromArray[Nested](bytes))
+      assert(readStackTrace.contains(".d0("))
+      assert(!readStackTrace.contains(".d1("))
+      assert(!readStackTrace.contains(".decodeValue("))
+      val writeStackTrace = AssertionUtils.assertStackOverflow(writeToArray[Nested](construct()))
+      assert(writeStackTrace.contains(".e0("))
+      assert(!writeStackTrace.contains(".e1("))
+      assert(!writeStackTrace.contains(".encodeValue("))
     }
   }
 }
