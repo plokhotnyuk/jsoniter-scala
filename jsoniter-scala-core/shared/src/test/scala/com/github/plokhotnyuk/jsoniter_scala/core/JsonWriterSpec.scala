@@ -488,14 +488,20 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for float" should {
     "write finite float values" in {
       def check(n: Float): Unit = {
+        val es = n.toString
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        if (TestUtils.isJS) { // FIXME: JS can loose 1 ULP when parses floats, see: https://github.com/scala-js/scala-js/issues/4035
+        if (TestUtils.isJS) { // FIXME: Scala.JS can loose 1 ULP when parses floats, see: https://github.com/scala-js/scala-js/issues/4035
           java.lang.Float.floatToIntBits(s.toFloat).toLong shouldBe (java.lang.Float.floatToIntBits(n).toLong +- 1)
+          if (es.indexOf('.') < 0) {
+            l should be <= es.length + 3 // formatting differs from JS for floats represented as whole numbers
+          } else {
+            l should be <= es.length // rounding and formatting isn't worse than in JS for floats represented in decimal or scientific notation
+          }
         } else {
           s.toFloat shouldBe n // no data loss when parsing by JDK
-          l should be <= n.toString.length // rounding isn't worse than in JDK
+          l should be <= es.length // rounding and formatting isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
         i should be < l - 1
@@ -593,12 +599,21 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   "JsonWriter.writeVal and JsonWriter.writeValAsString and JsonWriter.writeKey for double" should {
     "write finite double values" in {
       def check(n: Double): Unit = {
+        val es = n.toString
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
         s.toDouble shouldBe n // no data loss when parsing by JDK or JS
-        if (!TestUtils.isJS) {
-          l should be <= n.toString.length // rounding isn't worse than in JDK
+        if (TestUtils.isJS) {
+          if (es.indexOf('.') < 0) {
+            l should be <= es.length + 4 // formatting differs from JS for doubles represented as whole numbers
+          } else if (es.indexOf('e') < 0 && Math.abs(n) > 1) {
+            l should be <= es.length + 3 // formatting differs from JS for doubles with positive exponents that are represented in decimal notation
+          } else {
+            l should be <= es.length // rounding and formatting isn't worse than in JS for doubles represented in scientific notation
+          }
+        } else {
+          l should be <= es.length // rounding and formatting isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
         i should be < l - 1 // '.' is not the last character
