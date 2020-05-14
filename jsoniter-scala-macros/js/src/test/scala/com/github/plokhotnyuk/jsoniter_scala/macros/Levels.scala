@@ -7,5 +7,5 @@ object Levels {
     lazy val values: Array[InnerLevel] = Array(HIGH, LOW)
   }
 
-  final class InnerLevel (name: String, ordinal: Int) extends Enum[InnerLevel](name, ordinal)
+  final class InnerLevel private (name: String, ordinal: Int) extends Enum[InnerLevel](name, ordinal)
 }

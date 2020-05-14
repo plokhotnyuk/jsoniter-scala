@@ -252,12 +252,42 @@ java.lang.StackOverflowError
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
-	...
 ```
 
 Workarounds are:
 - don't enclose ADTs with an object into outer classes
 - use the outer object (not a class) instead 
+
+4. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
+
+```
+[error] Referring to non-existent class com.github.plokhotnyuk.jsoniter_scala.macros.Level
+[error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$24()void
+[error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$1()void
+[error]   called from constructor com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.<init>()void
+[error]   called from static constructor com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.<clinit>()void
+[error]   called from core module analyzer
+```
+
+The workaround is to split sources for JVM and JS and use Java enum emulation for JS.
+
+Code for JVM:
+```java
+public enum Level { 
+    HIGH, LOW;
+}
+``` 
+
+Code for JS:
+```scala
+object Level {
+  lazy val HIGH: Level = new Level("HIGH", 0)
+  lazy val LOW: Level = new Level("LOW", 1)
+  lazy val values: Array[Level] = Array(HIGH, LOW)
+}
+
+final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
+```
 
 ## How to develop
 

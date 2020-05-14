@@ -342,6 +342,8 @@ object JsonCodecMaker {
 
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
+      def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
+
       def substituteTypes(tpe: Type, from: List[Symbol], to: List[Type]): Type =
         try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
           fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
@@ -509,7 +511,7 @@ object JsonCodecMaker {
 
       val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
 
-      def isJavaEnum(tpe: Type) = tpe <:< typeOf[java.lang.Enum[_]]
+      def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
 
       def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
@@ -519,12 +521,21 @@ object JsonCodecMaker {
           val transformedName = javaEnumValueNameMapper(name)
           EnumValueInfo(q"$s", transformedName, name != transformedName)
         }
-        if (values.isEmpty) { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+        if (values.isEmpty) {
+          val comp = companion(tpe)
           values =
-            eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
-              case (className, name) =>
+            if (comp != NoSymbol) {
+              comp.typeSignature.members.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
+                val name = decodeName(m)
                 val transformedName = javaEnumValueNameMapper(name)
-                EnumValueInfo(q"$className.${TermName(name)}", transformedName, name != transformedName)
+                EnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
+              }.toSeq
+            } else { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+              eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
+                case (className, name) =>
+                  val transformedName = javaEnumValueNameMapper(name)
+                  EnumValueInfo(q"$className.${TermName(name)}", transformedName, name != transformedName)
+              }
             }
         }
         val nameCollisions = duplicated(values.map(_.name))
@@ -817,8 +828,6 @@ object JsonCodecMaker {
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
-
-        def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
           case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call

@@ -6,4 +6,4 @@ object Level {
   lazy val values: Array[Level] = Array(HIGH, LOW)
 }
 
-final class Level(name: String, ordinal: Int) extends Enum[Level](name, ordinal)
+final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
