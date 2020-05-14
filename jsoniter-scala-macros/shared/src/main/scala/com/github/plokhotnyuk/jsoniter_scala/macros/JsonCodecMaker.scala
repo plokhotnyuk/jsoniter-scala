@@ -509,6 +509,8 @@ object JsonCodecMaker {
 
       val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
 
+      def isJavaEnum(tpe: Type) = tpe <:< typeOf[java.lang.Enum[_]]
+
       def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
         var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
@@ -597,7 +599,7 @@ object JsonCodecMaker {
                 $ec.put(s, x)
               }
               x"""
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+        } else if (isJavaEnum(tpe)) {
           q"""val l = in.readKeyAsCharBuf()
               ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
         } else if (isConstType(tpe)) {
@@ -718,7 +720,7 @@ object JsonCodecMaker {
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
-        else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+        else if (isJavaEnum(tpe)) {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
@@ -1346,7 +1348,7 @@ object JsonCodecMaker {
                 }
                 x
               } else in.readNullOrTokenError(default, '"')"""
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
+        } else if (isJavaEnum(tpe)) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
                 val l = in.readStringAsCharBuf()
@@ -1654,7 +1656,7 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"out.writeVal(x.toString)"
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
+        } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
