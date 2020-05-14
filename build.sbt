@@ -109,7 +109,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.1.1" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.2.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     ),
     Seq(Test).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
