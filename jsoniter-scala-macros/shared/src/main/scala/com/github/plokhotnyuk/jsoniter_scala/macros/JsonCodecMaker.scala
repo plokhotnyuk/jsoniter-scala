@@ -342,6 +342,8 @@ object JsonCodecMaker {
 
       def valueClassValueMethod(tpe: Type): MethodSymbol = tpe.decls.head.asMethod
 
+      def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
+
       def substituteTypes(tpe: Type, from: List[Symbol], to: List[Type]): Type =
         try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
           fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
@@ -509,6 +511,8 @@ object JsonCodecMaker {
 
       val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
 
+      def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
+
       def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
         var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
@@ -517,12 +521,21 @@ object JsonCodecMaker {
           val transformedName = javaEnumValueNameMapper(name)
           EnumValueInfo(q"$s", transformedName, name != transformedName)
         }
-        if (values.isEmpty) { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+        if (values.isEmpty) {
+          val comp = companion(tpe)
           values =
-            eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
-              case (className, name) =>
+            if (comp != NoSymbol) {
+              comp.typeSignature.members.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
+                val name = decodeName(m)
                 val transformedName = javaEnumValueNameMapper(name)
-                EnumValueInfo(q"$className.${TermName(name)}", transformedName, name != transformedName)
+                EnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
+              }.toSeq
+            } else { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
+              eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
+                case (className, name) =>
+                  val transformedName = javaEnumValueNameMapper(name)
+                  EnumValueInfo(q"$className.${TermName(name)}", transformedName, name != transformedName)
+              }
             }
         }
         val nameCollisions = duplicated(values.map(_.name))
@@ -597,7 +610,7 @@ object JsonCodecMaker {
                 $ec.put(s, x)
               }
               x"""
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+        } else if (isJavaEnum(tpe)) {
           q"""val l = in.readKeyAsCharBuf()
               ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
         } else if (isConstType(tpe)) {
@@ -718,7 +731,7 @@ object JsonCodecMaker {
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
         else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
-        else if (tpe <:< typeOf[java.lang.Enum[_]]) {
+        else if (isJavaEnum(tpe)) {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
@@ -815,8 +828,6 @@ object JsonCodecMaker {
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
-
-        def decodeName(s: Symbol): String = NameTransformer.decode(s.name.toString)
 
         def getPrimaryConstructor(tpe: Type): MethodSymbol = tpe.decls.collectFirst {
           case m: MethodSymbol if m.isPrimaryConstructor => m // FIXME: sometime it cannot be accessed from the place of the `make` call
@@ -1346,7 +1357,7 @@ object JsonCodecMaker {
                 }
                 x
               } else in.readNullOrTokenError(default, '"')"""
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withDecoderFor(methodKey, default) {
+        } else if (isJavaEnum(tpe)) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
                 val l = in.readStringAsCharBuf()
@@ -1654,7 +1665,7 @@ object JsonCodecMaker {
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
           q"out.writeVal(x.toString)"
-        } else if (tpe <:< typeOf[java.lang.Enum[_]]) withEncoderFor(methodKey, m) {
+        } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
