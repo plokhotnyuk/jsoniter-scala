@@ -22,8 +22,6 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import spray.json._
 
-case class ExtractFields(s: String, i: Int)
-
 class ExtractFieldsReading extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 1000

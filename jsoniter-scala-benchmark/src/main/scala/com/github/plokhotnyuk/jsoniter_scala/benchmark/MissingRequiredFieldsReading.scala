@@ -24,10 +24,6 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
 import spray.json._
 
-case class MissingRequiredFields(
-    @com.fasterxml.jackson.annotation.JsonProperty(required = true) s: String,
-    @com.fasterxml.jackson.annotation.JsonProperty(required = true) i: Int)
-
 class MissingRequiredFieldsReading extends CommonParams {
   var jsonString: String = """{}"""
   var jsonBytes: Array[Byte] = jsonString.getBytes(UTF_8)

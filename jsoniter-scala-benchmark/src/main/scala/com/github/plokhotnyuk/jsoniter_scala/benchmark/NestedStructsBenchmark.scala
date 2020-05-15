@@ -2,11 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.avsystem.commons.serialization.transientDefault
-import com.rallyhealth.weepickle.v1.implicits.dropDefault
 import org.openjdk.jmh.annotations.{Param, Setup}
-
-case class NestedStructs(@transientDefault @dropDefault n: Option[NestedStructs] = None)
 
 abstract class NestedStructsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
