@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -21,7 +22,7 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def circe(): Array[Byte] = escapingPrinter.print(obj.asJson).getBytes
 
   @Benchmark
-  def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def jacksonScala(): Array[Byte] = jacksonEscapeNonAsciiMapper.writeValueAsBytes(obj)
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)

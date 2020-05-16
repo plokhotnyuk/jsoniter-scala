@@ -98,8 +98,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-coreJS`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
-    `jsoniter-scala-benchmarkJVM`,
-    `jsoniter-scala-benchmarkJS`
+    `jsoniter-scala-benchmarkJVM` // FIXME: Restore `jsoniter-scala-benchmarkJS` here
   )
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
@@ -158,7 +157,6 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
-  .enablePlugins(JmhPlugin)
   .dependsOn(`jsoniter-scala-macros`)
   .settings(commonSettings)
   .settings(noPublishSettings)
@@ -190,21 +188,16 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.23",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.23",
       "org.scalatest" %%% "scalatest" % "3.1.2" % Test
-    ),
-    Seq(Compile).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
-      unmanagedResourceDirectories ++= {
-        unmanagedSourceDirectories.value
-          .map(src => (src / ".." / "resources").getCanonicalFile)
-          .filterNot(unmanagedResourceDirectories.value.contains)
-          .distinct
-      }
-    })
+    )
   ).jsSettings(
+    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.6.0",
     scalaJSUseMainModuleInitializer := true,
     mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
+  .enablePlugins(JmhPlugin)
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
+  .enablePlugins(JSDependenciesPlugin)

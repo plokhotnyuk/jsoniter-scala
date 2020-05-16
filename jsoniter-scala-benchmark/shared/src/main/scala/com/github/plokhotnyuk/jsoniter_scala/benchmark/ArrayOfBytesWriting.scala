@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -31,7 +32,7 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 */
   @Benchmark
-  def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
+  def jacksonScala(): Array[Byte] = jacksonByteArrayMapper.writeValueAsBytes(obj)
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj)

@@ -46,8 +46,22 @@ object JacksonSerDesers {
   }
 
   val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
-  val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
-  jacksonPrettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true)
+  val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = {
+    val jm = createJacksonMapper
+    jm.configure(SerializationFeature.INDENT_OUTPUT, true)
+    jm
+  }
+  val jacksonEscapeNonAsciiMapper: ObjectMapper with ScalaObjectMapper = {
+    val jm = createJacksonMapper
+    jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
+    jm
+  }
+  val jacksonByteArrayMapper: ObjectMapper with ScalaObjectMapper = {
+    val jm = createJacksonMapper
+    jm.registerModule(new SimpleModule()
+      .addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
+    jm
+  }
 }
 
 class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]]) {

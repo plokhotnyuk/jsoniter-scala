@@ -17,11 +17,6 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   var jsonString2: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = {
-    val jm = createJacksonMapper
-    jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
-    jm
-  }
 
   @Setup
   def setup(): Unit = {
