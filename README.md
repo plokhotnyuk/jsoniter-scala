@@ -226,7 +226,6 @@ affected by the exception (after the `o` field)
 
 2. A configuration parameter for the `make` macro is evaluated in compile-time only that requires no dependency on other
 code that uses a result of the macro's call. In that case the following compilation error will be reported:
-
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
         code from the same compilation module where the 'make' macro is called. Use a separated submodule of the project
@@ -236,7 +235,8 @@ code that uses a result of the macro's call. In that case the following compilat
 But sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for configuration
 that has not clear dependencies on other code. For those cases workarounds can be simpler than recommended usage of
 separated submodule:
-- isolate the `make` macro call(s) in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
+- use the `make` macro call without parameters when they match with defaults
+- isolate the `make` macro call in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
 and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorldController.scala#L12)
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
@@ -244,7 +244,6 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 
 3. Scalac can throw the following stack overflow exception on `make` call for ADTs with objects if the call and the ADT
 definition are enclosed in the definition of some outer class (for more details see: https://github.com/scala/bug/issues/11157):
-
 ```
 java.lang.StackOverflowError
     ...
@@ -259,7 +258,6 @@ Workarounds are:
 - use the outer object (not a class) instead 
 
 4. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
-
 ```
 [error] Referring to non-existent class com.github.plokhotnyuk.jsoniter_scala.macros.Level
 [error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$24()void
@@ -273,7 +271,7 @@ The workaround is to split sources for JVM and JS and use Java enum emulation fo
 
 Code for JVM:
 ```java
-public enum Level { 
+public enum Level {
     HIGH, LOW;
 }
 ``` 
@@ -288,6 +286,16 @@ object Level {
 
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
+
+5. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details here
+, see details [here](https://github.com/scala-js/scala-js/issues/4035)
+
+The workaround is using `double` or `BigDecimal` types for cases when an exact precision is a matter.
+
+6. Scala.js cannot throw exceptions without stack traces, so `throwReaderExceptionWithStackTrace` and 
+`throwWriterExceptionWithStackTrace` configuration parameters are ignored.
+
+No workaround at the moment.
 
 ## How to develop
 
