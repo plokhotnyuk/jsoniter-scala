@@ -8,6 +8,7 @@ class ArrayOfZoneIdsReadingSpec extends BenchmarkSpecBase {
   "ArrayOfZoneIdsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
+      benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj

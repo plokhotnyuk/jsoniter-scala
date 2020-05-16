@@ -8,6 +8,7 @@ class ArrayOfZonedDateTimesWritingSpec extends BenchmarkSpecBase {
   "ArrayOfZonedDateTimesWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.borer()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: DSL-JSON does not serialize preferred timezone
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString

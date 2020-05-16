@@ -26,7 +26,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   def circe(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def borerJson(): Array[BigInt] = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[BigInt]].value
+  def borer(): Array[BigInt] = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[BigInt]].value
 
   @Benchmark
   def dslJsonScala(): Array[BigInt] = dslJsonDecode[Array[BigInt]](jsonBytes)

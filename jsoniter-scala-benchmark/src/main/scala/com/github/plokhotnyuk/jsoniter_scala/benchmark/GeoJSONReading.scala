@@ -26,7 +26,7 @@ class GeoJSONReading extends GeoJSONBenchmark {
   def avSystemGenCodec(): GeoJSON = JsonStringInput.read[GeoJSON](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): GeoJSON = io.bullet.borer.Json.decode(jsonBytes).to[GeoJSON].value
+  def borer(): GeoJSON = io.bullet.borer.Json.decode(jsonBytes).to[GeoJSON].value
 
   @Benchmark
   def circe(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, identity)

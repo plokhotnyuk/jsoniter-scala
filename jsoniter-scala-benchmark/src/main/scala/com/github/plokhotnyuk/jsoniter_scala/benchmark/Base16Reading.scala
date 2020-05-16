@@ -14,7 +14,7 @@ class Base16Reading extends Base16Benchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8), jsonBase16Options)
 
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]](base16Dec).value
+  def borer(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]](base16Dec).value
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes, tooLongStringConfig)(base16Codec)

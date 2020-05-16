@@ -19,7 +19,7 @@ class Base64Reading extends Base64Benchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringInput.read[Array[Byte]](new String(jsonBytes, UTF_8), jsonBase64Options)
 
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]].value
+  def borer(): Array[Byte] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Byte]].value
 
   @Benchmark
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8))(base64D5r).fold(throw _, identity)

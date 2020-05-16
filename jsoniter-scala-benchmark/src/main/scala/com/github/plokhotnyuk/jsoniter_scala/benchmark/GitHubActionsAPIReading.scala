@@ -23,8 +23,7 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     JsonStringInput.read[GitHubActionsAPI.Response](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): GitHubActionsAPI.Response =
-    io.bullet.borer.Json.decode(jsonBytes).to[GitHubActionsAPI.Response].value
+  def borer(): GitHubActionsAPI.Response = io.bullet.borer.Json.decode(jsonBytes).to[GitHubActionsAPI.Response].value
 
   @Benchmark
   def circe(): GitHubActionsAPI.Response =

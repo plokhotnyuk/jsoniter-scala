@@ -8,7 +8,7 @@ class Base16ReadingSpec extends BenchmarkSpecBase {
   "Base16Reading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
-      benchmark.borerJson() shouldBe benchmark.obj
+      benchmark.borer() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
     }
   }

@@ -5,6 +5,7 @@ import java.time.YearMonth
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -19,6 +20,9 @@ import spray.json._
 class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[YearMonth] = JsonStringInput.read[Array[YearMonth]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[YearMonth] = io.bullet.borer.Json.decode(jsonBytes).to[Array[YearMonth]].value
 
   @Benchmark
   def circe(): Array[YearMonth] = decode[Array[YearMonth]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

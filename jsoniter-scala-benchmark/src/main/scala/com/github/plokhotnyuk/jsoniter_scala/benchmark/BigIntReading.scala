@@ -22,7 +22,7 @@ class BigIntReading extends BigIntBenchmark {
   def avSystemGenCodec(): BigInt = JsonStringInput.read[BigInt](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): BigInt = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[BigInt].value
+  def borer(): BigInt = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[BigInt].value
 
   @Benchmark
   def circe(): BigInt = decode[BigInt](new String(jsonBytes, UTF_8)).fold(throw _, identity)

@@ -14,7 +14,7 @@ class Base16Writing extends Base16Benchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, jsonBase16Options).getBytes(UTF_8)
 
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj)(base16Enc).toByteArray
+  def borer(): Array[Byte] = io.bullet.borer.Json.encode(obj)(base16Enc).toByteArray
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj)(base16Codec)

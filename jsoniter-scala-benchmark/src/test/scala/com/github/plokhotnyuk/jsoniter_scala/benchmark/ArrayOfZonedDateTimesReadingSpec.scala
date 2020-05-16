@@ -8,6 +8,7 @@ class ArrayOfZonedDateTimesReadingSpec extends BenchmarkSpecBase {
   "ArrayOfZonedDateTimesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
+      benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       //FIXME: DSL-JSON does not parse preferred timezone
       //benchmark.dslJsonScala() shouldBe benchmark.obj

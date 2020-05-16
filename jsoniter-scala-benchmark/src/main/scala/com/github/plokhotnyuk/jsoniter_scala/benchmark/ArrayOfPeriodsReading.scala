@@ -5,6 +5,7 @@ import java.time.Period
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -18,6 +19,9 @@ import spray.json._
 class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Period] = JsonStringInput.read[Array[Period]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[Period] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Period]].value
 
   @Benchmark
   def circe(): Array[Period] = decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

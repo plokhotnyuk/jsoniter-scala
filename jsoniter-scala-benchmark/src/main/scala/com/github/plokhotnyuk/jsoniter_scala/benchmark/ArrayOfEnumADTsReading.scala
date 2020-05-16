@@ -26,7 +26,7 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
   def avSystemGenCodec(): Array[SuitADT] = JsonStringInput.read[Array[SuitADT]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[SuitADT] = io.bullet.borer.Json.decode(jsonBytes).to[Array[SuitADT]].value
+  def borer(): Array[SuitADT] = io.bullet.borer.Json.decode(jsonBytes).to[Array[SuitADT]].value
 
   @Benchmark
   def circe(): Array[SuitADT] = decode[Array[SuitADT]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

@@ -23,7 +23,7 @@ class BigDecimalReading extends BigDecimalBenchmark {
   def avSystemGenCodec(): BigDecimal = JsonStringInput.read[BigDecimal](new String(jsonBytes, UTF_8), jsonOptions)
 
   @Benchmark
-  def borerJson(): BigDecimal = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[BigDecimal].value
+  def borer(): BigDecimal = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[BigDecimal].value
 
   @Benchmark
   def circe(): BigDecimal = decode[BigDecimal](new String(jsonBytes, UTF_8)).fold(throw _, identity)

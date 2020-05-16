@@ -22,7 +22,7 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   def avSystemGenCodec(): Array[Char] = JsonStringInput.read[Array[Char]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[Char] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Char]].value
+  def borer(): Array[Char] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Char]].value
 
   @Benchmark
   def circe(): Array[Char] = decode[Array[Char]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

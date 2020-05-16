@@ -1,10 +1,11 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-import java.time._
+import java.time.OffsetDateTime
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -21,6 +22,9 @@ import spray.json._
 class ArrayOfOffsetDateTimesReading extends ArrayOfOffsetDateTimesBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[OffsetDateTime] = JsonStringInput.read[Array[OffsetDateTime]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[OffsetDateTime] = io.bullet.borer.Json.decode(jsonBytes).to[Array[OffsetDateTime]].value
 
   @Benchmark
   def circe(): Array[OffsetDateTime] = decode[Array[OffsetDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

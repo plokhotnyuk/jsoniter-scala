@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -21,6 +22,9 @@ import spray.json._
 class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[LocalDateTime] = JsonStringInput.read[Array[LocalDateTime]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[LocalDateTime] = io.bullet.borer.Json.decode(jsonBytes).to[Array[LocalDateTime]].value
 
   @Benchmark
   def circe(): Array[LocalDateTime] = decode[Array[LocalDateTime]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

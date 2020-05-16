@@ -5,6 +5,7 @@ import java.time.Instant
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -20,6 +21,9 @@ import spray.json._
 class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Instant] = JsonStringInput.read[Array[Instant]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[Instant] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Instant]].value
 
   @Benchmark
   def circe(): Array[Instant] = decode[Array[Instant]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

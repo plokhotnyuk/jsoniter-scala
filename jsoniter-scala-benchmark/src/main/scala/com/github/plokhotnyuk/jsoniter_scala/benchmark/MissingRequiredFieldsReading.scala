@@ -37,7 +37,7 @@ class MissingRequiredFieldsReading extends CommonParams {
     }
 
   @Benchmark
-  def borerJson(): String =
+  def borer(): String =
     try {
       io.bullet.borer.Json.decode(jsonBytes).to[MissingRequiredFields].value.toString // toString() should not be called
     } catch {

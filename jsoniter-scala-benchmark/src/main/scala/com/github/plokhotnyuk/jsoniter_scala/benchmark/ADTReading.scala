@@ -25,7 +25,7 @@ class ADTReading extends ADTBenchmark {
   def avSystemGenCodec(): ADTBase = JsonStringInput.read[ADTBase](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): ADTBase = io.bullet.borer.Json.decode(jsonBytes).to[ADTBase].value
+  def borer(): ADTBase = io.bullet.borer.Json.decode(jsonBytes).to[ADTBase].value
 
   @Benchmark
   def circe(): ADTBase = decode[ADTBase](new String(jsonBytes, UTF_8)).fold(throw _, identity)

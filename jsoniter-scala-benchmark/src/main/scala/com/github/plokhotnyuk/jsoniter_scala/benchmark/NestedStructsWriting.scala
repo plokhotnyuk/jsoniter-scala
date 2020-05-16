@@ -25,7 +25,7 @@ class NestedStructsWriting extends NestedStructsBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 /* FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
+  def borer(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 */
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)

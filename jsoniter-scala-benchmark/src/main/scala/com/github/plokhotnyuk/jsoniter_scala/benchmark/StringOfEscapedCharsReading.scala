@@ -19,7 +19,7 @@ class StringOfEscapedCharsReading extends StringOfEscapedCharsBenchmark {
   def avSystemGenCodec(): String = JsonStringInput.read[String](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
+  def borer(): String = io.bullet.borer.Json.decode(jsonBytes).to[String].value
 
   @Benchmark
   def circe(): String = decode[String](new String(jsonBytes, UTF_8)).fold(throw _, identity)

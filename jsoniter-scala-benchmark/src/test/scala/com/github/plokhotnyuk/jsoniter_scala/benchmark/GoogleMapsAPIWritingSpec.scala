@@ -6,7 +6,7 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
   "GoogleMapsAPIWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.compactJsonString
-      toString(benchmark.borerJson()) shouldBe benchmark.compactJsonString
+      toString(benchmark.borer()) shouldBe benchmark.compactJsonString
       toString(benchmark.circe()) shouldBe benchmark.compactJsonString
       toString(benchmark.dslJsonScala()) shouldBe benchmark.compactJsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.compactJsonString

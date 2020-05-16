@@ -21,7 +21,7 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
   def avSystemGenCodec(): Array[Boolean] = JsonStringInput.read[Array[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Boolean]].value
+  def borer(): Array[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Boolean]].value
 
   @Benchmark
   def circe(): Array[Boolean] = decode[Array[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

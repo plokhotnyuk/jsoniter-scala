@@ -7,7 +7,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
     "return some parsing error" in {
       benchmark.avSystemGenCodec() shouldBe
         "Cannot read com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields, field s is missing in decoded data"
-      benchmark.borerJson() shouldBe
+      benchmark.borer() shouldBe
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
       benchmark.circe() shouldBe
         "Attempt to decode value on failed cursor: DownField(s)"

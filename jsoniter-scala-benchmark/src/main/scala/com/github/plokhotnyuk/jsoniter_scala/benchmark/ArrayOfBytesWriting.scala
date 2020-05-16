@@ -22,7 +22,7 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj).getBytes(UTF_8)
 
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj)(byteArrayEnc).toByteArray
+  def borer(): Array[Byte] = io.bullet.borer.Json.encode(obj)(byteArrayEnc).toByteArray
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)

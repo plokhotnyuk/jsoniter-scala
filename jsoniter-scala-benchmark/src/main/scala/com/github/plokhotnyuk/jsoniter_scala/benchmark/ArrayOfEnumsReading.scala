@@ -26,7 +26,7 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   def avSystemGenCodec(): Array[SuitEnum] = JsonStringInput.read[Array[SuitEnum]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[SuitEnum] = io.bullet.borer.Json.decode(jsonBytes).to[Array[SuitEnum]].value
+  def borer(): Array[SuitEnum] = io.bullet.borer.Json.decode(jsonBytes).to[Array[SuitEnum]].value
 
   @Benchmark
   def circe(): Array[SuitEnum] = decode[Array[SuitEnum]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

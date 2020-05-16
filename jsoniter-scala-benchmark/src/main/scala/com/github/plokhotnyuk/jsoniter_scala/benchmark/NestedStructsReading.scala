@@ -26,7 +26,7 @@ class NestedStructsReading extends NestedStructsBenchmark {
   def avSystemGenCodec(): NestedStructs = JsonStringInput.read[NestedStructs](new String(jsonBytes, UTF_8))
 /* FIXME: Borer throws io.bullet.borer.Borer$Error$Overflow: This JSON parser does not support more than 64 Array/Object nesting levels
   @Benchmark
-  def borerJson(): NestedStructs = io.bullet.borer.Json.decode(jsonBytes).to[NestedStructs].value
+  def borer(): NestedStructs = io.bullet.borer.Json.decode(jsonBytes).to[NestedStructs].value
 */
   @Benchmark
   def circe(): NestedStructs = decode[NestedStructs](new String(jsonBytes, UTF_8)).fold(throw _, identity)

@@ -20,8 +20,7 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
   def avSystemGenCodec(): Array[Float] = JsonStringInput.read[Array[Float]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[Float] =
-    io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[Float]].value
+  def borer(): Array[Float] = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[Float]].value
 
   @Benchmark
   def circe(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

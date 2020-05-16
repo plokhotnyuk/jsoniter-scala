@@ -6,7 +6,7 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
   "AnyValsWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString1
-      toString(benchmark.borerJson()) shouldBe benchmark.jsonString1
+      toString(benchmark.borer()) shouldBe benchmark.jsonString1
       toString(benchmark.circe()) shouldBe benchmark.jsonString1
       //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString1

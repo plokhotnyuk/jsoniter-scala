@@ -8,6 +8,7 @@ class ArrayOfLocalDatesWritingSpec extends BenchmarkSpecBase {
   "ArrayOfLocalDatesWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.borer()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString

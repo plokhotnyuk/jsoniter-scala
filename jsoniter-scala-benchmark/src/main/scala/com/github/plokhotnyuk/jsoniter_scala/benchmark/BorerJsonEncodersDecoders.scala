@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.math.MathContext
-import java.time.Instant
+import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, MonthDay, OffsetDateTime, OffsetTime, Period, Year, YearMonth, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -48,17 +48,33 @@ object BorerJsonEncodersDecoders {
     implicit val c3: Codec[GeoJSON.SimpleGeoJSON] = deriveAllCodecs
     deriveAllCodecs[GeoJSON.GeoJSON]
   }
-  implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response],
-  gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
+  implicit val Codec(durationEnc: Encoder[Duration], durationDec: Decoder[Duration]) = stringCodec(Duration.parse)
+  implicit val Codec(instantEnc: Encoder[Instant], instantDec: Decoder[Instant]) = stringCodec(Instant.parse)
+  implicit val Codec(localDateEnc: Encoder[LocalDate], localDateDec: Decoder[LocalDate]) = stringCodec(LocalDate.parse)
+  implicit val Codec(localDateTimeEnc: Encoder[LocalDateTime], localDateTimeDec: Decoder[LocalDateTime]) =
+    stringCodec(LocalDateTime.parse)
+  implicit val Codec(localTimeEnc: Encoder[LocalTime], localTimeDec: Decoder[LocalTime]) = stringCodec(LocalTime.parse)
+  implicit val Codec(monthDayEnc: Encoder[MonthDay], monthDayDec: Decoder[MonthDay]) = stringCodec(MonthDay.parse)
+  implicit val Codec(offsetDateTimeEnc: Encoder[OffsetDateTime], offsetDateTimeDec: Decoder[OffsetDateTime]) =
+    stringCodec(OffsetDateTime.parse)
+  implicit val Codec(offsetTimeEnc: Encoder[OffsetTime], offsetTimeDec: Decoder[OffsetTime]) =
+    stringCodec(OffsetTime.parse)
+  implicit val Codec(periodEnc: Encoder[Period], periodDec: Decoder[Period]) = stringCodec(Period.parse)
+  implicit val Codec(yearMonthEnc: Encoder[YearMonth], yearMonthDec: Decoder[YearMonth]) = stringCodec(YearMonth.parse)
+  implicit val Codec(yearEnc: Encoder[Year], yearDec: Decoder[Year]) = stringCodec(Year.parse)
+  implicit val Codec(zonedDateTimeEnc: Encoder[ZonedDateTime], zonedDateTimeDec: Decoder[ZonedDateTime]) =
+    stringCodec(ZonedDateTime.parse)
+  implicit val Codec(zoneIdEnc: Encoder[ZoneId], zoneIdDec: Decoder[ZoneId]) = stringCodec(ZoneId.of)
+  implicit val Codec(zoneOffsetEnc: Encoder[ZoneOffset], zoneOffsetDec: Decoder[ZoneOffset]) =
+    stringCodec(ZoneOffset.of)
+  implicit val Codec(gitHubActionsAPIEnc: Encoder[GitHubActionsAPI.Response], gitHubActionsAPIDec: Decoder[GitHubActionsAPI.Response]) = {
     import Decoder.StringBooleans._
     import Encoder.StringBooleans._
 
-    implicit val c1: Codec[Instant] = stringCodec(Instant.parse)
     implicit val c2: Codec[GitHubActionsAPI.Artifact] = deriveCodec
     deriveCodec[GitHubActionsAPI.Response]
   }
-  implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix],
-  googleMapsAPIDec: Decoder[GoogleMapsAPI.DistanceMatrix]) = {
+  implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix], googleMapsAPIDec: Decoder[GoogleMapsAPI.DistanceMatrix]) = {
     implicit val c1: Codec[GoogleMapsAPI.Value] = deriveCodec
     implicit val c2: Codec[GoogleMapsAPI.Elements] = deriveCodec
     implicit val c3: Codec[GoogleMapsAPI.Rows] = deriveCodec

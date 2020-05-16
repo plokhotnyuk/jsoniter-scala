@@ -8,6 +8,7 @@ class ArrayOfPeriodsWritingSpec extends BenchmarkSpecBase {
   "ArrayOfPeriodsWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
+      toString(benchmark.borer()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString

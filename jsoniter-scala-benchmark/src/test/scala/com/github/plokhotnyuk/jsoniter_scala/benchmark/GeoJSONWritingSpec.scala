@@ -6,7 +6,7 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
   "GeoJSONWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString1
-      toString(benchmark.borerJson()) shouldBe benchmark.jsonString1
+      toString(benchmark.borer()) shouldBe benchmark.jsonString1
       toString(benchmark.circe()) shouldBe benchmark.jsonString2
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString1
       toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString1

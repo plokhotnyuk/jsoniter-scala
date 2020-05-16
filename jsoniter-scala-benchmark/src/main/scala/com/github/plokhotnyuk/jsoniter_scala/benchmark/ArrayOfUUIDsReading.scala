@@ -24,7 +24,7 @@ class ArrayOfUUIDsReading extends ArrayOfUUIDsBenchmark {
   def avSystemGenCodec(): Array[UUID] = JsonStringInput.read[Array[UUID]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[UUID] = io.bullet.borer.Json.decode(jsonBytes).to[Array[UUID]].value
+  def borer(): Array[UUID] = io.bullet.borer.Json.decode(jsonBytes).to[Array[UUID]].value
 
   @Benchmark
   def circe(): Array[UUID] = decode[Array[UUID]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

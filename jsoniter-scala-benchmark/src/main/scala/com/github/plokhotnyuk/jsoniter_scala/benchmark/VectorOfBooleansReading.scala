@@ -21,7 +21,7 @@ class VectorOfBooleansReading extends VectorOfBooleansBenchmark {
   def avSystemGenCodec(): Vector[Boolean] = JsonStringInput.read[Vector[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Vector[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[Vector[Boolean]].value
+  def borer(): Vector[Boolean] = io.bullet.borer.Json.decode(jsonBytes).to[Vector[Boolean]].value
 
   @Benchmark
   def circe(): Vector[Boolean] = decode[Vector[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

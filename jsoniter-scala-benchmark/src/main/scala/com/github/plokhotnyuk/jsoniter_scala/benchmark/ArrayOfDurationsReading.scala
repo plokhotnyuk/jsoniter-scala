@@ -5,6 +5,7 @@ import java.time.Duration
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
@@ -18,6 +19,9 @@ import spray.json._
 class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[Duration] = JsonStringInput.read[Array[Duration]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[Duration] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Duration]].value
 
   @Benchmark
   def circe(): Array[Duration] = decode[Array[Duration]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

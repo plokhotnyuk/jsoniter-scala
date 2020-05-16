@@ -40,7 +40,7 @@ class ExtractFieldsReading extends CommonParams {
   def avSystemGenCodec(): ExtractFields = JsonStringInput.read[ExtractFields](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): ExtractFields = io.bullet.borer.Json.decode(jsonBytes).to[ExtractFields].value
+  def borer(): ExtractFields = io.bullet.borer.Json.decode(jsonBytes).to[ExtractFields].value
 
   @Benchmark
   def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)

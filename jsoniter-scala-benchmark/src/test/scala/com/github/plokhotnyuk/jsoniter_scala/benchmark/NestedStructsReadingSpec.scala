@@ -9,7 +9,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       //FIXME: Borer throws io.bullet.borer.Borer$Error$Overflow: This JSON parser does not support more than 64 Array/Object nesting levels
-      //benchmark.borerJson() shouldBe benchmark.obj
+      //benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj

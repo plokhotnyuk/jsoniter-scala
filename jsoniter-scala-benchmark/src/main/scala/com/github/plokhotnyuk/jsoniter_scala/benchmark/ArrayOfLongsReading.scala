@@ -21,7 +21,7 @@ class ArrayOfLongsReading extends ArrayOfLongsBenchmark {
   def avSystemGenCodec(): Array[Long] = JsonStringInput.read[Array[Long]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Array[Long] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Long]].value
+  def borer(): Array[Long] = io.bullet.borer.Json.decode(jsonBytes).to[Array[Long]].value
 
   @Benchmark
   def circe(): Array[Long] = decode[Array[Long]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

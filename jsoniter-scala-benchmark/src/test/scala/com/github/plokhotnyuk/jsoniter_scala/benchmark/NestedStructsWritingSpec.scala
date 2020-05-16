@@ -10,7 +10,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
       toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
-      //toString(benchmark.borerJson()) shouldBe benchmark.jsonString
+      //toString(benchmark.borer()) shouldBe benchmark.jsonString
       //FIXME: DSL-JSON serializes null value for Option.None
       //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
       toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString

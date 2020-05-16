@@ -23,7 +23,7 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
   def avSystemGenCodec(): Set[Int] = JsonStringInput.read[Set[Int]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Set[Int] = io.bullet.borer.Json.decode(jsonBytes).to[Set[Int]].value
+  def borer(): Set[Int] = io.bullet.borer.Json.decode(jsonBytes).to[Set[Int]].value
 
   @Benchmark
   def circe(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

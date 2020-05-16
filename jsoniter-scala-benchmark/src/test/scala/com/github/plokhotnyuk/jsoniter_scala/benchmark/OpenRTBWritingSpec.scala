@@ -6,7 +6,7 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
   "OpenRTBWriting" should {
     "write properly" in {
       toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.borerJson()) shouldBe benchmark.jsonString
+      toString(benchmark.borer()) shouldBe benchmark.jsonString
       //FIXME: Circe serializes fields with default values
       //toString(benchmark.circe()) shouldBe benchmark.jsonString
       //FIXME: Jackson serializes fields with default values

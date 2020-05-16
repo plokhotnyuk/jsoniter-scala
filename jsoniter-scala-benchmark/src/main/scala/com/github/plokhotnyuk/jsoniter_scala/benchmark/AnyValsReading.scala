@@ -25,7 +25,7 @@ class AnyValsReading extends AnyValsBenchmark {
   def avSystemGenCodec(): AnyVals = JsonStringInput.read[AnyVals](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): AnyVals = io.bullet.borer.Json.decode(jsonBytes).to[AnyVals].value
+  def borer(): AnyVals = io.bullet.borer.Json.decode(jsonBytes).to[AnyVals].value
 
   @Benchmark
   def circe(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, identity)

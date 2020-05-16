@@ -26,7 +26,7 @@ class PrimitivesReading extends PrimitivesBenchmark {
   def avSystemGenCodec(): Primitives = JsonStringInput.read[Primitives](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Primitives = io.bullet.borer.Json.decode(jsonBytes).to[Primitives].value
+  def borer(): Primitives = io.bullet.borer.Json.decode(jsonBytes).to[Primitives].value
 
   @Benchmark
   def circe(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)

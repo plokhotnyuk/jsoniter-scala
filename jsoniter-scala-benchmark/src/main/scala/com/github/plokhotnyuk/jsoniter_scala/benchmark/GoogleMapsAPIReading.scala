@@ -27,7 +27,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def avSystemGenCodec(): DistanceMatrix = JsonStringInput.read[DistanceMatrix](new String(jsonBytes1, UTF_8))
 
   @Benchmark
-  def borerJson(): DistanceMatrix = io.bullet.borer.Json.decode(jsonBytes1).to[DistanceMatrix].value
+  def borer(): DistanceMatrix = io.bullet.borer.Json.decode(jsonBytes1).to[DistanceMatrix].value
 
   @Benchmark
   def circe(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)

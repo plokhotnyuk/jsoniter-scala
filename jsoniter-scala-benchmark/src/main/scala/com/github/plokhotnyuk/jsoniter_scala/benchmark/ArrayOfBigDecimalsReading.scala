@@ -24,7 +24,7 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
     JsonStringInput.read[Array[BigDecimal]](new String(jsonBytes, UTF_8), jsonOptions)
 
   @Benchmark
-  def borerJson(): Array[BigDecimal] =
+  def borer(): Array[BigDecimal] =
     io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[BigDecimal]].value
 
   @Benchmark

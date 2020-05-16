@@ -5,6 +5,7 @@ import java.time.MonthDay
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -19,6 +20,9 @@ import spray.json._
 class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[MonthDay] = JsonStringInput.read[Array[MonthDay]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[MonthDay] = io.bullet.borer.Json.decode(jsonBytes).to[Array[MonthDay]].value
 
   @Benchmark
   def circe(): Array[MonthDay] = decode[Array[MonthDay]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

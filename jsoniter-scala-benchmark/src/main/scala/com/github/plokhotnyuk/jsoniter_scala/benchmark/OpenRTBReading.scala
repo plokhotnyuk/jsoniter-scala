@@ -27,7 +27,7 @@ class OpenRTBReading extends OpenRTBBenchmark {
   def avSystemGenCodec(): BidRequest = JsonStringInput.read[BidRequest](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): BidRequest = io.bullet.borer.Json.decode(jsonBytes).to[BidRequest].value
+  def borer(): BidRequest = io.bullet.borer.Json.decode(jsonBytes).to[BidRequest].value
 
   @Benchmark
   def circe(): BidRequest = decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)

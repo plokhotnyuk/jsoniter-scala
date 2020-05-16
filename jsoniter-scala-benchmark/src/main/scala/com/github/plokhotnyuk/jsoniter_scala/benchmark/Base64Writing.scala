@@ -19,7 +19,7 @@ class Base64Writing extends Base64Benchmark {
   def avSystemGenCodec(): Array[Byte] = JsonStringOutput.write(obj, jsonBase64Options).getBytes(UTF_8)
 
   @Benchmark
-  def borerJson(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
+  def borer(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson(base64E5r)).getBytes(UTF_8)

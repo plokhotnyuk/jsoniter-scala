@@ -5,6 +5,7 @@ import java.time.ZoneOffset
 
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -19,6 +20,9 @@ import spray.json._
 class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
   @Benchmark
   def avSystemGenCodec(): Array[ZoneOffset] = JsonStringInput.read[Array[ZoneOffset]](new String(jsonBytes, UTF_8))
+
+  @Benchmark
+  def borer(): Array[ZoneOffset] = io.bullet.borer.Json.decode(jsonBytes).to[Array[ZoneOffset]].value
 
   @Benchmark
   def circe(): Array[ZoneOffset] = decode[Array[ZoneOffset]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

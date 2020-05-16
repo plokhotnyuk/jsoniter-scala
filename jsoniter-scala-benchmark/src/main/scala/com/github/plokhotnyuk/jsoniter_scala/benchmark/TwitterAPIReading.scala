@@ -29,7 +29,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   def avSystemGenCodec(): Seq[Tweet] = JsonStringInput.read[Seq[Tweet]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): Seq[Tweet] = io.bullet.borer.Json.decode(jsonBytes).to[Seq[Tweet]].value
+  def borer(): Seq[Tweet] = io.bullet.borer.Json.decode(jsonBytes).to[Seq[Tweet]].value
 
   @Benchmark
   def circe(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)

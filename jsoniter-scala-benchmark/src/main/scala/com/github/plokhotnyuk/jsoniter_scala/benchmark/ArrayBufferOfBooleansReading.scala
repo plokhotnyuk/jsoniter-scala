@@ -24,7 +24,7 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
     JsonStringInput.read[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def borerJson(): mutable.ArrayBuffer[Boolean] =
+  def borer(): mutable.ArrayBuffer[Boolean] =
     io.bullet.borer.Json.decode(jsonBytes).to[mutable.ArrayBuffer[Boolean]].value
 
   @Benchmark
