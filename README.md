@@ -278,9 +278,15 @@ public enum Level {
 Code for JS:
 ```scala
 object Level {
-  lazy val HIGH: Level = new Level("HIGH", 0)
-  lazy val LOW: Level = new Level("LOW", 1)
-  lazy val values: Array[Level] = Array(HIGH, LOW)
+  val HIGH: Level = new Level("HIGH", 0)
+  val LOW: Level = new Level("LOW", 1)
+  
+  val values: Array[Level] = Array(HIGH, LOW)
+
+  def valueOf(name: String): Level =
+    if (HIGH.name() == name) HIGH
+    else if (LOW.name() == name) LOW
+    else throw new IllegalArgumentException(s"Unrecognized Level name: $name")
 }
 
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
@@ -342,39 +348,39 @@ Learn how to write benchmarks in [JMH samples](https://hg.openjdk.java.net/code-
 List of available options can be printed by:
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -h'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -h'
 ```
 
 Results of benchmark can be stored in different formats: *.csv, *.json, etc. All supported formats can be listed by:
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -lrf'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -lrf'
 ```
 
 JMH allows to run benchmarks with different profilers, to get a list of supported use (can require entering of user
 password):
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -lprof'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -lprof'
 ```
 
 Help for profiler options can be printed by following command (`<profiler_name>` should be replaced by the name of the
 supported profiler from the command above):
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -prof <profiler_name>:help'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof <profiler_name>:help'
 ```
 
 For parametrized benchmarks the constant value(s) for parameter(s) can be set by `-p` option:
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -p size=1,10,100,1000 ArrayOf.*'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -p size=1,10,100,1000 ArrayOf.*'
 ```
 
 To see throughput with the allocation rate of generated codecs run benchmarks with GC profiler using the following
 command:
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
 ```
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](https://jmh.morethan.io/) by drugging & dropping
@@ -384,13 +390,13 @@ of your file to the drop zone or using the `source` parameter with an HTTP link 
 On Linux the perf profiler can be used to see CPU event statistics normalized per ops:
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfnorm TwitterAPIReading.jsoniterScala'
 ```
 
 Also, it can be run with a specified list of events: 
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -prof "perfnorm:event=cycles,instructions,ld_blocks_partial.address_alias" TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof "perfnorm:event=cycles,instructions,ld_blocks_partial.address_alias" TwitterAPIReading.jsoniterScala'
 ```
 
 List of available events for the perf profiler can be retrieved by the following command:
@@ -402,7 +408,7 @@ perf list
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 
 Now you can open files from the `/tmp/profile-jfr` directory:
@@ -419,7 +425,7 @@ To run benchmarks with recordings by [Async profiler](https://github.com/jvm-pro
 repository and use command like this:
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
@@ -454,7 +460,7 @@ Following command can be used to profile and print assembly code of the hottest 
 additional library to make PrintAssembly feature enabled](https://psy-lob-saw.blogspot.com/2013/01/java-print-assembly.html):
 
 ```sh
-sbt 'jsoniter-scala-benchmark/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof perfasm -wi 10 -i 10 -p size=128 BigIntReading.jsoniterScala'
 ```
 
 More info about extras, options, and ability to generate flame graphs see in [Sbt-JMH docs](https://github.com/ktoso/sbt-jmh)

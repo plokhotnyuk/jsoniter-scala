@@ -98,7 +98,9 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-coreJS`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
-    `jsoniter-scala-benchmark`)
+    `jsoniter-scala-benchmarkJVM`,
+    `jsoniter-scala-benchmarkJS`
+  )
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -120,8 +122,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
           .distinct
       }
     })
-  )
-  .jsSettings(
+  ).jsSettings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.0.0"
@@ -146,8 +147,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     )
-  )
-  .jsSettings(
+  ).jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
@@ -156,9 +156,10 @@ lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
 
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
 
-lazy val `jsoniter-scala-benchmark` = project
+lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
   .enablePlugins(JmhPlugin)
-  .dependsOn(`jsoniter-scala-macrosJVM`)
+  .dependsOn(`jsoniter-scala-macros`)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
@@ -167,18 +168,18 @@ lazy val `jsoniter-scala-benchmark` = project
     crossScalaVersions := Seq("2.13.2", "2.12.11"),
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.0.1",
-      "io.bullet" %% "borer-derivation" % "1.6.0",
+      "io.bullet" %%% "borer-derivation" % "1.6.0",
       "pl.iterators" %% "kebs-spray-json" % "1.7.1",
-      "io.spray" %%  "spray-json" % "1.3.5",
-      "com.avsystem.commons" %% "commons-core" % "2.0.0-M6",
-      "com.lihaoyi" %% "upickle" % "1.1.0",
+      "io.spray" %% "spray-json" % "1.3.5",
+      "com.avsystem.commons" %%% "commons-core" % "2.0.0-M6",
+      "com.lihaoyi" %%% "upickle" % "1.1.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.5",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.11.0",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.11.0",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.11.0",
-      "io.circe" %% "circe-generic-extras" % "0.13.0",
-      "io.circe" %% "circe-generic" % "0.13.0",
-      "io.circe" %% "circe-parser" % "0.13.0",
+      "io.circe" %%% "circe-generic-extras" % "0.13.0",
+      "io.circe" %%% "circe-generic" % "0.13.0",
+      "io.circe" %%% "circe-parser" % "0.13.0",
       "com.typesafe.play" %% "play-json" % "2.8.1",
       "org.julienrf" %% "play-json-derived-codecs" % "7.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",
@@ -188,6 +189,22 @@ lazy val `jsoniter-scala-benchmark` = project
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.23",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.23",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.23",
-      "org.scalatest" %% "scalatest" % "3.1.2" % Test
-    )
+      "org.scalatest" %%% "scalatest" % "3.1.2" % Test
+    ),
+    Seq(Compile).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
+      unmanagedResourceDirectories ++= {
+        unmanagedSourceDirectories.value
+          .map(src => (src / ".." / "resources").getCanonicalFile)
+          .filterNot(unmanagedResourceDirectories.value.contains)
+          .distinct
+      }
+    })
+  ).jsSettings(
+    scalaJSUseMainModuleInitializer := true,
+    mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
+    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
+
+lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
+
+lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
