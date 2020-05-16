@@ -6,9 +6,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
 abstract class GitHubActionsAPIBenchmark extends CommonParams {
-  var jsonBytes: Array[Byte] = bytes(getClass.getResourceAsStream("github_actions_api_response.json"))
-  var compactJsonBytes1: Array[Byte] = bytes(getClass.getResourceAsStream("github_actions_api_compact_response-1.json"))
-  var compactJsonBytes2: Array[Byte] = bytes(getClass.getResourceAsStream("github_actions_api_compact_response-2.json"))
+  var jsonBytes: Array[Byte] = bytes(Utils.getResourceAsStream("github_actions_api_response.json"))
+  var compactJsonBytes1: Array[Byte] = bytes(Utils.getResourceAsStream("github_actions_api_compact_response-1.json"))
+  var compactJsonBytes2: Array[Byte] = bytes(Utils.getResourceAsStream("github_actions_api_compact_response-2.json"))
   var obj: GitHubActionsAPI.Response = readFromArray[GitHubActionsAPI.Response](jsonBytes)
   var preallocatedBuf: Array[Byte] = new Array(compactJsonBytes1.length + 100/*to avoid possible out of bounds error*/)
   var jsonString: String = new String(jsonBytes, UTF_8)
