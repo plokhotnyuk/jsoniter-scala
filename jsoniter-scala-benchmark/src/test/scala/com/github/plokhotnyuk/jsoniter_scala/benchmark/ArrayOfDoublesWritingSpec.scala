@@ -13,8 +13,6 @@ class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
       //FIXME: DSL-JSON serializes doubles in a plain representation
       //sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
-      //FIXME: Jsoniter Java serializes values rounded to 6 digits (sometime PreciseFloatSupport.enable() doesn't work)
-      //sameOrBetter(toString(benchmark.jsoniterJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jsoniterScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500

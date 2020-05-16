@@ -12,8 +12,6 @@ class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
       sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
-      //FIXME: Jsoniter Java serializes values rounded to 6 digits because PreciseFloatSupport.enable() doesn't work sometime
-      //sameOrBetter(toString(benchmark.jsoniterJava()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.jsoniterScala()), benchmark.jsonString)
       sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
       //FIXME: Play-JSON serializes double values instead of float

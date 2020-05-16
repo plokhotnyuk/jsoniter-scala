@@ -8,7 +8,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.jsoniter.input.JsoniterJavaParser
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
@@ -32,9 +31,6 @@ class ArrayOfIntsReading extends ArrayOfIntsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Int] = jacksonMapper.readValue[Array[Int]](jsonBytes)
-
-  @Benchmark
-  def jsoniterJava(): Array[Int] = JsoniterJavaParser.parse[Array[Int]](jsonBytes, classOf[Array[Int]])
 
   @Benchmark
   def jsoniterScala(): Array[Int] = readFromArray[Array[Int]](jsonBytes)

@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.jsoniter.output.JsoniterJavaSerializer
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
@@ -23,9 +22,6 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-
-  @Benchmark
-  def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)

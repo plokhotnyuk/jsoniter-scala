@@ -13,7 +13,6 @@ class ArrayOfBytesReadingSpec extends BenchmarkSpecBase {
       //FIXME: DSL-JSON expects a base64 string for the byte array
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
-      benchmark.jsoniterJava() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj

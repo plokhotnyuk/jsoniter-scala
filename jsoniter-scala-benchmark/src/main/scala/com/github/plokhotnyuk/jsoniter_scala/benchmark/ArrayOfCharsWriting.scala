@@ -10,7 +10,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.jsoniter.output.JsoniterJavaSerializer
 import com.rallyhealth.weejson.v1.jackson.ToJson
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
@@ -31,10 +30,7 @@ class ArrayOfCharsWriting extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-/* FIXME: Jsoniter Java serializes chars as ints
-  @Benchmark
-  def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
-*/
+
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj)
 

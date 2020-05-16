@@ -13,7 +13,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.jsoniter.input.JsoniterJavaParser
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
@@ -36,9 +35,6 @@ class ArrayOfJavaEnumsReading extends ArrayOfJavaEnumsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Suit] = jacksonMapper.readValue[Array[Suit]](jsonBytes)
-
-  @Benchmark
-  def jsoniterJava(): Array[Suit] = JsoniterJavaParser.parse[Array[Suit]](jsonBytes, classOf[Array[Suit]])
 
   @Benchmark
   def jsoniterScala(): Array[Suit] = readFromArray[Array[Suit]](jsonBytes)

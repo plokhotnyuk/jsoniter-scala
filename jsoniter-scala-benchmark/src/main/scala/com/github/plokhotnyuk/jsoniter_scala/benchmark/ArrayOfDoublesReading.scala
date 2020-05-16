@@ -9,7 +9,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.jsoniter.output.JsoniterJavaSerializer
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
@@ -32,10 +31,7 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Double] = jacksonMapper.readValue[Array[Double]](jsonBytes)
-/* FIXME: Jsoniter Java cannot parse some numbers like 5.9823526 precisely
-  @Benchmark
-  def jsoniterJava(): Array[Double] = JsoniterJavaParser.parse[Array[Double]](jsonBytes, classOf[Array[Double]])
-*/
+
   @Benchmark
   def jsoniterScala(): Array[Double] = readFromArray[Array[Double]](jsonBytes)
 

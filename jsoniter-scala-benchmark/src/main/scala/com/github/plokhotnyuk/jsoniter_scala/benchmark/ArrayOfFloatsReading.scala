@@ -8,7 +8,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.jsoniter.input.JsoniterJavaParser
 //import com.rallyhealth.weejson.v1.jackson.FromJson
 //import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
@@ -33,10 +32,6 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 /* FIXME: Jackson Scala parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def jacksonScala(): Array[Float] = jacksonMapper.readValue[Array[Float]](jsonBytes)
-*/
-/* FIXME: Jsoniter Java parses 1.199999988079071 as 1.2f instead of 1.1999999f
-  @Benchmark
-  def jsoniterJava(): Array[Float] = JsoniterJavaParser.parse[Array[Float]](jsonBytes, classOf[Array[Float]])
 */
   @Benchmark
   def jsoniterScala(): Array[Float] = readFromArray[Array[Float]](jsonBytes)

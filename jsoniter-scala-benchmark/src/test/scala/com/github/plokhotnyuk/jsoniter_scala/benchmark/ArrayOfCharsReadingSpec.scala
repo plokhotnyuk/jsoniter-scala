@@ -11,8 +11,6 @@ class ArrayOfCharsReadingSpec extends BenchmarkSpecBase {
       benchmark.borerJson() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
-      // FIXME: Jsoniter Java parsers chars as ints
-      //benchmark.jsoniterJava() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj

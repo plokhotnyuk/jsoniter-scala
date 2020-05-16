@@ -13,9 +13,8 @@ parsing and serialization.
 
 [**Latest results of benchmarks**](https://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
 performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
-[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), 
-[DSL-JSON](https://github.com/ngs-doo/dsl-json), [Jackson](https://github.com/FasterXML/jackson-module-scala),
-[jsoniter (json-iterator) for Java](https://github.com/json-iterator/java), [Play-JSON](https://github.com/playframework/play-json), 
+[Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), [DSL-JSON](https://github.com/ngs-doo/dsl-json), 
+[Jackson](https://github.com/FasterXML/jackson-module-scala), [Play-JSON](https://github.com/playframework/play-json), 
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 and [weePickle](https://github.com/rallyhealth/weePickle) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
