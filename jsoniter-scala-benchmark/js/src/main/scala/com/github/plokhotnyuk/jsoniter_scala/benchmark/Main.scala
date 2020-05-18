@@ -2,10 +2,13 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.scalajs.dom._
 import japgolly.scalajs.benchmark.{Benchmark => B, Suite => S}
+import japgolly.scalajs.benchmark.engine.{EngineOptions => EO}
 import japgolly.scalajs.benchmark.gui.{BenchmarkGUI => BG, GuiSuite => GS}
 
 object Main {
-  def main(args: Array[String]): Unit = BG.renderMenu(document.getElementById("body"))({
+  def main(args: Array[String]): Unit = BG.renderMenu(document.getElementById("body"), options = EO.default.copy(
+    warmupIterations = 5, iterations = 5
+  ))({
     val benchmark = new ADTReading
     GS(S("ADTReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
