@@ -15,13 +15,6 @@ abstract class ArrayOfBytesBenchmark extends CommonParams {
   var jsonString: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = {
-    val jm = createJacksonMapper
-    jm.registerModule(new SimpleModule()
-      .addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
-    jm
-  }
-
   @Setup
   def setup(): Unit = {
     obj = (1 to size).map(_.toByte).toArray

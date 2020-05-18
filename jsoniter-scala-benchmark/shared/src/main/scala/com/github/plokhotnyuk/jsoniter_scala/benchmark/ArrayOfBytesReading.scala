@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -30,7 +31,7 @@ class ArrayOfBytesReading extends ArrayOfBytesBenchmark {
   def dslJsonScala(): Array[Byte] = dslJsonDecode[Array[Byte]](jsonBytes)
 */
   @Benchmark
-  def jacksonScala(): Array[Byte] = jacksonMapper.readValue[Array[Byte]](jsonBytes)
+  def jacksonScala(): Array[Byte] = jacksonByteArrayMapper.readValue[Array[Byte]](jsonBytes)
 
   @Benchmark
   def jsoniterScala(): Array[Byte] = readFromArray[Array[Byte]](jsonBytes)
