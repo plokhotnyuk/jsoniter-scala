@@ -1,4 +1,5 @@
 import com.typesafe.tools.mima.core._
+import org.scalajs.linker.interface.Semantics
 import sbt._
 
 import scala.sys.process._
@@ -192,6 +193,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   ).jsSettings(
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.6.0",
     scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true)),
     mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
