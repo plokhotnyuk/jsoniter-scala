@@ -191,7 +191,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     )
   ).jsSettings(
-    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.6.0",
+    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.7.0",
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true)),
     mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
