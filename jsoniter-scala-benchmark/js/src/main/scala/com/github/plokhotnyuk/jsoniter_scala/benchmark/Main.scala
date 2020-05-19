@@ -3,7 +3,8 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import org.scalajs.dom._
 import japgolly.scalajs.benchmark.{Benchmark => B, Suite => S}
 import japgolly.scalajs.benchmark.engine.{EngineOptions => EO}
-import japgolly.scalajs.benchmark.gui.{BmResultFormat => BRF, BenchmarkGUI => BG, GuiOptions => GO, GuiSuite => GS}
+import japgolly.scalajs.benchmark.gui.SuiteResultsFormat._
+import japgolly.scalajs.benchmark.gui.{Disabled => On, Enabled => Off, BenchmarkGUI => BG, BmResultFormat => BRF, GuiOptions => GO, GuiSuite => GS}
 
 import scala.concurrent.duration._
 
@@ -11,6 +12,7 @@ object Main {
   def main(args: Array[String]): Unit = BG.renderMenu(document.getElementById("body"), engineOptions = EO.default.copy(
     warmupIterations = 5, iterations = 5, iterationTime = 1.seconds,
   ), guiOptions = GO.default.copy(
+    batchModeFormats = Map(JmhJson -> On, JmhText -> Off, CSV(8) -> Off),
     bmResultFormats = ctx => Vector(BRF.OpsPerSec, BRF.chooseTimePerOp(ctx))
   ))({
     val benchmark = new ADTReading
