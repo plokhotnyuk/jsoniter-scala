@@ -16,6 +16,8 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.module.scala.ScalaObjectMapper
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 
+import scala.util.Try
+
 object JacksonSerDesers {
   def createJacksonMapper: ObjectMapper with ScalaObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
@@ -25,9 +27,9 @@ object JacksonSerDesers {
       registerModule(DefaultScalaModule)
       registerModule(new SimpleModule()
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
-        .addSerializer(classOf[SuitEnum], new SuitEnumSerializer)
+        .addSerializer(classOf[SuitEnum], new EnumSerializer(SuitEnum))
         .addDeserializer(classOf[SuitADT], new SuitADTDeserializer)
-        .addDeserializer(classOf[SuitEnum], new SuitEnumDeserializer))
+        .addDeserializer(classOf[SuitEnum], new EnumDeserializer(SuitEnum)))
       registerModule(new JavaTimeModule)
       registerModule(new Jdk8Module)
       registerModule(new AfterburnerModule)
@@ -85,24 +87,22 @@ class StringifiedBooleanSerializer extends JsonSerializer[Boolean] {
   override def serialize(x: Boolean, jgen: JsonGenerator, spro: SerializerProvider): Unit = jgen.writeString(x.toString)
 }
 
-class SuitEnumSerializer extends JsonSerializer[SuitEnum] {
-  override def serialize(x: SuitEnum, jg: JsonGenerator, spro: SerializerProvider): Unit = jg.writeString(x.toString)
+class EnumSerializer[T <: scala.Enumeration](e: T) extends JsonSerializer[T#Value] {
+  override def serialize(x: T#Value, jg: JsonGenerator, spro: SerializerProvider): Unit = jg.writeString(x.toString)
 }
 
-class SuitEnumDeserializer extends JsonDeserializer[SuitEnum] {
-  private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
+class EnumDeserializer[T <: scala.Enumeration](e: T) extends JsonDeserializer[T#Value] {
+  private[this] val ec = new ConcurrentHashMap[String, T#Value]
 
-  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitEnum =
-    if (jp.getCurrentToken != VALUE_STRING) ctxt.handleUnexpectedToken(classOf[SuitEnum], jp).asInstanceOf[SuitEnum]
-    else {
-      val s = jp.getValueAsString
-      var x = ec.get(s)
-      if (x eq null) {
-        x = SuitEnum.withName(s)
-        ec.put(s, x)
-      }
-      x
+  override def deserialize(jp: JsonParser, ctxt: DeserializationContext): T#Value = Try {
+    val s = jp.getValueAsString
+    var x = ec.get(s)
+    if (x eq null) {
+      x = e.values.iterator.find(_.toString == s).get
+      ec.put(s, x)
     }
+    x
+  }.getOrElse(ctxt.handleUnexpectedToken(classOf[T#Value], jp).asInstanceOf[T#Value])
 }
 
 class SuitADTSerializer extends JsonSerializer[SuitADT] {
