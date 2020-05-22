@@ -1701,7 +1701,7 @@ object JsonCodecMaker {
               leafCaseClasses.map { subTpe =>
                 cq"""x: $subTpe =>
                        out.writeObjectStart()
-                       out.writeKey(${discriminatorValue(subTpe)})
+                       ${genWriteConstantKey(discriminatorValue(subTpe))}
                        ${genWriteLeafClass(subTpe, EmptyTree)}
                        out.writeObjectEnd()"""
               } ++ leafModuleClasses.map(subTpe => cq"x: $subTpe => ${genWriteConstantVal(discriminatorValue(subTpe))}")
