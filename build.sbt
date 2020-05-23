@@ -85,6 +85,7 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaBinaryIssueFilters := Seq( // internal API to ignore
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReaderException.this"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genReadVal$default$4$1"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genWriteVal$default$4$1")
   ),

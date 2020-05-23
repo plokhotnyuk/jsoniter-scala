@@ -88,7 +88,7 @@ object ReaderConfig extends ReaderConfig(
     preferredCharBufSize = 4096,
     checkForEndOfInput = true)
 
-class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable)
   extends RuntimeException(msg, cause) // FIXME: No constructor with the withStackTrace parameter
 
 final class JsonReader private[jsoniter_scala](
@@ -805,7 +805,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(pos, offset.toInt, i)
     }
-    throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
+    throw new JsonReaderException(new String(charBuf, 0, i), cause)
   }
 
   @tailrec
@@ -2535,48 +2535,6 @@ final class JsonReader private[jsoniter_scala](
       val newPos = loadMoreOrError(pos)
       parseString(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
     } else parseString(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
-
-  @tailrec
-  private[this] def parseStringUnrolled(i: Int, minLim: Int, charBuf: Array[Char], pos: Int): Int =
-    if (i + 3 < minLim) {
-      val buf = this.buf
-      val b1 = buf(pos)
-      charBuf(i) = b1.toChar
-      val b2 = buf(pos + 1)
-      charBuf(i + 1) = b2.toChar
-      val b3 = buf(pos + 2)
-      charBuf(i + 2) = b3.toChar
-      val b4 = buf(pos + 3)
-      charBuf(i + 3) = b4.toChar
-      if (b1 == '"') {
-        head = pos + 1
-        i
-      } else if (((b1 - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
-      else if (b2 == '"') {
-        head = pos + 2
-        i + 1
-      } else if (((b2 - 32) ^ 60) <= 0) parseEncodedString(i + 1, charBuf.length - 1, charBuf, pos + 1)
-      else if (b3 == '"') {
-        head = pos + 3
-        i + 2
-      } else if (((b3 - 32) ^ 60) <= 0) parseEncodedString(i + 2, charBuf.length - 1, charBuf, pos + 2)
-      else if (b4 == '"') {
-        head = pos + 4
-        i + 3
-      } else if (((b4 - 32) ^ 60) <= 0) parseEncodedString(i + 3, charBuf.length - 1, charBuf, pos + 3)
-      else parseStringUnrolled(i + 4, minLim, charBuf, pos + 4)
-    } else if (i < minLim) {
-      val b = buf(pos)
-      charBuf(i) = b.toChar
-      if (b == '"') {
-        head = pos + 1
-        i
-      } else if (((b - 32) ^ 60) <= 0) parseEncodedString(i, charBuf.length - 1, charBuf, pos)
-      else parseStringUnrolled(i + 1, minLim, charBuf, pos + 1)
-    } else if (pos >= tail) {
-      val newPos = loadMoreOrError(pos)
-      parseStringUnrolled(i, Math.min(charBuf.length, i + tail - newPos), charBuf, newPos)
-    } else parseStringUnrolled(i, Math.min(growCharBuf(i + 1), i + tail - pos), this.charBuf, pos)
 
   @tailrec
   private[this] def parseEncodedString(i: Int, lim: Int, charBuf: Array[Char], pos: Int): Int = {
