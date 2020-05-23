@@ -4,7 +4,7 @@ import org.scalajs.dom._
 import japgolly.scalajs.benchmark.{Benchmark => B, Suite => S}
 import japgolly.scalajs.benchmark.engine.{EngineOptions => EO}
 import japgolly.scalajs.benchmark.gui.SuiteResultsFormat._
-import japgolly.scalajs.benchmark.gui.{Disabled => On, Enabled => Off, BenchmarkGUI => BG, BmResultFormat => BRF, GuiOptions => GO, GuiSuite => GS}
+import japgolly.scalajs.benchmark.gui.{Disabled => Off, Enabled => On, BenchmarkGUI => BG, BmResultFormat => BRF, GuiOptions => GO, GuiSuite => GS}
 
 import scala.concurrent.duration._
 
