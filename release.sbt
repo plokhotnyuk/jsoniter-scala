@@ -2,8 +2,7 @@ import scala.sys.process._
 import sbtrelease.ReleaseStateTransformations._
 
 lazy val ensureJDK8: ReleaseStep = { st: State =>
-  val javaVersion = System.getProperty("java.specification.version")
-  if (javaVersion != "1.8") throw new IllegalStateException("Cancelling release, please use JDK 1.8")
+  if (System.getProperty("java.specification.version") != "1.8") sys.error("Use JDK 1.8 for releasing")
   st
 }
 
