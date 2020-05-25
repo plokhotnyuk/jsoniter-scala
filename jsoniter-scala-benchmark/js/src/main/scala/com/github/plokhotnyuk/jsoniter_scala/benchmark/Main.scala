@@ -1,12 +1,24 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import java.nio.charset.StandardCharsets.UTF_8
+
+import com.avsystem.commons.serialization.json.{JsonStringInput, JsonStringOutput}
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI.Tweet
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.parser.decode
 import org.scalajs.dom._
 import japgolly.scalajs.benchmark.{Benchmark => B, Suite => S}
 import japgolly.scalajs.benchmark.engine.{EngineOptions => EO}
 import japgolly.scalajs.benchmark.gui.SuiteResultsFormat._
-import japgolly.scalajs.benchmark.gui.{Disabled => Off, Enabled => On, BenchmarkGUI => BG, BmResultFormat => BRF, GuiOptions => GO, GuiSuite => GS}
+import japgolly.scalajs.benchmark.gui.{BenchmarkGUI => BG, BmResultFormat => BRF, Disabled => Off, Enabled => On, GuiOptions => GO, GuiSuite => GS}
 
 import scala.concurrent.duration._
+import scala.scalajs.js.JSON
 
 object Main {
   def main(args: Array[String]): Unit = BG.renderMenu(document.getElementById("body"), engineOptions = EO.default.copy(
@@ -1033,22 +1045,36 @@ object Main {
   }, {
     val benchmark = new TwitterAPIReading
     GS(S("TwitterAPIReading")(
+      B("JSON")(JSON.parse(new String(benchmark.jsonBytes, UTF_8))),
+      B("JSON-string")(JSON.parse(benchmark.jsonString)),
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
+      B("avSystemGenCodec-string")(JsonStringInput.read[Seq[Tweet]](benchmark.jsonString)),
       B("borer")(benchmark.borer()),
+      B("borer-string")(io.bullet.borer.Json.decode(benchmark.jsonString.getBytes(UTF_8)).to[Seq[Tweet]].value),
       B("circe")(benchmark.circe()),
+      B("circe-string")(decode[Seq[Tweet]](benchmark.jsonString).fold(throw _, identity)),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("uPickle")(benchmark.uPickle())
+      B("jsoniterScala-string")(readFromArray[Seq[Tweet]](benchmark.jsonString.getBytes(UTF_8))),
+      B("uPickle")(benchmark.uPickle()),
+      B("uPickle-string")(read[Seq[Tweet]](benchmark.jsonString))
     ))
   }, {
     val benchmark = new TwitterAPIWriting
+    val jsonObj = JSON.parse(benchmark.jsonString)
     GS(S("TwitterAPIWriting")(
+      B("JSON")(JSON.stringify(jsonObj).getBytes(UTF_8)),
+      B("JSON-string")(JSON.stringify(jsonObj)),
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
+      B("avSystemGenCodec-string")(JsonStringOutput.write(benchmark.obj)),
       B("borer")(benchmark.borer()),
+      B("borer-string")(io.bullet.borer.Json.encode(benchmark.obj).toUtf8String),
       //FIXME: Circe serializes empty collections
       //B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("jsoniterScala-string")(new String(benchmark.jsoniterScala(), UTF_8)),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("uPickle-string")(write(benchmark.obj))
     ))
   }, {
     val benchmark = new VectorOfBooleansReading { size = 128; setup() }
