@@ -1853,8 +1853,10 @@ final class JsonWriter private[jsoniter_scala](
       } else if (ieeeExponent == 255) illegalNumberError(x)
       var decimalNotation = false
       var dv, exp, len = 0
-      if (e >= -23 && e <= 0 && multiplePowOf2(m, -e)) {
+      if (e >= -23 && e <= 0 && {
         dv = m >> -e
+        dv << -e == m
+      }) {
         len = offset(dv)
         exp += len
         len += 1
@@ -1901,7 +1903,7 @@ final class JsonWriter private[jsoniter_scala](
               dvIsTrailingZeros = true
               if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
               else dp -= 1
-            } else if (q < 31) dvIsTrailingZeros = multiplePowOf2(mv, q)
+            } else if (q < 31) dvIsTrailingZeros = mv >> q << q == mv
             f32Pow5Split
           }
         val s = ss(i)
@@ -2025,8 +2027,6 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def multiplePowOf2(q0: Int, q: Int): Boolean = (q0 & ((1 << q) - 1)) == 0
-
   @tailrec
   private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q match {
     case 0 => true
@@ -2059,8 +2059,10 @@ final class JsonWriter private[jsoniter_scala](
       var decimalNotation = false
       var dv = 0L
       var exp, len = 0
-      if (e >= -52 && e <= 0 && multiplePowOf2(m, -e)) {
+      if (e >= -52 && e <= 0 && {
         dv = m >> -e
+        dv << -e == m
+      }) {
         len = offset(dv)
         exp += len
         len += 1
@@ -2108,7 +2110,7 @@ final class JsonWriter private[jsoniter_scala](
               dvIsTrailingZeros = true
               if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
               else dp -= 1
-            } else if (q < 63) dvIsTrailingZeros = multiplePowOf2(mv, q)
+            } else if (q < 63) dvIsTrailingZeros = mv >> q << q == mv
             f64Pow5Split
           }
         i <<= 1
@@ -2245,8 +2247,6 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
   }
-
-  private[this] def multiplePowOf2(q0: Long, q: Int): Boolean = (q0 & ((1L << q) - 1)) == 0
 
   @tailrec
   private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q match {
