@@ -164,7 +164,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    resolvers += "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
+    resolvers ++= Seq(
+      "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
+      "Playframework" at "https://dl.bintray.com/playframework/maven"
+    ),
     crossScalaVersions := Seq("2.13.2", "2.12.11"),
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.0.1",
@@ -180,7 +183,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-generic-extras" % "0.13.0",
       "io.circe" %%% "circe-generic" % "0.13.0",
       "io.circe" %%% "circe-parser" % "0.13.0",
-      "com.typesafe.play" %% "play-json" % "2.8.1",
+      "com.typesafe.play" %% "play-json" % "2.9.0",
       "org.julienrf" %% "play-json-derived-codecs" % "7.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
