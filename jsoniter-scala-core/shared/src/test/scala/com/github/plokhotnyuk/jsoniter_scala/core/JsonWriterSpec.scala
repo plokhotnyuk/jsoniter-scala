@@ -563,6 +563,12 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           check(x)
         }
       }
+//      (0 to Int.MaxValue).foreach { n =>
+//        val x = java.lang.Float.intBitsToFloat(n)
+//        if (java.lang.Float.isFinite(x)) {
+//          try check(x) catch { case _: Throwable => println(x) }
+//        }
+//      }
       forAll(genFiniteFloat, minSuccessful(10000))(check)
     }
     "write float values exactly as expected" in {
@@ -575,7 +581,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check(2.4414063E-4f, "2.4414062E-4")
       check(1.10000005E10f, "1.1E10") // moreover, Java serializes 1.1E10f to "1.10000005E10"
-      check(4.7223665E21f, "4.7223664E21") // differs from the result produced by Java or by the original Ryu implementation
     }
     "write round-even float values" in {
       def check(n: Float, s: String): Unit = {
@@ -667,8 +672,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(1.0E-323, "1.0E-323")
-      check(1.0E-322, "1.0E-322")
       check(5.0E-324, "4.9E-324")
       check(2.98023223876953125E-8, "2.9802322387695312E-8")
       check(-8.9903423895340006E17, "-8.990342389534E17") // moreover, Java serializes -8.990342389534E17 to "-8.9903423895340006E17"
