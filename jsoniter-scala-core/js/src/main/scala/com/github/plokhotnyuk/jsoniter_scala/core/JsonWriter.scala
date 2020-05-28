@@ -1847,10 +1847,6 @@ final class JsonWriter private[jsoniter_scala](
       val ieeeMantissa = bits & 0x7FFFFF
       var e = ieeeExponent - 150
       var m = ieeeMantissa | 0x800000
-      if (ieeeExponent == 0) {
-        e = -149
-        m = ieeeMantissa
-      } else if (ieeeExponent == 255) illegalNumberError(x)
       var decimalNotation = false
       var dv, exp, len = 0
       if (e >= -23 && e <= 0 && {
@@ -1872,6 +1868,10 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
+        if (ieeeExponent == 0) {
+          e = -149
+          m = ieeeMantissa
+        } else if (ieeeExponent == 255) illegalNumberError(x)
         val mmShift =
           if (ieeeMantissa == 0 && ieeeExponent > 1) 1
           else 2
@@ -1900,10 +1900,10 @@ final class JsonWriter private[jsoniter_scala](
             i = -exp
             j = q - (i * 9972605231L >> 32).toInt + 29 // q - (i * Math.log(5) / Math.log(2)).toInt + 29
             if (q <= 1) {
-              dvIsTrailingZeros = true
               if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
               else dp -= 1
-            } else if (q < 31) dvIsTrailingZeros = mv >> q << q == mv
+              dvIsTrailingZeros = true
+            } else if (q <= 25 && mv >> q << q == mv) dvIsTrailingZeros = true
             f32Pow5Split
           }
         val s = ss(i)
@@ -2052,10 +2052,6 @@ final class JsonWriter private[jsoniter_scala](
       val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
       var e = ieeeExponent - 1075
       var m = ieeeMantissa | 0x10000000000000L
-      if (ieeeExponent == 0) {
-        e = -1074
-        m = ieeeMantissa
-      } else if (ieeeExponent == 2047) illegalNumberError(x)
       var decimalNotation = false
       var dv = 0L
       var exp, len = 0
@@ -2078,6 +2074,10 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
+        if (ieeeExponent == 0) {
+          e = -1074
+          m = ieeeMantissa
+        } else if (ieeeExponent == 2047) illegalNumberError(x)
         val mmShift =
           if (ieeeMantissa == 0 && ieeeExponent > 1) 1
           else 2
@@ -2107,10 +2107,10 @@ final class JsonWriter private[jsoniter_scala](
             i = -exp
             j = q - (i * 9972605231L >> 32).toInt + 6 // q - (i * Math.log(5) / Math.log(2)).toInt + 6
             if (q <= 1) {
-              dvIsTrailingZeros = true
               if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
               else dp -= 1
-            } else if (q < 63) dvIsTrailingZeros = mv >> q << q == mv
+              dvIsTrailingZeros = true
+            } else if (q <= 54 && mv >> q << q == mv) dvIsTrailingZeros = true
             f64Pow5Split
           }
         i <<= 1
