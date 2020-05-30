@@ -1774,10 +1774,9 @@ final class JsonWriter private[jsoniter_scala](
     lastPos + 1
   }
 
-  // Based on a great work of Ulf Adams:
-  // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
-  // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuFloat.java
-  // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
+  // Based on the amazing work of Raffaello Giulietti
+  // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
+  // Original sources with the corresponding license are here: https://mail.openjdk.java.net/pipermail/core-libs-dev/2020-March/065291.html
   private[this] def writeFloat(x: Float): Unit = {
     val bits = java.lang.Float.floatToRawIntBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
@@ -1808,110 +1807,67 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
+        var expShift = 0
+        var expCorr = 0L
+        var cblShift = 2
         if (ieeeExponent == 0) {
           e = -149
           m = ieeeMantissa
-        } else if (ieeeExponent == 255) illegalNumberError(x)
-        val mmShift =
-          if (ieeeMantissa == 0 && ieeeExponent > 1) 1
-          else 2
-        e -= 2
-        val mv = m << 2
-        val mp = mv + 2
-        val mm = mv - mmShift
-        var dvIsTrailingZeros, dmIsTrailingZeros = false
-        var dp, dm, i, j = 0
-        val ss =
-          if (e >= 0) {
-            val q = (e * 1292913986L >> 32).toInt // (e * Math.log10(2)).toInt
-            exp = q
-            i = q
-            j = (q * 9972605231L >> 32).toInt - e + q + 28 // (q * Math.log(5) / Math.log(2)).toInt - e + q + 28
-            if (q <= 9) {
-              val pv = mv * 3435973837L
-              if ((pv & 0x380000000L) == 0) dvIsTrailingZeros = multiplePowOf5((pv >> 34).toInt, q - 1) // test if a remainder of divisions by 5 is zero
-              else if ((mv & 0x7) == 0) dmIsTrailingZeros = multiplePowOf5(mm, q)
-              else if (multiplePowOf5(mp, q)) dp -= 1
-            }
-            f32Pow5InvSplit
-          } else {
-            val q = (-e * 3002053309L >> 32).toInt // (-e * Math.log10(5)).toInt
-            exp = e + q
-            i = -exp
-            j = q - (i * 9972605231L >> 32).toInt + 29 // q - (i * Math.log(5) / Math.log(2)).toInt + 29
-            if (q <= 1) {
-              if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
-              else dp -= 1
-              dvIsTrailingZeros = true
-            } else if (q <= 25 && mv >> q << q == mv) dvIsTrailingZeros = true
-            f32Pow5Split
+          if (ieeeMantissa < 8) {
+            m *= 10
+            expShift = 1
           }
-        val s = ss(i)
-        val sl = s & 0x7FFFFFFF
-        val sh = s >>> 31
-        dp += mulPow5DivPow2(mp, sl, sh, j)
-        dm = mulPow5DivPow2(mm, sl, sh, j)
-        dv = mulPow5DivPow2(mv, sl, sh, j)
-        len = offset(dp)
+        } else if (ieeeExponent == 255) illegalNumberError(x)
+        if (ieeeMantissa == 0 && ieeeExponent > 1) {
+          expCorr = 274743187321L
+          cblShift = 1
+        }
+        exp = (e * 661971961083L - expCorr >> 41).toInt
+        val g1 = gs(exp + 324 << 1) + 1
+        val h = (-exp * 913124641741L >> 38).toInt + e + 1
+        val cb = m << 2
+        val vb = rop(g1, cb << h)
+        val outm1 = (m & 0x1) - 1
+        val vbls = rop(g1, cb - cblShift << h) + outm1
+        val vbrd = outm1 - rop(g1, cb + 2 << h)
+        val s = vb >> 2
+        if (s < 100 || {
+          dv = (s * 3435973837L >>> 35).toInt  // divide positive int by 10
+          val sp10 = dv * 10
+          val sp40 = sp10 << 2
+          val upin = vbls - sp40
+          ((sp40 + vbrd + 40) ^ upin) >= 0 || {
+            dv += ~upin >>> 31
+            exp += 1
+            false
+          }
+        }) {
+          val s4 = s << 2
+          val uin = vbls - s4
+          dv = (~{
+            if (((s4 + vbrd + 4) ^ uin) < 0) uin
+            else (vb & 0x3) + (s & 0x1) - 3
+          } >>> 31) + s
+          exp -= expShift
+        }
+        len = offset(dv)
         exp += len
         len += 1
         decimalNotation = exp >= -3 && exp < 7
-        var newDp, newDm = 0
-        if (dmIsTrailingZeros || dvIsTrailingZeros) {
-          var pm, sm, pv, sv = 0L
-          while ((decimalNotation || dp >= 100) && {
-            newDp = (dp * 3435973837L >> 35).toInt // divide positive int by 10
-            pm = dm * 3435973837L
-            newDm = (pm >> 35).toInt // divide positive int by 10
-            newDp > newDm
-          }) {
-            sv |= pv
-            sm |= pm
-            pv = dv * 3435973837L
-            dv = (pv >> 35).toInt // divide positive int by 10
-            dp = newDp
-            dm = newDm
-            len -= 1
-          }
-          if ((sm & 0x780000000L) != 0) dmIsTrailingZeros = false // test if all remainders of divisions by 10 are zeros
-          if ((sv & 0x780000000L) != 0) dvIsTrailingZeros = false // test if all remainders of divisions by 10 are zeros
-          if (dmIsTrailingZeros) {
-            while ((decimalNotation || dv >= 99) && (pm & 0x780000000L) == 0) {  // test if remainder of division by 10 is zero
-              dv = (pm >> 35).toInt // divide positive int by 10
-              dm = dv
-              pm = dv * 3435973837L
-              pv = 0
-              len -= 1
-            }
-          }
-          pv &= 0x780000000L // mask the last removed digit
-          if (pv == 0x400000000L /* == 5 */ && dvIsTrailingZeros && (dv & 0x1) == 0) pv = 0
-          if (pv >= 0x400000000L /* >= 5 */ || dv == dm && !dmIsTrailingZeros) dv += 1
-        } else {
-          var pv = 0L
-          while ((decimalNotation || dp >= 1000) && {
-            newDp = (dp * 1374389535L >> 37).toInt // divide positive int by 100
-            newDm = (dm * 1374389535L >> 37).toInt // divide positive int by 100
-            newDp > newDm
-          }) {
-            pv = dv * 1374389535L
-            dv = (pv >> 37).toInt // divide positive int by 100
-            dp = newDp
-            dm = newDm
-            len -= 2
-          }
-          val diff =
-            if ((decimalNotation || dp >= 100) && {
-              newDm = (dm * 3435973837L >> 35).toInt // divide positive int by 10
-              (dp * 3435973837L >> 35).toInt > newDm // divide positive int by 10
-            }) {
-              pv = dv * 3435973837L
-              dv = (pv >> 35).toInt // divide positive int by 10
-              dm = newDm
-              len -= 1
-              (pv & 0x780000000L) - 0x400000000L // test if the last removed digit is 5 or greater
-            } else (pv & 0x1fc0000000L) - 0x1000000000L // test if the last removed digit is 5 or greater
-          if (diff >= 0 || dv == dm) dv += 1
+        var pv = 0L // FIXME: More efficient trimming of zeroes wanted here
+        while ((decimalNotation || dv >= 1000) && {
+          pv = dv * 1374389535L
+          (pv & 0x1fc0000000L) == 0 // test if the last 2 removed digits are 00
+        }) {
+          dv = (pv >> 37).toInt // divide positive int by 10
+          len -= 2
+        }
+        if ((decimalNotation || dv >= 100) && {
+          pv = dv * 3435973837L
+          (pv & 0x780000000L) == 0 // test if the last removed digit is 0
+        }) {
+          dv = (pv >> 35).toInt // divide positive int by 10
+          len -= 1
         }
       }
       var pos = ensureBufCapacity(15)
@@ -1967,22 +1923,16 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  @tailrec
-  private[this] def multiplePowOf5(q0: Int, q: Int): Boolean = q match {
-    case 0 => true
-    case 1 => (q0 * 3435973837L & 0x380000000L) == 0 // q0 % 5 == 0
-    case 2 => (q0 * 1374389535L & 0x7c0000000L) == 0 // q0 % 25 == 0
-    case _ =>
-      val p = q0 * 274877907L
-      (p & 0x7fe000000L) == 0 /* q0 % 125 == 0 */ && multiplePowOf5((p >> 35).toInt /* q0 / 125 */, q - 3)
+  private[this] def rop(g: Long, cp: Int): Int = {
+    val gl = g & 0xFFFFFFFFL
+    val gh = g >>> 32
+    val x1 = (cp * gl >>> 32) + cp * gh
+    ((x1 >>> 31) | (x1 & 0xFFFFFFFFL) + 0xFFFFFFFFL >>> 32).toInt
   }
 
-  private[this] def mulPow5DivPow2(m: Int, sl: Long, sh: Long, j: Int): Int = ((m * sl >>> 31) + m * sh >>> j).toInt
-
-  // Based on a great work of Ulf Adams:
-  // http://delivery.acm.org/10.1145/3200000/3192369/pldi18main-p10-p.pdf
-  // https://github.com/ulfjack/ryu/blob/62925340e4abc76e3c63b6de8dea1486d6970260/src/main/java/info/adams/ryu/RyuDouble.java
-  // Also, see his presentation "Ryū - Fast Float-to-String Conversion": https://www.youtube.com/watch?v=kw-U6smcLzk
+  // Based on the amazing work of Raffaello Giulietti
+  // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
+  // Original sources with the corresponding license are here: https://mail.openjdk.java.net/pipermail/core-libs-dev/2020-March/065291.html
   private[this] def writeDouble(x: Double): Unit = {
     val bits = java.lang.Double.doubleToRawLongBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
@@ -2014,124 +1964,76 @@ final class JsonWriter private[jsoniter_scala](
           false
         }
       } else {
+        var expShift = 0
+        var expCorr = 0L
+        var cblShift = 2
         if (ieeeExponent == 0) {
           e = -1074
           m = ieeeMantissa
-        } else if (ieeeExponent == 2047) illegalNumberError(x)
-        val mmShift =
-          if (ieeeMantissa == 0 && ieeeExponent > 1) 1
-          else 2
-        e -= 2
-        val mv = m << 2
-        val mp = mv + 2
-        val mm = mv - mmShift
-        var dvIsTrailingZeros, dmIsTrailingZeros = false
-        var dp, dm = 0L
-        var i, j = 0
-        val ss =
-          if (e >= 0) {
-            val q = Math.max(0, (e * 1292913986L >> 32).toInt - 1) // Math.max(0, (e * Math.log10(2)).toInt - 1)
-            exp = q
-            i = q
-            j = (q * 9972605231L >> 32).toInt - e + q + 8 // (q * Math.log(5) / Math.log(2)).toInt - e + q + 8
-            if (q <= 21) {
-              val mv5 = mv / 5
-              if ((mv5 << 2) + mv5 == mv) dvIsTrailingZeros = multiplePowOf5(mv5, q - 1)
-              else if ((mv & 0x7) == 0) dmIsTrailingZeros = multiplePowOf5(mm, q)
-              else if (multiplePowOf5(mp, q)) dp -= 1
-            }
-            f64Pow5InvSplit
-          } else {
-            val q = Math.max(0, (-e * 3002053309L >> 32).toInt - 1) // Math.max(0, (-e * Math.log10(5)).toInt - 1)
-            exp = e + q
-            i = -exp
-            j = q - (i * 9972605231L >> 32).toInt + 6 // q - (i * Math.log(5) / Math.log(2)).toInt + 6
-            if (q <= 1) {
-              if ((mv & 0x7) == 0) dmIsTrailingZeros = mmShift != 1
-              else dp -= 1
-              dvIsTrailingZeros = true
-            } else if (q <= 54 && mv >> q << q == mv) dvIsTrailingZeros = true
-            f64Pow5Split
+          if (ieeeMantissa < 3) {
+            m *= 10
+            expShift = 1
           }
-        i <<= 1
-        val s0 = ss(i)
-        val s0l = s0 & 0x7FFFFFFF
-        val s0h = s0 >>> 31
-        val s1 = ss(i + 1)
-        val s1l = s1 & 0x7FFFFFFF
-        val s1h = s1 >>> 31
-        dp += mulPow5DivPow2(mp, s0l, s0h, s1l, s1h, j)
-        dm = mulPow5DivPow2(mm, s0l, s0h, s1l, s1h, j)
-        dv = mulPow5DivPow2(mv, s0l, s0h, s1l, s1h, j)
-        len = offset(dp)
+        } else if (ieeeExponent == 2047) illegalNumberError(x)
+        if (ieeeMantissa == 0 && ieeeExponent > 1) {
+          expCorr = 274743187321L
+          cblShift = 1
+        }
+        exp = (e * 661971961083L - expCorr >> 41).toInt
+        val i = exp + 324 << 1
+        val g1 = gs(i)
+        val g0 = gs(i + 1)
+        val h = (-exp * 913124641741L >> 38).toInt + e + 2
+        val cb = m << 2
+        val vb = rop(g1, g0, cb << h)
+        val outm1 = (m & 0x1) - 1
+        val vbls = rop(g1, g0, cb - cblShift << h) + outm1
+        val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
+        val s = vb >> 2
+        if (s < 100 || {
+          dv = s / 10
+          val sp10 = dv * 10
+          val sp40 = sp10 << 2
+          val upin = vbls - sp40
+          ((sp40 + vbrd + 40) ^ upin) >= 0 || {
+            dv += ~upin >>> 63
+            exp += 1
+            false
+          }
+        }) {
+          val s4 = s << 2
+          val uin = vbls - s4
+          dv = (~{
+            if (((s4 + vbrd + 4) ^ uin) < 0) uin
+            else (vb & 0x3) + (s & 0x1) - 3
+          } >>> 63) + s
+          exp -= expShift
+        }
+        len = offset(dv)
         exp += len
         len += 1
         decimalNotation = exp >= -3 && exp < 7
-        var newDp, newDm = 0L
-        if (dmIsTrailingZeros || dvIsTrailingZeros) {
-          var lastRemovedDigit = 0L
-          while ((decimalNotation || dp >= 100) && {
-            newDp = dp / 10
-            newDm = dm / 10
-            newDp > newDm
-          }) {
-            if (dmIsTrailingZeros) dmIsTrailingZeros = newDm * 10 == dm
-            dvIsTrailingZeros &= lastRemovedDigit == 0
-            val newDv = dv / 10
-            lastRemovedDigit = dv - newDv * 10
-            dv = newDv
-            dp = newDp
-            dm = newDm
-            len -= 1
-          }
-          if (dmIsTrailingZeros) {
-            while ((decimalNotation || dv >= 99) && newDm * 10 == dm) {
-              dv = newDm
-              dm = newDm
-              newDm /= 10
-              lastRemovedDigit = 0
-              len -= 1
-            }
-          }
-          if (lastRemovedDigit == 5 && dvIsTrailingZeros && (dv & 0x1) == 0) lastRemovedDigit = 0
-          if (lastRemovedDigit >= 5 || dv == dm && !dmIsTrailingZeros) dv += 1
-        } else {
-          var diff = -1L
-          while ((decimalNotation || dp >= 100000) && {
-            newDp = dp / 10000
-            newDm = dm / 10000
-            newDp > newDm
-          }) {
-            diff = dv - 5000
-            dv /= 10000
-            diff -= dv * 10000
-            dp = newDp
-            dm = newDm
-            len -= 4
-          }
-          if ((decimalNotation || dp >= 1000) && {
-            newDp = dp / 100
-            newDm = dm / 100
-            newDp > newDm
-          }) {
-            diff = dv - 50
-            dv /= 100
-            diff -= dv * 100
-            dp = newDp
-            dm = newDm
-            len -= 2
-          }
-          if (dp != dm && (decimalNotation || dp >= 100) && {
-            newDm = dm / 10
-            dp / 10 > newDm
-          }) {
-            diff = dv - 5
-            dv /= 10
-            diff -= dv * 10
-            dm = newDm
-            len -= 1
-          }
-          if (diff >= 0 || dv == dm) dv += 1
+        var newDv = 0L // FIXME: More efficient trimming of zeroes wanted here
+        while ((decimalNotation || dv >= 100000) && {
+          newDv = dv / 10000
+          newDv * 10000 == dv
+        }) {
+          dv = newDv
+          len -= 4
+        }
+        if ((decimalNotation || dv >= 1000) && {
+          newDv = dv / 100
+          newDv * 100 == dv
+        }) {
+          dv = newDv
+          len -= 2
+        }
+        if ((decimalNotation || dv >= 100) && {
+          newDv = dv / 10
+          newDv * 10 == dv
+        }) {
+          dv = newDv
+          len -= 1
         }
       }
       var pos = ensureBufCapacity(24)
@@ -2188,25 +2090,22 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  @tailrec
-  private[this] def multiplePowOf5(q0: Long, q: Int): Boolean = q match {
-    case 0 => true
-    case 1 => q0 % 5 == 0
-    case 2 => q0 % 25 == 0
-    case 3 => q0 % 125 == 0
-    case 4 => q0 % 625 == 0
-    case 5 => q0 % 3125 == 0
-    case 6 => q0 % 15625 == 0
-    case _ =>
-      val q1 = q0 / 78125
-      q1 * 78125 == q0 && multiplePowOf5(q1, q - 7)
+  private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
+    val x1 = /*Math.*/multiplyHigh(g0, cp) // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+    val y0 = g1 * cp
+    val y1 = /*Math.*/multiplyHigh(g1, cp) // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+    val z = (y0 >>> 1) + x1
+    ((z >>> 63) + y1) | (z & 0x7FFFFFFFFFFFFFFFL) + 0x7FFFFFFFFFFFFFFFL >>> 63
   }
 
-  private[this] def mulPow5DivPow2(m: Long, s0l: Long, s0h: Long, s1l: Long, s1h: Long, j: Int): Long = {
-    val ml = m & 0x7FFFFFFF
-    val mh = m >>> 31
-    (((((ml * s0l >>> 31) + ml * s0h + mh * s0l >>> 31) + ml * s1l + mh * s0h >>> 31) + ml * s1h + mh * s1l >>> 21) +
-      (mh * s1h << 10)) >>> j
+  private[this] def multiplyHigh(x: Long, y: Long): Long = {
+    val x1 = x >>> 32
+    val y1 = y >>> 32
+    val x2 = x & 0xFFFFFFFFL
+    val y2 = y & 0xFFFFFFFFL
+    val a = x1 * y1
+    val b = x2 * y2
+    (((b >>> 32) + (x1 + x2) * (y1 + y2) - a - b) >>> 32) + a
   }
 
   private[this] def offset(q0: Long): Int = {
@@ -2365,52 +2264,26 @@ object JsonWriter {
     eval("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".getBytes)
   private final val base64UrlDigits: Array[Byte] =
     eval("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".getBytes)
-  private final val f32Pow5InvSplit: Array[Long] = eval {
-    val ss = new Array[Long](31)
-    var pow5 = BigInt(1)
+  private final val gs: Array[Long] = eval {
+    val gs = new Array[Long](1234)
     var i = 0
-    while (i < 31) {
-      ss(i) = ((BigInt(1) << (pow5.bitLength + 58)) / pow5).longValue + 1
-      pow5 *= 5
-      i += 1
-    }
-    ss
-  }
-  private final val f32Pow5Split: Array[Long] = eval {
-    val ss = new Array[Long](47)
     var pow5 = BigInt(1)
-    var i = 0
-    while (i < 47) {
-      ss(i) = (pow5 >> (pow5.bitLength - 61)).longValue
-      pow5 *= 5
-      i += 1
-    }
-    ss
-  }
-  private final val f64Pow5InvSplit: Array[Long] = eval {
-    val ss = new Array[Long](582)
-    var pow5 = BigInt(1)
-    var i = 0
-    while (i < 582) {
-      val inv = ((BigInt(1) << (pow5.bitLength + 121)) / pow5) + 1
-      ss(i) = inv.longValue & 0x3FFFFFFFFFFFFFFFL
-      ss(i + 1) = (inv >> 62).longValue & 0x3FFFFFFFFFFFFFFFL
+    while (i < 650) {
+      val av = (pow5 >> (pow5.bitLength - 126)) + 1
+      gs(648 - i) = (av >> 63).longValue & 0x7FFFFFFFFFFFFFFFL
+      gs(649 - i) = av.longValue & 0x7FFFFFFFFFFFFFFFL
       pow5 *= 5
       i += 2
     }
-    ss
-  }
-  private final val f64Pow5Split: Array[Long] = eval {
-    val ss = new Array[Long](652)
-    var pow5 = BigInt(1)
-    var i = 0
-    while (i < 652) {
-      ss(i) = (pow5 >> (pow5.bitLength - 121)).longValue & 0x3FFFFFFFFFFFFFFFL
-      ss(i + 1) = (pow5 >> (pow5.bitLength - 59)).longValue & 0x3FFFFFFFFFFFFFFFL
+    pow5 = BigInt(5)
+    while (i < 1234) {
+      val inv = ((BigInt(1) << (pow5.bitLength + 125)) / pow5) + 1
+      gs(i) = (inv >> 63).longValue & 0x7FFFFFFFFFFFFFFFL
+      gs(i + 1) = inv.longValue & 0x7FFFFFFFFFFFFFFFL
       pow5 *= 5
       i += 2
     }
-    ss
+    gs
   }
   @volatile private[this] var tenPow18Squares: Array[BigInteger] = Array(BigInteger.valueOf(1000000000000000000L))
 
