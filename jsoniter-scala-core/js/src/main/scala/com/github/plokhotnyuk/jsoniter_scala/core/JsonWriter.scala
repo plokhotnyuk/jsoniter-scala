@@ -1836,7 +1836,7 @@ final class JsonWriter private[jsoniter_scala](
 
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
-  // Original sources with the corresponding license are here: https://mail.openjdk.java.net/pipermail/core-libs-dev/2020-March/065291.html
+  // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/FloatToDecimal.java
   private[this] def writeFloat(x: Float): Unit = {
     val bits = java.lang.Float.floatToIntBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
@@ -1992,7 +1992,7 @@ final class JsonWriter private[jsoniter_scala](
 
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
-  // Original sources with the corresponding license are here: https://mail.openjdk.java.net/pipermail/core-libs-dev/2020-March/065291.html
+  // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
   private[this] def writeDouble(x: Double): Unit = {
     val bits = java.lang.Double.doubleToLongBits(x)
     if (bits == 0) writeBytes('0', '.', '0')
