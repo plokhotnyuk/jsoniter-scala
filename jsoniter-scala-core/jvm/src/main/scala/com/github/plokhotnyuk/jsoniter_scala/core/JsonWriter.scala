@@ -1927,7 +1927,7 @@ final class JsonWriter private[jsoniter_scala](
     val gl = g & 0xFFFFFFFFL
     val gh = g >>> 32
     val x1 = (cp * gl >>> 32) + cp * gh
-    ((x1 >>> 31) | (x1 & 0xFFFFFFFFL) + 0xFFFFFFFFL >>> 32).toInt
+    (x1 >>> 31).toInt | ((x1.toInt & 0x7FFFFFFF) + 0x7FFFFFFF >>> 31)
   }
 
   // Based on the amazing work of Raffaello Giulietti
@@ -1986,7 +1986,7 @@ final class JsonWriter private[jsoniter_scala](
         val h = (-exp * 913124641741L >> 38).toInt + e + 2
         val cb = m << 2
         val vb = rop(g1, g0, cb << h)
-        val outm1 = (m & 0x1) - 1
+        val outm1 = (m.toInt & 0x1) - 1
         val vbls = rop(g1, g0, cb - cblShift << h) + outm1
         val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
         val s = vb >> 2
@@ -1994,19 +1994,19 @@ final class JsonWriter private[jsoniter_scala](
           dv = s / 10
           val sp10 = dv * 10
           val sp40 = sp10 << 2
-          val upin = vbls - sp40
-          ((sp40 + vbrd + 40) ^ upin) >= 0 || {
-            dv += ~upin >>> 63
+          val upin = (vbls - sp40).toInt
+          (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
+            dv += ~upin >>> 31
             exp += 1
             false
           }
         }) {
           val s4 = s << 2
-          val uin = vbls - s4
+          val uin = (vbls - s4).toInt
           dv = (~{
-            if (((s4 + vbrd + 4) ^ uin) < 0) uin
-            else (vb & 0x3) + (s & 0x1) - 3
-          } >>> 63) + s
+            if ((((s4 + vbrd).toInt + 4) ^ uin) < 0) uin
+            else (vb.toInt & 0x3) + (s.toInt & 0x1) - 3
+          } >>> 31) + s
           exp -= expShift
         }
         len = offset(dv)
