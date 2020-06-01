@@ -1241,7 +1241,7 @@ final class JsonWriter private[jsoniter_scala](
         pos =
           if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
           else {
-            val q1 = hours / 100000000
+            val q1 = hours / 100000000 // FIXME: Use Math.multiplyHigh(hours, 193428131138340668L) >>> 20 after dropping JDK 8 support
             val r1 = (hours - q1 * 100000000).toInt
             write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
@@ -1291,20 +1291,6 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  @tailrec
-  private[this] def writeSignificantFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (pos > posLim) {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
-      val r1 = q0 - q1 * 100
-      val d = ds(r1)
-      if ((lastPos | r1) == 0 || {
-        buf(pos - 1) = d.toByte
-        buf(pos) = (d >> 8).toByte
-        lastPos != 0
-      }) writeSignificantFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
-      else writeSignificantFractionDigits(q1, pos + ((12345 - d) >>> 31), pos - 2, posLim, buf, ds) // 12345 == ('0' << 8) | '9'
-    } else lastPos
-
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
     val epochDay =
@@ -1331,9 +1317,9 @@ final class JsonWriter private[jsoniter_scala](
       else -9)
     val day = marchDayOfYear - ((marchMonth * 1051407994122L - 17179869183L) >> 35).toInt // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
-    val hour = (secsOfDay * 2443359173L >> 43).toInt // divide positive int by 3600
+    val hour = (secsOfDay * 2443359173L >> 43).toInt // divide a positive int by 3600
     val secsOfHour = secsOfDay - hour * 3600
-    val minute = (secsOfHour * 2290649225L >> 37).toInt // divide positive int by 60
+    val minute = (secsOfHour * 2290649225L >> 37).toInt // divide a positive int by 60
     val second = secsOfHour - minute * 60
     var pos = ensureBufCapacity(39) // 39 == Instant.MAX.toString.length + 2
     val buf = this.buf
@@ -1563,10 +1549,10 @@ final class JsonWriter private[jsoniter_scala](
       pos = write2Digits(second, pos + 1, buf, ds)
       if (nano != 0) {
         buf(pos) = '.'
-        val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
+        val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
         val r1 = nano - q1 * 10000000
           pos = write2Digits(q1, pos + 1, buf, ds)
-        val q2 = (r1 * 175921861L >> 44).toInt // divide positive int by 100000
+        val q2 = (r1 * 175921861L >> 44).toInt // divide a positive int by 100000
         val r2 = r1 - q2 * 100000
         val d = ds(q2)
         buf(pos) = d.toByte
@@ -1574,7 +1560,7 @@ final class JsonWriter private[jsoniter_scala](
         val b = (d >> 8).toByte
         if ((r2 | b - '0') != 0) {
           buf(pos) = b
-          val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
+          val q3 = (r2 * 2199023256L >> 41).toInt // divide a positive int by 1000
           val r3 = r2 - q3 * 1000
           pos = write2Digits(q3, pos + 1, buf, ds)
           if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
@@ -1592,10 +1578,10 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(second, pos + 1, buf, ds)
     if (nano != 0) {
       buf(pos) = '.'
-      val q1 = (nano * 1801439851L >> 54).toInt // divide positive int by 10000000
+      val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
       val r1 = nano - q1 * 10000000
         pos = write2Digits(q1, pos + 1, buf, ds)
-      val q2 = (r1 * 175921861L >> 44).toInt // divide positive int by 100000
+      val q2 = (r1 * 175921861L >> 44).toInt // divide a positive int by 100000
       val r2 = r1 - q2 * 100000
       val d = ds(q2)
       buf(pos) = d.toByte
@@ -1603,7 +1589,7 @@ final class JsonWriter private[jsoniter_scala](
       val b = (d >> 8).toByte
       if ((r2 | b - '0') != 0) {
         buf(pos) = b
-        val q3 = (r2 * 2199023256L >> 41).toInt // divide positive int by 1000
+        val q3 = (r2 * 2199023256L >> 41).toInt // divide a positive int by 1000
         val r3 = r2 - q3 * 1000
         pos = write2Digits(q3, pos + 1, buf, ds)
         if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
@@ -1626,11 +1612,11 @@ final class JsonWriter private[jsoniter_scala](
           buf(p) = '-'
           -totalSeconds
         }
-      val q1 = (q0 * 2443359173L >> 43).toInt // divide positive int by 3600
+      val q1 = (q0 * 2443359173L >> 43).toInt // divide a positive int by 3600
       val r1 = q0 - q1 * 3600
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'
-      val q2 = (r1 * 2290649225L >> 37).toInt // divide positive int by 60
+      val q2 = (r1 * 2290649225L >> 37).toInt // divide a positive int by 60
       val r2 = r1 - q2 * 60
       pos = write2Digits(q2, pos + 1, buf, ds)
       if (r2 == 0) pos
@@ -1649,7 +1635,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+    val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
     val d = ds(q0 - q1 * 100)
     buf(pos) = (q1 + '0').toByte
     buf(pos + 1) = d.toByte
@@ -1658,7 +1644,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write4Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+    val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
     val d1 = ds(q1)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
@@ -1669,8 +1655,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 3518437209L >> 45).toInt // divide positive int by 10000
-    val q2 = (q1 * 1374389535L >> 37).toInt // divide positive int by 100
+    val q1 = (q0 * 3518437209L >> 45).toInt // divide a positive int by 10000
+    val q2 = (q1 * 1374389535L >> 37).toInt // divide a positive int by 100
     val d1 = ds(q2)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
@@ -1678,7 +1664,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
     val r1 = q0 - q1 * 10000
-    val q3 = (r1 * 1374389535L >> 37).toInt // divide positive int by 100
+    val q3 = (r1 * 1374389535L >> 37).toInt // divide a positive int by 100
     val d3 = ds(q3)
     buf(pos + 4) = d3.toByte
     buf(pos + 5) = (d3 >> 8).toByte
@@ -1689,7 +1675,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 / 100000000
+    val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
     val r1 = (q0 - q1 * 100000000).toInt
     val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
     val r2 = (q1 - q2 * 100000000).toInt
@@ -1715,7 +1701,7 @@ final class JsonWriter private[jsoniter_scala](
       if (q0 < 1000) write3Digits(q0, pos, buf, digits)
       else write4Digits(q0, pos, buf, digits)
     } else {
-      val q1 = (q0 * 3518437209L >> 45).toInt // divide positive int by 10000
+      val q1 = (q0 * 3518437209L >> 45).toInt // divide a positive int by 10000
       buf(pos) = (q1 + '0').toByte
       write4Digits(q0 - 10000 * q1, pos + 1, buf, digits)
     }
@@ -1757,7 +1743,7 @@ final class JsonWriter private[jsoniter_scala](
       }
     if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
     else {
-      val q1 = q0 / 100000000
+      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
       val r1 = (q0 - q1 * 100000000).toInt
       if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
       else {
@@ -1786,27 +1772,11 @@ final class JsonWriter private[jsoniter_scala](
       val ieeeMantissa = bits & 0x7FFFFF
       var e = ieeeExponent - 150
       var m = ieeeMantissa | 0x800000
-      var decimalNotation = false
-      var dv, exp, len = 0
-      if (e >= -23 && e <= 0 && {
+      var dv, exp = 0
+      if (e < -23 || e > 0 || {
         dv = m >> -e
-        dv << -e == m
+        dv << -e != m
       }) {
-        len = offset(dv)
-        exp += len
-        len += 1
-        decimalNotation = (exp < 7) || {
-          var pv = 0L
-          while (dv >= 100 && {
-            pv = dv * 3435973837L
-            (pv & 0x780000000L) == 0 // test if remainder of division by 10 is zero
-          }) {
-            dv = (pv >> 35).toInt // divide positive int by 10
-            len -= 1
-          }
-          false
-        }
-      } else {
         var expShift = 0
         var expCorr = 0L
         var cblShift = 2
@@ -1826,13 +1796,13 @@ final class JsonWriter private[jsoniter_scala](
         val g1 = gs(exp + 324 << 1) + 1
         val h = (-exp * 913124641741L >> 38).toInt + e + 1
         val cb = m << 2
-        val vb = rop(g1, cb << h)
         val outm1 = (m & 0x1) - 1
+        val vb = rop(g1, cb << h)
         val vbls = rop(g1, cb - cblShift << h) + outm1
         val vbrd = outm1 - rop(g1, cb + 2 << h)
         val s = vb >> 2
         if (s < 100 || {
-          dv = (s * 3435973837L >>> 35).toInt  // divide positive int by 10
+          dv = (s * 3435973837L >>> 35).toInt  // divide a positive int by 10
           val sp10 = dv * 10
           val sp40 = sp10 << 2
           val upin = vbls - sp40
@@ -1850,26 +1820,10 @@ final class JsonWriter private[jsoniter_scala](
           } >>> 31) + s
           exp -= expShift
         }
-        len = offset(dv)
-        exp += len
-        len += 1
-        decimalNotation = exp >= -3 && exp < 7
-        var pv = 0L // FIXME: More efficient trimming of zeroes wanted here
-        while ((decimalNotation || dv >= 1000) && {
-          pv = dv * 1374389535L
-          (pv & 0x1fc0000000L) == 0 // test if the last 2 removed digits are 00
-        }) {
-          dv = (pv >> 37).toInt // divide positive int by 10
-          len -= 2
-        }
-        if ((decimalNotation || dv >= 100) && {
-          pv = dv * 3435973837L
-          (pv & 0x780000000L) == 0 // test if the last removed digit is 0
-        }) {
-          dv = (pv >> 35).toInt // divide positive int by 10
-          len -= 1
-        }
       }
+      var len = offset(dv)
+      exp += len
+      len += 1
       var pos = ensureBufCapacity(15)
       val buf = this.buf
       val ds = digits
@@ -1877,37 +1831,15 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = '-'
         pos += 1
       }
-      if (decimalNotation) {
-        if (exp < 0) {
-          buf(pos) = '0'
-          buf(pos + 1) = '.'
-          pos = writeNBytes(-1 - exp, '0', pos + 2, buf) + len
-          writePositiveIntStartingFromLastPosition(dv, pos - 1, buf, ds)
-          pos
-        } else if (exp + 1 >= len) {
-          pos += len
-          writePositiveIntStartingFromLastPosition(dv, pos - 1, buf, ds)
-          pos = writeNBytes(exp - len + 1, '0', pos, buf)
-          buf(pos) = '.'
-          buf(pos + 1) = '0'
-          pos + 2
-        } else {
-          val lastPos = pos + len
-          val beforeDotPos = pos + exp
-          writePositiveIntStartingFromLastPosition(dv, lastPos, buf, ds)
-          while (pos <= beforeDotPos) {
-            buf(pos) = buf(pos + 1)
-            pos += 1
-          }
-          buf(pos) = '.'
-          lastPos + 1
-        }
-      } else {
-        writePositiveIntStartingFromLastPosition(dv, pos + len, buf, ds)
+      if (exp < -3 || exp >= 7) {
+        val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
-        pos += 1
-        buf(pos) = '.'
-        pos += len
+        buf(pos + 1) = '.'
+        pos =
+          if (lastPos < pos + 3) {
+            buf(lastPos) = '0'
+            lastPos + 1
+          } else lastPos
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
@@ -1919,6 +1851,30 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = (exp + '0').toByte
           pos + 1
         } else write2Digits(exp, pos, buf, ds)
+      } else if (exp < 0) {
+        val dotPos = pos + 1
+        buf(pos) = '0'
+        buf(pos + 2) = '0'
+        buf(pos + 3) = '0'
+        pos -= exp
+        val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
+        buf(dotPos) = '.'
+        lastPos
+      } else if (exp < len - 1) {
+        val beforeDotPos = pos + exp
+        val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
+        while (pos <= beforeDotPos) {
+          buf(pos) = buf(pos + 1)
+          pos += 1
+        }
+        buf(pos) = '.'
+        lastPos
+      } else {
+        pos += len
+        writePositiveIntStartingFromLastPosition(dv, pos - 1, buf, ds)
+        buf(pos) = '.'
+        buf(pos + 1) = '0'
+        pos + 2
       }
     }
   }
@@ -1940,28 +1896,12 @@ final class JsonWriter private[jsoniter_scala](
       val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
       var e = ieeeExponent - 1075
       var m = ieeeMantissa | 0x10000000000000L
-      var decimalNotation = false
       var dv = 0L
-      var exp, len = 0
-      if (e >= -52 && e <= 0 && {
+      var exp = 0
+      if (e < -52 || e > 0 || {
         dv = m >> -e
-        dv << -e == m
+        dv << -e != m
       }) {
-        len = offset(dv)
-        exp += len
-        len += 1
-        decimalNotation = (exp < 7) || {
-          var newDv = 0L
-          while (dv >= 100 && {
-            newDv = dv / 10
-            newDv * 10 == dv
-          }) {
-            dv = newDv
-            len -= 1
-          }
-          false
-        }
-      } else {
         var expShift = 0
         var expCorr = 0L
         var cblShift = 2
@@ -1983,13 +1923,13 @@ final class JsonWriter private[jsoniter_scala](
         val g0 = gs(i + 1)
         val h = (-exp * 913124641741L >> 38).toInt + e + 2
         val cb = m << 2
-        val vb = rop(g1, g0, cb << h)
         val outm1 = (m.toInt & 0x1) - 1
+        val vb = rop(g1, g0, cb << h)
         val vbls = rop(g1, g0, cb - cblShift << h) + outm1
         val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
         val s = vb >> 2
         if (s < 100 || {
-          dv = s / 10 // Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping JDK 8 support
+          dv = s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping JDK 8 support
           val sp10 = dv * 10
           val sp40 = sp10 << 2
           val upin = (vbls - sp40).toInt
@@ -2007,33 +1947,10 @@ final class JsonWriter private[jsoniter_scala](
           } >>> 31) + s
           exp -= expShift
         }
-        len = offset(dv)
-        exp += len
-        len += 1
-        decimalNotation = exp >= -3 && exp < 7
-        var newDv = 0L // FIXME: More efficient trimming of zeroes wanted here
-        while ((decimalNotation || dv >= 100000) && {
-          newDv = dv / 10000
-          newDv * 10000 == dv
-        }) {
-          dv = newDv
-          len -= 4
-        }
-        if ((decimalNotation || dv >= 1000) && {
-          newDv = dv / 100
-          newDv * 100 == dv
-        }) {
-          dv = newDv
-          len -= 2
-        }
-        if ((decimalNotation || dv >= 100) && {
-          newDv = dv / 10
-          newDv * 10 == dv
-        }) {
-          dv = newDv
-          len -= 1
-        }
       }
+      var len = offset(dv)
+      exp += len
+      len += 1
       var pos = ensureBufCapacity(24)
       val buf = this.buf
       val ds = digits
@@ -2041,37 +1958,15 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = '-'
         pos += 1
       }
-      if (decimalNotation) {
-        if (exp < 0) {
-          buf(pos) = '0'
-          buf(pos + 1) = '.'
-          pos = writeNBytes(-1 - exp, '0', pos + 2, buf) + len
-          writeSmallPositiveLongStartingFromLastPosition(dv, pos - 1, buf, ds)
-          pos
-        } else if (exp + 1 >= len) {
-          pos += len
-          writeSmallPositiveLongStartingFromLastPosition(dv, pos - 1, buf, ds)
-          pos = writeNBytes(exp - len + 1, '0', pos, buf)
-          buf(pos) = '.'
-          buf(pos + 1) = '0'
-          pos + 2
-        } else {
-          val lastPos = pos + len
-          val beforeDotPos = pos + exp
-          writeSmallPositiveLongStartingFromLastPosition(dv, lastPos, buf, ds)
-          while (pos <= beforeDotPos) {
-            buf(pos) = buf(pos + 1)
-            pos += 1
-          }
-          buf(pos) = '.'
-          lastPos + 1
-        }
-      } else {
-        writeSmallPositiveLongStartingFromLastPosition(dv, pos + len, buf, ds)
+      if (exp < -3 || exp >= 7) {
+        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
-        pos += 1
-        buf(pos) = '.'
-        pos += len
+        buf(pos + 1) = '.'
+        pos =
+          if (lastPos < pos + 3) {
+            buf(lastPos) = '0'
+            lastPos + 1
+          } else lastPos
         buf(pos) = 'E'
         pos += 1
         if (exp < 0) {
@@ -2084,6 +1979,30 @@ final class JsonWriter private[jsoniter_scala](
           pos + 1
         } else if (exp < 100) write2Digits(exp, pos, buf, ds)
         else write3Digits(exp, pos, buf, ds)
+      } else if (exp < 0) {
+        val dotPos = pos + 1
+        buf(pos) = '0'
+        buf(pos + 2) = '0'
+        buf(pos + 3) = '0'
+        pos -= exp
+        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+        buf(dotPos) = '.'
+        lastPos
+      } else if (exp < len - 1) {
+        val beforeDotPos = pos + exp
+        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+        while (pos <= beforeDotPos) {
+          buf(pos) = buf(pos + 1)
+          pos += 1
+        }
+        buf(pos) = '.'
+        lastPos
+      } else {
+        pos += len
+        writeSmallPositiveLongStartingFromLastPosition(dv, pos - 1, buf, ds)
+        buf(pos) = '.'
+        buf(pos + 1) = '0'
+        pos + 2
       }
     }
   }
@@ -2123,10 +2042,38 @@ final class JsonWriter private[jsoniter_scala](
     else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
     else ((999999999 - q0) >>> 31) + 8
 
+  private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, 0, pos, posLim, buf, ds)
+    else {
+      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
+      writeSignificantFractionDigits(q1.toInt, {
+        val r1 = (q0 - q1 * 100000000).toInt
+        if (r1 == 0) 0
+        else writeSignificantFractionDigits(r1, 0, pos, pos - 8, buf, ds)
+      }, pos - 8, posLim, buf, ds)
+    }
+
+  @tailrec
+  private[this] def writeSignificantFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (pos > posLim) {
+      val qp = q0 * 1374389535L
+      val q1 = (qp >> 37).toInt // divide a positive int by 100
+      writeSignificantFractionDigits(q1, {
+        if (((qp & 0x1fc0000000L) | lastPos) == 0) lastPos // trailing zeros
+        else {
+          val d = ds(q0 - q1 * 100)
+          buf(pos - 1) = d.toByte
+          buf(pos) = (d >> 8).toByte
+          if (lastPos != 0) lastPos
+          else (12345 - d >>> 31) + pos
+        }
+      }, pos - 2, posLim, buf, ds)
+    } else lastPos
+
   private[this] def writeSmallPositiveLongStartingFromLastPosition(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
     if (q0.toInt == q0) writePositiveIntStartingFromLastPosition(q0.toInt, pos, buf, ds)
     else {
-      val q1 = q0 / 100000000
+      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
       writePositiveIntStartingFromLastPosition(q1.toInt, pos - 8, buf, ds)
       write8Digits((q0 - q1 * 100000000).toInt, pos - 7, buf, ds)
     }
@@ -2141,7 +2088,7 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = (d >> 8).toByte
       }
     } else {
-      val q1 = (q0 * 1374389535L >> 37).toInt // divide positive int by 100
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
       val d = ds(q0 - q1 * 100)
       buf(pos - 1) = d.toByte
       buf(pos) = (d >> 8).toByte
