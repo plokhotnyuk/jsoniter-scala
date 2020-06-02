@@ -1921,8 +1921,8 @@ final class JsonWriter private[jsoniter_scala](
         buf(dotPos) = '.'
         lastPos
       } else if (exp < len - 1) {
-        val beforeDotPos = pos + exp
         val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
+        val beforeDotPos = pos + exp
         while (pos <= beforeDotPos) {
           buf(pos) = buf(pos + 1)
           pos += 1
@@ -2049,8 +2049,8 @@ final class JsonWriter private[jsoniter_scala](
         buf(dotPos) = '.'
         lastPos
       } else if (exp < len - 1) {
-        val beforeDotPos = pos + exp
         val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
+        val beforeDotPos = pos + exp
         while (pos <= beforeDotPos) {
           buf(pos) = buf(pos + 1)
           pos += 1
@@ -2059,7 +2059,7 @@ final class JsonWriter private[jsoniter_scala](
         lastPos
       } else {
         pos += len
-        writeSmallPositiveLongStartingFromLastPosition(dv, pos - 1, buf, ds)
+        writePositiveIntStartingFromLastPosition(dv.toInt, pos - 1, buf, ds)
         buf(pos) = '.'
         buf(pos + 1) = '0'
         pos + 2
@@ -2118,25 +2118,25 @@ final class JsonWriter private[jsoniter_scala](
     if (pos > posLim) {
       val qp = q0 * 1374389535L
       val q1 = (qp >> 37).toInt // divide a positive int by 100
-      writeSignificantFractionDigits(q1, {
-        if (((qp & 0x1fc0000000L) | lastPos) == 0) lastPos // trailing zeros
-        else {
-          val d = ds(q0 - q1 * 100)
-          buf(pos - 1) = d.toByte
-          buf(pos) = (d >> 8).toByte
-          if (lastPos != 0) lastPos
-          else (12345 - d >>> 31) + pos
-        }
+      if (((qp & 0x1FC0000000L) | lastPos) == 0) writeSignificantFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
+      else writeSignificantFractionDigits2(q1, {
+        val d = ds(q0 - q1 * 100)
+        buf(pos - 1) = d.toByte
+        buf(pos) = (d >> 8).toByte
+        if (lastPos != 0) lastPos
+        else (12345 - d >>> 31) + pos // 12345 == ('0' << 8) | '9'
       }, pos - 2, posLim, buf, ds)
     } else lastPos
 
-  private[this] def writeSmallPositiveLongStartingFromLastPosition(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
-    if (q0.toInt == q0) writePositiveIntStartingFromLastPosition(q0.toInt, pos, buf, ds)
-    else {
-      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
-      writePositiveIntStartingFromLastPosition(q1.toInt, pos - 8, buf, ds)
-      write8Digits((q0 - q1 * 100000000).toInt, pos - 7, buf, ds)
-    }
+  @tailrec
+  private[this] def writeSignificantFractionDigits2(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
+    if (pos > posLim) {
+      val q1 = (q0 * 1374389535L >> 37).toInt // divide a positive int by 100
+      val d = ds(q0 - q1 * 100)
+      buf(pos - 1) = d.toByte
+      buf(pos) = (d >> 8).toByte
+      writeSignificantFractionDigits2(q1, lastPos, pos - 2, posLim, buf, ds)
+    } else lastPos
 
   @tailrec
   private[this] def writePositiveIntStartingFromLastPosition(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
