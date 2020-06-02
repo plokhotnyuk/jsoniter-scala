@@ -1,7 +1,5 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import java.util.concurrent.ConcurrentHashMap
-
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
@@ -43,17 +41,7 @@ object WeePickleFromTos {
       "Clubs" -> Clubs)
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   })
-  implicit val enumFromTo: FromTo[SuitEnum] = fromTo[String].bimap(_.toString, {
-    val ec = new ConcurrentHashMap[String, SuitEnum]
-    (s: String) => {
-      var x = ec.get(s)
-      if (x eq null) {
-        x = SuitEnum.withName(s)
-        ec.put(s, x)
-      }
-      x
-    }
-  })
+  implicit val enumFromTo: FromTo[SuitEnum] = fromToEnumerationName(SuitEnum)
   implicit val javaEnumFromTo: FromTo[Suit] = fromTo[String].bimap(_.toString, Suit.valueOf)
   implicit val simpleGeometryReadFromTos: FromTo[GeoJSON.SimpleGeometry] =
     FromTo.merge(macroFromTo[GeoJSON.Point], macroFromTo[GeoJSON.MultiPoint], macroFromTo[GeoJSON.LineString],
