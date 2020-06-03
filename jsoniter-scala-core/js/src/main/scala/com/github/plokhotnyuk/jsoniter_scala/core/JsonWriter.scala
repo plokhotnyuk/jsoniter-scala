@@ -594,9 +594,15 @@ final class JsonWriter private[jsoniter_scala](
     writeRawBytes(bs)
   }
 
-  def writeNull(): Unit = {
+  def writeNull(): Unit = count = {
     writeOptionalCommaAndIndentionBeforeValue()
-    writeBytes('n', 'u', 'l', 'l')
+    val pos = ensureBufCapacity(4)
+    val buf = this.buf
+    buf(pos) = 'n'
+    buf(pos + 1) = 'u'
+    buf(pos + 2) = 'l'
+    buf(pos + 3) = 'l'
+    pos + 4
   }
 
   def writeArrayStart(): Unit = writeNestedStart('[')
@@ -763,33 +769,6 @@ final class JsonWriter private[jsoniter_scala](
     val pos = ensureBufCapacity(1)
     buf(pos) = b
     pos + 1
-  }
-
-  private[this] def writeBytes(b1: Byte, b2: Byte): Unit = count = {
-    val pos = ensureBufCapacity(2)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    pos + 2
-  }
-
-  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte): Unit = count = {
-    val pos = ensureBufCapacity(3)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    buf(pos + 2) = b3
-    pos + 3
-  }
-
-  private[this] def writeBytes(b1: Byte, b2: Byte, b3: Byte, b4: Byte): Unit = count = {
-    val pos = ensureBufCapacity(4)
-    val buf = this.buf
-    buf(pos) = b1
-    buf(pos + 1) = b2
-    buf(pos + 2) = b3
-    buf(pos + 3) = b4
-    pos + 4
   }
 
   private[this] def writeBase16Bytes(bs: Array[Byte], ds: Array[Short]): Unit = count = {
@@ -1141,9 +1120,26 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeBigDecimal(x: java.math.BigDecimal): Unit = {
     val exp = writeBigDecimal(x.unscaledValue, x.scale, 0, null)
     if (exp != 0) {
-      if (exp > 0) writeBytes('E', '+')
-      else writeBytes('E')
-      writeInt(exp)
+      var pos = ensureBufCapacity(12)
+      val buf = this.buf
+      buf(pos) = 'E'
+      pos += 1
+      val q0 =
+        if (exp >= 0) {
+          buf(pos) = '+'
+          pos += 1
+          exp
+        } else if (exp != -2147483648) {
+          buf(pos) = '-'
+          pos += 1
+          -exp
+        } else {
+          buf(pos) = '-'
+          buf(pos + 1) = '2'
+          pos += 2
+          147483648
+        }
+      count = writePositiveInt(q0, pos, buf, digits)
     }
   }
 
@@ -1823,11 +1819,21 @@ final class JsonWriter private[jsoniter_scala](
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/FloatToDecimal.java
-  private[this] def writeFloat(x: Float): Unit = {
+  private[this] def writeFloat(x: Float): Unit = count = {
     val bits = java.lang.Float.floatToIntBits(x)
-    if (bits == 0) writeBytes('0', '.', '0')
-    else if (bits == 0x80000000) writeBytes('-', '0', '.', '0')
-    else count = {
+    var pos = ensureBufCapacity(15)
+    val buf = this.buf
+    val ds = digits
+    if (bits < 0) {
+      buf(pos) = '-'
+      pos += 1
+    }
+    if (x == 0.0f) {
+      buf(pos) = '0'
+      buf(pos + 1) = '.'
+      buf(pos + 2) = '0'
+      pos + 3
+    } else {
       val ieeeExponent = (bits >> 23) & 0xFF
       val ieeeMantissa = bits & 0x7FFFFF
       var e = ieeeExponent - 150
@@ -1884,13 +1890,6 @@ final class JsonWriter private[jsoniter_scala](
       var len = offset(dv)
       exp += len
       len += 1
-      var pos = ensureBufCapacity(15)
-      val buf = this.buf
-      val ds = digits
-      if (bits < 0) {
-        buf(pos) = '-'
-        pos += 1
-      }
       if (exp < -3 || exp >= 7) {
         val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
@@ -1947,12 +1946,22 @@ final class JsonWriter private[jsoniter_scala](
   // Based on the amazing work of Raffaello Giulietti
   // "The Schubfach way to render doubles": https://drive.google.com/file/d/1luHhyQF9zKlM8yJ1nebU0OgVYhfC6CBN/view
   // Sources with the license are here: https://github.com/c4f7fcce9cb06515/Schubfach/blob/3c92d3c9b1fead540616c918cdfef432bca53dfa/todec/src/math/DoubleToDecimal.java
-  private[this] def writeDouble(x: Double): Unit = {
+  private[this] def writeDouble(x: Double): Unit = count = {
     val bits = java.lang.Double.doubleToLongBits(x)
-    if (bits == 0) writeBytes('0', '.', '0')
-    else if (bits == 0x8000000000000000L) writeBytes('-', '0', '.', '0')
-    else count = {
-      val ieeeExponent = ((bits >> 52) & 0x7FF).toInt
+    var pos = ensureBufCapacity(24)
+    val buf = this.buf
+    val ds = digits
+    if (bits < 0) {
+      buf(pos) = '-'
+      pos += 1
+    }
+    if (x == 0.0) {
+      buf(pos) = '0'
+      buf(pos + 1) = '.'
+      buf(pos + 2) = '0'
+      pos + 3
+    } else {
+      val ieeeExponent = (bits >> 52).toInt & 0x7FF
       val ieeeMantissa = bits & 0xFFFFFFFFFFFFFL
       var e = ieeeExponent - 1075
       var m = ieeeMantissa | 0x10000000000000L
@@ -2011,13 +2020,6 @@ final class JsonWriter private[jsoniter_scala](
       var len = offset(dv)
       exp += len
       len += 1
-      var pos = ensureBufCapacity(24)
-      val buf = this.buf
-      val ds = digits
-      if (bits < 0) {
-        buf(pos) = '-'
-        pos += 1
-      }
       if (exp < -3 || exp >= 7) {
         val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
@@ -2085,15 +2087,14 @@ final class JsonWriter private[jsoniter_scala](
     (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
   }
 
-  private[this] def offset(q0: Long): Int = {
+  private[this] def offset(q0: Long): Int =
     if (q0.toInt == q0) offset(q0.toInt)
-    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63) + 8
-    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63) + 10
-    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63) + 12
-    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63) + 14
-    else if (q0 < 1000000000000000000L) ((99999999999999999L - q0) >>> 63) + 16
+    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63).toInt + 8
+    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63).toInt + 10
+    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63).toInt + 12
+    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63).toInt + 14
+    else if (q0 < 1000000000000000000L) ((99999999999999999L - q0) >>> 63).toInt + 16
     else 18
-  }.toInt
 
   private[this] def offset(q0: Int): Int =
     if (q0 < 100) (9 - q0) >>> 31
