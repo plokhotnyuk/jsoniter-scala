@@ -2352,9 +2352,9 @@ final class JsonReader private[jsoniter_scala](
   private[this] def epochDayForYear(year: Int): Long =
     year * 365L + (((year + 3) >> 2) - {
       if (year < 0) {
-        val century = year * 1374389535L >> 37 // divide a positive int by 100
+        val century = (year * 1374389535L >> 37).toInt // divide a negative int by 100 (the sign correction is not needed)
         century - (century >> 2)
-      } else ((year + 99) * 1374389535L >> 37) - ((year + 399) * 1374389535L >> 39) // divide a positive int by 100 and by 400 accordingly
+      } else ((year + 99) * 1374389535L >> 37).toInt - ((year + 399) * 1374389535L >> 39).toInt // divide a positive int by 100 and by 400 accordingly
     })
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =

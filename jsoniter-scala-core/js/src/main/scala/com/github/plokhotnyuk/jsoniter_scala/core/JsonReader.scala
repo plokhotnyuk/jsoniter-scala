@@ -1007,7 +1007,7 @@ final class JsonReader private[jsoniter_scala](
         b >= '0' && b <= '9' && nanoDigitWeight != 0
       }) {
         nano += (b - '0') * nanoDigitWeight
-        nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+        nanoDigitWeight /= 10
       }
       head = pos
       if (b != t) nanoError(nanoDigitWeight, t)
@@ -1992,7 +1992,7 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
           nanos += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight /= 10
           pos += 1
         }
         if (b != 'S') {
@@ -2124,7 +2124,7 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
           nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight /= 10
         }
         head = pos
       }
@@ -2173,7 +2173,7 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
           nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight /= 10
         }
         head = pos
       }
@@ -2280,7 +2280,7 @@ final class JsonReader private[jsoniter_scala](
           b >= '0' && b <= '9' && nanoDigitWeight != 0
         }) {
           nano += (b - '0') * nanoDigitWeight
-          nanoDigitWeight = (nanoDigitWeight * 3435973837L >> 35).toInt // divide a positive int by 10
+          nanoDigitWeight /= 10
         }
         head = pos
       }
@@ -2337,7 +2337,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    var q1 = (offsetTotal * 2443359173L >> 41).toInt // divide a positive int by 900
+    var q1 = offsetTotal / 900
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if (q1 * 900 == offsetTotal) {
       if (isNeg) q1 = -q1
@@ -2357,14 +2357,12 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def epochDayForYear(year: Int): Long =
     year * 365L + (((year + 3) >> 2) - {
-      if (year < 0) {
-        val century = year * 1374389535L >> 37 // divide a positive int by 100
-        century - (century >> 2)
-      } else ((year + 99) * 1374389535L >> 37) - ((year + 399) * 1374389535L >> 39) // divide a positive int by 100 and by 400 accordingly
+      if (year < 0) year / 100 - year / 400
+      else (year + 99) / 100 - (year + 399) / 400
     })
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 1050835331877L - 1036518774222L) >> 35).toInt - // (month * 367 - 362) / 12
+    ((month * 367 - 362) / 12) -
       (if (month <= 2) 0
       else if (isLeap(year)) 1
       else 2)
