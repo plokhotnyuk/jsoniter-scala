@@ -1854,10 +1854,10 @@ final class JsonWriter private[jsoniter_scala](
           }
         } else if (ieeeExponent == 255) illegalNumberError(x)
         if (ieeeMantissa == 0 && ieeeExponent > 1) {
-          expCorr = 16375
+          expCorr = 131007
           cblShift = 1
         }
-        exp = e * 39457 - expCorr >> 17
+        exp = e * 315653 - expCorr >> 20
         val g1 = gs(exp + 324 << 1) + 1
         val h = (-exp * 108853 >> 15) + e + 1
         val cb = m << 2
@@ -1970,8 +1970,7 @@ final class JsonWriter private[jsoniter_scala](
         dv = m >> -e
         dv << -e != m
       }) {
-        var expShift = 0
-        var expCorr = 0L
+        var expShift, expCorr = 0
         var cblShift = 2
         if (ieeeExponent == 0) {
           e = -1074
@@ -1982,14 +1981,14 @@ final class JsonWriter private[jsoniter_scala](
           }
         } else if (ieeeExponent == 2047) illegalNumberError(x)
         if (ieeeMantissa == 0 && ieeeExponent > 1) {
-          expCorr = 274743187321L
+          expCorr = 131007
           cblShift = 1
         }
-        exp = (e * 661971961083L - expCorr >> 41).toInt
+        exp = e * 315653 - expCorr >> 20
         val i = exp + 324 << 1
         val g1 = gs(i)
         val g0 = gs(i + 1)
-        val h = (-exp * 913124641741L >> 38).toInt + e + 2
+        val h = (-exp * 108853 >> 15) + e + 2
         val cb = m << 2
         val outm1 = (m.toInt & 0x1) - 1
         val vb = rop(g1, g0, cb << h)
