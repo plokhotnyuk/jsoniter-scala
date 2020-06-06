@@ -672,7 +672,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(5.0E-324, "4.9E-324")
+      check(1.0E-322, "9.9E-323") // 20 * (2 ^ (-1074)) == 9.88... * (10 ^ (-323))
+      check(5.0E-324, "4.9E-324") // 1 * (2 ^ (-1074)) == 4.94... * (10 ^ (-324))
       check(2.98023223876953125E-8, "2.9802322387695312E-8")
       check(-8.9903423895340006E17, "-8.990342389534E17") // moreover, Java serializes -8.990342389534E17 to "-8.9903423895340006E17"
       check(java.lang.Double.longBitsToDouble(0x44688ce73510bf08L), "3.623E21") // Java serializes it to "3.6230000000000003E21"
