@@ -19,7 +19,7 @@ performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com
 and [weePickle](https://github.com/rallyhealth/weePickle) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
 latest versions of Amazon Corretto 8/11, OpenJDK 15 (early-access build) with HotSpot C2[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing)
-and Graal compilers, GraalVM 20 CE for Java 8/11 (dev build) and GraalVM 20 EE for Java 8/11
+and Graal compilers, GraalVM 20.2 CE for Java 8/11 (dev build) and GraalVM 20.1 EE for Java 8/11
 
 ## Acknowledgments
 
@@ -115,7 +115,7 @@ Support of Scala Native is not a goal for the moment.
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible 
 - Support of compilation to a native image by GraalVM
-- Support of Scala.js 1.0.0+
+- Support of Scala.js 1.1.0+
   
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers from/to string values
@@ -186,12 +186,12 @@ Also, you can use the following on-line services to generate an initial version 
 samples: [json2caseclass](https://json2caseclass.cleverapps.io/), [json-to-scala-case-class](https://transform.now.sh/json-to-scala-case-class/), 
 and [json2classes](https://chadselph.github.io/json2classes/). 
 
-To see generated code for codecs add the following line to your sbt build file
+To see generated code for codecs add the following line to your sbt build file:
 ```sbt
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples) directory
+Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples) directory.
 
 For more use cases, please, check out tests:
 - [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
@@ -216,7 +216,7 @@ that contains a character that should be encoded immediately after the prefix (l
 compilation or runtime error, depending on the version of the compiler, see details [here](https://github.com/scala/bug/issues/11212).
 
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
-affected by the exception (after the `o` field)
+affected by the exception (after the `o` field).
 
 2. A configuration parameter for the `make` macro is evaluated in compile-time only that requires no dependency on other
 code that uses a result of the macro's call. In that case the following compilation error will be reported:
@@ -287,10 +287,10 @@ object Level {
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
 
-5. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details here
-, see details [here](https://github.com/scala-js/scala-js/issues/4035)
+5. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details 
+[here](https://github.com/scala-js/scala-js/issues/4035)
 
-The workaround is using `double` or `BigDecimal` types for cases when an exact precision is a matter.
+The workaround is using `double` or `BigDecimal` types for cases when an exact precision matters.
 
 6. Scala.js cannot throw exceptions without stack traces, so `throwReaderExceptionWithStackTrace` and 
 `throwWriterExceptionWithStackTrace` configuration parameters are ignored.
