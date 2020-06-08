@@ -1733,7 +1733,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
     val r1 = (q0 - q1 * 100000000).toInt
-    val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
+    val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
     val r2 = (q1 - q2 * 100000000).toInt
     write8Digits(r1, write8Digits(r2, write2Digits(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
   }
@@ -1803,7 +1803,7 @@ final class JsonWriter private[jsoniter_scala](
       val r1 = (q0 - q1 * 100000000).toInt
       if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
       else {
-        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide small positive long by 100000000
+        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
         val r2 = (q1 - q2 * 100000000).toInt
         write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
       }
