@@ -580,7 +580,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
 
       check(2.4414063E-4f, "2.4414062E-4")
-      check(1.10000005E10f, "1.1E10") // Java serializes 1.1E10f to "1.10000005E10"
+      check(1.1E10f, "1.1E10") // Java serializes it to "1.10000005E10" (string of redundant 0s)
+      check(1.0E17f, "1.0E17") // Java serializes it to "9.9999998E16" (string of redundant 9s)
     }
     "write round-even float values" in {
       def check(n: Float, s: String): Unit = {
