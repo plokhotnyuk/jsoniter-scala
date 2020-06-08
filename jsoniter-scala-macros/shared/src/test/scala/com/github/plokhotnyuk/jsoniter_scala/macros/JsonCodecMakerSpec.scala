@@ -808,9 +808,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       parsedObj.a shouldBe arrays.a
     }
     "throw parse exception for missing array field when the requireCollectionFields flag is on" in {
-      val codecOfArrays2 = make[Arrays](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false))
-      verifyDeserError(codecOfArrays2, "{}", "missing required field \"aa\", offset: 0x00000001")
-      verifyDeserError(codecOfArrays2, """{"aa":[[],[]]}""", "missing required field \"a\", offset: 0x0000000d")
+      val codecOfArrays = makeWithRequiredCollectionFields[Arrays]
+      verifyDeserError(codecOfArrays, "{}", "missing required field \"aa\", offset: 0x00000001")
+      verifyDeserError(codecOfArrays, """{"aa":[[],[]]}""", "missing required field \"a\", offset: 0x0000000d")
     }
     "throw parse exception in case of JSON array is not properly started/closed or with leading/trailing comma" in {
       verifyDeserError(codecOfArrays, """{"aa":[{1,2,3]],"a":[]}""", "expected '[' or null, offset: 0x00000007")
@@ -864,7 +864,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         EmptyIterables(List("VVV"), _root_.scala.collection.mutable.ArrayBuffer(1)), """{"l":["VVV"],"a":[1]}""")
     }
     "throw parse exception for missing collection field when the requireCollectionFields flag is on" in {
-      verifyDeserError(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifyDeserError(makeWithRequiredCollectionFields[EmptyIterables],
         "{}", "missing required field \"l\", offset: 0x00000001")
 
       case class NestedIterables(lessi: List[Either[String, Set[Int]]])
@@ -881,17 +881,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize case classes with collection fields that has default values when the requireCollectionFields flag is on" in {
       case class IterablesWithDefaults(l: List[Int] = _root_.scala.collection.immutable.Nil, s: Set[Option[String]] = Set())
 
-      verifySerDeser(make[IterablesWithDefaults](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifySerDeser(makeWithRequiredCollectionFields[IterablesWithDefaults],
         IterablesWithDefaults(), "{}")
     }
     "serialize and deserialize case classes with empty Iterables when the requireCollectionFields flag is on and transientEmpty is off" in {
-      verifySerDeser(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifySerDeser(makeWithRequiredCollectionFields[EmptyIterables],
         EmptyIterables(List(), _root_.scala.collection.mutable.ArrayBuffer()), """{"l":[],"a":[]}""")
     }
     "deserialize null values as empty Iterables for fields with collection types" in {
       verifyDeser(make[EmptyIterables],
         EmptyIterables(List(), _root_.scala.collection.mutable.ArrayBuffer()), """{"l":null,"a":null}""")
-      verifyDeser(make[EmptyIterables](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifyDeser(makeWithRequiredCollectionFields[EmptyIterables],
         EmptyIterables(List(), _root_.scala.collection.mutable.ArrayBuffer()), """{"l":null,"a":null}""")
     }
     "serialize and deserialize top-level Iterables" in {
@@ -944,17 +944,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"im":{"VVV":1},"mm":{"2":3}}""")
     }
     "throw parse exception for missing map field when the requireCollectionFields flag is on" in {
-      verifyDeserError(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifyDeserError(makeWithRequiredCollectionFields[EmptyMaps],
         "{}", "missing required field \"im\", offset: 0x00000001")
     }
     "serialize and deserialize case classes with empty maps when the requireCollectionFields flag is on and transientEmpty is off" in {
-      verifySerDeser(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifySerDeser(makeWithRequiredCollectionFields[EmptyMaps],
         EmptyMaps(Map(), _root_.scala.collection.mutable.Map()), """{"im":{},"mm":{}}""")
     }
     "deserialize null values as empty maps for fields with map types" in {
       verifyDeser(make[EmptyMaps],
         EmptyMaps(Map(), _root_.scala.collection.mutable.Map()), """{"im":null,"mm":null}""")
-      verifyDeser(make[EmptyMaps](CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)),
+      verifyDeser(makeWithRequiredCollectionFields[EmptyMaps],
         EmptyMaps(Map(), _root_.scala.collection.mutable.Map()), """{"im":null,"mm":null}""")
     }
     "serialize and deserialize top-level maps" in {
