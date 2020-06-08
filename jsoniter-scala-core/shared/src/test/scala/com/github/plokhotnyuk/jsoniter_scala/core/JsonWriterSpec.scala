@@ -580,7 +580,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
 
       check(2.4414063E-4f, "2.4414062E-4")
-      check(1.10000005E10f, "1.1E10") // moreover, Java serializes 1.1E10f to "1.10000005E10"
+      check(1.10000005E10f, "1.1E10") // Java serializes 1.1E10f to "1.10000005E10"
     }
     "write round-even float values" in {
       def check(n: Float, s: String): Unit = {
@@ -675,7 +675,23 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(1.0E-322, "9.9E-323") // 20 * 2 ^ -1074 == 9.88... * 10 ^ -323
       check(5.0E-324, "4.9E-324") // 1 * 2 ^ -1074 == 4.94... * 10 ^ -324
       check(2.98023223876953125E-8, "2.9802322387695312E-8")
-      check(-8.9903423895340006E17, "-8.990342389534E17") // moreover, Java serializes -8.990342389534E17 to "-8.9903423895340006E17"
+      check(1.0E23, "1.0E23") // Java serializes it to "9.999999999999999E22" (string of redundant 9s)
+      check(8.41E21, "8.41E21") // Java serializes it to "8.409999999999999E21" (string of redundant 9s)
+      check(2.0E23, "2.0E23") // Java serializes it to "1.9999999999999998E23" (string of redundant 9s)
+      check(8.962E21, "8.962E21") // Java serializes it to "8.961999999999999E21" (string of redundant 9s)
+      check(7.3879E20, "7.3879E20") // Java serializes it to "7.387900000000001E20" (string of redundant 0s)
+      check(3.1E22, "3.1E22") // Java serializes it to "3.1000000000000002E22" (string of redundant 0s)
+      check(5.63E21, "5.63E21") // Java serializes it to "5.630000000000001E21" (string of redundant 0s)
+      check(2.82879384806159E17, "2.82879384806159E17") // Java serializes it to "2.82879384806159008E17" (18 digits, even though 17 digits are *always* enough)
+      check(1.387364135037754E18, "1.387364135037754E18") // Java serializes it to "1.38736413503775411E18" (18 digits, even though 17 digits are *always* enough)
+      check(1.45800632428665E17, "1.45800632428665E17") // Java serializes it to "1.45800632428664992E17" (18 digits, even though 17 digits are *always* enough)
+      check(1.790086667993E18, "1.790086667993E18") // Java serializes it to "1.79008666799299994E18" (5 digits too much)
+      check(2.273317134858E18, "2.273317134858E18") // Java serializes it to "2.27331713485799987E18" (5 digits too much)
+      check(7.68905065813E17, "7.68905065813E17") // Java serializes it to "7.6890506581299994E17" (5 digits too much)
+      check(1.9400994884341945E25, "1.9400994884341945E25") // Java serializes it to "1.9400994884341944E25" (not the closest to the intermediate double)
+      check(3.6131332396758635E25, "3.6131332396758635E25") // Java serializes it to "3.6131332396758634E25" (not the closest to the intermediate double)
+      check(2.5138990223946153E25, "2.5138990223946153E25") // Java serializes it to "2.5138990223946152E25" (not the closest to the intermediate double)
+      check(-8.9903423895340006E17, "-8.990342389534E17") // Java serializes it to "-8.9903423895340006E17"
       check(java.lang.Double.longBitsToDouble(0x44688ce73510bf08L), "3.623E21") // Java serializes it to "3.6230000000000003E21"
     }
     "write round-even double values" in {
