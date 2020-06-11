@@ -2048,19 +2048,18 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   @tailrec
-  private[this] def writeSignificantFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (pos > posLim) {
-      val qp = q0 * 1374389535L
-      val q1 = (qp >> 37).toInt // divide a positive int by 100
-      if (((qp & 0x1FC0000000L) | lastPos) == 0) writeSignificantFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
-      else writeFractionDigits(q1, {
-        val d = ds(q0 - q1 * 100)
-        buf(pos - 1) = d.toByte
-        buf(pos) = (d >> 8).toByte
-        if (lastPos != 0) lastPos
-        else (12345 - d >>> 31) + pos // 12345 == ('0' << 8) | '9'
-      }, pos - 2, posLim, buf, ds)
-    } else lastPos
+  private[this] def writeSignificantFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val qp = q0 * 1374389535L
+    val q1 = (qp >> 37).toInt // divide a positive int by 100
+    if (((qp & 0x1FC0000000L) | lastPos) == 0) writeSignificantFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
+    else writeFractionDigits(q1, {
+      val d = ds(q0 - q1 * 100)
+      buf(pos - 1) = d.toByte
+      buf(pos) = (d >> 8).toByte
+      if (lastPos != 0) lastPos
+      else (12345 - d >>> 31) + pos // 12345 == ('0' << 8) | '9'
+    }, pos - 2, posLim, buf, ds)
+  }
 
   @tailrec
   private[this] def writeFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
