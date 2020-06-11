@@ -492,16 +492,16 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        if (TestUtils.isJS) { // FIXME: Scala.JS can loose 1 ULP when parses floats, see: https://github.com/scala-js/scala-js/issues/4035
+        if (TestUtils.isJS) { // FIXME: Scala.JS can loose 1 ULP during parsing of floats, see: https://github.com/scala-js/scala-js/issues/4035
           java.lang.Float.floatToIntBits(s.toFloat).toLong shouldBe (java.lang.Float.floatToIntBits(n).toLong +- 1)
-          if (es.indexOf('.') < 0) {
-            l should be <= es.length + 3 // formatting differs from JS for floats represented as whole numbers
-          } else {
-            l should be <= es.length // rounding and formatting isn't worse than in JS for floats represented in decimal or scientific notation
-          }
         } else {
           s.toFloat shouldBe n // no data loss when parsing by JDK
-          l should be <= es.length // rounding and formatting isn't worse than in JDK
+        }
+        l should be <= es.length + {
+          if (TestUtils.isJS) {
+            if (es.indexOf('.') < 0) 3 // formatting differs from JS for floats represented as whole numbers
+            else 0 // rounding and formatting isn't worse than in JS for floats represented in decimal or scientific notation
+          } else 0 // rounding and formatting isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
         i should be < l - 1
@@ -579,9 +579,14 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         withWriter(_.writeKey(n)) shouldBe s""""$s":"""
       }
 
-      check(2.4414063E-4f, "2.4414062E-4")
-      check(1.1E10f, "1.1E10") // Java serializes it to "1.10000005E10" (string of redundant 0s)
+      check(1.0E-43f, "9.9E-44") // 71 * 2 ^ -149 == 9.94... * 10 ^ -44
+      check(1.0E-45f, "1.4E-45") // 1 * 2 ^ -149 == 1.40... * 10 ^ -45
+      check(7.1E10f, "7.1E10") // Java serializes it to "7.0999998E10" (string of redundant 9s)
+      check(1.1E15f, "1.1E15") // Java serializes it to "1.09999998E15" (string of redundant 9s)
       check(1.0E17f, "1.0E17") // Java serializes it to "9.9999998E16" (string of redundant 9s)
+      check(6.3E9f, "6.3E9") // Java serializes it to "6.3000003E9" (string of redundant 0s)
+      check(3.0E10f, "3.0E10") // Java serializes it to "3.0000001E10" (string of redundant 0s)
+      check(1.1E10f, "1.1E10") // Java serializes it to "1.10000005E10" (string of redundant 0s)
     }
     "write round-even float values" in {
       def check(n: Float, s: String): Unit = {
@@ -610,16 +615,12 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val l = s.length
         val i = s.indexOf('.')
         s.toDouble shouldBe n // no data loss when parsing by JDK or JS
-        if (TestUtils.isJS) {
-          if (es.indexOf('.') < 0) {
-            l should be <= es.length + 4 // formatting differs from JS for doubles represented as whole numbers
-          } else if (es.indexOf('e') < 0 && Math.abs(n) > 1) {
-            l should be <= es.length + 3 // formatting differs from JS for doubles with positive exponents that are represented in decimal notation
-          } else {
-            l should be <= es.length // rounding and formatting isn't worse than in JS for doubles represented in scientific notation
-          }
-        } else {
-          l should be <= es.length // rounding and formatting isn't worse than in JDK
+        l should be <= es.length + {
+          if (TestUtils.isJS) {
+            if (es.indexOf('.') < 0) 4 // formatting differs from JS for doubles represented as whole numbers
+            else if (es.indexOf('e') < 0 && Math.abs(n) > 1) 3 // formatting differs from JS for doubles with positive exponents that are represented in decimal notation
+            else 0 // rounding and formatting isn't worse than in JS for doubles represented in scientific notation
+          } else 0 // rounding and formatting isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
         i should be < l - 1 // '.' is not the last character
@@ -675,10 +676,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check(1.0E-322, "9.9E-323") // 20 * 2 ^ -1074 == 9.88... * 10 ^ -323
       check(5.0E-324, "4.9E-324") // 1 * 2 ^ -1074 == 4.94... * 10 ^ -324
-      check(2.98023223876953125E-8, "2.9802322387695312E-8")
       check(1.0E23, "1.0E23") // Java serializes it to "9.999999999999999E22" (string of redundant 9s)
       check(8.41E21, "8.41E21") // Java serializes it to "8.409999999999999E21" (string of redundant 9s)
-      check(2.0E23, "2.0E23") // Java serializes it to "1.9999999999999998E23" (string of redundant 9s)
       check(8.962E21, "8.962E21") // Java serializes it to "8.961999999999999E21" (string of redundant 9s)
       check(7.3879E20, "7.3879E20") // Java serializes it to "7.387900000000001E20" (string of redundant 0s)
       check(3.1E22, "3.1E22") // Java serializes it to "3.1000000000000002E22" (string of redundant 0s)
@@ -692,8 +691,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       check(1.9400994884341945E25, "1.9400994884341945E25") // Java serializes it to "1.9400994884341944E25" (not the closest to the intermediate double)
       check(3.6131332396758635E25, "3.6131332396758635E25") // Java serializes it to "3.6131332396758634E25" (not the closest to the intermediate double)
       check(2.5138990223946153E25, "2.5138990223946153E25") // Java serializes it to "2.5138990223946152E25" (not the closest to the intermediate double)
-      check(-8.9903423895340006E17, "-8.990342389534E17") // Java serializes it to "-8.9903423895340006E17"
-      check(java.lang.Double.longBitsToDouble(0x44688ce73510bf08L), "3.623E21") // Java serializes it to "3.6230000000000003E21"
     }
     "write round-even double values" in {
       def check(n: Double, s: String): Unit = {

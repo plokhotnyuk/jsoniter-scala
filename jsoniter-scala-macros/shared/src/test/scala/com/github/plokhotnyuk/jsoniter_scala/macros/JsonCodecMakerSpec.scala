@@ -637,7 +637,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(customCodecOfStandardTypes, StandardTypes("XXX", 1, 1.1), """"{\"s\":\"XXX\",\"bi\":1,\"bd\":1.1}"""")
     }
     "serialize and deserialize sequences of tuples as JSON object with duplicated keys using a custom codec" in {
-      implicit val codecOfSeqOfTuples: JsonValueCodec[Seq[(String, Int)]] = new JsonValueCodec[Seq[(String, Int)]] {
+      val codecOfSeqOfTuples: JsonValueCodec[Seq[(String, Int)]] = new JsonValueCodec[Seq[(String, Int)]] {
         override def decodeValue(in: JsonReader, default: Seq[(String, Int)]): Seq[(String, Int)] =
           if (in.isNextToken('{')) {
             val kvs = _root_.scala.collection.immutable.List.newBuilder[(String, Int)]
@@ -706,7 +706,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(codecOfUserId, UserId("123abc"), "\"123abc\"")
       verifySerDeser(make[OrderId], OrderId(123123), "123123")
     }
-    "serialize and deserialize strinfigied top-level value classes" in {
+    "serialize and deserialize stringified top-level value classes" in {
       verifySerDeser(make[OrderId](CodecMakerConfig.withIsStringified(true)), OrderId(123123), "\"123123\"")
     }
     "serialize and deserialize case classes with options" in {
