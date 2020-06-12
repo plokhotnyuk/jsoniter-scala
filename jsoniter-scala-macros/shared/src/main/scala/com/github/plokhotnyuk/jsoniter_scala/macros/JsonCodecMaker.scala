@@ -303,13 +303,24 @@ object JsonCodecMaker {
   def make[A]: JsonValueCodec[A] = macro Impl.makeWithDefaultConfig[A]
 
   /**
-    * A replacement for the `make` call with the `CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)`
+    * A replacement for the `make` call with the
+    * `CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true)`
     * configuration parameter.
     *
     * @tparam A a type that should be encoded and decoded by the derived codec
     * @return an instance of the derived codec
     */
   def makeWithRequiredCollectionFields[A]: JsonValueCodec[A] = macro Impl.makeWithRequiredCollectionFields[A]
+
+  /**
+    * A replacement for the `make` call with the
+    * `CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true).withDiscriminatorFieldName(Some("name"))`
+    * configuration parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
+  def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]: JsonValueCodec[A] = macro Impl.makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A]
 
   /**
     * Derives a codec for JSON values for the specified type `A` and a provided derivation configuration.
@@ -326,6 +337,9 @@ object JsonCodecMaker {
 
     def makeWithRequiredCollectionFields[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
       make(c)(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true))
+
+    def makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[A: c.WeakTypeTag](c: blackbox.Context): c.Expr[JsonValueCodec[A]] =
+      make(c)(CodecMakerConfig.withTransientEmpty(false).withRequireCollectionFields(true).withDiscriminatorFieldName(Some("name")))
 
     def makeWithSpecifiedConfig[A: c.WeakTypeTag](c: blackbox.Context)(config: c.Expr[CodecMakerConfig]): c.Expr[JsonValueCodec[A]] =
       make(c) {

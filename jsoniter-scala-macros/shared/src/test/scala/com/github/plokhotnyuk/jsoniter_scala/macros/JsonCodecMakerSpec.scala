@@ -808,9 +808,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       parsedObj.a shouldBe arrays.a
     }
     "throw parse exception for missing array field when the requireCollectionFields flag is on" in {
-      val codecOfArrays = makeWithRequiredCollectionFields[Arrays]
-      verifyDeserError(codecOfArrays, "{}", "missing required field \"aa\", offset: 0x00000001")
-      verifyDeserError(codecOfArrays, """{"aa":[[],[]]}""", "missing required field \"a\", offset: 0x0000000d")
+      val codecOfArrays1 = makeWithRequiredCollectionFields[Arrays]
+      verifyDeserError(codecOfArrays1, "{}", "missing required field \"aa\", offset: 0x00000001")
+      verifyDeserError(codecOfArrays1, """{"aa":[[],[]]}""", "missing required field \"a\", offset: 0x0000000d")
+      val codecOfArrays2 = makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[Arrays]
+      verifyDeserError(codecOfArrays2, "{}", "missing required field \"aa\", offset: 0x00000001")
+      verifyDeserError(codecOfArrays2, """{"aa":[[],[]]}""", "missing required field \"a\", offset: 0x0000000d")
     }
     "throw parse exception in case of JSON array is not properly started/closed or with leading/trailing comma" in {
       verifyDeserError(codecOfArrays, """{"aa":[{1,2,3]],"a":[]}""", "expected '[' or null, offset: 0x00000007")
@@ -1457,6 +1460,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[List[Base]](CodecMakerConfig.withDiscriminatorFieldName(Some("t")).withSkipUnexpectedFields(false)),
         List(A(B("x")), B("x")), """[{"t":"A","b":{"c":"x"}},{"t":"B","c":"x"}]""")
+      verifySerDeser(makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[List[Base]],
+        List(A(B("x")), B("x")), """[{"name":"A","b":{"c":"x"}},{"name":"B","c":"x"}]""")
     }
     "serialize and deserialize ADTs using custom values of the discriminator field" in {
       sealed abstract class Base extends Product with Serializable
