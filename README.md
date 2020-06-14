@@ -8,6 +8,8 @@
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.0.0.svg)](https://www.scala-js.org)
 [![Maven Central](https://img.shields.io/badge/maven--central-2.4.0-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
 
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/plokhotnyuk/jsoniter-scala) 
+
 Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
 parsing and serialization.
 
