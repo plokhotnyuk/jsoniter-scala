@@ -15,6 +15,42 @@ case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
 
+object UserId2 {
+  type Opaque = Base with Tag
+  type Base = Any {
+    type Hack
+  }
+  trait Tag
+
+  object Opaque {
+    def apply(value: String): Opaque = value.asInstanceOf[Opaque]
+
+    def unapply(userId: Opaque): Option[String] = Option(userId).map(_.value)
+  }
+
+  final implicit class Ops(private val userId: Opaque) extends AnyVal {
+    def value: String = userId.asInstanceOf[String]
+  }
+}
+
+object OrderId2 {
+  type Opaque = Base with Tag
+  type Base = Any {
+    type Hack
+  }
+  trait Tag
+
+  object Opaque {
+    def apply(value: Int): Opaque = value.asInstanceOf[Opaque]
+
+    def unapply(orderId: Opaque): Option[Int] = Option(orderId).map(_.value)
+  }
+
+  final implicit class Ops(private val orderId: Opaque) extends AnyVal {
+    def value: Int = orderId.asInstanceOf[Int]
+  }
+}
+
 case class Id[A](id: A) extends AnyVal
 
 sealed trait Weapon extends Product with Serializable
@@ -548,6 +584,25 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         def decodeValue(in: JsonReader, default: Bar): Bar = in.readInt().asInstanceOf[Bar]
       }
       verifySerDeser(make[Baz], Baz(42.asInstanceOf[Bar]), "{\"bar\":42}")
+
+      case class OpaqueTypes(uid: UserId2.Opaque, oid: OrderId2.Opaque)
+
+      implicit val customCodecOfUserId2: JsonValueCodec[UserId2.Opaque] = new JsonValueCodec[UserId2.Opaque] {
+        val nullValue: UserId2.Opaque = null.asInstanceOf[UserId2.Opaque]
+
+        def encodeValue(x: UserId2.Opaque, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
+
+        def decodeValue(in: JsonReader, default: UserId2.Opaque): UserId2.Opaque = UserId2.Opaque(in.readString(default.value))
+      }
+      implicit val customCodecOfOrderId2: JsonValueCodec[OrderId2.Opaque] = new JsonValueCodec[OrderId2.Opaque] {
+        val nullValue: OrderId2.Opaque = null.asInstanceOf[OrderId2.Opaque]
+
+        def encodeValue(x: OrderId2.Opaque, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
+
+        def decodeValue(in: JsonReader, default: OrderId2.Opaque): OrderId2.Opaque = OrderId2.Opaque(in.readInt())
+      }
+      verifySerDeser(make[OpaqueTypes],
+        OpaqueTypes(UserId2.Opaque("123abc"), OrderId2.Opaque(123123)), """{"uid":"123abc","oid":123123}""")
     }
     "serialize and deserialize outer types using custom value codecs for nested types" in {
       implicit val customCodecOfEither1: JsonValueCodec[Either[String, Int]] =
