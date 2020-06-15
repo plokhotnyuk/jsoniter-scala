@@ -25,7 +25,7 @@ abstract class StringOfAsciiCharsBenchmark extends CommonParams {
           while ({
             ch = ((j * 1498724053) % 128).toChar
             j += 1
-            !JsonWriter.isNonEscapedAscii(ch) || ch == '~' // FIXME: Jsoniter(Java) uses hexadecimal escaping for `~`
+            !JsonWriter.isNonEscapedAscii(ch)
           }) ()
           ch
         }

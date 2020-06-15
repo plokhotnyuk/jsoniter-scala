@@ -1645,7 +1645,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def addExp(e2: Int, e10: Int): Int =
-    (e10 * 14267572527L >> 32).toInt + e2 + 1 // (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
+    (e10 * 108853 >> 15) + e2 + 1 // (e10 * Math.log(10) / Math.log(2)).toInt + e2 + 1
 
   private[this] def parseBigInt(isToken: Boolean, default: BigInt, digitsLimit: Int): BigInt = {
     var b =
@@ -1843,14 +1843,14 @@ final class JsonReader private[jsoniter_scala](
     }
     var x2 =
       (buf(pos) * 10 + buf(pos + 1)) * 10000000000000000L +
-      (buf(pos + 2) * 10 + buf(pos + 3)) * 100000000000000L +
-      (buf(pos + 4) * 10 + buf(pos + 5)) * 1000000000000L +
-      (buf(pos + 6) * 10 + buf(pos + 7)) * 10000000000L +
-      (buf(pos + 8) * 10 + buf(pos + 9)) * 100000000L +
-      (buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
+      ((buf(pos + 2) * 10 + buf(pos + 3)) * 1000000 +
+      (buf(pos + 4) * 10 + buf(pos + 5)) * 10000 +
+      (buf(pos + 6) * 10 + buf(pos + 7)) * 100 +
+      (buf(pos + 8) * 10 + buf(pos + 9))) * 100000000L +
+      ((buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
       (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
       (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
-      buf(pos + 16) * 10 + buf(pos + 17) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
+      buf(pos + 16) * 10 + buf(pos + 17)) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
     if (isNeg) {
       x1 = -x1
       x2 = -x2
@@ -1868,17 +1868,17 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = ((len * 445861642L) >>> 32).toInt // (len * log(10) / log (1L << 32)).toInt
+    val lastWord = ((len * 445861642L) >>> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
     magWords(lastWord) = x.toInt
     while (pos < limit) {
       x =
         (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
-        (buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
+        ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
         (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
         (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-        buf(pos + 8) - 5333333328L // 5333333328L == '0' * 111111111L
+        buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
       var i = lastWord
       while (i >= 0) {
         val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
@@ -2362,7 +2362,7 @@ final class JsonReader private[jsoniter_scala](
     })
 
   private[this] def dayOfYearForYearMonth(year: Int, month: Int): Int =
-    ((month * 367 - 362) / 12) -
+    ((month * 1002277 - 988622) >> 15) - // (month * 367 - 362) / 12
       (if (month <= 2) 0
       else if (isLeap(year)) 1
       else 2)

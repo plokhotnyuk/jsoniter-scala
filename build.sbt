@@ -86,8 +86,6 @@ lazy val publishSettings = Seq(
   },
   mimaBinaryIssueFilters := Seq( // internal API to ignore
     ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.JsonReaderException.this"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genReadVal$default$4$1"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$genWriteVal$default$4$1")
   ),
   mimaReportSignatureProblems := true
 )
@@ -123,7 +121,12 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
           .distinct
       }
     })
-  ).jsSettings(
+  )
+
+lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
+
+lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
+  .settings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.0.0"
@@ -131,10 +134,6 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
-
-lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
-
-lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -148,14 +147,15 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     )
-  ).jsSettings(
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
 
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
+  .settings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
+  )
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -194,12 +194,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.23",
       "org.scalatest" %%% "scalatest" % "3.1.2" % Test
     )
-  ).jsSettings(
-    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.7.0",
-    scalaJSUseMainModuleInitializer := true,
-    scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true)),
-    mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
-    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
 
 lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
@@ -207,3 +201,10 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)
+  .settings(
+    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.7.0",
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true)),
+    mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
+    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
+  )
