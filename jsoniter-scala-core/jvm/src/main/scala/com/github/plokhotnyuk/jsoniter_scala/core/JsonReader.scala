@@ -2331,7 +2331,7 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    var q1 = (offsetTotal * 2443359173L >> 41).toInt // divide a positive int by 900
+    var q1 = offsetTotal * 37283 >>> 25 // divide a small positive int by 900
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
     if (q1 * 900 == offsetTotal) {
       if (isNeg) q1 = -q1
