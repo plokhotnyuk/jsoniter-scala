@@ -346,10 +346,8 @@ object JsonCodecMaker {
 
         def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
 
-        def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
-
         val cfg =
-          try eval[CodecMakerConfig](config.tree) catch { case ex: Throwable =>
+          try c.eval(c.Expr[CodecMakerConfig](c.untypecheck(config.tree.duplicate))) catch { case ex: Throwable =>
             fail(s"Cannot evaluate a parameter of the 'make' macro call for type '${weakTypeOf[A].dealias}'. " +
               "It should not depend on code from the same compilation module where the 'make' macro is called. " +
               "Use a separated submodule of the project to compile all such dependencies before their usage for " +
@@ -469,8 +467,6 @@ object JsonCodecMaker {
       }
 
       def getType(typeTree: Tree): Type = c.typecheck(typeTree, c.TYPEmode).tpe
-
-      def eval[B](tree: Tree): B = c.eval[B](c.Expr[B](c.untypecheck(tree)))
 
       val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
       val rootTpe = weakTypeOf[A].dealias
@@ -867,7 +863,7 @@ object JsonCodecMaker {
             }
             val partiallyMappedName = named.headOption.map { a =>
               a.tree.children.tail.collectFirst { case Literal(Constant(s: String)) => s }.getOrElse {
-                try eval[named](a.tree).name catch { case ex: Throwable =>
+                try c.eval(c.Expr[named](c.untypecheck(a.tree.duplicate))).name catch { case ex: Throwable =>
                   fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
                     "It should not depend on code from the same compilation module where the 'make' macro is called. " +
                     "Use a separated submodule of the project to compile all such dependencies before their usage " +
