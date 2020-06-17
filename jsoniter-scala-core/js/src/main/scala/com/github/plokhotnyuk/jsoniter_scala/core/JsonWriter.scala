@@ -1134,7 +1134,7 @@ final class JsonWriter private[jsoniter_scala](
           pos += 1
           -exp
         } else {
-          buf(pos) = '-'
+          buf(pos) = '+'
           buf(pos + 1) = '2'
           pos += 2
           147483648
@@ -2085,8 +2085,7 @@ final class JsonWriter private[jsoniter_scala](
     else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63).toInt + 10
     else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63).toInt + 12
     else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63).toInt + 14
-    else if (q0 < 1000000000000000000L) ((99999999999999999L - q0) >>> 63).toInt + 16
-    else 18
+    else ((99999999999999999L - q0) >>> 63).toInt + 16
 
   private[this] def offset(q0: Int): Int =
     if (q0 < 100) (9 - q0) >>> 31

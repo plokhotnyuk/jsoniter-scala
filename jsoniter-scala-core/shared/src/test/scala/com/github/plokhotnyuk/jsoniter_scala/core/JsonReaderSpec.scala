@@ -2603,6 +2603,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check("1E+2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max positive scale that can be parsed
       }
     }
     "parse small number values without underflow up to limits" in {
@@ -2615,6 +2616,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
         check("-12345678901234567890123456789012345678901234567890123456789012345678901234567890e-123456789",
           MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws)
+        check("1E-2147483646", MathContext.UNLIMITED, Int.MaxValue, Int.MaxValue, ws) // max negative scale that can be parsed
       }
     }
     "throw number format exception for too big mantissa" in {
