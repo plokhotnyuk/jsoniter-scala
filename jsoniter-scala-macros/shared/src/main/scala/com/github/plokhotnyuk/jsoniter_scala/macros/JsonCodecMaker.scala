@@ -11,7 +11,6 @@ import scala.collection.{BitSet, immutable, mutable}
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 import scala.reflect.NameTransformer
-import scala.reflect.macros.contexts.Context
 import scala.reflect.macros.blackbox
 import scala.util.control.NonFatal
 
@@ -364,6 +363,7 @@ object JsonCodecMaker {
 
     private[this] def make[A: c.WeakTypeTag](c: blackbox.Context)(cfg: CodecMakerConfig): c.Expr[JsonValueCodec[A]] = {
       import c.universe._
+      import c.internal._
 
       def fail(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
 
@@ -441,40 +441,20 @@ object JsonCodecMaker {
       }
 
       def companion(tpe: Type): Symbol = {
-        // Borrowed and refactored from Chimney: https://github.com/scalalandio/chimney/blob/master/chimney/src/main/scala/io/scalaland/chimney/internal/CompanionUtils.scala#L10-L63
-        // Copied from Magnolia: https://github.com/propensive/magnolia/blob/master/core/shared/src/main/scala/globalutil.scala
-        // From Shapeless: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/generic.scala#L698
-        // Cut-n-pasted (with most original comments) and slightly adapted from https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
-        def patchedCompanionRef(tpe: Type): Tree = {
-          val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-          val globalType = tpe.asInstanceOf[global.Type]
-          val original = globalType.typeSymbol
-          global.gen.mkAttributedRef(globalType.prefix, original.companion.orElse {
-            import global._
-            val name = original.name.companionName
-            val expectedOwner = original.owner
-            var ctx = c.asInstanceOf[Context].callsiteTyper.asInstanceOf[global.analyzer.Typer].context
-            var res: Symbol = NoSymbol
-            while (res == NoSymbol && ctx.outer != ctx) {
-              // NOTE: original implementation says `val s = ctx.scope lookup name`
-              // but we can't use it, because Scope.lookup returns wrong results when the lookup is ambiguous
-              // and that triggers https://github.com/scalamacros/paradise/issues/64
-              val s = ctx.scope.lookupAll(name)
-                .filter(sym => (original.isTerm || sym.hasModuleFlag) && sym.isCoDefinedWith(original)).toList match {
-                case Nil => NoSymbol
-                case unique :: Nil => unique
-                case _ => fail(s"Unexpected multiple results for a companion symbol lookup for $original")
-              }
-              if (s != NoSymbol && s.owner == expectedOwner) res = s
-              else ctx = ctx.outer
-            }
-            res
-          }).asInstanceOf[Tree]
-        }
-
         val comp = tpe.typeSymbol.companion
         if (comp.isModule) comp
-        else patchedCompanionRef(tpe).symbol
+        else {
+          // Borrowed from Magnolia: https://github.com/propensive/magnolia/blob/f21f2aabb49e43b372240e98ec77981662cc570c/core/shared/src/main/scala/magnolia.scala#L123-L155
+          val ownerChainOf: Symbol => Iterator[Symbol] =
+            s => Iterator.iterate(s)(_.owner).takeWhile(x => x != null && x != NoSymbol).toVector.reverseIterator
+          val path = ownerChainOf(tpe.typeSymbol)
+            .zipAll(ownerChainOf(enclosingOwner), NoSymbol, NoSymbol)
+            .dropWhile { case (x, y) => x == y }
+            .takeWhile(_._1 != NoSymbol)
+            .map(_._1.name.toTermName)
+          if (path.isEmpty) fail(s"Cannot find a companion for $tpe")
+          else c.typecheck(path.foldLeft[Tree](Ident(path.next()))(Select(_, _)), silent = true).symbol
+        }
       }
 
       def isContainer(tpe: Type): Boolean =
@@ -563,19 +543,11 @@ object JsonCodecMaker {
         if (values.isEmpty) {
           val comp = companion(tpe)
           values =
-            if (comp != NoSymbol) {
-              comp.typeSignature.members.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
-                val name = decodeName(m)
-                val transformedName = javaEnumValueNameMapper(name)
-                EnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
-              }.toSeq
-            } else { // FIXME: Scala 2.11.x returns empty set of subclasses for Java enums
-              eval[Seq[(String, String)]](q"$tpe.values.map[(String, String)](e => (e.getClass.getName, e.name))").map {
-                case (className, name) =>
-                  val transformedName = javaEnumValueNameMapper(name)
-                  EnumValueInfo(q"$className.${TermName(name)}", transformedName, name != transformedName)
-              }
-            }
+            comp.typeSignature.members.collect { case m: MethodSymbol if m.isGetter && m.returnType.dealias =:= tpe =>
+              val name = decodeName(m)
+              val transformedName = javaEnumValueNameMapper(name)
+              EnumValueInfo(q"$comp.${TermName(name)}", transformedName, name != transformedName)
+            }.toSeq
         }
         val nameCollisions = duplicated(values.map(_.name))
         if (nameCollisions.nonEmpty) {
