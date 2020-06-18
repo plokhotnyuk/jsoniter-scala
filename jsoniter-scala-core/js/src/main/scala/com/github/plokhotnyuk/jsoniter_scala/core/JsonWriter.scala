@@ -1856,8 +1856,8 @@ final class JsonWriter private[jsoniter_scala](
         }
         exp = e * 315653 - expCorr >> 20
         val g1 = gs(exp + 324 << 1) + 1
-        val h = (-exp * 108853 >> 15) + e + 1
-        val cb = m << 2
+        val h = (-exp * 108853 >> 15) + e + 33
+        val cb: Long = m << 2
         val outm1 = (m & 0x1) - 1
         val vb = rop(g1, cb << h)
         val vbls = rop(g1, cb - cblShift << h) + outm1
@@ -1934,8 +1934,8 @@ final class JsonWriter private[jsoniter_scala](
     }
   }
 
-  private[this] def rop(g: Long, cp: Int): Int = {
-    val x1 = ((g & 0xFFFFFFFFL) * cp >>> 32) + (g >>> 32) * cp // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+  private[this] def rop(g: Long, cp: Long): Int = {
+    val x1 = Math.multiplyHigh(g, cp)
     (x1 >>> 31).toInt | -x1.toInt >>> 31
   }
 
@@ -1991,7 +1991,7 @@ final class JsonWriter private[jsoniter_scala](
         val vbrd = outm1 - rop(g1, g0, cb + 2 << h)
         val s = vb >> 2
         if (s < 100 || {
-          dv = s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping JDK 8 support
+          dv = Math.multiplyHigh(s, 1844674407370955168L)
           val sp10 = dv * 10
           val sp40 = sp10 << 2
           val upin = (vbls - sp40).toInt
@@ -2063,20 +2063,10 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x1 = /*Math.*/multiplyHigh(g0, cp) // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+    val x1 = Math.multiplyHigh(g0, cp)
     val z = (g1 * cp >>> 1) + x1
-    val y1 = /*Math.*/multiplyHigh(g1, cp) // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+    val y1 = Math.multiplyHigh(g1, cp)
     (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
-  }
-
-  private[this] def multiplyHigh(x: Long, y: Long): Long = {
-    val x2 = x & 0xFFFFFFFFL
-    val y2 = y & 0xFFFFFFFFL
-    val b = x2 * y2
-    val x1 = x >>> 32
-    val y1 = y >>> 32
-    val a = x1 * y1
-    (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
   }
 
   private[this] def offset(q0: Long): Int =
@@ -2097,7 +2087,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, 0, pos, posLim, buf, ds)
     else {
-      val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
+      val q1 = Math.multiplyHigh(q0, 193428131138340668L) >>> 20
       writeSignificantFractionDigits(q1.toInt, {
         val r1 = (q0 - q1 * 100000000).toInt
         if (r1 == 0) 0
