@@ -1066,6 +1066,7 @@ final class JsonWriter private[jsoniter_scala](
     if (exp != 0) {
       var pos = ensureBufCapacity(12)
       val buf = this.buf
+      val ds = digits
       buf(pos) = 'E'
       pos += 1
       val q0 =
@@ -1073,31 +1074,31 @@ final class JsonWriter private[jsoniter_scala](
           buf(pos) = '+'
           pos += 1
           exp
-        } else if (exp != -2147483648) {
+        } else {
           buf(pos) = '-'
           pos += 1
           -exp
-        } else {
-          buf(pos) = '+'
-          buf(pos + 1) = '2'
-          pos += 2
-          147483648
         }
-      count = writePositiveInt(q0, pos, buf, digits)
+      count =
+        if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
+        else {
+          val q1 = (q0 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+          write8Digits((q0 - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
+        }
     }
   }
 
-  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Int =
+  private[this] def writeBigDecimal(x: BigInteger, scale: Int, blockScale: Int, ss: Array[BigInteger]): Long =
     if (x.bitLength < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
       writeLong(v)
-      val blockLen = count - pos + (v >> 63).toInt
-      val dotOff = scale - blockScale
-      val exp = blockLen - dotOff - 1
+      val blockLen = (v >> 63).toInt + count - pos
+      val dotOff = scale.toLong - blockScale
+      val exp = (blockLen - 1) - dotOff
       if (scale >= 0 && exp >= -6) {
-        if (exp < 0) insertDotWithZeroes(blockLen, -1 - exp)
-        else if (dotOff > 0) insertDot(count - dotOff)
+        if (exp < 0) insertDotWithZeroes(blockLen, -1 - exp.toInt)
+        else if (dotOff > 0) insertDot(count - dotOff.toInt)
         0
       } else {
         if (blockLen > 1 || blockScale > 0) insertDot(count - blockLen + 1)
