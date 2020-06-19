@@ -1,17 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.ByteArrayInputStream
-
 object TestUtils {
   val isJDK8: Boolean = false
   val isJS: Boolean = true
-
-  def getResourceAsStream(resource: String): java.io.InputStream =
-    new ByteArrayInputStream(FS.readFileSync(Path.join(
-      "jsoniter-scala-core",
-      "shared", "src", "test", "resources",
-      "com", "github", "plokhotnyuk", "jsoniter_scala", "core",
-      resource), "utf8").getBytes)
 
   def byteArrayToString(bytes: Array[Byte]): String = new String(bytes, 0, bytes.length)
 

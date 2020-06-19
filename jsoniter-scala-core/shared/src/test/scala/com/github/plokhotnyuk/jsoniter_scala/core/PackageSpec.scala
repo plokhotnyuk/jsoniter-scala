@@ -12,7 +12,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "readFromStream" should {
     "parse JSON from the provided input stream" in {
-      readFromStream(TestUtils.getResourceAsStream("user_api_response.json"))(codec) shouldBe user
+      readFromStream(new ByteArrayInputStream(prettyJson))(codec) shouldBe user
     }
     "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromStream(new ByteArrayInputStream(httpMessage))(codec)).getMessage ==
@@ -26,7 +26,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
-      def streamWithError = TestUtils.getResourceAsStream("user_api_response_with_error.json")
+      def streamWithError = new ByteArrayInputStream(errorJson)
 
       readFromStream(streamWithError, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
       assert(intercept[JsonReaderException](readFromStream(streamWithError)(codec)).getMessage ==
@@ -211,11 +211,9 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
   }
   "scanValueStream" should {
-    def inputStream: InputStream = TestUtils.getResourceAsStream("user_api_value_stream.json")
-
     "scan JSON values from the provided input stream" in {
       var users: Seq[User] = Seq.empty
-      scanJsonValuesFromStream(inputStream) { u: User =>
+      scanJsonValuesFromStream(new ByteArrayInputStream(valueStreamJson)) { u: User =>
         users = users :+ u
         true
       }(codec)
@@ -223,7 +221,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "scanning of JSON values can be interrupted by returning `false` from the consumer" in {
       var users: Seq[User] = Seq.empty
-      scanJsonValuesFromStream(inputStream) { u: User =>
+      scanJsonValuesFromStream(new ByteArrayInputStream(valueStreamJson)) { u: User =>
         users = users :+ u
         false
       }(codec)
@@ -233,16 +231,14 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       val skip = (_: User) => true
       val npe = null.asInstanceOf[User => Boolean]
       intercept[NullPointerException](scanJsonValuesFromStream(null.asInstanceOf[InputStream])(skip)(codec))
-      intercept[NullPointerException](scanJsonValuesFromStream(inputStream, null)(skip)(codec))
-      intercept[NullPointerException](scanJsonValuesFromStream(inputStream)(npe)(codec))
+      intercept[NullPointerException](scanJsonValuesFromStream(new ByteArrayInputStream(valueStreamJson), null)(skip)(codec))
+      intercept[NullPointerException](scanJsonValuesFromStream(new ByteArrayInputStream(valueStreamJson))(npe)(codec))
     }
   }
   "scanArray" should {
-    def inputStream: InputStream = TestUtils.getResourceAsStream("user_api_array.json")
-
     "scan values of JSON array from the provided input stream" in {
       var users: Seq[User] = Seq.empty
-      scanJsonArrayFromStream(inputStream) { u: User =>
+      scanJsonArrayFromStream(new ByteArrayInputStream(arrayJson)) { u: User =>
         users = users :+ u
         true
       }(codec)
@@ -250,7 +246,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
     "scanning of JSON array values can be interrupted by returning `false` from the consumer" in {
       var users: Seq[User] = Seq.empty
-      scanJsonArrayFromStream(inputStream) { u: User =>
+      scanJsonArrayFromStream(new ByteArrayInputStream(arrayJson)) { u: User =>
         users = users :+ u
         false
       }(codec)
@@ -265,11 +261,10 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       users shouldBe Seq()
     }
     "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
-      def inputStreamWithError: InputStream = TestUtils.getResourceAsStream("user_api_array_with_error.json")
-
-      scanJsonArrayFromStream[User](inputStreamWithError)(_ => false)(codec)
-      scanJsonArrayFromStream[User](inputStreamWithError, ReaderConfig.withCheckForEndOfInput(false))(_ => true)(codec)
-      assert(intercept[JsonReaderException](scanJsonArrayFromStream[User](inputStreamWithError)(_ => true)(codec)).getMessage ==
+      scanJsonArrayFromStream[User](new ByteArrayInputStream(arrayWithErrorJson))(_ => false)(codec)
+      scanJsonArrayFromStream[User](new ByteArrayInputStream(arrayWithErrorJson),
+        ReaderConfig.withCheckForEndOfInput(false))(_ => true)(codec)
+      assert(intercept[JsonReaderException](scanJsonArrayFromStream[User](new ByteArrayInputStream(arrayWithErrorJson))(_ => true)(codec)).getMessage ==
         """expected end of input, offset: 0x00000193, buf:
           |+----------+-------------------------------------------------+------------------+
           ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
@@ -297,8 +292,8 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       val skip = (_: User) => true
       val npe = null.asInstanceOf[User => Boolean]
       intercept[NullPointerException](scanJsonArrayFromStream(null.asInstanceOf[InputStream])(skip)(codec))
-      intercept[NullPointerException](scanJsonArrayFromStream(inputStream, null)(skip)(codec))
-      intercept[NullPointerException](scanJsonArrayFromStream(inputStream)(npe)(codec))
+      intercept[NullPointerException](scanJsonArrayFromStream(new ByteArrayInputStream(arrayJson), null)(skip)(codec))
+      intercept[NullPointerException](scanJsonArrayFromStream(new ByteArrayInputStream(arrayJson))(npe)(codec))
     }
   }
   "readFromString" should {

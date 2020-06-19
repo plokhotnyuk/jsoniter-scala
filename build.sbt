@@ -112,15 +112,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6" % Test,
       "org.scalatestplus" %%% "scalacheck-1-14" % "3.1.2.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.0" % Test
-    ),
-    Seq(Test).flatMap(inConfig(_) { // FIXME: Shared resource directory is ignored, see https://github.com/portable-scala/sbt-crossproject/issues/74
-      unmanagedResourceDirectories ++= {
-        unmanagedSourceDirectories.value
-          .map(src => (src / ".." / "resources").getCanonicalFile)
-          .filterNot(unmanagedResourceDirectories.value.contains)
-          .distinct
-      }
-    })
+    )
   )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
