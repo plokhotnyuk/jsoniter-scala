@@ -15,11 +15,11 @@ matrix:
       jdk: oraclejdk11
       scala: 2.13.2
       script:
-        - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION! clean coverage test coverageAggregate mimaReportBinaryIssues < /dev/null
+        - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION! clean coverage test mimaReportBinaryIssues
+        - sbt -batch ++$TRAVIS_SCALA_VERSION! coverageReport coveralls
     - os: linux
       scala: 2.12.11
       jdk: oraclejdk11
       script:
-        - travis_wait 60 sbt -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseJVMCICompiler -batch ++$TRAVIS_SCALA_VERSION! clean coverage test coverageAggregate mimaReportBinaryIssues < /dev/null
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+        - travis_wait 60 sbt -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseJVMCICompiler -batch ++$TRAVIS_SCALA_VERSION! clean coverage test mimaReportBinaryIssues
+        - sbt -batch ++$TRAVIS_SCALA_VERSION! coverageReport coveralls
