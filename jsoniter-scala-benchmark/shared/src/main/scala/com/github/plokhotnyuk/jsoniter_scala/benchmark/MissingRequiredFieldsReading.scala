@@ -46,7 +46,7 @@ class MissingRequiredFieldsReading extends CommonParams {
 
   @Benchmark
   def circe(): String =
-    decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _ => null)
+    decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _.toString) // toString() should not be called
 
   @Benchmark
   def dslJsonScala(): String =

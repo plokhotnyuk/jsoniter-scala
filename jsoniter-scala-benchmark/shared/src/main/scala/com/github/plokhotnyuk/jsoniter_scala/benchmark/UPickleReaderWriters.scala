@@ -129,7 +129,7 @@ object UPickleReaderWriters extends AttributeTagged {
     implicitly[Writer[T]].comap[Option[T]](_.getOrElse(null.asInstanceOf[T]))
 
   override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    new Reader.Delegate[Any, Option[T]](implicitly[Reader[T]].map(x => new Some(x))){
+    new Reader.Delegate[Any, Option[T]](implicitly[Reader[T]].map(x => new Some(x))) {
       override def visitNull(index: Int): Option[T] = None
     }
 
