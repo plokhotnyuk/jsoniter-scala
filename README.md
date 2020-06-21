@@ -18,7 +18,7 @@ performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 and [weePickle](https://github.com/rallyhealth/weePickle) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
-latest versions of Amazon Corretto 8/11, OpenJDK 15 (early-access build) with HotSpot C2[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing)
+latest versions of Amazon Corretto 8/11, OpenJDK 16 (early-access build) with HotSpot C2[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing)
 and Graal compilers, GraalVM 20.2 CE for Java 8/11 (dev build) and GraalVM 20.1 EE for Java 8/11
 
 ## Acknowledgments
