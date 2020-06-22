@@ -890,8 +890,24 @@ final class JsonReader private[jsoniter_scala](
     } else parseHourWithByte(t, loadMoreOrError(pos))
 
   @tailrec
-  private[this] def parseMinute(pos: Int): Int =
+  private[this] def parseMinuteWithByte(t: Byte, pos: Int): Int =
     if (pos + 2 < tail) {
+      val buf = this.buf
+      val b1 = buf(pos)
+      val b2 = buf(pos + 1)
+      val b3 = buf(pos + 2)
+      val minute = b1 * 10 + b2 - 528 // 528 == '0' * 11
+      head = pos + 3
+      if (b1 < '0' || b1 > '9') digitError(pos)
+      if (b2 < '0' || b2 > '9') digitError(pos + 1)
+      if (b1 > '5') minuteError(pos + 1)
+      if (b3 != t) tokenError(t, pos + 2)
+      minute
+    } else parseMinuteWithByte(t, loadMoreOrError(pos))
+
+  @tailrec
+  private[this] def parseMinute(pos: Int): Int =
+    if (pos + 1 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
       val b2 = buf(pos + 1)
@@ -904,7 +920,7 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private[this] def parseSecond(pos: Int): Int =
-    if (pos + 2 < tail) {
+    if (pos + 1 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
       val b2 = buf(pos + 1)
@@ -969,7 +985,7 @@ final class JsonReader private[jsoniter_scala](
 
   @tailrec
   private[this] def parseOffsetSecond(pos: Int): Int =
-    if (pos + 2 < tail) {
+    if (pos + 1 < tail) {
       val buf = this.buf
       val b1 = buf(pos)
       val b2 = buf(pos + 1)
@@ -1947,17 +1963,12 @@ final class JsonReader private[jsoniter_scala](
     val month = parseMonthWithByte('-', head)
     val day = parseDayWithByte(year, month, 'T', head)
     val hour = parseHourWithByte(':', head)
-    val minute = parseMinute(head)
-    var second, nano = 0
-    val b = nextByte(head)
-    if (b == ':') {
-      second = parseSecond(head)
-      nano = parseOptionalNanoWithByte('Z')
-    } else if (b != 'Z') tokensError(':', 'Z')
+    val minute = parseMinuteWithByte(':', head)
+    val second = parseSecond(head)
+    val nano = parseOptionalNanoWithByte('Z')
     nextByteOrError('"', head)
     val epochDay = epochDayForYear(year) + (dayOfYearForYearMonth(year, month) + day - 719529) // 719528 == days 0000 to 1970
-    val secondOfDay = hour * 3600 + minute * 60 + second
-    Instant.ofEpochSecond(epochDay * 86400 + secondOfDay, nano) // 86400 == seconds per day
+    Instant.ofEpochSecond(epochDay * 86400 + (hour * 3600 + minute * 60 + second), nano) // 86400 == seconds per day
   }
 
   private[this] def parseLocalDate(): LocalDate = {

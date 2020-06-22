@@ -736,7 +736,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("\"2008-01-20T07=24:33Z\"", "expected ':', offset: 0x0000000e")
       checkError("\"2008-01-20T07:X4:33Z\"", "expected digit, offset: 0x0000000f")
       checkError("\"2008-01-20T07:2X:33Z\"", "expected digit, offset: 0x00000010")
-      checkError("\"2008-01-20T07:24=33Z\"", "expected ':' or 'Z', offset: 0x00000011")
+      checkError("\"2008-01-20T07:24=33Z\"", "expected ':', offset: 0x00000011")
       checkError("\"2008-01-20T07:24:X3Z\"", "expected digit, offset: 0x00000012")
       checkError("\"2008-01-20T07:24:3XZ\"", "expected digit, offset: 0x00000013")
       checkError("\"2008-01-20T07:24:33X\"", "expected '.' or 'Z', offset: 0x00000014")
