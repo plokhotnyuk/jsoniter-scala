@@ -1788,6 +1788,9 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse escaped chars of string value" in {
       forAll(genWhitespaces) { ws =>
         checkEscaped("""\b\f\n\r\t\/\\""", "\b\f\n\r\t/\\", ws)
+        checkEscaped(""" \b\f\n\r\t\/\\""", " \b\f\n\r\t/\\", ws)
+        checkEscaped("""  \b\f\n\r\t\/\\""", "  \b\f\n\r\t/\\", ws)
+        checkEscaped("""   \b\f\n\r\t\/\\""", "   \b\f\n\r\t/\\", ws)
       }
     }
     "parse string with hexadecimal escaped chars which are non-surrogate" in {
