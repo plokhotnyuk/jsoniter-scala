@@ -711,6 +711,16 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
       forAll(genInstant, genWhitespaces, minSuccessful(10000))(check)
     }
+    "parse Instant from a string representation without seconds" in {
+      def check(s: String, x: Instant, ws: String): Unit = {
+        reader(s"""$ws"$s"""").readInstant(null) shouldBe x
+        reader(s"""$ws"$s":""").readKeyAsInstant() shouldBe x
+      }
+
+      forAll(genWhitespaces) { ws =>
+        check("2008-01-20T07:24Z", Instant.ofEpochSecond(LocalDateTime.of(2008, 1, 20, 7, 24).toEpochSecond(ZoneOffset.UTC)), ws)
+      }
+    }
     "throw parsing exception for empty input and illegal or broken Instant string" in {
       def checkError(json: String, error: String): Unit = {
         assert(intercept[JsonReaderException](reader(json).readInstant(null)).getMessage.contains(error))
