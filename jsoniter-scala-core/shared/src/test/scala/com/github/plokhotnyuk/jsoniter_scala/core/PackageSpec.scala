@@ -337,12 +337,14 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "writeToStream" should {
     "serialize an object to the provided output stream" in {
-      val out1 = new ByteArrayOutputStream()
-      writeToStream(user, out1)(codec)
-      out1.toString("UTF-8") shouldBe toString(compactJson)
-      val out2 = new ByteArrayOutputStream()
-      writeToStream(user, out2, WriterConfig.withIndentionStep(2))(codec)
-      out2.toString("UTF-8") shouldBe toString(prettyJson)
+      (1 to 99).foreach { preferredBufSize =>
+        val out1 = new ByteArrayOutputStream()
+        writeToStream(user, out1, WriterConfig.withPreferredBufSize(preferredBufSize))(codec)
+        out1.toString("UTF-8") shouldBe toString(compactJson)
+        val out2 = new ByteArrayOutputStream()
+        writeToStream(user, out2, WriterConfig.withIndentionStep(2).withPreferredBufSize(preferredBufSize))(codec)
+        out2.toString("UTF-8") shouldBe toString(prettyJson)
+      }
     }
     "throw NullPointerException in case of the provided params are null" in {
       intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream())(null))
@@ -387,45 +389,49 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
   }
   "writeToByteBuffer" should {
     "serialize an object to the provided direct byte buffer from the current position" in {
-      val buf = new Array[Byte](150)
-      val bbuf = ByteBuffer.allocateDirect(150)
-      val from1 = 10
-      bbuf.position(from1)
-      writeToByteBuffer(user, bbuf)(codec)
-      val to1 = bbuf.position()
-      bbuf.position(from1)
-      bbuf.get(buf, from1, to1 - from1)
-      new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
-      bbuf.limit() shouldBe 150
-      val from2 = 0
-      bbuf.position(from2)
-      writeToByteBuffer(user, bbuf, WriterConfig.withIndentionStep(2))(codec)
-      val to2 = bbuf.position()
-      bbuf.position(from2)
-      bbuf.get(buf, from2, to2 - from2)
-      new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
-      bbuf.limit() shouldBe 150
+      (1 to 99).foreach { preferredBufSize =>
+        val buf = new Array[Byte](150)
+        val bbuf = ByteBuffer.allocateDirect(150)
+        val from1 = 10
+        bbuf.position(from1)
+        writeToByteBuffer(user, bbuf, WriterConfig.withPreferredBufSize(preferredBufSize))(codec)
+        val to1 = bbuf.position()
+        bbuf.position(from1)
+        bbuf.get(buf, from1, to1 - from1)
+        new String(buf, from1, to1 - from1, UTF_8) shouldBe toString(compactJson)
+        bbuf.limit() shouldBe 150
+        val from2 = 0
+        bbuf.position(from2)
+        writeToByteBuffer(user, bbuf, WriterConfig.withIndentionStep(2).withPreferredBufSize(preferredBufSize))(codec)
+        val to2 = bbuf.position()
+        bbuf.position(from2)
+        bbuf.get(buf, from2, to2 - from2)
+        new String(buf, from2, to2 - from2, UTF_8) shouldBe toString(prettyJson)
+        bbuf.limit() shouldBe 150
+      }
     }
     "serialize an object to the provided array-based byte buffer from the current position" in {
-      val buf = new Array[Byte](160)
-      var bbuf = ByteBuffer.wrap(buf)
-      val offset = 10
-      bbuf.position(offset)
-      bbuf = bbuf.slice()
-      val from1 = 5
-      bbuf.position(from1)
-      writeToByteBuffer(user, bbuf)(codec)
-      val to1 = bbuf.position()
-      new String(buf, from1 + offset, to1 - from1, UTF_8) shouldBe toString(compactJson)
-      bbuf.limit() shouldBe buf.length - offset
-      bbuf.arrayOffset() shouldBe offset
-      val from2 = 0
-      bbuf.position(from2)
-      writeToByteBuffer(user, bbuf, WriterConfig.withIndentionStep(2))(codec)
-      val to2 = bbuf.position()
-      new String(buf, from2 + offset, to2 - from2, UTF_8) shouldBe toString(prettyJson)
-      bbuf.limit() shouldBe buf.length - offset
-      bbuf.arrayOffset() shouldBe offset
+      (1 to 99).foreach { preferredBufSize =>
+        val buf = new Array[Byte](160)
+        var bbuf = ByteBuffer.wrap(buf)
+        val offset = 10
+        bbuf.position(offset)
+        bbuf = bbuf.slice()
+        val from1 = 5
+        bbuf.position(from1)
+        writeToByteBuffer(user, bbuf, WriterConfig.withPreferredBufSize(preferredBufSize))(codec)
+        val to1 = bbuf.position()
+        new String(buf, from1 + offset, to1 - from1, UTF_8) shouldBe toString(compactJson)
+        bbuf.limit() shouldBe buf.length - offset
+        bbuf.arrayOffset() shouldBe offset
+        val from2 = 0
+        bbuf.position(from2)
+        writeToByteBuffer(user, bbuf, WriterConfig.withIndentionStep(2).withPreferredBufSize(preferredBufSize))(codec)
+        val to2 = bbuf.position()
+        new String(buf, from2 + offset, to2 - from2, UTF_8) shouldBe toString(prettyJson)
+        bbuf.limit() shouldBe buf.length - offset
+        bbuf.arrayOffset() shouldBe offset
+      }
     }
     "throw BufferOverflowException in case of the provided byte buffer is overflown during serialization" in {
       val bbuf1 = ByteBuffer.allocateDirect(150)

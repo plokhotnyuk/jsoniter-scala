@@ -12,6 +12,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
+import scala.util.Random
+
 class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "WriterConfig.<init>" should {
     "have handy defaults" in {
@@ -884,7 +886,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     withWriter(WriterConfig.withPreferredBufSize(1).withThrowWriterExceptionWithStackTrace(true))(f)
 
   def withWriter(cfg: WriterConfig)(f: JsonWriter => Unit): String = {
-    val writer = new JsonWriter(new Array[Byte](0), 0, 0, 0, false, false, null, null, cfg)
+    val writer = new JsonWriter(new Array[Byte](Random.nextInt(16)), 0, 0, 0, false, false, null, null, cfg)
     new String(writer.write(new JsonValueCodec[String] {
       override def decodeValue(in: JsonReader, default: String): String = ""
 
