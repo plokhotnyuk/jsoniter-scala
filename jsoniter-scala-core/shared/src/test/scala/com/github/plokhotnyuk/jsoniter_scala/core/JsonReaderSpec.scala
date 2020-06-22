@@ -544,10 +544,10 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "parse Base16 representation according to format that defined in RFC4648" in {
       def check(s: String, ws: String): Unit = {
         val bs = s.getBytes(UTF_8)
-        val base16LowerCase = bs.map(TestUtils.lowercaseHex).mkString("\"", "", "\"")
+        val base16LowerCase = bs.map(TestUtils.toHex).mkString("\"", "", "\"")
         val base16UpperCase = base16LowerCase.toUpperCase
-        reader(ws + base16LowerCase).readBase16AsBytes(null).map(TestUtils.lowercaseHex).mkString("\"", "", "\"") shouldBe base16LowerCase
-        reader(ws + base16UpperCase).readBase16AsBytes(null).map(TestUtils.uppercaseHex).mkString("\"", "", "\"") shouldBe base16UpperCase
+        reader(ws + base16LowerCase).readBase16AsBytes(null).map(TestUtils.toHex).mkString("\"", "", "\"") shouldBe base16LowerCase
+        reader(ws + base16UpperCase).readBase16AsBytes(null).map(TestUtils.toHex).mkString("\"", "", "\"") shouldBe base16LowerCase
       }
 
       forAll(arbitrary[String], genWhitespaces, minSuccessful(10000))(check)

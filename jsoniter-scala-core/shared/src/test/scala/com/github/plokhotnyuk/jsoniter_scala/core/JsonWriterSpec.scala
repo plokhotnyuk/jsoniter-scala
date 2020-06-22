@@ -762,7 +762,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "write bytes as Base16 string according to format that defined in RFC4648" in {
       def check(s: String): Unit = {
         val bs = s.getBytes
-        val base16LowerCase = bs.map(TestUtils.lowercaseHex).mkString("\"", "", "\"")
+        val base16LowerCase = bs.map(TestUtils.toHex).mkString("\"", "", "\"")
         val base16UpperCase = base16LowerCase.toUpperCase
         withWriter(_.writeBase16Val(bs, lowerCase = true)) shouldBe base16LowerCase
         withWriter(_.writeBase16Val(bs, lowerCase = false)) shouldBe base16UpperCase

@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 import java.math.MathContext
 import java.math.MathContext._
 import java.math.RoundingMode._
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.UUID
 
@@ -18,7 +19,7 @@ object GenUtils {
     size =>
       val bs = new Array[Byte](size)
       java.util.Arrays.fill(bs, ws(Random.nextInt(ws.length)))
-      TestUtils.byteArrayToString(bs)
+      new String(bs, 0, bs.length, UTF_8)
   }
   val genHighSurrogateChar: Gen[Char] = Gen.choose('\ud800', '\udbff')
   val genLowSurrogateChar: Gen[Char] = Gen.choose('\udc00', '\udfff')
