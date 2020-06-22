@@ -238,6 +238,11 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
   "scanArray" should {
     "scan values of JSON array from the provided input stream" in {
       var users: Seq[User] = Seq.empty
+      scanJsonArrayFromStream(new ByteArrayInputStream("[]".getBytes(UTF_8))) { u: User =>
+        users = users :+ u
+        true
+      }(codec)
+      users shouldBe Seq()
       scanJsonArrayFromStream(new ByteArrayInputStream(arrayJson)) { u: User =>
         users = users :+ u
         true
