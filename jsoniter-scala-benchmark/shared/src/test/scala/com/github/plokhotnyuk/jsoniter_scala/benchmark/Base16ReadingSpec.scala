@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class Base16ReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new Base16Reading {
+  def benchmark: Base16Reading = new Base16Reading {
     setup()
   }
   

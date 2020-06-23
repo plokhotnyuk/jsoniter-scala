@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class BitSetReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new BitSetReading {
+  def benchmark: BitSetReading = new BitSetReading {
     setup()
   }
   

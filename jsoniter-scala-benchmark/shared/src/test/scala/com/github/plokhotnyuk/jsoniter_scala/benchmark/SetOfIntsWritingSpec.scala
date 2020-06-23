@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
 import scala.collection.immutable.Set
 
 class SetOfIntsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new SetOfIntsWriting {
+  val benchmark = new SetOfIntsWriting {
     setup()
   }
   

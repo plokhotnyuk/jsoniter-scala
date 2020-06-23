@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ExtractFieldsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ExtractFieldsReading {
+  def benchmark: ExtractFieldsReading = new ExtractFieldsReading {
     setup()
   }
   

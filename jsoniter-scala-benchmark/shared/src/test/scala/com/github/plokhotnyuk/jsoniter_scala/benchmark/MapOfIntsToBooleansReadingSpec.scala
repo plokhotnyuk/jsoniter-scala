@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new MapOfIntsToBooleansReading {
+  def benchmark: MapOfIntsToBooleansReading = new MapOfIntsToBooleansReading {
     setup()
   }
   

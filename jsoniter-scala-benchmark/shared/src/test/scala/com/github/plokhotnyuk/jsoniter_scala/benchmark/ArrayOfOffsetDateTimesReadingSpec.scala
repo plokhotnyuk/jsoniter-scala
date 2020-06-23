@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfOffsetDateTimesReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ArrayOfOffsetDateTimesReading {
+  def benchmark: ArrayOfOffsetDateTimesReading = new ArrayOfOffsetDateTimesReading {
     setup()
   }
   

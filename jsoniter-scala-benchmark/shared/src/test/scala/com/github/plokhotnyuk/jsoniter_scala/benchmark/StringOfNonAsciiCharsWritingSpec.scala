@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class StringOfNonAsciiCharsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new StringOfNonAsciiCharsWriting {
+  val benchmark = new StringOfNonAsciiCharsWriting {
     setup()
   }
   

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ArrayOfEnumADTsReading {
+  def benchmark: ArrayOfEnumADTsReading = new ArrayOfEnumADTsReading {
     setup()
   }
   
@@ -19,18 +19,20 @@ class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
       benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
-      val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
-      intercept[Throwable](b.avSystemGenCodec())
-      intercept[Throwable](b.borer())
-      intercept[Throwable](b.circe())
-      intercept[Throwable](b.dslJsonScala())
-      intercept[Throwable](b.jacksonScala())
-      intercept[Throwable](b.jsoniterScala())
-      intercept[Throwable](b.playJson())
-      intercept[Throwable](b.sprayJson())
-      intercept[Throwable](b.uPickle())
-      intercept[Throwable](b.weePickle())
+      (0 to 2).foreach { i =>
+        val b = benchmark
+        b.jsonBytes(i) = 'x'.toByte
+        intercept[Throwable](b.avSystemGenCodec())
+        intercept[Throwable](b.borer())
+        intercept[Throwable](b.circe())
+        intercept[Throwable](b.dslJsonScala())
+        intercept[Throwable](b.jacksonScala())
+        intercept[Throwable](b.jsoniterScala())
+        intercept[Throwable](b.playJson())
+        intercept[Throwable](b.sprayJson())
+        intercept[Throwable](b.uPickle())
+        intercept[Throwable](b.weePickle())
+      }
     }
   }
 }

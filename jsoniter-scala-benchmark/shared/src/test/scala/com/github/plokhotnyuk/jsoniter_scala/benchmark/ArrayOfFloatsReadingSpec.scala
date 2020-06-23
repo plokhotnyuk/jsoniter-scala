@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 
 class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark: ArrayOfFloatsReading = new ArrayOfFloatsReading {
+  def benchmark: ArrayOfFloatsReading = new ArrayOfFloatsReading {
     private val values: Array[String] = Array(
       "7.038531e-26",
       "1.199999988079071",

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class VectorOfBooleansReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new VectorOfBooleansReading {
+  def benchmark: VectorOfBooleansReading = new VectorOfBooleansReading {
     setup()
   }
   

@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfEnumsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new ArrayOfEnumsWriting {
+  val benchmark = new ArrayOfEnumsWriting {
     setup()
   }
   

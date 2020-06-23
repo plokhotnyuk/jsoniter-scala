@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GeoJSONReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new GeoJSONReading
+  def benchmark = new GeoJSONReading
   
   "GeoJSONReading" should {
     "read properly" in {
@@ -17,7 +17,10 @@ class GeoJSONReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes(42) = '{'.toByte
+      b.jsonBytes(43) = '}'.toByte
+      b.jsonBytes(44) = ','.toByte
+      b.jsonBytes(45) = '['.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

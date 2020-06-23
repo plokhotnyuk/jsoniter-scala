@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfUUIDsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ArrayOfUUIDsReading {
+  def benchmark: ArrayOfUUIDsReading = new ArrayOfUUIDsReading {
     setup()
   }
   
@@ -20,7 +20,7 @@ class ArrayOfUUIDsReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes(1) = 'x'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

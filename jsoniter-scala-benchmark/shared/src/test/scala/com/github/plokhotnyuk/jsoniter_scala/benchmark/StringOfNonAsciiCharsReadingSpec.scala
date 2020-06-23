@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class StringOfNonAsciiCharsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new StringOfNonAsciiCharsReading {
+  def benchmark: StringOfNonAsciiCharsReading = new StringOfNonAsciiCharsReading {
     setup()
   }
   

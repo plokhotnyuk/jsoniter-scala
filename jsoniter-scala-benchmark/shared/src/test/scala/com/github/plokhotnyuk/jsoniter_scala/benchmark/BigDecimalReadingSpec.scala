@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class BigDecimalReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new BigDecimalReading {
+  def benchmark: BigDecimalReading = new BigDecimalReading {
     setup()
   }
   

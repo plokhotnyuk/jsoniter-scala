@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class StringOfEscapedCharsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new StringOfEscapedCharsReading {
+  def benchmark: StringOfEscapedCharsReading = new StringOfEscapedCharsReading {
     setup()
   }
 

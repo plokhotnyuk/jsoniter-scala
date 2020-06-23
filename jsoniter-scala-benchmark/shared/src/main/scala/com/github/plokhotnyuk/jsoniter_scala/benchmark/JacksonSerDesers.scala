@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.util.concurrent.ConcurrentHashMap
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-import com.fasterxml.jackson.core.JsonToken._
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser}
 import com.fasterxml.jackson.databind._
@@ -69,18 +68,14 @@ object JacksonSerDesers {
 class ByteArraySerializer extends StdSerializer[Array[Byte]](classOf[Array[Byte]]) {
   override def serialize(value: Array[Byte], gen: JsonGenerator, provider: SerializerProvider): Unit = {
     gen.writeStartArray()
-    if (!isEmpty(provider, value)) {
-      val l = value.length
-      var i = 0
-      while (i < l) {
-        gen.writeNumber(value(i))
-        i += 1
-      }
+    val l = value.length
+    var i = 0
+    while (i < l) {
+      gen.writeNumber(value(i))
+      i += 1
     }
     gen.writeEndArray()
   }
-
-  override def isEmpty(spro: SerializerProvider, value: Array[Byte]): Boolean = value.isEmpty
 }
 
 class StringifiedBooleanSerializer extends JsonSerializer[Boolean] {
@@ -117,9 +112,5 @@ class SuitADTDeserializer extends JsonDeserializer[SuitADT] {
     "Clubs" -> Clubs)
 
   override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SuitADT =
-    if (jp.getCurrentToken != VALUE_STRING) ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT]
-    else {
-      val s = jp.getValueAsString
-      suite.getOrElse(s, ctxt.handleWeirdStringValue(classOf[SuitADT], s, "illegal value").asInstanceOf[SuitADT])
-    }
+    Try(suite(jp.getValueAsString)).getOrElse(ctxt.handleUnexpectedToken(classOf[SuitADT], jp).asInstanceOf[SuitADT])
 }

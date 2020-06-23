@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ListOfBooleansWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new ListOfBooleansWriting {
+  val benchmark = new ListOfBooleansWriting {
     setup()
   }
   

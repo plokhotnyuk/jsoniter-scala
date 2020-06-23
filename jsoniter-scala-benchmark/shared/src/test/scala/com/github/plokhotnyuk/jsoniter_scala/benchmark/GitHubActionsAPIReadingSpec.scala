@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new GitHubActionsAPIReading
+  def benchmark = new GitHubActionsAPIReading
   
   "GitHubActionsAPIReading" should {
     "read properly" in {

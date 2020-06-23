@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new MutableLongMapOfBooleansReading {
+  def benchmark: MutableLongMapOfBooleansReading = new MutableLongMapOfBooleansReading {
     setup()
   }
   

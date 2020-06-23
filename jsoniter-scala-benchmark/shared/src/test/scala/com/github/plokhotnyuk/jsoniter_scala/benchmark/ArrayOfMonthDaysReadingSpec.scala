@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfMonthDaysReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ArrayOfMonthDaysReading {
+  def benchmark: ArrayOfMonthDaysReading = new ArrayOfMonthDaysReading {
     setup()
   }
   

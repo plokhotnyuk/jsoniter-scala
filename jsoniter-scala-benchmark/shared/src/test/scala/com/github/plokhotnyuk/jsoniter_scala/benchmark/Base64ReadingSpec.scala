@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class Base64ReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new Base64Reading {
+  def benchmark: Base64Reading = new Base64Reading {
     setup()
   }
   

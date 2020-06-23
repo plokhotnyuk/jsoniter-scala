@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class Base64WritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new Base64Writing {
+  val benchmark = new Base64Writing {
     setup()
   }
   

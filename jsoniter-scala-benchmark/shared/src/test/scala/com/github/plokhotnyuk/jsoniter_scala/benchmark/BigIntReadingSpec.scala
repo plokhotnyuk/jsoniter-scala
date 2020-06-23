@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class BigIntReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new BigIntReading {
+  def benchmark: BigIntReading = new BigIntReading {
     setup()
   }
   

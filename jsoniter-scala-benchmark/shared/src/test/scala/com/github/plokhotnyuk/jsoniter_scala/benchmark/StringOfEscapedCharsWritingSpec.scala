@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new StringOfEscapedCharsWriting {
+  val benchmark = new StringOfEscapedCharsWriting {
     setup()
   }
 

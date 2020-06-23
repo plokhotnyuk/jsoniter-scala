@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class MutableBitSetWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new MutableBitSetWriting {
+  val benchmark = new MutableBitSetWriting {
     setup()
   }
   

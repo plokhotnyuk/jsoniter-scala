@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfDurationsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new ArrayOfDurationsWriting {
+  val benchmark = new ArrayOfDurationsWriting {
     setup()
   }
   

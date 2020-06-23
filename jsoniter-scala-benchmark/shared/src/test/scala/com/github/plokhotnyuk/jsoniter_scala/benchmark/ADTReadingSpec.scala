@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ADTReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ADTReading
+  def benchmark = new ADTReading
   
   "ADTReading" should {
     "read properly" in {
@@ -17,7 +17,7 @@ class ADTReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes(2) = 'x'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())

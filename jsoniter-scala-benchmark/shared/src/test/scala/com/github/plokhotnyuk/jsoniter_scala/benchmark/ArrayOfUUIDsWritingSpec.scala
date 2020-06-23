@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfUUIDsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new ArrayOfUUIDsWriting {
+  val benchmark = new ArrayOfUUIDsWriting {
     setup()
   }
   

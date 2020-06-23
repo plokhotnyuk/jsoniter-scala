@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class Base16WritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new Base16Writing {
+  val benchmark = new Base16Writing {
     setup()
   }
   

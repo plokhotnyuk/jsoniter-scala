@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class NestedStructsWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new NestedStructsWriting {
+  val benchmark = new NestedStructsWriting {
     setup()
   }
   

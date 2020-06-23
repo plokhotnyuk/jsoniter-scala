@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class PrimitivesReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new PrimitivesReading
+  def benchmark = new PrimitivesReading
   
   "PrimitivesReading" should {
     "read properly" in {

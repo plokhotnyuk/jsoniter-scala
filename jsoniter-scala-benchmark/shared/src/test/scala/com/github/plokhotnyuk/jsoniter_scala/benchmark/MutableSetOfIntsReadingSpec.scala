@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new MutableSetOfIntsReading {
+  def benchmark: MutableSetOfIntsReading = new MutableSetOfIntsReading {
     setup()
   }
   

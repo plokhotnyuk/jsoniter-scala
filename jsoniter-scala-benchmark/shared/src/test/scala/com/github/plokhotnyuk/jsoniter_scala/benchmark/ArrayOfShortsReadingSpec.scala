@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfShortsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new ArrayOfShortsReading {
+  def benchmark: ArrayOfShortsReading = new ArrayOfShortsReading {
     setup()
   }
   

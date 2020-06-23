@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GoogleMapsAPIReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new GoogleMapsAPIReading
+  def benchmark = new GoogleMapsAPIReading
   
   "GoogleMapsAPIReading" should {
     "read properly" in {

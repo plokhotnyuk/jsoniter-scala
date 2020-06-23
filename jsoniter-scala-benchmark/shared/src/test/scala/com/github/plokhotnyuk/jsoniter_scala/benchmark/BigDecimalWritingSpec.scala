@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class BigDecimalWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new BigDecimalWriting {
+  val benchmark = new BigDecimalWriting {
     setup()
   }
   

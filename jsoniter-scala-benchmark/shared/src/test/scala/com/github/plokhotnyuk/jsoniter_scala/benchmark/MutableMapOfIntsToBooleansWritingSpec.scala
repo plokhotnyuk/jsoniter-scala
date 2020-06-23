@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class MutableMapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
-  private val benchmark = new MutableMapOfIntsToBooleansWriting {
+  val benchmark = new MutableMapOfIntsToBooleansWriting {
     setup()
   }
   

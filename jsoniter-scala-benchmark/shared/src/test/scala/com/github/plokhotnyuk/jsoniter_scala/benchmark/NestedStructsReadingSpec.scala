@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class NestedStructsReadingSpec extends BenchmarkSpecBase {
-  private def benchmark = new NestedStructsReading {
+  def benchmark: NestedStructsReading = new NestedStructsReading {
     setup()
   }
   
