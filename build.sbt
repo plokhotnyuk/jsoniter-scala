@@ -123,7 +123,7 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
       "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.0.0"
     ),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule).withESFeatures(_.withUseECMAScript2015(false))),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
 
@@ -145,7 +145,7 @@ lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
 
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   .settings(
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule).withESFeatures(_.withUseECMAScript2015(false))),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
 
@@ -196,7 +196,7 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .settings(
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.7.0",
     scalaJSUseMainModuleInitializer := true,
-    scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true)),
+    scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true).withESFeatures(_.withUseECMAScript2015(false))),
     mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
