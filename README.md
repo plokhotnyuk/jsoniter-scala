@@ -298,6 +298,11 @@ The workaround is using `double` or `BigDecimal` types for cases when an exact p
 
 No workaround at the moment.
 
+7. [Internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during derivation of 
+codecs for type-parametrized ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
+
+A workaround is moving the ADT definition out of enclosing classes, preferably on a top-level.  
+
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 

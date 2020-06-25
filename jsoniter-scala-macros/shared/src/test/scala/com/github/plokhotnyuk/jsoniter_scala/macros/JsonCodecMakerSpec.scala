@@ -230,6 +230,18 @@ case class CCC(a: Int, b: String) extends Inner
 
 case object DDD extends AdtBase
 
+sealed trait GADT2[A] extends Product with Serializable
+
+object GADT2 {
+  case class IsDir(path: String) extends GADT2[_root_.scala.Boolean]
+
+  case class Exists(path: String) extends GADT2[_root_.scala.Boolean]
+
+  case class ReadBytes(path: String) extends GADT2[_root_.scala.Array[_root_.scala.Byte]]
+
+  case class CopyOver(src: Seq[_root_.scala.Byte], path: String) extends GADT2[Int]
+}
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
 
@@ -1875,19 +1887,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[Array[GADT[_]]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
         _root_.scala.Array[GADT[_]](Foo, Bar, Baz, Qux), """["Foo","Bar","Baz","Qux"]""")
-
-      sealed trait GADT2[A] extends Product with Serializable
-
-      case class IsDir(path: String) extends GADT2[_root_.scala.Boolean]
-
-      case class Exists(path: String) extends GADT2[_root_.scala.Boolean]
-
-      case class ReadBytes(path: String) extends GADT2[_root_.scala.Array[_root_.scala.Byte]]
-
-      case class CopyOver(src: Seq[_root_.scala.Byte], path: String) extends GADT2[Int]
-
       verifySerDeser(make[Array[GADT2[_]]],
-        _root_.scala.Array[GADT2[_]](Exists("WWW"), ReadBytes("QQQ"), CopyOver("AAA".getBytes.toSeq, "OOO")),
+        _root_.scala.Array[GADT2[_]](GADT2.Exists("WWW"), GADT2.ReadBytes("QQQ"), GADT2.CopyOver("AAA".getBytes.toSeq, "OOO")),
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
