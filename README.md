@@ -470,7 +470,7 @@ Other benchmarks with results for jsoniter-scala:
 
 Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
 ```sh
-sbt -java-home /usr/lib/jvm/openjdk-15 jsoniter-scala-benchmarkJS/fullOptJS
+sbt -java-home /usr/lib/jvm/openjdk-16 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
@@ -478,6 +478,8 @@ Then open the list of benchmarks in a browser:
 cd jsoniter-scala-benchmark/js
 open scala-2.13-fullopt.html
 ```
+
+The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-2.13-fullopt.html). 
 
 ### Publish locally
 
