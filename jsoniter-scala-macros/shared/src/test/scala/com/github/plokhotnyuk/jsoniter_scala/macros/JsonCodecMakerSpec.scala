@@ -804,6 +804,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None),
         """{}""")
     }
+    "serialize and deserialize options in collections using null for None values" in {
+      verifySerDeser(make[Array[Option[Int]]], _root_.scala.Array(_root_.scala.None, Some(1)), "[null,1]")
+      verifySerDeser(make[List[Option[Int]]], List(Some(1), _root_.scala.None), "[1,null]")
+      verifySerDeser(make[Set[Option[Int]]], Set(Some(1), _root_.scala.None), "[1,null]")
+      verifySerDeser(make[Map[String, Option[Int]]], Map("VVV" -> _root_.scala.None, "WWW" -> Some(1)),
+        """{"VVV":null,"WWW":1}""")
+    }
+    "don't generate codecs when options are used as keys in maps" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[Map[Option[Int], Option[String]]]"
+      }).getMessage.contains {
+        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'Option[Int]'"
+      })
+    }
     "serialize case classes with empty options as null when the transientNone flag is off" in {
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
         Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L))),
