@@ -691,6 +691,15 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
     ))
   }, {
+    val benchmark = new ExtractFieldsReading { size = 128; setup() }
+    GS(S("ExtractFieldsReading")(
+      B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
+      B("borer")(benchmark.borer()),
+      B("circe")(benchmark.circe()),
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle())
+    ))
+  }, {
     val benchmark = new GeoJSONReading
     GS(S("GeoJSONReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
