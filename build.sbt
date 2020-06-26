@@ -25,7 +25,7 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("staging"),
     "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
-  scalaVersion := "2.13.2",
+  scalaVersion := "2.13.3",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -106,7 +106,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.2", "2.12.11", "2.11.12"),
+    crossScalaVersions := Seq("2.13.3", "2.12.11", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6" % Test,
@@ -133,7 +133,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.2", "2.12.11", "2.11.12"),
+    crossScalaVersions := Seq("2.13.3", "2.12.11", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -160,7 +160,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
       "Playframework" at "https://dl.bintray.com/playframework/maven"
     ),
-    crossScalaVersions := Seq("2.13.2", "2.12.11"),
+    crossScalaVersions := Seq("2.13.3", "2.12.11"),
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.1.0",
       "io.bullet" %%% "borer-derivation" % "1.6.0",

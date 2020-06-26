@@ -13,7 +13,7 @@ matrix:
   include:
     - os: linux
       jdk: oraclejdk11
-      scala: 2.13.2
+      scala: 2.13.3
       script:
         - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION! clean coverage test mimaReportBinaryIssues coverageAggregate coveralls
     - os: linux

@@ -1,8 +1,8 @@
 val `jsoniter-scala-examples` = project.in(file("."))
   .settings(
-    scalaVersion := "2.13.2",
+    scalaVersion := "2.13.3",
     scalacOptions ++= Seq("-Xmacro-settings:print-codecs"),
-    crossScalaVersions := Seq("2.13.2", "2.12.11", "2.11.12"),
+    crossScalaVersions := Seq("2.13.3", "2.12.11", "2.11.12"),
     mainClass in assembly := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "latest.integration" % "runtime-internal",
