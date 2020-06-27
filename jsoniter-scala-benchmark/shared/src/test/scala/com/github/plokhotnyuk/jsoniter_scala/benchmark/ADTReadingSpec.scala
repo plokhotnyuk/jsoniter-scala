@@ -17,7 +17,9 @@ class ADTReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(2) = 'x'.toByte
+      b.jsonBytes(8) = '1'.toByte
+      b.jsonBytes(9) = '1'.toByte
+      b.jsonBytes(10) = '1'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
@@ -27,6 +29,11 @@ class ADTReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+    }
+    "fail on invalid discriminator value" in {
+      val b = benchmark
+      b.jsonBytes(9) = 'x'.toByte
+      intercept[Throwable](b.sprayJson())
     }
   }
 }

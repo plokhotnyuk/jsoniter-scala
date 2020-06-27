@@ -18,7 +18,10 @@ class ArrayOfYearMonthsReadingSpec extends BenchmarkSpecBase {
     }
     "fail on invalid input" in {
       val b = benchmark
-      b.jsonBytes(0) = 'x'.toByte
+      b.jsonBytes(1) = '{'.toByte
+      b.jsonBytes(2) = '}'.toByte
+      b.jsonBytes(3) = ','.toByte
+      b.jsonBytes(4) = '"'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
