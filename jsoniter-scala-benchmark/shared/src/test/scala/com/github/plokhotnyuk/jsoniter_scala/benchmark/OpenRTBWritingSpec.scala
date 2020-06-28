@@ -1,24 +1,25 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class OpenRTBWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new OpenRTBWriting
+  def benchmark = new OpenRTBWriting
 
   "OpenRTBWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.borer()) shouldBe benchmark.jsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString
+      toString(b.borer()) shouldBe b.jsonString
       //FIXME: Circe serializes fields with default values
-      //toString(benchmark.circe()) shouldBe benchmark.jsonString
+      //toString(b.circe()) shouldBe b.jsonString
       //FIXME: Jackson serializes fields with default values
-      //toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      //toString(b.jacksonScala()) shouldBe b.jsonString
+      toString(b.jsoniterScala()) shouldBe b.jsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       //FIXME: Play-JSON serializes lists with default values
-      //toString(benchmark.playJson()) shouldBe benchmark.jsonString
+      //toString(b.playJson()) shouldBe b.jsonString
       //FIXME: Spray-JSON serializes fields with default values
-      //toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString
-      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
+      //toString(b.sprayJson()) shouldBe b.jsonString
+      toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.weePickle()) shouldBe b.jsonString
     }
   }
 }

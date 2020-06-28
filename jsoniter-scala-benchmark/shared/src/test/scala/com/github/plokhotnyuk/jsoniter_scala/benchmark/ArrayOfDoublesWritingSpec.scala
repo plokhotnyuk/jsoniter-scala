@@ -1,26 +1,27 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfDoublesWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfDoublesWriting {
+  def benchmark: ArrayOfDoublesWriting = new ArrayOfDoublesWriting {
     setup()
   }
   
   "ArrayOfDoublesWriting" should {
     "write properly" in {
-      sameOrBetter(toString(benchmark.avSystemGenCodec()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.borer()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
+      val b = benchmark
+      sameOrBetter(toString(b.avSystemGenCodec()), b.jsonString)
+      sameOrBetter(toString(b.borer()), b.jsonString)
+      sameOrBetter(toString(b.circe()), b.jsonString)
       //FIXME: DSL-JSON serializes doubles in a plain representation
-      //sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.jsoniterScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
+      //sameOrBetter(toString(b.dslJsonScala()), b.jsonString)
+      sameOrBetter(toString(b.jacksonScala()), b.jsonString)
+      sameOrBetter(toString(b.jsoniterScala()), b.jsonString)
+      sameOrBetter(toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()), b.jsonString)
       //FIXME: Play-JSON serializes doubles in different format than toString: 0.0 as 0, 7.0687002407403325E18 as 7068700240740332500
-      //sameOrBetter(toString(benchmark.playJson()), benchmark.jsonString)
+      //sameOrBetter(toString(b.playJson()), b.jsonString)
       //FIXME: Spray-JSON serializes doubles in different format than toString: 6.653409109328879E-5 as 0.00006653409109328879
-      //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.weePickle()), benchmark.jsonString)
+      //sameOrBetter(toString(b.sprayJson()), b.jsonString)
+      sameOrBetter(toString(b.uPickle()), b.jsonString)
+      sameOrBetter(toString(b.weePickle()), b.jsonString)
     }
   }
 

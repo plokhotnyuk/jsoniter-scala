@@ -1,25 +1,26 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class TwitterAPIWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new TwitterAPIWriting
+  def benchmark = new TwitterAPIWriting
   
   "TwitterAPIWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.compactJsonString
-      toString(benchmark.borer()) shouldBe benchmark.compactJsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.compactJsonString
+      toString(b.borer()) shouldBe b.compactJsonString
       //FIXME: Circe serializes empty collections
-      //toString(benchmark.circe()) shouldBe benchmark.compactJsonString
+      //toString(b.circe()) shouldBe b.compactJsonString
       //FIXME: DSL-JSON serializes empty collections
-      //toString(benchmark.dslJsonScala()) shouldBe benchmark.compactJsonString
-      toString(benchmark.jacksonScala()) shouldBe benchmark.compactJsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.compactJsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.compactJsonString
+      //toString(b.dslJsonScala()) shouldBe b.compactJsonString
+      toString(b.jacksonScala()) shouldBe b.compactJsonString
+      toString(b.jsoniterScala()) shouldBe b.compactJsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString
       //FIXME: Play-JSON serializes empty collections
-      //toString(benchmark.playJson()) shouldBe benchmark.compactJsonString
+      //toString(b.playJson()) shouldBe b.compactJsonString
       //FIXME: Spray-JSON serializes empty options and collections
-      //toString(benchmark.sprayJson()) shouldBe benchmark.compactJsonString
-      toString(benchmark.uPickle()) shouldBe benchmark.compactJsonString
-      toString(benchmark.weePickle()) shouldBe benchmark.compactJsonString
+      //toString(b.sprayJson()) shouldBe b.compactJsonString
+      toString(b.uPickle()) shouldBe b.compactJsonString
+      toString(b.weePickle()) shouldBe b.compactJsonString
     }
   }
 }

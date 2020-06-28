@@ -1,25 +1,26 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class NestedStructsWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new NestedStructsWriting {
+  def benchmark: NestedStructsWriting = new NestedStructsWriting {
     setup()
   }
   
   "NestedStructsWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.circe()) shouldBe benchmark.jsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString
+      toString(b.circe()) shouldBe b.jsonString
       //FIXME: Borer throws io.bullet.borer.Borer$Error$Unsupported: The JSON renderer doesn't support more than 64 JSON Array/Object nesting levels
-      //toString(benchmark.borer()) shouldBe benchmark.jsonString
+      //toString(b.borer()) shouldBe b.jsonString
       //FIXME: DSL-JSON serializes null value for Option.None
-      //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.playJson()) shouldBe benchmark.jsonString
-      toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString
-      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
+      //toString(b.dslJsonScala()) shouldBe b.jsonString
+      toString(b.jacksonScala()) shouldBe b.jsonString
+      toString(b.jsoniterScala()) shouldBe b.jsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString
+      toString(b.sprayJson()) shouldBe b.jsonString
+      toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.weePickle()) shouldBe b.jsonString
     }
   }
 }

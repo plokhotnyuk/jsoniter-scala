@@ -1,24 +1,25 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfBytesWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new ArrayOfBytesWriting {
+  def benchmark: ArrayOfBytesWriting = new ArrayOfBytesWriting {
     setup()
   }
   
   "ArrayOfBytesWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.borer()) shouldBe benchmark.jsonString
-      toString(benchmark.circe()) shouldBe benchmark.jsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString
+      toString(b.borer()) shouldBe b.jsonString
+      toString(b.circe()) shouldBe b.jsonString
       //FIXME: DSL-JSON serializes a byte array to the base64 string
-      //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.playJson()) shouldBe benchmark.jsonString
-      toString(benchmark.sprayJson()) shouldBe benchmark.jsonString
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString
-      toString(benchmark.weePickle()) shouldBe benchmark.jsonString
+      //toString(b.dslJsonScala()) shouldBe b.jsonString
+      toString(b.jacksonScala()) shouldBe b.jsonString
+      toString(b.jsoniterScala()) shouldBe b.jsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString
+      toString(b.sprayJson()) shouldBe b.jsonString
+      toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.weePickle()) shouldBe b.jsonString
     }
   }
 }

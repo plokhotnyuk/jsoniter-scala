@@ -1,21 +1,22 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new GoogleMapsAPIWriting
+  def benchmark = new GoogleMapsAPIWriting
   
   "GoogleMapsAPIWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.compactJsonString
-      toString(benchmark.borer()) shouldBe benchmark.compactJsonString
-      toString(benchmark.circe()) shouldBe benchmark.compactJsonString
-      toString(benchmark.dslJsonScala()) shouldBe benchmark.compactJsonString
-      toString(benchmark.jacksonScala()) shouldBe benchmark.compactJsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.compactJsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.compactJsonString
-      toString(benchmark.playJson()) shouldBe benchmark.compactJsonString
-      toString(benchmark.sprayJson()) shouldBe benchmark.compactJsonString
-      toString(benchmark.uPickle()) shouldBe benchmark.compactJsonString
-      toString(benchmark.weePickle()) shouldBe benchmark.compactJsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.compactJsonString
+      toString(b.borer()) shouldBe b.compactJsonString
+      toString(b.circe()) shouldBe b.compactJsonString
+      toString(b.dslJsonScala()) shouldBe b.compactJsonString
+      toString(b.jacksonScala()) shouldBe b.compactJsonString
+      toString(b.jsoniterScala()) shouldBe b.compactJsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString
+      toString(b.playJson()) shouldBe b.compactJsonString
+      toString(b.sprayJson()) shouldBe b.compactJsonString
+      toString(b.uPickle()) shouldBe b.compactJsonString
+      toString(b.weePickle()) shouldBe b.compactJsonString
     }
   }
 }

@@ -1,20 +1,21 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new StringOfEscapedCharsWriting {
+  def benchmark: StringOfEscapedCharsWriting = new StringOfEscapedCharsWriting {
     setup()
   }
 
   "StringOfEscapedCharsWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.circe()) shouldBe benchmark.jsonString
-      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString2
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.playJson()) shouldBe benchmark.jsonString2
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString
-      toString(benchmark.weePickle()) shouldBe benchmark.jsonString2
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString
+      toString(b.circe()) shouldBe b.jsonString
+      toString(b.jacksonScala()) shouldBe b.jsonString2
+      toString(b.jsoniterScala()) shouldBe b.jsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString2
+      toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.weePickle()) shouldBe b.jsonString2
     }
   }
 }

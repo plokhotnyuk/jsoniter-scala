@@ -1,16 +1,17 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class Base16WritingSpec extends BenchmarkSpecBase {
-  val benchmark = new Base16Writing {
+  def benchmark: Base16Writing = new Base16Writing {
     setup()
   }
   
   "Base64Writing" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.borer()) shouldBe benchmark.jsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString
+      toString(b.borer()) shouldBe b.jsonString
+      toString(b.jsoniterScala()) shouldBe b.jsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
     }
   }
 }

@@ -1,22 +1,23 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class AnyValsWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new AnyValsWriting
+  def benchmark = new AnyValsWriting
   
   "AnyValsWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString1
-      toString(benchmark.borer()) shouldBe benchmark.jsonString1
-      toString(benchmark.circe()) shouldBe benchmark.jsonString1
-      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
-      //toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString1
-      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString1
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString1
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString1
-      toString(benchmark.playJson()) shouldBe benchmark.jsonString3
-      toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString1
-      toString(benchmark.weePickle()) shouldBe benchmark.jsonString1
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString1
+      toString(b.borer()) shouldBe b.jsonString1
+      toString(b.circe()) shouldBe b.jsonString1
+      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.b.AnyVals
+      //toString(b.dslJsonScala()) shouldBe b.jsonString1
+      toString(b.jacksonScala()) shouldBe b.jsonString1
+      toString(b.jsoniterScala()) shouldBe b.jsonString1
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
+      toString(b.playJson()) shouldBe b.jsonString3
+      toString(b.sprayJson()) shouldBe b.jsonString2
+      toString(b.uPickle()) shouldBe b.jsonString1
+      toString(b.weePickle()) shouldBe b.jsonString1
     }
   }
 }

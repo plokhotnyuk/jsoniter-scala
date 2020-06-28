@@ -1,19 +1,20 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class MutableBitSetWritingSpec extends BenchmarkSpecBase {
-  val benchmark = new MutableBitSetWriting {
+  def benchmark: MutableBitSetWriting = new MutableBitSetWriting {
     setup()
   }
   
   "MutableBitSetWriting" should {
     "write properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString
-      toString(benchmark.circe()) shouldBe benchmark.jsonString
-      toString(benchmark.dslJsonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString
-      toString(benchmark.playJson()) shouldBe benchmark.jsonString
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString
+      toString(b.circe()) shouldBe b.jsonString
+      toString(b.dslJsonScala()) shouldBe b.jsonString
+      toString(b.jacksonScala()) shouldBe b.jsonString
+      toString(b.jsoniterScala()) shouldBe b.jsonString
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.playJson()) shouldBe b.jsonString
     }
   }
 }

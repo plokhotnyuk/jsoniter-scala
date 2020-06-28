@@ -1,19 +1,20 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
-  val benchmark = new GoogleMapsAPIPrettyPrinting
+  def benchmark = new GoogleMapsAPIPrettyPrinting
   
   "GoogleMapsAPIPrettyPrinting" should {
     "pretty print properly" in {
-      toString(benchmark.avSystemGenCodec()) shouldBe benchmark.jsonString2
-      toString(benchmark.circe()) shouldBe benchmark.jsonString1
-      toString(benchmark.jacksonScala()) shouldBe benchmark.jsonString1
-      toString(benchmark.jsoniterScala()) shouldBe benchmark.jsonString2
-      toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()) shouldBe benchmark.jsonString2
-      toString(benchmark.playJson()) shouldBe benchmark.jsonString1
-      toString(benchmark.sprayJson()) shouldBe benchmark.jsonString2
-      toString(benchmark.uPickle()) shouldBe benchmark.jsonString2
-      toString(benchmark.weePickle()) shouldBe benchmark.jsonString2
+      val b = benchmark
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString2
+      toString(b.circe()) shouldBe b.jsonString1
+      toString(b.jacksonScala()) shouldBe b.jsonString1
+      toString(b.jsoniterScala()) shouldBe b.jsonString2
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString2
+      toString(b.playJson()) shouldBe b.jsonString1
+      toString(b.sprayJson()) shouldBe b.jsonString2
+      toString(b.uPickle()) shouldBe b.jsonString2
+      toString(b.weePickle()) shouldBe b.jsonString2
     }
   }
 }

@@ -1,25 +1,26 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class ArrayOfFloatsWritingSpec extends BenchmarkSpecBase {
-  val benchmark: ArrayOfFloatsWriting = new ArrayOfFloatsWriting {
+  def benchmark: ArrayOfFloatsWriting = new ArrayOfFloatsWriting {
     setup()
   }
   
   "ArrayOfFloatsWriting" should {
     "write properly" in {
-      sameOrBetter(toString(benchmark.avSystemGenCodec()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.borer()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.circe()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.dslJsonScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.jacksonScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.jsoniterScala()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.preallocatedBuf, 0, benchmark.jsoniterScalaPrealloc()), benchmark.jsonString)
+      val b = benchmark
+      sameOrBetter(toString(b.avSystemGenCodec()), b.jsonString)
+      sameOrBetter(toString(b.borer()), b.jsonString)
+      sameOrBetter(toString(b.circe()), b.jsonString)
+      sameOrBetter(toString(b.dslJsonScala()), b.jsonString)
+      sameOrBetter(toString(b.jacksonScala()), b.jsonString)
+      sameOrBetter(toString(b.jsoniterScala()), b.jsonString)
+      sameOrBetter(toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()), b.jsonString)
       //FIXME: Play-JSON serializes double values instead of float
-      //sameOrBetter(toString(benchmark.playJson()), benchmark.jsonString)
+      //sameOrBetter(toString(b.playJson()), b.jsonString)
       //FIXME: Spray-JSON serializes double values instead of float
-      //sameOrBetter(toString(benchmark.sprayJson()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.uPickle()), benchmark.jsonString)
-      sameOrBetter(toString(benchmark.weePickle()), benchmark.jsonString)
+      //sameOrBetter(toString(b.sprayJson()), b.jsonString)
+      sameOrBetter(toString(b.uPickle()), b.jsonString)
+      sameOrBetter(toString(b.weePickle()), b.jsonString)
     }
   }
 
