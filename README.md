@@ -303,6 +303,14 @@ codecs for type-parametrized ADT definitions that are nested in some classes or 
 
 A workaround is moving the ADT definition out of enclosing classes, preferably on a top-level.  
 
+8. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
+a default option for Scala.js 1.0+.
+
+A workaround is using the following configuration for the compiler to produce ES 5.1 output:
+```
+scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
+```  
+
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
