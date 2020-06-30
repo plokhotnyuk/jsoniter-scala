@@ -14,7 +14,7 @@ import scala.annotation.tailrec
 import scala.{specialized => sp}
 
 class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause) // FIXME: No constructor with the withStackTrace parameter
+  extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),

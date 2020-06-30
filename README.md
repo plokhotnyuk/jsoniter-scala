@@ -293,17 +293,12 @@ final class Level private (name: String, ordinal: Int) extends Enum[Level](name,
 
 The workaround is using `double` or `BigDecimal` types for cases when an exact precision matters.
 
-6. Scala.js cannot throw exceptions without stack traces, so `throwReaderExceptionWithStackTrace` and 
-`throwWriterExceptionWithStackTrace` configuration parameters are ignored.
-
-No workaround at the moment.
-
-7. [Internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during derivation of 
+6. [Internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during derivation of 
 codecs for type-parametrized ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
 
 A workaround is moving the ADT definition out of enclosing classes, preferably on a top-level.  
 
-8. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
+7. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
 a default option for Scala.js 1.0+.
 
 A workaround is using the following configuration for the compiler to produce ES 5.1 output:

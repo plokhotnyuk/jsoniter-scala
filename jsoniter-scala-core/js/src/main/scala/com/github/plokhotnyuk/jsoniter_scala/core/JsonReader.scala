@@ -13,8 +13,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 
-class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable)
-  extends RuntimeException(msg, cause) // FIXME: No constructor with the withStackTrace parameter
+class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
+  extends RuntimeException(msg, cause, true, withStackTrace)
 
 final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
@@ -730,7 +730,7 @@ final class JsonReader private[jsoniter_scala](
       i = appendString(", buf:", i)
       i = appendHexDump(pos, offset.toInt, i)
     }
-    throw new JsonReaderException(new String(charBuf, 0, i), cause)
+    throw new JsonReaderException(new String(charBuf, 0, i), cause, config.throwReaderExceptionWithStackTrace)
   }
 
   @tailrec

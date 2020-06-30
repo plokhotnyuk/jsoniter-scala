@@ -838,6 +838,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("jsoniterScalaWithoutDump")(benchmark.jsoniterScalaWithoutDump()),
+      B("jsoniterScalaWithStacktrace")(benchmark.jsoniterScalaWithStacktrace()),
       B("uPickle")(benchmark.uPickle())
     ))
   }, {
