@@ -1210,7 +1210,7 @@ final class JsonReader private[jsoniter_scala](
     val isNeg = b == '-'
     if (isNeg) b = nextByte(head)
     if (b < '0' || b > '9') numberError()
-    var x: Long = b - '0'
+    var x = '0' - b
     if (isToken && x == 0) ensureNotLeadingZero()
     else {
       var pos = head
@@ -1223,16 +1223,20 @@ final class JsonReader private[jsoniter_scala](
         b = buf(pos)
         b >= '0' && b <= '9'
       }) {
-        x = x * 10 + (b - '0')
-        if (x > 2147483648L) intOverflowError(pos)
+        if (x < -214748364 || {
+          x = x * 10 + ('0' - b)
+          x > 0
+        }) intOverflowError(pos)
         pos += 1
       }
       head = pos
       if ((b | 0x20) == 'e' || b == '.') numberError(pos)
-      if (isNeg) x = -x
-      else if (x == 2147483648L) intOverflowError(pos - 1)
+      if (!isNeg) {
+        if (x == -2147483648) intOverflowError(pos - 1)
+        x = -x
+      }
     }
-    x.toInt
+    x
   }
 
   private[this] def parseLong(isToken: Boolean): Long = {
