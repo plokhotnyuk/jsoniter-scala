@@ -13,9 +13,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 
-class JsonReaderException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause, true, withStackTrace)
-
 final class JsonReader private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
     private[this] var head: Int = 0,

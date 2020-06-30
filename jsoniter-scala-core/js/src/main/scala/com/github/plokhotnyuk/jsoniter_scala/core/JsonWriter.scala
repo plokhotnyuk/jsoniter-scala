@@ -13,9 +13,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
 import scala.annotation.tailrec
 import scala.{specialized => sp}
 
-class JsonWriterException private[jsoniter_scala](msg: String, cause: Throwable, withStackTrace: Boolean)
-  extends RuntimeException(msg, cause, true, withStackTrace)
-
 final class JsonWriter private[jsoniter_scala](
     private[this] var buf: Array[Byte] = new Array[Byte](16384),
     private[this] var count: Int = 0,
