@@ -1299,7 +1299,7 @@ final class JsonReader private[jsoniter_scala](
     mark = newMark
     try {
       var posMant: Long = b - '0'
-      var exp = 0L
+      var exp = 0
       var digits = 1
       if (isToken && posMant == 0) {
         if ((pos < tail || {
@@ -1353,7 +1353,7 @@ final class JsonReader private[jsoniter_scala](
         val isNegExp = b == '-'
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var posExp: Long = b - '0'
+        var posExp = b - '0'
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -1364,7 +1364,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
+          if (posExp < 214748364) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
         if (isNegExp) posExp = -posExp
@@ -1374,12 +1374,12 @@ final class JsonReader private[jsoniter_scala](
       var x: Double =
         if (exp == 0 && posMant < 922337203685477580L) posMant.toDouble
         else if (posMant < 4503599627370496L && Math.abs(exp) <= 22) {
-          if (exp < 0) posMant / pow10Doubles(-exp.toInt)
-          else posMant * pow10Doubles(exp.toInt)
+          if (exp < 0) posMant / pow10Doubles(-exp)
+          else posMant * pow10Doubles(exp)
         } else if (posMant < 4503599627370496L && exp > 22 && exp + digits <= 38) {
           val pow10 = pow10Doubles
           val slop = 16 - digits
-          (posMant * pow10(slop)) * pow10(exp.toInt - slop)
+          (posMant * pow10(slop)) * pow10(exp - slop)
         } else toDouble(posMant, exp, from, newMark, pos)
       if (isNeg) x = -x
       x
@@ -1388,13 +1388,13 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toDouble(m: Long, e: Long, from: Int, newMark: Int, pos: Int): Double =
+  private[this] def toDouble(m: Long, e: Int, from: Int, newMark: Int, pos: Int): Double =
     if (m == 0 || e < -343) 0.0
     else if (e >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = mulMant(m << shift, e.toInt)
-      var exp = addExp(-shift, e.toInt)
+      var mant = mulMant(m << shift, e)
+      var exp = addExp(-shift, e)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
@@ -1442,7 +1442,7 @@ final class JsonReader private[jsoniter_scala](
     mark = newMark
     try {
       var posMant: Long = b - '0'
-      var exp = 0L
+      var exp = 0
       var digits = 1
       if (isToken && posMant == 0) {
         if ((pos < tail || {
@@ -1496,7 +1496,7 @@ final class JsonReader private[jsoniter_scala](
         val isNegExp = b == '-'
         if (isNegExp || b == '+') b = nextByte(head)
         if (b < '0' || b > '9') numberError()
-        var posExp: Long = b - '0'
+        var posExp = b - '0'
         pos = head
         buf = this.buf
         while ((pos < tail || {
@@ -1507,7 +1507,7 @@ final class JsonReader private[jsoniter_scala](
           b = buf(pos)
           b >= '0' && b <= '9'
         }) {
-          if (posExp < 92233720368547758L) posExp = posExp * 10 + (b - '0')
+          if (posExp < 214748364) posExp = posExp * 10 + (b - '0')
           pos += 1
         }
         if (isNegExp) posExp = -posExp
@@ -1516,8 +1516,8 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       var x: Float =
         if (exp == 0 && posMant < 922337203685477580L) posMant.toFloat
-        else if (posMant < 4294967296L && exp < 0 && exp >= digits - 23) (posMant / pow10Doubles(-exp.toInt)).toFloat
-        else if (posMant < 4294967296L && exp >= 0 && exp <= 19 - digits) (posMant * pow10Doubles(exp.toInt)).toFloat
+        else if (posMant < 4294967296L && exp < 0 && exp >= digits - 23) (posMant / pow10Doubles(-exp)).toFloat
+        else if (posMant < 4294967296L && exp >= 0 && exp <= 19 - digits) (posMant * pow10Doubles(exp)).toFloat
         else toFloat(posMant, exp, from, newMark, pos)
       if (isNeg) x = -x
       x
@@ -1526,13 +1526,13 @@ final class JsonReader private[jsoniter_scala](
 
   // Based on the 'Moderate Path' algorithm from the awesome library of Alexander Huszagh: https://github.com/Alexhuszagh/rust-lexical
   // Here is his inspiring post: https://www.reddit.com/r/rust/comments/a6j5j1/making_rust_float_parsing_fast_and_correct
-  private[this] def toFloat(m: Long, e: Long, from: Int, newMark: Int, pos: Int): Float =
+  private[this] def toFloat(m: Long, e: Int, from: Int, newMark: Int, pos: Int): Float =
     if (m == 0 || e < -64) 0.0f
     else if (e >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = mulMant(m << shift, e.toInt)
-      var exp = addExp(-shift, e.toInt)
+      var mant = mulMant(m << shift, e)
+      var exp = addExp(-shift, e)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
       exp -= shift
