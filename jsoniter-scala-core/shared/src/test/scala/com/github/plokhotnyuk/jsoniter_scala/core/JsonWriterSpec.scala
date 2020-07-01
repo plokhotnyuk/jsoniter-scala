@@ -747,9 +747,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
 
       check(BigDecimal("1E-2147483647"))
       check(BigDecimal("1E+2147483647"))
-      if (!TestUtils.isJS) { // FIXME: https://github.com/scala-js/scala-js/issues/4088
-        forAll(genBigInt, minSuccessful(100))(n => check(BigDecimal(n, -2147483648)))
-      }
+      forAll(genBigInt, minSuccessful(100))(n => check(BigDecimal(n, -2147483648)))
       forAll(arbitrary[Double], minSuccessful(10000))(n => check(BigDecimal(n)))
       forAll(genBigDecimal, minSuccessful(10000))(check)
     }
