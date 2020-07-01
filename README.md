@@ -237,8 +237,8 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
 
-3. Scalac can throw the following stack overflow exception on `make` call for ADTs with objects if the call and the ADT
-definition are enclosed in the definition of some outer class (for more details see: https://github.com/scala/bug/issues/11157):
+3. [Scalac can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on `make` call 
+for ADTs with objects if the derivation call and the ADT definition are enclosed in the definition of some outer class:
 ```
 java.lang.StackOverflowError
     ...
@@ -247,10 +247,11 @@ java.lang.StackOverflowError
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 ```
+Also, [internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during compilation 
+of derived codecs for ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
 
-Workarounds are:
-- don't enclose ADTs with an object into outer classes
-- use the outer object (not a class) instead 
+Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
+_object_ (not a class) instead
 
 4. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
 ```
@@ -293,12 +294,7 @@ final class Level private (name: String, ordinal: Int) extends Enum[Level](name,
 
 The workaround is using `double` or `BigDecimal` types for cases when an exact precision matters.
 
-6. [Internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during derivation of 
-codecs for type-parametrized ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
-
-A workaround is moving the ADT definition out of enclosing classes, preferably on a top-level.  
-
-7. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
+6. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
 a default option for Scala.js 1.0+.
 
 A workaround is using the following configuration for the compiler to produce ES 5.1 output:
