@@ -531,8 +531,7 @@ object JsonCodecMaker {
       def javaEnumValues(tpe: Type): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         val javaEnumValueNameMapper: String => String = n => cfg.javaEnumValueNameMapper.lift(n).getOrElse(n)
         var values = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.map { s: Symbol =>
-          val n = s.fullName
-          val name = n.substring(n.lastIndexOf('.') + 1)
+          val name = s.name.toString
           val transformedName = javaEnumValueNameMapper(name)
           EnumValueInfo(q"$s", transformedName, name != transformedName)
         }
@@ -1760,8 +1759,7 @@ object JsonCodecMaker {
 
   private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] =
     xs.foldLeft(mutable.LinkedHashMap.empty[K, ArrayBuffer[A]]) { (m, x) =>
-      val k = f(x)
-      m.getOrElseUpdate(k, new ArrayBuffer[A]) += x
+      m.getOrElseUpdate(f(x), new ArrayBuffer[A]) += x
       m
     }.toSeq
 
