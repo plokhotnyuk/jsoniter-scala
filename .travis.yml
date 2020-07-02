@@ -3,9 +3,9 @@ git:
   depth: 100
 cache:
   directories:
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
-    - $HOME/.coursier
+    - $HOME/.sbt
 before_cache:
   # Cleanup locks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
