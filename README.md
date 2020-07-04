@@ -11,8 +11,8 @@
 Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
 parsing and serialization.
 
-[**Latest results of benchmarks**](https://plokhotnyuk.github.io/jsoniter-scala/) which compare parsing and serialization
-performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
+[**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
+serialization performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
 [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), [DSL-JSON](https://github.com/ngs-doo/dsl-json), 
 [Jackson](https://github.com/FasterXML/jackson-module-scala), [Play-JSON](https://github.com/playframework/play-json), 
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
@@ -20,6 +20,10 @@ and [weePickle](https://github.com/rallyhealth/weePickle) libraries using differ
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
 latest versions of Amazon Corretto 8/11, OpenJDK 16 (early-access build) with HotSpot C2[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing)
 and Graal compilers, GraalVM 20.2 CE for Java 8/11 (dev build) and GraalVM 20.1 EE for Java 8/11
+
+[**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
+compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 5.1 with GCC
+optimizations applied   
 
 ## Acknowledgments
 
