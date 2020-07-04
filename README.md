@@ -19,11 +19,11 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 and [weePickle](https://github.com/rallyhealth/weePickle) libraries using different JDK and GraalVM versions on the
 following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz (max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and 
 latest versions of Amazon Corretto 8/11, OpenJDK 16 (early-access build) with HotSpot C2[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing)
-and Graal compilers, GraalVM 20.2 CE for Java 8/11 (dev build) and GraalVM 20.1 EE for Java 8/11
+and Graal JIT compilers, GraalVM 20.2 CE for Java 8/11 (dev build) and GraalVM 20.1 EE for Java 8/11.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
 compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 5.1 with GCC
-optimizations applied   
+optimizations applied.
 
 ## Acknowledgments
 
@@ -33,8 +33,7 @@ reader and writer but then the library evolved to have its own core of mechanics
 The idea to generate codecs by Scala macros and main details were borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
   
-Other Scala macros features were peeped in
-[AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros)
+Other Scala macros features were peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros).
 
 ## Goals
 
@@ -195,7 +194,8 @@ To see generated code for codecs add the following line to your sbt build file:
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples) directory.
+Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples)
+directory.
 
 For more use cases, please, check out tests:
 - [JsonCodecMakerSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala)
@@ -215,14 +215,19 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 
 ## Known issues
 
-1. Scalac has a bug that affects case classes which have 2 fields where the name of one is a prefix for another name
+1. There is no validation for the length of JSON representation during parsing.
+
+So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
+check the input length for other ways of parsing.
+
+2. Scalac has a bug that affects case classes which have 2 fields where the name of one is a prefix for another name
 that contains a character that should be encoded immediately after the prefix (like `o` and `o-o`). You will get 
 compilation or runtime error, depending on the version of the compiler, see details [here](https://github.com/scala/bug/issues/11212).
 
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
 affected by the exception (after the `o` field).
 
-2. A configuration parameter for the `make` macro is evaluated in compile-time only that requires no dependency on other
+3. A configuration parameter for the `make` macro is evaluated in compile-time only that requires no dependency on other
 code that uses a result of the macro's call. In that case the following compilation error will be reported:
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
@@ -241,7 +246,7 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
 
-3. [Scalac can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on `make` call 
+4. [Scalac can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on `make` call 
 for ADTs with objects if the derivation call and the ADT definition are enclosed in the definition of some outer class:
 ```
 java.lang.StackOverflowError
@@ -255,9 +260,9 @@ Also, [internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/is
 of derived codecs for ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
 
 Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
-_object_ (not a class) instead
+_object_ (not a class) instead.
 
-4. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
+5. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
 ```
 [error] Referring to non-existent class com.github.plokhotnyuk.jsoniter_scala.macros.Level
 [error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$24()void
@@ -293,12 +298,12 @@ object Level {
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
 
-5. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details 
-[here](https://github.com/scala-js/scala-js/issues/4035)
+6. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details 
+[here](https://github.com/scala-js/scala-js/issues/4035).
 
 The workaround is using `double` or `BigDecimal` types for cases when an exact precision matters.
 
-6. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
+7. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
 a default option for Scala.js 1.0+.
 
 A workaround is using the following configuration for the compiler to produce ES 5.1 output:
@@ -309,7 +314,7 @@ scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
 ## How to develop
 
 Feel free to ask questions in [chat](https://gitter.im/plokhotnyuk/jsoniter-scala), open issues, or contribute by 
-creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated)
+creating pull requests (fixes and improvements to docs, code, and tests are highly appreciated).
 
 ### Run tests, check coverage and binary compatibility
 
@@ -460,8 +465,10 @@ More info about extras, options, and ability to generate flame graphs see in [Sb
 Other benchmarks with results for jsoniter-scala:
 - [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parsers for Scala mostly on samples from real
   APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java8 only
-- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with the best binary parsers and serializers for Scala
-- [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for Scala
+- [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with the best binary parsers and serializers for
+  Scala
+- [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for 
+  Scala
 - [comparison](https://github.com/tkrs/json-bench) with JSON serializers for Scala on synthetic samples
 - [comparison](https://github.com/yanns/scala-json-parsers-performance) with JSON parsers for Scala when parsing from/to
   a string representation
