@@ -1440,7 +1440,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifyDeserError(make[DetectUnknown](CodecMakerConfig.withSkipUnexpectedFields(false)),
         """{"x":1,"y":[1,2],"z":{"a",3}}""", "unexpected field \"x\", offset: 0x00000004")
     }
-    "throw parse exception in case of missing values for required fields if case class detected during deserialization" in {
+    "throw parse exception in case of null values for required fields of case classes are provided" in {
       verifyDeserError(codecOfStandardTypes, """{"s":null,"bi":0,"bd":1}""", """expected '"', offset: 0x00000005""")
       verifyDeserError(codecOfStandardTypes, """{"s":"VVV","bi":null,"bd":1}""", "illegal number, offset: 0x00000010")
     }
