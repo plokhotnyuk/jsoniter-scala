@@ -475,24 +475,26 @@ object JsonCodecMaker {
 
       def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
         val tpe :: nestedTypes = types
-        val recursiveIdx =
-          if (cfg.allowRecursiveTypes) -1
-          else nestedTypes.indexOf(tpe)
         if (nestedTypes.isEmpty) EmptyTree
-        else if (recursiveIdx < 0) {
-          if (tpe == rootTpe) EmptyTree
-          else if (isValueCodec) {
-            inferredValueCodecs.getOrElseUpdate(tpe,
-              c.inferImplicitValue(getType(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
+        else {
+          val recursiveIdx =
+            if (cfg.allowRecursiveTypes) -1
+            else nestedTypes.indexOf(tpe)
+          if (recursiveIdx < 0) {
+            if (tpe == rootTpe) EmptyTree
+            else if (isValueCodec) {
+              inferredValueCodecs.getOrElseUpdate(tpe,
+                c.inferImplicitValue(getType(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]")))
+            } else {
+              inferredKeyCodecs.getOrElseUpdate(tpe,
+                c.inferImplicitValue(getType(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]")))
+            }
           } else {
-            inferredKeyCodecs.getOrElseUpdate(tpe,
-              c.inferImplicitValue(getType(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[$tpe]")))
+            fail(s"Recursive type(s) detected: ${nestedTypes.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
+              "Please consider using a custom implicitly accessible codec for this type to control the level of " +
+              s"recursion or turn on the '${typeOf[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
+              "will not exceed the thread stack size.")
           }
-        } else {
-          fail(s"Recursive type(s) detected: ${nestedTypes.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
-            "Please consider using a custom implicitly accessible codec for this type to control the level of " +
-            s"recursion or turn on the '${typeOf[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
-            "will not exceed the thread stack size.")
         }
       }
 
