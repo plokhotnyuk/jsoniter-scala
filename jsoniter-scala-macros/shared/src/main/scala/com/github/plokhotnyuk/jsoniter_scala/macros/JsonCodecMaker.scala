@@ -41,7 +41,7 @@ final class stringified extends StaticAnnotation
   * @param adtLeafClassNameMapper the function of mapping from string of case class/object full name to string value of
   *                               discriminator field (a function that truncate to simple class name by default)
   * @param discriminatorFieldName an optional name of discriminator field, where None can be used for alternative
-  *                               representation of ADTs without the discriminator field (Some("type") value by default)
+  *                               representation of ADTs without the discriminator field (Some("type") by default)
   * @param isStringified          a flag that turns on stringification of number or boolean values of collections,
   *                               options and value classes (turned off by default)
   * @param mapAsArray             a flag that turns on serialization and parsing of maps as a JSON array (or sequences
@@ -49,8 +49,8 @@ final class stringified extends StaticAnnotation
   *                               and decoding of keys (turned off by default)
   * @param skipUnexpectedFields   a flag that turns on skipping of unexpected fields or in other case a parse exception
   *                               will be thrown (turned on by default)
-  * @param transientDefault       a flag that turns on skipping serialization of fields that have same values as default
-  *                               values defined for them in the primary constructor (turned on by default)
+  * @param transientDefault       a flag that turns on skipping serialization of fields that have same values as
+  *                               default values defined for them in the primary constructor (turned on by default)
   * @param transientEmpty         a flag that turns on skipping serialization of fields that have empty values of
   *                               arrays or collections (turned on by default)
   * @param transientNone          a flag that turns on skipping serialization of fields that have empty values of
@@ -65,6 +65,8 @@ final class stringified extends StaticAnnotation
   * @param mapMaxInsertNumber     a max number of inserts into maps (1024 by default)
   * @param setMaxInsertNumber     a max number of inserts into sets excluding bit sets (1024 by default)
   * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default)
+  * @param requireDiscriminatorFirst a flag that turns off limitation for a position of the discriminator field to be
+  *                               the first field of the JSON object (turned on by default)
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -85,7 +87,8 @@ class CodecMakerConfig private (
     val bitSetValueLimit: Int,
     val mapMaxInsertNumber: Int,
     val setMaxInsertNumber: Int,
-    val allowRecursiveTypes: Boolean) {
+    val allowRecursiveTypes: Boolean,
+    val requireDiscriminatorFirst: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -134,6 +137,9 @@ class CodecMakerConfig private (
   def withAllowRecursiveTypes(allowRecursiveTypes: Boolean): CodecMakerConfig =
     copy(allowRecursiveTypes = allowRecursiveTypes)
 
+  def withRequireDiscriminatorFirst(requireDiscriminatorFirst: Boolean): CodecMakerConfig =
+    copy(requireDiscriminatorFirst = requireDiscriminatorFirst)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -152,7 +158,8 @@ class CodecMakerConfig private (
                          bitSetValueLimit: Int = bitSetValueLimit,
                          mapMaxInsertNumber: Int = mapMaxInsertNumber,
                          setMaxInsertNumber: Int = setMaxInsertNumber,
-                         allowRecursiveTypes: Boolean = allowRecursiveTypes): CodecMakerConfig =
+                         allowRecursiveTypes: Boolean = allowRecursiveTypes,
+                         requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -172,7 +179,8 @@ class CodecMakerConfig private (
       bitSetValueLimit = bitSetValueLimit,
       mapMaxInsertNumber = mapMaxInsertNumber,
       setMaxInsertNumber = setMaxInsertNumber,
-      allowRecursiveTypes = allowRecursiveTypes)
+      allowRecursiveTypes = allowRecursiveTypes,
+      requireDiscriminatorFirst = requireDiscriminatorFirst)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -194,7 +202,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   bitSetValueLimit = 1024, // 128 bytes: collection.mutable.BitSet(1023).toBitMask.length * 8
   mapMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
   setMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
-  allowRecursiveTypes = false) // to avoid stack overflow errors with untrusted input
+  allowRecursiveTypes = false, // to avoid stack overflow errors with untrusted input
+  requireDiscriminatorFirst = true) // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
 
 object JsonCodecMaker {
   /**
@@ -1464,13 +1473,23 @@ object JsonCodecMaker {
                     } else in.readNullOrTokenError(default, '"')"""
               }
             case Some(discrFieldName) =>
-              q"""in.setMark()
-                  if (in.isNextToken('{')) {
-                    if (in.skipToKey($discrFieldName)) {
-                      val l = in.readStringAsCharBuf()
-                      ..${genReadSubclassesBlock(leafClasses)}
-                    } else in.requiredFieldError($discrFieldName)
-                  } else in.readNullOrTokenError(default, '{')"""
+              if (cfg.requireDiscriminatorFirst) {
+                q"""in.setMark()
+                    if (in.isNextToken('{')) {
+                      if ($discrFieldName.equals(in.readKeyAsString())) {
+                        val l = in.readStringAsCharBuf()
+                        ..${genReadSubclassesBlock(leafClasses)}
+                      } else in.decodeError("expected key: \"" + $discrFieldName + '"')
+                    } else in.readNullOrTokenError(default, '{')"""
+              } else {
+                q"""in.setMark()
+                    if (in.isNextToken('{')) {
+                      if (in.skipToKey($discrFieldName)) {
+                        val l = in.readStringAsCharBuf()
+                        ..${genReadSubclassesBlock(leafClasses)}
+                      } else in.requiredFieldError($discrFieldName)
+                    } else in.readNullOrTokenError(default, '{')"""
+              }
           }
         } else if (isNonAbstractScalaClass(tpe)) withDecoderFor(methodKey, default) {
           genReadNonAbstractScalaClass(types, discriminator)

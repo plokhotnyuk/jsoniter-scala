@@ -259,8 +259,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfRecursive: JsonValueCodec[Recursive] = make(CodecMakerConfig.withAllowRecursiveTypes(true))
   val codecOfUTF8KeysAndValues: JsonValueCodec[UTF8KeysAndValues] = make
   val codecOfStringified: JsonValueCodec[Stringified] = make
-  val codecOfADTList: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withBigIntDigitsLimit(20001))
+  val codecOfADTList1: JsonValueCodec[List[AdtBase]] = make
   val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None))
+  val codecOfADTList3: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withRequireDiscriminatorFirst(false).withBigIntDigitsLimit(20001))
 
   "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize case classes with primitives" in {
@@ -1496,7 +1497,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """missing required field "f4", offset: 0x0000000e""")
     }
     "serialize and deserialize ADTs using ASCII discriminator field & value" in {
-      verifySerDeser(codecOfADTList, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
+      verifySerDeser(codecOfADTList1, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"type":"AAA","a":1},{"type":"BBB","a":1},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]""")
       verifySerDeser(codecOfADTList2, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"AAA":{"a":1}},{"BBB":{"a":1}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""")
@@ -1511,12 +1512,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[CCC], CCC(1, "VVV"), """{"a":1,"b":"VVV"}""")
       verifySerDeser(make[DDD.type], DDD, """{}""")
     }
-    "deserialize ADTs when discriminator field was serialized in far away last position" in {
+    "deserialize ADTs when discriminator field was serialized in far away last position and configuration allows to parse it" in {
       val longStr = "W" * 100000
-      verifyDeser(codecOfADTList, List(CCC(2, longStr), CCC(1, "VVV")),
+      verifyDeser(codecOfADTList3, List(CCC(2, longStr), CCC(1, "VVV")),
         s"""[{"a":2,"b":"$longStr","type":"CCC"},{"a":1,"type":"CCC","b":"VVV"}]""")
       val longBigInt = BigInt("9" * 20000)
-      verifyDeser(codecOfADTList, List(BBB(longBigInt), BBB(BigInt(1))),
+      verifyDeser(codecOfADTList3, List(BBB(longBigInt), BBB(BigInt(1))),
         s"""[{"a":$longBigInt,"type":"BBB"},{"a":1,"type":"BBB"}]""")
     }
     "serialize and deserialize ADTs with leaf types that are not case classes or case objects" in {
@@ -1625,14 +1626,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
     "throw parse exception in case of duplicated discriminator field" in {
-      verifyDeserError(codecOfADTList, """[{"type":"AAA","a":1,"type":"AAA"}]""",
+      verifyDeserError(codecOfADTList1, """[{"type":"AAA","a":1,"type":"AAA"}]""",
         """duplicated field "type", offset: 0x0000001b""")
     }
-    "throw parse exception in case of missing discriminator field or illegal value of discriminator field" in {
-      verifyDeserError(codecOfADTList, """[{"a":1}]""", """missing required field "type", offset: 0x00000007""")
-      verifyDeserError(codecOfADTList, """[{"a":1,"type":"aaa"}]""",
+    "throw parse exception in case of missing discriminator field" in {
+      verifyDeserError(codecOfADTList1, """[{"a":1}]""", """expected key: "type", offset: 0x00000005""")
+      verifyDeserError(codecOfADTList3, """[{"a":1}]""", """missing required field "type", offset: 0x00000007""")
+    }
+    "throw parse exception in case of illegal value or position of discriminator field" in {
+      verifyDeserError(codecOfADTList1, """[{"a":1,"type":"aaa"}]""", """expected key: "type", offset: 0x00000005""")
+      verifyDeserError(codecOfADTList3, """[{"a":1,"type":"aaa"}]""",
         """illegal value of discriminator field "type", offset: 0x00000013""")
-      verifyDeserError(codecOfADTList, """[{"a":1,"type":123}]""", """expected '"', offset: 0x0000000f""")
+      verifyDeserError(codecOfADTList3, """[{"a":1,"type":123}]""", """expected '"', offset: 0x0000000f""")
+    }
+    "throw parse exception in case of illegal or missing discriminator" in {
       verifyDeserError(codecOfADTList2, """[true]""", """expected '"' or '{' or null, offset: 0x00000001""")
       verifyDeserError(codecOfADTList2, """[{{"a":1}}]""", """expected '"', offset: 0x00000002""")
       verifyDeserError(codecOfADTList2, """[{"aaa":{"a":1}}]""", """illegal discriminator, offset: 0x00000007""")
