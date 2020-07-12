@@ -7,17 +7,15 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import com.jsoniter.output.JsoniterJavaSerializer
 import com.rallyhealth.weejson.v1.jackson.ToJson
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
-//import io.circe.parser._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
-//import play.api.libs.json.Json
-//import spray.json._
+import play.api.libs.json.Json
+import spray.json._
 
 class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
   @Benchmark
@@ -34,23 +32,19 @@ class ArrayOfFloatsWriting extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
-/* FIXME: Jsoniter Java serializes values rounded to 6 digits because PreciseFloatSupport.enable() doesn't work sometime
-  @Benchmark
-  def jsoniterJava(): Array[Byte] = JsoniterJavaSerializer.serialize(obj)
-*/
+
   @Benchmark
   def jsoniterScala(): Array[Byte] = writeToArray(obj)
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
-/* FIXME: Play-JSON serializes double values instead of float
+
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-*/
-/* FIXME: Spray-JSON serializes double values instead of float
+
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
-*/
+
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 
