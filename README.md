@@ -239,6 +239,7 @@ But sometime scalac (or zinc) can fail to compile the `make` macro call with the
 that has not clear dependencies on other code. For those cases workarounds can be simpler than recommended usage of
 separated submodule:
 - use the `make` macro call without parameters when they match with defaults
+- use the `makeWithoutDiscriminator` macro call without parameters when the following configuration is used: `CodecMakerConfig.withDiscriminatorFieldName(None)`
 - use the `makeWithRequiredCollectionFields` macro call without parameters when the following configuration is used: `CodecMakerConfig.withRequireCollectionFields(true).withTransientEmpty(false)`
 - isolate the `make` macro call in the separated object, like in [this PR](https://github.com/plokhotnyuk/play/pull/5/files)
 - move jsoniter-scala imports to be local, like [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/microservice/HelloWorld.scala#L6-L7)
