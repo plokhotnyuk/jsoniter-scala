@@ -57,13 +57,15 @@ object GeoJSON {
   sealed trait SimpleGeoJSON extends GeoJSON
 
   @key("Feature")
+  @dropDefault
   case class Feature(
-    @transientDefault @dropDefault properties: Map[String, String] = Map.empty,
+    @transientDefault properties: Map[String, String] = Map.empty,
     geometry: Geometry,
-    @transientDefault @dropDefault bbox: Option[(Double, Double, Double, Double)] = None) extends SimpleGeoJSON
+    @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends SimpleGeoJSON
 
   @key("FeatureCollection")
+  @dropDefault
   case class FeatureCollection(
     features: IndexedSeq[SimpleGeoJSON],
-    @transientDefault @dropDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
+    @transientDefault bbox: Option[(Double, Double, Double, Double)] = None) extends GeoJSON
 }
