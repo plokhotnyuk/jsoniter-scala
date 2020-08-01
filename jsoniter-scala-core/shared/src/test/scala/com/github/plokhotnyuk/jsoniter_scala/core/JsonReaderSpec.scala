@@ -2862,11 +2862,11 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   def reader(json: String, totalRead: Long = 0): JsonReader = reader2(json.getBytes(UTF_8), totalRead)
 
   def reader2(jsonBytes: Array[Byte], totalRead: Long = 0): JsonReader =
-    new JsonReader(new Array[Byte](Random.nextInt(4) + 12), // 12 is a minimal allowed length to test resizing of the buffer
-      0, 0, -1, new Array[Char](Random.nextInt(16)), null, new ByteArrayInputStream(jsonBytes), totalRead, readerConfig)
+    new JsonReader(new Array[Byte](Random.nextInt(20) + 12), // 12 is a minimal allowed length to test resizing of the buffer
+      0, 0, -1, new Array[Char](Random.nextInt(32)), null, new ByteArrayInputStream(jsonBytes), totalRead, readerConfig)
 
   def readerConfig: ReaderConfig = ReaderConfig
-    .withPreferredBufSize(Random.nextInt(4) + 12) // 12 is a minimal allowed length to test resizing of the buffer
-    .withPreferredCharBufSize(Random.nextInt(16))
+    .withPreferredBufSize(Random.nextInt(20) + 12) // 12 is a minimal allowed length to test resizing of the buffer
+    .withPreferredCharBufSize(Random.nextInt(32))
     .withThrowReaderExceptionWithStackTrace(true)
 }
