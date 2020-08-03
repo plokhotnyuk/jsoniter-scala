@@ -171,7 +171,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.dslplatform" %% "dsl-json-scala" % "1.9.5",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.11.2",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.11.2",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.11.1",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.11.2",
       "io.circe" %%% "circe-generic-extras" % "0.13.0",
       "io.circe" %%% "circe-generic" % "0.13.0",
       "io.circe" %%% "circe-parser" % "0.13.0",
