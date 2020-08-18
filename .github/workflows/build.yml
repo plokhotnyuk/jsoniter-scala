@@ -37,6 +37,7 @@ jobs:
           fetch-depth: 100
       - name: Fetch tags
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
+      - uses: coursier/cache-action@v3
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: ${{ matrix.java }}
