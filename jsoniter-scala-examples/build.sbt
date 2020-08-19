@@ -8,7 +8,7 @@ val `jsoniter-scala-examples` = project.in(file("."))
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "latest.integration" % "runtime-internal",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "compile-internal" // or "provided", but it is required only in compile-time
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 13)) => Seq("org.graalvm.nativeimage" % "svm" % "20.1.0" % "compile-internal") // or "provided", but it is required only in compile-time
+      case Some((2, 13)) => Seq("org.graalvm.nativeimage" % "svm" % "20.2.0" % "compile-internal") // or "provided", but it is required only in compile-time
       case _ => Seq()
     }),
     assemblyShadeRules in assembly := Seq(
