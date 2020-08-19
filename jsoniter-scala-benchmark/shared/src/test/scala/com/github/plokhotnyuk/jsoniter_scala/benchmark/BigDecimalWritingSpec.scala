@@ -15,8 +15,7 @@ class BigDecimalWritingSpec extends BenchmarkSpecBase {
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
-      //FIXME: Play-JSON serializes BigInt in a scientific representation (as BigDecimal)
-      //toString(b.playJson()) shouldBe b.jsonString
+      BigDecimal(toString(b.playJson())) shouldBe b.obj
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       //FIXME: weePickle serializes BigDecimal values as JSON strings

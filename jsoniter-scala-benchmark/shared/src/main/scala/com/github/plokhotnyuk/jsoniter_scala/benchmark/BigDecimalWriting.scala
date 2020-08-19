@@ -15,6 +15,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import spray.json._
+import play.api.libs.json.Json
 
 class BigDecimalWriting extends BigDecimalBenchmark {
   @Benchmark
@@ -37,10 +38,10 @@ class BigDecimalWriting extends BigDecimalBenchmark {
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)(bigDecimalCodec)
-/* FIXME: Play-JSON serializes BigInt in a scientific representation (as BigDecimal)
+
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-*/
+
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
 
