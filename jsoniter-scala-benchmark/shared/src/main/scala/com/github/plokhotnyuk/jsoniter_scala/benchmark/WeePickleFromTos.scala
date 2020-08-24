@@ -1,6 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
-import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
+import com.fasterxml.jackson.core.json.JsonWriteFeature
+import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator}
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI.DistanceMatrix
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -18,7 +19,11 @@ object WeePickleFromTos {
       }))
   }
 
-  object ToEscapedNonAsciiJson extends JsonGeneratorOps(new JsonFactory().enable(JsonGenerator.Feature.ESCAPE_NON_ASCII))
+  object ToEscapedNonAsciiJson extends JsonGeneratorOps(
+    JsonFactory.builder().asInstanceOf[JsonFactoryBuilder]
+      .enable(JsonWriteFeature.ESCAPE_NON_ASCII)
+      .build()
+  )
 
   implicit val adtFromTos: FromTo[ADTBase] =
     FromTo.merge(macroFromTo[X], macroFromTo[Y], macroFromTo[Z])
