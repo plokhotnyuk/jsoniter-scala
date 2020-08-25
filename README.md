@@ -210,6 +210,11 @@ Samples for integration with different web frameworks:
 - [akka-http](https://github.com/hseeberger/akka-http-json/blob/master/akka-http-jsoniter-scala/src/test/scala/de/heikoseeberger/akkahttpjsoniterscala/ExampleApp.scala)
 - [http4s](https://github.com/TechEmpower/FrameworkBenchmarks/blob/d1f960b2d4d6ea7b5c30a3ef2a8b47670f346f1c/frameworks/Scala/http4s/src/main/scala/WebServer.scala)
 
+Other usages of jsoniter-scala:
+- [Dijon](https://github.com/pathikrit/dijon) - support of schema-less JSON using safe and efficient AST representation
+- [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
+and descriptive error messages
+
 For all dependent projects it is recommended to use [sbt-updates plugin](https://github.com/rtimush/sbt-updates) or
 [Scala steward service](https://github.com/scala-steward) to keep up with using of the latest releases.
 
