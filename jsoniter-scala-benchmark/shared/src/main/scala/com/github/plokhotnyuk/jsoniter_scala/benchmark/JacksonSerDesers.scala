@@ -3,6 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.util.concurrent.ConcurrentHashMap
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.core.{JsonFactory, JsonFactoryBuilder, JsonGenerator, JsonParser}
 import com.fasterxml.jackson.databind._
@@ -18,9 +19,11 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import scala.util.Try
 
 object JacksonSerDesers {
-  def createJacksonMapper: ObjectMapper with ScalaObjectMapper = {
+  def createJacksonMapper(escapeNonAscii: Boolean = false,
+                          indentOutput: Boolean = false): ObjectMapper with ScalaObjectMapper = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
+      .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
       .build()
     new ObjectMapper(jsonFactory) with ScalaObjectMapper {
       registerModule(DefaultScalaModule)
@@ -32,6 +35,7 @@ object JacksonSerDesers {
       registerModule(new JavaTimeModule)
       registerModule(new Jdk8Module)
       registerModule(new AfterburnerModule)
+      configure(SerializationFeature.INDENT_OUTPUT, indentOutput)
       configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
       configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       configure(SerializationFeature.WRITE_CHAR_ARRAYS_AS_JSON_ARRAYS, true)
@@ -46,19 +50,11 @@ object JacksonSerDesers {
     }
   }
 
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper
-  val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = {
-    val jm = createJacksonMapper
-    jm.configure(SerializationFeature.INDENT_OUTPUT, true)
-    jm
-  }
-  val jacksonEscapeNonAsciiMapper: ObjectMapper with ScalaObjectMapper = {
-    val jm = createJacksonMapper
-    jm.getFactory.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true)
-    jm
-  }
+  val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper()
+  val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper(indentOutput = true)
+  val jacksonEscapeNonAsciiMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper(escapeNonAscii = true)
   val jacksonByteArrayMapper: ObjectMapper with ScalaObjectMapper = {
-    val jm = createJacksonMapper
+    val jm = createJacksonMapper()
     jm.registerModule(new SimpleModule()
       .addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
     jm
