@@ -132,11 +132,12 @@ There are configurable options that can be set in compile-time:
   PascalCase names for all fields in the generated codec
 - An optional name of the discriminator field for ADTs
 - Mapping function for values of a discriminator field that is used for distinguishing classes of ADTs
-- Ability to set precision, scale limit, and the max number of significant digits when parsing `BigDecimal` values
+- Ability to set a precision, a scale limit, and the max number of significant digits when parsing `BigDecimal` values
 - Ability to set the max number of significant digits when parsing `BigInt` values
-- Ability to set max allowed value when parsing bit sets
-- Ability to set a limit for the number of inserts when parsing sets or maps
-- Throwing of compilation error for recursive data structures can be turned off
+- Ability to set the max allowed value when parsing bit sets
+- Ability to set the limit for the number of inserts when parsing sets or maps
+- Throwing of a compilation error for recursive data structures can be turned off
+- Throwing of a runtime error when the discriminator is not the first field can be turned off
 
 List of options that change parsing and serialization in runtime:
 - Serialization of strings with escaped Unicode characters to be ASCII compatible
@@ -144,8 +145,8 @@ List of options that change parsing and serialization in runtime:
 - Throwing of stack-less parsing exceptions by default to greatly reduce the impact on performance, while stack traces
   can be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
-- Preferred size of internal in buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
-- Preferred size of internal out buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
+- Preferred size of internal input buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
+- Preferred size of internal output buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of char buffers when parsing string values
 
 For upcoming features and fixes see [Commits](https://github.com/plokhotnyuk/jsoniter-scala/commits/master)
