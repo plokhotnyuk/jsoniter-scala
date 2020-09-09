@@ -213,6 +213,8 @@ Samples for integration with different web frameworks:
 
 Other usages of jsoniter-scala:
 - [Dijon](https://github.com/pathikrit/dijon) - support of schema-less JSON using safe and efficient AST representation
+- [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
+instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
 and descriptive error messages
 
