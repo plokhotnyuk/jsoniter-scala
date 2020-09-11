@@ -12,11 +12,17 @@ before_cache:
 matrix:
   include:
     - os: linux
+      dist: focal
+      arch: arm64-graviton2
+      group: edge
+      virt: vm
       jdk: openjdk11
       scala: 2.13.3
       script:
         - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION! clean coverage test mimaReportBinaryIssues coverageAggregate coveralls
     - os: linux
+      dist: focal
+      arch: amd64
       scala: 2.12.11
       jdk: openjdk11
       script:
