@@ -236,15 +236,14 @@ compilation or runtime error, depending on the version of the compiler, see deta
 The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
 affected by the exception (after the `o` field).
 
-3. A configuration parameter for the `make` macro is evaluated in compile-time only that requires no dependency on other
-code that uses a result of the macro's call. In that case the following compilation error will be reported:
+3. A configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on other
+code that uses a result of the macro's call, otherwise the following compilation error will be reported:
 ```
 [error] Cannot evaluate a parameter of the 'make' macro call for type 'full.name.of.YourType'. It should not depend on
         code from the same compilation module where the 'make' macro is called. Use a separated submodule of the project
         to compile all such dependencies before their usage for generation of codecs.
 ```
-
-But sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for configuration
+Sometime scalac (or zinc) can fail to compile the `make` macro call with the same error message for the configuration 
 that has not clear dependencies on other code. For those cases workarounds can be simpler than recommended usage of
 separated submodule:
 - use the `make` macro call without parameters when they match with defaults
