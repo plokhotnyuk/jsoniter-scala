@@ -15,6 +15,8 @@ class MutableMapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
       toString(b.playJson()) shouldBe b.jsonString
+      //FIXME: weePickle thorws com.rallyhealth.weepickle.v1.core.Abort: expected string key got int32
+      //toString(b.weePickle()) shouldBe b.jsonString
     }
   }
 }

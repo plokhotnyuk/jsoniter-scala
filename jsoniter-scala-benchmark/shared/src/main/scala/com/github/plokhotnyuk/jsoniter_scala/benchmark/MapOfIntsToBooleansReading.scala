@@ -7,6 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
@@ -43,4 +45,6 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
   @Benchmark
   def uPickle(): Map[Int, Boolean] = read[Map[Int, Boolean]](jsonBytes)
 */
+  @Benchmark
+  def weePickle(): Map[Int, Boolean] = FromJson(jsonBytes).transform(ToScala[Map[Int, Boolean]])
 }

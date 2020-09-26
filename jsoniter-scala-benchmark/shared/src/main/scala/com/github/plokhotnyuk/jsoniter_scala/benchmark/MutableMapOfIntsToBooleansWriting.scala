@@ -9,6 +9,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.ToJson
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -34,4 +36,8 @@ class MutableMapOfIntsToBooleansWriting extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
+/* FIXME: weePickle throws com.rallyhealth.weepickle.v1.core.Abort: expected string key got int32
+  @Benchmark
+  def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
+*/
 }

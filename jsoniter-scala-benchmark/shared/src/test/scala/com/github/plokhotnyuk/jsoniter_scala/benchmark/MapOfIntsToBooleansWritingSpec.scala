@@ -19,6 +19,8 @@ class MapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
       //toString(b.sprayJson()) shouldBe b.jsonString
       //FIXME: uPickle serializes maps as JSON arrays
       //toString(b.uPickle()) shouldBe b.jsonString
+      //FIXME: weePickle throws com.rallyhealth.weepickle.v1.core.Abort: expected string key got int32
+      //toString(b.weePickle()) shouldBe b.jsonString
     }
   }
 }
