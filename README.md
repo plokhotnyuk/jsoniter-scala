@@ -416,24 +416,16 @@ perf list
 
 To get a result for some benchmarks with an in-flight recording file from JFR profiler use command like this:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.JFR:dir=/tmp/profile-jfr;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;jfrFlameGraphDir=/home/andriy/Projects/com/github/chrishantha/jfr-flame-graph;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof "jfr:dir=target/jfr-reports" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
+You will get the profile in the `jsoniter-scala-benchmark/jvm/target/jfr-reports` directory.
 
-Now you can open files from the `/tmp/profile-jfr` directory:
+To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), extract
+binaries to `/opt/async-profiler` directory and use command like this:
 ```sh
-profile.jfr                             # JFR profile, open and analyze it using JMC
-jfr-collapsed-cpu.txt                   # Data from JFR profile that are extracted for Flame Graph tool
-flame-graph-cpu.svg                     # Flame graph of CPU usage
-flame-graph-cpu-reverse.svg             # Reversed flame graph of CPU usage
-flame-graph-allocation-tlab.svg         # Flame graph of heap allocations in TLAB
-flame-graph-allocation-tlab-reverse.svg # Reversed flame graph of heap allocations in TLAB
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof "async:dir=target/async-reports;output=flamegraph;libPath=/opt/async-profiler/build/libasyncProfiler.so" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
 ```
-
-To run benchmarks with recordings by [Async profiler](https://github.com/jvm-profiling-tools/async-profiler), clone its
-repository and use command like this:
-```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints" -prof "jmh.extras.Async:event=cpu;dir=/tmp/profile-async;asyncProfilerDir=/home/andriy/Projects/com/github/jvm-profiling-tools/async-profiler;flameGraphDir=/home/andriy/Projects/com/github/brendangregg/FlameGraph;flameGraphOpts=--color,java;verbose=true" -wi 10 -i 60 TwitterAPIReading.jsoniterScala'
-```
+Now you can open direct and reverse flame graphs in the `jsoniter-scala-benchmark/jvmtarget/async-reports` directory.
 
 To see list of available events need to start your app or benchmark, and run `jps` command. I will show list of PIDs and
 names for currently running Java processes. While your Java process still running launch the Async Profiler with the
