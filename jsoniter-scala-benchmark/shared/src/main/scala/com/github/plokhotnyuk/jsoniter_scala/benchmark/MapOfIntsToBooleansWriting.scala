@@ -8,8 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
-//import com.rallyhealth.weejson.v1.jackson.ToJson
-//import com.rallyhealth.weepickle.v1.WeePickle.FromScala
+import com.rallyhealth.weejson.v1.jackson.ToJson
+import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
@@ -47,8 +47,6 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 */
-/* FIXME: weePickle throws com.rallyhealth.weepickle.v1.core.Abort: expected string key got int32
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
-*/
 }

@@ -36,8 +36,7 @@ class MutableMapOfIntsToBooleansWriting extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
-/* FIXME: weePickle throws com.rallyhealth.weepickle.v1.core.Abort: expected string key got int32
+
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
-*/
 }
