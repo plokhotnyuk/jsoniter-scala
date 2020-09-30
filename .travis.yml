@@ -23,7 +23,7 @@ matrix:
     - os: linux
       dist: focal
       arch: amd64
-      scala: 2.12.11
+      scala: 2.12.12
       jdk: openjdk11
       script:
         - travis_wait 60 sbt -J-XX:+UnlockExperimentalVMOptions -J-XX:+UseJVMCICompiler -batch ++$TRAVIS_SCALA_VERSION! clean coverage test mimaReportBinaryIssues coverageAggregate coveralls
