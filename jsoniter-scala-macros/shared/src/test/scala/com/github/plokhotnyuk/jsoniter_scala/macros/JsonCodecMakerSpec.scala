@@ -957,12 +957,47 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"ml":[["1","2","3"]],"ab":[[4],[]],"as":[[5,6],[]],"b":[[7.7]],"lb":[[9,10]],"is":[[11.11,12.12]],"ub":[[13,14]]}""")
     }
     "serialize and deserialize case classes with immutable Iterables" in {
-      verifySerDeser(make[ImmutableIterables],
+      val codecOfImmutableIterables = make[ImmutableIterables]
+      verifySerDeser(codecOfImmutableIterables,
         ImmutableIterables(List(_root_.scala.collection.immutable.ListSet("1")),
           ::(::(2, ::(3, _root_.scala.Nil)), _root_.scala.Nil), _root_.scala.collection.immutable.Queue(Set[BigInt](4)),
           IndexedSeq(_root_.scala.collection.immutable.SortedSet(5, 6, 7), _root_.scala.collection.immutable.SortedSet()),
           Stream(_root_.scala.collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
         """{"l":[["1"]],"nl":[[2,3]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
+      intercept[JsonReaderException] {
+        verifyDeser(codecOfImmutableIterables,
+          ImmutableIterables(List(_root_.scala.collection.immutable.ListSet("1")),
+            ::(::(2, ::(3, _root_.scala.Nil)), _root_.scala.Nil), _root_.scala.collection.immutable.Queue(Set[BigInt](4)),
+            IndexedSeq(_root_.scala.collection.immutable.SortedSet(5, 6, 7), _root_.scala.collection.immutable.SortedSet()),
+            Stream(_root_.scala.collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
+          """{"l":[["1"]],"nl":[[]],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
+      }.getMessage.contains("expected non-empty JSON array")
+      intercept[JsonReaderException] {
+        verifyDeser(codecOfImmutableIterables,
+          ImmutableIterables(List(_root_.scala.collection.immutable.ListSet("1")),
+            ::(::(2, ::(3, _root_.scala.Nil)), _root_.scala.Nil), _root_.scala.collection.immutable.Queue(Set[BigInt](4)),
+            IndexedSeq(_root_.scala.collection.immutable.SortedSet(5, 6, 7), _root_.scala.collection.immutable.SortedSet()),
+            Stream(_root_.scala.collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
+          """{"l":[["1"]],"nl":[],"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
+      }.getMessage.contains("expected non-empty JSON array")
+      intercept[JsonReaderException] {
+        verifyDeser(codecOfImmutableIterables,
+          ImmutableIterables(List(_root_.scala.collection.immutable.ListSet("1")),
+            ::(::(2, ::(3, _root_.scala.Nil)), _root_.scala.Nil), _root_.scala.collection.immutable.Queue(Set[BigInt](4)),
+            IndexedSeq(_root_.scala.collection.immutable.SortedSet(5, 6, 7), _root_.scala.collection.immutable.SortedSet()),
+            Stream(_root_.scala.collection.immutable.TreeSet(8.9)), Vector(Iterable(10L, 11L))),
+          """{"l":[["1"]],"nl":null,"q":[[4]],"is":[[5,6,7],[]],"s":[[8.9]],"v":[[10,11]]}""")
+      }.getMessage.contains("expected non-empty JSON array")
+    }
+    "serialize and deserialize top-level ::" in {
+      val codecOfNonEmptyListOfInts = make[::[Int]]
+      verifySerDeser(codecOfNonEmptyListOfInts, ::(1, ::(2, ::(3, _root_.scala.Nil))), "[1,2,3]")
+      intercept[JsonReaderException] {
+        verifyDeser(codecOfNonEmptyListOfInts, ::(1, ::(2, ::(3, _root_.scala.Nil))), "[]")
+      }.getMessage.contains("expected non-empty JSON array")
+      intercept[JsonReaderException] {
+        verifyDeser(codecOfNonEmptyListOfInts, ::(1, ::(2, ::(3, _root_.scala.Nil))), "null")
+      }.getMessage.contains("expected non-empty JSON array")
     }
     "serialize and deserialize case class fields with empty iterables when transientEmpty is off" in {
       verifySerDeser(make[EmptyIterables](CodecMakerConfig.withTransientEmpty(false)),
@@ -1869,10 +1904,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize top-level aliased types" in {
       type I = Int
       type L = List[I]
-      type L2 = ::[I]
 
       verifySerDeser(make[L], List(1, 2, 3), "[1,2,3]")
-      verifySerDeser(make[L2], ::(1, ::(2, ::(3, _root_.scala.Nil))), "[1,2,3]")
     }
     "serialize and deserialize first-order types" in {
       verifySerDeser(make[Array[Id[String]]], _root_.scala.Array[Id[String]](Id("1"), Id("2")),
