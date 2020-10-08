@@ -1039,6 +1039,7 @@ object JsonCodecMaker {
         else if (tpe <:< typeOf[mutable.BitSet]) q"${scalaCollectionCompanion(tpe)}.empty"
         else if (tpe <:< typeOf[BitSet]) withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty")
         else if (tpe <:< typeOf[mutable.LongMap[_]]) q"${scalaCollectionCompanion(tpe)}.empty[${typeArg1(tpe)}]"
+        else if (tpe <:< typeOf[::[_]]) q"null"
         else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) q"_root_.scala.Nil"
         else if (tpe <:< typeOf[immutable.IntMap[_]] || tpe <:< typeOf[immutable.LongMap[_]] ||
           tpe <:< typeOf[immutable.Seq[_]] || tpe <:< typeOf[Set[_]]) withNullValueFor(tpe) {
@@ -1341,6 +1342,27 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           genReadSet(q"val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1]",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
+        } else if (tpe <:< typeOf[::[_]]) withDecoderFor(methodKey, default) {
+          val tpe1 = typeArg1(tpe)
+          val readVal = genReadValForGrowable(tpe1 :: types, isStringified)
+          q"""if (in.isNextToken('[')) {
+                if (in.isNextToken(']')) {
+                  if (default ne null) default
+                  else in.decodeError("expected non-empty JSON array")
+                } else {
+                  in.rollbackToken()
+                  val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]
+                  while ({
+                    ..$readVal
+                    in.isNextToken(',')
+                  }) ()
+                  if (in.isCurrentToken(']')) x.toList.asInstanceOf[_root_.scala.collection.immutable.::[$tpe1]]
+                  else in.arrayEndOrCommaError()
+                }
+              } else {
+                if (default ne null) in.readNullOrTokenError(default, '[')
+                else in.decodeError("expected non-empty JSON array")
+              }"""
         } else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]",
@@ -1676,10 +1698,11 @@ object JsonCodecMaker {
             if (isStringified) q"out.writeValAsString(x)"
             else q"out.writeVal(x)")
         } else if (tpe <:< typeOf[List[_]]) withEncoderFor(methodKey, m) {
+          val tpe1 = typeArg1(tpe)
           q"""out.writeArrayStart()
-              var l = x
+              var l: _root_.scala.collection.immutable.List[$tpe1] = x
               while (!l.isEmpty) {
-                ..${genWriteVal(q"l.head", typeArg1(tpe) :: types, isStringified, EmptyTree)}
+                ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
                 l = l.tail
               }
               out.writeArrayEnd()"""

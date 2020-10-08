@@ -17,6 +17,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       //benchmark.sprayJson() shouldBe benchmark.obj
       //FIXME: uPickle parses maps from JSON arrays only
       //benchmark.uPickle() shouldBe benchmark.obj
+      benchmark.weePickle() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -26,6 +27,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.weePickle())
     }
   }
 }

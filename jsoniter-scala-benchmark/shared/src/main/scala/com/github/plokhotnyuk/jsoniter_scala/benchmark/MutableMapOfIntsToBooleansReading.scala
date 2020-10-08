@@ -8,6 +8,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -34,4 +36,7 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def playJson(): mutable.Map[Int, Boolean] = Json.parse(jsonBytes).as[mutable.Map[Int, Boolean]]
+
+  @Benchmark
+  def weePickle(): mutable.Map[Int, Boolean] = FromJson(jsonBytes).transform(ToScala[mutable.Map[Int, Boolean]])
 }
