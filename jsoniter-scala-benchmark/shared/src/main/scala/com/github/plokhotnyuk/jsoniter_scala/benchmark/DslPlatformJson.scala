@@ -3,7 +3,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.time._
 import java.util.UUID
 import com.dslplatform.json._
-import com.dslplatform.json.runtime.{ArrayEncoder, Settings}
+import com.dslplatform.json.runtime.Settings
 import scala.collection.immutable.{BitSet, Seq}
 import scala.collection.mutable
 import scala.reflect.runtime.universe.TypeTag
@@ -13,8 +13,6 @@ object DslPlatformJson {
     .limitDigitsBuffer(Int.MaxValue /* WARNING: It is an unsafe option for open systems */)
     .limitStringBuffer(Int.MaxValue /* WARNING: It is an unsafe option for open systems */)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
-
-  dslJson.registerWriter(classOf[Array[SuitADT]], new ArrayEncoder(dslJson, dslJson.encoder[SuitADT]))
 
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter

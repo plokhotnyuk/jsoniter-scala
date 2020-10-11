@@ -6,7 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -45,10 +45,10 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: DSL-JSON throws com.dslplatform.json.ParsingException: Expecting ':' after attribute name. Found T at position: 13649, following: `"string":null},"!\"T`, before: `jyehe":{"number":0.0`
+
   @Benchmark
   def dslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)
-*/
+
   @Benchmark
   def jacksonScala(): ExtractFields = jacksonMapper.readValue[ExtractFields](jsonBytes)
 
