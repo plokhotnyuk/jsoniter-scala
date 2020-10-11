@@ -1,5 +1,6 @@
 # Sbt
 target
+.bsp
 
 # Idea
 .idea
