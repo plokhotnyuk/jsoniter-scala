@@ -109,10 +109,11 @@ final class JsonWriter private[jsoniter_scala](
     if (comma) {
       comma = false
       buf(pos) = ','
+      pos += 1
       if (indention != 0) {
-        buf(pos + 1) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 2, buf)
-      } else pos += 1
+        buf(pos) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 1, buf)
+      }
     }
     buf(pos) = '"'
     pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
@@ -120,10 +121,12 @@ final class JsonWriter private[jsoniter_scala](
     buf = this.buf
     buf(pos) = '"'
     buf(pos + 1) = ':'
+    pos += 2
     if (config.indentionStep > 0) {
-      buf(pos + 2) = ' '
-      pos + 3
-    } else pos + 2
+      buf(pos) = ' '
+      pos += 1
+    }
+    pos
   }
 
   def writeNonEscapedAsciiKey(x: String): Unit = count = {
@@ -135,10 +138,11 @@ final class JsonWriter private[jsoniter_scala](
     if (comma) {
       comma = false
       buf(pos) = ','
+      pos += 1
       if (indention != 0) {
-        buf(pos + 1) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 2, buf)
-      } else pos += 1
+        buf(pos) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 1, buf)
+      }
     }
     buf(pos) = '"'
     pos += 1
@@ -150,10 +154,12 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     buf(pos + 1) = ':'
+    pos += 2
     if (config.indentionStep > 0) {
-      buf(pos + 2) = ' '
-      pos + 3
-    } else pos + 2
+      buf(pos) = ' '
+      pos += 1
+    }
+    pos
   }
 
   def writeKey(x: Duration): Unit = {
@@ -281,10 +287,11 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(indention + 4)
     if (comma) {
       buf(pos) = ','
+      pos += 1
       if (indention != 0) {
-        buf(pos + 1) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 2, buf)
-      } else pos += 1
+        buf(pos) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 1, buf)
+      }
     } else comma = true
     buf(pos) = '"'
     pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
@@ -299,10 +306,11 @@ final class JsonWriter private[jsoniter_scala](
     var pos = ensureBufCapacity(indention + len + 4)
     if (comma) {
       buf(pos) = ','
+      pos += 1
       if (indention != 0) {
-        buf(pos + 1) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 2, buf)
-      } else pos += 1
+        buf(pos) = '\n'
+        pos = writeNBytes(indention, ' ', pos + 1, buf)
+      }
     } else comma = true
     buf(pos) = '"'
     pos += 1
@@ -683,24 +691,28 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeParenthesesWithColon(): Unit = count = {
-    val pos = ensureBufCapacity(3)
+    var pos = ensureBufCapacity(3)
     val buf = this.buf
     buf(pos) = '"'
     buf(pos + 1) = ':'
+    pos += 2
     if (config.indentionStep > 0) {
-      buf(pos + 2) = ' '
-      pos + 3
-    } else pos + 2
+      buf(pos) = ' '
+      pos += 1
+    }
+    pos
   }
 
   private[this] def writeColon(): Unit = count = {
-    val pos = ensureBufCapacity(2)
+    var pos = ensureBufCapacity(2)
     val buf = this.buf
     buf(pos) = ':'
+    pos += 1
     if (config.indentionStep > 0) {
-      buf(pos + 1) = ' '
-      pos + 2
-    } else pos + 1
+      buf(pos) = ' '
+      pos += 1
+    }
+    pos
   }
 
   private[this] def writeBytes(b: Byte): Unit = count = {
@@ -783,19 +795,21 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = ds(p >> 12)
       buf(pos + 1) = ds((p >> 6) & 0x3F)
       buf(pos + 2) = ds(p & 0x3F)
+      pos += 3
       if (doPadding) {
-        buf(pos + 3) = '='
-        pos += 4
-      } else pos += 3
+        buf(pos) = '='
+        pos += 1
+      }
     } else if (offset == lenM2 + 1) {
       val p = bs(offset) & 0xFF
       buf(pos) = ds(p >> 2)
       buf(pos + 1) = ds((p << 4) & 0x3F)
+      pos += 2
       if (doPadding) {
-        buf(pos + 2) = '='
-        buf(pos + 3) = '='
-        pos += 4
-      } else pos += 2
+        buf(pos) = '='
+        buf(pos + 1) = '='
+        pos += 2
+      }
     }
     buf(pos) = '"'
     pos + 1
@@ -980,31 +994,29 @@ final class JsonWriter private[jsoniter_scala](
     val buf = this.buf
     buf(pos) = '"'
     pos += 1
-    pos = {
-      if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
-        val esc = escapedChars(ch)
-        if (esc == 0) {
-          buf(pos) = ch.toByte
-          pos + 1
-        } else if (esc > 0) {
-          buf(pos) = '\\'
-          buf(pos + 1) = esc
-          pos + 2
-        } else writeEscapedUnicode(ch.toByte, pos, buf)
-      } else if (config.escapeUnicode) {
-        if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
-        writeEscapedUnicode(ch, pos, buf)
-      } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xC0 | (ch >> 6)).toByte
-        buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
-        pos + 2
-      } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
-        buf(pos) = (0xE0 | (ch >> 12)).toByte
-        buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
-        buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte
-        pos + 3
-      } else illegalSurrogateError()
-    }
+    if (ch < 0x80) { // 000000000aaaaaaa (UTF-16 char) -> 0aaaaaaa (UTF-8 byte)
+      val esc = escapedChars(ch)
+      if (esc == 0) {
+        buf(pos) = ch.toByte
+        pos += 1
+      } else if (esc > 0) {
+        buf(pos) = '\\'
+        buf(pos + 1) = esc
+        pos += 2
+      } else pos = writeEscapedUnicode(ch.toByte, pos, buf)
+    } else if (config.escapeUnicode) {
+      if (ch >= 0xD800 && ch <= 0xDFFF) illegalSurrogateError()
+      pos = writeEscapedUnicode(ch, pos, buf)
+    } else if (ch < 0x800) { // 00000bbbbbaaaaaa (UTF-16 char) -> 110bbbbb 10aaaaaa (UTF-8 bytes)
+      buf(pos) = (0xC0 | (ch >> 6)).toByte
+      buf(pos + 1) = (0x80 | (ch & 0x3F)).toByte
+      pos += 2
+    } else if (ch < 0xD800 || ch > 0xDFFF) { // ccccbbbbbbaaaaaa (UTF-16 char) -> 1110cccc 10bbbbbb 10aaaaaa (UTF-8 bytes)
+      buf(pos) = (0xE0 | (ch >> 12)).toByte
+      buf(pos + 1) = (0x80 | ((ch >> 6) & 0x3F)).toByte
+      buf(pos + 2) = (0x80 | (ch & 0x3F)).toByte
+      pos += 3
+    } else illegalSurrogateError()
     buf(pos) = '"'
     pos + 1
   }
