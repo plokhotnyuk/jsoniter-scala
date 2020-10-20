@@ -195,7 +195,9 @@ To see generated code for codecs add the following line to your sbt build file:
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples)
+Use [macrolizer](https://github.com/sirthias/macrolizer) to print the code for a selected macro call only.
+
+Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
 directory.
 
 For more use cases, please, check out tests:
@@ -490,7 +492,13 @@ cd jsoniter-scala-benchmark/js
 open scala-2.13-fullopt.html
 ```
 
-The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-2.13-fullopt.html). 
+The released version of Scala.js benchmarks is available [here](https://plokhotnyuk.github.io/jsoniter-scala/scala-2.13-fullopt.html).
+
+### Run compilation time benchmarks
+
+Use the [circe-argonaut-compile-times](https://github.com/stephennancekivell/circe-argonaut-compile-times) project to 
+compare compilation time of jsoniter-scala for deeply nested data structures with other JSON parsers like argonaut, 
+play-json, and circe in 3 modes: auto, semi-auto, and derivation.
 
 ### Publish locally
 
