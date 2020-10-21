@@ -2274,16 +2274,17 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    var q1 = offsetTotal / 900
+    var qp = offsetTotal * 37283
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-    if (q1 * 900 == offsetTotal) {
-      if (isNeg) q1 = -q1
-      var zoneOffset = zoneOffsets(q1 + 72)
+    if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
+      qp >>>= 25 // divide offsetTotal by 900
+      if (isNeg) qp = -qp
+      var zoneOffset = zoneOffsets(qp + 72)
       if (zoneOffset ne null) zoneOffset
       else {
         if (isNeg) offsetTotal = -offsetTotal
         zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
-        zoneOffsets(q1 + 72) = zoneOffset
+        zoneOffsets(qp + 72) = zoneOffset
         zoneOffset
       }
     } else {

@@ -1313,13 +1313,13 @@ final class JsonWriter private[jsoniter_scala](
       year -= 1
       marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
     }
-    val marchMonth = (marchDayOfYear * 5 + 2) / 153
-    year += marchMonth / 10 + adjustYear // reset any negative year and convert march-based values back to january-based
+    val marchMonth = (marchDayOfYear * 17135 + 6854) >> 19 // (marchDayOfYear * 5 + 2) / 153
+    year += (marchMonth * 3277 >> 15) + adjustYear // year += marchMonth / 10 + adjustYear (reset any negative year and convert march-based values back to january-based)
     val month = marchMonth +
       (if (marchMonth < 10) 3
       else -9)
-    val day = marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
-    val hour = secsOfDay / 3600
+    val day = marchDayOfYear - ((marchMonth * 1002762 - 16383) >> 15) // marchDayOfYear - (marchMonth * 306 + 5) / 10 + 1
+    val hour = secsOfDay * 37283 >>> 27 // divide a small positive int by 3600
     val secsOfHour = secsOfDay - hour * 3600
     val minute = secsOfHour * 17477 >> 20 // divide a small positive int by 60
     val second = secsOfHour - minute * 60
@@ -1618,7 +1618,7 @@ final class JsonWriter private[jsoniter_scala](
           buf(p) = '-'
           -totalSeconds
         }
-      val q1 = q0 / 3600
+      val q1 = q0 * 37283 >>> 27 // divide a small positive int by 3600
       val r1 = q0 - q1 * 3600
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'

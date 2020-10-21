@@ -906,7 +906,7 @@ object Main {
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("uPickle")(benchmark.uPickle())
     ))
-  }, { //FIXME: Add ExtractFieldsReading benchmark
+  }, {
     val benchmark = new NestedStructsReading { size = 128; setup() }
     GS(S("NestedStructsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
