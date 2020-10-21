@@ -9,7 +9,7 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
       toString(b.avSystemGenCodec()) shouldBe b.jsonString1
       toString(b.borer()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString1
-      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.b.AnyVals
+      //FIXME: DSL-JSON wraps AnyVal values
       //toString(b.dslJsonScala()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString1

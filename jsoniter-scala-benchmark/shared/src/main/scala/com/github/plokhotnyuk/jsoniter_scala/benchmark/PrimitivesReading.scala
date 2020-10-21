@@ -6,7 +6,7 @@ import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -30,10 +30,10 @@ class PrimitivesReading extends PrimitivesBenchmark {
 
   @Benchmark
   def circe(): Primitives = decode[Primitives](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
+
   @Benchmark
   def dslJsonScala(): Primitives = dslJsonDecode[Primitives](jsonBytes)
-*/
+
   @Benchmark
   def jacksonScala(): Primitives = jacksonMapper.readValue[Primitives](jsonBytes)
 

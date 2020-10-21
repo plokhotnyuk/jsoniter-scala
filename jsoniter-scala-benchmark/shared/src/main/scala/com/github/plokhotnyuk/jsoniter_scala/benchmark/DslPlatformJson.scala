@@ -14,6 +14,17 @@ object DslPlatformJson {
     .limitStringBuffer(Int.MaxValue /* WARNING: It is an unsafe option for open systems */)
     .doublePrecision(JsonReader.DoublePrecision.EXACT))
 
+  dslJson.registerReader(classOf[Char], new JsonReader.ReadObject[Char] {
+    override def read(reader: JsonReader[_]): Char = {
+      val s = reader.readString()
+      if (s.length != 1) reader.newParseError("expected string with a single char (not surrogate pair)")
+      s.charAt(0)
+    }
+  })
+  dslJson.registerWriter(classOf[Char], new JsonWriter.WriteObject[Char] {
+    override def write(writer: JsonWriter, value: Char): Unit = writer.writeString(value.toString)
+  })
+
   private[this] val threadLocalJsonWriter = new ThreadLocal[JsonWriter] {
     override def initialValue(): JsonWriter = dslJson.newWriter
   }
@@ -22,9 +33,7 @@ object DslPlatformJson {
   }
 
   val (stringEncoder, stringDecoder) = codec[String]
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
   implicit val (anyValsEncoder, anyValsDecoder) = codec[AnyVals]
-*/
   implicit val (arrayBufferOfBooleansEncoder, arrayBufferOfBooleansDecoder) = codec[mutable.ArrayBuffer[Boolean]]
   implicit val (arrayOfBigDecimalsEncoder, arrayOfBigDecimalsDecoder) = codec[Array[BigDecimal]]
   implicit val (arrayOfBigIntsEncoder, arrayOfBigIntsDecoder) = codec[Array[BigInt]]
@@ -64,9 +73,7 @@ object DslPlatformJson {
   implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingRequiredFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]
-/* FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
   implicit val (primitivesEncoder, primitivesDecoder) = codec[Primitives]
-*/
   implicit val (seqOfTweetEncoder, seqOfTweetDecoder) = codec[Seq[TwitterAPI.Tweet]]
   implicit val (setOfIntsEncoder, setOfIntsDecoder) = codec[Set[Int]]
   implicit val (vectorOfBooleansEncoder, vectorOfBooleansDecoder) = codec[Vector[Boolean]]
