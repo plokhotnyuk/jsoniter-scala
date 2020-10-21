@@ -8,6 +8,6 @@ val `jsoniter-scala-examples` = project.in(file("."))
     mainClass in assembly := Some("com.github.plokhotnyuk.jsoniter_scala.examples.Example01"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "latest.integration",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "provided" // or "provided", but it is required only in compile-time
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "latest.integration" % "compile-internal" // or "provided", but it is required only in compile-time
     )
   )
