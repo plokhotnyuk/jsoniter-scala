@@ -25,6 +25,14 @@ and Graal JIT compilers, GraalVM 20.3 CE for Java 8/11 (dev build) and GraalVM 2
 compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 5.1 with GCC
 optimizations applied.
 
+## Contents
+- [Acknowledgments](#acknowledgments)
+- [Goals](#goals)
+- [Features and limitations](#features-and-limitations)
+- [**How to use**](#how-to-use)
+- [Known issues](#known-issues)
+- [How to develop](#how-to-develop)
+
 ## Acknowledgments
 
 This library had started from macros that reused [jsoniter (json-iterator) for Java](https://github.com/json-iterator/java) 
@@ -34,6 +42,9 @@ The idea to generate codecs by Scala macros and main details were borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
   
 Other Scala macros features were peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros).
+
+Ideas for support of `java.time.*` values were inspired by [DSL-JSON](https://github.com/ngs-doo/dsl-json)'s 
+implementation for `java.time.OffsetDateTime`.
 
 ## Goals
 
@@ -214,7 +225,7 @@ Samples for integration with different web frameworks:
 - [Play (with Netty native transport)](https://github.com/plokhotnyuk/play/tree/master/src/main/scala/microservice)
 
 Other usages of jsoniter-scala:
-- [Dijon](https://github.com/pathikrit/dijon) - support of schema-less JSON using safe and efficient AST representation
+- [Dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
 instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
 - [scalatest-json](https://github.com/stephennancekivell/scalatest-json) - Scalatest matchers with appropriate equality 
