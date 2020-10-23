@@ -59,8 +59,8 @@ object DslPlatformJson {
   implicit val (extractFieldsEncoder, extractFieldsDecoder) = codec[ExtractFields]
   implicit val (googleMapsAPIEncoder, googleMapsAPIDecoder) = codec[GoogleMapsAPI.DistanceMatrix]
   implicit val (intEncoder, intDecoder) = codec[Int]
-/* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
-  implicit val intMapOfBooleansEncoder: JsonWriter.WriteObject[IntMap[Boolean]] = codec[IntMap[Boolean]]
+/* FIXME: DSL-JSON doesn't support immutable.IntMap
+  implicit val (intMapOfBooleansEncoder, intMapOfBooleansDecoder) = codec[IntMap[Boolean]]
 */
   implicit val (listOfBooleansEncoder, listOfBooleansDecoder) = codec[List[Boolean]]
   implicit val (mapOfIntsToBooleansEncoder, mapOfIntsToBooleansDecoder) = codec[Map[Int, Boolean]]
@@ -68,8 +68,7 @@ object DslPlatformJson {
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
   implicit val (mutableLongMapOfBooleansEncoder, mutableLongMapOfBooleansDecoder) = codec[mutable.LongMap[Boolean]]
 */
-  implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) =
-    codec[mutable.Map[Int, Boolean]]
+  implicit val (mutableMapOfIntsToBooleansEncoder, mutableMapOfIntsToBooleansDecoder) = codec[mutable.Map[Int, Boolean]]
   implicit val (mutableSetOfIntsEncoder, mutableSetOfIntsDecoder) = codec[mutable.Set[Int]]
   implicit val (missingReqFieldsEncoder, missingReqFieldsDecoder) = codec[MissingRequiredFields]
   implicit val (nestedStructsEncoder, nestedStructsDecoder) = codec[NestedStructs]

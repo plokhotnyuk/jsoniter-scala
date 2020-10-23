@@ -24,6 +24,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes(0) = 'x'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.circe())
+      intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())

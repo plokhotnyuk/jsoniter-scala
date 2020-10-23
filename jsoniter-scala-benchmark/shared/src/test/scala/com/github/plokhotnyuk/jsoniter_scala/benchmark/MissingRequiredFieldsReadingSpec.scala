@@ -52,6 +52,8 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.dslJsonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.jacksonScala() shouldBe "MissingRequiredFields(VVV,1)"
       b.jsoniterScala() shouldBe "MissingRequiredFields(VVV,1)"
+      b.jsoniterScalaWithoutDump() shouldBe "MissingRequiredFields(VVV,1)"
+      b.jsoniterScalaWithStacktrace() shouldBe "MissingRequiredFields(VVV,1)"
       b.playJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.sprayJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
