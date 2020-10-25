@@ -41,10 +41,20 @@ reader and writer but then the library evolved to have its own core of mechanics
 The idea to generate codecs by Scala macros and main details were borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
   
-Other Scala macros features were peeped in [AVSystem Commons Library for Scala](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros).
+Other Scala macros features were peeped in [AVSystem Commons](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros)
+and [magnolia](https://github.com/propensive/magnolia) libraries.
 
-Ideas for support of `java.time.*` values were inspired by [DSL-JSON](https://github.com/ngs-doo/dsl-json)'s 
-implementation for `java.time.OffsetDateTime`.
+Ideas for the most efficient parsing and serialization of `java.time.*` values were inspired by
+[DSL-JSON](https://github.com/ngs-doo/dsl-json)'s implementation for `java.time.OffsetDateTime`.
+
+Other projects that have helped deliver unparalleled safety and performance characteristics for parsing and 
+serialization of floating-point and big numbers:
+- [Schubfach](https://github.com/c4f7fcce9cb06515/Schubfach/) - the most efficient and concise way to serialize doubles 
+  and floats to the textual representation
+- [rust-lexical](https://github.com/Alexhuszagh/rust-lexical) - the most efficient way to parse floats and doubles from
+  the textual representation precisely
+- [big-math](https://github.com/eobermuhlner/big-math) - parsing of `BigInt` and `BigDecimal` values with the `O(n^1.5)`
+  complexity instead of `O(n^2)` using Java's implementations where `n` is a number of digits 
 
 ## Goals
 
