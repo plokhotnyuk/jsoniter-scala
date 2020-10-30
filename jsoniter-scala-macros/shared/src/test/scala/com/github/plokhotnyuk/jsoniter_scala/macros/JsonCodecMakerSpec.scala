@@ -842,6 +842,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfStringOption = make[Option[String]]
       verifyDeserError(codecOfStringOption, """no!!!""", "expected value or null, offset: 0x00000001")
     }
+    "serialize and deserialize None and Some with non-empty value for nested options" in {
+      case class NestedOptions(x: Option[Option[Option[String]]])
+
+      val codecOfNestedOptions = make[NestedOptions]
+      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), "{}")
+      verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), "{\"x\":null}")
+      verifySerDeser(codecOfNestedOptions, NestedOptions(Some(Some(Some("VVV")))), "{\"x\":\"VVV\"}")
+      verifySer(codecOfNestedOptions, NestedOptions(Some(_root_.scala.None)), "{\"x\":null}") // FIXME: add support of intermediate nested options
+      verifySer(codecOfNestedOptions, NestedOptions(Some(Some(_root_.scala.None))), "{\"x\":null}") // FIXME: add support of intermediate nested options
+    }
     "serialize and deserialize case classes with tuples" in {
       verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
         """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""")
