@@ -162,7 +162,11 @@ case class Recursive(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Recur
 
 case class UTF8KeysAndValues(გასაღები: String)
 
-case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
+case class Stringified(
+  @stringified i: Int,
+  @stringified bi: BigInt,
+  @stringified o: Option[Int],
+  @stringified l: List[Int])
 
 case class Defaults(
   st: String = "VVV",
@@ -1310,14 +1314,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }).getMessage.contains(expectedError))
     }
     "serialize and deserialize fields that stringified by annotation" in {
-      verifySerDeser(codecOfStringified, Stringified(1, 2, List(1), List(2)),
-        """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""")
+      verifySerDeser(codecOfStringified, Stringified(1, 2, Option(1), List(2)),
+        """{"i":"1","bi":"2","o":"1","l":["2"]}""")
     }
     "throw parse exception when stringified fields have non-string values" in {
-      verifyDeserError(codecOfStringified, """{"i":1,"bi":"2","l1":["1"],"l2":[2]}""",
+      verifyDeserError(codecOfStringified, """{"i":1,"bi":"2","o":"1","l":["2"]}""",
         "expected '\"', offset: 0x00000005")
-      verifyDeserError(codecOfStringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""",
+      verifyDeserError(codecOfStringified, """{"i":"1","bi":2,"o":"1","l":["2"]}""",
         "expected '\"', offset: 0x0000000e")
+      verifyDeserError(codecOfStringified, """{"i":"1","bi":"2","o":1,"l":["2"]}""",
+        "expected '\"', offset: 0x00000016")
+      verifyDeserError(codecOfStringified, """{"i":"1","bi":"2","o":"1","l":[2]}""",
+        "expected '\"', offset: 0x0000001f")
     }
     "serialize and deserialize recursive types if it was allowed" in {
       verifySerDeser(make[Recursive](CodecMakerConfig.withAllowRecursiveTypes(true)),
