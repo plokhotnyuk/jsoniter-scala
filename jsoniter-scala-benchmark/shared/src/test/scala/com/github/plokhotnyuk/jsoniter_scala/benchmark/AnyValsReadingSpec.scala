@@ -8,7 +8,7 @@ class AnyValsReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
-      //FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
+      //FIXME: DSL-JSON throws com.dslplatform.json.ParsingException: Expecting '{' to start decoding com.github.plokhotnyuk.jsoniter_scala.benchmark.ByteVal. Found 1 at position: 6, following: `{"b":1`, before: `,"s":2,"i":3,"l":4,"`
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj

@@ -162,7 +162,11 @@ case class Recursive(s: String, bd: BigDecimal, l: List[Int], m: Map[Char, Recur
 
 case class UTF8KeysAndValues(გასაღები: String)
 
-case class Stringified(@stringified i: Int, @stringified bi: BigInt, @stringified l1: List[Int], l2: List[Int])
+case class Stringified(
+  @stringified i: Int,
+  @stringified bi: BigInt,
+  @stringified o: Option[Int],
+  @stringified l: List[Int])
 
 case class Defaults(
   st: String = "VVV",
@@ -842,6 +846,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfStringOption = make[Option[String]]
       verifyDeserError(codecOfStringOption, """no!!!""", "expected value or null, offset: 0x00000001")
     }
+    "serialize and deserialize None and Some with non-empty value for nested options" in {
+      case class NestedOptions(x: Option[Option[Option[String]]])
+
+      val codecOfNestedOptions = make[NestedOptions]
+      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), "{}")
+      verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), "{\"x\":null}")
+      verifySerDeser(codecOfNestedOptions, NestedOptions(Some(Some(Some("VVV")))), "{\"x\":\"VVV\"}")
+      verifySer(codecOfNestedOptions, NestedOptions(Some(_root_.scala.None)), "{\"x\":null}") // FIXME: add support of intermediate nested options
+      verifySer(codecOfNestedOptions, NestedOptions(Some(Some(_root_.scala.None))), "{\"x\":null}") // FIXME: add support of intermediate nested options
+    }
     "serialize and deserialize case classes with tuples" in {
       verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
         """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""")
@@ -1300,14 +1314,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }).getMessage.contains(expectedError))
     }
     "serialize and deserialize fields that stringified by annotation" in {
-      verifySerDeser(codecOfStringified, Stringified(1, 2, List(1), List(2)),
-        """{"i":"1","bi":"2","l1":["1"],"l2":[2]}""")
+      verifySerDeser(codecOfStringified, Stringified(1, 2, Option(1), List(2)),
+        """{"i":"1","bi":"2","o":"1","l":["2"]}""")
     }
     "throw parse exception when stringified fields have non-string values" in {
-      verifyDeserError(codecOfStringified, """{"i":1,"bi":"2","l1":["1"],"l2":[2]}""",
+      verifyDeserError(codecOfStringified, """{"i":1,"bi":"2","o":"1","l":["2"]}""",
         "expected '\"', offset: 0x00000005")
-      verifyDeserError(codecOfStringified, """{"i":"1","bi":2,"l1":[1],"l2":[2]}""",
+      verifyDeserError(codecOfStringified, """{"i":"1","bi":2,"o":"1","l":["2"]}""",
         "expected '\"', offset: 0x0000000e")
+      verifyDeserError(codecOfStringified, """{"i":"1","bi":"2","o":1,"l":["2"]}""",
+        "expected '\"', offset: 0x00000016")
+      verifyDeserError(codecOfStringified, """{"i":"1","bi":"2","o":"1","l":[2]}""",
+        "expected '\"', offset: 0x0000001f")
     }
     "serialize and deserialize recursive types if it was allowed" in {
       verifySerDeser(make[Recursive](CodecMakerConfig.withAllowRecursiveTypes(true)),

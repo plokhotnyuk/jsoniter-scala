@@ -163,15 +163,15 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("2.13.3", "2.12.12"),
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.3.1",
-      "io.bullet" %%% "borer-derivation" % "1.6.2",
-      "pl.iterators" %% "kebs-spray-json" % "1.8.1",
+      "io.bullet" %%% "borer-derivation" % "1.6.3",
+      "pl.iterators" %% "kebs-spray-json" % "1.8.0",
       "io.spray" %% "spray-json" % "1.3.5",
       "com.avsystem.commons" %%% "commons-core" % "2.0.0-M12",
-      "com.lihaoyi" %%% "upickle" % "1.2.1",
-      "com.dslplatform" %% "dsl-json-scala" % "1.9.5",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.11.3",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.11.3",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.11.3",
+      "com.lihaoyi" %%% "upickle" % "1.2.2",
+      "com.dslplatform" %% "dsl-json-scala" % "1.9.7",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.0-rc1",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.12.0-rc1",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.12.0-rc1",
       "io.circe" %%% "circe-generic-extras" % "0.13.0",
       "io.circe" %%% "circe-generic" % "0.13.0",
       "io.circe" %%% "circe-parser" % "0.13.0",
@@ -179,6 +179,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.julienrf" %% "play-json-derived-codecs" % "7.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
+      "org.openjdk.jmh" % "jmh-core" % "1.26",
+      "org.openjdk.jmh" % "jmh-generator-asm" % "1.26",
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.26",
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.26",
       "org.scalatest" %%% "scalatest" % "3.2.2" % Test
     )
   )

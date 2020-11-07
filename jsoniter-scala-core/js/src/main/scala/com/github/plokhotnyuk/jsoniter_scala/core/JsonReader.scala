@@ -2274,16 +2274,17 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def toZoneOffset(isNeg: Boolean, offsetHour: Int, offsetMinute: Int, offsetSecond: Int): ZoneOffset = {
     var offsetTotal = offsetHour * 3600 + offsetMinute * 60 + offsetSecond
-    var q1 = offsetTotal / 900
+    var qp = offsetTotal * 37283
     if (offsetTotal > 64800) timezoneOffsetError() // 64800 == 18 * 60 * 60
-    if (q1 * 900 == offsetTotal) {
-      if (isNeg) q1 = -q1
-      var zoneOffset = zoneOffsets(q1 + 72)
+    if ((qp & 0x1FF8000) == 0) { // check if offsetTotal divisible by 900
+      qp >>>= 25 // divide offsetTotal by 900
+      if (isNeg) qp = -qp
+      var zoneOffset = zoneOffsets(qp + 72)
       if (zoneOffset ne null) zoneOffset
       else {
         if (isNeg) offsetTotal = -offsetTotal
         zoneOffset = ZoneOffset.ofTotalSeconds(offsetTotal)
-        zoneOffsets(q1 + 72) = zoneOffset
+        zoneOffsets(qp + 72) = zoneOffset
         zoneOffset
       }
     } else {
@@ -2644,24 +2645,23 @@ final class JsonReader private[jsoniter_scala](
       }
     }
     val bLen = i << 1
-    val bs = {
-      var b = nextByte(pos)
+    var bs: Array[Byte] = null
+    var b = nextByte(pos)
+    if (b == '"') bs = new Array[Byte](bLen)
+    else {
+      bits = ns(b & 0xFF)
+      if (bits < 0) decodeError("expected '\"' or hex digit")
+      b = nextByte(head)
+      bits = (bits << 4) | ns(b & 0xFF)
+      if (bits < 0) decodeError("expected hex digit")
+      b = nextByte(head)
       if (b != '"') {
-        bits = ns(b & 0xFF)
-        if (bits < 0) decodeError("expected '\"' or hex digit")
-        b = nextByte(head)
-        bits = (bits << 4) | ns(b & 0xFF)
-        if (bits < 0) decodeError("expected hex digit")
-        b = nextByte(head)
-        if (b != '"') {
-          if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
-          nextByte(head)
-          decodeError("expected hex digit")
-        }
-        val bs = new Array[Byte](bLen + 1)
-        bs(bLen) = bits.toByte
-        bs
-      } else new Array[Byte](bLen)
+        if (ns(b & 0xFF) < 0) decodeError("expected '\"' or hex digit")
+        nextByte(head)
+        decodeError("expected hex digit")
+      }
+      bs = new Array[Byte](bLen + 1)
+      bs(bLen) = bits.toByte
     }
     i = 0
     var j = 0
@@ -2706,35 +2706,33 @@ final class JsonReader private[jsoniter_scala](
       }
     }
     val bLen = i + (i >> 1)
-    val bs = {
-      var b = nextByte(pos)
-      if (b != '"') {
-        bits = ds(b & 0xFF)
-        if (bits < 0) decodeError("expected '\"' or base64 digit")
-        b = nextByte(head)
-        bits = (bits << 6) | ds(b & 0xFF)
-        if (bits < 0) decodeError("expected base64 digit")
-        b = nextByte(head)
-        if (b == '"' || b == '=') {
-          if (b == '=') {
-            nextByteOrError('=', head)
-            nextByteOrError('"', head)
-          }
-          val bs = new Array[Byte](bLen + 1)
-          bs(bLen) = (bits >> 4).toByte
-          bs
-        } else {
-          bits = (bits << 6) | ds(b & 0xFF)
-          if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
-          b = nextByte(head)
-          if (b == '=') nextByteOrError('"', head)
-          else if (b != '"') tokensError('"', '=')
-          val bs = new Array[Byte](bLen + 2)
-          bs(bLen) = (bits >> 10).toByte
-          bs(bLen + 1) = (bits >> 2).toByte
-          bs
+    var bs: Array[Byte] = null
+    var b = nextByte(pos)
+    if (b == '"') bs = new Array[Byte](bLen)
+    else {
+      bits = ds(b & 0xFF)
+      if (bits < 0) decodeError("expected '\"' or base64 digit")
+      b = nextByte(head)
+      bits = (bits << 6) | ds(b & 0xFF)
+      if (bits < 0) decodeError("expected base64 digit")
+      b = nextByte(head)
+      if (b == '"' || b == '=') {
+        if (b == '=') {
+          nextByteOrError('=', head)
+          nextByteOrError('"', head)
         }
-      } else new Array[Byte](bLen)
+        bs = new Array[Byte](bLen + 1)
+        bs(bLen) = (bits >> 4).toByte
+      } else {
+        bits = (bits << 6) | ds(b & 0xFF)
+        if (bits < 0) decodeError("expected '\"' or '=' or base64 digit")
+        b = nextByte(head)
+        if (b == '=') nextByteOrError('"', head)
+        else if (b != '"') tokensError('"', '=')
+        bs = new Array[Byte](bLen + 2)
+        bs(bLen) = (bits >> 10).toByte
+        bs(bLen + 1) = (bits >> 2).toByte
+      }
     }
     i = 0
     var j = 0

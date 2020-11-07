@@ -8,8 +8,7 @@ class PrimitivesReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.borer() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
-      //FIXME: DSL-JSON cannot create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.Primitives
-      //benchmark.dslJsonScala() shouldBe benchmark.obj
+      benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
@@ -23,6 +22,7 @@ class PrimitivesReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
+      intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())

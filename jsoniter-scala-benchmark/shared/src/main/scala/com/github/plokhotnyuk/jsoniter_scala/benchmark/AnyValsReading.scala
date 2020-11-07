@@ -29,7 +29,7 @@ class AnyValsReading extends AnyValsBenchmark {
 
   @Benchmark
   def circe(): AnyVals = decode[AnyVals](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
+/* FIXME: DSL-JSON throws com.dslplatform.json.ParsingException: Expecting '{' to start decoding com.github.plokhotnyuk.jsoniter_scala.benchmark.ByteVal. Found 1 at position: 6, following: `{"b":1`, before: `,"s":2,"i":3,"l":4,"`
   @Benchmark
   def dslJsonScala(): AnyVals = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._

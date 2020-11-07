@@ -29,7 +29,7 @@ class AnyValsWriting extends AnyValsBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
-/* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for com.github.plokhotnyuk.jsoniter_scala.benchmark.AnyVals
+/* FIXME: DSL-JSON wraps AnyVal values
   @Benchmark
   def dslJsonScala(): Array[Byte] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
