@@ -110,8 +110,8 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.2.0" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-14" % "3.2.2.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.2" % Test
+      "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.3.0" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.3" % Test
     )
   )
 
@@ -137,7 +137,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scalatest" %%% "scalatest" % "3.2.2" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.3" % Test
     )
   )
 
@@ -164,8 +164,8 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.3.1",
       "io.bullet" %%% "borer-derivation" % "1.6.3",
-      "pl.iterators" %% "kebs-spray-json" % "1.8.1",
-      "io.spray" %% "spray-json" % "1.3.5",
+      "pl.iterators" %% "kebs-spray-json" % "1.8.0",
+      "io.spray" %% "spray-json" % "1.3.6",
       "com.avsystem.commons" %%% "commons-core" % "2.0.0-M12",
       "com.lihaoyi" %%% "upickle" % "1.2.2",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.7",
@@ -183,7 +183,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.26",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.26",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.26",
-      "org.scalatest" %%% "scalatest" % "3.2.2" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.3" % Test
     )
   )
 
