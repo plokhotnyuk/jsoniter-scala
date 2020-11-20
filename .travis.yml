@@ -17,7 +17,7 @@ matrix:
       group: edge
       virt: vm
       jdk: openjdk11
-      scala: 2.13.3
+      scala: 2.13.4
       script:
         - lscpu
         - travis_wait 60 sbt -batch ++$TRAVIS_SCALA_VERSION! clean coverage test mimaReportBinaryIssues coverageAggregate coveralls
