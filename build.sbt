@@ -168,7 +168,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "io.spray" %% "spray-json" % "1.3.6",
       "com.avsystem.commons" %%% "commons-core" % "2.0.0-M16",
       "com.lihaoyi" %%% "upickle" % "1.2.2",
-      "com.dslplatform" %% "dsl-json-scala" % "1.9.7",
+      "com.dslplatform" %% "dsl-json-scala" % "1.9.8",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.1",
 
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.12.1",
