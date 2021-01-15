@@ -106,7 +106,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.4", "2.12.12", "2.11.12"),
+    crossScalaVersions := Seq("2.13.4", "2.12.13", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.3.2" % Test,
@@ -133,7 +133,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.4", "2.12.12", "2.11.12"),
+    crossScalaVersions := Seq("2.13.4", "2.12.13", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -160,7 +160,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
       "Playframework" at "https://dl.bintray.com/playframework/maven"
     ),
-    crossScalaVersions := Seq("2.13.4", "2.12.12"),
+    crossScalaVersions := Seq("2.13.4", "2.12.13"),
     libraryDependencies ++= Seq(
       "com.rallyhealth" %% "weepickle-v1" % "1.3.1",
       "io.bullet" %%% "borer-derivation" % "1.6.3",
@@ -170,7 +170,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.lihaoyi" %%% "upickle" % "1.2.2",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.8",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.1",
-
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.12.1",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.12.1",
       "io.circe" %%% "circe-generic-extras" % "0.13.0",
