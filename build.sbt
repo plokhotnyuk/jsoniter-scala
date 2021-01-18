@@ -193,7 +193,7 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)
   .settings(
-    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.8.0",
+    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.9.0",
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true).withESFeatures(_.withUseECMAScript2015(false))),
     mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
