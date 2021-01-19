@@ -2,7 +2,7 @@
 
 ## How to turn on performance (not power save) mode 
 
-```
+```sh
 echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 ```
 
