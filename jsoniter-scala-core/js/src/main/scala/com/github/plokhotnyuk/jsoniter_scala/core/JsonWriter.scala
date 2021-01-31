@@ -1283,7 +1283,7 @@ final class JsonWriter private[jsoniter_scala](
         if (nano != 0) {
           if (totalSecs < 0) nano = 1000000000 - nano
           val dotPos = pos
-          pos = writeSignificantFractionDigits(nano, 0, pos + 9, pos, buf, ds)
+          pos = writeSignificantFractionDigits(nano, pos + 9, pos, buf, ds)
           buf(dotPos) = '.'
         }
         buf(pos) = 'S'
@@ -1816,8 +1816,7 @@ final class JsonWriter private[jsoniter_scala](
         val s = vb >> 2
         if (s < 100 || {
           dv = s / 10
-          val sp10 = dv * 10
-          val sp40 = sp10 << 2
+          val sp40 = dv * 40
           val upin = vbls - sp40
           ((sp40 + vbrd + 40) ^ upin) >= 0 || {
             dv += ~upin >>> 31
@@ -1838,7 +1837,7 @@ final class JsonWriter private[jsoniter_scala](
       exp += len
       len += 1
       if (exp < -3 || exp >= 7) {
-        val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
+        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
         buf(pos + 1) = '.'
         pos =
@@ -1863,11 +1862,11 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos + 2) = '0'
         buf(pos + 3) = '0'
         pos -= exp
-        val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
+        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(dotPos) = '.'
         lastPos
       } else if (exp < len - 1) {
-        val lastPos = writeSignificantFractionDigits(dv, 0, pos + len, pos, buf, ds)
+        val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         val beforeDotPos = pos + exp
         while (pos <= beforeDotPos) {
           buf(pos) = buf(pos + 1)
@@ -1943,8 +1942,7 @@ final class JsonWriter private[jsoniter_scala](
         val s = vb >> 2
         if (s < 100 || {
           dv = s / 10 // FIXME: Use Math.multiplyHigh(s, 1844674407370955168L) instead after dropping JDK 8 support
-          val sp10 = dv * 10
-          val sp40 = sp10 << 2
+          val sp40 = dv * 40
           val upin = (vbls - sp40).toInt
           (((sp40 + vbrd).toInt + 40) ^ upin) >= 0 || {
             dv += ~upin >>> 31
@@ -2046,56 +2044,72 @@ final class JsonWriter private[jsoniter_scala](
     else ((999999999 - q0) >>> 31) + 8
 
   private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, 0, pos, posLim, buf, ds)
+    if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
     else {
       val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping JDK 8 support
-      writeSignificantFractionDigits(q1.toInt, {
-        val r1 = (q0 - q1 * 100000000).toInt
-        if (r1 == 0) 0
-        else writeSignificantFractionDigits(r1, 0, pos, pos - 8, buf, ds)
-      }, pos - 8, posLim, buf, ds)
+      val r1 = (q0 - q1 * 100000000).toInt
+      if (r1 == 0) writeSignificantFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
+      else {
+        val lastPos = writeSignificantFractionDigits(r1, pos, pos - 8, buf, ds)
+        writeFractionDigits(q1.toInt, pos - 8, posLim, buf, ds)
+        lastPos
+      }
     }
 
-  @tailrec
-  private[this] def writeSignificantFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = q0 / 100
-    val r1 = q0 - q1 * 100
-    if ((r1 | lastPos) == 0) writeSignificantFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
-    else writeFractionDigits(q1, {
-      val d = ds(r1)
-      buf(pos - 1) = d.toByte
+  private[this] def writeSignificantFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    var q0 = q
+    var q1, r1 = 0
+    var pos = p
+    while ({
+      q1 = q0 / 100
+      r1 = q0 - q1 * 100
+      r1 == 0
+    }) {
+      q0 = q1
+      pos -= 2
+    }
+    val d = ds(r1)
+    buf(pos - 1) = d.toByte
+    var lastPos = pos
+    if (d > 12345) { // 12345 == ('0' << 8) | '9'
       buf(pos) = (d >> 8).toByte
-      if (lastPos != 0) lastPos
-      else (12345 - d >>> 31) + pos // 12345 == ('0' << 8) | '9'
-    }, pos - 2, posLim, buf, ds)
+      lastPos += 1
+    }
+    writeFractionDigits(q1, pos - 2, posLim, buf, ds)
+    lastPos
   }
 
-  @tailrec
-  private[this] def writeFractionDigits(q0: Int, lastPos: Int, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
-    if (pos > posLim) {
+  private[this] def writeFractionDigits(q: Int, p: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
+    var q0 = q
+    var pos = p
+    while (pos > posLim) {
       val q1 = q0 / 100
       val d = ds(q0 - q1 * 100)
       buf(pos - 1) = d.toByte
       buf(pos) = (d >> 8).toByte
-      writeFractionDigits(q1, lastPos, pos - 2, posLim, buf, ds)
-    } else lastPos
-
-  @tailrec
-  private[this] def writePositiveIntDigits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Unit =
-    if (q0 < 100) {
-      if (q0 < 10) buf(pos) = (q0 + '0').toByte
-      else {
-        val d = ds(q0)
-        buf(pos - 1) = d.toByte
-        buf(pos) = (d >> 8).toByte
-      }
-    } else {
-      val q1 = q0 / 100
-      val d = ds(q0 - q1 * 100)
-      buf(pos - 1) = d.toByte
-      buf(pos) = (d >> 8).toByte
-      writePositiveIntDigits(q1, pos - 2, buf, ds)
+      q0 = q1
+      pos -= 2
     }
+  }
+
+  private[this] def writePositiveIntDigits(q: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Unit = {
+    var q0 = q
+    var pos = p
+    while (q0 >= 100) {
+      val q1 = q0 / 100
+      val d = ds(q0 - q1 * 100)
+      buf(pos - 1) = d.toByte
+      buf(pos) = (d >> 8).toByte
+      q0 = q1
+      pos -= 2
+    }
+    if (q0 < 10) buf(pos) = (q0 + '0').toByte
+    else {
+      val d = ds(q0)
+      buf(pos - 1) = d.toByte
+      buf(pos) = (d >> 8).toByte
+    }
+  }
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
 
