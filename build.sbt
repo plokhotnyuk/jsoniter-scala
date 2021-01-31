@@ -96,12 +96,13 @@ lazy val `jsoniter-scala` = project.in(file("."))
   .aggregate(
     `jsoniter-scala-coreJVM`,
     `jsoniter-scala-coreJS`,
+    `jsoniter-scala-coreNative`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
     `jsoniter-scala-benchmarkJVM` // FIXME: Restore `jsoniter-scala-benchmarkJS` here
   )
 
-lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
+lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -110,8 +111,8 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.1" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.3.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.3" % Test
+      "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.4.0-M1" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.4-M1" % Test
     )
   )
 
@@ -125,6 +126,12 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule).withESFeatures(_.withUseECMAScript2015(false))),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
+  )
+
+lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
+  .settings(
+    nativeLinkStubs := true,
+    libraryDependencies += "org.ekrich" %%% "sjavatime" % "1.1.0"
   )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
