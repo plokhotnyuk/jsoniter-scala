@@ -3,11 +3,12 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
 import java.nio.{BufferOverflowException, ByteBuffer, ReadOnlyBufferException}
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
+import java.math.MathContext
 
 class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   "readFromStream" should {
@@ -347,137 +348,20 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       }
     }
     "correctly write large data sets with BigDecimals to the provided output stream" in {
-      case class GotBD(bd: BigDecimal)
-
-      val codec: JsonValueCodec[Map[Long, Seq[GotBD]]] = {
-        final class $anon extends _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[scala.collection.immutable.Map[Long, Seq[GotBD]]] {
-          def nullValue: scala.collection.immutable.Map[Long, Seq[GotBD]] = c0;
-
-          def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: scala.collection.immutable.Map[Long, Seq[GotBD]]): scala.collection.immutable.Map[Long, Seq[GotBD]] = d0(in, default);
-
-          def encodeValue(x: scala.collection.immutable.Map[Long, Seq[GotBD]], out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = e0(x, out);
-
-          private[this] def d2(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: GotBD): GotBD =
-            if (in.isNextToken('{')) {
-              var _bd: scala.math.BigDecimal = null;
-              var p0 = 1;
-              if (in.isNextToken('}').`unary_!`) {
-                in.rollbackToken();
-                var l = -1;
-                while (l.<(0).||(in.isNextToken(','))) {
-                  l = in.readKeyAsCharBuf();
-                  if (in.isCharBufEqualsTo(l, "bd")) {
-                    if (p0.&(1).!=(0))
-                      p0.^=(1)
-                    else
-                      in.duplicatedKeyError(l);
-                    _bd = in.readBigDecimal(_bd, _root_.java.math.MathContext.DECIMAL128, 6178, 308)
-                  }
-                  else
-                    in.skip()
-                };
-                if (in.isCurrentToken('}').`unary_!`)
-                  in.objectEndOrCommaError()
-                else
-                  ()
-              }
-              else
-                ();
-              if (p0.&(1).!=(0))
-                in.requiredFieldError(f0(_root_.java.lang.Integer.numberOfTrailingZeros(p0.&(1))))
-              else
-                ();
-              new GotBD(bd = _bd)
-            }
-            else
-              in.readNullOrTokenError(default, '{');
-
-          private[this] def d1(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: Seq[GotBD]): Seq[GotBD] = if (in.isNextToken('['))
-            if (in.isNextToken(']'))
-              default
-            else {
-              in.rollbackToken();
-              val x = Seq.newBuilder[GotBD];
-              while ( {
-                x += (d2(in, null));
-                in.isNextToken(',')
-              })
-                ();
-              if (in.isCurrentToken(']'))
-                x.result()
-              else
-                in.arrayEndOrCommaError()
-            }
-          else
-            in.readNullOrTokenError(default, '[');
-
-          private[this] def d0(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: scala.collection.immutable.Map[Long, Seq[GotBD]]): scala.collection.immutable.Map[Long, Seq[GotBD]] = if (in.isNextToken('{'))
-            if (in.isNextToken('}'))
-              default
-            else {
-              in.rollbackToken();
-              val x = Map.newBuilder[Long, Seq[GotBD]];
-              var i = 0;
-              while ( {
-                x += (scala.Tuple2(in.readKeyAsLong(), d1(in, c1)));
-                i.+=(1);
-                if (i.>(1024))
-                  in.decodeError("too many map inserts")
-                else
-                  ();
-                in.isNextToken(',')
-              })
-                ();
-              if (in.isCurrentToken('}'))
-                x.result()
-              else
-                in.objectEndOrCommaError()
-            }
-          else
-            in.readNullOrTokenError(default, '{');
-
-          private[this] def e2(x: GotBD, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = {
-            out.writeObjectStart();
-            {
-              out.writeNonEscapedAsciiKey("bd");
-              out.writeVal(x.bd)
-            };
-            out.writeObjectEnd()
-          };
-
-          private[this] def e1(x: Seq[GotBD], out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = {
-            out.writeArrayStart();
-            x.foreach(((x) => e2(x, out)));
-            out.writeArrayEnd()
-          };
-
-          private[this] def e0(x: scala.collection.immutable.Map[Long, Seq[GotBD]], out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit = {
-            out.writeObjectStart();
-            x.foreach((kv => {
-              out.writeKey(kv._1);
-              e1(kv._2, out)
-            }));
-            out.writeObjectEnd()
-          };
-
-          private[this] def f0(i: Int): String = (i: @_root_.scala.annotation.switch) match {
-            case 0 => "bd"
-          };
-          private[this] val c0: scala.collection.immutable.Map[Long, Seq[GotBD]] = Map.empty[Long, Seq[GotBD]];
-          private[this] val c1: Seq[GotBD] = Seq.empty[GotBD]
-        };
-        new $anon()
-      }
-
-      val values: Map[Long, Seq[GotBD]] = (1L to 10L).map { i =>
-        i -> (1L to 200L).map(j => GotBD(j * 555))
-      }.toMap
-
+      val values: Seq[BigDecimal] = (1 to 3000).map(i => BigDecimal(i * 777))
       val out = new ByteArrayOutputStream()
-      writeToStream(values, out)(codec)
-      val asString = out.toString("UTF-8")
+      writeToStream(values, out)(new JsonValueCodec[Seq[BigDecimal]] {
+        def encodeValue(x: Seq[BigDecimal], out: JsonWriter): Unit = {
+          out.writeArrayStart()
+          x.foreach(x => out.writeVal(x))
+          out.writeArrayEnd()
+        }
 
-      readFromString(asString)(codec) shouldBe values
+        def decodeValue(in: JsonReader, default: Seq[BigDecimal]): Seq[BigDecimal] = ???
+
+        def nullValue: Seq[BigDecimal] = ???
+      })
+      out.toString("UTF-8") shouldBe values.mkString("[", ",", "]")
     }
 
     "throw NullPointerException in case of the provided params are null" in {
