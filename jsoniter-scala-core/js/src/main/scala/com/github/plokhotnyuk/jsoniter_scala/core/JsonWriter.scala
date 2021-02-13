@@ -1098,6 +1098,7 @@ final class JsonWriter private[jsoniter_scala](
     if (x.bitLength < 64) {
       val v = x.longValue
       val pos = ensureBufCapacity(28) // Long.MinValue.toString.length + 8 (for a leading zero, dot, and padding zeroes)
+      count = pos
       writeLong(v)
       val blockLen = (v >> 63).toInt + count - pos
       val dotOff = scale.toLong - blockScale
