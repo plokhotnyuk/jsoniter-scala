@@ -120,7 +120,7 @@ lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.1.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.2.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.0"
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule).withESFeatures(_.withUseECMAScript2015(false))),
