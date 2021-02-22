@@ -46,7 +46,7 @@ lazy val commonSettings = Seq(
     case _ => Seq()
   }),
   compileOrder := CompileOrder.JavaThenScala,
-  testOptions in Test += Tests.Argument("-oDF"),
+  Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   publishTo := sonatypePublishToBundle.value,
   publishMavenStyle := true,
@@ -60,7 +60,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val noPublishSettings = Seq(
-  skip in publish := true,
+  publish / skip := true,
   mimaPreviousArtifacts := Set()
 )
 
@@ -196,6 +196,6 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.9.0",
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true).withESFeatures(_.withUseECMAScript2015(false))),
-    mainClass in Compile := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
+    Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
