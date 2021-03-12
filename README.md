@@ -61,9 +61,9 @@ serialization of floating-point and big numbers:
 1. **Safety**: validate parsed values safely with the fail-fast approach and clear reporting, provide configurable 
 limits for suboptimal data structures with safe defaults to be resilient for DoS attacks, generate codecs that create
 instances of a _fixed_ set of classes during parsing to avoid RCE attacks
-2. **Correctness**: support the latest JSON format (RFC-8259), parse and serialize numbers without loosing of precision
-doing half even rounding for too long JSON numbers when they bounded to floats or doubles, do not replace illegally 
-encoded characters of string values by placeholder characters
+2. **Correctness**: support the latest JSON format (RFC-8259), do not replace illegally encoded characters of string 
+values by placeholder characters, parse numbers with limited binary representation doing half even rounding for too 
+long JSON numbers, serialize floats and doubles to the _shortest_ textual representation without loosing of precision 
 3. **Speed**: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back, do it 
 crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
 copying
