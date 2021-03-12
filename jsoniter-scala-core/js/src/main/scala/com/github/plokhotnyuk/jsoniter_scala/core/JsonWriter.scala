@@ -1790,7 +1790,8 @@ final class JsonWriter private[jsoniter_scala](
       var e = ieeeExponent - 150
       var m = ieeeMantissa | 0x800000
       var dv, exp = 0
-      if (e >= -23 && e <= 0 && (m << e & e) == 0) dv = m >> -e
+      if (e == 0) dv = m
+      else if (e >= -23 && e < 0 && m << e == 0) dv = m >> -e
       else {
         var expShift, expCorr = 0
         var cblShift = 2
@@ -1914,7 +1915,8 @@ final class JsonWriter private[jsoniter_scala](
       var m = ieeeMantissa | 0x10000000000000L
       var dv = 0L
       var exp = 0
-      if (e >= -52 && e <= 0 && (m << e & e) == 0) dv = m >> -e
+      if (e == 0) dv = m
+      else if (e >= -52 && e < 0 && m << e == 0) dv = m >> -e
       else {
         var expShift, expCorr = 0
         var cblShift = 2
