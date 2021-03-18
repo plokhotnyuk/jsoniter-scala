@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -37,6 +37,10 @@ class MapOfIntsToBooleansReading extends MapOfIntsToBooleansBenchmark {
 
   @Benchmark
   def playJson(): Map[Int, Boolean] = Json.parse(jsonBytes).as[Map[Int, Boolean]]
+
+  @Benchmark
+  def playJsonJsoniter(): Map[Int, Boolean] =
+    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Map[Int, Boolean]])
 /* FIXME: Spray-JSON throws spray.json.DeserializationException: Expected Int as JsNumber, but got "-1"
   @Benchmark
   def sprayJson(): Map[Int, Boolean] = JsonParser(jsonBytes).convertTo[Map[Int, Boolean]]

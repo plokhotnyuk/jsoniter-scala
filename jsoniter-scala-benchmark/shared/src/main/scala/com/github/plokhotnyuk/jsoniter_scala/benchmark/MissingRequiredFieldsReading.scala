@@ -2,9 +2,9 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.io.IOException
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
@@ -92,6 +92,14 @@ class MissingRequiredFieldsReading extends CommonParams {
   def playJson(): String =
     try {
       Json.parse(jsonBytes).as[MissingRequiredFields](missingReqFieldsFormat).toString // toString() should not be called
+    } catch {
+      case ex: JsResultException => ex.getMessage
+    }
+
+  @Benchmark
+  def playJsonJsoniter(): String =
+    try {
+      PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[MissingRequiredFields](missingReqFieldsFormat).toString) // toString() should not be called
     } catch {
       case ex: JsResultException => ex.getMessage
     }

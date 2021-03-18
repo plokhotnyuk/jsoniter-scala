@@ -13,7 +13,7 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
   var size: Int = 1000
   var obj: String = _
-  var jsonString: String = _
+  var jsonString1: String = _
   var jsonString2: String = _
   var jsonBytes: Array[Byte] = _
   var preallocatedBuf: Array[Byte] = _
@@ -38,9 +38,9 @@ class StringOfEscapedCharsBenchmark extends CommonParams {
       }
       new String(cs)
     }
-    jsonString = "\"" + obj.map(ch => f"\\u$ch%04x").mkString  + "\""
+    jsonString1 = "\"" + obj.map(ch => f"\\u$ch%04x").mkString  + "\""
     jsonString2 = "\"" + obj.map(ch => f"\\u$ch%04X").mkString  + "\""
-    jsonBytes = jsonString.getBytes(UTF_8)
+    jsonBytes = jsonString1.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }
 }

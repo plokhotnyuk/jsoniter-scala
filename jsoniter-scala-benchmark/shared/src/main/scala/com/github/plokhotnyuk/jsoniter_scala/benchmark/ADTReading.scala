@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -38,6 +38,9 @@ class ADTReading extends ADTBenchmark {
 
   @Benchmark
   def playJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)
+
+  @Benchmark
+  def playJsonJsoniter(): ADTBase = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[ADTBase](adtFormat))
 
   @Benchmark
   def sprayJson(): ADTBase = JsonParser(jsonBytes).convertTo[ADTBase](adtBaseJsonFormat)

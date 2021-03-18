@@ -14,6 +14,7 @@ class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
     }
@@ -27,6 +28,7 @@ class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
     }

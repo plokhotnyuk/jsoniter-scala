@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -36,6 +36,10 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def playJson(): mutable.Map[Int, Boolean] = Json.parse(jsonBytes).as[mutable.Map[Int, Boolean]]
+
+  @Benchmark
+  def playJsonJsoniter(): mutable.Map[Int, Boolean] =
+    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[mutable.Map[Int, Boolean]])
 
   @Benchmark
   def weePickle(): mutable.Map[Int, Boolean] = FromJson(jsonBytes).transform(ToScala[mutable.Map[Int, Boolean]])

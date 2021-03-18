@@ -2,8 +2,8 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Year
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -35,6 +35,9 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
 
   @Benchmark
   def playJson(): Array[Year] = Json.parse(jsonBytes).as[Array[Year]]
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Year] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Year]])
 
   @Benchmark
   def sprayJson(): Array[Year] = JsonParser(jsonBytes).convertTo[Array[Year]]

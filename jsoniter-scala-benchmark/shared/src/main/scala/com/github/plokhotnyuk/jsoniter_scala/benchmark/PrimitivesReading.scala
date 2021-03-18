@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -42,6 +42,9 @@ class PrimitivesReading extends PrimitivesBenchmark {
 
   @Benchmark
   def playJson(): Primitives = Json.parse(jsonBytes).as[Primitives]
+
+  @Benchmark
+  def playJsonJsoniter(): Primitives = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Primitives])
 
   @Benchmark
   def sprayJson(): Primitives = JsonParser(jsonBytes).convertTo[Primitives]

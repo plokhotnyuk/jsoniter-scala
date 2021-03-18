@@ -15,6 +15,7 @@ class BitSetReadingSpec extends BenchmarkSpecBase {
       //benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -23,6 +24,7 @@ class BitSetReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
     }
   }
 }
