@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -39,6 +39,9 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
   @Benchmark
   def playJson(): GeoJSON = Json.parse(jsonBytes).as[GeoJSON](geoJSONFormat)
+
+  @Benchmark
+  def playJsonJsoniter(): GeoJSON = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[GeoJSON](geoJSONFormat))
 
   @Benchmark
   def sprayJson(): GeoJSON = JsonParser(jsonBytes).convertTo[GeoJSON](geoJSONJsonFormat)

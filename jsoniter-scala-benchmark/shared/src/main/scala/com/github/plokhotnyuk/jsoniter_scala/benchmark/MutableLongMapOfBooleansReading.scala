@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -35,4 +35,7 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
 
   @Benchmark
   def playJson(): mutable.LongMap[Boolean] = Json.parse(jsonBytes).as[mutable.LongMap[Boolean]]
+
+  @Benchmark
+  def playJsonJsoniter(): mutable.LongMap[Boolean] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[mutable.LongMap[Boolean]])
 }

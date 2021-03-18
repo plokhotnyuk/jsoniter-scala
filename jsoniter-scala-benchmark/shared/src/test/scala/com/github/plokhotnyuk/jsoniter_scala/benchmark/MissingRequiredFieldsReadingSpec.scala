@@ -36,6 +36,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       b.playJson() should include("JsResultException")
+      b.playJsonJsoniter() should include("JsResultException")
       b.sprayJson() shouldBe
         "Object is missing required member 's'"
       b.uPickle() shouldBe
@@ -55,6 +56,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.jsoniterScalaWithoutDump() shouldBe "MissingRequiredFields(VVV,1)"
       b.jsoniterScalaWithStacktrace() shouldBe "MissingRequiredFields(VVV,1)"
       b.playJson() shouldBe "MissingRequiredFields(VVV,1)"
+      b.playJsonJsoniter() shouldBe "MissingRequiredFields(VVV,1)"
       b.sprayJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.weePickle() shouldBe "MissingRequiredFields(VVV,1)"

@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -37,6 +37,9 @@ class ArrayOfBooleansReading extends ArrayOfBooleansBenchmark {
 
   @Benchmark
   def playJson(): Array[Boolean] = Json.parse(jsonBytes).as[Array[Boolean]]
+
+  @Benchmark
+  def playJsonJsoniter(): Array[Boolean] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Boolean]])
 
   @Benchmark
   def sprayJson(): Array[Boolean] = JsonParser(jsonBytes).convertTo[Array[Boolean]]

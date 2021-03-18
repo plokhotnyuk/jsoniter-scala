@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -33,4 +33,7 @@ class BitSetReading extends BitSetBenchmark {
 
   @Benchmark
   def playJson(): BitSet = Json.parse(jsonBytes).as[BitSet](bitSetFormat)
+
+  @Benchmark
+  def playJsonJsoniter(): BitSet = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[BitSet](bitSetFormat))
 }

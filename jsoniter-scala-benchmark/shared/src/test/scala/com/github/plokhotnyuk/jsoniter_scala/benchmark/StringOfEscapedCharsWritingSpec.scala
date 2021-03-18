@@ -8,13 +8,14 @@ class StringOfEscapedCharsWritingSpec extends BenchmarkSpecBase {
   "StringOfEscapedCharsWriting" should {
     "write properly" in {
       val b = benchmark
-      toString(b.avSystemGenCodec()) shouldBe b.jsonString
-      toString(b.circe()) shouldBe b.jsonString
+      toString(b.avSystemGenCodec()) shouldBe b.jsonString1
+      toString(b.circe()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString2
-      toString(b.jsoniterScala()) shouldBe b.jsonString
-      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString
+      toString(b.jsoniterScala()) shouldBe b.jsonString1
+      toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.playJson()) shouldBe b.jsonString2
-      toString(b.uPickle()) shouldBe b.jsonString
+      toString(b.playJsonJsoniter()) shouldBe b.jsonString1
+      toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString2
     }
   }

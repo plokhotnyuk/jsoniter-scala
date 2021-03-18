@@ -29,6 +29,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       //benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.uPickle() shouldBe benchmark.obj
       //FIXME: weePickle parses 1.199999988079071 as 1.2f instead of 1.1999999f
@@ -42,6 +43,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circe())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
     }

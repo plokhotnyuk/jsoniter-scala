@@ -1,8 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
+import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
@@ -42,6 +42,9 @@ class ArrayOfEnumADTsReading extends ArrayOfEnumADTsBenchmark {
 
   @Benchmark
   def playJson(): Array[SuitADT] = Json.parse(jsonBytes).as[Array[SuitADT]]
+
+  @Benchmark
+  def playJsonJsoniter(): Array[SuitADT] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[SuitADT]])
 
   @Benchmark
   def sprayJson(): Array[SuitADT] = JsonParser(jsonBytes).convertTo[Array[SuitADT]]
