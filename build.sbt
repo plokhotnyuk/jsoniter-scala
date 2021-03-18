@@ -163,7 +163,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     ),
     crossScalaVersions := Seq("2.13.5", "2.12.13"),
     libraryDependencies ++= Seq(
-      "com.evolutiongaming" %% "play-json-jsoniter" % "0.7.0",
+      "com.evolutiongaming" %% "play-json-jsoniter" % "0.7.1",
       "com.rallyhealth" %% "weepickle-v1" % "1.4.0",
       "io.bullet" %%% "borer-derivation" % "1.6.3",
       "pl.iterators" %% "kebs-spray-json" % "1.8.0",
