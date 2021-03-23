@@ -14,6 +14,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -21,6 +22,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
+import zio.json.DecoderOps
 
 class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   @Benchmark
@@ -55,4 +57,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def weePickle(): DistanceMatrix = FromJson(jsonBytes1).transform(ToScala[DistanceMatrix])
+
+  @Benchmark
+  def zioJson(): DistanceMatrix = new String(jsonBytes1, UTF_8).fromJson[DistanceMatrix].fold(sys.error, identity)
 }

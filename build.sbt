@@ -161,8 +161,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
       "Playframework" at "https://dl.bintray.com/playframework/maven"
     ),
-    crossScalaVersions := Seq("2.13.5", "2.12.13"),
+    crossScalaVersions := Seq("2.13.5"),
     libraryDependencies ++= Seq(
+      "dev.zio" %%% "zio-json" % "0.1.3",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.4.0",
       "io.bullet" %%% "borer-derivation" % "1.6.3",

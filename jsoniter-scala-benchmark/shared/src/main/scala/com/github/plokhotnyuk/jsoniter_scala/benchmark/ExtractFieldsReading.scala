@@ -14,6 +14,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -21,6 +22,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import spray.json._
+import zio.json.DecoderOps
 
 class ExtractFieldsReading extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -69,4 +71,7 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def weePickle(): ExtractFields = FromJson(jsonBytes).transform(ToScala[ExtractFields])
+
+  @Benchmark
+  def zioJson(): ExtractFields = new String(jsonBytes, UTF_8).fromJson[ExtractFields].fold(sys.error, identity)
 }

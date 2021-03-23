@@ -260,7 +260,7 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
         val vs = Vector.newBuilder[JsValue]
         vs.sizeHint(buf.size)
         buf.foreach(x => vs += x.toJson)
-        JsArray(vs.result)
+        JsArray(vs.result())
       }
     }
 }

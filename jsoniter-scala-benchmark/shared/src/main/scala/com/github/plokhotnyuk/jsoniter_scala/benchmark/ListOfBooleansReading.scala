@@ -15,6 +15,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import upickle.default._
+import zio.json.DecoderOps
 
 class ListOfBooleansReading extends ListOfBooleansBenchmark {
   @Benchmark
@@ -49,4 +50,7 @@ class ListOfBooleansReading extends ListOfBooleansBenchmark {
 
   @Benchmark
   def weePickle(): List[Boolean] = FromJson(jsonBytes).transform(ToScala[List[Boolean]])
+
+  @Benchmark
+  def zioJson(): List[Boolean] = new String(jsonBytes, UTF_8).fromJson[List[Boolean]].fold(sys.error, identity)
 }

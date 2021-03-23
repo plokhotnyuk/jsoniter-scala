@@ -15,6 +15,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import upickle.default._
+import zio.json.DecoderOps
 
 import scala.collection.immutable.Set
 
@@ -51,4 +52,7 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def weePickle(): Set[Int] = FromJson(jsonBytes).transform(ToScala[Set[Int]])
+
+  @Benchmark
+  def zioJson(): Set[Int] = new String(jsonBytes, UTF_8).fromJson[Set[Int]].fold(sys.error, identity)
 }

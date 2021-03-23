@@ -4,7 +4,9 @@ import com.avsystem.commons.serialization.flatten
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, key}
+import zio.json.jsonDiscriminator
 
+@jsonDiscriminator("type")
 @discriminator("type")
 @flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")

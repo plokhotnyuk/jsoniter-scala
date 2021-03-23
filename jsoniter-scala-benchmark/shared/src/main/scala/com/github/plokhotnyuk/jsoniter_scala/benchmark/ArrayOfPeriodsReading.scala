@@ -10,11 +10,13 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
+import zio.json.DecoderOps
 
 class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   @Benchmark
@@ -43,4 +45,7 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Period] = read[Array[Period]](jsonBytes)
+
+  @Benchmark
+  def zioJson(): Array[Period] = new String(jsonBytes, UTF_8).fromJson[Array[Period]].fold(sys.error, identity)
 }

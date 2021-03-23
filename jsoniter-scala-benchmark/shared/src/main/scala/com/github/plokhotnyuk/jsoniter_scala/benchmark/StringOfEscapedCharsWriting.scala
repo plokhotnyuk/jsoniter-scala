@@ -28,7 +28,8 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def jsoniterScala(): Array[Byte] = writeToArray(obj, escapingConfig)(stringCodec)
 
   @Benchmark
-  def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, escapingConfig)(stringCodec)
+  def jsoniterScalaPrealloc(): Int =
+    writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length, escapingConfig)(stringCodec)
 
   @Benchmark
   def playJson(): Array[Byte] = Json.asciiStringify(Json.toJson(obj)).getBytes

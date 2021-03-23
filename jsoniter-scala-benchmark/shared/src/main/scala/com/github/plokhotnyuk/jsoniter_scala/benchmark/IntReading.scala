@@ -15,6 +15,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import upickle.default._
+import zio.json.DecoderOps
 
 class IntReading extends IntBenchmark {
   @Benchmark
@@ -49,4 +50,7 @@ class IntReading extends IntBenchmark {
 
   @Benchmark
   def weePickle(): Int = FromJson(jsonBytes).transform(ToScala[Int])
+
+  @Benchmark
+  def zioJson(): Int = new String(jsonBytes, UTF_8).fromJson[Int].fold(sys.error, identity)
 }

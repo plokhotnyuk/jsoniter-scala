@@ -12,8 +12,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
         "Cannot read com.github.plokhotnyuk.jsoniter_scala.benchmark.MissingRequiredFields, field s is missing in decoded data"
       b.borer() shouldBe
         "Cannot decode `MissingRequiredFields` instance due to missing map keys \"s\" and \"i\" (input position 1)"
-      b.circe() shouldBe
-        "Attempt to decode value on failed cursor: DownField(s)"
+      b.circe() shouldBe "Attempt to decode value on failed cursor: DownField(s)"
       b.dslJsonScala() shouldBe
         "Mandatory properties (s, i) not found at position: 1, following: `{`, before: `}`"
       b.jacksonScala() shouldBe
@@ -26,8 +25,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+
           || 00000000 | 7b 7d                                           | {}               |
           |+----------+-------------------------------------------------+------------------+""".stripMargin
-      b.jsoniterScalaWithoutDump() shouldBe
-        """missing required field "s", offset: 0x00000001"""
+      b.jsoniterScalaWithoutDump() shouldBe """missing required field "s", offset: 0x00000001"""
       b.jsoniterScalaWithStacktrace() shouldBe
         """missing required field "s", offset: 0x00000001, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -37,12 +35,10 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
           |+----------+-------------------------------------------------+------------------+""".stripMargin
       b.playJson() should include("JsResultException")
       b.playJsonJsoniter() should include("JsResultException")
-      b.sprayJson() shouldBe
-        "Object is missing required member 's'"
-      b.uPickle() shouldBe
-        "missing keys in dictionary: s, i at index 1"
-      b.weePickle() shouldBe
-        "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"
+      b.sprayJson() shouldBe "Object is missing required member 's'"
+      b.uPickle() shouldBe "missing keys in dictionary: s, i at index 1"
+      b.weePickle() shouldBe "Parser or Visitor failure jsonPointer= index=2 line=1 col=3 token=END_OBJECT"
+      b.zioJson() shouldBe ".s(missing)"
     }
     "return toString value for valid input" in {
       val b = benchmark
@@ -60,6 +56,7 @@ class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
       b.sprayJson() shouldBe "MissingRequiredFields(VVV,1)"
       b.uPickle() shouldBe "MissingRequiredFields(VVV,1)"
       b.weePickle() shouldBe "MissingRequiredFields(VVV,1)"
+      b.zioJson() shouldBe "MissingRequiredFields(VVV,1)"
     }
   }
 }

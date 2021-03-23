@@ -56,4 +56,11 @@ class StringOfAsciiCharsWriting extends StringOfAsciiCharsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
+
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+
+    obj.toJson.getBytes(UTF_8)
+  }
 }

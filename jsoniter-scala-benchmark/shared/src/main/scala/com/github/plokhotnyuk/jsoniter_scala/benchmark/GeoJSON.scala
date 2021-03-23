@@ -4,10 +4,12 @@ import com.avsystem.commons.serialization.{flatten, transientDefault}
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, dropDefault, key}
+import zio.json.jsonDiscriminator
 
 import scala.collection.immutable.IndexedSeq
 
 object GeoJSON {
+  @jsonDiscriminator("type")
   @discriminator("type")
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -21,6 +23,7 @@ object GeoJSON {
     new Type(value = classOf[GeometryCollection], name = "GeometryCollection")))
   sealed trait Geometry extends Product with Serializable
 
+  @jsonDiscriminator("type")
   @discriminator("type")
   sealed trait SimpleGeometry extends Geometry
 
@@ -45,6 +48,7 @@ object GeoJSON {
   @key("GeometryCollection")
   case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
 
+  @jsonDiscriminator("type")
   @discriminator("type")
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -53,6 +57,7 @@ object GeoJSON {
     new Type(value = classOf[FeatureCollection], name = "FeatureCollection")))
   sealed trait GeoJSON extends Product with Serializable
 
+  @jsonDiscriminator("type")
   @discriminator("type")
   sealed trait SimpleGeoJSON extends GeoJSON
 
