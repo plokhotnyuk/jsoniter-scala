@@ -17,6 +17,8 @@ class GeoJSONWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString3
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
+      //FIXME: ZIO-JSON serializes fields with None values
+      //toString(b.zioJson()) shouldBe b.jsonString1
     }
   }
 }

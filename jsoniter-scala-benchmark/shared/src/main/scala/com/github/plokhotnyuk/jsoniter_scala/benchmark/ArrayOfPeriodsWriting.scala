@@ -10,11 +10,11 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-import spray.json._
 
 class ArrayOfPeriodsWriting extends ArrayOfPeriodsBenchmark {
   @Benchmark
@@ -42,8 +42,19 @@ class ArrayOfPeriodsWriting extends ArrayOfPeriodsBenchmark {
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
 
   @Benchmark
-  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
+
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+
+    obj.toJson.getBytes(UTF_8)
+  }
 }

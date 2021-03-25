@@ -18,6 +18,7 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.compactJsonString
       toString(b.uPickle()) shouldBe b.compactJsonString
       toString(b.weePickle()) shouldBe b.compactJsonString
+      toString(b.zioJson()) shouldBe b.compactJsonString
     }
   }
 }

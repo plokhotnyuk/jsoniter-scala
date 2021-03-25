@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -15,6 +16,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
+import zio.json.DecoderOps
 
 class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
   @Benchmark
@@ -49,4 +51,7 @@ class ArrayOfDoublesReading extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def weePickle(): Array[Double] = FromJson(jsonBytes).transform(ToScala[Array[Double]])
+
+  @Benchmark
+  def zioJson(): Array[Double] = new String(jsonBytes, UTF_8).fromJson[Array[Double]].fold(sys.error, identity)
 }

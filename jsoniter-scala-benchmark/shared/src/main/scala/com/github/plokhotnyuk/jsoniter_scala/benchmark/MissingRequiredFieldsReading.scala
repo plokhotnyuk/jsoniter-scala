@@ -16,6 +16,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -23,6 +24,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
 import spray.json._
+import zio.json.DecoderOps
 
 class MissingRequiredFieldsReading extends CommonParams {
   var jsonString: String = """{}"""
@@ -126,5 +128,13 @@ class MissingRequiredFieldsReading extends CommonParams {
       FromJson(jsonBytes).transform(ToScala[MissingRequiredFields]).toString // toString() should not be called
     } catch {
       case ex: com.rallyhealth.weepickle.v1.core.TransformException => ex.getMessage
+    }
+
+  @Benchmark
+  def zioJson(): String =
+    try {
+      new String(jsonBytes, UTF_8).fromJson[MissingRequiredFields].fold(sys.error, identity).toString // toString() should not be called
+    } catch {
+      case ex: RuntimeException => ex.getMessage
     }
 }

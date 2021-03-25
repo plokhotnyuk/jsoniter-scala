@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.avsystem.commons.serialization.json._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.rallyhealth.weejson.v1.jackson.ToJson
@@ -12,10 +11,10 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 //import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
-//import spray.json._
 
 class TwitterAPIWriting extends TwitterAPIBenchmark {
   @Benchmark
@@ -45,11 +44,23 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 */
 /* FIXME: Spray-JSON serializes empty collections
   @Benchmark
-  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
 */
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
+/* FIXME: Zio-JSON serializes empty collections
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+
+    obj.toJson.getBytes(UTF_8)
+  }
+*/
 }

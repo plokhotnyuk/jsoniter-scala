@@ -11,11 +11,13 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
+import zio.json.DecoderOps
 
 class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
   @Benchmark
@@ -45,4 +47,7 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
 
   @Benchmark
   def uPickle(): Array[ZoneOffset] = read[Array[ZoneOffset]](jsonBytes)
+
+  @Benchmark
+  def zioJson(): Array[ZoneOffset] = new String(jsonBytes, UTF_8).fromJson[Array[ZoneOffset]].fold(sys.error, identity)
 }

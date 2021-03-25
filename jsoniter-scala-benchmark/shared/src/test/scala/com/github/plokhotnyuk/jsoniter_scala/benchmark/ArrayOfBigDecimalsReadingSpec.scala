@@ -19,6 +19,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.uPickle() shouldBe benchmark.sourceObj
       //FIXME: weePickle rounds mantissa to 16 digits
       //benchmark.weePickle() shouldBe benchmark.sourceObj
+      benchmark.zioJson() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -32,6 +33,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

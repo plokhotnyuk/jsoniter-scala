@@ -34,6 +34,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       benchmark.uPickle() shouldBe benchmark.obj
       //FIXME: weePickle parses 1.199999988079071 as 1.2f instead of 1.1999999f
       //benchmark.weePickle() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -46,6 +47,7 @@ class ArrayOfFloatsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.playJsonJsoniter())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.uPickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

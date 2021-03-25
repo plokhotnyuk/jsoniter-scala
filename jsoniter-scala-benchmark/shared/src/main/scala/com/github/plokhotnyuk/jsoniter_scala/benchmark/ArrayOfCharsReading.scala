@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -16,6 +17,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import upickle.default._
+import zio.json.DecoderOps
 
 class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
   @Benchmark
@@ -47,4 +49,7 @@ class ArrayOfCharsReading extends ArrayOfCharsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Char] = FromJson(jsonBytes).transform(ToScala[Array[Char]])
+
+  @Benchmark
+  def zioJson(): Array[Char] = new String(jsonBytes, UTF_8).fromJson[Array[Char]].fold(sys.error, identity)
 }

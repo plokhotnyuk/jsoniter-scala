@@ -11,6 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -18,6 +19,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
+import zio.json.DecoderOps
 
 class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
   @Benchmark
@@ -52,4 +54,7 @@ class ArrayOfLocalDatesReading extends ArrayOfLocalDatesBenchmark {
 
   @Benchmark
   def weePickle(): Array[LocalDate] = FromJson(jsonBytes).transform(ToScala[Array[LocalDate]])
+
+  @Benchmark
+  def zioJson(): Array[LocalDate] = new String(jsonBytes, UTF_8).fromJson[Array[LocalDate]].fold(sys.error, identity)
 }

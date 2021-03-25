@@ -14,6 +14,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.TwitterAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
@@ -21,7 +22,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
-
+import zio.json._
 import scala.collection.immutable.Seq
 
 class TwitterAPIReading extends TwitterAPIBenchmark {
@@ -57,4 +58,7 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
 
   @Benchmark
   def weePickle(): Seq[Tweet] = FromJson(jsonBytes).transform(ToScala[Seq[Tweet]])
+
+  @Benchmark
+  def zioJson(): Seq[Tweet] = new String(jsonBytes, UTF_8).fromJson[Seq[Tweet]].fold(sys.error, identity)
 }

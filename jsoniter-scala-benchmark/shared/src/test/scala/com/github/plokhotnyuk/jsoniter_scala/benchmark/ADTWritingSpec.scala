@@ -17,6 +17,7 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString2
       toString(b.uPickle()) shouldBe b.jsonString1
       toString(b.weePickle()) shouldBe b.jsonString1
+      toString(b.zioJson()) shouldBe b.jsonString1
     }
     "fail on invalid input" in {
       val b = benchmark

@@ -14,6 +14,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import upickle.default._
+import zio.json.DecoderOps
 
 class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
   @Benchmark
@@ -48,4 +49,7 @@ class StringOfAsciiCharsReading extends StringOfAsciiCharsBenchmark {
 
   @Benchmark
   def weePickle(): String = FromJson(jsonBytes).transform(ToScala[String])
+
+  @Benchmark
+  def zioJson(): String = new String(jsonBytes, UTF_8).fromJson[String].fold(sys.error, identity)
 }
