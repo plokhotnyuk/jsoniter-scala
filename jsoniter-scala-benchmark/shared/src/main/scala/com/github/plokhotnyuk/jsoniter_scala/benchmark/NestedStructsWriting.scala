@@ -12,7 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.ToJson
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
@@ -60,11 +60,12 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
-
+/* FIXME: ZIO-JSON serializes null value for Option.None
   @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json._
 
     obj.toJson.getBytes(UTF_8)
   }
+*/
 }
