@@ -3,9 +3,10 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.internal._
+
 import scala.reflect.ClassTag
 
-object ZioJSONEncoderDecoders extends ZioJSONCollectionEncoderDecoders {
+object ZioJSONEncoderDecoders extends ZioJSONNonGenEncoderDecoders {
   implicit val (adtE5r: JsonEncoder[ADTBase], adtD5r: JsonDecoder[ADTBase]) = {
     implicit val c1: JsonCodec[ADTBase] = DeriveJsonCodec.gen
     (c1.encoder, c1.decoder)
@@ -90,9 +91,12 @@ object ZioJSONEncoderDecoders extends ZioJSONCollectionEncoderDecoders {
   }
 }
 
-trait ZioJSONCollectionEncoderDecoders {
-  implicit def array[A](implicit codec: JsonCodec[A], classTag: ClassTag[A]): JsonCodec[Array[A]] =
-    JsonCodec((as: Array[A], indent: Option[Int], out: Write) => {
+trait ZioJSONNonGenEncoderDecoders {
+  implicit def arrayCodec[A](implicit codec: JsonCodec[A], classTag: ClassTag[A]): JsonCodec[Array[A]] =
+    JsonCodec.apply(arrayEncoder(codec.encoder), arrayDecoder(codec.decoder, classTag))
+
+  implicit def arrayEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[Array[A]] =
+    (as: Array[A], indent: Option[Int], out: Write) => {
       out.write('[')
       val len = as.length
       var i: Int = 0
@@ -101,42 +105,51 @@ trait ZioJSONCollectionEncoderDecoders {
           if (indent.isEmpty) out.write(',')
           else out.write(", ")
         }
-        codec.unsafeEncode(as(i), indent, out)
+        encoder.unsafeEncode(as(i), indent, out)
         i += 1
       }
       out.write(']')
-    }, (trace: List[JsonError], in: RetractReader) => {
+    }
+
+  implicit def arrayDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[Array[A]] =
+    (trace: List[JsonError], in: RetractReader) => {
       val builder = Array.newBuilder[A]
       Lexer.char(trace, in, '[')
       var i: Int = 0
       if (Lexer.firstArrayElement(in)) do {
-        builder += codec.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
+        builder += decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
         i += 1
       } while (Lexer.nextArrayElement(trace, in))
       builder.result()
-    })
+    }
 
-  implicit def indexedSeq[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
-    JsonCodec((as: IndexedSeq[A], indent: Option[Int], out: Write) => {
+  implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
+    JsonCodec.apply(indexedSeqEncoder(codec.encoder), indexedSeqDecoder(codec.decoder))
+
+  implicit def indexedSeqEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[IndexedSeq[A]] =
+    (as: IndexedSeq[A], indent: Option[Int], out: Write) => {
       out.write('[')
       var first = true
       as.foreach { a =>
         if (first) first = false
         else if (indent.isEmpty) out.write(',')
         else out.write(", ")
-        codec.unsafeEncode(a, indent, out)
+        encoder.unsafeEncode(a, indent, out)
       }
       out.write(']')
-    }, (trace: List[JsonError], in: RetractReader) => {
+    }
+
+  implicit def indexedSeqDecoder[A](implicit decoder: JsonDecoder[A]): JsonDecoder[IndexedSeq[A]] =
+    (trace: List[JsonError], in: RetractReader) => {
       val builder = IndexedSeq.newBuilder[A]
       Lexer.char(trace, in, '[')
       var i: Int = 0
       if (Lexer.firstArrayElement(in)) do {
-        builder += codec.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
+        builder += decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
         i += 1
       } while (Lexer.nextArrayElement(trace, in))
       builder.result()
-    })
+    }
 }
 
-object ZioJSONCollectionEncoderDecoders extends ZioJSONCollectionEncoderDecoders
+object ZioJSONNonGenEncoderDecoders extends ZioJSONNonGenEncoderDecoders
