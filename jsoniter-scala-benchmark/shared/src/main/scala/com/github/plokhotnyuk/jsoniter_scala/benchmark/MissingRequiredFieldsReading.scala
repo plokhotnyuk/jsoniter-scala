@@ -132,9 +132,5 @@ class MissingRequiredFieldsReading extends CommonParams {
 
   @Benchmark
   def zioJson(): String =
-    try {
-      new String(jsonBytes, UTF_8).fromJson[MissingRequiredFields].fold(sys.error, identity).toString // toString() should not be called
-    } catch {
-      case ex: RuntimeException => ex.getMessage
-    }
+    new String(jsonBytes, UTF_8).fromJson[MissingRequiredFields].fold(identity, _.toString) // toString() should not be called
 }
