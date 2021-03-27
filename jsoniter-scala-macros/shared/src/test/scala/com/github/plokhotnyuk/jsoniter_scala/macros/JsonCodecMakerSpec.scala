@@ -98,6 +98,8 @@ object LocationType extends Enumeration {
 
 case class Enums(lt: LocationType.LocationType)
 
+case class Enums2(@stringified lt: LocationType.LocationType)
+
 case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
 case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long], ojl: Option[java.lang.Long])
@@ -254,7 +256,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make
   val codecOfJavaEnums: JsonValueCodec[JavaEnums] = make
   val codecOfJavaTypes: JsonValueCodec[JavaTypes] = make
-  val codecOfEnums: JsonValueCodec[Enums] = make
+  val codecOfEnums1: JsonValueCodec[Enums] = make
+  val codecOfEnums2: JsonValueCodec[Enums] = make(CodecMakerConfig.withUseScalaEnumValueId(true))
+  val codecOfEnums3: JsonValueCodec[Enums2] = make(CodecMakerConfig.withUseScalaEnumValueId(true))
   val codecOfOptions: JsonValueCodec[Options] = make
   val codecOfTuples: JsonValueCodec[Tuples] = make
   val codecOfArrays: JsonValueCodec[Arrays] = make
@@ -490,19 +494,30 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         check = (actual: _root_.scala.collection.immutable.TreeSet[Level]) => actual.ordering shouldBe levelOrdering)
     }
     "serialize and deserialize enumerations" in {
-      verifySerDeser(codecOfEnums, Enums(LocationType.GPS), """{"lt":"GPS"}""")
-      verifySerDeser(codecOfEnums, Enums(LocationType.extra("Galileo")), """{"lt":"Galileo"}""")
+      verifySerDeser(codecOfEnums1, Enums(LocationType.GPS), """{"lt":"GPS"}""")
+      verifySerDeser(codecOfEnums2, Enums(LocationType.GPS), """{"lt":1}""")
+      verifySerDeser(codecOfEnums3, Enums2(LocationType.GPS), """{"lt":"1"}""")
+      verifySerDeser(codecOfEnums1, Enums(LocationType.extra("Galileo1")), """{"lt":"Galileo1"}""")
+      verifySerDeser(codecOfEnums2, Enums(LocationType.extra("Galileo2")), """{"lt":3}""")
+      verifySerDeser(codecOfEnums3, Enums2(LocationType.extra("Galileo3")), """{"lt":"4"}""")
     }
     "throw parse exception in case of illegal value of enumeration" in {
-      verifyDeserError(codecOfEnums, """{"lt":null}""", "expected '\"', offset: 0x00000006")
-      verifyDeserError(codecOfEnums, """{"lt":"GLONASS"}""", "illegal enum value \"GLONASS\", offset: 0x0000000e")
+      verifyDeserError(codecOfEnums1, """{"lt":null}""", "expected '\"', offset: 0x00000006")
+      verifyDeserError(codecOfEnums1, """{"lt":"GLONASS"}""", "illegal enum value \"GLONASS\", offset: 0x0000000e")
+      verifyDeserError(codecOfEnums2, """{"lt":null}""", "expected digit, offset: 0x00000006")
+      verifyDeserError(codecOfEnums2, """{"lt":5}""", "illegal enum value 5, offset: 0x00000006")
     }
     "serialize and deserialize top-level enumerations" in {
       verifySerDeser(make[LocationType.LocationType], LocationType.GPS, "\"GPS\"")
+      verifySerDeser(make[LocationType.LocationType](CodecMakerConfig.withUseScalaEnumValueId(true)),
+        LocationType.GPS, "1")
+      verifySerDeser(make[LocationType.LocationType](CodecMakerConfig.withUseScalaEnumValueId(true).withIsStringified(true)),
+        LocationType.GPS, "\"1\"")
     }
     "serialize and deserialize enumerations as key in maps" in {
-      verifySerDeser(make[Map[LocationType.LocationType, Int]], Map(LocationType.GPS -> 0),
-        """{"GPS":0}""")
+      verifySerDeser(make[Map[LocationType.LocationType, Int]], Map(LocationType.GPS -> 0), """{"GPS":0}""")
+      verifySerDeser(make[Map[LocationType.LocationType, Int]](CodecMakerConfig.withUseScalaEnumValueId(true)),
+        Map(LocationType.GPS -> 0), """{"1":0}""")
     }
     "serialize and deserialize outer types using custom value codecs for primitive types" in {
       implicit val customCodecOfLong: JsonValueCodec[Long] = new JsonValueCodec[Long] {

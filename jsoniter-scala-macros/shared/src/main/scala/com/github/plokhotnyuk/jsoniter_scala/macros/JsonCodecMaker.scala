@@ -67,6 +67,8 @@ final class stringified extends StaticAnnotation
   * @param allowRecursiveTypes    a flag that turns on support of recursive types (turned off by default)
   * @param requireDiscriminatorFirst a flag that turns off limitation for a position of the discriminator field to be
   *                               the first field of the JSON object (turned on by default)
+  * @param useScalaEnumValueId    a flag that turns on using of ids for parsing and serialization of Scala enumeration
+ *                                values
   */
 class CodecMakerConfig private (
     val fieldNameMapper: PartialFunction[String, String],
@@ -88,7 +90,8 @@ class CodecMakerConfig private (
     val mapMaxInsertNumber: Int,
     val setMaxInsertNumber: Int,
     val allowRecursiveTypes: Boolean,
-    val requireDiscriminatorFirst: Boolean) {
+    val requireDiscriminatorFirst: Boolean,
+    val useScalaEnumValueId: Boolean) {
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = fieldNameMapper)
 
@@ -140,6 +143,9 @@ class CodecMakerConfig private (
   def withRequireDiscriminatorFirst(requireDiscriminatorFirst: Boolean): CodecMakerConfig =
     copy(requireDiscriminatorFirst = requireDiscriminatorFirst)
 
+  def withUseScalaEnumValueId(useScalaEnumValueId: Boolean): CodecMakerConfig =
+    copy(useScalaEnumValueId = useScalaEnumValueId)
+
   private[this] def copy(fieldNameMapper: PartialFunction[String, String] = fieldNameMapper,
                          javaEnumValueNameMapper: PartialFunction[String, String] = javaEnumValueNameMapper,
                          adtLeafClassNameMapper: String => String = adtLeafClassNameMapper,
@@ -159,7 +165,8 @@ class CodecMakerConfig private (
                          mapMaxInsertNumber: Int = mapMaxInsertNumber,
                          setMaxInsertNumber: Int = setMaxInsertNumber,
                          allowRecursiveTypes: Boolean = allowRecursiveTypes,
-                         requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst): CodecMakerConfig =
+                         requireDiscriminatorFirst: Boolean = requireDiscriminatorFirst,
+                         useScalaEnumValueId: Boolean = useScalaEnumValueId): CodecMakerConfig =
     new CodecMakerConfig(
       fieldNameMapper = fieldNameMapper,
       javaEnumValueNameMapper = javaEnumValueNameMapper,
@@ -180,7 +187,8 @@ class CodecMakerConfig private (
       mapMaxInsertNumber = mapMaxInsertNumber,
       setMaxInsertNumber = setMaxInsertNumber,
       allowRecursiveTypes = allowRecursiveTypes,
-      requireDiscriminatorFirst = requireDiscriminatorFirst)
+      requireDiscriminatorFirst = requireDiscriminatorFirst,
+      useScalaEnumValueId = useScalaEnumValueId)
 }
 
 object CodecMakerConfig extends CodecMakerConfig(
@@ -203,7 +211,8 @@ object CodecMakerConfig extends CodecMakerConfig(
   mapMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
   setMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
   allowRecursiveTypes = false, // to avoid stack overflow errors with untrusted input
-  requireDiscriminatorFirst = true) // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
+  requireDiscriminatorFirst = true, // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
+  useScalaEnumValueId = false)
 
 object JsonCodecMaker {
   /**
@@ -539,10 +548,11 @@ object JsonCodecMaker {
       val scalaEnumCacheTries = mutable.LinkedHashMap.empty[Type, Tree]
 
       def withScalaEnumCacheFor(tpe: Type): Tree = {
-        val ec = q"new _root_.java.util.concurrent.ConcurrentHashMap[String, $tpe]"
+        val keyTpe = if (cfg.useScalaEnumValueId) tq"Int" else tq"String"
+        val ec = q"new _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe]"
         val enumCacheName = scalaEnumCacheNames.getOrElseUpdate(tpe, TermName("ec" + scalaEnumCacheNames.size))
         scalaEnumCacheTries.getOrElseUpdate(tpe,
-          q"private[this] val $enumCacheName: _root_.java.util.concurrent.ConcurrentHashMap[String, $tpe] = $ec")
+          q"private[this] val $enumCacheName: _root_.java.util.concurrent.ConcurrentHashMap[$keyTpe, $tpe] = $ec")
         Ident(enumCacheName)
       }
 
@@ -633,13 +643,23 @@ object JsonCodecMaker {
         else if (tpe =:= typeOf[ZoneOffset]) q"in.readKeyAsZoneOffset()"
         else if (tpe <:< typeOf[Enumeration#Value]) {
           val ec = withScalaEnumCacheFor(tpe)
-          q"""val s = in.readKeyAsString()
-              var x = $ec.get(s)
-              if (x eq null) {
-                x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
-                $ec.put(s, x)
-              }
-              x"""
+          if (cfg.useScalaEnumValueId) {
+            q"""val i = in.readKeyAsInt()
+                var x = $ec.get(i)
+                if (x eq null) {
+                  x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.enumValueError(i.toString))
+                  $ec.put(i, x)
+                }
+                x"""
+          } else {
+            q"""val s = in.readKeyAsString()
+                var x = $ec.get(s)
+                if (x eq null) {
+                  x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
+                  $ec.put(s, x)
+                }
+                x"""
+          }
         } else if (isJavaEnum(tpe)) {
           q"""val l = in.readKeyAsCharBuf()
               ${genReadEnumValue(javaEnumValues(tpe), q"in.enumValueError(l)")}"""
@@ -760,8 +780,10 @@ object JsonCodecMaker {
           tpe =:= typeOf[MonthDay] || tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[OffsetTime] ||
           tpe =:= typeOf[Period] || tpe =:= typeOf[Year] || tpe =:= typeOf[YearMonth] ||
           tpe =:= typeOf[ZonedDateTime] || tpe =:= typeOf[ZoneId] || tpe =:= typeOf[ZoneOffset]) q"out.writeKey($x)"
-        else if (tpe <:< typeOf[Enumeration#Value]) q"out.writeKey($x.toString)"
-        else if (isJavaEnum(tpe)) {
+        else if (tpe <:< typeOf[Enumeration#Value]) {
+          if (cfg.useScalaEnumValueId) q"out.writeKey($x.id)"
+          else q"out.writeKey($x.toString)"
+        } else if (isJavaEnum(tpe)) {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
@@ -1394,16 +1416,43 @@ object JsonCodecMaker {
             q"if (i == x.length) x else $shrinkArray")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
           val ec = withScalaEnumCacheFor(tpe)
-          q"""if (in.isNextToken('"')) {
-                in.rollbackToken()
-                val s = in.readString(null)
-                var x = $ec.get(s)
-                if (x eq null) {
-                  x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
-                  $ec.put(s, x)
-                }
-                x
-              } else in.readNullOrTokenError(default, '"')"""
+          if (cfg.useScalaEnumValueId) {
+            if (isStringified) {
+              q"""if (in.isNextToken('"')) {
+                    in.rollbackToken()
+                    val i = in.readStringAsInt()
+                    var x = $ec.get(i)
+                    if (x eq null) {
+                      x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.enumValueError(i.toString))
+                      $ec.put(i, x)
+                    }
+                    x
+                  } else in.readNullOrTokenError(default, '"')"""
+            } else {
+              q"""val t = in.nextToken()
+                  if (t >= '0' && t <= '9') {
+                    in.rollbackToken()
+                    val i = in.readInt()
+                    var x = $ec.get(i)
+                    if (x eq null) {
+                      x = ${enumSymbol(tpe)}.values.iterator.find(_.id == i).getOrElse(in.decodeError("illegal enum value " + i))
+                      $ec.put(i, x)
+                    }
+                    x
+                  } else in.readNullOrError(default, "expected digit")"""
+            }
+          } else {
+            q"""if (in.isNextToken('"')) {
+                  in.rollbackToken()
+                  val s = in.readString(null)
+                  var x = $ec.get(s)
+                  if (x eq null) {
+                    x = ${enumSymbol(tpe)}.values.iterator.find(_.toString == s).getOrElse(in.enumValueError(s.length))
+                    $ec.put(s, x)
+                  }
+                  x
+                } else in.readNullOrTokenError(default, '"')"""
+          }
         } else if (isJavaEnum(tpe)) withDecoderFor(methodKey, default) {
           q"""if (in.isNextToken('"')) {
                 in.rollbackToken()
@@ -1722,7 +1771,10 @@ object JsonCodecMaker {
               }
               out.writeArrayEnd()"""
         } else if (tpe <:< typeOf[Enumeration#Value]) withEncoderFor(methodKey, m) {
-          q"out.writeVal(x.toString)"
+          if (cfg.useScalaEnumValueId) {
+            if (isStringified) q"out.writeValAsString(x.id)"
+            else q"out.writeVal(x.id)"
+          } else q"out.writeVal(x.toString)"
         } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m) {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
