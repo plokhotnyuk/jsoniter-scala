@@ -110,7 +110,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("2.13.5", "2.12.13", "2.11.12"),
     libraryDependencies ++= Seq(
       "com.github.plokhotnyuk.expression-evaluator" %% "expression-evaluator" % "0.1.2" % "compile-internal",
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.2" % Test,
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3" % Test,
       "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.3.0" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.6" % Test
     )
@@ -181,7 +181,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.typesafe.play" %% "play-json" % "2.9.2",
       "org.julienrf" %% "play-json-derived-codecs" % "9.0.0",
       "ai.x" %% "play-json-extensions" % "0.42.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3",
       "org.openjdk.jmh" % "jmh-core" % "1.29",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.29",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.29",
