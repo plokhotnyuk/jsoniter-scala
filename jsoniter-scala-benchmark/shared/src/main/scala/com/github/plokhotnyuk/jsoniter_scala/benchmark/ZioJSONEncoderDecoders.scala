@@ -32,6 +32,26 @@ object ZioJSONEncoderDecoders extends ZioJSONNonGenEncoderDecoders {
     implicit val c4: JsonCodec[GeoJSON.GeoJSON] = DeriveJsonCodec.gen
     (c4.encoder, c4.decoder)
   }
+  implicit val (gitHubActionsAPIE5r: JsonEncoder[GitHubActionsAPI.Response], gitHubActionsAPID5r: JsonDecoder[GitHubActionsAPI.Response]) = {
+    implicit val c1: JsonCodec[Boolean] = new JsonCodec[Boolean] {
+      override def encoder: JsonEncoder[Boolean] = this
+
+      override def decoder: JsonDecoder[Boolean] = this
+
+      override def unsafeEncode(a: Boolean, indent: Option[Int], out: Write): Unit =
+        out.write(if (a) "\"true\"" else "\"false\"")
+
+      override def unsafeDecode(trace: List[JsonError], in: RetractReader): Boolean = {
+        Lexer.char(trace, in, '"')
+        val x = Lexer.boolean(trace, in)
+        Lexer.char(trace, in, '"')
+        x
+      }
+    }
+    implicit val c2: JsonCodec[GitHubActionsAPI.Artifact] = DeriveJsonCodec.gen
+    implicit val c3: JsonCodec[GitHubActionsAPI.Response] = DeriveJsonCodec.gen
+    (c3.encoder, c3.decoder)
+  }
   implicit val (googleMapsAPIE5r: JsonEncoder[GoogleMapsAPI.DistanceMatrix], googleMapsAPID5r: JsonDecoder[GoogleMapsAPI.DistanceMatrix]) = {
     implicit val c1: JsonCodec[GoogleMapsAPI.Value] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GoogleMapsAPI.Elements] = DeriveJsonCodec.gen
@@ -94,6 +114,12 @@ object ZioJSONEncoderDecoders extends ZioJSONNonGenEncoderDecoders {
 }
 
 trait ZioJSONNonGenEncoderDecoders {
+  implicit val (intFE5r: JsonFieldEncoder[Int], intFD5r: JsonFieldDecoder[Int]) =
+    (new JsonFieldEncoder[Int] {
+      override def unsafeEncodeField(in: Int): String = in.toString
+    }, new JsonFieldDecoder[Int] {
+      override def unsafeDecodeField(trace: List[JsonError], in: String): Int = Integer.parseInt(in)
+    })
   implicit val (arrayOfBigDecimalsE5r: JsonEncoder[Array[BigDecimal]], arrayOfBigDecimalsD5r: JsonDecoder[Array[BigDecimal]]) =
     (arrayEncoder[BigDecimal], arrayDecoder[BigDecimal])
   implicit val (arrayOfBooleansE5r: JsonEncoder[Array[Boolean]], arrayOfBooleansD5r: JsonDecoder[Array[Boolean]]) =
@@ -106,6 +132,19 @@ trait ZioJSONNonGenEncoderDecoders {
     (arrayEncoder[Double], arrayDecoder[Double])
   implicit val (arrayOfDurationsE5r: JsonEncoder[Array[Duration]], arrayOfDurationsD5r: JsonDecoder[Array[Duration]]) =
     (arrayEncoder[Duration], arrayDecoder[Duration])
+  implicit val (arrayOfEnumADTsE5r: JsonEncoder[Array[SuitADT]], arrayOfEnumADTsD5r: JsonDecoder[Array[SuitADT]]) =
+    (arrayEncoder[SuitADT]{ (a: SuitADT, indent: Option[Int], out: Write) =>
+      out.write('"')
+      out.write(a.toString)
+      out.write('"')
+    }, arrayDecoder[SuitADT](JsonDecoder.string.map {
+      val suite = Map(
+        "Hearts" -> Hearts,
+        "Spades" -> Spades,
+        "Diamonds" -> Diamonds,
+        "Clubs" -> Clubs)
+      s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+    }, ClassTag(classOf[SuitADT])))
   implicit val (arrayOfFloatsE5r: JsonEncoder[Array[Float]], arrayOfFloatsD5r: JsonDecoder[Array[Float]]) =
     (arrayEncoder[Float], arrayDecoder[Float])
   implicit val (arrayOfInstantsE5r: JsonEncoder[Array[Instant]], arrayOfInstantsD5r: JsonDecoder[Array[Instant]]) =
@@ -144,6 +183,8 @@ trait ZioJSONNonGenEncoderDecoders {
     (arrayEncoder[ZoneOffset], arrayDecoder[ZoneOffset])
   implicit val (listOfBooleansE5r: JsonEncoder[List[Boolean]], listOfBooleansD5r: JsonDecoder[List[Boolean]]) =
     (JsonEncoder.list[Boolean], JsonDecoder.list[Boolean])
+  implicit val (mapOfIntsToBooleansE5r: JsonEncoder[Map[Int, Boolean]], mapOfIntsToBooleansD5r: JsonDecoder[Map[Int, Boolean]]) =
+    (JsonEncoder.map[Int, Boolean], JsonDecoder.map[Int, Boolean])
   implicit val (setOfIntsE5r: JsonEncoder[Set[Int]], setOfIntsD5r: JsonDecoder[Set[Int]]) =
     (JsonEncoder.set[Int], JsonDecoder.set[Int])
   implicit val (vectorOfBooleansE5r: JsonEncoder[Vector[Boolean]], vectorOfBooleansD5r: JsonDecoder[Vector[Boolean]]) =

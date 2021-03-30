@@ -71,7 +71,7 @@ object BorerJsonEncodersDecoders {
     import Decoder.StringBooleans._
     import Encoder.StringBooleans._
 
-    implicit val c2: Codec[GitHubActionsAPI.Artifact] = deriveCodec
+    implicit val c1: Codec[GitHubActionsAPI.Artifact] = deriveCodec
     deriveCodec[GitHubActionsAPI.Response]
   }
   implicit val Codec(googleMapsAPIEnc: Encoder[GoogleMapsAPI.DistanceMatrix], googleMapsAPIDec: Decoder[GoogleMapsAPI.DistanceMatrix]) = {
