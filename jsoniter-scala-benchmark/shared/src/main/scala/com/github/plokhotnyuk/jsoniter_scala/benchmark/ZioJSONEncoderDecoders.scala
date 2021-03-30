@@ -4,6 +4,8 @@ import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.internal._
 
+import java.time._
+import java.util.UUID
 import scala.reflect.ClassTag
 
 object ZioJSONEncoderDecoders extends ZioJSONNonGenEncoderDecoders {
@@ -92,28 +94,90 @@ object ZioJSONEncoderDecoders extends ZioJSONNonGenEncoderDecoders {
 }
 
 trait ZioJSONNonGenEncoderDecoders {
-  implicit def arrayCodec[A](implicit codec: JsonCodec[A], classTag: ClassTag[A]): JsonCodec[Array[A]] =
-    JsonCodec.apply(arrayEncoder(codec.encoder), arrayDecoder(codec.decoder, classTag))
+  implicit val (arrayOfBigDecimalsE5r: JsonEncoder[Array[BigDecimal]], arrayOfBigDecimalsD5r: JsonDecoder[Array[BigDecimal]]) =
+    (arrayEncoder[BigDecimal], arrayDecoder[BigDecimal])
+  implicit val (arrayOfBooleansE5r: JsonEncoder[Array[Boolean]], arrayOfBooleansD5r: JsonDecoder[Array[Boolean]]) =
+    (arrayEncoder[Boolean], arrayDecoder[Boolean])
+  implicit val (arrayOfBytesE5r: JsonEncoder[Array[Byte]], arrayOfBytesD5r: JsonDecoder[Array[Byte]]) =
+    (arrayEncoder[Byte], arrayDecoder[Byte])
+  implicit val (arrayOfCharsE5r: JsonEncoder[Array[Char]], arrayOfCharsD5r: JsonDecoder[Array[Char]]) =
+    (arrayEncoder[Char], arrayDecoder[Char])
+  implicit val (arrayOfDoublesE5r: JsonEncoder[Array[Double]], arrayOfDoublesD5r: JsonDecoder[Array[Double]]) =
+    (arrayEncoder[Double], arrayDecoder[Double])
+  implicit val (arrayOfDurationsE5r: JsonEncoder[Array[Duration]], arrayOfDurationsD5r: JsonDecoder[Array[Duration]]) =
+    (arrayEncoder[Duration], arrayDecoder[Duration])
+  implicit val (arrayOfFloatsE5r: JsonEncoder[Array[Float]], arrayOfFloatsD5r: JsonDecoder[Array[Float]]) =
+    (arrayEncoder[Float], arrayDecoder[Float])
+  implicit val (arrayOfInstantsE5r: JsonEncoder[Array[Instant]], arrayOfInstantsD5r: JsonDecoder[Array[Instant]]) =
+    (arrayEncoder[Instant], arrayDecoder[Instant])
+  implicit val (arrayOfIntsE5r: JsonEncoder[Array[Int]], arrayOfIntsD5r: JsonDecoder[Array[Int]]) =
+    (arrayEncoder[Int], arrayDecoder[Int])
+  implicit val (arrayOfLocalDatesE5r: JsonEncoder[Array[LocalDate]], arrayOfLocalDatesD5r: JsonDecoder[Array[LocalDate]]) =
+    (arrayEncoder[LocalDate], arrayDecoder[LocalDate])
+  implicit val (arrayOfLocalDateTimesE5r: JsonEncoder[Array[LocalDateTime]], arrayOfLocalDateTimesD5r: JsonDecoder[Array[LocalDateTime]]) =
+    (arrayEncoder[LocalDateTime], arrayDecoder[LocalDateTime])
+  implicit val (arrayOfLocalTimesE5r: JsonEncoder[Array[LocalTime]], arrayOfLocalTimesD5r: JsonDecoder[Array[LocalTime]]) =
+    (arrayEncoder[LocalTime], arrayDecoder[LocalTime])
+  implicit val (arrayOfLongsE5r: JsonEncoder[Array[Long]], arrayOfLongsD5r: JsonDecoder[Array[Long]]) =
+    (arrayEncoder[Long], arrayDecoder[Long])
+  implicit val (arrayOfMonthDaysE5r: JsonEncoder[Array[MonthDay]], arrayOfMonthDaysD5r: JsonDecoder[Array[MonthDay]]) =
+    (arrayEncoder[MonthDay], arrayDecoder[MonthDay])
+  implicit val (arrayOfOffsetDateTimesE5r: JsonEncoder[Array[OffsetDateTime]], arrayOfOffsetDateTimesD5r: JsonDecoder[Array[OffsetDateTime]]) =
+    (arrayEncoder[OffsetDateTime], arrayDecoder[OffsetDateTime])
+  implicit val (arrayOfOffsetTimesE5r: JsonEncoder[Array[OffsetTime]], arrayOfOffsetTimesD5r: JsonDecoder[Array[OffsetTime]]) =
+    (arrayEncoder[OffsetTime], arrayDecoder[OffsetTime])
+  implicit val (arrayOfPeriodsE5r: JsonEncoder[Array[Period]], arrayOfPeriodsD5r: JsonDecoder[Array[Period]]) =
+    (arrayEncoder[Period], arrayDecoder[Period])
+  implicit val (arrayOfShortsE5r: JsonEncoder[Array[Short]], arrayOfShortsD5r: JsonDecoder[Array[Short]]) =
+    (arrayEncoder[Short], arrayDecoder[Short])
+  implicit val (arrayOfUUIDsE5r: JsonEncoder[Array[UUID]], arrayOfUUIDsD5r: JsonDecoder[Array[UUID]]) =
+    (arrayEncoder[UUID], arrayDecoder[UUID])
+  implicit val (arrayOfYearMonthsE5r: JsonEncoder[Array[YearMonth]], arrayOfYearMonthsD5r: JsonDecoder[Array[YearMonth]]) =
+    (arrayEncoder[YearMonth], arrayDecoder[YearMonth])
+  implicit val (arrayOfYearsE5r: JsonEncoder[Array[Year]], arrayOfYearsD5r: JsonDecoder[Array[Year]]) =
+    (arrayEncoder[Year], arrayDecoder[Year])
+  implicit val (arrayOfZonedDateTimesE5r: JsonEncoder[Array[ZonedDateTime]], arrayOfZonedDateTimesD5r: JsonDecoder[Array[ZonedDateTime]]) =
+    (arrayEncoder[ZonedDateTime], arrayDecoder[ZonedDateTime])
+  implicit val (arrayOfZoneIdsE5r: JsonEncoder[Array[ZoneId]], arrayOfZoneIdsD5r: JsonDecoder[Array[ZoneId]]) =
+    (arrayEncoder[ZoneId], arrayDecoder[ZoneId])
+  implicit val (arrayOfZoneOffsetsE5r: JsonEncoder[Array[ZoneOffset]], arrayOfZoneOffsetsD5r: JsonDecoder[Array[ZoneOffset]]) =
+    (arrayEncoder[ZoneOffset], arrayDecoder[ZoneOffset])
+  implicit val (listOfBooleansE5r: JsonEncoder[List[Boolean]], listOfBooleansD5r: JsonDecoder[List[Boolean]]) =
+    (JsonEncoder.list[Boolean], JsonDecoder.list[Boolean])
+  implicit val (setOfIntsE5r: JsonEncoder[Set[Int]], setOfIntsD5r: JsonDecoder[Set[Int]]) =
+    (JsonEncoder.set[Int], JsonDecoder.set[Int])
+  implicit val (vectorOfBooleansE5r: JsonEncoder[Vector[Boolean]], vectorOfBooleansD5r: JsonDecoder[Vector[Boolean]]) =
+    (JsonEncoder.vector[Boolean], JsonDecoder.vector[Boolean])
 
-  implicit def arrayEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[Array[A]] =
-    (as: Array[A], indent: Option[Int], out: Write) => {
+  implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
+    JsonCodec.apply(indexedSeqEncoder(codec.encoder), indexedSeqDecoder(codec.decoder))
+
+  implicit def indexedSeqEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[IndexedSeq[A]] =
+    (as: IndexedSeq[A], indent: Option[Int], out: Write) => {
       out.write('[')
-      val len = as.length
-      var i: Int = 0
-      while (i < len) {
-        if (i != 0) {
-          if (indent.isEmpty) out.write(',')
-          else out.write(", ")
+      if (indent.isEmpty) {
+        as.foreach {
+          var first = true
+          a =>
+            if (first) first = false
+            else out.write(',')
+            encoder.unsafeEncode(a, indent, out)
         }
-        encoder.unsafeEncode(as(i), indent, out)
-        i += 1
+      } else {
+        as.foreach {
+          var first = true
+          a =>
+            if (first) first = false
+            else out.write(", ")
+            encoder.unsafeEncode(a, indent, out)
+        }
       }
       out.write(']')
     }
 
-  implicit def arrayDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[Array[A]] =
+  implicit def indexedSeqDecoder[A](implicit decoder: JsonDecoder[A]): JsonDecoder[IndexedSeq[A]] =
     (trace: List[JsonError], in: RetractReader) => {
-      val builder = Array.newBuilder[A]
+      val builder = IndexedSeq.newBuilder[A]
       Lexer.char(trace, in, '[')
       var i: Int = 0
       if (Lexer.firstArrayElement(in)) do {
@@ -123,25 +187,30 @@ trait ZioJSONNonGenEncoderDecoders {
       builder.result()
     }
 
-  implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
-    JsonCodec.apply(indexedSeqEncoder(codec.encoder), indexedSeqDecoder(codec.decoder))
-
-  implicit def indexedSeqEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[IndexedSeq[A]] =
-    (as: IndexedSeq[A], indent: Option[Int], out: Write) => {
+  private[this] def arrayEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[Array[A]] =
+    (as: Array[A], indent: Option[Int], out: Write) => {
       out.write('[')
-      var first = true
-      as.foreach { a =>
-        if (first) first = false
-        else if (indent.isEmpty) out.write(',')
-        else out.write(", ")
-        encoder.unsafeEncode(a, indent, out)
+      val len = as.length
+      var i: Int = 0
+      if (indent.isEmpty) {
+        while (i < len) {
+          if (i != 0) out.write(',')
+          encoder.unsafeEncode(as(i), indent, out)
+          i += 1
+        }
+      } else {
+        while (i < len) {
+          if (i != 0) out.write(", ")
+          encoder.unsafeEncode(as(i), indent, out)
+          i += 1
+        }
       }
       out.write(']')
     }
 
-  implicit def indexedSeqDecoder[A](implicit decoder: JsonDecoder[A]): JsonDecoder[IndexedSeq[A]] =
+  private[this] def arrayDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[Array[A]] =
     (trace: List[JsonError], in: RetractReader) => {
-      val builder = IndexedSeq.newBuilder[A]
+      val builder = Array.newBuilder[A]
       Lexer.char(trace, in, '[')
       var i: Int = 0
       if (Lexer.firstArrayElement(in)) do {
