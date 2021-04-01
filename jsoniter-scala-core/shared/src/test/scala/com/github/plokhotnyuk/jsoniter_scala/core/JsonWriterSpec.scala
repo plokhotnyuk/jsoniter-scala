@@ -494,11 +494,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        if (TestUtils.isJS) { // FIXME: Scala.JS can loose 1 ULP during parsing of floats, see: https://github.com/scala-js/scala-js/issues/4035
-          java.lang.Float.floatToIntBits(s.toFloat).toLong shouldBe (java.lang.Float.floatToIntBits(n).toLong +- 1)
-        } else {
-          s.toFloat shouldBe n // no data loss when parsing by JDK
-        }
+        s.toFloat shouldBe n // no data loss when parsing by JDK
         l should be <= es.length + {
           if (TestUtils.isJS) {
             if (es.indexOf('.') < 0) 3 // formatting differs from JS for floats represented as whole numbers
