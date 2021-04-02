@@ -244,7 +244,8 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ArrayOfEnumsWriting { size = 128; setup() }
@@ -254,7 +255,8 @@ object Main {
       B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
-      B("uPickle")(benchmark.uPickle())
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new ArrayOfFloatsReading { size = 128; setup() }
@@ -966,8 +968,6 @@ object Main {
     val benchmark = new NestedStructsReading { size = 128; setup() }
     GS(S("NestedStructsReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
-      //FIXME: Borer doesn't support more than 64 JSON Array/Object nesting levels
-      //B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("uPickle")(benchmark.uPickle())
@@ -976,8 +976,6 @@ object Main {
     val benchmark = new NestedStructsWriting { size = 128; setup() }
     GS(S("NestedStructsWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
-      //FIXME: Borer doesn't support more than 64 JSON Array/Object nesting levels
-      //B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
@@ -997,8 +995,6 @@ object Main {
     GS(S("OpenRTBWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      //FIXME: Circe serializes fields with default values
-      //B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("uPickle")(benchmark.uPickle())
@@ -1118,8 +1114,6 @@ object Main {
     GS(S("TwitterAPIWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      //FIXME: Circe serializes empty collections
-      //B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("uPickle")(benchmark.uPickle())

@@ -12,13 +12,13 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONNonGenEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.ToJson
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-import spray.json._
 
 class ArrayOfEnumsWriting extends ArrayOfEnumsBenchmark {
   @Benchmark
@@ -46,11 +46,22 @@ class ArrayOfEnumsWriting extends ArrayOfEnumsBenchmark {
   def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
 
   @Benchmark
-  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
+
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+
+    obj.toJson.getBytes(UTF_8)
+  }
 }

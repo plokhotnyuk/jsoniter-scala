@@ -1,11 +1,13 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.internal._
 
 import java.time._
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import scala.reflect.ClassTag
 
 object ZioJSONEncoderDecoders extends ZioJSONNonGenEncoderDecoders {
@@ -137,14 +139,34 @@ trait ZioJSONNonGenEncoderDecoders {
       out.write('"')
       out.write(a.toString)
       out.write('"')
-    }, arrayDecoder[SuitADT](JsonDecoder.string.map {
-      val suite = Map(
+    }, arrayDecoder[SuitADT](new JsonDecoder[SuitADT] {
+      private[this] val suite = Map(
         "Hearts" -> Hearts,
         "Spades" -> Spades,
         "Diamonds" -> Diamonds,
         "Clubs" -> Clubs)
-      s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
+
+      override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT =
+        suite.getOrElse(Lexer.string(trace, in).toString, throw new IllegalArgumentException("SuitADT"))
     }, ClassTag(classOf[SuitADT])))
+  implicit val (arrayOfEnumsE5r: JsonEncoder[Array[SuitEnum]], arrayOfEnumsD5r: JsonDecoder[Array[SuitEnum]]) =
+    (arrayEncoder[SuitEnum]{ (a: SuitEnum, indent: Option[Int], out: Write) =>
+      out.write('"')
+      out.write(a.toString)
+      out.write('"')
+    }, arrayDecoder[SuitEnum](new JsonDecoder[SuitEnum] {
+      private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
+
+      override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
+        val s = Lexer.string(trace, in).toString
+        var v = ec.get(s)
+        if (v eq null) {
+          v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
+          ec.put(s, v)
+        }
+        v
+      }
+    }, ClassTag(classOf[SuitEnum])))
   implicit val (arrayOfFloatsE5r: JsonEncoder[Array[Float]], arrayOfFloatsD5r: JsonDecoder[Array[Float]]) =
     (arrayEncoder[Float], arrayDecoder[Float])
   implicit val (arrayOfInstantsE5r: JsonEncoder[Array[Instant]], arrayOfInstantsD5r: JsonDecoder[Array[Instant]]) =

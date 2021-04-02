@@ -12,6 +12,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONNonGenEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
@@ -20,6 +21,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
+import zio.json._
 
 class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
   @Benchmark
@@ -51,4 +53,7 @@ class ArrayOfEnumsReading extends ArrayOfEnumsBenchmark {
 
   @Benchmark
   def weePickle(): Array[SuitEnum] = FromJson(jsonBytes).transform(ToScala[Array[SuitEnum]])
+
+  @Benchmark
+  def zioJson(): Array[SuitEnum] = new String(jsonBytes, UTF_8).fromJson[Array[SuitEnum]].fold(sys.error, identity)
 }
