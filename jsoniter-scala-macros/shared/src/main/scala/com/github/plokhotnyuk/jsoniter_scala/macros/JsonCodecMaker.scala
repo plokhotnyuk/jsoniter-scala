@@ -990,9 +990,10 @@ object JsonCodecMaker {
       def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val fieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
         fieldTrees.getOrElseUpdate(tpe,
-          q"""private[this] def $fieldName(i: Int): String = (i: @_root_.scala.annotation.switch) match {
-                case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n"}}
-              }""")
+          q"""private[this] def $fieldName(i: Int): String =
+                (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
+                  case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n"}}
+                }""")
         Ident(fieldName)
       }
 
