@@ -2,14 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time.Instant
 import java.util.Base64
-
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
 import io.circe.Decoder._
 import io.circe.Encoder._
 import io.circe._
 import io.circe.generic.extras._
-import io.circe.generic.extras.decoding.UnwrappedDecoder
-import io.circe.generic.extras.encoding.UnwrappedEncoder
+import io.circe.generic.extras.codec.UnwrappedCodec
 import io.circe.generic.extras.semiauto._
 
 import scala.collection.immutable.{BitSet, IntMap}
@@ -23,9 +21,7 @@ object CirceEncodersDecoders {
   implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val adtC3c: Codec[ADTBase] = deriveConfiguredCodec[ADTBase]
   implicit val anyValsC3c: Codec[AnyVals] = {
-    implicit def valueClassEncoder[A <: AnyVal : UnwrappedEncoder]: Encoder[A] = implicitly
-
-    implicit def valueClassDecoder[A <: AnyVal : UnwrappedDecoder]: Decoder[A] = implicitly
+    implicit def anyValCodec[A <: AnyVal : UnwrappedCodec]: Codec[A] = implicitly
 
     deriveConfiguredCodec[AnyVals]
   }
