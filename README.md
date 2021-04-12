@@ -334,7 +334,7 @@ final class Level private (name: String, ordinal: Int) extends Enum[Level](name,
 ```
 
 6. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details 
-[here](https://github.com/scala-js/scala-js/issues/4035).
+[here](https://github.com/scala-js/scala-js/issues/4466).
 
 The workaround is using `double` or `BigDecimal` types for cases when an exact precision matters.
 
