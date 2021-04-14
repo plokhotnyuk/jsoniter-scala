@@ -1293,7 +1293,7 @@ object JsonCodecMaker {
           } else genReadMap(newBuilder, q"x = x.updated(in.readKeyAsInt(), $readVal)")
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          val newBuilder = q"val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1]"
+          val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }"
           val readVal = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
             val readKey =
@@ -1316,7 +1316,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val newBuilder = q"val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2]"
+          val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
           val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
             val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
@@ -1325,7 +1325,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
-          val newBuilder = q"val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2]"
+          val newBuilder = q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2] }"
           val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
             val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
@@ -1354,11 +1354,11 @@ object JsonCodecMaker {
             else q"${scalaCollectionCompanion(tpe)}.fromBitMaskNoCopy(x)")
         } else if (tpe <:< typeOf[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadSet(q"val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1]",
+          genReadSet(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified))
         } else if (tpe <:< typeOf[collection.Set[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadSet(q"val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1]",
+          genReadSet(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
         } else if (tpe <:< typeOf[::[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
@@ -1383,16 +1383,16 @@ object JsonCodecMaker {
               }"""
         } else if (tpe <:< typeOf[List[_]] || tpe =:= typeOf[Seq[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1]",
+          genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
             !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.11.x/2.12.x
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1]",
+          genReadArray(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified))
         } else if (tpe <:< typeOf[Iterable[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
-          genReadArray(q"val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1]",
+          genReadArray(q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.result()")
         } else if (tpe <:< typeOf[Array[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
