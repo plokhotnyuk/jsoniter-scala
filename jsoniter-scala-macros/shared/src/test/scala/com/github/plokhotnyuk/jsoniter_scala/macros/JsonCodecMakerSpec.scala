@@ -1312,6 +1312,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'z' of 'DuplicatedNamed'."""
       })
     }
+    "don't generate codecs for ADT leaf case classes that have duplicated @named annotation" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        """sealed trait Z
+          |@named("x") @named("y") case class DuplicatedNamed(z: Int) extends Z
+          |JsonCodecMaker.make[Z]""".stripMargin
+      }).getMessage.contains {
+        """Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'DuplicatedNamed'."""
+      })
+    }
     "don't generate codecs for case classes with fields that have duplicated JSON names" in {
       val expectedError =
         """Duplicated JSON key(s) defined for 'DuplicatedJsonName': 'x'. Keys are derived from field names of the class
@@ -1648,6 +1657,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         case "B" => "Y"
       }).withSkipUnexpectedFields(false)),
       List(A(B("x")), B("x")), """[{"type":"X","b":{"c":"x"}},{"type":"Y","c":"x"}]""")
+    }
+    "serialize and deserialize ADTs using custom values of the discriminator field set by the named annotation" in {
+      sealed abstract class Base extends Product with Serializable
+
+      @named("X") final case class A(b: B) extends Base
+
+      @named("Y") final case class B(c: String) extends Base
+
+      verifySerDeser(make[List[Base]](CodecMakerConfig.withSkipUnexpectedFields(false)),
+        List(A(B("x")), B("x")), """[{"type":"X","b":{"c":"x"}},{"type":"Y","c":"x"}]""")
     }
     "serialize and deserialize ADTs using non-ASCII characters for the discriminator field name and it's values" in {
       sealed abstract class База extends Product with Serializable

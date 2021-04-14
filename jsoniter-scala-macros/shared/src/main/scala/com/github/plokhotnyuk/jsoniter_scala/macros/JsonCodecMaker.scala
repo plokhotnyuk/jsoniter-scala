@@ -252,7 +252,7 @@ object JsonCodecMaker {
 
   private[this] def enforceCamelOrPascalCase(s: String, toPascal: Boolean): String =
     if (s.indexOf('_') == -1 && s.indexOf('-') == -1) {
-      if (s.length == 0) s
+      if (s.isEmpty) s
       else {
         val ch = s.charAt(0)
         val fixedCh =
@@ -871,6 +871,18 @@ object JsonCodecMaker {
             s"Please consider sealing the '$tpe' or provide a custom implicitly accessible codec for it."
         } else s"No implicit '${typeOf[JsonValueCodec[_]]}' defined for '$tpe'.")
 
+      def namedValueOpt(namedOpt: Option[Annotation], tpe: Type): Option[String] = namedOpt.map { a =>
+        a.tree.children.tail.collectFirst { case Literal(Constant(s: String)) => s }.getOrElse {
+          try c.eval(c.Expr[named](c.untypecheck(a.tree.duplicate))).name catch {
+            case ex: Throwable =>
+              fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
+                "It should not depend on code from the same compilation module where the 'make' macro is called. " +
+                "Use a separated submodule of the project to compile all such dependencies before their usage " +
+                s"for generation of codecs. Cause:\n$ex")
+          }
+        }
+      }
+
       case class FieldInfo(symbol: TermSymbol, mappedName: String, tmpName: TermName, getter: MethodSymbol,
                            defaultValue: Option[Tree], resolvedTpe: Type, isStringified: Boolean)
 
@@ -906,16 +918,7 @@ object JsonCodecMaker {
               warn(s"Both '${typeOf[transient]}' and '${typeOf[named]}' or " +
                 s"'${typeOf[transient]}' and '${typeOf[stringified]}' defined for '$name' of '$tpe'.")
             }
-            val partiallyMappedName = named.headOption.map { a =>
-              a.tree.children.tail.collectFirst { case Literal(Constant(s: String)) => s }.getOrElse {
-                try c.eval(c.Expr[named](c.untypecheck(a.tree.duplicate))).name catch { case ex: Throwable =>
-                  fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'. " +
-                    "It should not depend on code from the same compilation module where the 'make' macro is called. " +
-                    "Use a separated submodule of the project to compile all such dependencies before their usage " +
-                    s"for generation of codecs. Cause:\n$ex")
-                }
-              }
-            }.getOrElse(name)
+            val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
         ClassInfo(tpe, getPrimaryConstructor(tpe).paramLists match {
@@ -952,8 +955,12 @@ object JsonCodecMaker {
               in.skip()
             } else in.duplicatedKeyError(l)"""
 
-      def discriminatorValue(tpe: Type): String =
-        cfg.adtLeafClassNameMapper(NameTransformer.decode(tpe.typeSymbol.fullName))
+      def discriminatorValue(tpe: Type): String = {
+        val named = tpe.typeSymbol.annotations.filter(_.tree.tpe =:= typeOf[named])
+        if (named.size > 1) fail(s"Duplicated '${typeOf[named]}' defined for '$tpe'.")
+        namedValueOpt(named.headOption, tpe)
+          .getOrElse(cfg.adtLeafClassNameMapper(NameTransformer.decode(tpe.typeSymbol.fullName)))
+      }
 
       def checkFieldNameCollisions(tpe: Type, names: Seq[String]): Unit = {
         val collisions = duplicated(names)

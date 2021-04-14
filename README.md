@@ -148,6 +148,7 @@ There are configurable options that can be set in compile-time:
 - Skipping of serialization of fields that have empty optional values can be turned off to force serialization of them
 - Skipping of serialization of fields which values are matched with defaults that are defined in the primary constructor
   can be turned off to force serialization of that values
+- Ability to override names of classes of ADTs and fields using a compile-time annotation  
 - Mapping functions from names of classes and their fields to JSON keys or from names of Java enumeration values to 
   JSON strings and back, including predefined functions which enforce snake_case, kebab-case, camelCase or 
   PascalCase names for all fields in the generated codec
