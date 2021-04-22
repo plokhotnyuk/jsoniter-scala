@@ -1,13 +1,13 @@
 echo 'var providedBenchmarks = ["Chrome", "Edge", "Firefox", "Opera", "Safari"];
 var providedBenchmarkStore = {
 "Chrome":'
-cat chrome.json
+jq -c . < chrome.json
 echo ', "Edge":'
-cat edge.json
+jq -c . < edge.json
 echo ', "Firefox":'
-cat firefox.json
+jq -c . < firefox.json
 echo ', "Opera":'
-cat opera.json
+jq -c . < opera.json
 echo ', "Safari":'
-cat safari.json
+jq -c . < safari.json
 echo '}'
