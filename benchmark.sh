@@ -1,4 +1,5 @@
 #!/bin/bash
+sbt -batch -java-home /usr/lib/jvm/graalvm-ee-java16 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-Dgraal.UseBranchesWithin32ByteBoundary=true" -p size=128 -prof gc -rf json -rff graalvm-ee-java16.json .*' 2>&1 | tee graalvm-ee-java16.txt
 sbt -batch -java-home /usr/lib/jvm/graalvm-ee-java11 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-Dgraal.UseBranchesWithin32ByteBoundary=true" -p size=128 -prof gc -rf json -rff graalvm-ee-java11.json .*' 2>&1 | tee graalvm-ee-java11.txt
 sbt -batch -java-home /usr/lib/jvm/graalvm-ee-java8 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-Dgraal.UseBranchesWithin32ByteBoundary=true" -p size=128 -prof gc -rf json -rff graalvm-ee-java8.json .*' 2>&1 | tee graalvm-ee-java8.txt
 sbt -batch -java-home /usr/lib/jvm/graalvm-ce-java16 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-Dgraal.UseBranchesWithin32ByteBoundary=true" -p size=128 -prof gc -rf json -rff graalvm-ce-java16.json .*' 2>&1 | tee graalvm-ce-java16.txt
