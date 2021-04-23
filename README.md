@@ -84,8 +84,8 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - JSON serialization to `Array[Byte]`, `java.io.OutputStream` or `java.nio.ByteBuffer`
 - Support of parsing from or writing to part of `Array[Byte]` or `java.nio.ByteBuffer` by specifying of position and 
   limit
-- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all parsed
-  values in the memory
+- Parsing of streaming JSON values and JSON arrays from `java.io.InputStream` without the need of holding all input 
+  and parsed values in the memory
 - Only UTF-8 encoding is supported when working with buffered bytes directly but there is a fallback to parse and
   serialize JSON from/to `String` (while this is much less efficient)
 - Parsing of strings with escaped characters for JSON keys and string values
@@ -230,12 +230,14 @@ For more use cases, please, check out tests:
 - [JsonReaderSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonReaderSpec.scala)
 - [JsonWriterSpec](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-core/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/core/JsonWriterSpec.scala)
 
-Samples for integration with different web frameworks:
+Samples for integration with different web frameworks and HTTP servers:
 - [akka-http](https://github.com/hseeberger/akka-http-json/blob/master/akka-http-jsoniter-scala/src/test/scala/de/heikoseeberger/akkahttpjsoniterscala/ExampleApp.scala)
 - [blaze](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/blaze/src/main/scala/Main.scala)
 - [colossus](https://github.com/TechEmpower/FrameworkBenchmarks/blob/b3a39dcd95b207cd2509d7bbf873a0dfb91097f5/frameworks/Scala/colossus/src/main/scala/example/Main.scala)
 - [http4s](https://github.com/TechEmpower/FrameworkBenchmarks/blob/d1f960b2d4d6ea7b5c30a3ef2a8b47670f346f1c/frameworks/Scala/http4s/src/main/scala/WebServer.scala)
 - [Play (with Netty native transport)](https://github.com/plokhotnyuk/play/tree/master/src/main/scala/microservice)
+- [youi](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/youi/src/main/scala/example/Main.scala)
+- [zio-http](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/zio-http/src/main/scala/Main.scala)
 
 Other usages of jsoniter-scala:
 - [Dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
