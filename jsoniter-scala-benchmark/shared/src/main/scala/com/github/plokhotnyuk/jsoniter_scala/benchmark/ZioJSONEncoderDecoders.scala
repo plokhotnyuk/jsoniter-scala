@@ -218,22 +218,12 @@ trait ZioJSONNonGenEncoderDecoders {
   implicit def indexedSeqEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[IndexedSeq[A]] =
     (as: IndexedSeq[A], indent: Option[Int], out: Write) => {
       out.write('[')
-      if (indent.isEmpty) {
-        as.foreach {
-          var first = true
-          a =>
-            if (first) first = false
-            else out.write(',')
-            encoder.unsafeEncode(a, indent, out)
-        }
-      } else {
-        as.foreach {
-          var first = true
-          a =>
-            if (first) first = false
-            else out.write(", ")
-            encoder.unsafeEncode(a, indent, out)
-        }
+      as.foreach {
+        var first = true
+        a =>
+          if (first) first = false
+          else out.write(',')
+          encoder.unsafeEncode(a, indent, out)
       }
       out.write(']')
     }
@@ -255,18 +245,10 @@ trait ZioJSONNonGenEncoderDecoders {
       out.write('[')
       val len = as.length
       var i: Int = 0
-      if (indent.isEmpty) {
-        while (i < len) {
-          if (i != 0) out.write(',')
-          encoder.unsafeEncode(as(i), indent, out)
-          i += 1
-        }
-      } else {
-        while (i < len) {
-          if (i != 0) out.write(", ")
-          encoder.unsafeEncode(as(i), indent, out)
-          i += 1
-        }
+      while (i < len) {
+        if (i != 0) out.write(',')
+        encoder.unsafeEncode(as(i), indent, out)
+        i += 1
       }
       out.write(']')
     }

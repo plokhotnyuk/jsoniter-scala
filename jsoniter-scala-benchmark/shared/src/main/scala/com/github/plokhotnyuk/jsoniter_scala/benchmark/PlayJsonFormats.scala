@@ -37,11 +37,11 @@ object PlayJsonFormats {
       override def writes(v: A): JsValue = JsString(v.toString)
     }
 
-  implicit val intKeyReads: KeyReads[Int] = (s: String) =>
-    Try(JsSuccess(s.toInt)).getOrElse(JsError(s"expected.intstring"))
+  implicit val intKeyReads: KeyReads[Int] =
+    (s: String) => Try(JsSuccess(s.toInt)).getOrElse(JsError("expected.intstring"))
   implicit val intKeyWrites: KeyWrites[Int] = _.toString
-  implicit val longKeyReads: KeyReads[Long] = (s: String) =>
-    Try(JsSuccess(s.toLong)).getOrElse(JsError(s"expected.longstring"))
+  implicit val longKeyReads: KeyReads[Long] =
+    (s: String) => Try(JsSuccess(s.toLong)).getOrElse(JsError("expected.longstring"))
 
   implicit def mutableMapReads[A, B](implicit mapReads: Reads[Map[A, B]]): Reads[mutable.Map[A, B]] =
     Reads[mutable.Map[A, B]](js => JsSuccess(js.as[Map[A, B]].foldLeft(mutable.Map.empty[A, B]) {
@@ -64,21 +64,24 @@ object PlayJsonFormats {
       override def reads(js: JsValue): JsResult[IntMap[A]] =
         JsSuccess(js.as[Map[Int, A]].foldLeft(IntMap.empty[A])((m, p) => m.updated(p._1, p._2)))
 
-      override def writes(v: IntMap[A]): JsValue = Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
-        (m, p) => m += ((p._1.toString, aWrites.writes(p._2)))
-      })
+      override def writes(v: IntMap[A]): JsValue =
+        Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {
+          (m, p) => m += ((p._1.toString, aWrites.writes(p._2)))
+        })
     }
 
   // Allow case classes with Tuple2 types to be represented as a Json Array with 2 elements e.g. (Double, Double)
   // Borrowed from https://gist.github.com/alexanderjarvis/4595298
-  implicit def tuple2Format[A, B](implicit aFormat: Format[A], bFormat: Format[B]): Format[Tuple2[A, B]] =
-    new Format[Tuple2[A, B]] {
-      override def reads(js: JsValue): JsResult[(A, B)] = Try {
-        val arr = js.asInstanceOf[JsArray]
-        aFormat.reads(arr(0)).flatMap(a => bFormat.reads(arr(1)).map(b => (a, b)))
-      }.getOrElse(JsError("expected.jsarray"))
+  implicit def tuple2Format[A, B](implicit aFormat: Format[A], bFormat: Format[B]): Format[(A, B)] =
+    new Format[(A, B)] {
+      override def reads(js: JsValue): JsResult[(A, B)] = Try(readsUnsafe(js)).getOrElse(JsError("expected.jsarray"))
 
       override def writes(tuple: (A, B)): JsValue = JsArray(Seq(aFormat.writes(tuple._1), bFormat.writes(tuple._2)))
+
+      private[this] def readsUnsafe(js: JsValue): JsResult[(A, B)] = {
+        val arr = js.asInstanceOf[JsArray]
+        aFormat.reads(arr(0)).flatMap(a => bFormat.reads(arr(1)).map(b => (a, b)))
+      }
     }
 
   implicit val charFormat: Format[Char] = stringFormat("char") { case s if s.length == 1 => s.charAt(0) }
