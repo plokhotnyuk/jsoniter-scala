@@ -36,12 +36,12 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
   }
   "JsonReader.toHashCode" should {
     "produce the same hash value for strings as JDK by default" in {
-      forAll(minSuccessful(10000)) { x: String =>
+      forAll(minSuccessful(10000)) { (x: String) =>
         assert(JsonReader.toHashCode(x.toCharArray, x.length) == x.hashCode)
       }
     }
     "produce 0 hash value when the provided 'len' isn't greater than 0" in {
-      forAll(minSuccessful(10000)) { x: Int =>
+      forAll(minSuccessful(10000)) { (x: Int) =>
         whenever(x <= 0) {
           assert(JsonReader.toHashCode("VVV".toCharArray, x) == 0)
         }
@@ -1946,7 +1946,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "throw parsing exception for string with length > 1" in {
-      forAll(minSuccessful(10000)) { ch: Char =>
+      forAll(minSuccessful(10000)) { (ch: Char) =>
         whenever(ch >= 32 && ch != '"' && ch != '\\' && !Character.isSurrogate(ch)) {
           checkError(s""""$ch$ch"""", "expected '\"'") // offset can differs for non-ASCII characters
         }
@@ -1958,7 +1958,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         assert(intercept[JsonReaderException](reader2(bytes).readKeyAsChar()).getMessage.contains(error))
       }
 
-      forAll(genControlChar, minSuccessful(1000)) { ch: Char =>
+      forAll(genControlChar, minSuccessful(1000)) { (ch: Char) =>
         checkError(Array('"', ch.toByte, '"'), "unescaped control character, offset: 0x00000001")
       }
     }
@@ -2706,7 +2706,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         jsonReader.nextToken().toChar shouldBe s2.charAt(0)
       }
 
-      forAll(Gen.size, minSuccessful(10000)) { n: Int =>
+      forAll(Gen.size, minSuccessful(10000)) { (n: Int) =>
         check(n, "123456")(_.readBigInt(null))
         check(n, "\"UTC\"")(_.readZoneId(null))
         check(n, "[true]")(_.readRawValAsBytes())

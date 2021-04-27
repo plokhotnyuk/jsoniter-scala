@@ -31,21 +31,27 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
-    "-target:jvm-1.8",
     "-feature",
-    "-unchecked",
-    "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
-  ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 11)) => Seq(
-      "-language:higherKinds",
-      "-Ybackend:GenBCode",
-      "-Ydelambdafy:inline"
-    )
-    case Some((2, 12)) => Seq(
-      "-language:higherKinds"
-    )
-    case _ => Seq()
-  }),
+    "-unchecked"
+  ) ++ {
+    val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
+    if (major == 2) {
+      (minor match {
+        case 11 => Seq(
+          "-Ybackend:GenBCode",
+          "-Ydelambdafy:inline",
+          "-language:higherKinds",
+        )
+        case 12 => Seq(
+          "-language:higherKinds"
+        )
+        case 13 => Seq()
+      }) ++ Seq(
+        "-target:jvm-1.8",
+        "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
+      )
+    } else Seq()
+  },
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
@@ -76,10 +82,12 @@ lazy val publishSettings = Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
+    val Some((scalaMajor, _)) = CrossVersion.partialVersion(scalaVersion.value)
+
     def isCheckingRequired: Boolean = {
       val Array(newMajor, _, _) = version.value.split('.')
       val Array(oldMajor, _, _) = oldVersion.split('.')
-      newMajor == oldMajor
+      newMajor == oldMajor && scalaMajor == 2
     }
 
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
@@ -107,12 +115,19 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.5", "2.12.13", "2.11.12"),
+    crossScalaVersions := Seq("3.0.0-RC3", "2.13.5", "2.12.13", "2.11.12"),
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3" % Test,
-      "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.3.0" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.8" % Test
-    )
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.3" % Test
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11)) => Seq(
+        "org.scalatest" %%% "scalatest" % "3.2.4-M1" % Test,
+        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.4.0-M1" % Test
+      )
+      case _=> Seq(
+        "org.scalatest" %%% "scalatest" % "3.2.8" % Test,
+        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.8.0" % Test
+      )
+    })
   )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
