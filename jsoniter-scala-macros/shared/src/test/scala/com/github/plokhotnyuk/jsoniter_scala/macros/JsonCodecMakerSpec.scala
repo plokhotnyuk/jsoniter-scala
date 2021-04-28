@@ -810,9 +810,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         ValueClassTypes(UserId("123abc"), OrderId(123123)), """{"uid":"123abc","oid":123123}""")
     }
     "serialize and deserialize top-level value classes" in {
-      val codecOfUserId = make[UserId]
-      verifySerDeser(codecOfUserId, UserId("123abc"), "\"123abc\"")
+      verifySerDeser(make[UserId], UserId("123abc"), "\"123abc\"")
       verifySerDeser(make[OrderId], OrderId(123123), "123123")
+    }
+    "serialize and deserialize arrays of value classes" in {
+      verifySerDeser(make[Array[UserId]], _root_.scala.Array(UserId("123abc"), UserId("123def")), "[\"123abc\",\"123def\"]")
+      verifySerDeser(make[Array[OrderId]], _root_.scala.Array(OrderId(123123), OrderId(123456)), "[123123,123456]")
     }
     "serialize and deserialize stringified top-level value classes" in {
       verifySerDeser(make[OrderId](CodecMakerConfig.withIsStringified(true)), OrderId(123123), "\"123123\"")
