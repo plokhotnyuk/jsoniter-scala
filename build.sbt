@@ -55,6 +55,7 @@ lazy val commonSettings = Seq(
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
+  versionScheme := Some("early-semver"),
   publishTo := sonatypePublishToBundle.value,
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false },
