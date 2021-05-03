@@ -102,7 +102,13 @@ case class Enums2(@stringified lt: LocationType.LocationType)
 
 case class OuterTypes(s: String, st: Either[String, StandardTypes] = Left("error"))
 
-case class Options(os: Option[String], obi: Option[BigInt], osi: Option[Set[Int]], ol: Option[Long], ojl: Option[java.lang.Long])
+case class Options(
+  os: Option[String],
+  obi: Option[BigInt],
+  osi: Option[Set[Int]],
+  ol: Option[Long],
+  ojl: Option[java.lang.Long],
+  ost: Option[StandardTypes])
 
 case class Tuples(t1: (Int, Double, List[Char]), t2: (String, BigInt, Option[LocationType.LocationType]))
 
@@ -822,10 +828,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L))),
-        """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L)),
+          Option(StandardTypes("WWW", BigInt(2), BigDecimal(3.3)))),
+        """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2,"ost":{"s":"WWW","bi":2,"bd":3.3}}""")
       verifySerDeser(codecOfOptions,
-        Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None),
+        Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None,
+          _root_.scala.None),
         """{}""")
     }
     "serialize and deserialize options in collections using null for None values" in {
@@ -844,11 +852,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize case classes with empty options as null when the transientNone flag is off" in {
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
-        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L))),
-        """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2}""")
+        Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L)),
+          Option(StandardTypes("WWW", BigInt(2), BigDecimal(3.3)))),
+        """{"os":"VVV","obi":4,"osi":[],"ol":1,"ojl":2,"ost":{"s":"WWW","bi":2,"bd":3.3}}""")
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
-        Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None),
-        """{"os":null,"obi":null,"osi":null,"ol":null,"ojl":null}""")
+        Options(_root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None, _root_.scala.None,
+          _root_.scala.None),
+        """{"os":null,"obi":null,"osi":null,"ol":null,"ojl":null,"ost":null}""")
     }
     "serialize and deserialize top-level options" in {
       val codecOfStringOption = make[Option[String]]
