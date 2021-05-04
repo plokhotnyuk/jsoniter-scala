@@ -173,7 +173,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     resolvers ++= Seq(
-      "Rally Health" at "https://dl.bintray.com/rallyhealth/maven",
       "Playframework" at "https://dl.bintray.com/playframework/maven"
     ),
     crossScalaVersions := Seq("2.13.5"),
