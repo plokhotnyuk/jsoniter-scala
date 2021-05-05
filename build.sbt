@@ -172,9 +172,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    resolvers ++= Seq(
-      "Playframework" at "https://dl.bintray.com/playframework/maven"
-    ),
     crossScalaVersions := Seq("2.13.5"),
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio-json" % "0.1.4",
