@@ -17,8 +17,8 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.9.0")
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 
 libraryDependencies ++= Seq(
-  "org.openjdk.jmh" % "jmh-core" % "1.29",
-  "org.openjdk.jmh" % "jmh-generator-asm" % "1.29",
-  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.29",
-  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.29"
+  "org.openjdk.jmh" % "jmh-core" % "1.30",
+  "org.openjdk.jmh" % "jmh-generator-asm" % "1.30",
+  "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.30",
+  "org.openjdk.jmh" % "jmh-generator-reflection" % "1.30"
 )
