@@ -73,7 +73,8 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val publishSettings = Seq(
-  mimaCheckDirection := {
+    packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> moduleName.value),
+    mimaCheckDirection := {
     def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
       val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
