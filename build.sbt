@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.Semantics
 import sbt._
 
@@ -84,20 +83,15 @@ lazy val publishSettings = Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
-    val Some((scalaMajor, _)) = CrossVersion.partialVersion(scalaVersion.value)
-
     def isCheckingRequired: Boolean = {
       val Array(newMajor, _, _) = version.value.split('.')
       val Array(oldMajor, _, _) = oldVersion.split('.')
-      newMajor == oldMajor && scalaMajor == 2
+      newMajor == oldMajor
     }
 
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.this")
-  ),
   mimaReportSignatureProblems := true
 )
 
