@@ -665,7 +665,7 @@ final class JsonReader private[jsoniter_scala](
   private[jsoniter_scala] def endOfInputOrError(): Boolean =
     !skipWhitespaces() || decodeError("expected end of input", head)
 
-  private[this] def skipWhitespaces(): Boolean = {
+  private[jsoniter_scala] def skipWhitespaces(): Boolean = {
     var pos = head
     var buf = this.buf
     while ((pos < tail || {
