@@ -22,7 +22,6 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.mavenLocal,
     Resolver.sonatypeRepo("staging"),
-    Resolver.bintrayRepo("evolutiongaming", "maven"),
     "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
   scalaVersion := "2.13.5",
