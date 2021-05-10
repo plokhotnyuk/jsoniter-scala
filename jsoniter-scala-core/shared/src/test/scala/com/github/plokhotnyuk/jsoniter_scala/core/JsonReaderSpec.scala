@@ -219,7 +219,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
     }
   }
-  "JsonReader.isNextToken, JsonReader.isCurrentToken, and JsonReader.readNullOrTokenError" should {
+  "JsonReader.isNextToken, JsonReader.isCurrentToken, JsonReader.readNullOrTokenError, JsonReader.endOfInputOrError" should {
     "be visible in the jsoniter_scala package" in {
       def toJsonArrayIteratorFromStream[A](in: InputStream, config: ReaderConfig = ReaderConfig)
                                            (implicit codec: JsonValueCodec[A]): Iterator[A] =
@@ -230,25 +230,22 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
             in = in,
             config = config)
           private[this] var continue: Boolean =
-            if (!reader.isNextToken('[')) reader.readNullOrTokenError(false, '[')
-            else !reader.isNextToken(']') && {
+            if (reader.isNextToken('[')) !reader.isNextToken(']') && {
               reader.rollbackToken()
               true
-            }
+            } else reader.readNullOrTokenError(false, '[')
 
           override def hasNext: Boolean = continue
 
           override def next(): A = {
             val x = codec.decodeValue(reader, codec.nullValue)
-            continue = reader.isNextToken(',')
-            if (!continue) checkEndConditions()
+            continue = reader.isNextToken(',') || checkEndConditions()
             x
           }
 
-          private[this] def checkEndConditions(): Unit = {
-            if (!reader.isCurrentToken(']')) reader.decodeError("expected ']' or ','")
-            if (config.checkForEndOfInput) !reader.skipWhitespaces() || reader.decodeError("expected end of input")
-          }
+          private[this] def checkEndConditions(): Boolean =
+            (reader.isCurrentToken(']') || reader.decodeError("expected ']' or ','")) &&
+              config.checkForEndOfInput && reader.endOfInputOrError()
         }
 
       def toInputStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes(UTF_8))
@@ -274,7 +271,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("[1")).toList)
         .getMessage.contains("unexpected end of input, offset: 0x00000002"))
       assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("[1]1")).toList)
-        .getMessage.contains("expected end of input, offset: 0x00000002"))
+        .getMessage.contains("expected end of input, offset: 0x00000003"))
     }
   }
   "JsonReader.readRawValueAsBytes" should {
