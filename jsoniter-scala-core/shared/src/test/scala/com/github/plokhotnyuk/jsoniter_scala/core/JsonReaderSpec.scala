@@ -1,12 +1,11 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, InputStream}
 import java.math.MathContext
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.{Base64, UUID}
-
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 import org.scalacheck.Arbitrary.arbitrary
@@ -14,7 +13,7 @@ import org.scalacheck.Gen
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
+import scala.collection.AbstractIterator
 import scala.util.Random
 
 class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
@@ -179,6 +178,45 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       checkError("}")
       checkError(",")
       checkError(":")
+    }
+  }
+  "JsonReader.skipWhitespaces" should {
+    "be visible in the jsoniter_scala package" in {
+      def toJsonValuesIteratorFromStream[A](in: InputStream, config: ReaderConfig = ReaderConfig)
+                                           (implicit codec: JsonValueCodec[A]): Iterator[A] =
+        new AbstractIterator[A] {
+          private[this] val reader = new JsonReader(
+            buf = new Array[Byte](config.preferredBufSize),
+            charBuf = new Array[Char](config.preferredCharBufSize),
+            in = in,
+            config = config)
+          private[this] var continue: Boolean = reader.skipWhitespaces()
+
+          override def hasNext: Boolean = continue
+
+          override def next(): A = {
+            val x = codec.decodeValue(reader, codec.nullValue)
+            continue = reader.skipWhitespaces()
+            x
+          }
+        }
+
+      def toInputStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes(UTF_8))
+
+      implicit val intCodec: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+        override def decodeValue(in: JsonReader, default: Int): Int = in.readInt()
+
+        override def encodeValue(x: Int, out: JsonWriter): Unit = out.writeVal(x)
+
+        override def nullValue: Int = 0
+      }
+      assert(toJsonValuesIteratorFromStream(toInputStream("")).toList == List())
+      assert(toJsonValuesIteratorFromStream(toInputStream("\n\n")).toList == List())
+      assert(toJsonValuesIteratorFromStream(toInputStream("1")).toList == List(1))
+      assert(toJsonValuesIteratorFromStream(toInputStream("1\n2\n3")).toList == List(1, 2, 3))
+      assert(toJsonValuesIteratorFromStream(toInputStream("\n1\n2\n\n3\n")).toList == List(1, 2, 3))
+      assert(intercept[JsonReaderException](toJsonValuesIteratorFromStream(toInputStream("01\n")).toList)
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
     }
   }
   "JsonReader.readRawValueAsBytes" should {
