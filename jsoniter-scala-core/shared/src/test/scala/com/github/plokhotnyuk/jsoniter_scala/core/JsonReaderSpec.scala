@@ -219,6 +219,64 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         .getMessage.contains("illegal number with leading zero, offset: 0x00000000"))
     }
   }
+  "JsonReader.isNextToken, JsonReader.isCurrentToken, and JsonReader.readNullOrTokenError" should {
+    "be visible in the jsoniter_scala package" in {
+      def toJsonArrayIteratorFromStream[A](in: InputStream, config: ReaderConfig = ReaderConfig)
+                                           (implicit codec: JsonValueCodec[A]): Iterator[A] =
+        new AbstractIterator[A] {
+          private[this] val reader = new JsonReader(
+            buf = new Array[Byte](config.preferredBufSize),
+            charBuf = new Array[Char](config.preferredCharBufSize),
+            in = in,
+            config = config)
+          private[this] var continue: Boolean =
+            if (!reader.isNextToken('[')) reader.readNullOrTokenError(false, '[')
+            else !reader.isNextToken(']') && {
+              reader.rollbackToken()
+              true
+            }
+
+          override def hasNext: Boolean = continue
+
+          override def next(): A = {
+            val x = codec.decodeValue(reader, codec.nullValue)
+            continue = reader.isNextToken(',')
+            if (!continue) checkEndConditions()
+            x
+          }
+
+          private[this] def checkEndConditions(): Unit = {
+            if (!reader.isCurrentToken(']')) reader.decodeError("expected ']' or ','")
+            if (config.checkForEndOfInput) !reader.skipWhitespaces() || reader.decodeError("expected end of input")
+          }
+        }
+
+      def toInputStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes(UTF_8))
+
+      implicit val intCodec: JsonValueCodec[Int] = new JsonValueCodec[Int] {
+        override def decodeValue(in: JsonReader, default: Int): Int = in.readInt()
+
+        override def encodeValue(x: Int, out: JsonWriter): Unit = out.writeVal(x)
+
+        override def nullValue: Int = 0
+      }
+      assert(toJsonArrayIteratorFromStream(toInputStream("null")).toList == List())
+      assert(toJsonArrayIteratorFromStream(toInputStream("[]")).toList == List())
+      assert(toJsonArrayIteratorFromStream(toInputStream("[1]")).toList == List(1))
+      assert(toJsonArrayIteratorFromStream(toInputStream("[1,2,3]")).toList == List(1, 2, 3))
+      assert(toJsonArrayIteratorFromStream(toInputStream("\n[1, \n2,\n 3\n]")).toList == List(1, 2, 3))
+      assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("")).toList)
+        .getMessage.contains("unexpected end of input, offset: 0x00000000"))
+      assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("1")).toList)
+        .getMessage.contains("expected '[' or null, offset: 0x00000000"))
+      assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("[01]")).toList)
+        .getMessage.contains("illegal number with leading zero, offset: 0x00000001"))
+      assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("[1")).toList)
+        .getMessage.contains("unexpected end of input, offset: 0x00000002"))
+      assert(intercept[JsonReaderException](toJsonArrayIteratorFromStream(toInputStream("[1]1")).toList)
+        .getMessage.contains("expected end of input, offset: 0x00000002"))
+    }
+  }
   "JsonReader.readRawValueAsBytes" should {
     def check(s: String, ws: String): Unit =
       new String(reader(ws + s).readRawValAsBytes(), UTF_8) shouldBe ws + s
