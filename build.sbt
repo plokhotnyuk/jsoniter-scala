@@ -82,10 +82,12 @@ lazy val publishSettings = Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
+    val Some((scalaMajor, _)) = CrossVersion.partialVersion(scalaVersion.value)
+
     def isCheckingRequired: Boolean = {
       val Array(newMajor, _, _) = version.value.split('.')
       val Array(oldMajor, _, _) = oldVersion.split('.')
-      newMajor == oldMajor
+      newMajor == oldMajor && scalaMajor == 2
     }
 
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
@@ -110,7 +112,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.5", "2.12.13", "2.11.12"),
+    crossScalaVersions := Seq("3.0.0-RC3", "2.13.5", "2.12.13", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
