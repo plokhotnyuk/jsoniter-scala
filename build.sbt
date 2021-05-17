@@ -149,6 +149,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.beachape" %%% "enumeratum" % "1.6.1" % Test,
       "org.scalatest" %%% "scalatest" % "3.2.8" % Test
     )
   )

@@ -59,6 +59,24 @@ object Weapon {
   final case object Sword extends Weapon
 }
 
+sealed trait TrafficLight extends enumeratum.EnumEntry
+object TrafficLight extends enumeratum.Enum[TrafficLight] {
+  case object Red extends TrafficLight
+  case object Yellow extends TrafficLight
+  case object Green extends TrafficLight
+
+  val values = findValues
+}
+
+sealed abstract class MediaType(val value: Long, name: String) extends enumeratum.values.LongEnumEntry
+case object MediaType extends enumeratum.values.LongEnum[MediaType] {
+  case object `text/json` extends MediaType(1L, "text/json")
+  case object `text/html` extends MediaType(2L, "text/html")
+  case object `application/jpeg` extends MediaType(3L, "application/jpeg")
+
+  val values = findValues
+}
+
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
 case class BoxedPrimitives(
@@ -808,6 +826,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Message],
         Message("A", "B", RawVal("""{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"}"""), "C"),
         """{"param1":"A","param2":"B","payload":{"x":[-1.0,1,4.0E20],"y":{"xx":true,"yy":false,"zz":null},"z":"Z"},"param3":"C"}""")
+    }
+    "serialize and deserialize Enumeratum enums" in {
+      verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
+        List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
+
+      implicit val codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
+        override val nullValue: MediaType = null
+
+        override def decodeValue(in: JsonReader, default: MediaType): MediaType = in.readLong() match {
+          case 1L => MediaType.`text/json`
+          case 2L => MediaType.`text/html`
+          case 3L => MediaType.`application/jpeg`
+          case x => in.decodeError(s"unexpected number value: $x")
+        }
+
+        override def encodeValue(x: MediaType, out: JsonWriter): _root_.scala.Unit = out.writeVal(x.value)
+      }
+
+      verifySerDeser[List[MediaType]](make[List[MediaType]],
+        List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
     }
     "serialize and deserialize case classes with value classes" in {
       case class ValueClassTypes(uid: UserId, oid: OrderId)
