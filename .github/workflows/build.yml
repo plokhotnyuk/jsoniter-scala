@@ -47,5 +47,5 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.java == 'zulu@1.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: "sbt -batch coverage jsoniter-scala-coreJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageAggregate coveralls"
+        run: "sbt -batch ++2.13.5! coverage jsoniter-scala-coreJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageAggregate coveralls"
         shell: bash
