@@ -1840,19 +1840,23 @@ object JsonCodecMaker {
       }
 
       val codec =
-        q"""new _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$rootTpe] {
-              def nullValue: $rootTpe = ${nullValue(rootTpe :: Nil)}
-              def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe =
-                ${genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)}
-              def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit =
-                ${genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)}
-              ..${decodeMethodTrees.values}
-              ..${encodeMethodTrees.values}
-              ..${fieldTrees.values}
-              ..${equalsMethodTrees.values}
-              ..${nullValueTrees.values}
-              ..${mathContextTrees.values}
-              ..${scalaEnumCacheTries.values}
+        q"""{
+              @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.All"))
+              val x = new _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$rootTpe] {
+                def nullValue: $rootTpe = ${nullValue(rootTpe :: Nil)}
+                def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe =
+                  ${genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)}
+                def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit =
+                  ${genWriteVal(q"x", rootTpe :: Nil, cfg.isStringified, EmptyTree)}
+                ..${decodeMethodTrees.values}
+                ..${encodeMethodTrees.values}
+                ..${fieldTrees.values}
+                ..${equalsMethodTrees.values}
+                ..${nullValueTrees.values}
+                ..${mathContextTrees.values}
+                ..${scalaEnumCacheTries.values}
+              }
+              x
             }"""
       if (c.settings.contains("print-codecs")) {
         c.info(c.enclosingPosition, s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}", force = true)
