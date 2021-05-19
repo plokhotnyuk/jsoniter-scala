@@ -43,7 +43,7 @@ The idea to generate codecs by Scala macros and main details were borrowed from
 [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) and adapted for the needs of the JSON domain.
   
 Other Scala macros features were peeped in [AVSystem Commons](https://github.com/AVSystem/scala-commons/tree/master/commons-macros/src/main/scala/com/avsystem/commons/macros)
-and [magnolia](https://github.com/propensive/magnolia) libraries.
+and [magnolia](https://github.com/softwaremill/magnolia) libraries.
 
 Ideas for the most efficient parsing and serialization of `java.time.*` values were inspired by
 [DSL-JSON](https://github.com/ngs-doo/dsl-json)'s implementation for `java.time.OffsetDateTime`.
@@ -135,8 +135,9 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
 - Releases for different Scala versions: 2.11, 2.12, 2.13
+- Suppressing of all WartRemover warnings for generated codecs  
 - Support of shading to another package for locking on a particular released version
-- Patch versions are backward and forward compatible 
+- Patch versions are backward and forward compatible
 - Support of compilation to a native image by GraalVM
 - Support of Scala.js 1.0+
   
