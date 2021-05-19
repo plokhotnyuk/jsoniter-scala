@@ -112,7 +112,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.0.0-RC3", "2.13.6", "2.12.13", "2.11.12"),
+    crossScalaVersions := Seq("3.0.0", "2.13.6", "2.12.13", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.4.4" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -121,8 +121,8 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
         "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.4.0-M1" % Test
       )
       case _=> Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.8" % Test,
-        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.8.0" % Test
+        "org.scalatest" %%% "scalatest" % "3.2.9" % Test,
+        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.9.0" % Test
       )
     })
   )
@@ -132,8 +132,8 @@ lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.2.2",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.2.2"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.3.0"
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule).withESFeatures(_.withUseECMAScript2015(false))),
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
@@ -150,7 +150,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "com.beachape" %%% "enumeratum" % "1.6.1" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.8" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.9" % Test
     )
   )
 
@@ -194,7 +194,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.31",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.31",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.31",
-      "org.scalatest" %%% "scalatest" % "3.2.8" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.9" % Test
     )
   )
 
