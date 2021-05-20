@@ -170,8 +170,9 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.6"),
+    dependencyOverrides += "com.chuusai" %%% "shapeless" % "2.3.3", // FIXME: Used by circe and isn't binary compatible with the 2.3.6 version used by zio-json
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-json" % "0.1.4",
+      "dev.zio" %%% "zio-json" % "0.1.5",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.1",
       "com.rallyhealth" %% "weepickle-v1" % "1.4.2",
       "io.bullet" %%% "borer-derivation" % "1.7.2",

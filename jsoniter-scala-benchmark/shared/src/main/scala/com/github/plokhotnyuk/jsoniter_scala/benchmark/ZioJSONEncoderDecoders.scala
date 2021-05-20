@@ -123,23 +123,23 @@ trait ZioJSONNonGenEncoderDecoders {
       override def unsafeDecodeField(trace: List[JsonError], in: String): Int = Integer.parseInt(in)
     })
   implicit val (arrayOfBigDecimalsE5r: JsonEncoder[Array[BigDecimal]], arrayOfBigDecimalsD5r: JsonDecoder[Array[BigDecimal]]) =
-    (arrayEncoder[BigDecimal], arrayDecoder[BigDecimal])
+    (JsonEncoder.array[BigDecimal], JsonDecoder.array[BigDecimal])
   implicit val (arrayOfBooleansE5r: JsonEncoder[Array[Boolean]], arrayOfBooleansD5r: JsonDecoder[Array[Boolean]]) =
-    (arrayEncoder[Boolean], arrayDecoder[Boolean])
+    (JsonEncoder.array[Boolean], JsonDecoder.array[Boolean])
   implicit val (arrayOfBytesE5r: JsonEncoder[Array[Byte]], arrayOfBytesD5r: JsonDecoder[Array[Byte]]) =
-    (arrayEncoder[Byte], arrayDecoder[Byte])
+    (JsonEncoder.array[Byte], JsonDecoder.array[Byte])
   implicit val (arrayOfCharsE5r: JsonEncoder[Array[Char]], arrayOfCharsD5r: JsonDecoder[Array[Char]]) =
-    (arrayEncoder[Char], arrayDecoder[Char])
+    (JsonEncoder.array[Char], JsonDecoder.array[Char])
   implicit val (arrayOfDoublesE5r: JsonEncoder[Array[Double]], arrayOfDoublesD5r: JsonDecoder[Array[Double]]) =
-    (arrayEncoder[Double], arrayDecoder[Double])
+    (JsonEncoder.array[Double], JsonDecoder.array[Double])
   implicit val (arrayOfDurationsE5r: JsonEncoder[Array[Duration]], arrayOfDurationsD5r: JsonDecoder[Array[Duration]]) =
-    (arrayEncoder[Duration], arrayDecoder[Duration])
+    (JsonEncoder.array[Duration], JsonDecoder.array[Duration])
   implicit val (arrayOfEnumADTsE5r: JsonEncoder[Array[SuitADT]], arrayOfEnumADTsD5r: JsonDecoder[Array[SuitADT]]) =
-    (arrayEncoder[SuitADT]{ (a: SuitADT, indent: Option[Int], out: Write) =>
+    (JsonEncoder.array[SuitADT]({ (a: SuitADT, indent: Option[Int], out: Write) =>
       out.write('"')
       out.write(a.toString)
       out.write('"')
-    }, arrayDecoder[SuitADT](new JsonDecoder[SuitADT] {
+    }, ClassTag(classOf[SuitADT])), JsonDecoder.array[SuitADT](new JsonDecoder[SuitADT] {
       private[this] val suite = Map(
         "Hearts" -> Hearts,
         "Spades" -> Spades,
@@ -150,11 +150,11 @@ trait ZioJSONNonGenEncoderDecoders {
         suite.getOrElse(Lexer.string(trace, in).toString, throw new IllegalArgumentException("SuitADT"))
     }, ClassTag(classOf[SuitADT])))
   implicit val (arrayOfEnumsE5r: JsonEncoder[Array[SuitEnum]], arrayOfEnumsD5r: JsonDecoder[Array[SuitEnum]]) =
-    (arrayEncoder[SuitEnum]{ (a: SuitEnum, indent: Option[Int], out: Write) =>
+    (JsonEncoder.array[SuitEnum]({ (a: SuitEnum, indent: Option[Int], out: Write) =>
       out.write('"')
       out.write(a.toString)
       out.write('"')
-    }, arrayDecoder[SuitEnum](new JsonDecoder[SuitEnum] {
+    }, ClassTag(classOf[SuitEnum])), JsonDecoder.array[SuitEnum](new JsonDecoder[SuitEnum] {
       private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
 
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitEnum = {
@@ -168,41 +168,41 @@ trait ZioJSONNonGenEncoderDecoders {
       }
     }, ClassTag(classOf[SuitEnum])))
   implicit val (arrayOfFloatsE5r: JsonEncoder[Array[Float]], arrayOfFloatsD5r: JsonDecoder[Array[Float]]) =
-    (arrayEncoder[Float], arrayDecoder[Float])
+    (JsonEncoder.array[Float], JsonDecoder.array[Float])
   implicit val (arrayOfInstantsE5r: JsonEncoder[Array[Instant]], arrayOfInstantsD5r: JsonDecoder[Array[Instant]]) =
-    (arrayEncoder[Instant], arrayDecoder[Instant])
+    (JsonEncoder.array[Instant], JsonDecoder.array[Instant])
   implicit val (arrayOfIntsE5r: JsonEncoder[Array[Int]], arrayOfIntsD5r: JsonDecoder[Array[Int]]) =
-    (arrayEncoder[Int], arrayDecoder[Int])
+    (JsonEncoder.array[Int], JsonDecoder.array[Int])
   implicit val (arrayOfLocalDatesE5r: JsonEncoder[Array[LocalDate]], arrayOfLocalDatesD5r: JsonDecoder[Array[LocalDate]]) =
-    (arrayEncoder[LocalDate], arrayDecoder[LocalDate])
+    (JsonEncoder.array[LocalDate], JsonDecoder.array[LocalDate])
   implicit val (arrayOfLocalDateTimesE5r: JsonEncoder[Array[LocalDateTime]], arrayOfLocalDateTimesD5r: JsonDecoder[Array[LocalDateTime]]) =
-    (arrayEncoder[LocalDateTime], arrayDecoder[LocalDateTime])
+    (JsonEncoder.array[LocalDateTime], JsonDecoder.array[LocalDateTime])
   implicit val (arrayOfLocalTimesE5r: JsonEncoder[Array[LocalTime]], arrayOfLocalTimesD5r: JsonDecoder[Array[LocalTime]]) =
-    (arrayEncoder[LocalTime], arrayDecoder[LocalTime])
+    (JsonEncoder.array[LocalTime], JsonDecoder.array[LocalTime])
   implicit val (arrayOfLongsE5r: JsonEncoder[Array[Long]], arrayOfLongsD5r: JsonDecoder[Array[Long]]) =
-    (arrayEncoder[Long], arrayDecoder[Long])
+    (JsonEncoder.array[Long], JsonDecoder.array[Long])
   implicit val (arrayOfMonthDaysE5r: JsonEncoder[Array[MonthDay]], arrayOfMonthDaysD5r: JsonDecoder[Array[MonthDay]]) =
-    (arrayEncoder[MonthDay], arrayDecoder[MonthDay])
+    (JsonEncoder.array[MonthDay], JsonDecoder.array[MonthDay])
   implicit val (arrayOfOffsetDateTimesE5r: JsonEncoder[Array[OffsetDateTime]], arrayOfOffsetDateTimesD5r: JsonDecoder[Array[OffsetDateTime]]) =
-    (arrayEncoder[OffsetDateTime], arrayDecoder[OffsetDateTime])
+    (JsonEncoder.array[OffsetDateTime], JsonDecoder.array[OffsetDateTime])
   implicit val (arrayOfOffsetTimesE5r: JsonEncoder[Array[OffsetTime]], arrayOfOffsetTimesD5r: JsonDecoder[Array[OffsetTime]]) =
-    (arrayEncoder[OffsetTime], arrayDecoder[OffsetTime])
+    (JsonEncoder.array[OffsetTime], JsonDecoder.array[OffsetTime])
   implicit val (arrayOfPeriodsE5r: JsonEncoder[Array[Period]], arrayOfPeriodsD5r: JsonDecoder[Array[Period]]) =
-    (arrayEncoder[Period], arrayDecoder[Period])
+    (JsonEncoder.array[Period], JsonDecoder.array[Period])
   implicit val (arrayOfShortsE5r: JsonEncoder[Array[Short]], arrayOfShortsD5r: JsonDecoder[Array[Short]]) =
-    (arrayEncoder[Short], arrayDecoder[Short])
+    (JsonEncoder.array[Short], JsonDecoder.array[Short])
   implicit val (arrayOfUUIDsE5r: JsonEncoder[Array[UUID]], arrayOfUUIDsD5r: JsonDecoder[Array[UUID]]) =
-    (arrayEncoder[UUID], arrayDecoder[UUID])
+    (JsonEncoder.array[UUID], JsonDecoder.array[UUID])
   implicit val (arrayOfYearMonthsE5r: JsonEncoder[Array[YearMonth]], arrayOfYearMonthsD5r: JsonDecoder[Array[YearMonth]]) =
-    (arrayEncoder[YearMonth], arrayDecoder[YearMonth])
+    (JsonEncoder.array[YearMonth], JsonDecoder.array[YearMonth])
   implicit val (arrayOfYearsE5r: JsonEncoder[Array[Year]], arrayOfYearsD5r: JsonDecoder[Array[Year]]) =
-    (arrayEncoder[Year], arrayDecoder[Year])
+    (JsonEncoder.array[Year], JsonDecoder.array[Year])
   implicit val (arrayOfZonedDateTimesE5r: JsonEncoder[Array[ZonedDateTime]], arrayOfZonedDateTimesD5r: JsonDecoder[Array[ZonedDateTime]]) =
-    (arrayEncoder[ZonedDateTime], arrayDecoder[ZonedDateTime])
+    (JsonEncoder.array[ZonedDateTime], JsonDecoder.array[ZonedDateTime])
   implicit val (arrayOfZoneIdsE5r: JsonEncoder[Array[ZoneId]], arrayOfZoneIdsD5r: JsonDecoder[Array[ZoneId]]) =
-    (arrayEncoder[ZoneId], arrayDecoder[ZoneId])
+    (JsonEncoder.array[ZoneId], JsonDecoder.array[ZoneId])
   implicit val (arrayOfZoneOffsetsE5r: JsonEncoder[Array[ZoneOffset]], arrayOfZoneOffsetsD5r: JsonDecoder[Array[ZoneOffset]]) =
-    (arrayEncoder[ZoneOffset], arrayDecoder[ZoneOffset])
+    (JsonEncoder.array[ZoneOffset], JsonDecoder.array[ZoneOffset])
   implicit val (listOfBooleansE5r: JsonEncoder[List[Boolean]], listOfBooleansD5r: JsonDecoder[List[Boolean]]) =
     (JsonEncoder.list[Boolean], JsonDecoder.list[Boolean])
   implicit val (mapOfIntsToBooleansE5r: JsonEncoder[Map[Int, Boolean]], mapOfIntsToBooleansD5r: JsonDecoder[Map[Int, Boolean]]) =
@@ -213,7 +213,7 @@ trait ZioJSONNonGenEncoderDecoders {
     (JsonEncoder.vector[Boolean], JsonDecoder.vector[Boolean])
 
   implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
-    JsonCodec.apply(indexedSeqEncoder(codec.encoder), indexedSeqDecoder(codec.decoder))
+    JsonCodec.apply(indexedSeqEncoder(codec.encoder), JsonDecoder.indexedSeq(codec.decoder))
 
   implicit def indexedSeqEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[IndexedSeq[A]] =
     (as: IndexedSeq[A], indent: Option[Int], out: Write) => {
@@ -226,43 +226,6 @@ trait ZioJSONNonGenEncoderDecoders {
           encoder.unsafeEncode(a, indent, out)
       }
       out.write(']')
-    }
-
-  implicit def indexedSeqDecoder[A](implicit decoder: JsonDecoder[A]): JsonDecoder[IndexedSeq[A]] =
-    (trace: List[JsonError], in: RetractReader) => {
-      val builder = IndexedSeq.newBuilder[A]
-      Lexer.char(trace, in, '[')
-      var i: Int = 0
-      if (Lexer.firstArrayElement(in)) do {
-        builder += decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
-        i += 1
-      } while (Lexer.nextArrayElement(trace, in))
-      builder.result()
-    }
-
-  private[this] def arrayEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[Array[A]] =
-    (as: Array[A], indent: Option[Int], out: Write) => {
-      out.write('[')
-      val len = as.length
-      var i: Int = 0
-      while (i < len) {
-        if (i != 0) out.write(',')
-        encoder.unsafeEncode(as(i), indent, out)
-        i += 1
-      }
-      out.write(']')
-    }
-
-  private[this] def arrayDecoder[A](implicit decoder: JsonDecoder[A], classTag: ClassTag[A]): JsonDecoder[Array[A]] =
-    (trace: List[JsonError], in: RetractReader) => {
-      val builder = Array.newBuilder[A]
-      Lexer.char(trace, in, '[')
-      var i: Int = 0
-      if (Lexer.firstArrayElement(in)) do {
-        builder += decoder.unsafeDecode(JsonError.ArrayAccess(i) :: trace, in)
-        i += 1
-      } while (Lexer.nextArrayElement(trace, in))
-      builder.result()
     }
 }
 
