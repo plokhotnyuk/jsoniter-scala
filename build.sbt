@@ -170,7 +170,6 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.6"),
-    dependencyOverrides += "com.chuusai" %%% "shapeless" % "2.3.3", // FIXME: Used by circe and isn't binary compatible with the 2.3.6 version used by zio-json
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio-json" % "0.1.5",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.1",
@@ -185,8 +184,8 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.3",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.12.3",
       "io.circe" %%% "circe-generic-extras" % "0.13.0",
-      "io.circe" %%% "circe-generic" % "0.13.0",
-      "io.circe" %%% "circe-parser" % "0.13.0",
+      "io.circe" %%% "circe-generic" % "0.14.0",
+      "io.circe" %%% "circe-parser" % "0.14.0",
       "com.typesafe.play" %% "play-json" % "2.9.2",
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
