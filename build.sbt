@@ -184,16 +184,16 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.3",
       "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.12.3",
       "io.circe" %%% "circe-generic-extras" % "0.14.1",
-      "io.circe" %%% "circe-generic" % "0.14.0",
-      "io.circe" %%% "circe-parser" % "0.14.0",
+      "io.circe" %%% "circe-generic" % "0.14.1",
+      "io.circe" %%% "circe-parser" % "0.14.1",
       "com.typesafe.play" %% "play-json" % "2.9.2",
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4",
-      "org.openjdk.jmh" % "jmh-core" % "1.31",
-      "org.openjdk.jmh" % "jmh-generator-asm" % "1.31",
-      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.31",
-      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.31",
+      "org.openjdk.jmh" % "jmh-core" % "1.32",
+      "org.openjdk.jmh" % "jmh-generator-asm" % "1.32",
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.32",
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.32",
       "org.scalatest" %%% "scalatest" % "3.2.9" % Test
     )
   )
