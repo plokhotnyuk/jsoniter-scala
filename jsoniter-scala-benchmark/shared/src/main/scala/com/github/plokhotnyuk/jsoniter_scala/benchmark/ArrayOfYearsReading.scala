@@ -11,7 +11,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONNonGenEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark

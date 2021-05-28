@@ -10,7 +10,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONNonGenEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
