@@ -84,7 +84,10 @@ object AVSystemCodecs {
     transformed(_.toArray, (a: Array[Int]) => mutable.BitSet.fromBitMaskNoCopy(toBitMask(a, Int.MaxValue /* WARNING: It is an unsafe option for open systems */)))
   implicit val mutableLongMapOfBooleansGenCodec: GenCodec[mutable.LongMap[Boolean]] =
     transformed(m => (m: mutable.Map[Long, Boolean]),
-      (m: mutable.Map[Long, Boolean]) => m.foldLeft(new mutable.LongMap[Boolean])((lm, p) => lm += (p._1, p._2)))
+      (m: mutable.Map[Long, Boolean]) => m.foldLeft(new mutable.LongMap[Boolean]) { (lm, p) =>
+        lm.update(p._1, p._2)
+        lm
+      })
   implicit val nestedStructsGenCodec: GenCodec[NestedStructs] = materializeRecursively
   implicit val openRTBGenCodec: GenCodec[OpenRTB.BidRequest] = materializeRecursively
   implicit val primitivesGenCodec: GenCodec[Primitives] = materializeRecursively

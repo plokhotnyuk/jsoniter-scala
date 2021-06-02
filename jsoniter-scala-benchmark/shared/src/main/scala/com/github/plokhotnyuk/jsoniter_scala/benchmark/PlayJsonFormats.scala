@@ -51,7 +51,10 @@ object PlayJsonFormats {
   implicit def mutableLongMapFormat[A](implicit mapReads: Reads[Map[Long, A]], aWrites: Writes[A]): Format[mutable.LongMap[A]] =
     new Format[mutable.LongMap[A]] {
       override def reads(js: JsValue): JsResult[mutable.LongMap[A]] =
-        JsSuccess(js.as[Map[Long, A]].foldLeft(mutable.LongMap.empty[A])((m, p) => m += (p._1, p._2)))
+        JsSuccess(js.as[Map[Long, A]].foldLeft(mutable.LongMap.empty[A]) { (m, p) =>
+          m.update(p._1, p._2)
+          m
+        })
 
       override def writes(v: mutable.LongMap[A]): JsValue =
         Json.toJsObject(v.foldLeft(mutable.LinkedHashMap.empty[String, JsValue]) {

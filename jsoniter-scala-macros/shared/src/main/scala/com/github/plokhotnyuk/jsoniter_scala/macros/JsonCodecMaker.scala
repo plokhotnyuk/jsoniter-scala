@@ -471,15 +471,14 @@ object JsonCodecMaker {
       def companion(tpe: Type): Symbol = {
         val comp = tpe.typeSymbol.companion
         if (comp.isModule) comp
-        else {
-          // Borrowed from Magnolia: https://github.com/propensive/magnolia/blob/f21f2aabb49e43b372240e98ec77981662cc570c/core/shared/src/main/scala/magnolia.scala#L123-L155
-          val ownerChainOf: Symbol => Iterator[Symbol] =
-            s => Iterator.iterate(s)(_.owner).takeWhile(x => x != null && x != NoSymbol).toVector.reverseIterator
+        else { // Borrowed from Magnolia: https://github.com/softwaremill/magnolia/blob/f21f2aabb49e43b372240e98ec77981662cc570c/core/shared/src/main/scala/magnolia.scala#L123-L155
+          val ownerChainOf = (s: Symbol) =>
+            Iterator.iterate(s)(_.owner).takeWhile(x => x != null && x != NoSymbol).toVector.reverseIterator
           val path = ownerChainOf(tpe.typeSymbol)
             .zipAll(ownerChainOf(enclosingOwner), NoSymbol, NoSymbol)
             .dropWhile { case (x, y) => x == y }
-            .takeWhile(_._1 != NoSymbol)
-            .map(_._1.name.toTermName)
+            .takeWhile { case (x, _) => x != NoSymbol }
+            .map { case (x, _) => x.name.toTermName }
           if (path.isEmpty) fail(s"Cannot find a companion for $tpe")
           else c.typecheck(path.foldLeft[Tree](Ident(path.next()))(Select(_, _)), silent = true).symbol
         }
