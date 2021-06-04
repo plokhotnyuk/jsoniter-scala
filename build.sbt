@@ -104,7 +104,8 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-coreJS`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
-    `jsoniter-scala-benchmarkJVM` // FIXME: Restore `jsoniter-scala-benchmarkJS` here
+    `jsoniter-scala-benchmarkJVM`,
+    `jsoniter-scala-benchmarkJS`
   )
 
 lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
@@ -208,5 +209,6 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withSemantics(Semantics.Defaults.withProductionMode(true)).withClosureCompiler(true).withESFeatures(_.withUseECMAScript2015(false))),
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
+    Test / test := {},  // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
     coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
   )
