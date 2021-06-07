@@ -516,7 +516,7 @@ Other benchmarks with results for jsoniter-scala:
 
 Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
 ```sh
-sbt -java-home /usr/lib/jvm/openjdk-17 jsoniter-scala-benchmarkJS/fullLinkJS
+sbt -java-home /usr/lib/jvm/openjdk-17 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
