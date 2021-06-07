@@ -37,7 +37,7 @@ jobs:
       - name: Fetch tags
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
       - uses: coursier/cache-action@v5
-      - uses: olafurpg/setup-scala@v10
+      - uses: olafurpg/setup-scala@v12
         with:
           java-version: ${{ matrix.java }}
       - name: Compile, test and check binary compatibility
