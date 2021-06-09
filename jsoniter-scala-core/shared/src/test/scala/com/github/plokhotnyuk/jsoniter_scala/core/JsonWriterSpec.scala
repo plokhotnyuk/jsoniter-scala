@@ -494,7 +494,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        s.toFloat shouldBe n // no data loss when parsing by JDK
+        s.toFloat shouldBe n // no data loss when parsing by JDK or JS
         l should be <= es.length + {
           if (TestUtils.isJS) {
             if (es.indexOf('.') < 0) 3 // formatting differs from JS for floats represented as whole numbers
@@ -502,7 +502,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           } else 0 // rounding and formatting isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
-        i should be < l - 1
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has a digit after the '.' character
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""
@@ -621,7 +620,6 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
           } else 0 // rounding and formatting isn't worse than in JDK
         }
         i should be > 0 // has the '.' character inside
-        i should be < l - 1 // '.' is not the last character
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
         Character.isDigit(s.charAt(i + 1)) shouldBe true // has a digit after the '.' character
         withWriter(_.writeValAsString(n)) shouldBe s""""$s""""

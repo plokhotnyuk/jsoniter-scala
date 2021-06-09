@@ -336,12 +336,7 @@ object Level {
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
 
-6. Scala.js can introduce 1ULP rounding error when parsing of float values with a long mantissa, see details 
-[here](https://github.com/scala-js/scala-js/issues/4466).
-
-The workaround is using `double` or `BigDecimal` types for cases when an exact precision matters.
-
-7. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
+6. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
 a default option for Scala.js 1.0+.
 
 A workaround is using the following configuration for the compiler to produce ES 5.1 output:
@@ -349,7 +344,7 @@ A workaround is using the following configuration for the compiler to produce ES
 scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
 ```
 
-8. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
+7. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
 `Some(Some(Some(x: String))))` values can be serialized and then parsed without lost of the info. `Some(None)` and 
 `Some(Some(None))` values will be normalized to `None`.
 
