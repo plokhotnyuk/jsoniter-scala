@@ -264,7 +264,7 @@ the prefix (like `o` and `o-o`). You will get compilation or runtime error, depe
 see details of the issue [here](https://github.com/scala/bug/issues/11212).
 
 Use latest versions of Scala 2.12 or 2.13 were the issue was fixed or move a definition of the field with encoded chars 
-(`o-o` in our case) to be after the field that is affected by the exception (after the `o` field).
+(`o-o` in our case) to be after the field that is affected by the exception (after the `o` field) like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/df3a3e237ce61991e9f4e6c2c50516eb6e70ac45/jsoniter-scala-macros/shared/src/test/scala-2.11/com.github.plokhotnyuk.jsoniter_scala.macros/JsonCodecMaker211Spec.scala#L10).
 
 3. A configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on other
 code that uses a result of the macro's call, otherwise the following compilation error will be reported:
