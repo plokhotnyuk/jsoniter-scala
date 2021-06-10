@@ -258,12 +258,13 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
 check the input length for other ways of parsing.
 
-2. Scalac has a bug that affects case classes which have 2 fields where the name of one is a prefix for another name
-that contains a character that should be encoded immediately after the prefix (like `o` and `o-o`). You will get 
-compilation or runtime error, depending on the version of the compiler, see details [here](https://github.com/scala/bug/issues/11212).
+2. Scalac 2.11 and earlier versions of Scalac 2.12 and 2.13 have a bug that affects case classes which have 2 fields 
+where the name of one is a prefix for another name that contains a character that should be encoded immediately after
+the prefix (like `o` and `o-o`). You will get compilation or runtime error, depending on the version of the compiler, 
+see details of the issue [here](https://github.com/scala/bug/issues/11212).
 
-The workaround is to move a definition of the field with encoded chars (`o-o` in our case) to be after the field that is
-affected by the exception (after the `o` field).
+Use latest versions of Scala 2.12 or 2.13 were the issue was fixed or move a definition of the field with encoded chars 
+(`o-o` in our case) to be after the field that is affected by the exception (after the `o` field).
 
 3. A configuration parameter for the `make` macro is evaluated in compile-time only and requires no dependency on other
 code that uses a result of the macro's call, otherwise the following compilation error will be reported:
