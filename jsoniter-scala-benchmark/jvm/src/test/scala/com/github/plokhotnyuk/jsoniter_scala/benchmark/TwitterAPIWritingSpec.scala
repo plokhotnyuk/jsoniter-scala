@@ -8,8 +8,7 @@ class TwitterAPIWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.compactJsonString
       toString(b.borer()) shouldBe b.compactJsonString
-      //FIXME: Circe serializes empty collections
-      //toString(b.circe()) shouldBe b.compactJsonString
+      toString(b.circe()) shouldBe b.compactJsonString
       //FIXME: DSL-JSON serializes empty collections
       //toString(b.dslJsonScala()) shouldBe b.compactJsonString
       toString(b.jacksonScala()) shouldBe b.compactJsonString

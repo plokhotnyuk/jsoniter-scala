@@ -6,14 +6,15 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.rallyhealth.weejson.v1.jackson.ToJson
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
+//import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
-//import io.circe.syntax._
+import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 
 class TwitterAPIWriting extends TwitterAPIBenchmark {
@@ -22,10 +23,9 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
 
   @Benchmark
   def borer(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
-/* FIXME: Circe serializes empty collections
+
   @Benchmark
-  def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
-*/
+  def circe(): Array[Byte] = printer.print(io.circe.Util.deepDropEmptyValues(obj.asJson)).getBytes(UTF_8)
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

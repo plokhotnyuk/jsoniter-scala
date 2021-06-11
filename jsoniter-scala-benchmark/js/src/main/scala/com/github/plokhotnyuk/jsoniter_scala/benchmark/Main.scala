@@ -1124,6 +1124,7 @@ object Main {
     GS(S("TwitterAPIWriting")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
+      B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
       B("uPickle")(benchmark.uPickle())
