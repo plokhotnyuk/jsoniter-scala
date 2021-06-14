@@ -1701,9 +1701,9 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val lastPos = offset(q0) + pos
-    writePositiveIntDigits(q0, lastPos, buf, ds)
-    lastPos + 1
+    val lastPos = digitCount(q0) + pos
+    writePositiveIntDigits(q0, lastPos - 1, buf, ds)
+    lastPos
   }
 
   // Based on the amazing work of Raffaello Giulietti
@@ -1774,9 +1774,8 @@ final class JsonWriter private[jsoniter_scala](
           exp -= expShift
         }
       }
-      var len = offset(dv)
-      exp += len
-      len += 1
+      val len = digitCount(dv)
+      exp += len - 1
       if (exp < -3 || exp >= 7) {
         val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
@@ -1901,9 +1900,8 @@ final class JsonWriter private[jsoniter_scala](
           exp -= expShift
         }
       }
-      var len = offset(dv)
-      exp += len
-      len += 1
+      val len = digitCount(dv)
+      exp += len - 1
       if (exp < -3 || exp >= 7) {
         val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
@@ -1970,20 +1968,9 @@ final class JsonWriter private[jsoniter_scala](
     (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
   }
 
-  private[this] def offset(q0: Long): Int =
-    if (q0.toInt == q0) offset(q0.toInt)
-    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63).toInt + 8
-    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63).toInt + 10
-    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63).toInt + 12
-    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63).toInt + 14
-    else ((99999999999999999L - q0) >>> 63).toInt + 16
-
-  private[this] def offset(q0: Int): Int =
-    if (q0 < 100) (9 - q0) >>> 31
-    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
-    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
-    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
-    else ((999999999 - q0) >>> 31) + 8
+  // Adoption of a nice trick form Daniel Lemire's blog that works for numbers up to 10^18:
+  // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
+  private[this] def digitCount(q0: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(q0)) + q0 >> 58).toInt
 
   private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
@@ -2120,6 +2107,25 @@ object JsonWriter {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1
   )
+
+  private final val offsets = Array(
+    5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
+    5088146770730811392L, 5088146770730811392L, 5088146770730811392L, 5088146770730811392L,
+    4889916394579099648L, 4889916394579099648L, 4889916394579099648L, 4610686018427387904L,
+    4610686018427387904L, 4610686018427387904L, 4610686018427387904L, 4323355642275676160L,
+    4323355642275676160L, 4323355642275676160L, 4035215266123964416L, 4035215266123964416L,
+    4035215266123964416L, 3746993889972252672L, 3746993889972252672L, 3746993889972252672L,
+    3746993889972252672L, 3458764413820540928L, 3458764413820540928L, 3458764413820540928L,
+    3170534127668829184L, 3170534127668829184L, 3170534127668829184L, 2882303760517117440L,
+    2882303760517117440L, 2882303760517117440L, 2882303760517117440L, 2594073385265405696L,
+    2594073385265405696L, 2594073385265405696L, 2305843009203693952L, 2305843009203693952L,
+    2305843009203693952L, 2017612633060982208L, 2017612633060982208L, 2017612633060982208L,
+    2017612633060982208L, 1729382256910170464L, 1729382256910170464L, 1729382256910170464L,
+    1441151880758548720L, 1441151880758548720L, 1441151880758548720L, 1152921504606845976L,
+    1152921504606845976L, 1152921504606845976L, 1152921504606845976L, 864691128455135132L,
+    864691128455135132L, 864691128455135132L, 576460752303423478L, 576460752303423478L,
+    576460752303423478L, 576460752303423478L, 576460752303423478L, 576460752303423478L,
+    576460752303423478L)
   /* Use the following code to generate `digits` in Scala REPL:
     val ds = new Array[Short](100)
     var i, j = 0
