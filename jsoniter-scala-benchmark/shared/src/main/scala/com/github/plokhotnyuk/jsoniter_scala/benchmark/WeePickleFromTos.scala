@@ -9,6 +9,7 @@ import com.rallyhealth.weejson.v1.jackson.CustomPrettyPrinter.FieldSepPrettyPrin
 import com.rallyhealth.weejson.v1.jackson.JsonGeneratorOps
 import com.rallyhealth.weepickle.v1.WeePickle._
 import com.rallyhealth.weepickle.v1.core.Visitor
+import java.time._
 
 object WeePickleFromTos {
   object ToPrettyJson extends JsonGeneratorOps {
@@ -38,6 +39,7 @@ object WeePickleFromTos {
     implicit val ft8: FromTo[FloatVal] = fromTo[Float].bimap(_.a, FloatVal.apply)
     macroFromTo
   }
+  implicit val durationFromTo: FromTo[Duration] = fromTo[String].bimap(_.toString, Duration.parse)
   implicit val enumADTFromTo: FromTo[SuitADT] = fromTo[String].bimap(_.toString, {
     val suite = Map(
       "Hearts" -> Hearts,
@@ -47,18 +49,29 @@ object WeePickleFromTos {
     s => suite.getOrElse(s, throw new IllegalArgumentException("SuitADT"))
   })
   implicit val enumFromTo: FromTo[SuitEnum] = fromToEnumerationName(SuitEnum)
+  implicit val extractFieldsFromTos: FromTo[ExtractFields] = macroFromTo
   implicit val javaEnumFromTo: FromTo[Suit] = fromTo[String].bimap(_.toString, Suit.valueOf)
-  implicit val simpleGeometryReadFromTos: FromTo[GeoJSON.SimpleGeometry] =
-    FromTo.merge(macroFromTo[GeoJSON.Point], macroFromTo[GeoJSON.MultiPoint], macroFromTo[GeoJSON.LineString],
-      macroFromTo[GeoJSON.MultiLineString], macroFromTo[GeoJSON.Polygon], macroFromTo[GeoJSON.MultiPolygon])
-  implicit val geometryReadFromTos: FromTo[GeoJSON.Geometry] =
-    FromTo.merge(macroFromTo[GeoJSON.Point], macroFromTo[GeoJSON.MultiPoint], macroFromTo[GeoJSON.LineString],
-      macroFromTo[GeoJSON.MultiLineString], macroFromTo[GeoJSON.Polygon], macroFromTo[GeoJSON.MultiPolygon],
-      macroFromTo[GeoJSON.GeometryCollection])
-  implicit val simpleGeoJsonFromTos: FromTo[GeoJSON.SimpleGeoJSON] =
-    FromTo.merge(macroFromTo[GeoJSON.Feature])
-  implicit val geoJsonFromTos: FromTo[GeoJSON.GeoJSON] =
+  implicit val geoJsonFromTos: FromTo[GeoJSON.GeoJSON] = {
+    implicit val ft1: FromTo[GeoJSON.SimpleGeometry] = FromTo.merge(
+      macroFromTo[GeoJSON.Point],
+      macroFromTo[GeoJSON.MultiPoint],
+      macroFromTo[GeoJSON.LineString],
+      macroFromTo[GeoJSON.MultiLineString],
+      macroFromTo[GeoJSON.Polygon],
+      macroFromTo[GeoJSON.MultiPolygon]
+    )
+    implicit val ft2: FromTo[GeoJSON.Geometry] = FromTo.merge(
+      macroFromTo[GeoJSON.Point],
+      macroFromTo[GeoJSON.MultiPoint],
+      macroFromTo[GeoJSON.LineString],
+      macroFromTo[GeoJSON.MultiLineString],
+      macroFromTo[GeoJSON.Polygon],
+      macroFromTo[GeoJSON.MultiPolygon],
+      macroFromTo[GeoJSON.GeometryCollection]
+    )
+    implicit val ft3: FromTo[GeoJSON.SimpleGeoJSON] = FromTo.merge(macroFromTo[GeoJSON.Feature])
     FromTo.merge(macroFromTo[GeoJSON.Feature], macroFromTo[GeoJSON.FeatureCollection])
+  }
   implicit val gitHubActionsAPIFromTos: FromTo[GitHubActionsAPI.Response] = {
     implicit val ft1: FromTo[Boolean] = fromTo[String].bimap(_.toString, _.toBoolean)
     implicit val ft2: FromTo[GitHubActionsAPI.Artifact] = macroFromTo
@@ -71,8 +84,9 @@ object WeePickleFromTos {
     macroFromTo
   }
   implicit val missingRequiredFieldsFromTos: FromTo[MissingRequiredFields] = macroFromTo
+  implicit val monthDayFromTo: FromTo[MonthDay] = fromTo[String].bimap(_.toString, MonthDay.parse)
   implicit val nestedStructsFromTos: FromTo[NestedStructs] = macroFromTo
-  implicit val extractFieldsFromTos: FromTo[ExtractFields] = macroFromTo
+  implicit val offsetTimeFromTo: FromTo[OffsetTime] = fromTo[String].bimap(_.toString, OffsetTime.parse)
   implicit val openRTBBidRequestFromTos: FromTo[OpenRTB.BidRequest] = {
     implicit val ft1: FromTo[OpenRTB.Segment] = macroFromTo
     implicit val ft2: FromTo[OpenRTB.Format] = macroFromTo
@@ -97,6 +111,7 @@ object WeePickleFromTos {
     implicit val ft21: FromTo[OpenRTB.Reqs] = macroFromTo
     macroFromTo
   }
+  implicit val periodFromTo: FromTo[Period] = fromTo[String].bimap(_.toString, Period.parse)
   implicit val primitivesFromTos: FromTo[Primitives] = macroFromTo
   implicit val twitterAPIFromTos: FromTo[TwitterAPI.Tweet] = {
     implicit val ft1: FromTo[TwitterAPI.Urls] = macroFromTo
@@ -108,6 +123,10 @@ object WeePickleFromTos {
     implicit val ft7: FromTo[TwitterAPI.RetweetedStatus] = macroFromTo
     macroFromTo
   }
+  implicit val yearMonthFromTo: FromTo[YearMonth] = fromTo[String].bimap(_.toString, YearMonth.parse)
+  implicit val yearFromTo: FromTo[Year] = fromTo[String].bimap(_.toString, Year.parse)
+  implicit val zoneIdFromTo: FromTo[ZoneId] = fromTo[String].bimap(_.toString, ZoneId.of)
+  implicit val zoneOffsetFromTo: FromTo[ZoneOffset] = fromTo[String].bimap(_.toString, ZoneOffset.of)
 
   val fromNonBinaryByteArray: From[Array[Byte]] = ArrayFrom[Byte](new From[Byte] {
     // Force encoding as [0,1,255] rather than base64, e.g. Visitor.visitBinary().

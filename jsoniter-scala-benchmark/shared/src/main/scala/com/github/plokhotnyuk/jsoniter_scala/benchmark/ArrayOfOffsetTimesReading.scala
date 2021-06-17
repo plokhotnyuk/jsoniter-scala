@@ -12,7 +12,10 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -50,6 +53,9 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
 
   @Benchmark
   def uPickle(): Array[OffsetTime] = read[Array[OffsetTime]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Array[OffsetTime] = FromJson(jsonBytes).transform(ToScala[Array[OffsetTime]])
 
   @Benchmark
   def zioJson(): Array[OffsetTime] = new String(jsonBytes, UTF_8).fromJson[Array[OffsetTime]].fold(sys.error, identity)

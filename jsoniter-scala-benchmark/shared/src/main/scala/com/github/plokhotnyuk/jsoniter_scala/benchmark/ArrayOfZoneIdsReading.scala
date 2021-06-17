@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-import java.time.ZoneId
+import java.time.{Duration, ZoneId}
 import com.avsystem.commons.serialization.json._
 import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
@@ -10,7 +10,10 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -44,6 +47,9 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
 
   @Benchmark
   def uPickle(): Array[ZoneId] = read[Array[ZoneId]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Array[ZoneId] = FromJson(jsonBytes).transform(ToScala[Array[ZoneId]])
 
   @Benchmark
   def zioJson(): Array[ZoneId] = new String(jsonBytes, UTF_8).fromJson[Array[ZoneId]].fold(sys.error, identity)

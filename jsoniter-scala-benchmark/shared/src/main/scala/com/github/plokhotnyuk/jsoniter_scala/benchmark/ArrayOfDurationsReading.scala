@@ -10,7 +10,10 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -44,6 +47,9 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Duration] = read[Array[Duration]](jsonBytes)
+
+  @Benchmark
+  def weePickle(): Array[Duration] = FromJson(jsonBytes).transform(ToScala[Array[Duration]])
 
   @Benchmark
   def zioJson(): Array[Duration] = new String(jsonBytes, UTF_8).fromJson[Array[Duration]].fold(sys.error, identity)
