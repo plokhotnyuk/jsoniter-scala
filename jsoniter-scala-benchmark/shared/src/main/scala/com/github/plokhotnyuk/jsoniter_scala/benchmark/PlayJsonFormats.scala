@@ -1,13 +1,13 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
-
 import ai.x.play.json.Encoders._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
 import com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, ReaderConfig, WriterConfig}
 import julienrf.json.derived.flat
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
@@ -184,7 +184,39 @@ object PlayJsonFormats {
   }
   implicit val javaEnumFormat: Format[Suit] = stringFormat("suitenum")(Suit.valueOf)
   implicit val monthDayFormat: Format[MonthDay] = stringFormat("monthday")(MonthDay.parse)
-  implicit val offsetTimeFormat: Format[OffsetTime] = stringFormat("offsettime")(OffsetTime.parse)
+  implicit val offsetTimeFormat: Format[OffsetTime] =
+    new ThreadLocal[(Array[Byte], JsonReader, JsonWriter)] with JsonValueCodec[OffsetTime] with Format[OffsetTime] {
+      override def reads(json: JsValue): JsResult[OffsetTime] = Try(JsSuccess {
+        val (buf, reader, _) = get
+        val s = json.asInstanceOf[JsString].value
+        val len = s.length
+        var i = 0
+        buf(0) = '"'
+        while (i < len) {
+          buf(i + 1) = s.charAt(i).toByte
+          i += 1
+        }
+        buf(i + 1) = '"'
+        reader.read(this, buf, 0, len + 2, ReaderConfig)
+      }).getOrElse(JsError(s"expected.offsettimestring"))
+
+      override def writes(x: OffsetTime): JsValue = {
+        val (buf, _, writer) = get
+        val len = writer.write(this, x, buf, 0, buf.length, WriterConfig)
+        JsString(new String(buf, 0, 1, len - 2))
+      }
+
+      override def decodeValue(in: JsonReader, default: OffsetTime): OffsetTime = in.readOffsetTime(default)
+
+      override def encodeValue(x: OffsetTime, out: JsonWriter): Unit = out.writeVal(x)
+
+      override def nullValue: OffsetTime = null
+
+      override def initialValue(): (Array[Byte], JsonReader, JsonWriter) = {
+        val buf = new Array[Byte](64)
+        (buf, new JsonReader(buf, charBuf = new Array[Char](64)), new JsonWriter(buf))
+      }
+    }
   implicit val yearFormat: Format[Year] = stringFormat("year")(Year.parse)
   implicit val yearMonthFormat: Format[YearMonth] = stringFormat("yearmonth")(YearMonth.parse)
   implicit val zoneOffsetFormat: Format[ZoneOffset] = stringFormat("zoneoffset")(ZoneOffset.of)
