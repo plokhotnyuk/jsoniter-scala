@@ -118,7 +118,9 @@ trait ZioJSONScalaJsEncoderDecoders {
   }
   implicit val (arrayOfEnumADTsE5r: JsonEncoder[Array[SuitADT]], arrayOfEnumADTsD5r: JsonDecoder[Array[SuitADT]]) =
     (JsonEncoder.array[SuitADT]({ (a: SuitADT, indent: Option[Int], out: Write) =>
-      out.write('"' + a.toString + '"')
+      out.write('"')
+      out.write(a.toString)
+      out.write('"')
     }, ClassTag(classOf[SuitADT])), JsonDecoder.array[SuitADT](new JsonDecoder[SuitADT] {
       private[this] val suite = Map(
         "Hearts" -> Hearts,
@@ -131,7 +133,9 @@ trait ZioJSONScalaJsEncoderDecoders {
     }, ClassTag(classOf[SuitADT])))
   implicit val (arrayOfEnumsE5r: JsonEncoder[Array[SuitEnum]], arrayOfEnumsD5r: JsonDecoder[Array[SuitEnum]]) =
     (JsonEncoder.array[SuitEnum]({ (a: SuitEnum, indent: Option[Int], out: Write) =>
-      out.write('"' + a.toString + '"')
+      out.write('"')
+      out.write(a.toString)
+      out.write('"')
     }, ClassTag(classOf[SuitEnum])), JsonDecoder.array[SuitEnum](new JsonDecoder[SuitEnum] {
       private[this] val ec = new ConcurrentHashMap[String, SuitEnum]
 
