@@ -2796,8 +2796,9 @@ final class JsonReader private[jsoniter_scala](
   }
 
   private[this] def appendHexDump(pos: Int, offset: Int, from: Int): Int = {
-    val start = Math.max((pos - 32) & 0xFFFFFFF0, 0)
-    val end = Math.min((pos + 48) & 0xFFFFFFF0, tail)
+    val hexDumpSizeInBytes = config.hexDumpSize << 4
+    val start = Math.max((pos - hexDumpSizeInBytes) & 0xFFFFFFF0, 0)
+    val end = Math.min((pos + hexDumpSizeInBytes + 16) & 0xFFFFFFF0, tail)
     val alignedAbsFrom = (start + offset) & 0xFFFFFFF0
     val alignedAbsTo = (end + offset + 15) & 0xFFFFFFF0
     val len = alignedAbsTo - alignedAbsFrom

@@ -83,7 +83,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     "parse JSON from the byte array within specified positions" in {
       readFromSubArray(httpMessage, 66, httpMessage.length)(codec) shouldBe user
     }
-    "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
+    "throw JsonReaderException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromSubArray(httpMessage, 0, httpMessage.length)(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -94,7 +94,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
-    "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
+    "optionally throw JsonReaderException if there are remaining non-whitespace characters" in {
       val msgWithError = httpMessage ++ "}}}}}".getBytes(UTF_8)
 
       readFromSubArray(msgWithError, 66, msgWithError.length, ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user
@@ -142,7 +142,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       bbuf.limit() shouldBe 50000 + httpMessage.length
       bbuf.arrayOffset() shouldBe 10000
     }
-    "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part of the direct byte buffer" in {
+    "throw JsonReaderException if cannot parse input with message containing input offset & hex dump of affected part of the direct byte buffer" in {
       val bbuf = ByteBuffer.allocateDirect(httpMessage.length)
       bbuf.put(httpMessage)
       bbuf.position(10)
@@ -157,7 +157,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
       bbuf.position() shouldBe 11
     }
-    "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
+    "throw JsonReaderException if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
       val bbuf = ByteBuffer.wrap(httpMessage)
       bbuf.position(10)
       assert(intercept[JsonReaderException](readFromByteBuffer(bbuf)(codec)).getMessage ==
@@ -171,7 +171,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
       bbuf.position() shouldBe 11
     }
-    "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
+    "optionally throw JsonReaderException if there are remaining non-whitespace characters" in {
       def bbufWithError: ByteBuffer = ByteBuffer.wrap(compactJson ++ "}}}}}".getBytes(UTF_8))
 
       def directBbufWithError: ByteBuffer = {
@@ -266,7 +266,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       }(codec)
       users shouldBe Seq()
     }
-    "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
+    "optionally throw JsonReaderException if there are remaining non-whitespace characters" in {
       scanJsonArrayFromStream[User](new ByteArrayInputStream(arrayWithErrorJson))(_ => false)(codec)
       scanJsonArrayFromStream[User](new ByteArrayInputStream(arrayWithErrorJson),
         ReaderConfig.withCheckForEndOfInput(false))(_ => true)(codec)
@@ -306,7 +306,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     "parse JSON from the byte array" in {
       readFromString(new String(compactJson, UTF_8))(codec) shouldBe user
     }
-    "throw JsonParseException if cannot parse input with message containing input offset & hex dump of affected part" in {
+    "throw JsonReaderException if cannot parse input with message containing input offset & hex dump of affected part" in {
       assert(intercept[JsonReaderException](readFromString(new String(httpMessage, UTF_8))(codec)).getMessage ==
         """expected '{', offset: 0x00000000, buf:
           |+----------+-------------------------------------------------+------------------+
@@ -317,7 +317,25 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
           || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
           |+----------+-------------------------------------------------+------------------+""".stripMargin)
     }
-    "optionally throw JsonParseException if there are remaining non-whitespace characters" in {
+    "size of the hex dump can be altered to have more lines" in {
+      assert(intercept[JsonReaderException](readFromString(new String(httpMessage, UTF_8), ReaderConfig.withHexDumpSize(10))(codec)).getMessage ==
+        """expected '{', offset: 0x00000000, buf:
+          |+----------+-------------------------------------------------+------------------+
+          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
+          |+----------+-------------------------------------------------+------------------+
+          || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
+          || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
+          || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+          || 00000030 | 6f 6e 74 65 6e 74 2d 4c 65 6e 67 74 68 3a 20 35 | ontent-Length: 5 |
+          || 00000040 | 35 0a 0a 7b 22 6e 61 6d 65 22 3a 22 4a 6f 68 6e | 5..{"name":"John |
+          || 00000050 | 22 2c 22 64 65 76 69 63 65 73 22 3a 5b 7b 22 69 | ","devices":[{"i |
+          || 00000060 | 64 22 3a 31 2c 22 6d 6f 64 65 6c 22 3a 22 48 54 | d":1,"model":"HT |
+          || 00000070 | 43 20 4f 6e 65 20 58 22 7d 2c 7b 22 69 64 22 3a | C One X"},{"id": |
+          || 00000080 | 32 2c 22 6d 6f 64 65 6c 22 3a 22 69 50 68 6f 6e | 2,"model":"iPhon |
+          || 00000090 | 65 20 58 22 7d 5d 7d                            | e X"}]}          |
+          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+    }
+    "optionally throw JsonReaderException if there are remaining non-whitespace characters" in {
       val compactJsonWithError = compactJson ++ "}}}}}".getBytes(UTF_8)
 
       readFromString(new String(compactJsonWithError, UTF_8), ReaderConfig.withCheckForEndOfInput(false))(codec) shouldBe user

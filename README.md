@@ -27,6 +27,7 @@ compares the same libraries on the same environment by the same code which is co
 optimizations applied.
 
 ## Contents
+
 - [Acknowledgments](#acknowledgments)
 - [Goals](#goals)
 - [Features and limitations](#features-and-limitations)
@@ -80,6 +81,7 @@ view of an error context
 The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
 
 ## Features and limitations
+
 - JSON parsing from `Array[Byte]`, `java.io.InputStream` or `java.nio.ByteBuffer`
 - JSON serialization to `Array[Byte]`, `java.io.OutputStream` or `java.nio.ByteBuffer`
 - Support of parsing from or writing to part of `Array[Byte]` or `java.nio.ByteBuffer` by specifying of position and 
@@ -168,6 +170,7 @@ List of options that change parsing and serialization in runtime:
 - Throwing of stack-less parsing exceptions by default to greatly reduce the impact on performance, while stack traces
   can be turned on in development for debugging
 - Turning off hex dumping affected by error part of an internal byte buffer to reduce the impact on performance
+- Size of the hex dump can be adjusted for bigger or smaller number of 16-byte lines
 - Preferred size of internal input buffers when parsing from `java.io.InputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of internal output buffers when serializing to `java.io.OutputStream` or `java.nio.DirectByteBuffer`
 - Preferred size of char buffers when parsing string values

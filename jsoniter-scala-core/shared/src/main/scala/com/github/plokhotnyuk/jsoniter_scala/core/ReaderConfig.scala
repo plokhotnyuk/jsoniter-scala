@@ -29,13 +29,15 @@ package com.github.plokhotnyuk.jsoniter_scala.core
   * @param preferredCharBufSize a preferred size (in chars) of an internal char buffer for parsing of string values
   * @param checkForEndOfInput a flag to check and raise an error if some non whitespace bytes will be detected after
   *                           successful parsing of the value
+  * @param hexDumpSize a size of the hex dump in 16-byte lines before and after the 16-byte line where an error occurs
   */
 class ReaderConfig private (
                              val throwReaderExceptionWithStackTrace: Boolean,
                              val appendHexDumpToParseException: Boolean,
                              val preferredBufSize: Int,
                              val preferredCharBufSize: Int,
-                             val checkForEndOfInput: Boolean) {
+                             val checkForEndOfInput: Boolean,
+                             val hexDumpSize: Int) {
   def withThrowReaderExceptionWithStackTrace(throwReaderExceptionWithStackTrace: Boolean): ReaderConfig =
     copy(throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace)
 
@@ -55,17 +57,24 @@ class ReaderConfig private (
   def withCheckForEndOfInput(checkForEndOfInput: Boolean): ReaderConfig =
     copy(checkForEndOfInput = checkForEndOfInput)
 
+  def withHexDumpSize(hexDumpSize: Int): ReaderConfig = {
+    if (hexDumpSize < 1) throw new IllegalArgumentException("'hexDumpSize' should be not less than 1")
+    copy(hexDumpSize = hexDumpSize)
+  }
+
   private[this] def copy(throwReaderExceptionWithStackTrace: Boolean = throwReaderExceptionWithStackTrace,
                          appendHexDumpToParseException: Boolean = appendHexDumpToParseException,
                          preferredBufSize: Int = preferredBufSize,
                          preferredCharBufSize: Int = preferredCharBufSize,
-                         checkForEndOfInput: Boolean = checkForEndOfInput): ReaderConfig =
+                         checkForEndOfInput: Boolean = checkForEndOfInput,
+                         hexDumpSize: Int = hexDumpSize): ReaderConfig =
     new ReaderConfig(
       throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace,
       appendHexDumpToParseException = appendHexDumpToParseException,
       preferredBufSize = preferredBufSize,
       preferredCharBufSize = preferredCharBufSize,
-      checkForEndOfInput = checkForEndOfInput)
+      checkForEndOfInput = checkForEndOfInput,
+      hexDumpSize = hexDumpSize)
 }
 
 object ReaderConfig extends ReaderConfig(
@@ -73,4 +82,5 @@ object ReaderConfig extends ReaderConfig(
   appendHexDumpToParseException = true,
   preferredBufSize = 16384,
   preferredCharBufSize = 4096,
-  checkForEndOfInput = true)
+  checkForEndOfInput = true,
+  hexDumpSize = 2)
