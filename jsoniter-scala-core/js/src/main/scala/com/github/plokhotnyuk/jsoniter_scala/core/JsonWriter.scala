@@ -1761,9 +1761,9 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writePositiveInt(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val lastPos = offset(q0) + pos
-    writePositiveIntDigits(q0, lastPos, buf, ds)
-    lastPos + 1
+    val lastPos = digitCount(q0) + pos
+    writePositiveIntDigits(q0, lastPos - 1, buf, ds)
+    lastPos
   }
 
   // Based on the amazing work of Raffaello Giulietti
@@ -1834,9 +1834,8 @@ final class JsonWriter private[jsoniter_scala](
           exp -= expShift
         }
       }
-      var len = offset(dv)
-      exp += len
-      len += 1
+      val len = digitCount(dv)
+      exp += len - 1
       if (exp < -3 || exp >= 7) {
         val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
@@ -1961,9 +1960,8 @@ final class JsonWriter private[jsoniter_scala](
           exp -= expShift
         }
       }
-      var len = offset(dv)
-      exp += len
-      len += 1
+      val len = digitCount(dv)
+      exp += len - 1
       if (exp < -3 || exp >= 7) {
         val lastPos = writeSignificantFractionDigits(dv, pos + len, pos, buf, ds)
         buf(pos) = buf(pos + 1)
@@ -2030,20 +2028,20 @@ final class JsonWriter private[jsoniter_scala](
     (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
   }
 
-  private[this] def offset(q0: Long): Int =
-    if (q0.toInt == q0) offset(q0.toInt)
-    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63).toInt + 8
-    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63).toInt + 10
-    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63).toInt + 12
-    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63).toInt + 14
-    else ((99999999999999999L - q0) >>> 63).toInt + 16
+  private[this] def digitCount(q0: Long): Int =
+    if (q0.toInt == q0) digitCount(q0.toInt)
+    else if (q0 < 10000000000L) ((999999999 - q0) >>> 63).toInt + 9
+    else if (q0 < 1000000000000L) ((99999999999L - q0) >>> 63).toInt + 11
+    else if (q0 < 100000000000000L) ((9999999999999L - q0) >>> 63).toInt + 13
+    else if (q0 < 10000000000000000L) ((999999999999999L - q0) >>> 63).toInt + 15
+    else ((99999999999999999L - q0) >>> 63).toInt + 17
 
-  private[this] def offset(q0: Int): Int =
-    if (q0 < 100) (9 - q0) >>> 31
-    else if (q0 < 10000) ((999 - q0) >>> 31) + 2
-    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 4
-    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 6
-    else ((999999999 - q0) >>> 31) + 8
+  private[this] def digitCount(q0: Int): Int =
+    if (q0 < 100) ((9 - q0) >>> 31) + 1
+    else if (q0 < 10000) ((999 - q0) >>> 31) + 3
+    else if (q0 < 1000000) ((99999 - q0) >>> 31) + 5
+    else if (q0 < 100000000) ((9999999 - q0) >>> 31) + 7
+    else ((999999999 - q0) >>> 31) + 9
 
   private[this] def writeSignificantFractionDigits(q0: Long, pos: Int, posLim: Int, buf: Array[Byte], ds: Array[Short]): Int =
     if (q0.toInt == q0) writeSignificantFractionDigits(q0.toInt, pos, posLim, buf, ds)
