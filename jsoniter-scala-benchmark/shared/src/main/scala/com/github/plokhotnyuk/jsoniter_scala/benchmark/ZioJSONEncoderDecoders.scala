@@ -151,18 +151,5 @@ trait ZioJSONScalaJsEncoderDecoders {
     }, ClassTag(classOf[SuitEnum])))
 
   implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
-    JsonCodec.apply(indexedSeqEncoder(codec.encoder), JsonDecoder.indexedSeq(codec.decoder))
-
-  implicit def indexedSeqEncoder[A](implicit encoder: JsonEncoder[A]): JsonEncoder[IndexedSeq[A]] =
-    (as: IndexedSeq[A], indent: Option[Int], out: Write) => {
-      out.write('[')
-      as.foreach {
-        var first = true
-        a =>
-          if (first) first = false
-          else out.write(',')
-          encoder.unsafeEncode(a, indent, out)
-      }
-      out.write(']')
-    }
+    JsonCodec.apply(JsonEncoder.indexedSeq(codec.encoder), JsonDecoder.indexedSeq(codec.decoder))
 }
