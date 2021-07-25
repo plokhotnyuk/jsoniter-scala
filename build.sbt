@@ -150,7 +150,7 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
         .withESFeatures(_.withESVersion(ESVersion.ES5_1))
         .withModuleKind(ModuleKind.CommonJSModule)
     },
-    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
+    coverageEnabled := false // FIXME: Too slow coverage test running
   )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
@@ -182,7 +182,7 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
         .withESFeatures(_.withESVersion(ESVersion.ES5_1))
         .withModuleKind(ModuleKind.CommonJSModule)
     },
-    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
+    coverageEnabled := false // FIXME: Unexpected compilation error
   )
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
@@ -240,5 +240,5 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
     },
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     Test / test := {},  // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
-    coverageEnabled := false // FIXME: No support for Scala.js 1.0 yet, see https://github.com/scoverage/scalac-scoverage-plugin/pull/287
+    coverageEnabled := false // FIXME: Disabled `jsoniter-scala-benchmarkJS` tests
   )
