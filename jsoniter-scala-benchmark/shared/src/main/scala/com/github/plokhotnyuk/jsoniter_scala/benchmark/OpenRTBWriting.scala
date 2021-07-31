@@ -53,7 +53,7 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
-/* FIXME: ZIO-JSON serializes optional fields with null values
+/* FIXME: Zio-JSON serializes empty collections
   @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json._

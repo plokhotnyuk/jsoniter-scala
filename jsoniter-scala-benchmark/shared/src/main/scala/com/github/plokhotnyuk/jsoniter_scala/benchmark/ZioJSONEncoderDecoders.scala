@@ -14,6 +14,8 @@ object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
     (c1.encoder, c1.decoder)
   }
   implicit val (geoJsonE5r: JsonEncoder[GeoJSON.GeoJSON], geoJsonD5r: JsonDecoder[GeoJSON.GeoJSON]) = {
+    import zio.json.JsonCodec._
+
     implicit val c1: JsonCodec[GeoJSON.SimpleGeometry] = DeriveJsonCodec.gen
     implicit val c2: JsonCodec[GeoJSON.Geometry] = DeriveJsonCodec.gen
     implicit val c3: JsonCodec[GeoJSON.SimpleGeoJSON] = DeriveJsonCodec.gen
@@ -21,6 +23,8 @@ object ZioJSONEncoderDecoders extends ZioJSONScalaJsEncoderDecoders {
     (c4.encoder, c4.decoder)
   }
   implicit val (nestedStructsE5r: JsonEncoder[NestedStructs], nestedStructsD5r: JsonDecoder[NestedStructs]) = {
+    import zio.json.JsonCodec._
+
     implicit lazy val c1: JsonCodec[NestedStructs] = DeriveJsonCodec.gen
     (c1.encoder, c1.decoder)
   }

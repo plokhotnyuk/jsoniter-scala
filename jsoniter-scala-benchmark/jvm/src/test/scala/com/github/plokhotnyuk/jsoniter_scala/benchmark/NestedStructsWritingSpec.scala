@@ -22,8 +22,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
       toString(b.sprayJson()) shouldBe b.jsonString
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
-      //FIXME: ZIO-JSON serializes null value for Option.None
-      //toString(b.zioJson()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }
