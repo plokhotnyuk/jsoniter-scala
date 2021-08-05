@@ -1,9 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
-import java.util.UUID
+import java.util.{Base64, UUID}
 import java.util.concurrent.ConcurrentHashMap
-
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import pl.iterators.kebs.json.KebsSpray
 import spray.json._
@@ -84,6 +83,16 @@ object SprayFormats extends DefaultJsonProtocol with KebsSpray.NoFlat {
       }
     }
     jf4
+  }
+  val base64JsonFormat: RootJsonFormat[Array[Byte]] = new RootJsonFormat[Array[Byte]] {
+    def read(json: JsValue): Array[Byte] =
+      if (!json.isInstanceOf[JsString]) deserializationError(s"Expected JSON string, but got $json")
+      else {
+        val s = json.asInstanceOf[JsString].value
+        try Base64.getDecoder.decode(s) catch { case NonFatal(e) => deserializationError(s"Illegal value: $json", e) }
+      }
+
+    def write(obj: Array[Byte]): JsValue = new JsString(Base64.getEncoder.encodeToString(obj))
   }
   implicit val durationJsonFormat: RootJsonFormat[Duration] = stringJsonFormat(Duration.parse)
   implicit val extractFieldsJsonFormat: RootJsonFormat[ExtractFields] = jsonFormatN

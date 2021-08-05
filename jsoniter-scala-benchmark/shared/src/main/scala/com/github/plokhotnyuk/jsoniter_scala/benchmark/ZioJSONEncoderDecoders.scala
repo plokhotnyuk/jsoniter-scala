@@ -5,6 +5,7 @@ import zio.json.JsonDecoder.JsonError
 import zio.json._
 import zio.json.internal._
 
+import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import scala.reflect.ClassTag
 
@@ -80,6 +81,20 @@ trait ZioJSONScalaJsEncoderDecoders {
     implicit val c8: JsonCodec[FloatVal] = JsonCodec.float.xmap(FloatVal.apply, _.a)
     implicit val c9: JsonCodec[AnyVals] = DeriveJsonCodec.gen
     (c9.encoder, c9.decoder)
+  }
+  val base64C3c: JsonCodec[Array[Byte]] = new JsonCodec[Array[Byte]] {
+    override def encoder: JsonEncoder[Array[Byte]] = this
+
+    override def decoder: JsonDecoder[Array[Byte]] = this
+
+    override def unsafeEncode(a: Array[Byte], indent: Option[Int], out: Write): Unit = {
+      out.write('"')
+      out.write(Base64.getEncoder.encodeToString(a))
+      out.write('"')
+    }
+
+    override def unsafeDecode(trace: List[JsonError], in: RetractReader): Array[Byte] =
+      Base64.getDecoder.decode(Lexer.string(trace, in).toString)
   }
   implicit val (extractFieldsE5r: JsonEncoder[ExtractFields], extractFieldsD5r: JsonDecoder[ExtractFields]) = {
     implicit val c1: JsonCodec[ExtractFields] = DeriveJsonCodec.gen

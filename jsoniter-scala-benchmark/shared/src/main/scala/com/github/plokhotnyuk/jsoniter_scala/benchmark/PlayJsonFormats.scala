@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
-
 import ai.x.play.json.Encoders._
 import ai.x.play.json.Jsonx
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
@@ -13,6 +12,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.jackson.PlayJsonModule
 
+import java.util.Base64
 import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable
 import scala.util.Try
@@ -86,6 +86,14 @@ object PlayJsonFormats {
         aFormat.reads(arr(0)).flatMap(a => bFormat.reads(arr(1)).map(b => (a, b)))
       }
     }
+
+  val base64Format: Format[Array[Byte]] = new Format[Array[Byte]] {
+    override def reads(js: JsValue): JsResult[Array[Byte]] =
+      Try(JsSuccess(Base64.getDecoder.decode(js.asInstanceOf[JsString].value)))
+        .getOrElse(JsError(s"expected.base64string"))
+
+    override def writes(v: Array[Byte]): JsValue = JsString(Base64.getEncoder.encodeToString(v))
+  }
 
   implicit val charFormat: Format[Char] = stringFormat("char") { case s if s.length == 1 => s.charAt(0) }
   implicit val missingReqFieldsFormat: Format[MissingRequiredFields] = Json.format

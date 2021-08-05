@@ -680,7 +680,9 @@ object Main {
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
-      B("jsoniterScala")(benchmark.jsoniterScala())
+      B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new Base64Writing { size = 128; setup() }
@@ -689,7 +691,9 @@ object Main {
       B("borer")(benchmark.borer()),
       B("circe")(benchmark.circe()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
-      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc())
+      B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle()),
+      B("zioJson")(benchmark.zioJson())
     ))
   }, {
     val benchmark = new BigDecimalReading { size = 128; setup() }

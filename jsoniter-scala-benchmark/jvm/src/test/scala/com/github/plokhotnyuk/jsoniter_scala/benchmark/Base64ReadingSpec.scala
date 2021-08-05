@@ -13,7 +13,12 @@ class Base64ReadingSpec extends BenchmarkSpecBase {
       benchmark.dslJsonScala() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.playJson() shouldBe benchmark.obj
+      benchmark.playJsonJsoniter() shouldBe benchmark.obj
+      benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
+      benchmark.zioJson() shouldBe benchmark.obj
     }
     "fail on invalid input" in {
       val b = benchmark
@@ -24,7 +29,12 @@ class Base64ReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.playJson())
+      intercept[Throwable](b.playJsonJsoniter())
+      intercept[Throwable](b.sprayJson())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.zioJson())
     }
   }
 }

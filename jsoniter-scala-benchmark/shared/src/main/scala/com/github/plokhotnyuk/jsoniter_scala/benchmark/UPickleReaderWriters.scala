@@ -2,11 +2,11 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 import java.util.concurrent.ConcurrentHashMap
-
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import upickle.AttributeTagged
 import upickle.core.Visitor
 
+import java.util.Base64
 import scala.reflect.ClassTag
 
 object UPickleReaderWriters extends AttributeTagged {
@@ -28,6 +28,8 @@ object UPickleReaderWriters extends AttributeTagged {
     implicit val v8: ReadWriter[FloatVal] = readwriter[Float].bimap(_.a, FloatVal.apply)
     macroRW
   }
+  val base64ReadWriter: ReadWriter[Array[Byte]] =
+    readwriter[String].bimap(Base64.getEncoder.encodeToString, Base64.getDecoder.decode)
   implicit val extractFieldsReadWriter: ReadWriter[ExtractFields] = macroRW
   implicit val simpleGeometryReadWriter: ReadWriter[GeoJSON.SimpleGeometry] =
     ReadWriter.merge(macroRW[GeoJSON.Point], macroRW[GeoJSON.MultiPoint], macroRW[GeoJSON.LineString],
