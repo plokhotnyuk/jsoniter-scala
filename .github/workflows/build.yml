@@ -36,8 +36,8 @@ jobs:
           fetch-depth: 100
       - name: Fetch tags
         run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
-      - uses: coursier/cache-action@v5
-      - uses: olafurpg/setup-scala@v12
+      - uses: coursier/cache-action@v6.3
+      - uses: olafurpg/setup-scala@v13
         with:
           java-version: ${{ matrix.java }}
       - name: Compile, test and check binary compatibility
@@ -47,5 +47,5 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.java == 'zulu@1.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: "sbt -batch ++2.13.5! coverage jsoniter-scala-coreJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageAggregate coveralls"
+        run: "sbt -batch ++2.13.6! coverage jsoniter-scala-coreJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageAggregate coveralls"
         shell: bash
