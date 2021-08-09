@@ -213,10 +213,10 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
-      "org.openjdk.jmh" % "jmh-core" % "1.32",
-      "org.openjdk.jmh" % "jmh-generator-asm" % "1.32",
-      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.32",
-      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.32",
+      "org.openjdk.jmh" % "jmh-core" % "1.33",
+      "org.openjdk.jmh" % "jmh-generator-asm" % "1.33",
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.33",
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.33",
       "org.scalatest" %%% "scalatest" % "3.2.9" % Test
     )
   )
