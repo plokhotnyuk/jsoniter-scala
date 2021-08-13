@@ -16,7 +16,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 //import play.api.libs.json.Json
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
-import spray.json._
 
 class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
   @Benchmark
@@ -43,9 +42,12 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 */
-
   @Benchmark
-  def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+
+    obj.toJson.compactPrint.getBytes(UTF_8)
+  }
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)
@@ -53,4 +55,10 @@ class ArrayOfBigIntsWriting extends ArrayOfBigIntsBenchmark {
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
 */
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+
+    obj.toJson.getBytes(UTF_8)
+  }
 }

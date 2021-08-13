@@ -17,6 +17,7 @@ import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import spray.json._
+import zio.json._
 
 class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
   @Benchmark
@@ -49,4 +50,7 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
 
   @Benchmark
   def weePickle(): Array[BigInt] = FromJson(jsonBytes).transform(ToScala[Array[BigInt]])
+
+  @Benchmark
+  def zioJson(): Array[BigInt] = new String(jsonBytes, UTF_8).fromJson[Array[BigInt]].fold(sys.error, identity)
 }

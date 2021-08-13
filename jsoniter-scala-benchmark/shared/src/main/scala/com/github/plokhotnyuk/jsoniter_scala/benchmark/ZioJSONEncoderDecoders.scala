@@ -1,7 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-import zio.json.JsonDecoder.JsonError
+import zio.json.JsonDecoder.{JsonError, UnsafeJson}
 import zio.json._
 import zio.json.internal._
 
@@ -148,7 +148,7 @@ trait ZioJSONScalaJsEncoderDecoders {
         "Clubs" -> Clubs)
 
       override def unsafeDecode(trace: List[JsonError], in: RetractReader): SuitADT =
-        suite.getOrElse(Lexer.string(trace, in).toString, throw new IllegalArgumentException("SuitADT"))
+        suite.getOrElse(Lexer.string(trace, in).toString, throwError("SuitADT", trace))
     }, ClassTag(classOf[SuitADT])))
   implicit val (arrayOfEnumsE5r: JsonEncoder[Array[SuitEnum]], arrayOfEnumsD5r: JsonDecoder[Array[SuitEnum]]) =
     (JsonEncoder.array[SuitEnum]({ (a: SuitEnum, indent: Option[Int], out: Write) =>
@@ -162,7 +162,7 @@ trait ZioJSONScalaJsEncoderDecoders {
         val s = Lexer.string(trace, in).toString
         var v = ec.get(s)
         if (v eq null) {
-          v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throw new IllegalArgumentException("SuitEnum"))
+          v = SuitEnum.values.iterator.find(_.toString == s).getOrElse(throwError("SuitEnum", trace))
           ec.put(s, v)
         }
         v
@@ -171,4 +171,7 @@ trait ZioJSONScalaJsEncoderDecoders {
 
   implicit def indexedSeqCodec[A](implicit codec: JsonCodec[A]): JsonCodec[IndexedSeq[A]] =
     JsonCodec.apply(JsonEncoder.indexedSeq(codec.encoder), JsonDecoder.indexedSeq(codec.decoder))
+
+  private[this] def throwError(msg: String, trace: List[JsonError]): Nothing =
+    throw UnsafeJson(JsonError.Message(msg) :: trace)
 }

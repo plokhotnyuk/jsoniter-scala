@@ -11,12 +11,12 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-import spray.json._
 
 class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   @Benchmark
@@ -41,11 +41,22 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def playJsonJsoniter(): Array[Byte] = writeToArray(Json.toJson(obj), prettyConfig)(PlayJsonJsoniter.jsValueCodec)
 
   @Benchmark
-  def sprayJson(): Array[Byte] = CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
+  def sprayJson(): Array[Byte] = {
+    import spray.json._
+
+    CustomPrettyPrinter(obj.toJson).getBytes(UTF_8)
+  }
 
   @Benchmark
   def uPickle(): Array[Byte] = write(obj, 2).getBytes(UTF_8)
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToPrettyJson.bytes)
+
+  @Benchmark
+  def zioJson(): Array[Byte] = {
+    import zio.json._
+
+    obj.toJsonPretty.getBytes(UTF_8)
+  }
 }
