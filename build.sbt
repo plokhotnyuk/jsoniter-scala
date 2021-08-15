@@ -23,6 +23,7 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.mavenLocal,
     Resolver.sonatypeRepo("staging"),
+    Resolver.sonatypeRepo("snapshots"),
     "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
   scalaVersion := "2.13.6",
@@ -194,7 +195,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.6"),
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-json" % "0.2.0-M1",
+      "dev.zio" %%% "zio-json" % "0.2.0-M1+13-3d43d8b6-SNAPSHOT",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.2",
       "com.rallyhealth" %% "weepickle-v1" % "1.5.1",
       "io.bullet" %%% "borer-derivation" % "1.7.2",
