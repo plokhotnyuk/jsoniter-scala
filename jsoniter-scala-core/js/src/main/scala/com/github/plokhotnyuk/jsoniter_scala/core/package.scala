@@ -26,7 +26,7 @@ package object core {
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
-    * @throws java.lang.NullPointerException if the `codec`, `in` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
     */
   def readFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)
                            (implicit codec: JsonValueCodec[A]): A = {
@@ -49,7 +49,7 @@ package object core {
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
-    * @throws java.lang.NullPointerException if the `codec`, `in` or `config` is null
+    * @throws java.lang.NullPointerException if any `codec`, `in` or `config` is null
     * @throws java.lang.Throwable if some error was thrown by f() call
     */
   def scanJsonValuesFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)(f: A => Boolean)
@@ -73,7 +73,7 @@ package object core {
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
-    * @throws java.lang.NullPointerException if the `codec`, `in` or `config` is null
+    * @throws java.lang.NullPointerException if any `codec`, `in` or `config` is null
     * @throws java.lang.Throwable if some error was thrown by f() call
     */
   def scanJsonArrayFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)(f: A => Boolean)
@@ -93,7 +93,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also in case if end of input is detected while some input bytes are expected
-    * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
+    * @throws java.lang.NullPointerException if any `codec`, `buf` or `config` is null
     */
   def readFromArray[@sp A](buf: Array[Byte], config: ReaderConfig = ReaderConfig)
                           (implicit codec: JsonValueCodec[A]): A = {
@@ -114,7 +114,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also in case if end of input is detected while some input bytes are expected
-    * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
     *                                                  or `from` is greater than `to` or negative
     */
@@ -143,7 +143,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
     *                             the input JSON structure does not match structure that expected for the result type,
     *                             also in case if end of input is detected while some input bytes are expected
-    * @throws java.lang.NullPointerException if the `codec`, `bbuf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `bbuf` or `config` is null
     */
   def readFromByteBuffer[@sp A](bbuf: ByteBuffer, config: ReaderConfig = ReaderConfig)
                                (implicit codec: JsonValueCodec[A]): A = {
@@ -165,7 +165,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains invalid JSON content or the input JSON structure does not
     *                             match structure that expected for the result type, also in case if end of input is
     *                             detected while some input characters are expected
-    * @throws java.lang.NullPointerException if the `codec`, `s` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `s` or `config` is null
     */
   def readFromString[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A = {
     if ((s eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
@@ -189,11 +189,11 @@ package object core {
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
     * @throws java.io.IOException if an I/O error occurs in a call to output stream
-    * @throws java.lang.NullPointerException if the `codec`, `out` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec`, `out` or `config` is null
     */
   def writeToStream[@sp A](x: A, out: OutputStream, config: WriterConfig = WriterConfig)
                           (implicit codec: JsonValueCodec[A]): Unit = {
-    if ((out eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
+    if ((x == null) || (out eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     writerPool.get.write(codec, x, out, config)
   }
 
@@ -207,11 +207,11 @@ package object core {
     * @return a byte array with `x` serialized to JSON
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException if the `codec` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec` or `config` is null
     */
   def writeToArray[@sp A](x: A, config: WriterConfig = WriterConfig)
                          (implicit codec: JsonValueCodec[A]): Array[Byte] = {
-    if ((codec eq null) || (config eq null)) throw new NullPointerException
+    if ((x == null) || (codec eq null) || (config eq null)) throw new NullPointerException
     writerPool.get.write(codec, x, config)
   }
 
@@ -228,13 +228,13 @@ package object core {
     * @return number of next position after last byte serialized to `buf`
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException if the `codec`, `buf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `from` is greater than `to` or negative, if 'to' is greater
     *                                                  than `buf` length or `to` limit was exceeded during serialization
     */
   def writeToSubArray[@sp A](x: A, buf: Array[Byte], from: Int, to: Int, config: WriterConfig = WriterConfig)
                             (implicit codec: JsonValueCodec[A]): Int = {
-    if ((buf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
+    if ((x == null) || (buf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     if (to > buf.length) // also checks that `buf` is not null before any serialization
       throw new ArrayIndexOutOfBoundsException("`to` should be positive and not greater than `buf` length")
     if (from > to || from < 0)
@@ -255,13 +255,13 @@ package object core {
     * @param codec a codec for the given value
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException    if the `codec`, `bbuf` or `config` is null
+    * @throws java.lang.NullPointerException    if any of `x`, `codec`, `bbuf` or `config` is null
     * @throws java.nio.ReadOnlyBufferException if the `bbuf` is read-only
     * @throws java.nio.BufferOverflowException if the `bbuf` limit was exceeded during serialization
     */
   def writeToByteBuffer[@sp A](x: A, bbuf: ByteBuffer, config: WriterConfig = WriterConfig)
                               (implicit codec: JsonValueCodec[A]): Unit = {
-    if ((bbuf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
+    if ((x == null) || (bbuf eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     writerPool.get.write(codec, x, bbuf, config)
   }
 
@@ -278,10 +278,10 @@ package object core {
     * @return a string with `x` serialized to JSON
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException if the `codec` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec` or `config` is null
     */
   def writeToString[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String = {
-    if ((codec eq null) || (config eq null)) throw new NullPointerException
+    if ((x == null) || (codec eq null) || (config eq null)) throw new NullPointerException
     new JsonWriter(buf = new Array[Byte](32), limit = 32).writeStringWithoutBufReallocation(codec, x, config)
   }
 }

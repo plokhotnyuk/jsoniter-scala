@@ -383,6 +383,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     }
 
     "throw NullPointerException in case of the provided params are null" in {
+      intercept[NullPointerException](writeToStream[User](null, new ByteArrayOutputStream())(codec))
       intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream())(null))
       intercept[NullPointerException](writeToStream(user, null.asInstanceOf[OutputStream])(codec))
       intercept[NullPointerException](writeToStream(user, new ByteArrayOutputStream(), null)(codec))
@@ -394,6 +395,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       toString(writeToArray(user, WriterConfig.withIndentionStep(2))(codec)) shouldBe toString(prettyJson)
     }
     "throw NullPointerException in case of the provided params are null" in {
+      intercept[NullPointerException](writeToArray[User](null)(codec))
       intercept[NullPointerException](writeToArray(user)(null))
       intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
     }
@@ -414,6 +416,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
         .getMessage.contains("`buf` length exceeded"))
     }
     "throw ArrayIndexOutOfBoundsException or NullPointerException in case of the provided params are invalid or null" in {
+      intercept[NullPointerException](writeToSubArray[User](null, buf, 0, buf.length)(codec))
       intercept[NullPointerException](writeToSubArray(user, buf, 0, buf.length)(null))
       intercept[NullPointerException](writeToSubArray(user, null, 50, buf.length)(codec))
       intercept[NullPointerException](writeToSubArray(user, buf, 0, buf.length, null)(codec))
@@ -492,9 +495,11 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
     "throw NullPointerException in case of the provided params are null" in {
       intercept[NullPointerException](writeToByteBuffer(user, null)(codec))
       val bbuf1 = ByteBuffer.allocateDirect(150)
+      intercept[NullPointerException](writeToByteBuffer[User](null, bbuf1)(codec))
       intercept[NullPointerException](writeToByteBuffer(user, bbuf1)(null))
       intercept[NullPointerException](writeToByteBuffer(user, bbuf1, null)(codec))
       val bbuf2 = ByteBuffer.wrap(new Array[Byte](150))
+      intercept[NullPointerException](writeToByteBuffer[User](null, bbuf2)(codec))
       intercept[NullPointerException](writeToByteBuffer(user, bbuf2)(null))
       intercept[NullPointerException](writeToByteBuffer(user, bbuf2, null)(codec))
     }
@@ -505,6 +510,7 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       writeToString(user, WriterConfig.withIndentionStep(2))(codec) shouldBe toString(prettyJson)
     }
     "throw NullPointerException in case of the provided params are null" in {
+      intercept[NullPointerException](writeToArray[User](null)(codec))
       intercept[NullPointerException](writeToArray(user)(null))
       intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
     }
