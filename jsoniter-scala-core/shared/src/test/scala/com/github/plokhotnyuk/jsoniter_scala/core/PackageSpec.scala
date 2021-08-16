@@ -510,9 +510,20 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       writeToString(user, WriterConfig.withIndentionStep(2))(codec) shouldBe toString(prettyJson)
     }
     "throw NullPointerException in case of the provided params are null" in {
-      intercept[NullPointerException](writeToArray[User](null)(codec))
-      intercept[NullPointerException](writeToArray(user)(null))
-      intercept[NullPointerException](writeToArray(user, null.asInstanceOf[WriterConfig])(codec))
+      intercept[NullPointerException](writeToString[User](null)(codec))
+      intercept[NullPointerException](writeToString(user)(null))
+      intercept[NullPointerException](writeToString(user, null.asInstanceOf[WriterConfig])(codec))
+    }
+  }
+  "writeToStringReentrant" should {
+    "serialize an object to a string" in {
+      writeToStringReentrant(user)(codec) shouldBe toString(compactJson)
+      writeToStringReentrant(user, WriterConfig.withIndentionStep(2))(codec) shouldBe toString(prettyJson)
+    }
+    "throw NullPointerException in case of the provided params are null" in {
+      intercept[NullPointerException](writeToStringReentrant[User](null)(codec))
+      intercept[NullPointerException](writeToStringReentrant(user)(null))
+      intercept[NullPointerException](writeToStringReentrant(user, null.asInstanceOf[WriterConfig])(codec))
     }
   }
 

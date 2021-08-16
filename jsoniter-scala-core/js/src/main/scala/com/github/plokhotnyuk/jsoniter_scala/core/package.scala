@@ -154,9 +154,6 @@ package object core {
   /**
     * Deserialize JSON content from a string into a value of given `A` type.
     *
-    * While it much less efficient than parsing from a byte array using pooled readers but it can be safely used
-    * internally in custom codecs.
-    *
     * @tparam A type of the value to parse
     * @param s a value of string which will be parsed
     * @param config a parsing configuration
@@ -168,6 +165,27 @@ package object core {
     * @throws java.lang.NullPointerException if any of `codec`, `s` or `config` is null
     */
   def readFromString[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A = {
+    if ((s eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
+    readerPool.get.read(codec, s, config)
+  }
+
+  /**
+    * Deserialize JSON content from a string into a value of given `A` type.
+    *
+    * While it is less efficient than parsing from a byte array using pooled readers but it can be safely used
+    * internally in custom codecs when previous call of this method is not finished in this thread.
+    *
+    * @tparam A type of the value to parse
+    * @param s a value of string which will be parsed
+    * @param config a parsing configuration
+    * @param codec a codec for the given `A` type
+    * @return a successfully parsed value
+    * @throws JsonReaderException if underlying input contains invalid JSON content or the input JSON structure does not
+    *                             match structure that expected for the result type, also in case if end of input is
+    *                             detected while some input characters are expected
+    * @throws java.lang.NullPointerException if any of `codec`, `s` or `config` is null
+    */
+  def readFromStringReentrant[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A = {
     if ((s eq null) || (codec eq null) || (config eq null)) throw new NullPointerException
     val buf = s.getBytes(UTF_8)
     val len = buf.length
@@ -268,9 +286,6 @@ package object core {
   /**
     * Serialize the `x` argument to a string in JSON format.
     *
-    * While it much less efficient than serialization to a byte array using pooled writers but it can be safely used
-    * internally in custom codecs.
-    *
     * @tparam A type of value to serialize
     * @param x the value to serialize
     * @param config a serialization configuration
@@ -282,6 +297,26 @@ package object core {
     */
   def writeToString[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String = {
     if ((x == null) || (codec eq null) || (config eq null)) throw new NullPointerException
-    new JsonWriter(buf = new Array[Byte](32), limit = 32).writeStringWithoutBufReallocation(codec, x, config)
+    writerPool.get.writeToString(codec, x, config)
+  }
+
+  /**
+    * Serialize the `x` argument to a string in JSON format.
+    *
+    * While it is less efficient than serialization to a string using pooled writers but it can be safely used
+    * internally in custom codecs when previous call of this method is not finished in this thread.
+    *
+    * @tparam A type of value to serialize
+    * @param x the value to serialize
+    * @param config a serialization configuration
+    * @param codec a codec for the given value
+    * @return a string with `x` serialized to JSON
+    * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
+    *                             properly encoded
+    * @throws java.lang.NullPointerException if any of `x`, `codec` or `config` is null
+    */
+  def writeToStringReentrant[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String = {
+    if ((x == null) || (codec eq null) || (config eq null)) throw new NullPointerException
+    new JsonWriter(buf = new Array[Byte](32), limit = 32).writeToStringWithoutBufReallocation(codec, x, config)
   }
 }

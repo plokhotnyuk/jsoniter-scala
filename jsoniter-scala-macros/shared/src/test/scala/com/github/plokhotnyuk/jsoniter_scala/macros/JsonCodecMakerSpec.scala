@@ -631,7 +631,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         def encodeValue(x: ZonedDateTime, out: JsonWriter): _root_.scala.Unit =
           if (x.getSecond != 0 || x.getNano != 0) out.writeVal(x)
           else {
-            val s = writeToString(x)(standardCodec)
+            val s = writeToStringReentrant(x)(standardCodec)
             val i = s.indexOf(':', 13) + 3
             out.writeNonEscapedAsciiVal(s"${s.substring(1, i)}:00${s.substring(i, s.length - 1)}")
           }
@@ -755,14 +755,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
               codecOfStandardTypes.decodeValue(in, codecOfStandardTypes.nullValue)
             case '"' =>
               in.rollbackToken()
-              readFromString(in.readString(null))(codecOfStandardTypes)
+              readFromStringReentrant(in.readString(null))(codecOfStandardTypes)
             case _ =>
               in.decodeError("expected '{' or '\"'")
           }
 
           def encodeValue(x: StandardTypes, out: JsonWriter): _root_.scala.Unit = x.s match {
             case "VVV" => codecOfStandardTypes.encodeValue(x, out)
-            case "XXX" => out.writeVal(writeToString(x)(codecOfStandardTypes))
+            case "XXX" => out.writeVal(writeToStringReentrant(x)(codecOfStandardTypes))
           }
         }
       verifySerDeser(customCodecOfStandardTypes, StandardTypes("VVV", 1, 1.1), """{"s":"VVV","bi":1,"bd":1.1}""")

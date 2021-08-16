@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
+import java.nio.charset.StandardCharsets.UTF_8
 import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 
@@ -616,6 +617,25 @@ final class JsonReader private[jsoniter_scala](
         bbuf.position(totalRead.toInt - tail + head + position)
       }
     }
+
+  private[jsoniter_scala] def read[@sp A](codec: JsonValueCodec[A], s: String, config: ReaderConfig): A = {
+    val currBuf = this.buf
+    try {
+      this.buf = s.getBytes(UTF_8)
+      this.config = config
+      head = 0
+      val to = buf.length
+      tail = to
+      totalRead = 0
+      mark = -1
+      val x = codec.decodeValue(this, codec.nullValue)
+      if (head != to && config.checkForEndOfInput) endOfInputOrError()
+      x
+    } finally {
+      this.buf = currBuf
+      if (charBuf.length > config.preferredCharBufSize) reallocateCharBufToPreferredSize()
+    }
+  }
 
   private[jsoniter_scala] def scanValueStream[@sp A](codec: JsonValueCodec[A], in: InputStream, config: ReaderConfig)
                                                     (f: A => Boolean): Unit =

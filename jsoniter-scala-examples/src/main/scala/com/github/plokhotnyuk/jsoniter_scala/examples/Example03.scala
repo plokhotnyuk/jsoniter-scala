@@ -18,7 +18,7 @@ object Example03 {
     val requestDataEncodedCodec: JsonValueCodec[RequestData] = new JsonValueCodec[RequestData] {
       override def decodeValue(in: JsonReader, default: RequestData): RequestData = {
         val json = in.readString(null)
-        readFromString(json)(requestDataDirectCodec)
+        readFromStringReentrant(json)(requestDataDirectCodec)
       }
 
       override def encodeValue(x: RequestData, out: JsonWriter): Unit = requestDataDirectCodec.encodeValue(x, out)

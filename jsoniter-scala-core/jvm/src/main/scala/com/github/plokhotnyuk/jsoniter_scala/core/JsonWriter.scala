@@ -543,7 +543,20 @@ final class JsonWriter private[jsoniter_scala](
       if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
     }
 
-  private[jsoniter_scala] def writeStringWithoutBufReallocation[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String = {
+  private[jsoniter_scala] def writeToString[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String =
+    try {
+      this.config = config
+      count = 0
+      indention = 0
+      comma = false
+      disableBufGrowing = false
+      codec.encodeValue(x, this)
+      new String(buf, 0, count, StandardCharsets.UTF_8)
+    } finally {
+      if (limit > config.preferredBufSize) reallocateBufToPreferredSize()
+    }
+
+  private[jsoniter_scala] def writeToStringWithoutBufReallocation[@sp A](codec: JsonValueCodec[A], x: A, config: WriterConfig): String = {
     this.config = config
     count = 0
     indention = 0
