@@ -115,7 +115,9 @@ final class JsonWriter private[jsoniter_scala](
       }
     }
     buf(pos) = '"'
-    pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
+    pos += 1
+    val minLim = Math.min(x.length, limit - 1 - pos) + pos
+    pos = writeString(x, 0, pos, minLim, escapedChars)
     if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
@@ -293,7 +295,9 @@ final class JsonWriter private[jsoniter_scala](
       }
     } else comma = true
     buf(pos) = '"'
-    pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
+    pos += 1
+    val minLim = Math.min(x.length, limit - 1 - pos) + pos
+    pos = writeString(x, 0, pos, minLim, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
@@ -926,16 +930,23 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
-    if (from >= to) pos
-    else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
-    else {
+  private[this] def writeString(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
+    if (pos < minLim) {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
-      else writeEncodedString(s, from, to, pos, posLim - 6, escapedChars)
+      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, pos + 1, minLim, escapedChars)
+      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
+    } else {
+      val remaining = s.length - from
+      if (remaining > 0) {
+        val newPos = flushAndGrowBuf(2, pos)
+        writeString(s, from, newPos, Math.min(remaining, limit - 1 - newPos) + newPos, escapedChars)
+      } else pos
     }
+
+  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]) =
+    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
+    else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
   @tailrec
   private[this] def writeEncodedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =

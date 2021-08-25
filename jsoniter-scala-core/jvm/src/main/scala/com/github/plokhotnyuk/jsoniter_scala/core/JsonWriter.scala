@@ -113,9 +113,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     val minLim = Math.min(x.length, limit - 1 - pos) + pos
-    pos =
-      if (JsonWriter.isGraalVM) writeString(x, 0, pos, minLim, escapedChars)
-      else writeStringUnrolled(x, 0, pos, minLim, escapedChars)
+    pos = writeString(x, 0, pos, minLim, escapedChars)
     if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
@@ -272,9 +270,7 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos) = '"'
     pos += 1
     val minLim = Math.min(x.length, limit - 1 - pos) + pos
-    pos =
-      if (JsonWriter.isGraalVM) writeString(x, 0, pos, minLim, escapedChars)
-      else writeStringUnrolled(x, 0, pos, minLim, escapedChars)
+    pos = writeString(x, 0, pos, minLim, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
@@ -879,21 +875,6 @@ final class JsonWriter private[jsoniter_scala](
 
   @tailrec
   private[this] def writeString(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
-    if (pos < minLim) {
-      val ch = s.charAt(from)
-      buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, pos + 1, minLim, escapedChars)
-      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
-    } else {
-      val remaining = s.length - from
-      if (remaining > 0) {
-        val newPos = flushAndGrowBuf(2, pos)
-        writeString(s, from, newPos, Math.min(remaining, limit - 1 - newPos) + newPos, escapedChars)
-      } else pos
-    }
-
-  @tailrec
-  private[this] def writeStringUnrolled(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
     if (pos + 3 < minLim) {
       val ch1 = s.charAt(from)
       val ch2 = s.charAt(from + 1)
@@ -905,18 +886,18 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 3) = ch4.toByte
       if ((ch1 | ch2 | ch3 | ch4) < 0x80 &&
         (escapedChars(ch1) | escapedChars(ch2) | escapedChars(ch3) | escapedChars(ch4)) == 0) {
-        writeStringUnrolled(s, from + 4, pos + 4, minLim, escapedChars)
+        writeString(s, from + 4, pos + 4, minLim, escapedChars)
       } else writeEscapedOrEncodedString(s, from, pos, escapedChars)
     } else if (pos < minLim) {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeStringUnrolled(s, from + 1, pos + 1, minLim, escapedChars)
+      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, pos + 1, minLim, escapedChars)
       else writeEscapedOrEncodedString(s, from, pos, escapedChars)
     } else {
       val remaining = s.length - from
       if (remaining > 0) {
         val newPos = flushAndGrowBuf(2, pos)
-        writeStringUnrolled(s, from, newPos, Math.min(remaining, limit - 1 - newPos) + newPos, escapedChars)
+        writeString(s, from, newPos, Math.min(remaining, limit - 1 - newPos) + newPos, escapedChars)
       } else pos
     }
 
@@ -2140,9 +2121,6 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private final val isGraalVM: Boolean =
-    Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM") ||
-      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.contains("-XX:+UseJVMCICompiler")
   /* Use the following code to generate `escapedChars` in Scala REPL:
     val es = new Array[Byte](128)
     java.util.Arrays.fill(es, 0, 32, -1: Byte)
