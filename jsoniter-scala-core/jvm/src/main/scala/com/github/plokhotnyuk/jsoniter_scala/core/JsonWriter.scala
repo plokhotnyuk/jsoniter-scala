@@ -2024,7 +2024,7 @@ final class JsonWriter private[jsoniter_scala](
     (((b >>> 32) + (x1 + x2) * (y1 + y2) - b - a) >>> 32) + a
   }
 
-  // Adoption of a nice trick form Daniel Lemire's blog that works for numbers up to 10^18:
+  // Adoption of a nice trick from Daniel Lemire's blog that works for numbers up to 10^18:
   // https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
   private[this] def digitCount(q0: Long): Int = (offsets(java.lang.Long.numberOfLeadingZeros(q0)) + q0 >> 58).toInt
 

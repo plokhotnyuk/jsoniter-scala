@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, ProblemFilters}
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 
@@ -94,7 +95,12 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq(), // internal API to ignore
+  mimaBinaryIssueFilters := Seq( // internal API to ignore
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.bs_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.from_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.to_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.hash_=")
+  ),
   mimaReportSignatureProblems := true
 )
 
