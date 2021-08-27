@@ -112,10 +112,9 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos += 1
-    val minLim = Math.min(x.length, limit - 1 - pos) + pos
     pos =
-      if (JsonWriter.isGraalVM) writeString(x, 0, pos, minLim, escapedChars)
-      else writeStringUnrolled(x, 0, pos, minLim, escapedChars)
+      if (JsonWriter.isGraalVM) writeString(x, 0, x.length, pos, limit - 1, escapedChars)
+      else writeStringUnrolled(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
@@ -271,10 +270,9 @@ final class JsonWriter private[jsoniter_scala](
     } else comma = true
     buf(pos) = '"'
     pos += 1
-    val minLim = Math.min(x.length, limit - 1 - pos) + pos
     pos =
-      if (JsonWriter.isGraalVM) writeString(x, 0, pos, minLim, escapedChars)
-      else writeStringUnrolled(x, 0, pos, minLim, escapedChars)
+      if (JsonWriter.isGraalVM) writeString(x, 0, x.length, pos, limit - 1, escapedChars)
+      else writeStringUnrolled(x, 0, pos, Math.min(x.length, limit - pos - 1) + pos, escapedChars)
     buf(pos) = '"'
     pos + 1
   }
@@ -878,18 +876,14 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   @tailrec
-  private[this] def writeString(s: String, from: Int, pos: Int, minLim: Int, escapedChars: Array[Byte]): Int =
-    if (pos < minLim) {
+  private[this] def writeString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
+    if (from >= to) pos
+    else if (pos >= posLim) writeString(s, from, to, flushAndGrowBuf(2, pos), limit - 1, escapedChars)
+    else {
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
-      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, pos + 1, minLim, escapedChars)
+      if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
       else writeEscapedOrEncodedString(s, from, pos, escapedChars)
-    } else {
-      val remaining = s.length - from
-      if (remaining > 0) {
-        val newPos = flushAndGrowBuf(2, pos)
-        writeString(s, from, newPos, Math.min(remaining, limit - 1 - newPos) + newPos, escapedChars)
-      } else pos
     }
 
   @tailrec
@@ -916,11 +910,11 @@ final class JsonWriter private[jsoniter_scala](
       val remaining = s.length - from
       if (remaining > 0) {
         val newPos = flushAndGrowBuf(2, pos)
-        writeStringUnrolled(s, from, newPos, Math.min(remaining, limit - 1 - newPos) + newPos, escapedChars)
+        writeStringUnrolled(s, from, newPos, Math.min(remaining, limit - newPos - 1) + newPos, escapedChars)
       } else pos
     }
 
-  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]) =
+  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =
     if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
     else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
