@@ -105,10 +105,7 @@ final class JsonWriter private[jsoniter_scala](
       comma = false
       buf(pos) = ','
       pos += 1
-      if (indention != 0) {
-        buf(pos) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 1, buf)
-      }
+      if (indention != 0) pos = writeIndention(buf, pos, indention)
     }
     buf(pos) = '"'
     pos += 1
@@ -136,10 +133,7 @@ final class JsonWriter private[jsoniter_scala](
       comma = false
       buf(pos) = ','
       pos += 1
-      if (indention != 0) {
-        buf(pos) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 1, buf)
-      }
+      if (indention != 0) pos = writeIndention(buf, pos, indention)
     }
     buf(pos) = '"'
     pos += 1
@@ -263,10 +257,7 @@ final class JsonWriter private[jsoniter_scala](
     if (comma) {
       buf(pos) = ','
       pos += 1
-      if (indention != 0) {
-        buf(pos) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 1, buf)
-      }
+      if (indention != 0) pos = writeIndention(buf, pos, indention)
     } else comma = true
     buf(pos) = '"'
     pos += 1
@@ -284,10 +275,7 @@ final class JsonWriter private[jsoniter_scala](
     if (comma) {
       buf(pos) = ','
       pos += 1
-      if (indention != 0) {
-        buf(pos) = '\n'
-        pos = writeNBytes(indention, ' ', pos + 1, buf)
-      }
+      if (indention != 0) pos = writeIndention(buf, pos, indention)
     } else comma = true
     buf(pos) = '"'
     pos += 1
@@ -650,10 +638,21 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeIndention(): Unit = count = {
-    val pos = ensureBufCapacity(indention + 1)
-    val buf = this.buf
-    buf(pos) = '\n'
-    writeNBytes(indention, ' ', pos + 1, buf)
+    val n = indention
+    val pos = ensureBufCapacity(n + 1)
+    writeIndention(buf, pos, n)
+  }
+
+  private[this] def writeIndention(buf: Array[Byte], pos: Int, n: Int): Int = {
+    var p = pos
+    buf(p) = '\n'
+    p += 1
+    val posLim = p + n
+    while (p < posLim) {
+      buf(p) = ' '
+      p += 1
+    }
+    p
   }
 
   private[this] def writeParenthesesWithColon(): Unit = count = {
@@ -2008,7 +2007,7 @@ final class JsonWriter private[jsoniter_scala](
     (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
   }
 
-  private[this] def multiplyHigh(x: Long, y: Long): Long = {
+  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Use Karatsuba technique with two base 2^32 digits
     val x2 = x & 0xFFFFFFFFL
     val y2 = y & 0xFFFFFFFFL
     val b = x2 * y2
@@ -2042,7 +2041,7 @@ final class JsonWriter private[jsoniter_scala](
     while ({
       val qp = q0 * 1374389535L
       q1 = (qp >> 37).toInt // divide a positive int by 100
-      (qp & 0x1FC0000000L) == 0
+      (qp & 0x1FC0000000L) == 0 // check if q is divisible by 100
     }) {
       q0 = q1
       pos -= 2
@@ -2091,15 +2090,6 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def illegalNumberError(x: Double): Nothing = encodeError("illegal number: " + x)
-
-  private[this] def writeNBytes(n: Int, b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    var i = 0
-    while (i < n) {
-      buf(pos + i) = b
-      i += 1
-    }
-    pos + n
-  }
 
   private[this] def ensureBufCapacity(required: Int): Int = {
     val pos = count
