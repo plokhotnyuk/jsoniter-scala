@@ -6,7 +6,6 @@ import java.nio.ByteBuffer
 import java.time._
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
 
 import java.nio.charset.StandardCharsets.UTF_8
@@ -1303,7 +1302,6 @@ final class JsonReader private[jsoniter_scala](
       val b = buf(pos)
       b >= '0' && b <= '9'
     }) leadingZeroError(pos - 1)
-    head = pos
   }
 
   private[this] def parseDouble(isToken: Boolean): Double = {
@@ -1540,9 +1538,10 @@ final class JsonReader private[jsoniter_scala](
       head = pos
       var x: Float =
         if (exp == 0 && posMant < 922337203685477580L) posMant.toFloat
-        else if (posMant < 4294967296L && exp < 0 && exp >= digits - 23) (posMant / pow10Doubles(-exp.toInt)).toFloat
-        else if (posMant < 4294967296L && exp >= 0 && exp <= 19 - digits) (posMant * pow10Doubles(exp.toInt)).toFloat
-        else toFloat(posMant, exp, from, newMark, pos)
+        else if (posMant < 4294967296L && exp >= digits - 23 && exp <= 19 - digits) {
+          (if (exp < 0) posMant / pow10Doubles(-exp.toInt)
+          else posMant * pow10Doubles(exp.toInt)).toFloat
+        } else toFloat(posMant, exp, from, newMark, pos)
       if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
@@ -1779,7 +1778,7 @@ final class JsonReader private[jsoniter_scala](
       if (isNeg) x = -x
       java.math.BigDecimal.valueOf(x, scale)
     } else if (len < 37) toBigDecimal37(buf, offset, limit, isNeg, scale)
-    else if (len < 280) toBigDecimal280(buf, offset, limit, isNeg, scale)
+    else if (len < 300) toBigDecimal300(buf, offset, limit, isNeg, scale)
     else {
       val mid = len >> 1
       val midPos = limit - mid
@@ -1814,7 +1813,7 @@ final class JsonReader private[jsoniter_scala](
     java.math.BigDecimal.valueOf(x1, scale - 18).add(java.math.BigDecimal.valueOf(x2, scale))
   }
 
-  private[this] def toBigDecimal280(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
+  private[this] def toBigDecimal300(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - offset
     var x = 0L
@@ -1825,6 +1824,7 @@ final class JsonReader private[jsoniter_scala](
       pos += 1
     }
     val lastWord = ((len * 445861642L) >>> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
+    var firstWord = lastWord
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
     magWords(lastWord) = x.toInt
@@ -1835,8 +1835,9 @@ final class JsonReader private[jsoniter_scala](
         (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
         (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
         buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
+      firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
-      while (i >= 0) {
+      while (i >= firstWord) {
         val p = (magWords(i) & 0xFFFFFFFFL) * 1000000000 + x
         magWords(i) = p.toInt
         x = p >>> 32
