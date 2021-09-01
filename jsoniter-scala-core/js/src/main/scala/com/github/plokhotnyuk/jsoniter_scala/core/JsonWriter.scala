@@ -1240,18 +1240,18 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 1) = 'S'
       pos += 2
     } else {
-      var effectiveTotalSecs = totalSecs
-      if (totalSecs < 0 && nano > 0) effectiveTotalSecs += 1
-      var hours = effectiveTotalSecs / 3600 // 3600 == seconds in a hour
+      val effectiveTotalSecs =
+        if (totalSecs < 0) (-nano >> 31) - totalSecs
+        else totalSecs
+      val hours = effectiveTotalSecs / 3600
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
-      var minutes = secsOfHour / 60
-      var seconds = secsOfHour - minutes * 60
+      val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
+      val seconds = secsOfHour - minutes * 60
       val ds = digits
       if (hours != 0) {
-        if (hours < 0) {
+        if (totalSecs < 0) {
           buf(pos) = '-'
           pos += 1
-          hours = -hours
         }
         pos =
           if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
@@ -1264,10 +1264,9 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if (minutes != 0) {
-        if (minutes < 0) {
+        if (totalSecs < 0) {
           buf(pos) = '-'
           pos += 1
-          minutes = -minutes
         }
         if (minutes < 10) {
           buf(pos) = (minutes + '0').toByte
@@ -1277,21 +1276,14 @@ final class JsonWriter private[jsoniter_scala](
         pos += 1
       }
       if ((seconds | nano) != 0) {
-        if (totalSecs < 0 && seconds == 0) {
+        if (totalSecs < 0) {
           buf(pos) = '-'
-          buf(pos + 1) = '0'
-          pos += 2
-        } else {
-          if (seconds < 0) {
-            buf(pos) = '-'
-            pos += 1
-            seconds = -seconds
-          }
-          if (seconds < 10) {
-            buf(pos) = (seconds + '0').toByte
-            pos += 1
-          } else pos = write2Digits(seconds, pos, buf, ds)
+          pos += 1
         }
+        if (seconds < 10) {
+          buf(pos) = (seconds + '0').toByte
+          pos += 1
+        } else pos = write2Digits(seconds, pos, buf, ds)
         if (nano != 0) {
           if (totalSecs < 0) nano = 1000000000 - nano
           val dotPos = pos
