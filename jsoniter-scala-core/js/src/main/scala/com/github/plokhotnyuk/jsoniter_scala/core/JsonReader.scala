@@ -1417,7 +1417,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e >= 310) Double.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = multiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+      var mant = unsignedMultiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
       var exp = addExp(-shift, e.toInt)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
@@ -1556,7 +1556,7 @@ final class JsonReader private[jsoniter_scala](
     else if (e >= 39) Float.PositiveInfinity
     else {
       var shift = java.lang.Long.numberOfLeadingZeros(m)
-      var mant = multiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.multiplyHigh after dropping JDK 8 support
+      var mant = unsignedMultiplyHigh(m << shift, pow10Mantissas(e.toInt + 343)) // FIXME: Use Math.unsignedMultiplyHigh after dropping of JDK 17 support
       var exp = addExp(-shift, e.toInt)
       shift = java.lang.Long.numberOfLeadingZeros(mant)
       mant <<= shift
@@ -1591,7 +1591,7 @@ final class JsonReader private[jsoniter_scala](
   // 64-bit unsigned multiplication was adopted from the great Hacker's Delight function
   // (Henry S. Warren, Hacker's Delight, Addison-Wesley, 2nd edition, Fig. 8.2)
   // https://doc.lagout.org/security/Hackers%20Delight.pdf
-  private[this] def multiplyHigh(x: Long, y: Long): Long = {
+  private[this] def unsignedMultiplyHigh(x: Long, y: Long): Long = { // FIXME: Use Math.multiplyHigh(x, y) + ((x >> 63) & y) + ((y >> 63) & x) after dropping of JDK 8 support
     val xl = x & 0xFFFFFFFFL
     val xh = x >>> 32
     val yl = y & 0xFFFFFFFFL

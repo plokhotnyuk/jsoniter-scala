@@ -1889,7 +1889,7 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g: Long, cp: Int): Int = {
-    val x1 = ((g & 0xFFFFFFFFL) * cp >>> 32) + (g >>> 32) * cp
+    val x1 = ((g & 0xFFFFFFFFL) * cp >>> 32) + (g >>> 32) * cp // FIXME: Use Math.multiplyHigh(g, cp.toLong << 32) after dropping of JDK 8 support
     (x1 >>> 31).toInt | -x1.toInt >>> 31
   }
 
@@ -2016,13 +2016,13 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x1 = multiplyHigh(g0, cp)
+    val x1 = multiplyHigh(g0, cp) // FIXME: Use Math.multiplyHigh after dropping of JDK 8 support
     val z = (g1 * cp >>> 1) + x1
-    val y1 = multiplyHigh(g1, cp)
+    val y1 = multiplyHigh(g1, cp) // FIXME: Use Math.multiplyHigh after dropping of JDK 8 support
     (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
   }
 
-  private[this] def multiplyHigh(x: Long, y: Long): Long = {
+  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Use Karatsuba technique for two positive ints
     val x2 = x & 0xFFFFFFFFL
     val y2 = y & 0xFFFFFFFFL
     val b = x2 * y2
