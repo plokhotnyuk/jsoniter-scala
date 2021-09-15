@@ -18,9 +18,9 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
 libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz
-(max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and latest versions of Amazon Corretto 8/11, OpenJDK 18
+(max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and latest versions of Amazon Corretto 11/17, OpenJDK 18
 (early-access build) [*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
-GraalVM CE 21.3 (dev build) for Java 11/16, GraalVM EE 21.2 (release) for Java 8/11/16.
+GraalVM CE 21.3 (dev build) for Java 11/17, GraalVM EE 21.2 (release) for Java 11/16.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
 compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 5.1 with GCC
@@ -78,7 +78,7 @@ and run-time configuration instances, combined with compile-time annotations and
 representation of JSON providing a pretty printing option, provide a hex dump in the error message to speed up the
 view of an error context
 
-The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
+The library targets JDK 11+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
 
 ## Features and limitations
 
@@ -499,7 +499,7 @@ More info about extras, options, and ability to generate flame graphs see in [Sb
 
 Other benchmarks with results for jsoniter-scala:
 - [comparison](https://github.com/sirthias/borer/pull/30) with other JSON parsers for Scala mostly on samples from real
-  APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java8 only
+  APIs, but with mapping to simple types only like strings and primitives and results for GraalVM EE Java 8 only
 - [comparison](https://github.com/dkomanov/scala-serialization/pull/8) with the best binary parsers and serializers for
   Scala
 - [comparison](https://github.com/saint1991/serialization-benchmark) with different binary and text serializers for 

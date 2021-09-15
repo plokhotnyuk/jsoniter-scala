@@ -27,7 +27,7 @@ lazy val commonSettings = Seq(
     "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
   scalaVersion := "2.13.6",
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  javacOptions ++= Seq("-source", "11", "-target", "11"),
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -47,7 +47,7 @@ lazy val commonSettings = Seq(
         )
         case 13 => Seq()
       }) ++ Seq(
-        "-target:jvm-1.8",
+        "-target:11",
         "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
       )
     } else Seq()
