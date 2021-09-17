@@ -20,7 +20,8 @@ jobs:
     strategy:
       matrix:
         java:
-          - zulu@1.11
+          - zulu@1.17
+          - graalvm-ce-java11@21
           - zulu@1.8
         os:
           - ubuntu-latest
@@ -44,7 +45,7 @@ jobs:
         run: "sbt -batch clean +test +mimaReportBinaryIssues"
         shell: bash
       - name: Test with coverage
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.java == 'zulu@1.8' }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: "sbt -batch ++2.13.6! coverage jsoniter-scala-coreJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageAggregate coveralls"
