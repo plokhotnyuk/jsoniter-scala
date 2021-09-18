@@ -130,8 +130,8 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
         "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.4.0-M1" % Test
       )
       case _=> Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.10" % Test,
-        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.9.0" % Test
+        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.10.0" % Test,
+        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
       )
     })
   )
