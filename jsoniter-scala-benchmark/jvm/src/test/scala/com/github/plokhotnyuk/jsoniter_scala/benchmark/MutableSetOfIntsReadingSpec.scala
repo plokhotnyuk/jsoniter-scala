@@ -4,7 +4,7 @@ class MutableSetOfIntsReadingSpec extends BenchmarkSpecBase {
   def benchmark: MutableSetOfIntsReading = new MutableSetOfIntsReading {
     setup()
   }
-  
+
   "MutableSetOfIntsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

@@ -4,7 +4,7 @@ class ArrayOfZonedDateTimesWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfZonedDateTimesWriting = new ArrayOfZonedDateTimesWriting {
     setup()
   }
-  
+
   "ArrayOfZonedDateTimesWriting" should {
     "write properly" in {
       val b = benchmark

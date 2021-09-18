@@ -4,7 +4,7 @@ class VectorOfBooleansReadingSpec extends BenchmarkSpecBase {
   def benchmark: VectorOfBooleansReading = new VectorOfBooleansReading {
     setup()
   }
-  
+
   "VectorOfBooleansReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

@@ -4,7 +4,7 @@ class Base16WritingSpec extends BenchmarkSpecBase {
   def benchmark: Base16Writing = new Base16Writing {
     setup()
   }
-  
+
   "Base64Writing" should {
     "write properly" in {
       val b = benchmark

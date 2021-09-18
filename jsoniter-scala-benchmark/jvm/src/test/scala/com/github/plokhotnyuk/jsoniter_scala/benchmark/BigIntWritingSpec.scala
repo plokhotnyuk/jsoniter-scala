@@ -4,7 +4,7 @@ class BigIntWritingSpec extends BenchmarkSpecBase {
   def benchmark: BigIntWriting = new BigIntWriting {
     setup()
   }
-  
+
   "BigIntWriting" should {
     "write properly" in {
       val b = benchmark

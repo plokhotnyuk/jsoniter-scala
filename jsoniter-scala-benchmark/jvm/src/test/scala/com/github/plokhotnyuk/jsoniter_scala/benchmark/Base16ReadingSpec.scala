@@ -4,7 +4,7 @@ class Base16ReadingSpec extends BenchmarkSpecBase {
   def benchmark: Base16Reading = new Base16Reading {
     setup()
   }
-  
+
   "Base16Reading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

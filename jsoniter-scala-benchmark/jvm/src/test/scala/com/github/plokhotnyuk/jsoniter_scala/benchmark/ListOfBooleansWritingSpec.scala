@@ -4,7 +4,7 @@ class ListOfBooleansWritingSpec extends BenchmarkSpecBase {
   def benchmark: ListOfBooleansWriting = new ListOfBooleansWriting {
     setup()
   }
-  
+
   "ListOfBooleansWriting" should {
     "write properly" in {
       val b = benchmark

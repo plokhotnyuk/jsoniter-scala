@@ -4,7 +4,7 @@ class ExtractFieldsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ExtractFieldsReading = new ExtractFieldsReading {
     setup()
   }
-  
+
   "ExtractFieldsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

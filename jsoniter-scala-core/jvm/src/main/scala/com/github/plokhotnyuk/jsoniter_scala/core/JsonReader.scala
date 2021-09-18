@@ -1635,7 +1635,7 @@ final class JsonReader private[jsoniter_scala](
           if (mark == 0) from -= newMark
           if (pos - from >= digitsLimit) digitsLimitError(from + digitsLimit - 1)
           new BigInt(toBigDecimal(buf, from, pos, isNeg, 0).unscaledValue)
-        } finally if (mark != 0 || oldMark< 0) mark = oldMark
+        } finally if (mark != 0 || oldMark < 0) mark = oldMark
       }
     }
   }
@@ -1755,7 +1755,7 @@ final class JsonReader private[jsoniter_scala](
         if (digits > mc.getPrecision) x = x.plus(mc)
         if (Math.abs(x.scale) >= scaleLimit) scaleLimitError()
         new BigDecimal(x, mc)
-      } finally if (mark != 0 || oldMark< 0) mark = oldMark
+      } finally if (mark != 0 || oldMark < 0) mark = oldMark
     }
   }
 
@@ -1796,14 +1796,14 @@ final class JsonReader private[jsoniter_scala](
     }
     var x2 =
       (buf(pos) * 10 + buf(pos + 1)) * 10000000000000000L +
-      ((buf(pos + 2) * 10 + buf(pos + 3)) * 1000000 +
-      (buf(pos + 4) * 10 + buf(pos + 5)) * 10000 +
-      (buf(pos + 6) * 10 + buf(pos + 7)) * 100 +
-      (buf(pos + 8) * 10 + buf(pos + 9))) * 100000000L +
-      ((buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
-      (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
-      (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
-      buf(pos + 16) * 10 + buf(pos + 17)) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
+        ((buf(pos + 2) * 10 + buf(pos + 3)) * 1000000 +
+          (buf(pos + 4) * 10 + buf(pos + 5)) * 10000 +
+          (buf(pos + 6) * 10 + buf(pos + 7)) * 100 +
+          (buf(pos + 8) * 10 + buf(pos + 9))) * 100000000L +
+        ((buf(pos + 10) * 10 + buf(pos + 11)) * 1000000 +
+          (buf(pos + 12) * 10 + buf(pos + 13)) * 10000 +
+          (buf(pos + 14) * 10 + buf(pos + 15)) * 100 +
+          buf(pos + 16) * 10 + buf(pos + 17)) - 5333333333333333328L // 5333333333333333328L == '0' * 111111111111111111L
     if (isNeg) {
       x1 = -x1
       x2 = -x2
@@ -1829,10 +1829,10 @@ final class JsonReader private[jsoniter_scala](
     while (pos < limit) {
       x =
         (buf(pos) * 10 + buf(pos + 1)) * 10000000L +
-        ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
-        (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
-        (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
-        buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
+          ((buf(pos + 2) * 10 + buf(pos + 3)) * 100000 +
+            (buf(pos + 4) * 10 + buf(pos + 5)) * 1000 +
+            (buf(pos + 6) * 10 + buf(pos + 7)) * 10 +
+            buf(pos + 8)) - 5333333328L // 5333333328L == '0' * 111111111L
       firstWord = Math.max(firstWord - 1, 0)
       var i = lastWord
       while (i >= firstWord) {
@@ -2420,49 +2420,49 @@ final class JsonReader private[jsoniter_scala](
       val buf = this.buf
       val mostSigBits1: Long =
         (ns(buf(pos) & 0xFF).toLong << 28) |
-        ((ns(buf(pos + 1) & 0xFF) << 24) |
-        (ns(buf(pos + 2) & 0xFF) << 20) |
-        (ns(buf(pos + 3) & 0xFF) << 16) |
-        (ns(buf(pos + 4) & 0xFF) << 12) |
-        (ns(buf(pos + 5) & 0xFF) << 8) |
-        (ns(buf(pos + 6) & 0xFF) << 4) |
-        ns(buf(pos + 7) & 0xFF))
+          ((ns(buf(pos + 1) & 0xFF) << 24) |
+            (ns(buf(pos + 2) & 0xFF) << 20) |
+            (ns(buf(pos + 3) & 0xFF) << 16) |
+            (ns(buf(pos + 4) & 0xFF) << 12) |
+            (ns(buf(pos + 5) & 0xFF) << 8) |
+            (ns(buf(pos + 6) & 0xFF) << 4) |
+            ns(buf(pos + 7) & 0xFF))
       if (mostSigBits1 < 0) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
       val mostSigBits2: Int =
         (ns(buf(pos + 9) & 0xFF) << 12) |
-        (ns(buf(pos + 10) & 0xFF) << 8) |
-        (ns(buf(pos + 11) & 0xFF) << 4) |
-        ns(buf(pos + 12) & 0xFF)
+          (ns(buf(pos + 10) & 0xFF) << 8) |
+          (ns(buf(pos + 11) & 0xFF) << 4) |
+          ns(buf(pos + 12) & 0xFF)
       if (mostSigBits2 < 0) hexDigitError(pos + 9)
       if (buf(pos + 13) != '-') tokenError('-', pos + 13)
       val mostSigBits3: Int =
         (ns(buf(pos + 14) & 0xFF) << 12) |
-        (ns(buf(pos + 15) & 0xFF) << 8) |
-        (ns(buf(pos + 16) & 0xFF) << 4) |
-        ns(buf(pos + 17) & 0xFF)
+          (ns(buf(pos + 15) & 0xFF) << 8) |
+          (ns(buf(pos + 16) & 0xFF) << 4) |
+          ns(buf(pos + 17) & 0xFF)
       if (mostSigBits3 < 0) hexDigitError(pos + 14)
       if (buf(pos + 18) != '-') tokenError('-', pos + 18)
       val leastSigBits1: Int =
         (ns(buf(pos + 19) & 0xFF) << 12) |
-        (ns(buf(pos + 20) & 0xFF) << 8) |
-        (ns(buf(pos + 21) & 0xFF) << 4) |
-        ns(buf(pos + 22) & 0xFF)
+          (ns(buf(pos + 20) & 0xFF) << 8) |
+          (ns(buf(pos + 21) & 0xFF) << 4) |
+          ns(buf(pos + 22) & 0xFF)
       if (leastSigBits1 < 0) hexDigitError(pos + 19)
       if (buf(pos + 23) != '-') tokenError('-', pos + 23)
       val leastSigBits2: Long =
         ((ns(buf(pos + 24) & 0xFF) << 16) |
-        (ns(buf(pos + 25) & 0xFF) << 12) |
-        (ns(buf(pos + 26) & 0xFF) << 8) |
-        (ns(buf(pos + 27) & 0xFF) << 4) |
-        ns(buf(pos + 28) & 0xFF)).toLong << 28 |
-        ((ns(buf(pos + 29) & 0xFF) << 24) |
-        (ns(buf(pos + 30) & 0xFF) << 20) |
-        (ns(buf(pos + 31) & 0xFF) << 16) |
-        (ns(buf(pos + 32) & 0xFF) << 12) |
-        (ns(buf(pos + 33) & 0xFF) << 8) |
-        (ns(buf(pos + 34) & 0xFF) << 4) |
-        ns(buf(pos + 35) & 0xFF))
+          (ns(buf(pos + 25) & 0xFF) << 12) |
+          (ns(buf(pos + 26) & 0xFF) << 8) |
+          (ns(buf(pos + 27) & 0xFF) << 4) |
+          ns(buf(pos + 28) & 0xFF)).toLong << 28 |
+          ((ns(buf(pos + 29) & 0xFF) << 24) |
+            (ns(buf(pos + 30) & 0xFF) << 20) |
+            (ns(buf(pos + 31) & 0xFF) << 16) |
+            (ns(buf(pos + 32) & 0xFF) << 12) |
+            (ns(buf(pos + 33) & 0xFF) << 8) |
+            (ns(buf(pos + 34) & 0xFF) << 4) |
+            ns(buf(pos + 35) & 0xFF))
       if (leastSigBits2 < 0) hexDigitError(pos + 24)
       if (buf(pos + 36) != '"') tokenError('"', pos + 36)
       head = pos + 37
@@ -2669,9 +2669,9 @@ final class JsonReader private[jsoniter_scala](
     val ns = nibbles
     val x =
       (ns(buf(pos) & 0xFF) << 12) |
-      (ns(buf(pos + 1) & 0xFF) << 8) |
-      (ns(buf(pos + 2) & 0xFF) << 4) |
-      ns(buf(pos + 3) & 0xFF)
+        (ns(buf(pos + 1) & 0xFF) << 8) |
+        (ns(buf(pos + 2) & 0xFF) << 4) |
+        ns(buf(pos + 3) & 0xFF)
     if (x < 0) hexDigitError(pos)
     x.toChar
   }
@@ -2695,9 +2695,9 @@ final class JsonReader private[jsoniter_scala](
       while (pos < posLim && {
         bits =
           ns(buf(pos) & 0xFF) << 12 |
-          ns(buf(pos + 1) & 0xFF) << 8 |
-          ns(buf(pos + 2) & 0xFF) << 4 |
-          ns(buf(pos + 3) & 0xFF)
+            ns(buf(pos + 1) & 0xFF) << 8 |
+            ns(buf(pos + 2) & 0xFF) << 4 |
+            ns(buf(pos + 3) & 0xFF)
         bits >= 0
       }) {
         charBuf(i) = bits.toChar
@@ -2755,9 +2755,9 @@ final class JsonReader private[jsoniter_scala](
       while (pos < posLim && {
         bits =
           ds(buf(pos) & 0xFF) << 18 |
-          ds(buf(pos + 1) & 0xFF) << 12 |
-          ds(buf(pos + 2) & 0xFF) << 6 |
-          ds(buf(pos + 3) & 0xFF)
+            ds(buf(pos + 1) & 0xFF) << 12 |
+            ds(buf(pos + 2) & 0xFF) << 6 |
+            ds(buf(pos + 3) & 0xFF)
         bits >= 0
       }) {
         charBuf(i) = (bits >> 8).toChar

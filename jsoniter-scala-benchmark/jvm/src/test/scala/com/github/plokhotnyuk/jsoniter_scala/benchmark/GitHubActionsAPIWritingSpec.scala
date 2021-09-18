@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
   def benchmark = new GitHubActionsAPIWriting
-  
+
   "GoogleMapsAPIWriting" should {
     "write properly" in {
       val b = benchmark

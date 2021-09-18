@@ -4,7 +4,7 @@ class Base64ReadingSpec extends BenchmarkSpecBase {
   def benchmark: Base64Reading = new Base64Reading {
     setup()
   }
-  
+
   "Base64Reading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

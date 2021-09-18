@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets._
 
 class MissingRequiredFieldsReadingSpec extends BenchmarkSpecBase {
   def benchmark = new MissingRequiredFieldsReading
-  
+
   "MissingRequiredFieldsReading" should {
     "return some parsing error" in {
       val b = benchmark

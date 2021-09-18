@@ -4,7 +4,7 @@ class StringOfNonAsciiCharsWritingSpec extends BenchmarkSpecBase {
   def benchmark: StringOfNonAsciiCharsWriting = new StringOfNonAsciiCharsWriting {
     setup()
   }
-  
+
   "StringOfNonAsciiCharsWriting" should {
     "write properly" in {
       val b = benchmark

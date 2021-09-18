@@ -15,4 +15,4 @@ object Suit {
     else throw new IllegalArgumentException(s"Unrecognized Suit name: $name")
 }
 
-final class Suit private (name: String, ordinal: Int) extends Enum[Suit](name, ordinal)
+final class Suit private(name: String, ordinal: Int) extends Enum[Suit](name, ordinal)

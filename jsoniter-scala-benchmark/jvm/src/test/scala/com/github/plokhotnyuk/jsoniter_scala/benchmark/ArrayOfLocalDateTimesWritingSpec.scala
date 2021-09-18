@@ -4,7 +4,7 @@ class ArrayOfLocalDateTimesWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfLocalDateTimesWriting = new ArrayOfLocalDateTimesWriting {
     setup()
   }
-  
+
   "ArrayOfLocalDateTimesWriting" should {
     "write properly" in {
       val b = benchmark

@@ -268,7 +268,7 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  def writeNonEscapedAsciiVal(x: String): Unit =  count = {
+  def writeNonEscapedAsciiVal(x: String): Unit = count = {
     val len = x.length
     val indention = this.indention
     var pos = ensureBufCapacity(indention + len + 4)
@@ -720,7 +720,7 @@ final class JsonWriter private[jsoniter_scala](
       val d1 = ds(bs(offset) & 0xFF)
       buf(pos) = d1.toByte
       buf(pos + 1) = (d1 >> 8).toByte
-      pos +=2
+      pos += 2
     }
     buf(pos) = '"'
     pos + 1
@@ -1115,7 +1115,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def writeBigDecimalRemainder(x: BigInteger, scale: Int, blockScale: Int, n: Int,
-                                            ss: Array[BigInteger]): Unit =
+                                             ss: Array[BigInteger]): Unit =
     if (n < 0) {
       count = write18Digits(Math.abs(x.longValue), ensureBufCapacity(19), buf, digits) // 18 digits and a place for optional dot
       val dotOff = scale - blockScale
@@ -1538,7 +1538,7 @@ final class JsonWriter private[jsoniter_scala](
         buf(pos) = '.'
         val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
         val r1 = nano - q1 * 10000000
-          pos = write2Digits(q1, pos + 1, buf, ds)
+        pos = write2Digits(q1, pos + 1, buf, ds)
         val q2 = (r1 * 175921861L >> 44).toInt // divide a positive int by 100000
         val r2 = r1 - q2 * 100000
         val d = ds(q2)
@@ -1567,7 +1567,7 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos) = '.'
       val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
       val r1 = nano - q1 * 10000000
-        pos = write2Digits(q1, pos + 1, buf, ds)
+      pos = write2Digits(q1, pos + 1, buf, ds)
       val q2 = (r1 * 175921861L >> 44).toInt // divide a positive int by 100000
       val r2 = r1 - q2 * 100000
       val d = ds(q2)
@@ -1797,7 +1797,7 @@ final class JsonWriter private[jsoniter_scala](
         val vbrd = outm1 - rop(g1, cb + 2 << h)
         val s = vb >> 2
         if (s < 100 || {
-          dv = (s * 3435973837L >>> 35).toInt  // divide a positive int by 10
+          dv = (s * 3435973837L >>> 35).toInt // divide a positive int by 10
           val sp40 = dv * 40
           val upin = vbls - sp40
           ((sp40 + vbrd + 40) ^ upin) >= 0 || {

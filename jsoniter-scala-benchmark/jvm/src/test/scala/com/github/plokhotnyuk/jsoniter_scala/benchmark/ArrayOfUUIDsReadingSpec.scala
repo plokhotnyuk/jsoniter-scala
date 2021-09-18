@@ -4,7 +4,7 @@ class ArrayOfUUIDsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfUUIDsReading = new ArrayOfUUIDsReading {
     setup()
   }
-  
+
   "ArrayOfUUIDsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

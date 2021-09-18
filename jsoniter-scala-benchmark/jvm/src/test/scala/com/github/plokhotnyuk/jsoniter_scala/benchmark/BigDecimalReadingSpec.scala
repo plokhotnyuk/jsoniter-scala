@@ -4,7 +4,7 @@ class BigDecimalReadingSpec extends BenchmarkSpecBase {
   def benchmark: BigDecimalReading = new BigDecimalReading {
     setup()
   }
-  
+
   "BigDecimalReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj

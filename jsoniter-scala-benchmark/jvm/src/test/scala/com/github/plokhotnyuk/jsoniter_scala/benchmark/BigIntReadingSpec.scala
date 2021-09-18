@@ -4,7 +4,7 @@ class BigIntReadingSpec extends BenchmarkSpecBase {
   def benchmark: BigIntReading = new BigIntReading {
     setup()
   }
-  
+
   "BigIntReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

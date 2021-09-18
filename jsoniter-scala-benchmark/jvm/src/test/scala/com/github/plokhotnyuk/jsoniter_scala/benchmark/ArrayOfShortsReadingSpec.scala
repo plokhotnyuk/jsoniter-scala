@@ -4,7 +4,7 @@ class ArrayOfShortsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfShortsReading = new ArrayOfShortsReading {
     setup()
   }
-  
+
   "ArrayOfShortsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

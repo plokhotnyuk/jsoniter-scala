@@ -4,7 +4,7 @@ class ArrayOfEnumADTsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfEnumADTsReading = new ArrayOfEnumADTsReading {
     setup()
   }
-  
+
   "ArrayOfEnumADTsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

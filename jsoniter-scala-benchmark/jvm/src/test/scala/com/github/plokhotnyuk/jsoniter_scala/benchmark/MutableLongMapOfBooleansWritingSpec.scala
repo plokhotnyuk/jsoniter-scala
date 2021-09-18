@@ -4,7 +4,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
   def benchmark: MutableLongMapOfBooleansWriting = new MutableLongMapOfBooleansWriting {
     setup()
   }
-  
+
   "MutableLongMapOfBooleansWriting" should {
     "write properly" in {
       val b = benchmark

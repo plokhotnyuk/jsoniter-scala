@@ -4,7 +4,7 @@ class ArrayOfLocalTimesReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfLocalTimesReading = new ArrayOfLocalTimesReading {
     setup()
   }
-  
+
   "ArrayOfLocalTimesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

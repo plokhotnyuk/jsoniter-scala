@@ -4,7 +4,7 @@ class SetOfIntsReadingSpec extends BenchmarkSpecBase {
   def benchmark: SetOfIntsReading = new SetOfIntsReading {
     setup()
   }
-  
+
   "SetOfIntsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

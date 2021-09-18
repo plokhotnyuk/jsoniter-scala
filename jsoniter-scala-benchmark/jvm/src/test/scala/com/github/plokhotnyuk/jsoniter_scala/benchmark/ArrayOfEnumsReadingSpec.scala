@@ -4,7 +4,7 @@ class ArrayOfEnumsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfEnumsReading = new ArrayOfEnumsReading {
     setup()
   }
-  
+
   "ArrayOfEnumsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

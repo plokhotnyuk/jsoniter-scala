@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class PrimitivesReadingSpec extends BenchmarkSpecBase {
   def benchmark = new PrimitivesReading
-  
+
   "PrimitivesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

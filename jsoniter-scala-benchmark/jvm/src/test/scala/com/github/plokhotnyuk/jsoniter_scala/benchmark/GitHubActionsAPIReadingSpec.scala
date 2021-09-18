@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
   def benchmark = new GitHubActionsAPIReading
-  
+
   "GitHubActionsAPIReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

@@ -4,7 +4,7 @@ class NestedStructsReadingSpec extends BenchmarkSpecBase {
   def benchmark: NestedStructsReading = new NestedStructsReading {
     setup()
   }
-  
+
   "NestedStructsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

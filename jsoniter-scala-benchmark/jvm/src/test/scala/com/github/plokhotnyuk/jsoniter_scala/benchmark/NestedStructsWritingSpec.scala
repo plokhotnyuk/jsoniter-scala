@@ -4,7 +4,7 @@ class NestedStructsWritingSpec extends BenchmarkSpecBase {
   def benchmark: NestedStructsWriting = new NestedStructsWriting {
     setup()
   }
-  
+
   "NestedStructsWriting" should {
     "write properly" in {
       val b = benchmark

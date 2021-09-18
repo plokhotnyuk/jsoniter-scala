@@ -4,7 +4,7 @@ class IntMapOfBooleansWritingSpec extends BenchmarkSpecBase {
   def benchmark: IntMapOfBooleansWriting = new IntMapOfBooleansWriting {
     setup()
   }
-  
+
   "IntMapOfBooleansWriting" should {
     "write properly" in {
       val b = benchmark

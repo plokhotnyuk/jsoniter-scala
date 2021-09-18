@@ -73,8 +73,8 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val publishSettings = Seq(
-    packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> moduleName.value),
-    mimaCheckDirection := {
+  packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> moduleName.value),
+  mimaCheckDirection := {
     def isPatch: Boolean = {
       val Array(newMajor, newMinor, _) = version.value.split('.')
       val Array(oldMajor, oldMinor, _) = oldVersion.split('.')
@@ -129,7 +129,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
         "org.scalatest" %%% "scalatest" % "3.2.4-M1" % Test,
         "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.4.0-M1" % Test
       )
-      case _=> Seq(
+      case _ => Seq(
         "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.10.0" % Test,
         "org.scalatest" %%% "scalatest" % "3.2.10" % Test
       )
@@ -243,6 +243,6 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
         .withESFeatures(_.withESVersion(ESVersion.ES5_1))
     },
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
-    Test / test := {},  // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
+    Test / test := {}, // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
     coverageEnabled := false // FIXME: Disabled `jsoniter-scala-benchmarkJS` tests
   )

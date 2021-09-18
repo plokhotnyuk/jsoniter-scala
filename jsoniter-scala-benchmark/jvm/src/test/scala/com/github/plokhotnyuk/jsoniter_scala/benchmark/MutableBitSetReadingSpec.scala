@@ -4,7 +4,7 @@ class MutableBitSetReadingSpec extends BenchmarkSpecBase {
   def benchmark: MutableBitSetReading = new MutableBitSetReading {
     setup()
   }
-  
+
   "MutableBitSetReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

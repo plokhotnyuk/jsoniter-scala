@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class TwitterAPIWritingSpec extends BenchmarkSpecBase {
   def benchmark = new TwitterAPIWriting
-  
+
   "TwitterAPIWriting" should {
     "write properly" in {
       val b = benchmark

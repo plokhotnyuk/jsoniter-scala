@@ -4,7 +4,7 @@ class ArrayOfIntsWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfIntsWriting = new ArrayOfIntsWriting {
     setup()
   }
-  
+
   "ArrayOfIntsWriting" should {
     "write properly" in {
       val b = benchmark

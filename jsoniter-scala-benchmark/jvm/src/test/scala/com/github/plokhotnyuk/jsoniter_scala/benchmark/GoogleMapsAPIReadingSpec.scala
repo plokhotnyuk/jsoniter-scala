@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GoogleMapsAPIReadingSpec extends BenchmarkSpecBase {
   def benchmark = new GoogleMapsAPIReading
-  
+
   "GoogleMapsAPIReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

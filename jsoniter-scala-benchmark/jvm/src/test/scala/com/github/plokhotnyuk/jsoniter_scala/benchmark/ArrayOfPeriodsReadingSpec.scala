@@ -4,7 +4,7 @@ class ArrayOfPeriodsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfPeriodsReading = new ArrayOfPeriodsReading {
     setup()
   }
-  
+
   "ArrayOfPeriodsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

@@ -4,7 +4,7 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
   def benchmark: MutableLongMapOfBooleansReading = new MutableLongMapOfBooleansReading {
     setup()
   }
-  
+
   "MutableLongMapOfBooleansReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

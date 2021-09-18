@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GeoJSONWritingSpec extends BenchmarkSpecBase {
   def benchmark = new GeoJSONWriting
-  
+
   "GeoJSONWriting" should {
     "write properly" in {
       val b = benchmark

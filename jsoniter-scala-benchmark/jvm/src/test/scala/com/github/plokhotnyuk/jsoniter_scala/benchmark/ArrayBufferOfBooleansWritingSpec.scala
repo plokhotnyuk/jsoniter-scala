@@ -4,7 +4,7 @@ class ArrayBufferOfBooleansWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayBufferOfBooleansWriting = new ArrayBufferOfBooleansWriting {
     setup()
   }
-  
+
   "ArrayBufferOfBooleansWriting" should {
     "write properly" in {
       val b = benchmark

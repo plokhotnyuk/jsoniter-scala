@@ -4,7 +4,7 @@ class MutableMapOfIntsToBooleansWritingSpec extends BenchmarkSpecBase {
   def benchmark: MutableMapOfIntsToBooleansWriting = new MutableMapOfIntsToBooleansWriting {
     setup()
   }
-  
+
   "MutableMapOfIntsToBooleansWriting" should {
     "write properly" in {
       val b = benchmark

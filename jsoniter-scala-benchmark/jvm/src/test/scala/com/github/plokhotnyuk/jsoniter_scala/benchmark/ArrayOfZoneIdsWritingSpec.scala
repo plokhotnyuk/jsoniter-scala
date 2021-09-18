@@ -4,7 +4,7 @@ class ArrayOfZoneIdsWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfZoneIdsWriting = new ArrayOfZoneIdsWriting {
     setup()
   }
-  
+
   "ArrayOfZoneIdsWriting" should {
     "serialize properly" in {
       val b = benchmark

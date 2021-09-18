@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class PrimitivesWritingSpec extends BenchmarkSpecBase {
   def benchmark = new PrimitivesWriting
-  
+
   "PrimitivesWriting" should {
     "write properly" in {
       val b = benchmark

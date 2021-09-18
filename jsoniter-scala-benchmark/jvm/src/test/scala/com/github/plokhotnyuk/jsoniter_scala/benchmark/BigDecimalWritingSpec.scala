@@ -4,7 +4,7 @@ class BigDecimalWritingSpec extends BenchmarkSpecBase {
   def benchmark: BigDecimalWriting = new BigDecimalWriting {
     setup()
   }
-  
+
   "BigDecimalWriting" should {
     "write properly" in {
       val b = benchmark

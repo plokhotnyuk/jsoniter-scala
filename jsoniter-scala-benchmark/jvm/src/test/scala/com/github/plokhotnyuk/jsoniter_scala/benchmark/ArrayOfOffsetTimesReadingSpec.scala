@@ -4,7 +4,7 @@ class ArrayOfOffsetTimesReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfOffsetTimesReading = new ArrayOfOffsetTimesReading {
     setup()
   }
-  
+
   "ArrayOfOffsetTimesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

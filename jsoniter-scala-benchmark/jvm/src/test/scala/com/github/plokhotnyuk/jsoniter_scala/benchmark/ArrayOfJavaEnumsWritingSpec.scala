@@ -4,7 +4,7 @@ class ArrayOfJavaEnumsWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfJavaEnumsWriting = new ArrayOfJavaEnumsWriting {
     setup()
   }
-  
+
   "ArrayOfJavaEnumsWriting" should {
     "write properly" in {
       val b = benchmark

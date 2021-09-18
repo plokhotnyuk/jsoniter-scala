@@ -4,7 +4,7 @@ class ArrayOfZonedDateTimesReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfZonedDateTimesReading = new ArrayOfZonedDateTimesReading {
     setup()
   }
-  
+
   "ArrayOfZonedDateTimesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

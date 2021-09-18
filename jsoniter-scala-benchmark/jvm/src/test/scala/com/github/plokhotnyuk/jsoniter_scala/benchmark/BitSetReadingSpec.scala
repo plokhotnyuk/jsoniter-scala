@@ -4,7 +4,7 @@ class BitSetReadingSpec extends BenchmarkSpecBase {
   def benchmark: BitSetReading = new BitSetReading {
     setup()
   }
-  
+
   "BitSetReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

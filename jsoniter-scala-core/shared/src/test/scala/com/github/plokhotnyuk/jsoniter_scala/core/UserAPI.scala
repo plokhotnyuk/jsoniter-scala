@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import scala.annotation.switch
 
 case class Device(id: Int, model: String)

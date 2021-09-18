@@ -9,7 +9,7 @@ class SetOfIntsWritingSpec extends BenchmarkSpecBase {
   def benchmark: SetOfIntsWriting = new SetOfIntsWriting {
     setup()
   }
-  
+
   "SetOfIntsWriting" should {
     "serialize properly" in {
       val b = benchmark

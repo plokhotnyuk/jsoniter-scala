@@ -4,7 +4,7 @@ class BitSetWritingSpec extends BenchmarkSpecBase {
   def benchmark: BitSetWriting = new BitSetWriting {
     setup()
   }
-  
+
   "BitSetWriting" should {
     "write properly" in {
       val b = benchmark

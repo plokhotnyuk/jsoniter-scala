@@ -4,7 +4,7 @@ class VectorOfBooleansWritingSpec extends BenchmarkSpecBase {
   def benchmark: VectorOfBooleansWriting = new VectorOfBooleansWriting {
     setup()
   }
-  
+
   "VectorOfBooleansWriting" should {
     "write properly" in {
       val b = benchmark

@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
   def benchmark = new GoogleMapsAPIPrettyPrinting
-  
+
   "GoogleMapsAPIPrettyPrinting" should {
     "pretty print properly" in {
       val b = benchmark

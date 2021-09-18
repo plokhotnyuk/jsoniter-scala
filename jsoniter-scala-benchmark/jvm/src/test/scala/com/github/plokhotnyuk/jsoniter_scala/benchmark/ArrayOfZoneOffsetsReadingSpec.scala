@@ -4,7 +4,7 @@ class ArrayOfZoneOffsetsReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfZoneOffsetsReading = new ArrayOfZoneOffsetsReading {
     setup()
   }
-  
+
   "ArrayOfZoneOffsetsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

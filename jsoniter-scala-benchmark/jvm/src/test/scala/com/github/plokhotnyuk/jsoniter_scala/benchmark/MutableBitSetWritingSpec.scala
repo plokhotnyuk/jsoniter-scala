@@ -4,7 +4,7 @@ class MutableBitSetWritingSpec extends BenchmarkSpecBase {
   def benchmark: MutableBitSetWriting = new MutableBitSetWriting {
     setup()
   }
-  
+
   "MutableBitSetWriting" should {
     "write properly" in {
       val b = benchmark

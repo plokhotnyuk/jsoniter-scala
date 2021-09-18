@@ -4,7 +4,7 @@ class ArrayOfEnumADTsWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfEnumADTsWriting = new ArrayOfEnumADTsWriting {
     setup()
   }
-  
+
   "ArrayOfEnumADTsWriting" should {
     "write properly" in {
       val b = benchmark

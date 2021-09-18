@@ -4,7 +4,7 @@ class ArrayOfZoneOffsetsWritingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfZoneOffsetsWriting = new ArrayOfZoneOffsetsWriting {
     setup()
   }
-  
+
   "ArrayOfZoneOffsetsWriting" should {
     "write properly" in {
       val b = benchmark

@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class IntWritingSpec extends BenchmarkSpecBase {
   def benchmark = new IntWriting
-  
+
   "IntWriting" should {
     "write properly" in {
       val b = benchmark

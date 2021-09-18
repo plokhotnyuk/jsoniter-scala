@@ -4,7 +4,7 @@ class MutableMapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
   def benchmark: MutableMapOfIntsToBooleansReading = new MutableMapOfIntsToBooleansReading {
     setup()
   }
-  
+
   "MutableMapOfIntsToBooleansReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

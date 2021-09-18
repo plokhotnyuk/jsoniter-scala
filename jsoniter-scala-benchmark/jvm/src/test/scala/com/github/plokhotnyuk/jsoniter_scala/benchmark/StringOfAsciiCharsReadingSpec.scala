@@ -4,7 +4,7 @@ class StringOfAsciiCharsReadingSpec extends BenchmarkSpecBase {
   def benchmark: StringOfAsciiCharsReading = new StringOfAsciiCharsReading {
     setup()
   }
-  
+
   "StringOfAsciiCharsReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

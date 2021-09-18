@@ -12,4 +12,4 @@ object Level {
     else throw new IllegalArgumentException(s"Unrecognized Level name: $name")
 }
 
-final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
+final class Level private(name: String, ordinal: Int) extends Enum[Level](name, ordinal)

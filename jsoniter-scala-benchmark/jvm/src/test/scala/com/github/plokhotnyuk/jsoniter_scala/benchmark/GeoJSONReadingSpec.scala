@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 class GeoJSONReadingSpec extends BenchmarkSpecBase {
   def benchmark = new GeoJSONReading
-  
+
   "GeoJSONReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

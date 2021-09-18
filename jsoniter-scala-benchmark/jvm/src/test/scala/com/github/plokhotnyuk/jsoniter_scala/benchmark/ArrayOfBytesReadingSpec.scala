@@ -4,7 +4,7 @@ class ArrayOfBytesReadingSpec extends BenchmarkSpecBase {
   def benchmark: ArrayOfBytesReading = new ArrayOfBytesReading {
     setup()
   }
-  
+
   "ArrayOfBytesReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj

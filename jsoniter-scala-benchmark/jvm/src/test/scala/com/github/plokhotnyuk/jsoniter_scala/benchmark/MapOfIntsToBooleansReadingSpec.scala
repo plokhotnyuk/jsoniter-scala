@@ -4,7 +4,7 @@ class MapOfIntsToBooleansReadingSpec extends BenchmarkSpecBase {
   def benchmark: MapOfIntsToBooleansReading = new MapOfIntsToBooleansReading {
     setup()
   }
-  
+
   "MapOfIntsToBooleansReading" should {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
