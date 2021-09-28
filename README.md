@@ -67,8 +67,8 @@ instances of a _fixed_ set of classes during parsing to avoid RCE attacks
 values by placeholder characters, parse numbers with limited binary representation doing half even rounding for too 
 long JSON numbers, serialize floats and doubles to the _shortest_ textual representation without loosing of precision 
 3. **Speed**: do parsing and serialization of JSON directly from UTF-8 bytes to your data structures and back, do it 
-crazily fast without using of run-time reflection, intermediate ASTs, strings or hash maps, with minimum allocations and
-copying
+crazily fast without using of runtime reflection or runtime code generation, intermediate ASTs, hash maps, but with 
+minimum allocations and copying
 4. **Productivity**: derive codecs recursively for complex types using one line macro, do it in _compile-time_ to 
 minimize the probability of run-time issues, optionally print generated sources as compiler output to be inspected for 
 proving safety and correctness or to be reused as a starting point for the implementation of custom codecs, prohibit 
@@ -139,7 +139,7 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Releases for different Scala versions: 2.11, 2.12, 2.13
 - Suppressing of all WartRemover warnings for generated codecs  
 - Support of shading to another package for locking on a particular released version
-- Patch versions are backward and forward compatible
+- Patch versions are backward and forward compatible, minor versions are backward compatible
 - Support of compilation to a native image by GraalVM
 - Support of Scala.js 1.0+
   
