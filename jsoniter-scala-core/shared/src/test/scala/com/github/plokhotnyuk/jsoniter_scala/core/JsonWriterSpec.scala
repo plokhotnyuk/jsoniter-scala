@@ -376,8 +376,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       }
     }
     "write string with mixed Latin-1 characters when escaping of Unicode chars is turned on" in {
-      withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal("a\bc")) shouldBe "\"a\\bc\""
-      withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey("a\bc")) shouldBe "\"a\\bc\":"
+      withWriter(WriterConfig.withEscapeUnicode(true))(_.writeVal("ї\bc\u0000")) shouldBe "\"\\u0457\\bc\\u0000\""
+      withWriter(WriterConfig.withEscapeUnicode(true))(_.writeKey("ї\bc\u0000")) shouldBe "\"\\u0457\\bc\\u0000\":"
     }
     "write string with mixed UTF-8 characters when escaping of Unicode chars is turned off" in {
       withWriter(_.writeVal("ї\bc\u0000")) shouldBe "\"ї\\bc\\u0000\""
