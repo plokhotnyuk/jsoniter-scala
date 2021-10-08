@@ -121,7 +121,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.6", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("3.0.2", "2.13.6", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
