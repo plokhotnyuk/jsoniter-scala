@@ -15,7 +15,7 @@ abstract class ArrayOfZoneOffsetsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).map(i => ZoneOffset.ofHoursMinutesSeconds(i % 17, (i % 4) * 15, 0)).toArray
+    obj = (1 to size).map(i => ZoneOffset.ofHoursMinutesSeconds(i % 17, (i % 2) * 30, 0)).toArray
     jsonString = obj.mkString("[\"", "\",\"", "\"]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
