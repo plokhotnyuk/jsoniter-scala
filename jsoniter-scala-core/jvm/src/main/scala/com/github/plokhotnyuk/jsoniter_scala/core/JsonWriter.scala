@@ -1605,17 +1605,24 @@ final class JsonWriter private[jsoniter_scala](
           buf(p) = '-'
           -totalSeconds
         }
-      val q1 = q0 * 37283 >>> 27 // divide a small positive int by 3600
-      val r1 = q0 - q1 * 3600
+      val p1 = q0 * 37283
+      val q1 = p1 >>> 27 // divide a small positive int by 3600
       var pos = write2Digits(q1, p + 1, buf, ds)
       buf(pos) = ':'
-      val q2 = r1 * 17477 >> 20 // divide a small positive int by 60
-      val r2 = r1 - q2 * 60
-      pos = write2Digits(q2, pos + 1, buf, ds)
-      if (r2 == 0) pos
-      else {
-        buf(pos) = ':'
-        write2Digits(r2, pos + 1, buf, ds)
+      if ((p1 & 0x7FF8000) == 0) { // check if q0 is divisible by 3600
+        buf(pos + 1) = '0'
+        buf(pos + 2) = '0'
+        pos + 3
+      } else {
+        val r1 = q0 - q1 * 3600
+        val p2 = r1 * 17477
+        val q2 = p2 >> 20 // divide a small positive int by 60
+        pos = write2Digits(q2, pos + 1, buf, ds)
+        if ((p2 & 0xFC000) == 0) pos // check if r1 is divisible by 60
+        else {
+          buf(pos) = ':'
+          write2Digits(r1 - q2 * 60, pos + 1, buf, ds)
+        }
       }
     }
   }
