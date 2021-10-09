@@ -1539,18 +1539,21 @@ final class JsonWriter private[jsoniter_scala](
         val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
         val r1 = nano - q1 * 10000000
         pos = write2Digits(q1, pos + 1, buf, ds)
-        val q2 = (r1 * 175921861L >> 44).toInt // divide a positive int by 100000
-        val r2 = r1 - q2 * 100000
+        val p2 = r1 * 175921861L
+        val q2 = (p2 >> 44).toInt // divide a positive int by 100000
         val d = ds(q2)
         buf(pos) = d.toByte
         pos += 1
         val b = (d >> 8).toByte
-        if ((r2 | b - '0') != 0) {
+        if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
+          val r2 = r1 - q2 * 100000
           buf(pos) = b
-          val q3 = (r2 * 2199023256L >> 41).toInt // divide a positive int by 1000
-          val r3 = r2 - q3 * 1000
+          val p3 = r2 * 2199023256L
+          val q3 = (p3 >> 41).toInt // divide a positive int by 1000
           pos = write2Digits(q3, pos + 1, buf, ds)
-          if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
+          if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
+            pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
+          }
         }
       }
     }
@@ -1568,18 +1571,21 @@ final class JsonWriter private[jsoniter_scala](
       val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
       val r1 = nano - q1 * 10000000
       pos = write2Digits(q1, pos + 1, buf, ds)
-      val q2 = (r1 * 175921861L >> 44).toInt // divide a positive int by 100000
-      val r2 = r1 - q2 * 100000
+      val p2 = r1 * 175921861L
+      val q2 = (p2 >> 44).toInt // divide a positive int by 100000
       val d = ds(q2)
       buf(pos) = d.toByte
       pos += 1
       val b = (d >> 8).toByte
-      if ((r2 | b - '0') != 0) {
+      if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
+        val r2 = r1 - q2 * 100000
         buf(pos) = b
-        val q3 = (r2 * 2199023256L >> 41).toInt // divide a positive int by 1000
-        val r3 = r2 - q3 * 1000
+        val p3 = r2 * 2199023256L
+        val q3 = (p3 >> 41).toInt // divide a positive int by 1000
         pos = write2Digits(q3, pos + 1, buf, ds)
-        if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
+        if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
+          pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
+        }
       }
     }
     pos
