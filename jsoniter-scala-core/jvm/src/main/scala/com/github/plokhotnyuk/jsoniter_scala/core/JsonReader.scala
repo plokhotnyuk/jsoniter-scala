@@ -907,13 +907,12 @@ final class JsonReader private[jsoniter_scala](
       val b1 = buf(pos)
       val b2 = buf(pos + 1)
       val b3 = buf(pos + 2)
-      val minute = b1 * 10 + b2 - 528 // 528 == '0' * 11
       head = pos + 3
       if (b1 < '0' || b1 > '9') digitError(pos)
       if (b2 < '0' || b2 > '9') digitError(pos + 1)
       if (b1 > '5') minuteError(pos + 1)
       if (b3 != t) tokenError(t, pos + 2)
-      minute
+      b1 * 10 + b2 - 528 // 528 == '0' * 11
     } else parseMinuteWithByte(t, loadMoreOrError(pos))
 
   @tailrec

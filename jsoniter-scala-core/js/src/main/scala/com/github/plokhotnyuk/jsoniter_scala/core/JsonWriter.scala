@@ -1646,8 +1646,8 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write3Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 * 1311 >> 17 // divide a small positive int by 100
-    val d = ds(q0 - q1 * 100)
     buf(pos) = (q1 + '0').toByte
+    val d = ds(q0 - q1 * 100)
     buf(pos + 1) = d.toByte
     buf(pos + 2) = (d >> 8).toByte
     pos + 3
@@ -1686,10 +1686,9 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 / 100000000
-    val r1 = (q0 - q1 * 100000000).toInt
-    val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-    val r2 = (q1 - q2 * 100000000).toInt
-    write8Digits(r1, write8Digits(r2, write2Digits(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
+    val q2 = q1 / 100000000
+    write8Digits((q0 - q1 * 100000000).toInt,
+      write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
   }
 
   private[this] def writeShort(x: Short): Unit = count = {
@@ -1754,13 +1753,13 @@ final class JsonWriter private[jsoniter_scala](
     if (q0.toInt == q0) writePositiveInt(q0.toInt, pos, buf, ds)
     else {
       val q1 = q0 / 100000000
-      val r1 = (q0 - q1 * 100000000).toInt
-      if (q1.toInt == q1) write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
-      else {
-        val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-        val r2 = (q1 - q2 * 100000000).toInt
-        write8Digits(r1, write8Digits(r2, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
-      }
+      write8Digits((q0 - q1 * 100000000).toInt, {
+        if (q1.toInt == q1) writePositiveInt(q1.toInt, pos, buf, ds)
+        else {
+          val q2 = q1 / 100000000
+          write8Digits((q1 - q2 * 100000000).toInt, writePositiveInt(q2.toInt, pos, buf, ds), buf, ds)
+        }
+      }, buf, ds)
     }
   }
 
