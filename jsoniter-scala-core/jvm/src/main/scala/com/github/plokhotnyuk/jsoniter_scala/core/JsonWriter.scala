@@ -813,15 +813,15 @@ final class JsonWriter private[jsoniter_scala](
     val pos = ensureBufCapacity(38) // 38 == (new java.util.UUID(0, 0)).toString.length + 2
     val buf = this.buf
     val ds = lowerCaseHexDigits
-    val mostSigBits1 = (mostSigBits >>> 32).toInt
+    val mostSigBits1 = (mostSigBits >> 32).toInt
     buf(pos) = '"'
     val d1 = ds(mostSigBits1 >>> 24)
     buf(pos + 1) = d1.toByte
     buf(pos + 2) = (d1 >> 8).toByte
-    val d2 = ds((mostSigBits1 >>> 16) & 0xFF)
+    val d2 = ds((mostSigBits1 >> 16) & 0xFF)
     buf(pos + 3) = d2.toByte
     buf(pos + 4) = (d2 >> 8).toByte
-    val d3 = ds((mostSigBits1 >>> 8) & 0xFF)
+    val d3 = ds((mostSigBits1 >> 8) & 0xFF)
     buf(pos + 5) = d3.toByte
     buf(pos + 6) = (d3 >> 8).toByte
     val d4 = ds(mostSigBits1 & 0xFF)
@@ -832,26 +832,26 @@ final class JsonWriter private[jsoniter_scala](
     val d5 = ds(mostSigBits2 >>> 24)
     buf(pos + 10) = d5.toByte
     buf(pos + 11) = (d5 >> 8).toByte
-    val d6 = ds((mostSigBits2 >>> 16) & 0xFF)
+    val d6 = ds((mostSigBits2 >> 16) & 0xFF)
     buf(pos + 12) = d6.toByte
     buf(pos + 13) = (d6 >> 8).toByte
     buf(pos + 14) = '-'
-    val d7 = ds((mostSigBits2 >>> 8) & 0xFF)
+    val d7 = ds((mostSigBits2 >> 8) & 0xFF)
     buf(pos + 15) = d7.toByte
     buf(pos + 16) = (d7 >> 8).toByte
     val d8 = ds(mostSigBits2 & 0xFF)
     buf(pos + 17) = d8.toByte
     buf(pos + 18) = (d8 >> 8).toByte
-    val leastSigBits1 = (leastSigBits >>> 32).toInt
+    val leastSigBits1 = (leastSigBits >> 32).toInt
     buf(pos + 19) = '-'
     val d9 = ds(leastSigBits1 >>> 24)
     buf(pos + 20) = d9.toByte
     buf(pos + 21) = (d9 >> 8).toByte
-    val d10 = ds((leastSigBits1 >>> 16) & 0xFF)
+    val d10 = ds((leastSigBits1 >> 16) & 0xFF)
     buf(pos + 22) = d10.toByte
     buf(pos + 23) = (d10 >> 8).toByte
     buf(pos + 24) = '-'
-    val d11 = ds((leastSigBits1 >>> 8) & 0xFF)
+    val d11 = ds((leastSigBits1 >> 8) & 0xFF)
     buf(pos + 25) = d11.toByte
     buf(pos + 26) = (d11 >> 8).toByte
     val d12 = ds(leastSigBits1 & 0xFF)
@@ -861,10 +861,10 @@ final class JsonWriter private[jsoniter_scala](
     val d13 = ds(leastSigBits2 >>> 24)
     buf(pos + 29) = d13.toByte
     buf(pos + 30) = (d13 >> 8).toByte
-    val d14 = ds((leastSigBits2 >>> 16) & 0xFF)
+    val d14 = ds((leastSigBits2 >> 16) & 0xFF)
     buf(pos + 31) = d14.toByte
     buf(pos + 32) = (d14 >> 8).toByte
-    val d15 = ds((leastSigBits2 >>> 8) & 0xFF)
+    val d15 = ds((leastSigBits2 >> 8) & 0xFF)
     buf(pos + 33) = d15.toByte
     buf(pos + 34) = (d15 >> 8).toByte
     val d16 = ds(leastSigBits2 & 0xFF)
@@ -1017,7 +1017,7 @@ final class JsonWriter private[jsoniter_scala](
     val ds = lowerCaseHexDigits
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
-    val d1 = ds(ch >>> 8)
+    val d1 = ds(ch >> 8)
     buf(pos + 2) = d1.toByte
     buf(pos + 3) = (d1 >> 8).toByte
     val d2 = ds(ch & 0xFF)
@@ -1127,7 +1127,7 @@ final class JsonWriter private[jsoniter_scala](
     }
 
   private[this] def calculateTenPow18SquareNumber(x: BigInteger): Int = {
-    val m = Math.max((x.bitLength * 71828554L >>> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
+    val m = Math.max((x.bitLength * 71828554L >> 32).toInt - 1, 1) // Math.max((x.bitLength * Math.log(1e18) / Math.log(2)).toInt - 1, 1)
     31 - java.lang.Integer.numberOfLeadingZeros(m)
   }
 
@@ -1238,8 +1238,7 @@ final class JsonWriter private[jsoniter_scala](
           if (hours.toInt == hours) writePositiveInt(hours.toInt, pos, buf, ds)
           else {
             val q1 = hours / 100000000 // FIXME: Use Math.multiplyHigh(hours, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-            val r1 = (hours - q1 * 100000000).toInt
-            write8Digits(r1, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
+            write8Digits((hours - q1 * 100000000).toInt, writePositiveInt(q1.toInt, pos, buf, ds), buf, ds)
           }
         buf(pos) = 'H'
         pos += 1
@@ -1662,9 +1661,10 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
-    val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
-    write8Digits((q0 - q1 * 100000000).toInt,
-      write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds), buf, ds)
+    write8Digits((q0 - q1 * 100000000).toInt, {
+      val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+      write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
+    }, buf, ds)
   }
 
   private[this] def writeShort(x: Short): Unit = count = {
@@ -1795,7 +1795,7 @@ final class JsonWriter private[jsoniter_scala](
         val vbrd = outm1 - rop(g1, cb + 2 << h)
         val s = vb >> 2
         if (s < 100 || {
-          dv = (s * 3435973837L >>> 35).toInt // divide a positive int by 10
+          dv = (s * 3435973837L >> 35).toInt // divide a positive int by 10
           val sp40 = dv * 40
           val upin = vbls - sp40
           ((sp40 + vbrd + 40) ^ upin) >= 0 || {

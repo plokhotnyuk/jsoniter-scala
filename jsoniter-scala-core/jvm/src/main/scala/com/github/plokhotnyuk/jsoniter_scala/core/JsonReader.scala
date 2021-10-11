@@ -1820,7 +1820,7 @@ final class JsonReader private[jsoniter_scala](
       x = x * 10 + (buf(pos) - '0')
       pos += 1
     }
-    val lastWord = ((len * 445861642L) >>> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
+    val lastWord = ((len * 445861642L) >> 32).toInt // (len * Math.log(10) / Math.log(1L << 32)).toInt
     var firstWord = lastWord
     val numWords = lastWord + 1
     val magWords = new Array[Int](numWords)
@@ -2892,7 +2892,7 @@ final class JsonReader private[jsoniter_scala](
       charBuf(i + 50 - (linePos << 1)) =
         if (pos >= start && pos < end) {
           val b = buf(pos)
-          charBuf(i) = ds((b >>> 4) & 0xF)
+          charBuf(i) = ds((b >> 4) & 0xF)
           charBuf(i + 1) = ds(b & 0xF)
           charBuf(i + 2) = ' '
           if (b <= 31 || b >= 127) '.'
@@ -2923,7 +2923,7 @@ final class JsonReader private[jsoniter_scala](
     if (d.toInt != d) {
       var shift = (64 - java.lang.Long.numberOfLeadingZeros(d)) & 0x3C
       while (shift >= 32) {
-        charBuf(j) = ds((d >>> shift).toInt & 0xF)
+        charBuf(j) = ds((d >> shift).toInt & 0xF)
         shift -= 4
         j += 1
       }
@@ -2934,19 +2934,19 @@ final class JsonReader private[jsoniter_scala](
 
   private[this] def appendHexByte(b: Byte, i: Int, ds: Array[Char]): Int = {
     if (i + 2 >= charBuf.length) growCharBuf(i + 2)
-    charBuf(i) = ds((b >>> 4) & 0xF)
+    charBuf(i) = ds((b >> 4) & 0xF)
     charBuf(i + 1) = ds(b & 0xF)
     i + 2
   }
 
   private[this] def putHexInt(d: Int, i: Int, charBuf: Array[Char], ds: Array[Char]): Unit = {
     charBuf(i) = ds(d >>> 28)
-    charBuf(i + 1) = ds((d >>> 24) & 0xF)
-    charBuf(i + 2) = ds((d >>> 20) & 0xF)
-    charBuf(i + 3) = ds((d >>> 16) & 0xF)
-    charBuf(i + 4) = ds((d >>> 12) & 0xF)
-    charBuf(i + 5) = ds((d >>> 8) & 0xF)
-    charBuf(i + 6) = ds((d >>> 4) & 0xF)
+    charBuf(i + 1) = ds((d >> 24) & 0xF)
+    charBuf(i + 2) = ds((d >> 20) & 0xF)
+    charBuf(i + 3) = ds((d >> 16) & 0xF)
+    charBuf(i + 4) = ds((d >> 12) & 0xF)
+    charBuf(i + 5) = ds((d >> 8) & 0xF)
+    charBuf(i + 6) = ds((d >> 4) & 0xF)
     charBuf(i + 7) = ds(d & 0xF)
   }
 
