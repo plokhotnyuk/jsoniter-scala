@@ -1049,7 +1049,8 @@ final class JsonReader private[jsoniter_scala](
       var zoneId = zoneIds.get(k)
       if ((zoneId eq null) && {
         zoneId = ZoneId.of(k.toString)
-        !zoneId.isInstanceOf[ZoneOffset] || zoneId.asInstanceOf[ZoneOffset].getTotalSeconds % 900 == 0
+        !zoneId.isInstanceOf[ZoneOffset] ||
+          (zoneId.asInstanceOf[ZoneOffset].getTotalSeconds * 37283 & 0x1FF8000) == 0 // check if divisible by 900
       }) zoneIds.put(k.copy, zoneId)
       zoneId
     } catch {
@@ -1814,7 +1815,8 @@ final class JsonReader private[jsoniter_scala](
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - offset
     var x = 0L
-    val firstBlockLimit = (len % 9) + offset
+    val lenD9 = (len * 954437177L >> 33).toInt // divide a positive number by 9
+    val firstBlockLimit = len - (lenD9 << 3) - lenD9 + offset // len % 9 + offset
     var pos = offset
     while (pos < firstBlockLimit) {
       x = x * 10 + (buf(pos) - '0')
