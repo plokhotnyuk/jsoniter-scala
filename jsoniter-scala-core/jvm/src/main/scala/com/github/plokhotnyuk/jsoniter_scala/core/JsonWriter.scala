@@ -1536,25 +1536,7 @@ final class JsonWriter private[jsoniter_scala](
       pos = write2Digits(second, pos + 1, buf, ds)
       if (nano != 0) {
         buf(pos) = '.'
-        val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
-        val r1 = nano - q1 * 10000000
-        pos = write2Digits(q1, pos + 1, buf, ds)
-        val p2 = r1 * 175921861L
-        val q2 = (p2 >> 44).toInt // divide a positive int by 100000
-        val d = ds(q2)
-        buf(pos) = d.toByte
-        pos += 1
-        val b = (d >> 8).toByte
-        if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
-          val r2 = r1 - q2 * 100000
-          buf(pos) = b
-          val p3 = r2 * 2199023256L
-          val q3 = (p3 >> 41).toInt // divide a positive int by 1000
-          pos = write2Digits(q3, pos + 1, buf, ds)
-          if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
-            pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
-          }
-        }
+        pos = writeNanos(nano, pos + 1, buf, ds)
       }
     }
     pos
@@ -1568,24 +1550,28 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(second, pos + 1, buf, ds)
     if (nano != 0) {
       buf(pos) = '.'
-      val q1 = (nano * 1801439851L >> 54).toInt // divide a positive int by 10000000
-      val r1 = nano - q1 * 10000000
-      pos = write2Digits(q1, pos + 1, buf, ds)
-      val p2 = r1 * 175921861L
-      val q2 = (p2 >> 44).toInt // divide a positive int by 100000
-      val d = ds(q2)
-      buf(pos) = d.toByte
-      pos += 1
-      val b = (d >> 8).toByte
-      if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
-        val r2 = r1 - q2 * 100000
-        buf(pos) = b
-        val p3 = r2 * 2199023256L
-        val q3 = (p3 >> 41).toInt // divide a positive int by 1000
-        pos = write2Digits(q3, pos + 1, buf, ds)
-        if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
-          pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
-        }
+      writeNanos(nano, pos + 1, buf, ds)
+    } else pos
+  }
+
+  private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = (q0 * 1801439851L >> 54).toInt // divide a positive int by 10000000
+    val r1 = q0 - q1 * 10000000
+    var pos = write2Digits(q1, p, buf, ds)
+    val p2 = r1 * 175921861L
+    val q2 = (p2 >> 44).toInt // divide a positive int by 100000
+    val d = ds(q2)
+    buf(pos) = d.toByte
+    pos += 1
+    val b = (d >> 8).toByte
+    if ((p2 & 0xFFFF8000000L | b - '0') != 0) { // check if r1 divisible by 100000 and the next digit is zero
+      val r2 = r1 - q2 * 100000
+      buf(pos) = b
+      val p3 = r2 * 2199023256L
+      val q3 = (p3 >> 41).toInt // divide a positive int by 1000
+      pos = write2Digits(q3, pos + 1, buf, ds)
+      if ((p3 & 0x1FF80000000L) != 0) { // check if r2 divisible by 1000
+        pos = write3Digits(r2 - q3 * 1000, pos, buf, ds)
       }
     }
     pos

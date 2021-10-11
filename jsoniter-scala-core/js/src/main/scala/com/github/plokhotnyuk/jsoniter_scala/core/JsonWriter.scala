@@ -1559,22 +1559,7 @@ final class JsonWriter private[jsoniter_scala](
       pos = write2Digits(second, pos + 1, buf, ds)
       if (nano != 0) {
         buf(pos) = '.'
-        val q1 = nano / 10000000
-        val r1 = nano - q1 * 10000000
-        pos = write2Digits(q1, pos + 1, buf, ds)
-        val q2 = r1 / 100000
-        val r2 = r1 - q2 * 100000
-        val d = ds(q2)
-        buf(pos) = d.toByte
-        pos += 1
-        val b = (d >> 8).toByte
-        if ((r2 | b - '0') != 0) {
-          buf(pos) = b
-          val q3 = r2 / 1000
-          val r3 = r2 - q3 * 1000
-          pos = write2Digits(q3, pos + 1, buf, ds)
-          if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
-        }
+        pos = writeNanos(nano, pos + 1, buf, ds)
       }
     }
     pos
@@ -1588,22 +1573,26 @@ final class JsonWriter private[jsoniter_scala](
     pos = write2Digits(second, pos + 1, buf, ds)
     if (nano != 0) {
       buf(pos) = '.'
-      val q1 = nano / 10000000
-      val r1 = nano - q1 * 10000000
-      pos = write2Digits(q1, pos + 1, buf, ds)
-      val q2 = r1 / 100000
-      val r2 = r1 - q2 * 100000
-      val d = ds(q2)
-      buf(pos) = d.toByte
-      pos += 1
-      val b = (d >> 8).toByte
-      if ((r2 | b - '0') != 0) {
-        buf(pos) = b
-        val q3 = r2 / 1000
-        val r3 = r2 - q3 * 1000
-        pos = write2Digits(q3, pos + 1, buf, ds)
-        if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
-      }
+      writeNanos(nano, pos + 1, buf, ds)
+    } else pos
+  }
+
+  private[this] def writeNanos(q0: Int, p: Int, buf: Array[Byte], ds: Array[Short]): Int = {
+    val q1 = q0 / 10000000
+    val r1 = q0 - q1 * 10000000
+    var pos = write2Digits(q1, p, buf, ds)
+    val q2 = r1 / 100000
+    val r2 = r1 - q2 * 100000
+    val d = ds(q2)
+    buf(pos) = d.toByte
+    pos += 1
+    val b = (d >> 8).toByte
+    if ((r2 | b - '0') != 0) {
+      buf(pos) = b
+      val q3 = r2 / 1000
+      val r3 = r2 - q3 * 1000
+      pos = write2Digits(q3, pos + 1, buf, ds)
+      if (r3 != 0) pos = write3Digits(r3, pos, buf, ds)
     }
     pos
   }
