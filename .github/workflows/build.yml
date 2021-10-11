@@ -44,9 +44,3 @@ jobs:
       - name: Compile, test and check binary compatibility
         run: "sbt -batch clean +test +mimaReportBinaryIssues"
         shell: bash
-      - name: Test with coverage
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: "sbt -batch ++2.13.6! coverage jsoniter-scala-coreJVM/test jsoniter-scala-macrosJVM/test jsoniter-scala-benchmarkJVM/test coverageAggregate coveralls"
-        shell: bash
