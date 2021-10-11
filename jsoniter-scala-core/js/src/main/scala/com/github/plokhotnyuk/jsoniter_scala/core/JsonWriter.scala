@@ -1306,11 +1306,11 @@ final class JsonWriter private[jsoniter_scala](
     var marchZeroDay = epochDay + 719468 // 719468 == 719528 - 60 == days 0000 to 1970 - days 1st Jan to 1st Mar
     var adjustYear = 0
     if (marchZeroDay < 0) { // adjust negative years to positive for calculation
-      val adjust400YearCycles = to400YearCycle(marchZeroDay + 1) - 1
+      val adjust400YearCycles = ((marchZeroDay + 1) / 146097).toInt - 1 // 146097 == number of days in a 400 year cycle
       adjustYear = adjust400YearCycles * 400
       marchZeroDay -= adjust400YearCycles * 146097L
     }
-    var year = to400YearCycle(marchZeroDay * 400 + 591)
+    var year = ((marchZeroDay * 400 + 591) / 146097).toInt
     var marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
     if (marchDayOfYear < 0) { // fix year estimate
       year -= 1
@@ -1337,8 +1337,6 @@ final class JsonWriter private[jsoniter_scala](
     buf(pos + 1) = '"'
     pos + 2
   }
-
-  private[this] def to400YearCycle(day: Long): Int = (day / 146097).toInt // 146097 == number of days in a 400 year cycle
 
   private[this] def toMarchDayOfYear(marchZeroDay: Long, year: Int): Int = {
     val century = year / 100
@@ -1422,10 +1420,10 @@ final class JsonWriter private[jsoniter_scala](
       buf(pos + 1) = 'D'
       pos += 2
     } else {
+      val ds = digits
       val years = x.getYears
       val months = x.getMonths
       val days = x.getDays
-      val ds = digits
       if (years != 0) pos = writePeriod(years, pos, buf, ds, 'Y')
       if (months != 0) pos = writePeriod(months, pos, buf, ds, 'M')
       if (days != 0) pos = writePeriod(days, pos, buf, ds, 'D')
@@ -1772,7 +1770,6 @@ final class JsonWriter private[jsoniter_scala](
     val bits = java.lang.Float.floatToIntBits(x)
     var pos = ensureBufCapacity(15)
     val buf = this.buf
-    val ds = digits
     if (bits < 0) {
       buf(pos) = '-'
       pos += 1
@@ -1833,6 +1830,7 @@ final class JsonWriter private[jsoniter_scala](
           exp -= expShift
         }
       }
+      val ds = digits
       val len = digitCount(dv)
       exp += len - 1
       if (exp < -3 || exp >= 7) {
@@ -1895,7 +1893,6 @@ final class JsonWriter private[jsoniter_scala](
     val bits = java.lang.Double.doubleToLongBits(x)
     var pos = ensureBufCapacity(24)
     val buf = this.buf
-    val ds = digits
     if (bits < 0) {
       buf(pos) = '-'
       pos += 1
@@ -1959,6 +1956,7 @@ final class JsonWriter private[jsoniter_scala](
           exp -= expShift
         }
       }
+      val ds = digits
       val len = digitCount(dv)
       exp += len - 1
       if (exp < -3 || exp >= 7) {
