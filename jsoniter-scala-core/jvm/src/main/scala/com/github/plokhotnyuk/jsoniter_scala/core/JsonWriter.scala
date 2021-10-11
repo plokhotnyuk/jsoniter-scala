@@ -1224,7 +1224,7 @@ final class JsonWriter private[jsoniter_scala](
       val effectiveTotalSecs =
         if (totalSecs < 0) (-nano >> 31) - totalSecs
         else totalSecs
-      val hours = effectiveTotalSecs / 3600 // FIXME: Use Math.multiplyHigh(x >> 4, 655884233731895169L) >> 3 after dropping of JDK 8 support
+      val hours = effectiveTotalSecs / 3600 // FIXME: Use Math.multiplyHigh(x, 5247073869855161349L) >> 10 after dropping of JDK 8 support
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
       val seconds = secsOfHour - minutes * 60
@@ -1280,7 +1280,7 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeInstant(x: Instant): Unit = count = {
     val epochSecond = x.getEpochSecond
-    val epochDay =
+    val epochDay = // FIXME: Use (Math.multiplyHigh(if (epochSecond >= 0) epochSecond else epochSecond - 86399, 1749024623285053783L) >> 13) - (epochSecond >> 63) after dropping JDK 8 support
       (if (epochSecond >= 0) epochSecond
       else epochSecond - 86399) / 86400 // 86400 == seconds per day
     val secsOfDay = (epochSecond - epochDay * 86400).toInt
@@ -1292,7 +1292,8 @@ final class JsonWriter private[jsoniter_scala](
       adjustYear = adjust400YearCycles * 400
       marchZeroDay -= adjust400YearCycles * 146097L // 146097 == number of days in a 400 year cycle
     }
-    var year = ((marchZeroDay * 400 + 591) / 146097).toInt
+    var year = // FIXME: Use { val pa = marchZeroDay * 400 + 591; ((Math.multiplyHigh(pa, 4137408090565272301L) >> 15) + (pa >> 63)).toInt } after dropping JDK 8 support
+      ((marchZeroDay * 400 + 591) / 146097).toInt
     var marchDayOfYear = toMarchDayOfYear(marchZeroDay, year)
     if (marchDayOfYear < 0) { // fix year estimate
       year -= 1
@@ -1996,7 +1997,7 @@ final class JsonWriter private[jsoniter_scala](
     (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
   }
 
-  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Use Karatsuba technique for two positive ints
+  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive ints
     val x2 = x & 0xFFFFFFFFL
     val y2 = y & 0xFFFFFFFFL
     val b = x2 * y2
