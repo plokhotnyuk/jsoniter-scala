@@ -987,10 +987,13 @@ final class JsonReader private[jsoniter_scala](
       val b1 = buf(pos)
       val b2 = buf(pos + 1)
       head = pos + 2
-      if (b1 < '0' || b1 > '9') digitError(pos)
-      if (b2 < '0' || b2 > '9') digitError(pos + 1)
-      if (b1 > '5') timezoneOffsetMinuteError(pos + 1)
-      b1 * 10 + b2 - 528 // 528 == '0' * 11
+      if (b1 == '0' && b2 == '0') 0
+      else {
+        if (b1 < '0' || b1 > '9') digitError(pos)
+        if (b2 < '0' || b2 > '9') digitError(pos + 1)
+        if (b1 > '5') timezoneOffsetMinuteError(pos + 1)
+        b1 * 10 + b2 - 528 // 528 == '0' * 11
+      }
     } else parseOffsetMinute(loadMoreOrError(pos))
 
   @tailrec
