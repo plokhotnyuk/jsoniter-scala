@@ -26,7 +26,6 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
       fail-fast: false
     steps:
       - name: Configure git
