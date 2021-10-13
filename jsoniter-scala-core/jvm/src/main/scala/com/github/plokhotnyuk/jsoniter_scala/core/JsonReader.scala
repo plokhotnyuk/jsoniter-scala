@@ -1861,7 +1861,7 @@ final class JsonReader private[jsoniter_scala](
     val signum =
       if (isNeg) -1
       else 1
-    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale)
+    new java.math.BigDecimal(new java.math.BigInteger(signum, magBytes), scale) // FIXME: Use cached arrays with the constructor that has an offset and a len params after dropping of JDK 8 support
   }
 
   private[this] def readNullOrNumberError[@sp A](default: A, pos: Int): A =
@@ -2031,11 +2031,11 @@ final class JsonReader private[jsoniter_scala](
       val b2 = buf(pos + 1)
       val b3 = buf(pos + 2)
       val b4 = buf(pos + 3)
+      val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
       val b5 = buf(pos + 4)
       val b6 = buf(pos + 5)
       val b7 = buf(pos + 6)
       val b8 = buf(pos + 7)
-      val month = b3 * 10 + b4 - 528 // 528 == '0' * 11
       val day = b6 * 10 + b7 - 528 // 528 == '0' * 11
       head = pos + 8
       if (b1 != '-') tokenError('-', pos)
