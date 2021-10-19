@@ -15,6 +15,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.ToJson
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
+import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 
 class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
@@ -26,6 +27,9 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = writeToArray(obj.asJson)
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)

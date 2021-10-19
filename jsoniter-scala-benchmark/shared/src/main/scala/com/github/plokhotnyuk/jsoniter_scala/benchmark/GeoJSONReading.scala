@@ -17,7 +17,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
+import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
@@ -32,6 +34,10 @@ class GeoJSONReading extends GeoJSONBenchmark {
 
   @Benchmark
   def circe(): GeoJSON = decode[GeoJSON](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): GeoJSON =
+    Decoder[GeoJSON].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
 
   @Benchmark
   def jacksonScala(): GeoJSON = jacksonMapper.readValue[GeoJSON](jsonBytes)

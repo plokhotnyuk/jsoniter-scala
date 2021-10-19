@@ -18,7 +18,9 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDeco
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
+import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
@@ -33,6 +35,10 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def circe(): DistanceMatrix = decode[DistanceMatrix](new String(jsonBytes1, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): DistanceMatrix =
+    Decoder[DistanceMatrix].decodeJson(readFromArray[io.circe.Json](jsonBytes1)).fold(throw _, identity)
 
   @Benchmark
   def dslJsonScala(): DistanceMatrix = dslJsonDecode[DistanceMatrix](jsonBytes1)

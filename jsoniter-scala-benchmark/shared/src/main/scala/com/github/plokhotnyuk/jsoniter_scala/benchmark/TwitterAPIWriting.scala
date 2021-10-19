@@ -15,6 +15,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.syntax._
+import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 
 class TwitterAPIWriting extends TwitterAPIBenchmark {
@@ -25,7 +26,10 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def borer(): Array[Byte] = io.bullet.borer.Json.encode(obj).toByteArray
 
   @Benchmark
-  def circe(): Array[Byte] = printer.print(io.circe.Util.deepDropEmptyValues(obj.asJson)).getBytes(UTF_8)
+  def circe(): Array[Byte] = printer.print(deepDropEmptyValues(obj.asJson)).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = writeToArray(deepDropEmptyValues(obj.asJson))
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

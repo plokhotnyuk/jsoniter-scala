@@ -8,6 +8,7 @@ class GoogleMapsAPIPrettyPrintingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString2
       toString(b.circe()) shouldBe b.jsonString1
+      toString(b.circeJsoniter()) shouldBe b.jsonString2
       toString(b.jacksonScala()) shouldBe b.jsonString1
       toString(b.jsoniterScala()) shouldBe b.jsonString2
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString2
