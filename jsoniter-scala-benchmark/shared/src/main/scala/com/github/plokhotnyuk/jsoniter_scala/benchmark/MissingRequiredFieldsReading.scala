@@ -20,6 +20,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDeco
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.{JsResultException, Json}
@@ -33,7 +34,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def avSystemGenCodec(): String =
     try {
-      JsonStringInput.read[MissingRequiredFields](new String(jsonBytes, UTF_8)).toString // toString() should not be called
+      JsonStringInput.read[MissingRequiredFields](new String(jsonBytes, UTF_8)).toString // toString shouldn't be called
     } catch {
       case ex: GenCodec.ReadFailure => ex.getMessage
     }
@@ -41,19 +42,26 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def borer(): String =
     try {
-      io.bullet.borer.Json.decode(jsonBytes).to[MissingRequiredFields].value.toString // toString() should not be called
+      io.bullet.borer.Json.decode(jsonBytes).to[MissingRequiredFields].value.toString // toString shouldn't be called
     } catch {
       case ex: io.bullet.borer.Borer.Error[_] => ex.getMessage
     }
 
   @Benchmark
   def circe(): String =
-    decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _.toString) // toString() should not be called
+    decode[MissingRequiredFields](new String(jsonBytes, UTF_8)).fold(_.getMessage, _.toString) // toString shouldn't be called
+
+  @Benchmark
+  def circeJsoniter(): String = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[MissingRequiredFields].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(_.getMessage, _.toString) // toString shouldn't be called
+  }
 
   @Benchmark
   def dslJsonScala(): String =
     try {
-      dslJsonDecode[MissingRequiredFields](jsonBytes).toString // toString() should not be called
+      dslJsonDecode[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {
       case ex: IOException => ex.getMessage
     }
@@ -61,7 +69,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def jacksonScala(): String =
     try {
-      jacksonMapper.readValue[MissingRequiredFields](jsonBytes).toString // toString() should not be called
+      jacksonMapper.readValue[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {
       case ex: MismatchedInputException => ex.getMessage
     }
@@ -69,7 +77,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def jsoniterScala(): String =
     try {
-      readFromArray[MissingRequiredFields](jsonBytes).toString // toString() should not be called
+      readFromArray[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {
       case ex: JsonReaderException => ex.getMessage
     }
@@ -77,7 +85,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def jsoniterScalaWithoutDump(): String =
     try {
-      readFromArray[MissingRequiredFields](jsonBytes, exceptionWithoutDumpConfig).toString // toString() should not be called
+      readFromArray[MissingRequiredFields](jsonBytes, exceptionWithoutDumpConfig).toString // toString shouldn't be called
     } catch {
       case ex: JsonReaderException => ex.getMessage
     }
@@ -85,7 +93,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def jsoniterScalaWithStacktrace(): String =
     try {
-      readFromArray[MissingRequiredFields](jsonBytes, exceptionWithStacktraceConfig).toString // toString() should not be called
+      readFromArray[MissingRequiredFields](jsonBytes, exceptionWithStacktraceConfig).toString // toString shouldn't be called
     } catch {
       case ex: JsonReaderException => ex.getMessage
     }
@@ -93,7 +101,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def playJson(): String =
     try {
-      Json.parse(jsonBytes).as[MissingRequiredFields](missingReqFieldsFormat).toString // toString() should not be called
+      Json.parse(jsonBytes).as[MissingRequiredFields](missingReqFieldsFormat).toString // toString shouldn't be called
     } catch {
       case ex: JsResultException => ex.getMessage
     }
@@ -101,7 +109,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def playJsonJsoniter(): String =
     try {
-      PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[MissingRequiredFields](missingReqFieldsFormat).toString) // toString() should not be called
+      PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[MissingRequiredFields](missingReqFieldsFormat).toString) // toString shouldn't be called
     } catch {
       case ex: JsResultException => ex.getMessage
     }
@@ -109,7 +117,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def sprayJson(): String =
     try {
-      JsonParser(jsonBytes).convertTo[MissingRequiredFields](missingReqFieldsJsonFormat).toString // toString() should not be called
+      JsonParser(jsonBytes).convertTo[MissingRequiredFields](missingReqFieldsJsonFormat).toString // toString shouldn't be called
     } catch {
       case ex: spray.json.DeserializationException => ex.getMessage
     }
@@ -117,7 +125,7 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def uPickle(): String =
     try {
-      read[MissingRequiredFields](jsonBytes).toString // toString() should not be called
+      read[MissingRequiredFields](jsonBytes).toString // toString shouldn't be called
     } catch {
       case ex: upickle.core.AbortException => ex.getMessage
     }
@@ -125,12 +133,12 @@ class MissingRequiredFieldsReading extends CommonParams {
   @Benchmark
   def weePickle(): String =
     try {
-      FromJson(jsonBytes).transform(ToScala[MissingRequiredFields]).toString // toString() should not be called
+      FromJson(jsonBytes).transform(ToScala[MissingRequiredFields]).toString // toString shouldn't be called
     } catch {
       case ex: com.rallyhealth.weepickle.v1.core.TransformException => ex.getMessage
     }
 
   @Benchmark
   def zioJson(): String =
-    new String(jsonBytes, UTF_8).fromJson[MissingRequiredFields].fold(identity, _.toString) // toString() should not be called
+    new String(jsonBytes, UTF_8).fromJson[MissingRequiredFields].fold(identity, _.toString) // toString shouldn't be called
 }

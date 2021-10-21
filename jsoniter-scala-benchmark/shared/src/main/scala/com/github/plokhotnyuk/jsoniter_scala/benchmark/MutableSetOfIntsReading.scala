@@ -9,11 +9,11 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import upickle.default._
-
 import scala.collection.mutable
 
 class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
@@ -25,6 +25,13 @@ class MutableSetOfIntsReading extends MutableSetOfIntsBenchmark {
 
   @Benchmark
   def circe(): mutable.Set[Int] = decode[mutable.Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): mutable.Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[mutable.Set[Int]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): mutable.Set[Int] = dslJsonDecode[mutable.Set[Int]](jsonBytes)

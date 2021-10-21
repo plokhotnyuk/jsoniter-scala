@@ -5,6 +5,7 @@ import com.avsystem.commons.serialization.json._
 import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import io.circe.Decoder
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -13,15 +14,23 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-
 import scala.collection.mutable
 
 class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark {
   @Benchmark
-  def avSystemGenCodec(): mutable.LongMap[Boolean] = JsonStringInput.read[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8))
+  def avSystemGenCodec(): mutable.LongMap[Boolean] =
+    JsonStringInput.read[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8))
 
   @Benchmark
-  def circe(): mutable.LongMap[Boolean] = decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+  def circe(): mutable.LongMap[Boolean] =
+    decode[mutable.LongMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): mutable.LongMap[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[mutable.LongMap[Boolean]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
   @Benchmark
   def dslJsonScala(): mutable.LongMap[Boolean] = dslJsonDecode[mutable.LongMap[Boolean]](jsonBytes)
@@ -37,5 +46,6 @@ class MutableLongMapOfBooleansReading extends MutableLongMapOfBooleansBenchmark 
   def playJson(): mutable.LongMap[Boolean] = Json.parse(jsonBytes).as[mutable.LongMap[Boolean]]
 
   @Benchmark
-  def playJsonJsoniter(): mutable.LongMap[Boolean] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[mutable.LongMap[Boolean]])
+  def playJsonJsoniter(): mutable.LongMap[Boolean] =
+    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[mutable.LongMap[Boolean]])
 }

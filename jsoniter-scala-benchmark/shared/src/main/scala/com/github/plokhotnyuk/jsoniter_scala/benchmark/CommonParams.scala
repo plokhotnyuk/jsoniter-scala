@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.util.concurrent.TimeUnit
-
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
@@ -15,7 +14,7 @@ import org.openjdk.jmh.annotations._
   "-XX:MaxNewSize=1g",
   "-XX:InitialCodeCacheSize=512m",
   "-XX:ReservedCodeCacheSize=512m",
-  "-XX:+UseZGC",
+  "-XX:+UseParallelGC",
   "-XX:-UseAdaptiveSizePolicy",
   "-XX:MaxInlineLevel=18",
   "-XX:-UseBiasedLocking",

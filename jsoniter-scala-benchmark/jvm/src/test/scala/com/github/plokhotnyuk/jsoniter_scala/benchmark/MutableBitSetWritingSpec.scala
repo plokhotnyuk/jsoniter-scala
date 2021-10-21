@@ -10,6 +10,7 @@ class MutableBitSetWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
+      toString(b.circeJsoniter()) shouldBe b.jsonString
       toString(b.dslJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString

@@ -18,6 +18,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDeco
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
@@ -47,6 +48,13 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def circe(): ExtractFields = decode[ExtractFields](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): ExtractFields = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[ExtractFields].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): ExtractFields = dslJsonDecode[ExtractFields](jsonBytes)

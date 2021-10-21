@@ -11,6 +11,7 @@ class ArrayOfZonedDateTimesWritingSpec extends BenchmarkSpecBase {
       toString(b.avSystemGenCodec()) shouldBe b.jsonString
       toString(b.borer()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
+      toString(b.circeJsoniter()) shouldBe b.jsonString
       //FIXME: DSL-JSON does not serialize preferred timezone
       //toString(b.dslJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString

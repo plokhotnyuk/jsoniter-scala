@@ -14,6 +14,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -29,6 +30,14 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
 
   @Benchmark
   def circe(): Array[Period] = decode[Array[Period]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): Array[Period] = {
+    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[Array[Period]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def jacksonScala(): Array[Period] = jacksonMapper.readValue[Array[Period]](jsonBytes)

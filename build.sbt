@@ -110,6 +110,8 @@ lazy val `jsoniter-scala` = project.in(file("."))
   .aggregate(
     `jsoniter-scala-coreJVM`,
     `jsoniter-scala-coreJS`,
+    `jsoniter-scala-circeJVM`,
+    `jsoniter-scala-circeJS`,
     `jsoniter-scala-macrosJVM`,
     `jsoniter-scala-macrosJS`,
     `jsoniter-scala-benchmarkJVM`,
@@ -189,8 +191,40 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
     coverageEnabled := false // FIXME: Unexpected compilation error
   )
 
+lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .dependsOn(`jsoniter-scala-core`)
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .settings(
+    crossScalaVersions := Seq("3.1.0", "2.13.6", "2.12.15"),
+    libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-core" % "0.14.1",
+      "io.circe" %%% "circe-parser" % "0.14.1" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+    )
+  )
+
+lazy val `jsoniter-scala-circeJVM` = `jsoniter-scala-circe`.jvm
+
+lazy val `jsoniter-scala-circeJS` = `jsoniter-scala-circe`.js
+  .settings(
+    scalaJSLinkerConfig ~= {
+      _.withSemantics({
+        _.optimized
+          .withProductionMode(true)
+          .withAsInstanceOfs(CheckedBehavior.Unchecked)
+          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
+      }).withClosureCompiler(true)
+        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
+        .withModuleKind(ModuleKind.CommonJSModule)
+    },
+    coverageEnabled := false // FIXME: Unexpected compilation error
+  )
+
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
+  .dependsOn(`jsoniter-scala-circe`)
   .dependsOn(`jsoniter-scala-macros`)
   .settings(commonSettings)
   .settings(noPublishSettings)

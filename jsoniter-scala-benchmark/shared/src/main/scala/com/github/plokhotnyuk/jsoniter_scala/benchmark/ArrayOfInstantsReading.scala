@@ -13,6 +13,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -28,6 +29,14 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
 
   @Benchmark
   def circe(): Array[Instant] = decode[Array[Instant]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): Array[Instant] = {
+    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[Array[Instant]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def jacksonScala(): Array[Instant] = jacksonMapper.readValue[Array[Instant]](jsonBytes)

@@ -9,6 +9,7 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
     "read properly" in {
       benchmark.avSystemGenCodec() shouldBe benchmark.obj
       benchmark.circe() shouldBe benchmark.obj
+      benchmark.circeJsoniter() shouldBe benchmark.obj
       //FIXME: DSL-JSON doesn't support mutable.LongMap
       //benchmark.dslJsonScala() shouldBe benchmark.obj
       //FIXME: Jackson throws Need exactly 2 type parameters for map like types (scala.collection.mutable.LongMap)
@@ -22,6 +23,7 @@ class MutableLongMapOfBooleansReadingSpec extends BenchmarkSpecBase {
       b.jsonBytes(0) = 'x'.toByte
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.circe())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jsoniterScala())
       intercept[Throwable](b.playJson())
       intercept[Throwable](b.playJsonJsoniter())

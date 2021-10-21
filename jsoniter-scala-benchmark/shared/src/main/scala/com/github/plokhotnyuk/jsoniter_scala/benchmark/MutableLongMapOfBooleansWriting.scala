@@ -20,6 +20,13 @@ class MutableLongMapOfBooleansWriting extends MutableLongMapOfBooleansBenchmark 
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson)
+  }
 /* FIXME: DSL-JSON doesn't support mutable.LongMap
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

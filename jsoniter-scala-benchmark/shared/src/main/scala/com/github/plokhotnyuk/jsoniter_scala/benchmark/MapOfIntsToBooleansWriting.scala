@@ -26,6 +26,13 @@ class MapOfIntsToBooleansWriting extends MapOfIntsToBooleansBenchmark {
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson)
+  }
+
+  @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark

@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.Decoder
 //import com.rallyhealth.weejson.v1.jackson.FromJson
 //import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
@@ -25,6 +26,13 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def circe(): Array[Float] = decode[Array[Float]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): Array[Float] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[Array[Float]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 /* FIXME: DSL-JSON parses 1.199999988079071 as 1.2f instead of 1.1999999f
   @Benchmark
   def dslJsonScala(): Array[Float] = dslJsonDecode[Array[Float]](jsonBytes)

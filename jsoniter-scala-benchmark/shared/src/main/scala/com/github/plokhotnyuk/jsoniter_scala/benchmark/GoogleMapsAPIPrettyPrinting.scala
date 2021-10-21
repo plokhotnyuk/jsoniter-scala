@@ -15,7 +15,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDeco
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weepickle.v1.WeePickle.FromScala
 import io.circe.syntax._
-import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 
@@ -27,7 +26,11 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def circe(): Array[Byte] = prettyPrinter.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
-  def circeJsoniter(): Array[Byte] = writeToArray(obj.asJson, prettyConfig)
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson, prettyConfig)
+  }
 
   @Benchmark
   def jacksonScala(): Array[Byte] = jacksonPrettyMapper.writeValueAsBytes(obj)

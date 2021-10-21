@@ -15,7 +15,6 @@ import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.Decoder
 import io.circe.parser._
-import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 import spray.json.JsonParser
 import zio.json._
@@ -33,8 +32,11 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
     decode[GitHubActionsAPI.Response](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def circeJsoniter(): GitHubActionsAPI.Response =
+  def circeJsoniter(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
     Decoder[GitHubActionsAPI.Response].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def jacksonScala(): GitHubActionsAPI.Response = jacksonMapper.readValue[GitHubActionsAPI.Response](jsonBytes)

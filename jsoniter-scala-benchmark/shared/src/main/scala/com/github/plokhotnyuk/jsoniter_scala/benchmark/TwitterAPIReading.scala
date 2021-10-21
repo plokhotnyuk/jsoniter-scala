@@ -20,7 +20,6 @@ import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.Decoder
 import io.circe.parser._
-import io.circe.Util._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
@@ -38,8 +37,11 @@ class TwitterAPIReading extends TwitterAPIBenchmark {
   def circe(): Seq[Tweet] = decode[Seq[Tweet]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
 
   @Benchmark
-  def circeJsoniter(): Seq[Tweet] =
+  def circeJsoniter(): Seq[Tweet] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
     Decoder[Seq[Tweet]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): Seq[Tweet] = dslJsonDecode[Seq[Tweet]](jsonBytes)

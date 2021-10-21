@@ -5,6 +5,7 @@ import com.avsystem.commons.serialization.json._
 import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import io.circe.Decoder
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
@@ -13,7 +14,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
-
 import scala.collection.immutable.IntMap
 
 class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
@@ -22,6 +22,13 @@ class IntMapOfBooleansReading extends IntMapOfBooleansBenchmark {
 
   @Benchmark
   def circe(): IntMap[Boolean] = decode[IntMap[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): IntMap[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[IntMap[Boolean]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 /* FIXME: DSL-JSON throws java.lang.IllegalArgumentException: requirement failed: Unable to create decoder for scala.collection.immutable.IntMap[Boolean]
   @Benchmark
   def dslJsonScala(): IntMap[Boolean] = dslJsonDecode[IntMap[Boolean]](jsonBytes)

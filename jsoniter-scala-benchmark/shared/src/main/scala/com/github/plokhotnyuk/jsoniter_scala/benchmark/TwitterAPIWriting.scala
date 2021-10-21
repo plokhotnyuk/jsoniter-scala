@@ -29,7 +29,11 @@ class TwitterAPIWriting extends TwitterAPIBenchmark {
   def circe(): Array[Byte] = printer.print(deepDropEmptyValues(obj.asJson)).getBytes(UTF_8)
 
   @Benchmark
-  def circeJsoniter(): Array[Byte] = writeToArray(deepDropEmptyValues(obj.asJson))
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(deepDropEmptyValues(obj.asJson))
+  }
 /* FIXME: DSL-JSON serializes empty collections
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

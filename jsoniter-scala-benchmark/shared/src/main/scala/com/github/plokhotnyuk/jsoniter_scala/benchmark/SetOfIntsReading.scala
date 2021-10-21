@@ -10,13 +10,13 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import upickle.default._
 import zio.json.DecoderOps
-
 import scala.collection.immutable.Set
 
 class SetOfIntsReading extends SetOfIntsBenchmark {
@@ -28,6 +28,13 @@ class SetOfIntsReading extends SetOfIntsBenchmark {
 
   @Benchmark
   def circe(): Set[Int] = decode[Set[Int]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): Set[Int] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[Set[Int]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): Set[Int] = dslJsonDecode[Set[Int]](jsonBytes)

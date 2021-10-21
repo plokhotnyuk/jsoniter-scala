@@ -26,6 +26,13 @@ class ArrayOfBytesWriting extends ArrayOfBytesBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson)
+  }
 /* FIXME: DSL-JSON serializes a byte array to the base64 string
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
