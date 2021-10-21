@@ -9,6 +9,7 @@ class AnyValsWritingSpec extends BenchmarkSpecBase {
       toString(b.avSystemGenCodec()) shouldBe b.jsonString1
       toString(b.borer()) shouldBe b.jsonString1
       toString(b.circe()) shouldBe b.jsonString1
+      toString(b.circeJsoniter()) shouldBe b.jsonString1
       //FIXME: DSL-JSON wraps AnyVal values
       //toString(b.dslJsonScala()) shouldBe b.jsonString1
       toString(b.jacksonScala()) shouldBe b.jsonString1

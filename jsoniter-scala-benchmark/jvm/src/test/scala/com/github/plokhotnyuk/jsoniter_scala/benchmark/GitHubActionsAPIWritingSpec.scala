@@ -9,6 +9,7 @@ class GitHubActionsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.avSystemGenCodec()) shouldBe b.compactJsonString1
       toString(b.borer()) shouldBe b.compactJsonString1
       toString(b.circe()) shouldBe b.compactJsonString1
+      toString(b.circeJsoniter()) shouldBe b.compactJsonString1
       toString(b.jacksonScala()) shouldBe b.compactJsonString1
       toString(b.jsoniterScala()) shouldBe b.compactJsonString1
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString1

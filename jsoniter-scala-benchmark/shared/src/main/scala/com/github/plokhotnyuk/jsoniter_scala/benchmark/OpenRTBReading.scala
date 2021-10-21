@@ -18,6 +18,7 @@ import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 //import play.api.libs.json.Json
 //import spray.json.JsonParser
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import zio.json.DecoderOps
@@ -31,6 +32,13 @@ class OpenRTBReading extends OpenRTBBenchmark {
 
   @Benchmark
   def circe(): BidRequest = decode[BidRequest](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): BidRequest = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[BidRequest].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def jacksonScala(): BidRequest = jacksonMapper.readValue[BidRequest](jsonBytes)

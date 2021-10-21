@@ -9,6 +9,7 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.avSystemGenCodec()) shouldBe b.compactJsonString
       toString(b.borer()) shouldBe b.compactJsonString
       toString(b.circe()) shouldBe b.compactJsonString
+      toString(b.circeJsoniter()) shouldBe b.compactJsonString
       toString(b.dslJsonScala()) shouldBe b.compactJsonString
       toString(b.jacksonScala()) shouldBe b.compactJsonString
       toString(b.jsoniterScala()) shouldBe b.compactJsonString

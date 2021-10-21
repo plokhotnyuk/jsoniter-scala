@@ -11,6 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
+//import io.circe.Decoder
 //import com.rallyhealth.weejson.v1.jackson.FromJson
 //import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
@@ -30,7 +31,14 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
   @Benchmark
   def circe(): Array[BigDecimal] = decode[Array[BigDecimal]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+/* FIXME: circe API parse whole numbers as long values
+  @Benchmark
+  def circeJsoniter(): Array[BigDecimal] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
+    Decoder[Array[BigDecimal]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
+*/
   @Benchmark
   def dslJsonScala(): Array[BigDecimal] = dslJsonDecode[Array[BigDecimal]](jsonBytes)
 

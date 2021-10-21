@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import org.openjdk.jmh.annotations.{Param, Setup}
 
 abstract class NestedStructsBenchmark extends CommonParams {
@@ -14,8 +13,8 @@ abstract class NestedStructsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = (1 to size).foldLeft(NestedStructs(None))((n, _) => NestedStructs(Some(n)))
-    jsonString = "{" + "\"n\":{" * size + "}" * size + "}"
+    obj = (1 until size).foldLeft(NestedStructs(None))((n, _) => NestedStructs(Some(n)))
+    jsonString = "{" + "\"n\":{" * (size - 1) + "}" * (size - 1) + "}"
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)
   }

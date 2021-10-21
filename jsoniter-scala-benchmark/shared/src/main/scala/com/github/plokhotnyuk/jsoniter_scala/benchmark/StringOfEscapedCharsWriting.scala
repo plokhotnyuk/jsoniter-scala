@@ -22,6 +22,13 @@ class StringOfEscapedCharsWriting extends StringOfEscapedCharsBenchmark {
   def circe(): Array[Byte] = escapingPrinter.print(obj.asJson).getBytes
 
   @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson, escapingConfig)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = jacksonEscapeNonAsciiMapper.writeValueAsBytes(obj)
 
   @Benchmark

@@ -29,7 +29,7 @@ releaseProcess := Seq[ReleaseStep](
   runClean,
   releaseStepCommandAndRemaining("+test"),
   setReleaseVersion,
-  releaseStepCommandAndRemaining("+mimaReportBinaryIssues"),
+  //releaseStepCommandAndRemaining("+mimaReportBinaryIssues"), FIXME: Uncomment after releasing circe API
   updateVersionInReadme,
   commitReleaseVersion,
   tagRelease,

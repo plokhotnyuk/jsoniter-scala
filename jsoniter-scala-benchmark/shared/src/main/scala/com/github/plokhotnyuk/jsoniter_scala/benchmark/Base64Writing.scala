@@ -30,6 +30,13 @@ class Base64Writing extends Base64Benchmark {
   def circe(): Array[Byte] = printer.print(obj.asJson(base64E5r)).getBytes(UTF_8)
 
   @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson(base64E5r))
+  }
+
+  @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)
 
   @Benchmark

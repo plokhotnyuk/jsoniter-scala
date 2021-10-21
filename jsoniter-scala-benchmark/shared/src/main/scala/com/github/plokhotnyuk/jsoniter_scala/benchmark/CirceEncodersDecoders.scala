@@ -12,7 +12,6 @@ import io.circe.generic.extras.semiauto._
 
 import scala.collection.immutable.{BitSet, IntMap}
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 object CirceEncodersDecoders {

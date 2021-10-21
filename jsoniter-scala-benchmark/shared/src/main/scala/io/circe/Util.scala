@@ -1,7 +1,6 @@
 package io.circe
 
 import io.circe.Json._
-
 import java.util
 
 object Util {

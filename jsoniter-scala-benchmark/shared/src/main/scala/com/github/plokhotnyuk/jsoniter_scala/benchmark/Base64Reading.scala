@@ -15,6 +15,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDeco
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser.decode
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -30,6 +31,13 @@ class Base64Reading extends Base64Benchmark {
 
   @Benchmark
   def circe(): Array[Byte] = decode[Array[Byte]](new String(jsonBytes, UTF_8))(base64D5r).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[Array[Byte]](base64D5r).decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonDecode[Array[Byte]](jsonBytes)

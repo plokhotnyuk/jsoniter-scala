@@ -10,6 +10,7 @@ class MutableLongMapOfBooleansWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString
       toString(b.circe()) shouldBe b.jsonString
+      toString(b.circeJsoniter()) shouldBe b.jsonString
       //FIXME: DSL-JSON doesn't support mutable.LongMap
       //toString(b.dslJsonScala()) shouldBe b.jsonString
       toString(b.jacksonScala()) shouldBe b.jsonString

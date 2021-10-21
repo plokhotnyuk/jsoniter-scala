@@ -10,12 +10,12 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import upickle.default._
-
 import scala.collection.mutable
 
 class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
@@ -30,6 +30,13 @@ class ArrayBufferOfBooleansReading extends ArrayBufferOfBooleansBenchmark {
   @Benchmark
   def circe(): mutable.ArrayBuffer[Boolean] =
     decode[mutable.ArrayBuffer[Boolean]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
+
+  @Benchmark
+  def circeJsoniter(): mutable.ArrayBuffer[Boolean] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    Decoder[mutable.ArrayBuffer[Boolean]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
+  }
 
   @Benchmark
   def dslJsonScala(): mutable.ArrayBuffer[Boolean] = dslJsonDecode[mutable.ArrayBuffer[Boolean]](jsonBytes)

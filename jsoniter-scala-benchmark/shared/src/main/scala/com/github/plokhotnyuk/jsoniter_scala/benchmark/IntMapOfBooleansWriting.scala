@@ -20,6 +20,13 @@ class IntMapOfBooleansWriting extends IntMapOfBooleansBenchmark {
 
   @Benchmark
   def circe(): Array[Byte] = printer.print(obj.asJson).getBytes(UTF_8)
+
+  @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson)
+  }
 /* FIXME: DSL-JSON throws java.lang.ClassCastException: scala.Tuple2 cannot be cast to java.lang.Boolean
   @Benchmark
   def dslJsonScala(): Array[Byte] = dslJsonEncode(obj)

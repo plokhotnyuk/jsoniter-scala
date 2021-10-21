@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.util.concurrent.TimeUnit
-
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)

@@ -26,6 +26,13 @@ class GoogleMapsAPIPrettyPrinting extends GoogleMapsAPIBenchmark {
   def circe(): Array[Byte] = prettyPrinter.print(obj.asJson).getBytes(UTF_8)
 
   @Benchmark
+  def circeJsoniter(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
+
+    writeToArray(obj.asJson, prettyConfig)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = jacksonPrettyMapper.writeValueAsBytes(obj)
 
   @Benchmark
