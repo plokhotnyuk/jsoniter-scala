@@ -30,7 +30,7 @@ class ArrayOfLocalTimesWriting extends ArrayOfLocalTimesBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[Byte] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     writeToArray(obj.asJson)

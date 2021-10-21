@@ -5,7 +5,7 @@ import io.circe._
 import java.nio.charset.StandardCharsets
 import java.time._
 
-object JavaTimeCodecs {
+object CirceCodecs {
   implicit val durationC3C: Codec[Duration] =
     shortAsciiStringCodec("duration", _.readDuration(_), _.writeVal(_))
   implicit val instantC3C: Codec[Instant] =
@@ -24,16 +24,10 @@ object JavaTimeCodecs {
     shortAsciiStringCodec("offset time", _.readOffsetTime(_), _.writeVal(_))
   implicit val periodC3C: Codec[Period] =
     shortAsciiStringCodec("period", _.readPeriod(_), _.writeVal(_))
-  implicit val yearC3C: Codec[Year] =
-    shortAsciiStringCodec("year", _.readYear(_), _.writeVal(_))
   implicit val yearMonthC3C: Codec[YearMonth] =
     shortAsciiStringCodec("year month", _.readYearMonth(_), _.writeVal(_))
   implicit val zonedDateTimeC3C: Codec[ZonedDateTime] =
     shortAsciiStringCodec("zoned date time", _.readZonedDateTime(_), _.writeVal(_))
-  implicit val zoneIdC3C: Codec[ZoneId] =
-    shortAsciiStringCodec("zone id", _.readZoneId(_), _.writeVal(_))
-  implicit val zoneOffsetC3C: Codec[ZoneOffset] =
-    shortAsciiStringCodec("zone offset", _.readZoneOffset(_), _.writeVal(_))
 
   private[this] val pool = new ThreadLocal[(Array[Byte], JsonReader, JsonWriter)] {
     override def initialValue(): (Array[Byte], JsonReader, JsonWriter) = {

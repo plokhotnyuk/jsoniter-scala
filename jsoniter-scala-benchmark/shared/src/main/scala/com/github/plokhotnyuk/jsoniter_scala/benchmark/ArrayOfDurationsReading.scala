@@ -33,7 +33,7 @@ class ArrayOfDurationsReading extends ArrayOfDurationsBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[Duration] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     Decoder[Array[Duration]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)

@@ -32,7 +32,7 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[Instant] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     Decoder[Array[Instant]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)

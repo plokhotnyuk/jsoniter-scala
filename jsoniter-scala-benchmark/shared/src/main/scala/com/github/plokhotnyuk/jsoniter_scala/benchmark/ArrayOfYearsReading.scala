@@ -34,7 +34,7 @@ class ArrayOfYearsReading extends ArrayOfYearsBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[Year] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     Decoder[Array[Year]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)

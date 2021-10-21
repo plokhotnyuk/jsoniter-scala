@@ -34,7 +34,7 @@ class ArrayOfZoneOffsetsReading extends ArrayOfZoneOffsetsBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[ZoneOffset] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     Decoder[Array[ZoneOffset]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)

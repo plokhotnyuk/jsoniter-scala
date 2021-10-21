@@ -5,14 +5,14 @@ import io.circe.Encoder._
 import io.circe._
 import io.circe.generic.extras.semiauto._
 import java.time.Instant
-import com.github.plokhotnyuk.jsoniter_scala.circe.JsonCodec
+import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import io.circe.generic.extras.Configuration
 
 object CirceJsoniterCodecs {
-  import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+  import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
 
-  implicit val jsonCodec: JsonValueCodec[Json] = JsonCodec.jsonCodec(doSerialize = _ ne Json.Null)
+  implicit val jsonCodec: JsonValueCodec[Json] = JsoniterScalaCodec.jsonCodec(doSerialize = _ ne Json.Null)
   implicit val config: Configuration = Configuration.default.withDefaults.withDiscriminator("type")
   implicit val gitHubActionsAPIC3c: Codec[GitHubActionsAPI.Response] = {
     implicit val c1: Codec[GitHubActionsAPI.Artifact] =

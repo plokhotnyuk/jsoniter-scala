@@ -3,8 +3,8 @@ package com.github.plokhotnyuk.jsoniter_scala.circe
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec}
 import io.circe._
 
-object JsonCodec {
-  implicit val codec: JsonValueCodec[Json] = jsonCodec()
+object JsoniterScalaCodec {
+  implicit val jsonC3c: JsonValueCodec[Json] = jsonCodec()
 
   def jsonCodec(
       maxDepth: Int = 128,

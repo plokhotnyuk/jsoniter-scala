@@ -34,7 +34,7 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
 
   @Benchmark
   def circeJsoniter(): Array[ZonedDateTime] = {
-    import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+    import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     Decoder[Array[ZonedDateTime]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)

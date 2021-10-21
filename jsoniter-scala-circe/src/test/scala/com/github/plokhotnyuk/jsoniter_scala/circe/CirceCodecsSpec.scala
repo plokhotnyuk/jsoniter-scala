@@ -4,10 +4,10 @@ import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import java.time._
-import com.github.plokhotnyuk.jsoniter_scala.circe.JavaTimeCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.circe.CirceCodecs._
 
-class JavaTimeCodecsSpec extends AnyWordSpec with Matchers {
-  "JavaTimeCodecsSpec codecs" should {
+class CirceCodecsSpec extends AnyWordSpec with Matchers {
+  "CirceCodecsSpec codecs" should {
     "decode and encode duration" in {
       verifyDecoding[Duration]("duration", Duration.ofMillis(System.currentTimeMillis()))
       verifyEncoding[Duration](Duration.ofMillis(System.currentTimeMillis()))
@@ -44,10 +44,6 @@ class JavaTimeCodecsSpec extends AnyWordSpec with Matchers {
       verifyDecoding[Period]("period", Period.ofYears(Year.now().getValue))
       verifyEncoding[Period](Period.ofYears(Year.now().getValue))
     }
-    "decode and encode year" in {
-      verifyDecoding[Year]("year", Year.now())
-      verifyEncoding[Year](Year.now())
-    }
     "decode and encode year month" in {
       verifyDecoding[YearMonth]("year month", YearMonth.now())
       verifyEncoding[YearMonth](YearMonth.now())
@@ -55,16 +51,6 @@ class JavaTimeCodecsSpec extends AnyWordSpec with Matchers {
     "decode and encode zoned date time" in {
       verifyDecoding[ZonedDateTime]("zoned date time", ZonedDateTime.now())
       verifyEncoding[ZonedDateTime](ZonedDateTime.now())
-    }
-    "decode and encode zone id" in {
-      val now = LocalTime.now()
-      verifyDecoding[ZoneId]("zone id", ZoneOffset.ofHoursMinutesSeconds(now.getHour % 18, now.getMinute, now.getSecond))
-      verifyEncoding[ZoneId](ZoneOffset.ofHoursMinutesSeconds(now.getHour % 18, now.getMinute, now.getSecond))
-    }
-    "decode and encode zone offset" in {
-      val now = LocalTime.now()
-      verifyDecoding[ZoneOffset]("zone offset", ZoneOffset.ofHoursMinutesSeconds(now.getHour % 18, now.getMinute, now.getSecond))
-      verifyEncoding[ZoneOffset](ZoneOffset.ofHoursMinutesSeconds(now.getHour % 18, now.getMinute, now.getSecond))
     }
   }
 
