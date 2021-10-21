@@ -4,21 +4,29 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonReaderExcepti
 import io.circe.Json._
 import java.util
 
-object JsonCodec {
+object JsoniterScalaCodec {
   val defaultNumberParser: JsonReader => Json = in => {
     in.setMark()
-    var b: Byte = 0
+    var digits = 0
+    var b = in.nextByte()
+    if (b == '-') b = in.nextByte()
     try {
-      while ({
+      while (b >= '0' && b <= '9') {
         b = in.nextByte()
-        b >= '0' && b <= '9' || b == '-'
-      }) ()
+        digits += 1
+      }
     } catch {
       case _: JsonReaderException => // ignore the end of input error for now
     } finally in.rollbackToMark()
     new JNumber({
-      if (b == '.' || b == 'e' || b == 'E') new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
-      else new JsonLong(in.readLong())
+      if ((b | 0x20) != 'e' && b != '.') {
+        if (digits < 19) new JsonLong(in.readLong())
+        else {
+          val x = in.readBigInt(null)
+          if (x.bitLength < 64) new JsonLong(x.longValue)
+          else new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger))
+        }
+      } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
     })
   }
 

@@ -10,8 +10,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.avSystemGenCodec() shouldBe benchmark.sourceObj
       benchmark.borer() shouldBe benchmark.sourceObj
       benchmark.circe() shouldBe benchmark.sourceObj
-      //FIXME: circe API parse whole numbers as long values
-      //benchmark.circeJsoniter() shouldBe benchmark.sourceObj
+      benchmark.circeJsoniter() shouldBe benchmark.sourceObj
       benchmark.dslJsonScala() shouldBe benchmark.sourceObj
       benchmark.jacksonScala() shouldBe benchmark.sourceObj
       benchmark.jsoniterScala() shouldBe benchmark.sourceObj

@@ -10,6 +10,6 @@ object JsoniterScalaCodec {
       maxDepth: Int = 128,
       initialSize: Int = 8,
       doSerialize: Json => Boolean = _ => true,
-      numberParser: JsonReader => Json = io.circe.JsonCodec.defaultNumberParser): JsonValueCodec[Json] =
-    io.circe.JsonCodec.jsonCodec(maxDepth, initialSize, doSerialize, numberParser)
+      numberParser: JsonReader => Json = io.circe.JsoniterScalaCodec.defaultNumberParser): JsonValueCodec[Json] =
+    io.circe.JsoniterScalaCodec.jsonCodec(maxDepth, initialSize, doSerialize, numberParser)
 }

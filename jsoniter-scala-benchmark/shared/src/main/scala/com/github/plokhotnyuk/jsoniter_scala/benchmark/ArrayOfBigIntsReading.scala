@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-//import io.circe.Decoder
+import io.circe.Decoder
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -25,14 +25,14 @@ class ArrayOfBigIntsReading extends ArrayOfBigIntsBenchmark {
 
   @Benchmark
   def circe(): Array[BigInt] = decode[Array[BigInt]](new String(jsonBytes, UTF_8)).fold(throw _, identity)
-/* FIXME: circe API parse whole numbers as long values
+
   @Benchmark
   def circeJsoniter(): Array[BigInt] = {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     Decoder[Array[BigInt]].decodeJson(readFromArray[io.circe.Json](jsonBytes)).fold(throw _, identity)
   }
-*/
+
   @Benchmark
   def borer(): Array[BigInt] = io.bullet.borer.Json.decode(jsonBytes).withConfig(decodingConfig).to[Array[BigInt]].value
 
