@@ -3,6 +3,7 @@ package io.circe
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonReaderException, JsonValueCodec, JsonWriter}
 import io.circe.Json._
 import java.util
+import scala.collection.immutable.VectorBuilder
 
 object JsoniterScalaCodec {
   val defaultNumberParser: JsonReader => Json = in => {
@@ -29,6 +30,8 @@ object JsoniterScalaCodec {
       } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
     })
   }
+  private[this] val emptyJsonArray = new JArray(Vector.empty)
+  private[this] val emptyJsonObject = new JObject(JsonObject.empty)
 
   def jsonCodec(
     maxDepth: Int,
@@ -44,50 +47,45 @@ object JsoniterScalaCodec {
     private[this] def decode(in: JsonReader, depth: Int): Json = {
       val b = in.nextToken()
       if (b == 'n') in.readNullOrError(Null, "expected `null` value")
-      else if (b == '"') new JString({
+      else if (b == '"') {
         in.rollbackToken()
-        in.readString(null)
-      }) else if (b == 'f' || b == 't') {
+        new JString(in.readString(null))
+      } else if (b == 'f' || b == 't') {
         in.rollbackToken()
         if (in.readBoolean()) True
         else False
       } else if (b >= '0' && b <= '9' || b == '-') {
         in.rollbackToken()
         numberParser(in)
-      } else if (b == '[') new JArray({
+      } else if (b == '[') {
         val depthM1 = depth - 1
         if (depthM1 < 0) in.decodeError("depth limit exceeded")
-        if (in.isNextToken(']')) Vector.empty
+        if (in.isNextToken(']')) emptyJsonArray
         else {
           in.rollbackToken()
-          var x = new Array[Json](initialSize)
-          var i = 0
+          val x = new VectorBuilder[Json]
           while ({
-            if (i == x.length) x = java.util.Arrays.copyOf(x, i << 1)
-            x(i) = decode(in, depthM1)
-            i += 1
+            x += decode(in, depthM1)
             in.isNextToken(',')
           }) ()
-          (if (in.isCurrentToken(']'))
-            if (i == x.length) x
-            else java.util.Arrays.copyOf(x, i)
-          else in.arrayEndOrCommaError()).toVector
+          if (in.isCurrentToken(']')) new JArray(x.result())
+          else in.arrayEndOrCommaError()
         }
-      }) else if (b == '{') new JObject({
+      } else if (b == '{') {
         val depthM1 = depth - 1
         if (depthM1 < 0) in.decodeError("depth limit exceeded")
-        if (in.isNextToken('}')) JsonObject.empty
+        if (in.isNextToken('}')) emptyJsonObject
         else {
           in.rollbackToken()
-          val x = new util.LinkedHashMap[String, Json](8)
+          val x = new util.LinkedHashMap[String, Json](initialSize)
           while ({
             x.put(in.readKeyAsString(), decode(in, depthM1))
             in.isNextToken(',')
           }) ()
-          if (!in.isCurrentToken('}')) in.objectEndOrCommaError()
-          JsonObject.fromLinkedHashMap(x)
+          if (in.isCurrentToken('}')) new JObject(JsonObject.fromLinkedHashMap(x))
+          else in.objectEndOrCommaError()
         }
-      }) else in.decodeError("expected JSON value")
+      } else in.decodeError("expected JSON value")
     }
 
     private[this] def encode(x: Json, out: JsonWriter, depth: Int): Unit = x match {
