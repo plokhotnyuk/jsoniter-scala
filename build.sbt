@@ -1,4 +1,4 @@
-import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, ProblemFilters}
+import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 
@@ -96,10 +96,12 @@ lazy val publishSettings = Seq(
     else Set()
   },
   mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.bs_="),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.from_="),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.to_="),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.core.Key.hash_=")
+    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.jsonCodec"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.nullValue"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.decodeValue"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.encodeValue"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.this"),
+    ProblemFilters.exclude[MissingTypesProblem]("io.circe.JsoniterScalaCodec")
   ),
   mimaReportSignatureProblems := true
 )
