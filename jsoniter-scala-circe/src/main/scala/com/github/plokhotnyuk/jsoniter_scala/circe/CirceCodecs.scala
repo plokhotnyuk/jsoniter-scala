@@ -2,8 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe._
+
 import java.nio.charset.StandardCharsets
 import java.time._
+import java.util.UUID
 
 object CirceCodecs {
   implicit val durationC3C: Codec[Duration] =
@@ -26,6 +28,8 @@ object CirceCodecs {
     shortAsciiStringCodec("period", _.readPeriod(_), _.writeVal(_))
   implicit val yearMonthC3C: Codec[YearMonth] =
     shortAsciiStringCodec("year month", _.readYearMonth(_), _.writeVal(_))
+  implicit val yearD5r: Decoder[Year] =
+    shortAsciiStringCodec("year", _.readYear(_), _.writeVal(_))
   implicit val zonedDateTimeC3C: Codec[ZonedDateTime] =
     shortAsciiStringCodec("zoned date time", _.readZonedDateTime(_), _.writeVal(_))
 
