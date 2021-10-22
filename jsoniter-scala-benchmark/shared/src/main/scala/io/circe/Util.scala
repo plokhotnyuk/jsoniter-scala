@@ -6,7 +6,7 @@ import java.util
 object Util {
   // Based on the work of Rafi Baker: https://gitter.im/circe/circe?at=60c27ac04fc7ad136ac3831c
   private[this] val dropEmptyValueFolder: Json.Folder[Json] = new Json.Folder[Json] {
-    def onNull: Json = Null
+    val onNull: Json = Null
 
     def onBoolean(value: Boolean): Json =
       if (value) True

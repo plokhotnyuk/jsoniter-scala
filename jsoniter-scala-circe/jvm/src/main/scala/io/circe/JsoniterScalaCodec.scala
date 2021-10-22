@@ -30,6 +30,14 @@ object JsoniterScalaCodec {
       } else new JsonBigDecimal(in.readBigDecimal(null).bigDecimal)
     })
   }
+
+  def asciiStringToJString[A](buf: Array[Byte], len: Int): Json =
+    new JString(new String(buf, 0, 1, len - 2))
+
+  def stringValue(c: HCursor): String = c.value match {
+    case s: JString => s.value
+    case _ => null
+  }
 }
 
 final class JsoniterScalaCodec(
@@ -124,5 +132,3 @@ final class JsoniterScalaCodec(
     case _ => out.writeRawVal(x.toString.getBytes)
   }
 }
-
-

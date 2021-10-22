@@ -10,6 +10,7 @@ class ArrayOfBytesWritingSpec extends BenchmarkSpecBase {
       val b = benchmark
       toString(b.avSystemGenCodec()) shouldBe b.jsonString
       toString(b.borer()) shouldBe b.jsonString
+      toString(b.circe()) shouldBe b.jsonString
       toString(b.circeJsoniter()) shouldBe b.jsonString
       //FIXME: DSL-JSON serializes a byte array to the base64 string
       //toString(b.dslJsonScala()) shouldBe b.jsonString

@@ -2,10 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe._
-
-import java.nio.charset.StandardCharsets
 import java.time._
-import java.util.UUID
 
 object CirceCodecs {
   implicit val durationC3C: Codec[Duration] =
@@ -44,22 +41,19 @@ object CirceCodecs {
     new JsonValueCodec[A] with Codec[A] {
       def apply(x: A): Json = {
         val (buf, _, writer) = pool.get
-        val len = writer.write(this, x, buf, 0, buf.length, WriterConfig)
-        Json.fromString(new String(buf, 1, len - 2, StandardCharsets.UTF_8))
+        io.circe.JsoniterScalaCodec.asciiStringToJString(buf, writer.write(this, x, buf, 0, buf.length, WriterConfig))
       }
 
       def apply(c: HCursor): Decoder.Result[A] = {
-        val x = c.value.asString
-        if (x eq None) error(c)
+        val s = io.circe.JsoniterScalaCodec.stringValue(c)
+        if (s eq null) error(c)
         else {
-          val s = x.asInstanceOf[Some[String]].value
           val (buf, reader, _) = pool.get
           val len = s.length
           if (len + 2 > buf.length) error(c)
           else {
             buf(0) = '"'
-            var bits = 0
-            var i = 0
+            var bits, i = 0
             while (i < len) {
               val ch = s.charAt(i)
               i += 1

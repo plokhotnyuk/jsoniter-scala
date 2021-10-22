@@ -194,7 +194,7 @@ lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
   )
 
 lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
+  .crossType(CrossType.Full)
   .dependsOn(`jsoniter-scala-core`)
   .settings(commonSettings)
   .settings(publishSettings)

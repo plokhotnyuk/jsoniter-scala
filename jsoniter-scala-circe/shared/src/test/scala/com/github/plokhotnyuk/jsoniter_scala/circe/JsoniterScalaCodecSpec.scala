@@ -15,11 +15,19 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       val json = parse(jsonStr).getOrElse(null)
       readFromString(jsonStr) shouldBe json
     }
+    "not deserialize invalid json" in {
+      import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec._
+
+      val jsonStr = """{"n":null[]"""
+      assert(intercept[JsonReaderException](readFromString(jsonStr)).getMessage.contains("expected '}' or ','"))
+    }
     "not deserialize deeply nested json" in {
       import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec._
 
-      val jsonStr = "[" + """{"n":[""" * 64 + "]}" * 64 + "]"
-      assert(intercept[JsonReaderException](readFromString(jsonStr)).getMessage.contains("depth limit exceeded"))
+      val jsonStr1 = """[{"n":""" * 64 + "[]" + "}]" * 64
+      val jsonStr2 = """{"n":[""" * 64 + "{}" + "]}" * 64
+      assert(intercept[JsonReaderException](readFromString(jsonStr1)).getMessage.contains("depth limit exceeded"))
+      assert(intercept[JsonReaderException](readFromString(jsonStr2)).getMessage.contains("depth limit exceeded"))
     }
     "allow customization for number parsing" in {
       implicit val jsonCodec: JsonValueCodec[Json] =
@@ -37,12 +45,19 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
       val json = readFromString(jsonStr)
       writeToString(json) shouldBe jsonStr
     }
+    "not serialize invalid json" in {
+      import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec._
+
+      val json1 = parse(""""\ud800"""").getOrElse(null)
+      assert(intercept[Throwable](writeToString(json1)).getMessage.contains("illegal char sequence of surrogate pair"))
+    }
     "not serialize deeply nested json" in {
       import com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec._
 
-      val jsonStr = "[" + """{"n":[""" * 64 + "]}" * 64 + "]"
-      val json = parse(jsonStr).getOrElse(null)
-      assert(intercept[Throwable](writeToString(json)).getMessage.contains("depth limit exceeded"))
+      val json1 = parse("""[{"n":""" * 64 + "[]" + "}]" * 64).getOrElse(null)
+      val json2 = parse("""{"n":[""" * 64 + "{}" + "]}" * 64).getOrElse(null)
+      assert(intercept[Throwable](writeToString(json1)).getMessage.contains("depth limit exceeded"))
+      assert(intercept[Throwable](writeToString(json2)).getMessage.contains("depth limit exceeded"))
     }
     "allow filtering for key-value serialization" in {
       implicit val jsonCodec: JsonValueCodec[Json] =
