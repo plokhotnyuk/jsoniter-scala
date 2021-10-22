@@ -2,7 +2,6 @@ package io.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonReaderException, JsonValueCodec, JsonWriter}
 import io.circe.Json._
-import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
 
@@ -32,8 +31,7 @@ object JsoniterScalaCodec {
     })
   }
 
-  def asciiStringToJString[A](buf: Array[Byte], len: Int): Json =
-    new JString(new String(buf, 1, len - 2, StandardCharsets.UTF_8))
+  def asciiStringToJString[A](buf: Array[Byte], len: Int): Json = new JString(StringUtil.toString(buf, len))
 
   def stringValue(c: HCursor): String = c.value match {
     case s: JString => s.value
@@ -43,18 +41,16 @@ object JsoniterScalaCodec {
   def bigIntValue(c: HCursor): BigInt = c.value match {
     case n: JNumber =>
       n.value match {
-        case jbd: JsonBigDecimal => {
+        case jbd: JsonBigDecimal =>
           val bd = jbd.value
-          if (bd.scale() == 0) new BigInt(bd.unscaledValue())
+          if (bd.scale == 0) new BigInt(bd.unscaledValue)
           else null
-        }
         case _ => null
       }
     case _ => null
   }
 
-  def jsonValue(x: BigInt): Json =
-    new JNumber(new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger)))
+  def jsonValue(x: BigInt): Json = new JNumber(new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger)))
 }
 
 final class JsoniterScalaCodec(
