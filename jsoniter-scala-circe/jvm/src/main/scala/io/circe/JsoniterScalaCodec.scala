@@ -38,6 +38,22 @@ object JsoniterScalaCodec {
     case s: JString => s.value
     case _ => null
   }
+
+  def bigIntValue(c: HCursor): BigInt = c.value match {
+    case n: JNumber =>
+      n.value match {
+        case jbd: JsonBigDecimal => {
+          val bd = jbd.value
+          if (bd.scale() == 0) new BigInt(bd.unscaledValue())
+          else null
+        }
+        case _ => null
+      }
+    case _ => null
+  }
+
+  def jsonValue(x: BigInt): Json =
+    new JNumber(new JsonBigDecimal(new java.math.BigDecimal(x.bigInteger)))
 }
 
 final class JsoniterScalaCodec(

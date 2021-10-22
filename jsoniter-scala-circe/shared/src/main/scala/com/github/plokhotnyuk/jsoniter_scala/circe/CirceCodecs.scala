@@ -5,6 +5,15 @@ import io.circe._
 import java.time._
 
 object CirceCodecs {
+  implicit val bigIntC3c: Codec[BigInt] = new Codec[BigInt] {
+    override def apply(x: BigInt): Json = io.circe.JsoniterScalaCodec.jsonValue(x)
+
+    override def apply(c: HCursor): Decoder.Result[BigInt] = {
+      val bi = io.circe.JsoniterScalaCodec.bigIntValue(c)
+      if (bi ne null) new scala.util.Right(bi)
+      else Decoder.decodeBigInt.apply(c)
+    }
+  }
   implicit val durationC3C: Codec[Duration] =
     shortAsciiStringCodec("duration", _.readDuration(_), _.writeVal(_))
   implicit val instantC3C: Codec[Instant] =
@@ -39,12 +48,12 @@ object CirceCodecs {
 
   private[this] def shortAsciiStringCodec[A](name: String, read: (JsonReader, A) => A, write: (JsonWriter, A) => Unit): Codec[A] =
     new JsonValueCodec[A] with Codec[A] {
-      def apply(x: A): Json = {
+      override def apply(x: A): Json = {
         val (buf, _, writer) = pool.get
         io.circe.JsoniterScalaCodec.asciiStringToJString(buf, writer.write(this, x, buf, 0, buf.length, WriterConfig))
       }
 
-      def apply(c: HCursor): Decoder.Result[A] = {
+      override def apply(c: HCursor): Decoder.Result[A] = {
         val s = io.circe.JsoniterScalaCodec.stringValue(c)
         if (s eq null) error(c)
         else {
