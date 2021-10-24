@@ -243,6 +243,7 @@ Samples for integration with different web frameworks and HTTP servers:
 - [zio-http](https://github.com/TechEmpower/FrameworkBenchmarks/blob/master/frameworks/Scala/zio-http/src/main/scala/Main.scala)
 
 Other usages of jsoniter-scala:
+- [jsoniter-scala-circe](https://github.com/plokhotnyuk/jsoniter-scala/tree/master/jsoniter-scala-circe) - the circe booster for faster parsing/serialization to/form circe AST and decoding/encoding of `java.time._` and `BigInt` types.
 - [Dijon](https://github.com/jvican/dijon) - support of schema-less JSON using safe and efficient AST representation
 - [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools) - provides the fastest way to convert an 
 instance of `play.api.libs.json.JsValue` to byte array (or byte buffer, or output stream) and read it back
