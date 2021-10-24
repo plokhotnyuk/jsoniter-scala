@@ -2,6 +2,7 @@ package io.circe
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonReaderException, JsonValueCodec, JsonWriter}
 import io.circe.Json._
+import java.nio.charset.StandardCharsets
 import java.util
 import scala.collection.immutable.VectorBuilder
 
@@ -142,6 +143,6 @@ final class JsoniterScalaCodec(
     case f: JsonFloat => out.writeVal(f.value)
     case d: JsonDouble => out.writeVal(d.value)
     case bd: JsonBigDecimal => out.writeVal(bd.value)
-    case _ => out.writeRawVal(x.toString.getBytes)
+    case _ => out.writeRawVal(x.toString.getBytes(StandardCharsets.UTF_8))
   }
 }

@@ -32,7 +32,7 @@ class JsoniterScalaCodecSpec extends AnyWordSpec with Matchers {
     "allow customization for number parsing" in {
       implicit val jsonCodec: JsonValueCodec[Json] =
         com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec
-          .jsonCodec(numberParser = in => Json.fromDoubleOrNull(in.readDouble())) // compatible with JS and faster than default one
+          .jsonCodec(numberParser = in => Json.fromDoubleOrNull(in.readDouble())) // compatible with JS and faster than the default one
 
       val jsonStr = """{"n":null,"s":"VVV","n1":1.0,"n2":2,"a":[null,"WWW",[],{}],"o":{"a":[]}}"""
       val json = parse(jsonStr).getOrElse(null)
