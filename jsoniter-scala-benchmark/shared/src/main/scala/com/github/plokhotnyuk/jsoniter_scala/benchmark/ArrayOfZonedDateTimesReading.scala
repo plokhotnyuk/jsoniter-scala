@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.ZonedDateTime
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import io.circe.Decoder
@@ -53,8 +52,11 @@ class ArrayOfZonedDateTimesReading extends ArrayOfZonedDateTimesBenchmark {
   def playJson(): Array[ZonedDateTime] = Json.parse(jsonBytes).as[Array[ZonedDateTime]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[ZonedDateTime] =
-    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[ZonedDateTime]])
+  def playJsonJsoniter(): Array[ZonedDateTime] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[ZonedDateTime]])
+  }
 
   @Benchmark
   def sprayJson(): Array[ZonedDateTime] = JsonParser(jsonBytes).convertTo[Array[ZonedDateTime]]

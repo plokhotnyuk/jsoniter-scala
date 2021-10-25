@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.MonthDay
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -50,7 +49,11 @@ class ArrayOfMonthDaysReading extends ArrayOfMonthDaysBenchmark {
   def playJson(): Array[MonthDay] = Json.parse(jsonBytes).as[Array[MonthDay]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[MonthDay] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[MonthDay]])
+  def playJsonJsoniter(): Array[MonthDay] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[MonthDay]])
+  }
 
   @Benchmark
   def uPickle(): Array[MonthDay] = read[Array[MonthDay]](jsonBytes)

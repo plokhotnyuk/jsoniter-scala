@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -48,7 +47,11 @@ class ArrayOfInstantsReading extends ArrayOfInstantsBenchmark {
   def playJson(): Array[Instant] = Json.parse(jsonBytes).as[Array[Instant]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[Instant] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Instant]])
+  def playJsonJsoniter(): Array[Instant] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[Instant]])
+  }
 
   @Benchmark
   def sprayJson(): Array[Instant] = JsonParser(jsonBytes).convertTo[Array[Instant]]
