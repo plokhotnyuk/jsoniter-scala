@@ -64,7 +64,7 @@ final class JsoniterScalaCodec(
   private[this] val emptyArrayValue = new JArray(Vector.empty)
   private[this] val emptyObjectValue = new JObject(JsonObject.empty)
 
-  override val nullValue: Json = Null
+  override val nullValue: Json = JNull
 
   override def decodeValue(in: JsonReader, default: Json): Json = decode(in, maxDepth)
 
@@ -72,8 +72,7 @@ final class JsoniterScalaCodec(
 
   private[this] def decode(in: JsonReader, depth: Int): Json = {
     val b = in.nextToken()
-    if (b == 'n') in.readNullOrError(nullValue, "expected `null` value")
-    else if (b == '"') {
+    if (b == '"') {
       in.rollbackToken()
       new JString(in.readString(null))
     } else if (b == 'f' || b == 't') {
@@ -111,11 +110,10 @@ final class JsoniterScalaCodec(
         if (in.isCurrentToken('}')) new JObject(JsonObject.fromLinkedHashMap(x))
         else in.objectEndOrCommaError()
       }
-    } else in.decodeError("expected JSON value")
+    } else in.readNullOrError(nullValue, "expected JSON value")
   }
 
   private[this] def encode(x: Json, out: JsonWriter, depth: Int): Unit = x match {
-    case JNull => out.writeNull()
     case s: JString => out.writeVal(s.value)
     case b: JBoolean => out.writeVal(b.value)
     case n: JNumber => encodeJsonNumber(n.value, out)
@@ -123,19 +121,22 @@ final class JsoniterScalaCodec(
       val depthM1 = depth - 1
       if (depthM1 < 0) out.encodeError("depth limit exceeded")
       out.writeArrayStart()
-      a.value.foreach(x => encode(x, out, depthM1))
+      a.value.foreach(v => encode(v, out, depthM1))
       out.writeArrayEnd()
     case o: JObject =>
       val depthM1 = depth - 1
       if (depthM1 < 0) out.encodeError("depth limit exceeded")
       out.writeObjectStart()
-      o.value.toIterable.foreach { kv =>
-        if (doSerialize(kv._2)) {
-          out.writeKey(kv._1)
-          encode(kv._2, out, depthM1)
+      val it = o.value.toIterable.iterator
+      while (it.hasNext) {
+        val (k, v) = it.next()
+        if (doSerialize(v)) {
+          out.writeKey(k)
+          encode(v, out, depthM1)
         }
       }
       out.writeObjectEnd()
+    case _ => out.writeNull()
   }
 
   private[this] def encodeJsonNumber(x: JsonNumber, out: JsonWriter): Unit = x match {
