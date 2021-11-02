@@ -28,8 +28,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.avSystemGenCodec())
       intercept[Throwable](b.borer())
       intercept[Throwable](b.circe())
-      //FIXME: circe API parse whole numbers as long values
-      //intercept[Throwable](b.circeJsoniter())
+      intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.dslJsonScala())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())

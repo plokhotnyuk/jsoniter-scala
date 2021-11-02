@@ -19,8 +19,8 @@ object Main {
     GS(S("ADTReading")(
       B("avSystemGenCodec")(benchmark.avSystemGenCodec()),
       B("borer")(benchmark.borer()),
-      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("circe")(benchmark.circe()),
+      B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("uPickle")(benchmark.uPickle())
     ))
