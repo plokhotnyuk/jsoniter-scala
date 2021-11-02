@@ -26,7 +26,7 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("snapshots"),
     "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
-  scalaVersion := "2.13.6",
+  scalaVersion := "2.13.7",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -125,7 +125,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.0", "2.13.6", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("3.1.0", "2.13.7", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -167,7 +167,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.6", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("2.13.7", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -199,7 +199,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.0", "2.13.6", "2.12.15"),
+    crossScalaVersions := Seq("3.1.0", "2.13.7", "2.12.15"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1" % Test,
@@ -232,7 +232,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    crossScalaVersions := Seq("2.13.6"),
+    crossScalaVersions := Seq("2.13.7"),
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio-json" % "0.2.0-M1+46-a15ee827-SNAPSHOT",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.3",
