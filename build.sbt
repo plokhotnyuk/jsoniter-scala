@@ -1,7 +1,5 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
-
 import scala.sys.process._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
@@ -95,14 +93,6 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.jsonCodec"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.nullValue"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.decodeValue"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.encodeValue"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.this"),
-    ProblemFilters.exclude[MissingTypesProblem]("io.circe.JsoniterScalaCodec")
-  ),
   mimaReportSignatureProblems := true
 )
 
