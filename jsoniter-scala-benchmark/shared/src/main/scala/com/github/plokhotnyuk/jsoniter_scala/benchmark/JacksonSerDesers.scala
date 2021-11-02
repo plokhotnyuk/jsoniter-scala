@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.util.concurrent.ConcurrentHashMap
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.core.json.JsonWriteFeature
 import com.fasterxml.jackson.core.util.{DefaultIndenter, DefaultPrettyPrinter}
@@ -12,20 +11,18 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.module.scala.ScalaObjectMapper
+import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
-
 import scala.util.Try
 
 object JacksonSerDesers {
   def createJacksonMapper(escapeNonAscii: Boolean = false,
-                          indentOutput: Boolean = false): ObjectMapper with ScalaObjectMapper = {
+                          indentOutput: Boolean = false): ObjectMapper with ClassTagExtensions = {
     val jsonFactory = new JsonFactoryBuilder()
       .configure(JsonFactory.Feature.INTERN_FIELD_NAMES, false)
       .configure(JsonWriteFeature.ESCAPE_NON_ASCII, escapeNonAscii)
       .build()
-    new ObjectMapper(jsonFactory) with ScalaObjectMapper {
+    new ObjectMapper(jsonFactory) with ClassTagExtensions {
       registerModule(DefaultScalaModule)
       registerModule(new SimpleModule()
         .addSerializer(classOf[SuitADT], new SuitADTSerializer)
@@ -50,10 +47,10 @@ object JacksonSerDesers {
     }
   }
 
-  val jacksonMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper()
-  val jacksonPrettyMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper(indentOutput = true)
-  val jacksonEscapeNonAsciiMapper: ObjectMapper with ScalaObjectMapper = createJacksonMapper(escapeNonAscii = true)
-  val jacksonByteArrayMapper: ObjectMapper with ScalaObjectMapper = {
+  val jacksonMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper()
+  val jacksonPrettyMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper(indentOutput = true)
+  val jacksonEscapeNonAsciiMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper(escapeNonAscii = true)
+  val jacksonByteArrayMapper: ObjectMapper with ClassTagExtensions = {
     val jm = createJacksonMapper()
     jm.registerModule(new SimpleModule()
       .addSerializer(classOf[Array[Byte]], new ByteArraySerializer))

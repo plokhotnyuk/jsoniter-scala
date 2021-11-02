@@ -34,10 +34,10 @@ class MutableMapOfIntsToBooleansReading extends MutableMapOfIntsToBooleansBenchm
 
   @Benchmark
   def dslJsonScala(): mutable.Map[Int, Boolean] = dslJsonDecode[mutable.Map[Int, Boolean]](jsonBytes)
-
+/* FIXME: Jackson-scala has compilation failure: ambiguous implicit values
   @Benchmark
   def jacksonScala(): mutable.Map[Int, Boolean] = jacksonMapper.readValue[mutable.Map[Int, Boolean]](jsonBytes)
-
+*/
   @Benchmark
   def jsoniterScala(): mutable.Map[Int, Boolean] = readFromArray[mutable.Map[Int, Boolean]](jsonBytes)
 
