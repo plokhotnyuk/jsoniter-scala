@@ -224,7 +224,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.7"),
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-json" % "0.2.0-M1+50-27d6cb68-SNAPSHOT",
+      "dev.zio" %%% "zio-json" % "0.2.0-M2",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.3",
       "com.rallyhealth" %% "weepickle-v1" % "1.5.1",
       "io.bullet" %%% "borer-derivation" % "1.7.2",
