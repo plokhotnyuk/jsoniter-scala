@@ -37,7 +37,7 @@ class ReaderConfig private (
                              val preferredBufSize: Int,
                              val preferredCharBufSize: Int,
                              val checkForEndOfInput: Boolean,
-                             val hexDumpSize: Int) {
+                             val hexDumpSize: Int) extends Serializable {
   def withThrowReaderExceptionWithStackTrace(throwReaderExceptionWithStackTrace: Boolean): ReaderConfig =
     copy(throwReaderExceptionWithStackTrace = throwReaderExceptionWithStackTrace)
 

@@ -25,7 +25,7 @@ class WriterConfig private (
                              val throwWriterExceptionWithStackTrace: Boolean,
                              val indentionStep: Int,
                              val escapeUnicode: Boolean,
-                             val preferredBufSize: Int) {
+                             val preferredBufSize: Int) extends Serializable {
   def withThrowWriterExceptionWithStackTrace(throwWriterExceptionWithStackTrace: Boolean): WriterConfig =
     copy(throwWriterExceptionWithStackTrace = throwWriterExceptionWithStackTrace)
 

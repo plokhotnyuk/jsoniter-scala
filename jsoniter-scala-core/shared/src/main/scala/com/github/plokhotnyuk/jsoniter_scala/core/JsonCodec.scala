@@ -12,7 +12,7 @@ trait JsonCodec[@sp A] extends JsonValueCodec[A] with JsonKeyCodec[A]
   * potentially failing with an error if the JSON content does not encode a value of the given type or `A` cannot be
   * encoded properly according to RFC-8259 requirements.
   */
-trait JsonValueCodec[@sp A] {
+trait JsonValueCodec[@sp A] extends Serializable {
   /**
     * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
     * error if the JSON input does not encode a value of this type.
@@ -47,7 +47,7 @@ trait JsonValueCodec[@sp A] {
   * potentially failing with an error if the JSON input is not a key or does not encode a value of the given type or
   * `A` cannot be encoded properly according to RFC-8259 requirements.
   */
-trait JsonKeyCodec[@sp A] {
+trait JsonKeyCodec[@sp A] extends Serializable {
   /**
     * Attempts to decode a value of type `A` from the specified `JsonReader`, but may fail with `JsonReaderException`
     * error if the JSON input is not a key or does not encode a value of this type.
