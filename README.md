@@ -12,7 +12,9 @@ parsing and serialization.
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
 serialization performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
 [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), [DSL-JSON](https://github.com/ngs-doo/dsl-json), 
-[Jackson](https://github.com/FasterXML/jackson-module-scala), [Play-JSON](https://github.com/playframework/play-json),
+[Jackson](https://github.com/FasterXML/jackson-module-scala), 
+[ninny-json](https://kag0.github.io/ninny-json/USERGUIDE),
+[Play-JSON](https://github.com/playframework/play-json),
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
