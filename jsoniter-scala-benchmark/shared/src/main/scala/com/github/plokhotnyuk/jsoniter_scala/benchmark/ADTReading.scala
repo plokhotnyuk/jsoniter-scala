@@ -6,6 +6,7 @@ import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -18,6 +19,7 @@ import com.rallyhealth.weejson.v1.jackson.FromJson
 import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.Decoder
 import io.circe.parser._
+import io.github.kag0.ninny
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
@@ -45,6 +47,9 @@ class ADTReading extends ADTBenchmark {
 
   @Benchmark
   def jsoniterScala(): ADTBase = readFromArray[ADTBase](jsonBytes)
+
+  @Benchmark
+  def ninnyJson(): ADTBase = ninny.Json.parse(new String(jsonBytes, UTF_8)).to[ADTBase].get
 
   @Benchmark
   def playJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)
