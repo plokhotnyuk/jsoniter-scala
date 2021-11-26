@@ -29,3 +29,6 @@ TAGS
 # Visual Studio Code
 .metals
 .bloop
+.vscode/settings.json
+
+metals.sbt
