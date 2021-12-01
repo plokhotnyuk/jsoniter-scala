@@ -40,6 +40,9 @@ jobs:
       - uses: olafurpg/setup-scala@v13
         with:
           java-version: ${{ matrix.java }}
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 14
       - name: Compile, test and check binary compatibility
         run: "sbt -batch clean +test +mimaReportBinaryIssues"
         shell: bash
