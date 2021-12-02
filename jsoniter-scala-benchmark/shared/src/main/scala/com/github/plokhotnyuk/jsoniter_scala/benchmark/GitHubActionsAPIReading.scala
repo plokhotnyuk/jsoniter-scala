@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONScalaJsEncoderDecoders._
@@ -18,6 +19,7 @@ import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import spray.json.JsonParser
 import zio.json._
+import io.github.kag0.ninny._
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   @Benchmark
@@ -43,6 +45,9 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
 
   @Benchmark
   def jsoniterScala(): GitHubActionsAPI.Response = readFromArray[GitHubActionsAPI.Response](jsonBytes)
+
+  @Benchmark
+  def ninnyJson(): GitHubActionsAPI.Response = Json.parse(new String(jsonBytes, UTF_8)).to[GitHubActionsAPI.Response].get
 
   @Benchmark
   def sprayJson(): GitHubActionsAPI.Response = JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]

@@ -14,6 +14,8 @@ class GoogleMapsAPIWritingSpec extends BenchmarkSpecBase {
       toString(b.jacksonScala()) shouldBe b.compactJsonString
       toString(b.jsoniterScala()) shouldBe b.compactJsonString
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.compactJsonString
+      ujson.read(b.ninnyJson()) shouldBe ujson.read(b.compactJsonString)
+      ujson.read(b.ninnyJsonJsoniter()) shouldBe ujson.read(b.compactJsonString)
       toString(b.playJson()) shouldBe b.compactJsonString
       toString(b.playJsonJsoniter()) shouldBe b.compactJsonString
       toString(b.sprayJson()) shouldBe b.compactJsonString

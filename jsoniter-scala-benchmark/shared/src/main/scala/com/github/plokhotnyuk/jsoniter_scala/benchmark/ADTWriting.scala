@@ -45,6 +45,12 @@ class ADTWriting extends ADTBenchmark {
   }
 
   @Benchmark
+  def ninnyJsonJsoniter(): Array[Byte] = {
+    import io.github.kag0.ninny.AnySyntax
+    writeToArray(AnySyntax(obj).toSomeJson)
+  }
+
+  @Benchmark
   def jacksonScala(): Array[Byte] = jacksonMapper.writeValueAsBytes(obj)
 
   @Benchmark

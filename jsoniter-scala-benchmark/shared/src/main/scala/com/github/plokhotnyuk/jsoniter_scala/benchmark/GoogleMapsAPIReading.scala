@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.GoogleMapsAPI._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -24,6 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import zio.json.DecoderOps
+import io.github.kag0.ninny
 
 class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   @Benchmark
@@ -50,6 +52,9 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def jsoniterScala(): DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes1)
+
+  @Benchmark
+  def ninnyJson(): DistanceMatrix = ninny.Json.parse(new String(jsonBytes1, UTF_8)).to[DistanceMatrix].get
 
   @Benchmark
   def playJson(): DistanceMatrix = Json.parse(jsonBytes1).as[DistanceMatrix]
