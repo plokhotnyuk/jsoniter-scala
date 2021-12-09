@@ -26,6 +26,7 @@ import play.api.libs.json.Json
 import spray.json._
 import zio.json.DecoderOps
 import io.github.kag0.ninny
+import scala.collection.immutable.ArraySeq
 
 class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   @Benchmark
@@ -54,7 +55,7 @@ class GoogleMapsAPIReading extends GoogleMapsAPIBenchmark {
   def jsoniterScala(): DistanceMatrix = readFromArray[DistanceMatrix](jsonBytes1)
 
   @Benchmark
-  def ninnyJson(): DistanceMatrix = ninny.Json.parse(new String(jsonBytes1, UTF_8)).to[DistanceMatrix].get
+  def ninnyJson(): DistanceMatrix = ninny.Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes1)).to[DistanceMatrix].get
 
   @Benchmark
   def playJson(): DistanceMatrix = Json.parse(jsonBytes1).as[DistanceMatrix]

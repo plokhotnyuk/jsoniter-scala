@@ -23,8 +23,16 @@ implicit val jsoniterWritingCodec = new JsonValueCodec[JsonValue] {
                 encodeValue(v, out)
             }
             out.writeObjectEnd()
-        case JsonDecimal(preciseValue) => out.writeVal(preciseValue)
-        case JsonDouble(value) => out.writeVal(value)
+        case JsonDecimal(preciseValue) => 
+          if(preciseValue.precision == 0)
+          out.writeVal(preciseValue.toBigInt)
+          else
+          out.writeVal(preciseValue)
+        case JsonDouble(value) => 
+          if(value % 1 == 0)
+          out.writeVal(BigDecimal(value).toBigInt)
+          else
+          out.writeVal(value)
         case JsonBlob(value) => out.writeBase64UrlVal(value.unsafeArray.asInstanceOf[Array[Byte]], false)
         case JsonString(value) => out.writeVal(value)
         case JsonFalse => out.writeVal(false)

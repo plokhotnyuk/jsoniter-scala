@@ -20,6 +20,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import spray.json.JsonParser
 import zio.json._
 import io.github.kag0.ninny._
+import scala.collection.immutable.ArraySeq
 
 class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   @Benchmark
@@ -47,7 +48,7 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   def jsoniterScala(): GitHubActionsAPI.Response = readFromArray[GitHubActionsAPI.Response](jsonBytes)
 
   @Benchmark
-  def ninnyJson(): GitHubActionsAPI.Response = Json.parse(new String(jsonBytes, UTF_8)).to[GitHubActionsAPI.Response].get
+  def ninnyJson(): GitHubActionsAPI.Response = Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[GitHubActionsAPI.Response].get
 
   @Benchmark
   def sprayJson(): GitHubActionsAPI.Response = JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]
