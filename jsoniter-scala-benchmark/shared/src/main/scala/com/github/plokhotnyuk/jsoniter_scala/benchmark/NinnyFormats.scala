@@ -11,8 +11,24 @@ import GoogleMapsAPI._
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import ujson.Str
+import ujson.Obj
+import ujson.Arr
+import ujson.Num
+import ujson.False
+import ujson.True
 
 object NinnyFormats {
+  def translateUJson(ujson: _root_.ujson.Value): JsonValue = ujson match {
+    case Str(value) => JsonString(value)
+    case Obj(value) => JsonObject(value.view.mapValues(translateUJson).toMap)
+    case Arr(value) => JsonArray(value.map(translateUJson).toSeq)
+    case Num(value) => JsonDouble(value)
+    case False => JsonFalse
+    case True => JsonTrue
+    case _root_.ujson.Null => JsonNull
+  }
+
 implicit val jsoniterWritingCodec = new JsonValueCodec[JsonValue] {
     def decodeValue(in: JsonReader, default: JsonValue) = ???
     def encodeValue(x: JsonValue, out: JsonWriter) = x match {
@@ -25,14 +41,17 @@ implicit val jsoniterWritingCodec = new JsonValueCodec[JsonValue] {
             out.writeObjectEnd()
         case JsonDecimal(preciseValue) => 
           if(preciseValue.precision == 0)
-          out.writeVal(preciseValue.toBigInt)
+            out.writeVal(preciseValue.toBigInt)
           else
-          out.writeVal(preciseValue)
+            out.writeVal(preciseValue)
         case JsonDouble(value) => 
-          if(value % 1 == 0)
-          out.writeVal(BigDecimal(value).toBigInt)
+          val longValue = value.toLong
+          if(longValue == value)
+            out.writeVal(longValue)
+          else if(value % 1 == 0)
+            out.writeVal(BigDecimal(value).toBigInt)
           else
-          out.writeVal(value)
+            out.writeVal(value)
         case JsonBlob(value) => out.writeBase64UrlVal(value.unsafeArray.asInstanceOf[Array[Byte]], false)
         case JsonString(value) => out.writeVal(value)
         case JsonFalse => out.writeVal(false)
@@ -102,11 +121,12 @@ implicit val jsoniterWritingCodec = new JsonValueCodec[JsonValue] {
   implicit val rowsToFromJson = ToAndFromJson.auto[Rows]
   implicit val distanceMatrixToFromJson = ToAndFromJson.auto[DistanceMatrix]
 
-  implicit val artifactFromJson = FromJson.auto[GitHubActionsAPI.Artifact]
-  implicit val artifactToJson = {
+  // github actions api
+  implicit val artifactToFromJson = {
     implicit val booleanStringer: ToSomeJson[Boolean] = b => JsonString(b.toString)
-    implicit val isoInstants = ToJsonInstances.offsetDateTimeToJson.contramap[Instant](OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
-    ToJson.auto[GitHubActionsAPI.Artifact]
+    implicit val isoInstantsToJson = ToJsonInstances.offsetDateTimeToJson.contramap[Instant](OffsetDateTime.ofInstant(_, ZoneOffset.UTC))
+    implicit val isoInstantsFromJson = FromJsonInstances.offsetDateTimeFromJson.map(_.toInstant)
+    ToAndFromJson.auto[GitHubActionsAPI.Artifact]
   }
   implicit val ghaResponseToFromJson = ToAndFromJson.auto[GitHubActionsAPI.Response]
 }
