@@ -1,7 +1,7 @@
 resolvers += Resolver.sonatypeRepo("staging")
 
 val scalaJSVersion =
-  Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.7.1")
+  Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.8.0")
 
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.0.0")
 addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "1.0.2")
