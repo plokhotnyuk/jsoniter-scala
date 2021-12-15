@@ -7,6 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
@@ -44,6 +45,13 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
+
+  @Benchmark
+  def ninnyJsonJsoniter(): Array[Byte] = {
+    import io.github.kag0.ninny.AnySyntax
+    import io.github.kag0.ninny.ast.JsonValue
+    writeToArray(obj.toIterable.toSomeJson: JsonValue)
+  }
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))

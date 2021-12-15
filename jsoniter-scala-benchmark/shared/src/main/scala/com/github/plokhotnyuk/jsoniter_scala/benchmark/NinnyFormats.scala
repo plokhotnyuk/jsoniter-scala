@@ -46,12 +46,8 @@ implicit val jsoniterWritingCodec = new JsonValueCodec[JsonValue] {
             out.writeVal(preciseValue)
         case JsonDouble(value) => 
           val longValue = value.toLong
-          if(longValue == value)
-            out.writeVal(longValue)
-          else if(value % 1 == 0)
-            out.writeVal(BigDecimal(value).toBigInt)
-          else
-            out.writeVal(value)
+          if(longValue == value) out.writeVal(longValue)
+          else out.writeVal(value)
         case JsonBlob(value) => out.writeBase64UrlVal(value.unsafeArray.asInstanceOf[Array[Byte]], false)
         case JsonString(value) => out.writeVal(value)
         case JsonFalse => out.writeVal(false)
