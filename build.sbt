@@ -157,12 +157,19 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.7", "2.12.15", "2.11.12"),
-    libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.beachape" %%% "enumeratum" % "1.6.1" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+    crossScalaVersions := Seq("3.1.0","2.13.7", "2.12.15", "2.11.12"),
+    libraryDependencies ++= (
+      Seq(
+        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+      ) ++ (
+      if (scalaVersion.value.startsWith("2")) 
+        Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value,
+            "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+            "com.beachape" %%% "enumeratum" % "1.6.1" % Test
+        )
+      else
+        Seq.empty
+      )
     )
   )
 

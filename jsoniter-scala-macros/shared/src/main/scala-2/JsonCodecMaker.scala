@@ -1840,7 +1840,7 @@ object JsonCodecMaker {
         else cannotFindValueCodecError(tpe)
       }
 
-      val codec =
+      val codec = 
         q"""{
               @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.All"))
               val x = new _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$rootTpe] {
