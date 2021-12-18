@@ -574,9 +574,16 @@ object JsonCodecMaker {
         case _ => false
       }
 
+
+      def getEnclosingClass(sym: Symbol): Symbol =
+        if (sym.isClassDef) sym else getEnclosingClass(sym.owner)
+
     
       // TODO: explorr collection adtLeafClasses via mirror.
-      
+
+      val enclosingClassTpe = getEnclosingClass(Symbol.spliceOwner).tree match
+        case cl: ClassDef => cl.constructor.returnTpt.tpe
+        case _ => fail("")
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
 
@@ -597,8 +604,9 @@ object JsonCodecMaker {
                 // use antipattern
                 val tpe = symbol.tree match
                   case tpt: TypeTree => tpt.tpe
+                  case cl: ClassDef => cl.constructor.returnTpt.tpe
                   case _ => // todo: 
-                    adtBaseTpe.memberType(symbol)
+                    enclosingClassTpe.memberType(symbol)
                 leafTpes :+ tpe
             } else {
                 if (flags.is(Flags.Abstract)) {
