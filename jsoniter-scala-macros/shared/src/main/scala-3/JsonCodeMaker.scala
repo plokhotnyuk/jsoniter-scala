@@ -575,6 +575,7 @@ object JsonCodecMaker {
       }
 
     
+      // TODO: explorr collection adtLeafClasses via mirror.
       
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
