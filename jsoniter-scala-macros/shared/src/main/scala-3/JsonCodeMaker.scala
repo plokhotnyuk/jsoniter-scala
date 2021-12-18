@@ -579,7 +579,6 @@ object JsonCodecMaker {
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
 
-      
         def collectRecursively(symbol: Symbol): Seq[TypeRepr] = {
           val leafTpes = if (symbol.flags.is(Flags.Sealed)) {
                                symbol.children.flatMap{ s =>
@@ -591,7 +590,14 @@ object JsonCodecMaker {
             if (!flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && symbol.isClassDef) {
                 // tpe used for 'as seen from'
                 //  mb - use class 'this'or package
-                val tpe = adtBaseTpe.memberType(symbol)
+                //
+                // not work
+                //val tpe = adtBaseTpe.memberType(symbol)
+                // use antipattern
+                val tpe = symbol.tree match
+                  case tpt: TypeTree => tpt.tpe
+                  case _ => // todo: 
+                    adtBaseTpe.memberType(symbol)
                 leafTpes :+ tpe
             } else {
                 if (flags.is(Flags.Abstract)) {
