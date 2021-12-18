@@ -48,7 +48,9 @@ lazy val commonSettings = Seq(
         "-target:jvm-1.8",
         "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
       )
-    } else Seq()
+    } else Seq(
+        "-Xcheck-macros", "-Ycheck:all"
+      )
   },
   compileOrder := CompileOrder.JavaThenScala,
   Test / testOptions += Tests.Argument("-oDF"),
