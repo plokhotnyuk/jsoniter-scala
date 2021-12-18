@@ -2354,6 +2354,20 @@ object JsonCodecMaker {
           def genReadCollisions(subTpes: collection.Seq[TypeRepr], l:Expr[Int]): Term =
             val s0: Term = discriminatorError.asTerm
             subTpes.foldRight(s0) { (subTpe, acc) =>
+                try {
+                  subTpe.asType match
+                    case '[st] =>
+                      //println(s"resolved ${subTpe}")
+                }catch{
+                  case ex: Throwable =>
+                    println(s"can't resolve tpe: ${subTpe} "+ Position.ofMacroExpansion)
+                    val pos = Position.ofMacroExpansion
+                    println(s"souceFile: ${pos.sourceFile}, line: ${pos.startLine}, code: ${pos.sourceCode}")
+                    println(s"tpe=${tpe}, show: ${tpe.show}")
+                    println(s"tpe.classSymbol=${tpe.classSymbol}")
+                    println(s"tpe.typeSymbol.tree=${tpe.typeSymbol.tree.show}")
+                    throw ex;
+                }
                 subTpe.asType match
                   case '[st] =>
                     val readVal: Expr[st] = {
