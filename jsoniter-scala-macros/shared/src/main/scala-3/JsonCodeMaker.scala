@@ -1601,6 +1601,8 @@ object JsonCodecMaker {
             case ConstantType(DoubleConstant(v)) => Literal(DoubleConstant(v)).asExprOf[C]
             case _ => cannotFindValueCodecError(tpe)
           }
+        } else if (tpe =:= TypeRepr.of[Unit]) {
+          '{ () }.asExprOf[C]
         } else '{ null }.asExprOf[C]
       }
 
