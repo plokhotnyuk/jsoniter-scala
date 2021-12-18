@@ -555,8 +555,15 @@ object JsonCodecMaker {
       //def paramType(tpe: TypeRepr, p: Symbol): TypeRepr = ??? // resolveConcreteType(tpe, p.typeSignature.dealias)
 
       def valueClassValueType(tpe: TypeRepr): TypeRepr = 
-        val field = tpe.typeSymbol.fieldMembers(0)
-        tpe.memberType(field)
+        try {
+          val field = tpe.typeSymbol.fieldMembers(0)
+          tpe.memberType(field)
+        }catch{
+          case NonFatal(ex) =>
+            println(s"error getting valueType for ${tpe.show}")
+            println(s"tpe.typeSymbol.fieldMembers = ${tpe.typeSymbol.fieldMembers}")
+            throw ex
+        }
 
 
       def isNonAbstractScalaClass(tpe: TypeRepr): Boolean =
@@ -604,7 +611,12 @@ object JsonCodecMaker {
                 // use antipattern
                 val tpe = symbol.tree match
                   case tpt: TypeTree => tpt.tpe
-                  case cl: ClassDef => cl.constructor.returnTpt.tpe
+                  case cl: ClassDef => 
+                    val x = cl.self match
+                      case Some(clSelf) => clSelf.tpt.tpe
+                      case None => fail(s"Can't find self time for classdef ${symbol}")
+                    x
+                     
                   case _ => // todo: 
                     enclosingClassTpe.memberType(symbol)
                 leafTpes :+ tpe
@@ -1907,6 +1919,8 @@ object JsonCodecMaker {
                     ${Expr(cfg.bigDecimalScaleLimit)}, ${Expr(cfg.bigDecimalDigitsLimit)}) 
               }.asExprOf[C]
           }
+        } else if (tpe =:= TypeRepr.of[Unit]) {
+          fail("Unit can't be read")
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
