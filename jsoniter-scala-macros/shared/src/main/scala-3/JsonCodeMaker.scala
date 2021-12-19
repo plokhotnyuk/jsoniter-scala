@@ -283,6 +283,15 @@ object CodecMakerConfig extends CodecMakerConfig(
                       report.warning(message, expr)
                       None
                   }
+          case '{ (${x}:CodecMakerConfig).withAllowRecursiveTypes($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withAllowRecursiveTypes(vv))
+          case '{ CodecMakerConfig } =>
+            Some(CodecMakerConfig)
+          case other =>
+            report.error(s"Can't interpret ${other.show} as constant expression, tree=$other")
+            None
      }
 
 }
@@ -983,7 +992,7 @@ object JsonCodecMaker {
           }
 
 
-      def genReadSet[B:Type,C:Type](newBuilder: Expr[B], readVal: Expr[B] => UpdateOp, default: Expr[C], result: Expr[B] => Expr[C],  in: Expr[JsonReader]): Expr[C] =
+      def genReadSet[B:Type,C:Type](newBuilder: Expr[B], readVal: Quotes ?=> Expr[B] => UpdateOp, default: Expr[C], result: Expr[B] => Expr[C],  in: Expr[JsonReader]): Expr[C] =
         '{  if ($in.isNextToken('[')) {
               if ($in.isNextToken(']')) $default
               else {
@@ -1823,7 +1832,7 @@ object JsonCodecMaker {
         case _ => cannotFindValueCodecError(tpe)
       }
 
-      def genReadValForGrowable[G<:Growable[V]:Type,V:Type](types: List[TypeRepr], isStringified: Boolean, x: Expr[G], in: Expr[JsonReader]): Expr[Unit] =
+      def genReadValForGrowable[G<:Growable[V]:Type,V:Type](types: List[TypeRepr], isStringified: Boolean, x: Expr[G], in: Expr[JsonReader])(using Quotes): Expr[Unit] =
           '{ $x.addOne(${genReadVal[V](types, genNullValue[V](types), isStringified, None, in)}) }
 
       def genArraysCopyOf[T:Type](tpe: TypeRepr, x:Expr[Array[T]], newLen:Expr[Int]): Expr[Array[T]] = {

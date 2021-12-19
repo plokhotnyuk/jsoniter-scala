@@ -84,6 +84,7 @@ object CompileTimeEval {
       case _ =>
         Left((s"map ${m.show} should be a constrictoor literal, we have ${m.asTerm}", m))
 
+
   def evalTerm(using Quotes)(ft: quotes.reflect.Term, input:String): Either[(String,Expr[Any]),Option[String]] =
     import quotes.reflect._
     ft match
@@ -91,6 +92,6 @@ object CompileTimeEval {
       case Lambda(params, body) => ???
       case Select(term, string) => ???  
 
-  
+   
   
 }
