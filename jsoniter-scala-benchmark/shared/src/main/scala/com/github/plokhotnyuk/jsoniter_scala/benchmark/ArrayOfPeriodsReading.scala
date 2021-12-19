@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Period
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -49,7 +48,11 @@ class ArrayOfPeriodsReading extends ArrayOfPeriodsBenchmark {
   def playJson(): Array[Period] = Json.parse(jsonBytes).as[Array[Period]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[Period] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[Period]])
+  def playJsonJsoniter(): Array[Period] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[Period]])
+  }
 
   @Benchmark
   def sprayJson(): Array[Period] = JsonParser(jsonBytes).convertTo[Array[Period]]

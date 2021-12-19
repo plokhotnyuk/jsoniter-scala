@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.OffsetTime
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -54,8 +53,11 @@ class ArrayOfOffsetTimesReading extends ArrayOfOffsetTimesBenchmark {
   def playJson(): Array[OffsetTime] = Json.parse(jsonBytes).as[Array[OffsetTime]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[OffsetTime] =
-    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[OffsetTime]])
+  def playJsonJsoniter(): Array[OffsetTime] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[OffsetTime]])
+  }
 
   @Benchmark
   def sprayJson(): Array[OffsetTime] = JsonParser(jsonBytes).convertTo[Array[OffsetTime]]

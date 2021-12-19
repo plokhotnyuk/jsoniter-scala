@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.YearMonth
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -50,7 +49,11 @@ class ArrayOfYearMonthsReading extends ArrayOfYearMonthsBenchmark {
   def playJson(): Array[YearMonth] = Json.parse(jsonBytes).as[Array[YearMonth]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[YearMonth] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[YearMonth]])
+  def playJsonJsoniter(): Array[YearMonth] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[YearMonth]])
+  }
 
   @Benchmark
   def sprayJson(): Array[YearMonth] = JsonParser(jsonBytes).convertTo[Array[YearMonth]]

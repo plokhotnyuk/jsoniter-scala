@@ -50,7 +50,11 @@ class ArrayOfYearMonthsWriting extends ArrayOfYearMonthsBenchmark {
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark
-  def playJsonJsoniter(): Array[Byte] = PlayJsonJsoniter.serialize(Json.toJson(obj))
+  def playJsonJsoniter(): Array[Byte] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    serialize(Json.toJson(obj))
+  }
 
   @Benchmark
   def sprayJson(): Array[Byte] = {

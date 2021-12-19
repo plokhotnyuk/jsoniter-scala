@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.LocalDateTime
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
@@ -53,8 +52,11 @@ class ArrayOfLocalDateTimesReading extends ArrayOfLocalDateTimesBenchmark {
   def playJson(): Array[LocalDateTime] = Json.parse(jsonBytes).as[Array[LocalDateTime]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[LocalDateTime] =
-    PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[LocalDateTime]])
+  def playJsonJsoniter(): Array[LocalDateTime] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[LocalDateTime]])
+  }
 
   @Benchmark
   def sprayJson(): Array[LocalDateTime] = JsonParser(jsonBytes).convertTo[Array[LocalDateTime]]
