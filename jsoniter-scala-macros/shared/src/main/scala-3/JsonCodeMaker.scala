@@ -1285,7 +1285,7 @@ object JsonCodecMaker {
         }
       }
 
-      case class FieldInfo(symbol: Symbol, mappedName: String,  getter: Symbol,
+      case class FieldInfo(symbol: Symbol, mappedName: String,  field: Symbol,
                            defaultValue: Option[Term], resolvedTpe: TypeRepr, isStringified: Boolean)
 
       case class ClassInfo(tpe: TypeRepr, fields: Seq[FieldInfo])
@@ -1314,7 +1314,13 @@ object JsonCodecMaker {
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"expected that ${tpe.show} has classSymbol"))
 
         //lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
-        val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
+        //val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
+        val fields = tpeClassSym.fieldMembers
+        if (tpeClassSym.name == "Nested") {
+          println("!!tpeClassSym.name==Nested")
+          println(s"members = ${tpeClassSym.methodMembers}")
+          println(s"fields = ${fields}")
+        }
         val annotations = tpeClassSym.fieldMembers.collect {
           case m: Symbol if hasSupportedAnnotation(m) =>
             val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
@@ -1345,8 +1351,12 @@ object JsonCodecMaker {
                   case Left((message, expr)) => fail("Can't interpret fieldNameMapper:"+message)
                   case Right(optValue) => optValue.getOrElse(name)
               }(_.partiallyMappedName)
-              val getter = getters.find(_.name == symbol.name).getOrElse {
-                fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
+              //val getter = getters.find(_.name == symbol.name).getOrElse {
+              //  println(s"!!!fail (name - parameters: ):getters = $getters, name=${symbol.name}")
+              //  fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
+              //}
+              val field = fields.find(_.name == symbol.name).getOrElse{
+                 fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
               }
               //???
               //val paramType = tpe.memberType(sym)
@@ -1358,7 +1368,7 @@ object JsonCodecMaker {
                 //else None
               val isStringified = annotationOption.exists(_.stringified)
               val fieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ??? 
-              Some(FieldInfo(symbol, mappedName, getter, defaultValue, fieldType, isStringified))
+              Some(FieldInfo(symbol, mappedName, field, defaultValue, fieldType, isStringified))
             }
           }
           case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
@@ -2512,7 +2522,7 @@ object JsonCodecMaker {
               fDefault match {
                 case Some(d) =>
                   if (f.resolvedTpe <:< TypeRepr.of[Iterable[?]] && cfg.transientEmpty) {
-                    '{  val v = ${ Select(x.asTerm, f.getter).asExprOf[Iterable[?]] }
+                    '{  val v = ${ Select(x.asTerm, f.field).asExprOf[Iterable[?]] }
                         if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
                           ${genWriteConstantKey(f.mappedName, out)}
                           ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
@@ -2522,7 +2532,7 @@ object JsonCodecMaker {
                     typeArg1(f.resolvedTpe).asType match
                       case '[t1] =>
                         '{ 
-                            val v = ${ Select(x.asTerm, f.getter).asExprOf[Option[t1]]  }
+                            val v = ${ Select(x.asTerm, f.field).asExprOf[Option[t1]]  }
                             if ((v ne None) && v != ${d.asExprOf[ft]}) {
                                 ${genWriteConstantKey(f.mappedName, out)}
                                 //val vg = v.get
@@ -2539,7 +2549,7 @@ object JsonCodecMaker {
                       } else 
                         '{ !${withEqualsFor(f.resolvedTpe, v, da)( (x1, x2) => genArrayEquals(f.resolvedTpe, x1, x2))} }
                     '{  
-                        val v = ${ Select(x.asTerm, f.getter).asExprOf[ft & Array[?]] } 
+                        val v = ${ Select(x.asTerm, f.field).asExprOf[ft & Array[?]] } 
                         if (${cond('v)}) {
                           ${genWriteConstantKey(f.mappedName, out)}
                           ${genWriteVal( 'v, f.resolvedTpe :: types, f.isStringified, None, out)}
@@ -2547,7 +2557,7 @@ object JsonCodecMaker {
                     }
                   } else {
                     '{
-                        val v = ${ Select(x.asTerm, f.getter).asExprOf[ft] }
+                        val v = ${ Select(x.asTerm, f.field).asExprOf[ft] }
                         if (v != ${d.asExprOf[ft]}) {
                           ${genWriteConstantKey(f.mappedName, out)}
                           ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
@@ -2557,7 +2567,7 @@ object JsonCodecMaker {
                 case None =>
                   if (f.resolvedTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) {
                     '{
-                        val v = ${ Select(x.asTerm, f.getter).asExprOf[ft & Iterable[?]] }
+                        val v = ${ Select(x.asTerm, f.field).asExprOf[ft & Iterable[?]] }
                         if (!v.isEmpty) {
                           ${genWriteConstantKey(f.mappedName, out)}
                           ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
@@ -2567,7 +2577,7 @@ object JsonCodecMaker {
                     typeArg1(f.resolvedTpe).asType match
                       case '[tf] =>
                         '{
-                            val v = ${ Select(x.asTerm, f.getter).asExprOf[Option[tf]] }
+                            val v = ${ Select(x.asTerm, f.field).asExprOf[Option[tf]] }
                             if (v ne None) {
                               ${genWriteConstantKey(f.mappedName, out)}
                               ${genWriteVal('{ v.get }, typeArg1(f.resolvedTpe) :: types, f.isStringified, None, out)}
@@ -2576,14 +2586,14 @@ object JsonCodecMaker {
                       case _ => fail(s"Can't resolve type of ${f.resolvedTpe.show}")
                   } else if (f.resolvedTpe <:< TypeRepr.of[Array[_]] && cfg.transientEmpty) {
                     '{  
-                        val v = ${ Select(x.asTerm, f.getter).asExprOf[ft & Array[?]] }
+                        val v = ${ Select(x.asTerm, f.field).asExprOf[ft & Array[?]] }
                         if (v.length > 0) {
                           ${genWriteConstantKey(f.mappedName, out)}
                           ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
                         }
                     }
                   } else {
-                    val v = Select(x.asTerm, f.getter).asExprOf[ft]
+                    val v = Select(x.asTerm, f.field).asExprOf[ft]
                     '{ 
                         ${genWriteConstantKey(f.mappedName, out)}
                         ${genWriteVal( v , f.resolvedTpe :: types, f.isStringified, None, out)}
