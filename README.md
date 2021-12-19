@@ -4,7 +4,7 @@
 [![Scala Steward](https://img.shields.io/badge/Scala_Steward-helping-brightgreen.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
 [![Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.0.0.svg)](https://www.scala-js.org)
-[![Maven Central](https://img.shields.io/badge/maven--central-2.11.0-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
+[![Maven Central](https://img.shields.io/badge/maven--central-2.12.0-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
 
 Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
 parsing and serialization.
@@ -12,7 +12,9 @@ parsing and serialization.
 [**Latest results of benchmarks on JVMs**](https://plokhotnyuk.github.io/jsoniter-scala/) that compare parsing and
 serialization performance of jsoniter-scala with [AVSystem's scala-commons](https://github.com/AVSystem/scala-commons), 
 [Borer](https://github.com/sirthias/borer), [Circe](https://github.com/circe/circe), [DSL-JSON](https://github.com/ngs-doo/dsl-json), 
-[Jackson](https://github.com/FasterXML/jackson-module-scala), [Play-JSON](https://github.com/playframework/play-json),
+[Jackson](https://github.com/FasterXML/jackson-module-scala), 
+[ninny-json](https://kag0.github.io/ninny-json/USERGUIDE),
+[Play-JSON](https://github.com/playframework/play-json),
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
@@ -191,9 +193,9 @@ list of dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.11.0",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.12.0",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.11.0" % "compile-internal"
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.12.0" % "compile-internal"
 )
 ```
 

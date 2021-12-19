@@ -10,6 +10,7 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       toString(b.borer()) shouldBe b.jsonString
       //FIXME: Circe serializes fields with default values
       //toString(b.circe()) shouldBe b.jsonString
+      //toString(b.circeJsoniter()) shouldBe b.jsonString
       //FIXME: Jackson serializes fields with default values
       //toString(b.jacksonScala()) shouldBe b.jsonString
       toString(b.jsoniterScala()) shouldBe b.jsonString

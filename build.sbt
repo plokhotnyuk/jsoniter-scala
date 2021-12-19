@@ -1,7 +1,5 @@
-import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
-
 import scala.sys.process._
 
 lazy val oldVersion = "git describe --abbrev=0".!!.trim.replaceAll("^v", "")
@@ -26,7 +24,7 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("snapshots"),
     "scala-integration" at "https://scala-ci.typesafe.com/artifactory/scala-integration/"
   ),
-  scalaVersion := "2.13.6",
+  scalaVersion := "2.13.7",
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",
@@ -95,14 +93,6 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.jsonCodec"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.nullValue"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.decodeValue"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.encodeValue"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("io.circe.JsoniterScalaCodec.this"),
-    ProblemFilters.exclude[MissingTypesProblem]("io.circe.JsoniterScalaCodec")
-  ),
   mimaReportSignatureProblems := true
 )
 
@@ -125,9 +115,9 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.0", "2.13.6", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("3.1.0", "2.13.7", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.5.0" % Test
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => Seq(
         "org.scalatest" %%% "scalatest" % "3.2.4-M1" % Test,
@@ -167,7 +157,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.6", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("2.13.7", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -199,7 +189,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.0", "2.13.6", "2.12.15"),
+    crossScalaVersions := Seq("3.1.0", "2.13.7", "2.12.15"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1" % Test,
@@ -232,27 +222,28 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .settings(noPublishSettings)
   .settings(
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    crossScalaVersions := Seq("2.13.6"),
+    crossScalaVersions := Seq("2.13.7"),
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-json" % "0.2.0-M1",
-      "com.evolutiongaming" %% "play-json-jsoniter" % "0.10.0-SNAPSHOT",
-      "com.rallyhealth" %% "weepickle-v1" % "1.5.1",
+      "dev.zio" %%% "zio-json" % "0.2.0-M3",
+      "com.evolutiongaming" %% "play-json-jsoniter" % "0.10.0",
+      "com.rallyhealth" %% "weepickle-v1" % "1.7.0",
       "io.bullet" %%% "borer-derivation" % "1.7.2",
       "pl.iterators" %% "kebs-spray-json" % "1.9.3",
       "io.spray" %% "spray-json" % "1.3.6",
-      "com.avsystem.commons" %%% "commons-core" % "2.3.0",
-      "com.lihaoyi" %%% "upickle" % "1.4.2",
-      "com.dslplatform" %% "dsl-json-scala" % "1.9.8",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.13.0",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.13.0",
+      "com.avsystem.commons" %%% "commons-core" % "2.5.1",
+      "com.lihaoyi" %%% "upickle" % "1.4.3",
+      "com.dslplatform" %% "dsl-json-scala" % "1.9.9",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.13.1",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.1",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.13.1",
       "io.circe" %%% "circe-generic-extras" % "0.14.1",
       "io.circe" %%% "circe-generic" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1",
       "com.typesafe.play" %% "play-json" % "2.9.2",
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
+      "io.github.kag0" %% "ninny" % "0.4.1",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
       "org.openjdk.jmh" % "jmh-core" % "1.32",
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.32",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.32",
@@ -267,7 +258,7 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)
   .settings(
-    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.9.0",
+    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.10.0",
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= {
       _.withSemantics({

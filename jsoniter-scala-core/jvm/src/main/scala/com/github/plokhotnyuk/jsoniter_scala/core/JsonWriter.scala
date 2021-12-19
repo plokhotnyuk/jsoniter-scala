@@ -272,6 +272,7 @@ final class JsonWriter private[jsoniter_scala](
     val len = x.length
     val indention = this.indention
     var pos = ensureBufCapacity(indention + len + 4)
+    val buf = this.buf
     if (comma) {
       buf(pos) = ','
       pos += 1
@@ -681,7 +682,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeBytes(b: Byte): Unit = count = {
-    val pos = ensureBufCapacity(1)
+    var pos = count
+    if (pos >= limit) pos = flushAndGrowBuf(1, pos)
     buf(pos) = b
     pos + 1
   }

@@ -6,6 +6,7 @@ import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
@@ -35,6 +36,12 @@ class ADTWriting extends ADTBenchmark {
     import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceJsoniterCodecs._
 
     writeToArray(obj.asJson)
+  }
+
+  @Benchmark
+  def ninnyJson(): Array[Byte] = {
+    import io.github.kag0.ninny.AnySyntax
+    AnySyntax(obj).toSomeJson.toString.getBytes(UTF_8)
   }
 
   @Benchmark
