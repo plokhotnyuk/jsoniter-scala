@@ -1426,7 +1426,8 @@ object JsonCodecMaker {
       val fieldIndexAccessors = mutable.LinkedHashMap.empty[TypeRepr, DefDef]
     
 
-      def withFieldsFor(tpe: TypeRepr)(f: => Seq[String]): Expr[Int => String] = {
+      def withFieldsByIndexFor(tpe: TypeRepr)(f: => Seq[String]): Term = { 
+        // [Int => String], we don't want eta-expand without reason, so let this will be just index.
         val defDef = fieldIndexAccessors.getOrElseUpdate(tpe, {
           val name = "f" + fieldIndexAccessors.size
           val mt = MethodType(List("i"))(_ => List(TypeRepr.of[Int]), _ => TypeRepr.of[String] )
@@ -1442,7 +1443,7 @@ object JsonCodecMaker {
               Some(body)
           })
         })
-        Ref(defDef.symbol).asExprOf[Int => String]
+        Ref(defDef.symbol)// .asExprOf[Int => String]
       }
 
       val equalsMethods = mutable.LinkedHashMap.empty[TypeRepr, DefDef]
@@ -1693,7 +1694,7 @@ object JsonCodecMaker {
         val checkReqVars =
           if (required.isEmpty) Nil
           else {
-            val names = withFieldsFor(tpe)(classInfo.fields.map(_.mappedName))
+            val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.fields.map(_.mappedName))
             val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
               if (required(f.mappedName)) acc | (1 << i)
               else acc
@@ -1702,9 +1703,11 @@ object JsonCodecMaker {
               val n = Ref(nValDef.symbol).asExprOf[Int]
               val m = Expr(reqMasks(i))
               val fieldName = 
-                if (i == 0)  '{ $names(java.lang.Integer.numberOfTrailingZeros($n & $m)) } 
-                else '{ $names(java.lang.Integer.numberOfTrailingZeros($n & $m) + ${Expr(i << 5)}) }
-              '{  if ( ($n & $m) != 0) $in.requiredFieldError($fieldName) }
+                if (i == 0)  
+                    Apply(nameByIndex,List( '{java.lang.Integer.numberOfTrailingZeros($n & $m) }.asTerm) ) 
+                else 
+                    Apply(nameByIndex,List( '{ java.lang.Integer.numberOfTrailingZeros($n & $m) + ${Expr(i << 5)} }.asTerm ))
+              '{  if ( ($n & $m) != 0) $in.requiredFieldError(${fieldName.asExprOf[String]}) }
             }.toList
           }
         val readVars: Seq[ValDef] = classInfo.fields.map { f =>
@@ -1734,7 +1737,7 @@ object JsonCodecMaker {
           else classInfo.fields :+ FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], isStringified = true)
         }
 
-        def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String,ValDef], l:Expr[Int]): Expr[Unit] =
+        def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String,ValDef], l:Expr[Int])(using Quotes): Expr[Unit] =
           val s0: Expr[Unit] = unexpectedFieldHandler(in,l) 
           fs.foldRight(s0){ (f, acc) =>
             val readValue: Expr[Unit] =
@@ -1755,7 +1758,8 @@ object JsonCodecMaker {
              '{ if ($in.isCharBufEqualsTo($l, ${Expr(f.mappedName)})) $readValue else $acc }
           }
 
-        def readFieldsBlock(l: Expr[Int]):Expr[Unit] =
+        def readFieldsBlock(l: Expr[Int])(using Quotes):Expr[Unit] =
+          //  using Quotes for workarround agains https://github.com/lampepfl/dotty/issues/14137
           if (readFields.size <= 8 && readFields.map(fiLength).sum <= 64) 
             genReadCollisions(readFields, readVarsMap, l)
           else {
