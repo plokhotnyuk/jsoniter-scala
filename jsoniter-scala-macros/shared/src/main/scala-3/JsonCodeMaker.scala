@@ -481,6 +481,8 @@ object JsonCodecMaker {
       try {
         make[A](cfg)
       } catch {
+        case ex: scala.quoted.runtime.StopMacroExpansion =>
+          throw ex
         case NonFatal(ex) =>
           println(s"catched exception during macro expansion: $ex: msg=${ex.getMessage}")
           ex.printStackTrace()
@@ -2963,7 +2965,7 @@ object JsonCodecMaker {
                
             }
           }
-          
+
           val needDefs: List[Statement] = (decodeMethodDefs.values.toList: List[Statement]) ++
                                           (encodeMethodDefs.values.toList: List[Statement]) ++
                                           (fieldIndexAccessors.values.toList: List[Statement]) ++
