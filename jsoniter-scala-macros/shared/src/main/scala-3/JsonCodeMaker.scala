@@ -838,7 +838,8 @@ object JsonCodecMaker {
             fail(s"$tpe is not a class")
       })
 
-      def genReadEnumValue[E:Type](enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Expr[E], in: Expr[JsonReader], l: Expr[Int]): Expr[E] = {
+      
+      def genReadEnumValue[E:Type](enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Expr[E], in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[E] = {
         val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
         val length: EnumValueInfo => Int = _.name.length
 
@@ -1778,13 +1779,13 @@ object JsonCodecMaker {
         val optDiscriminatorVar = discriminator.map{ _.valDef }
                    
 
-        def blockWithVars(next: Term): Term =
+        def blockWithVars[A:Type](next: Expr[A])(using Quotes): Expr[A] =
           Block(
             readVars.toList ++
             paramVars.toList ++
             optDiscriminatorVar.toList,
-            next
-          )
+            next.asTerm
+          ).asExprOf[A]
 
         '{  if ($in.isNextToken('{')) {
              ${blockWithVars(
@@ -1798,7 +1799,7 @@ object JsonCodecMaker {
                     if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
                 }
                 ${Block(checkReqVars.map(_.asTerm), construct).asExprOf[A]}
-              }.asTerm).asExprOf[A]
+              }).asExprOf[A]
              }
             } else $in.readNullOrTokenError($default, '{')
         }
@@ -2945,7 +2946,7 @@ object JsonCodecMaker {
 
       val codec = rootTpe.asType match {
         case '[rootType] =>
-          val codecExpr = '{
+          def codecExpr(using Quotes) = '{
             new JsonValueCodec[rootType] {
                def nullValue: rootType = ${genNullValue[rootType](rootTpe :: Nil)}
                
@@ -2967,6 +2968,7 @@ object JsonCodecMaker {
                                           (nullValues.values.toList: List[Statement]) ++
                                           (mathContexts.values.toList: List[Statement]) ++
                                           (scalaEnumCaches.values.toList: List[Statement])
+          
           val retBlock = Block(
               needDefs,
               codecExpr.asTerm
