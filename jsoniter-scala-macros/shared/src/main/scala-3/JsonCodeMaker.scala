@@ -1655,7 +1655,7 @@ object JsonCodecMaker {
                   discriminator: Option[ReadDiscriminator],
                   in: Expr[JsonReader],
                   default: Expr[A],
-                  ): Expr[A] = {
+                  )(using Quotes): Expr[A] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
@@ -1678,11 +1678,12 @@ object JsonCodecMaker {
           val rhs = Literal(IntConstant(if (i == lastParamVarIndex) lastParamVarBits else -1))
           ValDef(sym, Some(rhs))
         } 
-        val checkAndResetFieldPresenceFlags:Map[String, Expr[Int] => Expr[Unit]] = {
+
+        val checkAndResetFieldPresenceFlags: Map[String, Quotes ?=> Expr[Int] => Expr[Unit]] = {
           classInfo.fields.zipWithIndex.map { case (f, i) =>
             val n = Ref(paramVars(i >> 5).symbol).asExprOf[Int]
             val m = Expr(1 << i)
-            (f.mappedName, (l:Expr[Int]) => '{ 
+            (f.mappedName, (q: Quotes) ?=> (l:Expr[Int]) => '{ 
               if (($n & $m) != 0) 
                 ${Assign(n.asTerm , '{ $n ^ $m }.asTerm).asExprOf[Unit]} 
               else 
@@ -1776,16 +1777,16 @@ object JsonCodecMaker {
         val optDiscriminatorVar = discriminator.map{ _.valDef }
                    
 
-        def blockWithVars(next: Term): Term =
+        def blockWithVars[A:Type](next: Expr[A])(using Quotes): Expr[A] =
           Block(
             readVars.toList ++
             paramVars.toList ++
             optDiscriminatorVar.toList,
-            next
-          )
+            next.asTerm
+          ).asExprOf[A]
 
         '{  if ($in.isNextToken('{')) {
-             ${blockWithVars(
+             ${blockWithVars[A](
               '{if (!$in.isNextToken('}')) {
                     $in.rollbackToken()
                     var l = -1
@@ -1796,7 +1797,7 @@ object JsonCodecMaker {
                     if (!$in.isCurrentToken('}')) $in.objectEndOrCommaError()
                 }
                 ${Block(checkReqVars.map(_.asTerm), construct).asExprOf[A]}
-              }.asTerm).asExprOf[A]
+              }).asExprOf[A]
              }
             } else $in.readNullOrTokenError($default, '{')
         }
@@ -1878,7 +1879,7 @@ object JsonCodecMaker {
                      isStringified: Boolean, 
                      optDiscriminator: Option[ReadDiscriminator],
                      in: Expr[JsonReader]
-                     ): Expr[C] = {
+                     )(using Quotes): Expr[C] = {
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optDiscriminator.isDefined)
@@ -2943,12 +2944,17 @@ object JsonCodecMaker {
 
       val codec = rootTpe.asType match {
         case '[rootType] =>
-          val codecExpr = '{
+          def codecExpr(using Quotes) = '{
             new JsonValueCodec[rootType] {
                def nullValue: rootType = ${genNullValue[rootType](rootTpe :: Nil)}
                
                def decodeValue(in: JsonReader, default: rootType): rootType = {
-                  ${genReadVal(rootTpe :: Nil, 'default, cfg.isStringified, None, 'in)}
+                  ${genReadVal(
+                          rootTpe :: Nil, 
+                          'default, 
+                          cfg.isStringified, 
+                          None, 
+                          'in)}
                }
 
                def encodeValue(x: rootType, out: JsonWriter): Unit = {
@@ -2957,6 +2963,7 @@ object JsonCodecMaker {
                
             }
           }
+          
           val needDefs: List[Statement] = (decodeMethodDefs.values.toList: List[Statement]) ++
                                           (encodeMethodDefs.values.toList: List[Statement]) ++
                                           (fieldIndexAccessors.values.toList: List[Statement]) ++
