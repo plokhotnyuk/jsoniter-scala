@@ -55,12 +55,6 @@ class OpenRTBWriting extends OpenRTBBenchmark {
     import io.github.kag0.ninny.AnySyntax
     obj.toSomeJson.toString.getBytes(UTF_8)
   }
-
-  @Benchmark
-  def ninnyJsonJsoniter(): Array[Byte] = {
-    import io.github.kag0.ninny.AnySyntax
-    writeToArray(obj.toSomeJson)
-  }
 */
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

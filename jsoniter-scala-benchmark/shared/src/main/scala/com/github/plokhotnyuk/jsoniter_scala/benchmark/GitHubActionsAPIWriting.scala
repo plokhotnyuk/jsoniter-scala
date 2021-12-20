@@ -50,12 +50,6 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
-  def ninnyJsonJsoniter(): Array[Byte] = {
-    import io.github.kag0.ninny.{AnySyntax, Json}
-    writeToArray(obj.toSomeJson)
-  }
-
-  @Benchmark
   def sprayJson(): Array[Byte] = {
     import spray.json._
 

@@ -58,12 +58,6 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
   }
 
   @Benchmark
-  def ninnyJsonJsoniter(): Array[Byte] = {
-    import io.github.kag0.ninny.AnySyntax
-    writeToArray(obj.toSomeJson)
-  }
-
-  @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
 
   @Benchmark

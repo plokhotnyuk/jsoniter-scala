@@ -47,10 +47,10 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
 
   @Benchmark
-  def ninnyJsonJsoniter(): Array[Byte] = {
+  def ninnyJson(): Array[Byte] = {
     import io.github.kag0.ninny.AnySyntax
-    import io.github.kag0.ninny.ast.JsonValue
-    writeToArray(obj.toIterable.toSomeJson: JsonValue)
+    import io.github.kag0.ninny.Json
+    Json.render(obj.toSomeJson).getBytes(UTF_8)
   }
 
   @Benchmark

@@ -14,7 +14,6 @@ class ADTWritingSpec extends BenchmarkSpecBase {
       toString(b.jsoniterScala()) shouldBe b.jsonString1
       toString(b.preallocatedBuf, 0, b.jsoniterScalaPrealloc()) shouldBe b.jsonString1
       toString(b.ninnyJson()) shouldBe b.jsonString3
-      toString(b.ninnyJsonJsoniter()) shouldBe b.jsonString3
       toString(b.playJson()) shouldBe b.jsonString1
       toString(b.playJsonJsoniter()) shouldBe b.jsonString1
       toString(b.sprayJson()) shouldBe b.jsonString2
