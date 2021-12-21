@@ -487,6 +487,9 @@ object JsonCodecMaker {
           println(s"catched exception during macro expansion: $ex: msg=${ex.getMessage}")
           ex.printStackTrace()
           throw ex
+        case ex: Throwable =>
+          ex.printStackTrace()
+          throw ex 
       }
     }
 
