@@ -1289,13 +1289,15 @@ object JsonCodecMaker {
       }
 
       case class FieldInfo(symbol: Symbol, mappedName: String,  field: Symbol,
-                           defaultValue: Option[Term], resolvedTpe: TypeRepr, isStringified: Boolean)
+                           defaultValue: Option[Term], resolvedTpe: TypeRepr, 
+                           isStringified: Boolean, fieldIndex: Int)
 
-      case class ClassInfo(tpe: TypeRepr, fields: Seq[FieldInfo])
+      case class ClassInfo(tpe: TypeRepr, fields: IndexedSeq[FieldInfo])
 
       val classInfos = mutable.LinkedHashMap.empty[TypeRepr, ClassInfo]
 
       def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
+
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
 
         def getPrimaryConstructor(tpe: TypeRepr): Symbol = 
@@ -1341,13 +1343,14 @@ object JsonCodecMaker {
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
         }.toMap
         val primaryConstructor = getPrimaryConstructor(tpe)
+
         ClassInfo(tpe, primaryConstructor.paramSymss match {
-          case params :: Nil => params.zipWithIndex.flatMap { case (symbol, i) =>
+          case params :: Nil =>   params.foldLeft(IndexedSeq.empty[FieldInfo]){ (fieldInfos, symbol) =>
             //val symbol = p.asTerm
             //val name = decodeName(symbol)
             val name = symbol.name
             val annotationOption = annotations.get(name)
-            if (annotationOption.exists(_.transient)) None
+            if (annotationOption.exists(_.transient)) fieldInfos
             else {
               val mappedName = annotationOption.fold{ 
                 cfg.fieldNameMapper(name) match
@@ -1371,7 +1374,8 @@ object JsonCodecMaker {
                 //else None
               val isStringified = annotationOption.exists(_.stringified)
               val fieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ??? 
-              Some(FieldInfo(symbol, mappedName, field, defaultValue, fieldType, isStringified))
+              val newFieldInfo = FieldInfo(symbol, mappedName, field, defaultValue, fieldType, isStringified, fieldInfos.length) 
+              fieldInfos.appended(newFieldInfo)
             }
           }
           case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
@@ -1658,7 +1662,7 @@ object JsonCodecMaker {
                   discriminator: Option[ReadDiscriminator],
                   in: Expr[JsonReader],
                   default: Expr[A],
-                  ): Expr[A] = {
+                  )(using Quotes): Expr[A] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
@@ -1681,9 +1685,11 @@ object JsonCodecMaker {
           val rhs = Literal(IntConstant(if (i == lastParamVarIndex) lastParamVarBits else -1))
           ValDef(sym, Some(rhs))
         } 
+        
+        /*
         val checkAndResetFieldPresenceFlags:Map[String, Expr[Int] => Expr[Unit]] = {
           classInfo.fields.zipWithIndex.map { case (f, i) =>
-            val n = Ref(paramVars(i >> 5).symbol).asExprOf[Int]
+            var n = Ref(paramVars(i >> 5).symbol).asExprOf[Int]
             val m = Expr(1 << i)
             (f.mappedName, (l:Expr[Int]) => '{ 
               if (($n & $m) != 0) 
@@ -1693,6 +1699,23 @@ object JsonCodecMaker {
             } )
           }.toMap
         }
+        */
+        
+        def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
+          classInfo.fields.find(_.mappedName == name) match
+            case None => fail(s"field ${name} is not found in fields for ${classInfo}")
+            case Some(fi) =>
+                val n = Ref(paramVars(fi.fieldIndex >> 5).symbol).asExprOf[Int]
+                val m = Expr(1 << fi.fieldIndex)
+                '{
+                  if (($m & $n) != 0) {
+                    ${ Assign(n.asTerm, '{  $n ^ $m }.asTerm ).asExprOf[Unit] }
+                  } else {
+                    $in.duplicatedKeyError($l)
+                  }
+                }
+        
+         
          
         val checkReqVars =
           if (required.isEmpty) Nil
@@ -1713,6 +1736,7 @@ object JsonCodecMaker {
               '{  if ( ($n & $m) != 0) $in.requiredFieldError(${fieldName.asExprOf[String]}) }
             }.toList
           }
+
         val readVars: Seq[ValDef] = classInfo.fields.map { f =>
             val name = "_"+f.symbol.name
             val sym = Symbol.newVal(Symbol.spliceOwner, name, f.resolvedTpe, Flags.Mutable, Symbol.noSymbol)
@@ -1737,7 +1761,7 @@ object JsonCodecMaker {
         val fiLength: (FieldInfo => Int) = _.mappedName.length
         val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
           if (discriminator.isEmpty) classInfo.fields
-          else classInfo.fields :+ FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], isStringified = true)
+          else classInfo.fields :+ FieldInfo(Symbol.noSymbol, n, Symbol.noSymbol, None, TypeRepr.of[String], isStringified = true, classInfo.fields.length)
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String,ValDef], l:Expr[Int])(using Quotes): Expr[Unit] =
@@ -1751,7 +1775,7 @@ object JsonCodecMaker {
                   case '[ft] =>
                     val tmpVar = Ref(tmpVars(f.symbol.name).symbol)
                     Block(
-                      List(checkAndResetFieldPresenceFlags(f.mappedName)(l).asTerm),
+                      List(checkAndResetFieldPresenceFlag(f.mappedName,l).asTerm),
                       Assign(
                         tmpVar, genReadVal[ft](f.resolvedTpe :: types, tmpVar.asExprOf[ft], f.isStringified,  None, in).asTerm
                       )
@@ -1881,7 +1905,7 @@ object JsonCodecMaker {
                      isStringified: Boolean, 
                      optDiscriminator: Option[ReadDiscriminator],
                      in: Expr[JsonReader]
-                     ): Expr[C] = {
+                     )(using Quotes): Expr[C] = {
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optDiscriminator.isDefined)
@@ -2441,7 +2465,7 @@ object JsonCodecMaker {
                   case _ => fail(s"Can't extract type for ${subTpe}")
             }
 
-          def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l:Expr[Int]): Term =
+          def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
             if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) 
               genReadCollisions(leafClasses, l)
             else {
@@ -2519,7 +2543,7 @@ object JsonCodecMaker {
       }
 
    
-      def genWriteNonAbstractScalaClass[T](x: Expr[T], types: List[TypeRepr], optDiscriminator: Option[WriteDiscriminator], out: Expr[JsonWriter]): Expr[Unit] = {
+      def genWriteNonAbstractScalaClass[T](x: Expr[T], types: List[TypeRepr], optDiscriminator: Option[WriteDiscriminator], out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         val writeFields = classInfo.fields.map { f =>
@@ -2623,7 +2647,7 @@ object JsonCodecMaker {
 
       }
 
-      def getWriteConstType(tpe: TypeRepr, m: Term, isStringified: Boolean, out: Expr[JsonWriter]): Expr[Unit] = tpe match {
+      def getWriteConstType(tpe: TypeRepr, m: Term, isStringified: Boolean, out: Expr[JsonWriter])(using Quotes): Expr[Unit] = tpe match {
         case ConstantType(StringConstant(_)) => '{ $out.writeVal(${m.asExprOf[String]}) }
         case ConstantType(BooleanConstant(_)) =>
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Boolean]}) }
@@ -2651,7 +2675,7 @@ object JsonCodecMaker {
       }
 
  
-      def genWriteVal[T:Type](m: Expr[T], types: List[TypeRepr], isStringified: Boolean, optWriteDiscriminator: Option[WriteDiscriminator], out: Expr[JsonWriter]): Expr[Unit]= {
+      def genWriteVal[T:Type](m: Expr[T], types: List[TypeRepr], isStringified: Boolean, optWriteDiscriminator: Option[WriteDiscriminator], out: Expr[JsonWriter])(using Quotes): Expr[Unit]= {
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
