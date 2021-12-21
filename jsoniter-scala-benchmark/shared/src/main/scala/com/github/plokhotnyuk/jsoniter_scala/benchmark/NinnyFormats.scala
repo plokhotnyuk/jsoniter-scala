@@ -33,6 +33,8 @@ object NinnyFormats {
     )
   }
 
+  implicit val extractFieldsFromJson: FromJson[ExtractFields] = FromJson.auto[ExtractFields]
+
   implicit val googleMapsAPIToFromJson: ToAndFromJson[DistanceMatrix] = {
     implicit val v1: ToAndFromJson[Value] = ToAndFromJson.auto[Value]
     implicit val v2: ToAndFromJson[Elements] = ToAndFromJson.auto[Elements]

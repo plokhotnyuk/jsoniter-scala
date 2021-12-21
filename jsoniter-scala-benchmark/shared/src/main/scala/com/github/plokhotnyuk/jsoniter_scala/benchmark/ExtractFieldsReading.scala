@@ -10,6 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.HashCodeCollider._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -24,6 +25,7 @@ import org.openjdk.jmh.annotations.{Benchmark, Param, Setup}
 import play.api.libs.json.Json
 import spray.json._
 import zio.json.DecoderOps
+import scala.collection.immutable.ArraySeq
 
 class ExtractFieldsReading extends CommonParams {
   @Param(Array("1", "10", "100", "1000", "10000", "100000", "1000000"))
@@ -64,6 +66,13 @@ class ExtractFieldsReading extends CommonParams {
 
   @Benchmark
   def jsoniterScala(): ExtractFields = readFromArray[ExtractFields](jsonBytes)
+
+  @Benchmark
+  def ninnyJson(): ExtractFields = {
+    import io.github.kag0.ninny.Json
+
+    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ExtractFields].get
+  }
 
   @Benchmark
   def playJson(): ExtractFields = Json.parse(jsonBytes).as[ExtractFields]
