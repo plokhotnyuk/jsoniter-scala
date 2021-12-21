@@ -24,6 +24,7 @@ import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
 import spray.json._
 import zio.json._
+import scala.collection.immutable.ArraySeq
 
 class ADTReading extends ADTBenchmark {
   @Benchmark
@@ -49,7 +50,7 @@ class ADTReading extends ADTBenchmark {
   def jsoniterScala(): ADTBase = readFromArray[ADTBase](jsonBytes)
 
   @Benchmark
-  def ninnyJson(): ADTBase = ninny.Json.parse(new String(jsonBytes, UTF_8)).to[ADTBase].get
+  def ninnyJson(): ADTBase = ninny.Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[ADTBase].get
 
   @Benchmark
   def playJson(): ADTBase = Json.parse(jsonBytes).as[ADTBase](adtFormat)

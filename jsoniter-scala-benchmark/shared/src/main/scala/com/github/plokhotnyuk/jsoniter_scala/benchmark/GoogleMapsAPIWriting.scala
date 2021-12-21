@@ -9,6 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.DslPlatformJson._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
+import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
@@ -49,6 +50,12 @@ class GoogleMapsAPIWriting extends GoogleMapsAPIBenchmark {
 
   @Benchmark
   def jsoniterScalaPrealloc(): Int = writeToSubArray(obj, preallocatedBuf, 0, preallocatedBuf.length)
+
+  @Benchmark
+  def ninnyJson(): Array[Byte] = {
+    import io.github.kag0.ninny.{AnySyntax, Json}
+    Json.render(obj.toSomeJson).getBytes(UTF_8)
+  }
 
   @Benchmark
   def playJson(): Array[Byte] = Json.toBytes(Json.toJson(obj))
