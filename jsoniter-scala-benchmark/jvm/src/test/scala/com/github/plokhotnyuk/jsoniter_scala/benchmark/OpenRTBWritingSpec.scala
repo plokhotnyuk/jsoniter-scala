@@ -19,7 +19,6 @@ class OpenRTBWritingSpec extends BenchmarkSpecBase {
       //toString(b.playJson()) shouldBe b.jsonString
       //FIXME: Spray-JSON serializes fields with default values
       //toString(b.sprayJson()) shouldBe b.jsonString
-      //ujson.read(b.ninnyJson()) shouldBe ujson.read(b.jsonString)
       toString(b.uPickle()) shouldBe b.jsonString
       toString(b.weePickle()) shouldBe b.jsonString
       //FIXME: Zio-JSON serializes empty collections

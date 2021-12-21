@@ -48,7 +48,8 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   def jsoniterScala(): GitHubActionsAPI.Response = readFromArray[GitHubActionsAPI.Response](jsonBytes)
 
   @Benchmark
-  def ninnyJson(): GitHubActionsAPI.Response = Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[GitHubActionsAPI.Response].get
+  def ninnyJson(): GitHubActionsAPI.Response =
+    Json.parseArray(ArraySeq.unsafeWrapArray(jsonBytes)).to[GitHubActionsAPI.Response].get
 
   @Benchmark
   def sprayJson(): GitHubActionsAPI.Response = JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]

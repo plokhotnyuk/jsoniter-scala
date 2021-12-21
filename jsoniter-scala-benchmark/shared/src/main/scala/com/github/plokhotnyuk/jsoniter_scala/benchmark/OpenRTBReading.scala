@@ -10,7 +10,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.OpenRTB.BidRequest
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.ZioJSONEncoderDecoders._
@@ -23,7 +22,6 @@ import io.circe.Decoder
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import zio.json.DecoderOps
-import io.github.kag0.ninny.Json
 
 class OpenRTBReading extends OpenRTBBenchmark {
   @Benchmark
@@ -54,11 +52,6 @@ class OpenRTBReading extends OpenRTBBenchmark {
 /* FIXME: Spray-JSON throws spray.json.DeserializationException: Object is missing required member 'expdir'
   @Benchmark
   def sprayJson(): BidRequest = JsonParser(jsonBytes).convertTo[BidRequest]
-*/
-
-/* FIXME: also doesn't like default values
-  @Benchmark
-  def ninnyJson(): BidRequest = Json.parse(new String(jsonBytes, UTF_8)).to[BidRequest].get
 */
   @Benchmark
   def uPickle(): BidRequest = read[BidRequest](jsonBytes)

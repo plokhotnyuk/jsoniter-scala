@@ -40,8 +40,9 @@ class ADTWriting extends ADTBenchmark {
 
   @Benchmark
   def ninnyJson(): Array[Byte] = {
-    import io.github.kag0.ninny.AnySyntax
-    AnySyntax(obj).toSomeJson.toString.getBytes(UTF_8)
+    import io.github.kag0.ninny.{AnySyntax, Json}
+
+    Json.render(obj.toSomeJson).getBytes(UTF_8)
   }
 
   @Benchmark

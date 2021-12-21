@@ -48,8 +48,8 @@ class ArrayOfDoublesWriting extends ArrayOfDoublesBenchmark {
 
   @Benchmark
   def ninnyJson(): Array[Byte] = {
-    import io.github.kag0.ninny.AnySyntax
-    import io.github.kag0.ninny.Json
+    import io.github.kag0.ninny.{AnySyntax, Json}
+
     Json.render(obj.toSomeJson).getBytes(UTF_8)
   }
 
