@@ -1387,7 +1387,7 @@ object JsonCodecMaker {
         })
       })
 
-      def unexpectedFieldHandler(in: Expr[JsonReader], l:Expr[Int]): Expr[Unit] =
+      def unexpectedFieldHandler(in: Expr[JsonReader], l:Expr[Int])(using Quotes): Expr[Unit] =
         if (cfg.skipUnexpectedFields) '{ $in.skip() }
         else '{ $in.unexpectedKeyError($l) }
 
@@ -1519,32 +1519,34 @@ object JsonCodecMaker {
       case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean)
       
       val decodeMethodDefs = mutable.LinkedHashMap.empty[DecoderMethodKey,  DefDef]
+      val decodeMethodSyms = mutable.LinkedHashMap.empty[DecoderMethodKey,  Symbol]
       
       def withDecoderFor[A:Type](methodKey: DecoderMethodKey, arg: Expr[A], in: Expr[JsonReader])(f: (Expr[JsonReader], Expr[A]) => Expr[A]): Expr[A] = {
-        val defDef = decodeMethodDefs.getOrElseUpdate( methodKey, {
-           val name = "d" + decodeMethodDefs.size
-           val mt = MethodType(List("in","defaultValue"))(
-             _ => List(TypeRepr.of[JsonReader], methodKey.tpe),
-             _ => TypeRepr.of[A]
-           )
-           val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
-           DefDef(sym, {
-             case List(List(in,default)) =>
-                default match
-                  case defaultTerm: Term =>
-                    Some(f(in.asExprOf[JsonReader],defaultTerm.asExprOf[A]).asTerm.changeOwner(sym))
-                  case _ =>
-                    fail(s"expected that ${default} is term")
-           })
-        })
-        val refDef = Ref(defDef.symbol)
-        try {
-          Apply(refDef,List(in.asTerm,arg.asTerm)).asExprOf[A]
-        }catch{
-          case NonFatal(ex) =>
-            println(s"can't set decoder for ${TypeRepr.of[A].show}")
-            throw ex;
-        }
+        val refDef = decodeMethodSyms.get(methodKey) match
+          case Some(sym) => Ref(sym)
+          case None =>
+            val defDef = decodeMethodDefs.getOrElseUpdate( methodKey, {
+              val name = "d" + decodeMethodDefs.size
+              println(s"With decoded for $name, type=${Type.show[A]}, tpe=${TypeRepr.of[A]}, methodKey=${methodKey}")
+              println(s"methodKey,hashCode = ${methodKey.hashCode}")
+              val mt = MethodType(List("in","defaultValue"))(
+                _ => List(TypeRepr.of[JsonReader], methodKey.tpe),
+                _ => TypeRepr.of[A]
+              )
+              val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
+              decodeMethodSyms.update(methodKey, sym)
+              DefDef(sym, {
+                case List(List(in,default)) =>
+                    default match
+                      case defaultTerm: Term =>
+                        Some(f(in.asExprOf[JsonReader],defaultTerm.asExprOf[A]).asTerm.changeOwner(sym))
+                      case _ =>
+                        fail(s"expected that ${default} is term")
+              })
+            })
+            println(s"With decoded for: received defdef, sym=${defDef.symbol}")
+            Ref(defDef.symbol)
+        Apply(refDef,List(in.asTerm,arg.asTerm)).asExprOf[A]
       }
 
       case class WriteDiscriminator(fieldName: String, fieldValue: String) {
@@ -1560,25 +1562,31 @@ object JsonCodecMaker {
       
 
       val encodeMethodDefs = mutable.LinkedHashMap.empty[EncoderMethodKey, DefDef]
+      val encodeMethodSyms = mutable.LinkedHashMap.empty[EncoderMethodKey, Symbol]
       
       def withEncoderFor(methodKey: EncoderMethodKey,  arg: Term, out: Expr[JsonWriter])(f: (Expr[JsonWriter], Term)=> Expr[Unit]): Expr[Unit] = {
-        val defDef = encodeMethodDefs.getOrElseUpdate(methodKey, {
-          val name = "e" + encodeMethodDefs.size
-          val mt = MethodType(List("x","out"))(
-            _ => List(methodKey.tpe, TypeRepr.of[JsonWriter]),
-            _ => TypeRepr.of[Unit]
-          )
-          val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
-          DefDef(sym, {
-            case List(List(x,out)) =>
-              x match
-                case xTerm: Term => 
-                  Some(f(out.asExprOf[JsonWriter],xTerm).asTerm.changeOwner(sym))
-                case _ =>
-                  fail(s"expected that ${x} is term")
-          })
-        })
-        val refDef = Ref(defDef.symbol)
+        val symDef = encodeMethodSyms.get(methodKey) match
+          case Some(sym) => sym
+          case None =>
+            val defDef = encodeMethodDefs.getOrElseUpdate(methodKey, {
+              val name = "e" + encodeMethodDefs.size
+              val mt = MethodType(List("x","out"))(
+                _ => List(methodKey.tpe, TypeRepr.of[JsonWriter]),
+                _ => TypeRepr.of[Unit]
+              )
+              val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
+              encodeMethodSyms.update(methodKey, sym)
+              DefDef(sym, {
+                case List(List(x,out)) =>
+                  x match
+                    case xTerm: Term => 
+                      Some(f(out.asExprOf[JsonWriter],xTerm).asTerm.changeOwner(sym))
+                    case _ =>
+                      fail(s"expected that ${x} is term")
+              })
+            })
+            defDef.symbol
+        val refDef = Ref(symDef)
         Apply(refDef, List(arg, out.asTerm)).asExprOf[Unit]
       }
 
@@ -1668,6 +1676,12 @@ object JsonCodecMaker {
                   )(using Quotes): Expr[A] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
+        if (traceFlag) {
+           println(s"genReadNonAbstractScalaClass[${tpe.show}]") 
+           if (tpe.show == "Recursive") {
+
+           }
+        }
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
           val names = classInfo.fields.map(_.mappedName)
           if (discriminator.isEmpty) names
@@ -1768,6 +1782,9 @@ object JsonCodecMaker {
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String,ValDef], l:Expr[Int])(using Quotes): Expr[Unit] =
+          if (traceFlag) {
+            println(s"genReadCollisions, fields = ${fs}")
+          }
           val s0: Expr[Unit] = unexpectedFieldHandler(in,l) 
           fs.foldRight(s0){ (f, acc) =>
             val readValue: Expr[Unit] =
@@ -1909,6 +1926,9 @@ object JsonCodecMaker {
                      optDiscriminator: Option[ReadDiscriminator],
                      in: Expr[JsonReader]
                      )(using Quotes): Expr[C] = {
+        if (traceFlag) {
+          println(s"genReadVal[${Type.show[C]}]")
+        }
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optDiscriminator.isDefined)
@@ -2371,6 +2391,9 @@ object JsonCodecMaker {
                 } else $in.readNullOrTokenError($default, '{')
             }
         } else if (isTuple(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
+          if (traceFlag) {
+            println(s"genReadFlag[${tpe.show}]: isTuple")
+          }
           val indexedTypes = tpe match {
             case AppliedType(orig, typeArgs) =>
               typeArgs.zipWithIndex
@@ -2414,6 +2437,9 @@ object JsonCodecMaker {
               } else $in.readNullOrTokenError($default, '[')
           }.asExprOf[C]
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) => 
+          if (traceFlag) {
+            println(s"in genReadVal[${tpe.show}], isSealedClass(tpe)")
+          }
           val hashCode: TypeRepr => Int = t => {
             val cs = discriminatorValue(t).toCharArray
             JsonReader.toHashCode(cs, cs.length)
@@ -2424,6 +2450,9 @@ object JsonCodecMaker {
                                        '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
           def genReadLeafClass[S:Type](subTpe: TypeRepr): Expr[S] =
+            if (traceFlag) {
+              println(s"genReadLeafClass ${Type.show[S]}")
+            }
             //val discriminator = cfg.discriminatorFieldName.map( fieldName => Discriminator(fieldName, skipDiscriminatorField))
             val optLeafDiscriminator = cfg.discriminatorFieldName.map{ fieldName =>
               val sym = Symbol.newVal(Symbol.spliceOwner, "pd", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
