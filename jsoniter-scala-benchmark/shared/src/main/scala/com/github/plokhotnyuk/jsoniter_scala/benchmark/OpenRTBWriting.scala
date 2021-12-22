@@ -8,7 +8,6 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.CirceEncodersDecoders._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs._
-//import com.github.plokhotnyuk.jsoniter_scala.benchmark.NinnyFormats._
 //import com.github.plokhotnyuk.jsoniter_scala.benchmark.PlayJsonFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.WeePickleFromTos._
@@ -48,13 +47,6 @@ class OpenRTBWriting extends OpenRTBBenchmark {
 /* FIXME: Spray-JSON serializes fields with default values
   @Benchmark
   def sprayJson(): Array[Byte] = obj.toJson.compactPrint.getBytes(UTF_8)
-*/
-/* FIXME: we don't like the defaults
-  @Benchmark
-  def ninnyJson(): Array[Byte] = {
-    import io.github.kag0.ninny.AnySyntax
-    obj.toSomeJson.toString.getBytes(UTF_8)
-  }
 */
   @Benchmark
   def uPickle(): Array[Byte] = write(obj).getBytes(UTF_8)

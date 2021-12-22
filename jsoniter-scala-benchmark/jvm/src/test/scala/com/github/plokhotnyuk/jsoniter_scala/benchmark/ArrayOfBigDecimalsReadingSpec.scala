@@ -18,8 +18,7 @@ class ArrayOfBigDecimalsReadingSpec extends BenchmarkSpecBase {
       benchmark.playJsonJsoniter() shouldBe benchmark.sourceObj
       benchmark.sprayJson() shouldBe benchmark.sourceObj
       benchmark.uPickle() shouldBe benchmark.sourceObj
-      //FIXME: weePickle rounds mantissa to 16 digits
-      //benchmark.weePickle() shouldBe benchmark.sourceObj
+      benchmark.weePickle() shouldBe benchmark.sourceObj
       benchmark.zioJson() shouldBe benchmark.sourceObj
     }
     "fail on invalid input" in {
