@@ -24,7 +24,6 @@ enum MediaType(val value: Long, name: String) {
 
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
-  import NamespacePollutions._
 
   "JsonCodecMakerNeEnum.make generate codes which" should {
     "serialize and deserialize Scala3 enums" in {

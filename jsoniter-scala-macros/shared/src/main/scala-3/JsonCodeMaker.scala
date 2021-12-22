@@ -287,10 +287,14 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vv = v.valueOrAbort
             val vx = x.valueOrAbort
             Some(vx.withAllowRecursiveTypes(vv))
+          case '{ (${x}:CodecMakerConfig).withDiscriminatorFieldName($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withDiscriminatorFieldName(vv))
           case '{ CodecMakerConfig } =>
             Some(CodecMakerConfig)
           case other =>
-            report.error(s"Can't interpret ${other.show} as constant expression, tree=$other")
+            report.error(s"Can't interpret ${other.show} as constant expression, tree=${other.asTerm}")
             None
      }
 
@@ -1501,8 +1505,6 @@ object JsonCodecMaker {
           case Some(sym) => Ref(sym)
           case None =>
             val name = "d" + decodeMethodDefs.size
-            println(s"With decoded for $name, type=${Type.show[A]}, tpe=${TypeRepr.of[A]}, methodKey=${methodKey}")
-            println(s"methodKey,hashCode = ${methodKey.hashCode}")
             val mt = MethodType(List("in","defaultValue"))(
                 _ => List(TypeRepr.of[JsonReader], methodKey.tpe),
                 _ => TypeRepr.of[A]

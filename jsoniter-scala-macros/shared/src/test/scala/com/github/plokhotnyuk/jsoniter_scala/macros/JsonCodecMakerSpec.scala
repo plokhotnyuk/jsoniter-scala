@@ -257,7 +257,6 @@ object GADT2 {
 }
 
 class JsonCodecMakerSpec extends VerifyingSpec {
-  import NamespacePollutions._
 
   val codecOfPrimitives: JsonValueCodec[Primitives] = make
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make
