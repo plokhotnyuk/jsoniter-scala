@@ -206,7 +206,7 @@ object CodecMakerConfig extends CodecMakerConfig(
   isStringified = false,
   mapAsArray = false,
   skipUnexpectedFields = true,
-  transientDefault = false,  // scala3 -- off
+  transientDefault = true,  
   transientEmpty = true,
   transientNone = true,
   requireCollectionFields = false,
@@ -610,17 +610,26 @@ object JsonCodecMaker {
         case cl: ClassDef => cl.constructor.returnTpt.tpe
         case _ => fail("")
 
+      /*  
+      def enumClasses(base: TypeRepr): Seq[TypeRepr] = {
+
+      } 
+      */ 
+
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
 
         def collectRecursively(symbol: Symbol): Seq[TypeRepr] = {
           val leafTpes = if (symbol.flags.is(Flags.Sealed)) {
                                symbol.children.flatMap{ s =>
-                                   collectRecursively(s)
+                                      println(s"collectRecursively: child=$s")
+                                      collectRecursively(s)
                                }
                             }  else Seq()
           if (symbol.isType) {
             val flags = symbol.flags 
-            if (!flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && symbol.isClassDef) {
+            if (flags.is(Flags.Enum)) {
+                leafTpes
+            } else if (!flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && symbol.isClassDef) {
                 // tpe used for 'as seen from'
                 //  mb - use class 'this'or package
                 //
@@ -634,10 +643,11 @@ object JsonCodecMaker {
                       case Some(clSelf) => clSelf.tpt.tpe
                       case None => fail(s"Can't find self time for classdef ${symbol}")
                     x
-                     
                   case _ => // todo: 
                     enclosingClassTpe.memberType(symbol)
                 leafTpes :+ tpe
+            } else if (flags.is(Flags.Abstract) && flags.is(Flags.Sealed)) {
+                leafTpes
             } else {
                 if (flags.is(Flags.Abstract)) {
                     fail(
@@ -654,9 +664,26 @@ object JsonCodecMaker {
                 }
               }
           } else {
-            fail(s"expectd that ${symbol} is a type")
+            // case object.
+            if (symbol.isClassDef) {
+              println("isClassDef: "+symbol)
+            } 
+            if (symbol.isTerm) {
+              println("isTerm: "+symbol)
+              List(Ref(symbol).tpe)
+            }else{
+              if (symbol.flags.is(Flags.Enum)) {
+                println("enumFlag is set for "+symbol)
+              }
+              println(s"flags:${symbol.flags}, moduleClass: ${symbol.moduleClass}, companionClass=${symbol.companionClass} ")
+              fail(s"expectd that ${symbol} is a type or term")
+            }
           }
         }  
+
+        if (adtBaseTpe.typeSymbol.flags.is(Flags.Enum)) {
+          println(s"adtBaseTpe: isEnum = true for ${adtBaseTpe.typeSymbol}")
+        }
                
         val classes = collectRecursively(adtBaseTpe.typeSymbol).distinct
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
@@ -713,14 +740,16 @@ object JsonCodecMaker {
 
       def checkRecursionInTypes(types: List[TypeRepr]): Unit = {
         if (!cfg.allowRecursiveTypes) {
-           val tpe::nested = types
-           val recursiveIdx = nested.indexOf(tpe)
-           if (recursiveIdx >=0 ) {
+          val tpe::nested = types
+          if (!tpe.typeSymbol.flags.is(Flags.Enum)) {
+            val recursiveIdx = nested.indexOf(tpe)
+            if (recursiveIdx >=0 ) {
               fail(s"Recursive type(s) detected: ${nested.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
               "Please consider using a custom implicitly accessible codec for this type to control the level of " +
               s"recursion or turn on the '${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
               "will not exceed the thread stack size.")
-           }
+            }
+          }
         }
       }
     
@@ -1376,20 +1405,31 @@ object JsonCodecMaker {
 
       def discriminatorValue(tpe: TypeRepr): String = {
         val named = tpe.typeSymbol.annotations.filter(_.tpe =:= TypeRepr.of[named])
-        if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$tpe'.")
-        namedValueOpt(named.headOption, tpe)
-          .getOrElse{
-            cfg.adtLeafClassNameMapper(tpe.typeSymbol.fullName) match
-              case Left((message,expr)) => fail("can't appy adtLefClasssNameMapper:"+message)
-              case Right(v) => v.getOrElse(fail(s"discriminator is not defined for ${tpe.show}"))
+        if (named.size > 1) {
+          fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '${tpe.show}'.")
+        } else if (named.size > 0) {
+          namedValueOpt(named.headOption, tpe).get
+        } else {
+          // enum discriminatores are by name
+          val adtClassNames = if (tpe.typeSymbol.flags.is(Flags.Enum)) {
+            tpe match
+              case TermRef(qual, name) => name
+              case _  =>
+                fail(s"expected that $tpe is a TermRef") 
+          } else {
+              tpe.typeSymbol.fullName
           }
+          cfg.adtLeafClassNameMapper(adtClassNames) match
+            case Left((message,expr)) => fail("can't appy adtLefClasssNameMapper:"+message)
+            case Right(v) => v.getOrElse(fail(s"discriminator is not defined for ${tpe.show}"))
+        }
       }
 
       def checkFieldNameCollisions(tpe: TypeRepr, names: Seq[String]): Unit = {
         val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          fail(s"Duplicated JSON key(s) defined for '$tpe': $formattedCollisions. Keys are derived from field names of " +
+          fail(s"Duplicated JSON key(s) defined for '${tpe.show}': $formattedCollisions. Keys are derived from field names of " +
             s"the class that are mapped by the '${TypeRepr.of[CodecMakerConfig]}.fieldNameMapper' function or can be overridden " +
             s"by '${TypeRepr.of[named]}' annotation(s). Result keys should be unique and should not match with a key for the " +
             s"discriminator field that is specified by the '${TypeRepr.of[CodecMakerConfig]}.discriminatorFieldName' option.")
@@ -1400,8 +1440,10 @@ object JsonCodecMaker {
         val collisions = duplicated(names)
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
-          fail(s"Duplicated discriminator defined for ADT base '$tpe': $formattedCollisions. Values for leaf classes of ADT " +
-            s"that are returned by the '${Type.show[CodecMakerConfig]}.adtLeafClassNameMapper' function should be unique.")
+          fail(s"Duplicated discriminator defined for ADT base '${tpe.show}': $formattedCollisions. Values for leaf classes of ADT " +
+            s"that are returned by the '${Type.show[CodecMakerConfig]}.adtLeafClassNameMapper' function should be unique." +
+            s"names:  ${names}"
+            )
         }
       }
 
@@ -2430,7 +2472,7 @@ object JsonCodecMaker {
           val discriminatorError = cfg.discriminatorFieldName.fold(
                                        '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
-          def genReadLeafClass[S:Type](subTpe: TypeRepr): Expr[S] =
+          def genReadLeafClass[S:Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
             if (traceFlag) {
               println(s"genReadLeafClass ${Type.show[S]}")
             }
@@ -2445,7 +2487,7 @@ object JsonCodecMaker {
             else 
                 genReadVal[S](subTpe :: types, genNullValue[S](subTpe :: types), isStringified, optLeafDiscriminator, in)
 
-          def genReadCollisions(subTpes: collection.Seq[TypeRepr], l:Expr[Int]): Term =
+          def genReadCollisions(subTpes: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
             val s0: Term = discriminatorError.asTerm
             subTpes.foldRight(s0) { (subTpe, acc) =>
                 try {
@@ -2462,14 +2504,14 @@ object JsonCodecMaker {
                     println(s"tpe.typeSymbol.tree=${tpe.typeSymbol.tree.show}")
                     throw ex;
                 }
-                subTpe.asType match
+                subTpe.widen.asType match
                   case '[st] =>
-                    val readVal: Expr[st] = {
+                    def readVal(using Quotes): Expr[st] = {
                       if (cfg.discriminatorFieldName.isDefined) {
                         '{ $in.rollbackToMark()
                              ${genReadLeafClass(subTpe)}
                          }
-                      } else if (subTpe.typeSymbol.flags.is(Flags.Module) && subTpe.isSingleton) {
+                      } else if (subTpe.typeSymbol.flags.is(Flags.Module) && subTpe.isSingleton || subTpe.typeSymbol.flags.is(Flags.Enum)) {
                           Ref(subTpe.termSymbol).asExprOf[st]
                       } else genReadLeafClass[st](subTpe)
                     }
@@ -2490,8 +2532,15 @@ object JsonCodecMaker {
               val scrutinee = '{ $in.charBufToHashCode($l): @scala.annotation.switch }.asTerm
               Match(scrutinee, (cases :+ lastCase).toList)
             }
-
-          checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
+          try {
+            checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
+          }catch{
+            case ex: Throwable =>
+              println("leafClasses = "+leafClasses) 
+              println("cfg.discriminatorFieldName="+cfg.discriminatorFieldName)
+              ex.printStackTrace()
+              throw ex;
+          }
           cfg.discriminatorFieldName match {
             case None =>
               val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.flags.is(Flags.Module))
@@ -2937,15 +2986,15 @@ object JsonCodecMaker {
                 '{ $out.writeArrayEnd() }.asTerm,
               )
               block.asExprOf[Unit]
-            case _ => fail(s"exprected that ${tpe.show} should be AppliedType")
+            case _ => fail(s"exprected that ${tpe.show} should be AppliedType")    
         } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m.asTerm, out) { (out, x) =>
-          def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator]): Expr[Unit] = {
+          def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator], vx: Term): Expr[Unit] = {
             subTpe.asType match
               case '[st] =>
                 if (subTpe != tpe) { // TODO: check chanr to =:=
-                  genWriteVal[st](x.asExprOf[st], subTpe :: types, isStringified, discriminator, out)
+                  genWriteVal[st](vx.asExprOf[st], subTpe :: types, isStringified, discriminator, out)
                 } else {
-                  genWriteNonAbstractScalaClass(x.asExprOf[st], types, discriminator, out)
+                  genWriteNonAbstractScalaClass(vx.asExprOf[st], types, discriminator, out)
                 }
               case _ => fail(s"Can't get type of ${subTpe.show}")
           } 
@@ -2954,12 +3003,13 @@ object JsonCodecMaker {
             case None =>
               val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.flags.is(Flags.Module))
               leafCaseClasses.map { subTpe =>
+                val vxSym = Symbol.newBind(Symbol.spliceOwner,"vx",Flags.EmptyFlags,subTpe)
                 CaseDef(
-                  Typed(x, Inferred(subTpe)), None,
+                  Bind(vxSym,Typed(x, Inferred(subTpe))), None,
                   '{
                     $out.writeObjectStart()
                     ${genWriteConstantKey(discriminatorValue(subTpe), out)}
-                    ${genWriteLeafClass(subTpe, None)}
+                    ${genWriteLeafClass(subTpe, None, Ref(vxSym))}
                     $out.writeObjectEnd()
                   }.asTerm
                 )
@@ -2970,8 +3020,13 @@ object JsonCodecMaker {
               }
             case Some(discrFieldName) =>
               leafClasses.map{ subTpe =>
+                val vxSym = Symbol.newBind(Symbol.spliceOwner,"vx",Flags.EmptyFlags,subTpe)
                 val writeDiscriminator = WriteDiscriminator(discrFieldName,  discriminatorValue(subTpe))
-                CaseDef(Typed(x, Inferred(subTpe)), None, genWriteLeafClass(subTpe, Some(writeDiscriminator)).asTerm) 
+                CaseDef(
+                    Bind(vxSym,Typed(x, Inferred(subTpe))), 
+                    None, 
+                    genWriteLeafClass(subTpe, Some(writeDiscriminator), Ref(vxSym)).asTerm
+                  ) 
               }
           }) :+ CaseDef(Literal(NullConstant()),  None, '{ $out.writeNull() }.asTerm )
           Match(x, writeSubclasses.toList).asExprOf[Unit]
