@@ -975,7 +975,11 @@ object JsonCodecMaker {
       
       
 
-      def genReadArray[B:Type,C:Type](newBuilder: Expr[B], readVal: (Expr[B], Expr[Int]) => UpdateOp, default: Expr[C], result: (Expr[B], Expr[Int]) => Expr[C], in: Expr[JsonReader])(using Quotes): Expr[C] =
+      def genReadArray[B:Type,C:Type](newBuilder: Expr[B], 
+                                      readVal: Quotes ?=> (Expr[B], Expr[Int]) => UpdateOp, 
+                                      default: Expr[C], 
+                                      result: Quotes ?=> (Expr[B], Expr[Int]) => Expr[C], 
+                                      in: Expr[JsonReader])(using Quotes): Expr[C] =
           '{ if ($in.isNextToken('[')) {
               if ($in.isNextToken(']')) $default
               else {
@@ -1497,7 +1501,7 @@ object JsonCodecMaker {
 
       case class DecoderMethodKey(tpe: TypeRepr, isStringified: Boolean, useDiscriminator: Boolean)
       
-      val decodeMethodDefs = mutable.LinkedHashMap.empty[DecoderMethodKey,  () => DefDef]
+      val decodeMethodDefs = mutable.LinkedHashMap.empty[DecoderMethodKey,  DefDef]
       val decodeMethodSyms = mutable.LinkedHashMap.empty[DecoderMethodKey,  Symbol]
       
       def withDecoderFor[A:Type](methodKey: DecoderMethodKey, arg: Expr[A], in: Expr[JsonReader])(f: (Expr[JsonReader], Expr[A]) => Expr[A])(using Quotes): Expr[A] = {
@@ -1512,7 +1516,7 @@ object JsonCodecMaker {
             val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
             val defDefFun = decodeMethodDefs.getOrElseUpdate( methodKey, {  
               decodeMethodSyms.update(methodKey, sym)
-              () => DefDef(sym, {
+              DefDef(sym, {
                 case List(List(in,default)) =>
                     default match
                       case defaultTerm: Term =>
@@ -1537,7 +1541,7 @@ object JsonCodecMaker {
       case class EncoderMethodKey(tpe: TypeRepr, isStringified: Boolean, discriminatorKeyValue: Option[(String,String)])
       
 
-      val encodeMethodDefs = mutable.LinkedHashMap.empty[EncoderMethodKey, () => DefDef]
+      val encodeMethodDefs = mutable.LinkedHashMap.empty[EncoderMethodKey, DefDef]
       val encodeMethodSyms = mutable.LinkedHashMap.empty[EncoderMethodKey, Symbol]
       
       def withEncoderFor(methodKey: EncoderMethodKey,  arg: Term, out: Expr[JsonWriter])(f: (Expr[JsonWriter], Term)=> Expr[Unit]): Expr[Unit] = {
@@ -1552,7 +1556,7 @@ object JsonCodecMaker {
             val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
             val funDefDef = encodeMethodDefs.getOrElseUpdate(methodKey, {
               encodeMethodSyms.update(methodKey, sym)
-              () => DefDef(sym, {
+              DefDef(sym, {
                 case List(List(x,out)) =>
                   x match
                     case xTerm: Term => 
@@ -3015,8 +3019,8 @@ object JsonCodecMaker {
             }*/
 
 
-          val needDefs: List[Statement] = (decodeMethodDefs.values.map(_.apply()).toList: List[Statement]) ++
-                                          (encodeMethodDefs.values.map(_.apply()).toList: List[Statement]) ++
+          val needDefs: List[Statement] = (decodeMethodDefs.values.toList: List[Statement]) ++
+                                          (encodeMethodDefs.values.toList: List[Statement]) ++
                                           (fieldIndexAccessors.values.toList: List[Statement]) ++
                                           (equalsMethods.values.toList: List[Statement]) ++
                                           (nullValues.values.toList: List[Statement]) ++
