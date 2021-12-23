@@ -49,7 +49,7 @@ lazy val commonSettings = Seq(
         "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
       )
     } else Seq(
-        "-Xcheck-macros", "-Ycheck:all"
+        "-Xcheck-macros", "-Ycheck:all", "-Yprint-syms"
       )
   },
   compileOrder := CompileOrder.JavaThenScala,
