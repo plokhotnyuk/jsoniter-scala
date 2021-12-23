@@ -845,23 +845,16 @@ object JsonCodecMaker {
       def javaEnumValues(tpe: TypeRepr): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
         tpe.classSymbol match
           case Some(classSym) =>
-            // known direct subclasses is not known at this type.
-            //  TODO: check childs...
-            println("javaEnum - loot at declared fields: : "+ classSym.declaredFields)
-            var originValues = PlatformJavaEnumHelper.retrieveValues(classSym.fullName)
-            // TODO: can be incorrect, run test.
-            val values = originValues.map{ name =>
-               val sym = classSym.typeMember(name)
-               val transformed = cfg.javaEnumValueNameMapper.apply(name) match {
+        
+            val values = classSym.children.map{ sym =>
+              val name = sym.name
+              val transformed = cfg.javaEnumValueNameMapper.apply(name) match {
                  case Left((msg,expr)) => fail(msg)
                  case Right(optResult) => optResult.getOrElse(name)
-               }
-               EnumValueInfo(sym, transformed, name!=transformed)
+              }
+              EnumValueInfo(sym, transformed, name!=transformed)
             }
-            if (values.isEmpty) {
-              ???
-              // TODO: get from companion object
-            }
+
             val nameCollisions = duplicated(values.map(_.name))
             if (nameCollisions.nonEmpty) {
                val formattedCollisions = nameCollisions.mkString("'", "', '", "'")
