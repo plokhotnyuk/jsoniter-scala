@@ -1553,7 +1553,7 @@ object JsonCodecMaker {
         val refDef = decodeMethodSyms.get(methodKey) match
           case Some(sym) => Ref(sym)
           case None =>
-            val name = "d" + decodeMethodDefs.size
+            val name = "d" + decodeMethodSyms.size
             val mt = MethodType(List("in","defaultValue"))(
                 _ => List(TypeRepr.of[JsonReader], methodKey.tpe),
                 _ => TypeRepr.of[A]
@@ -1562,13 +1562,21 @@ object JsonCodecMaker {
             val defDefFun = decodeMethodDefs.getOrElseUpdate( methodKey, {  
               decodeMethodSyms.update(methodKey, sym)
               DefDef(sym, {
-                case List(List(in,default)) =>
+                  case List(List(in,default)) =>
                     default match
                       case defaultTerm: Term =>
-                        Some(f(in.asExprOf[JsonReader],defaultTerm.asExprOf[A]).asTerm.changeOwner(sym))
+                        val res = try { 
+                          f(in.asExprOf[JsonReader],defaultTerm.asExprOf[A]).asTerm
+                        } catch {
+                          case ex: Throwable =>
+                            println("Catched exception during applying of f in decodeMethodCreation: "+ex.getMessage);
+                            ex.printStackTrace()
+                            throw ex;
+                        }
+                        Some(res.changeOwner(sym))
                       case _ =>
                         fail(s"expected that ${default} is term")
-              })
+              })  
             })
             Ref(sym)
         Apply(refDef,List(in.asTerm,arg.asTerm)).asExprOf[A]
@@ -1593,7 +1601,7 @@ object JsonCodecMaker {
         val symDef = encodeMethodSyms.get(methodKey) match
           case Some(sym) => sym
           case None =>
-            val name = "e" + encodeMethodDefs.size
+            val name = "e" + encodeMethodSyms.size
             val mt = MethodType(List("x","out"))(
                 _ => List(methodKey.tpe, TypeRepr.of[JsonWriter]),
                 _ => TypeRepr.of[Unit]
@@ -1793,7 +1801,7 @@ object JsonCodecMaker {
             val sym = Symbol.newVal(Symbol.spliceOwner, name, f.resolvedTpe, Flags.Mutable, Symbol.noSymbol)
             f.resolvedTpe.asType match
               case '[ft] =>  
-                ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue[ft](f.resolvedTpe::types).asTerm)))
+                ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue[ft](f.resolvedTpe::types).asTerm.changeOwner(sym))))
               case _ =>
                 fail(s"Can't determinate type for ${f.resolvedTpe}")
         }
@@ -2451,16 +2459,28 @@ object JsonCodecMaker {
           if (traceFlag) {
             println(s"genReadFlag[${tpe.show}]: isTuple")
           }
+
           val indexedTypes = tpe match {
             case AppliedType(orig, typeArgs) =>
               typeArgs.zipWithIndex
             case _ =>
               List.empty[(TypeRepr,Int)]
           }
+
+          /*
+          def genVars[TI:Type <: Tuple,TO:Type: <Tuple](i: Int, rest: Expr[Unit] =>  ) {
+            summon[Type[TI]] match
+              case '[h *: t] =>
+                '{
+                  var 
+                }
+              case EmptyTuple  =>  
+          }*/ 
+
           val valDefs: ArrayBuffer[ValDef] = new ArrayBuffer()
           indexedTypes.foldLeft(valDefs){ (acc, e) =>
             val (te, i) = e
-            val name = "_" + (i+1)
+            val name = "_r" + (i+1)
             val tp = te.dealias
             tp.asType match
               case '[t] =>
@@ -2476,22 +2496,29 @@ object JsonCodecMaker {
                           }
                         }.asTerm
                       }
-                val valDef = ValDef(sym, Some(rhs))
+                val valDef = ValDef(sym, Some(rhs.changeOwner(sym)))
                 valDefs.addOne(valDef)
               case _ =>
                 fail(s"Can't match ${tp} as type")
           }
-          def readCreateBlock(using Quotes) = 
+          val readCreateBlock: Term =  {
             Block(
-              valDefs.toList.map(_.changeOwner(Symbol.spliceOwner)),
+              valDefs.toList,
               '{ if ($in.isNextToken(']'))
-                  ${Apply(Select.unique(New(Inferred(tpe)),"<init>"),valDefs.map(x=>Ref(x.symbol)).toList).asExpr}
+                  ${Apply(
+                      TypeApply(
+                        Select.unique(New(Inferred(tpe)),"<init>"),
+                        indexedTypes.map(x => Inferred(x._1)).toList
+                      ),
+                    valDefs.map(x=>Ref(x.symbol)).toList
+                  ).asExpr}
                 else
                   $in.arrayEndError()
-              }.asTerm.changeOwner(Symbol.spliceOwner)  
-          ).asExprOf[C]  
+              }.asTerm 
+            )
+          }
           '{ if ($in.isNextToken('[')) {
-                $readCreateBlock
+                ${readCreateBlock.asExprOf[C]}
               } else $in.readNullOrTokenError($default, '[')
           }.asExprOf[C]
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default, in) { (in, default) => 
@@ -2787,27 +2814,42 @@ object JsonCodecMaker {
         } else if (tpe =:= TypeRepr.of[java.lang.Boolean]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Boolean]}) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Boolean]}) }
-        } else if (tpe <:< TypeRepr.of[Byte]|| tpe =:= TypeRepr.of[java.lang.Byte] ) {
+        } else if (tpe <:< TypeRepr.of[Byte]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Byte]}) }
           else '{ $out.writeVal(${m.asExprOf[Byte]}) }
-        } else if ( tpe <:< TypeRepr.of[Short] || tpe =:= TypeRepr.of[java.lang.Short] ) {
+        } else if (tpe =:= TypeRepr.of[java.lang.Byte] ) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Byte]}.byteValue) }
+          else '{ $out.writeVal(${m.asExprOf[java.lang.Byte]}.byteValue) }
+        } else if ( tpe <:< TypeRepr.of[Short] ) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Short]}) }
           else '{ $out.writeVal(${m.asExprOf[Short]}) }
-        } else if ( tpe <:< TypeRepr.of[Int] || tpe =:= TypeRepr.of[java.lang.Integer] ) {
+        } else if ( tpe =:= TypeRepr.of[java.lang.Short] ) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Short]}.shortValue) }
+          else '{ $out.writeVal(${m.asExprOf[java.lang.Short]}.shortValue) }
+        } else if ( tpe <:< TypeRepr.of[Int] ) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Int]}) }
           else '{ $out.writeVal(${m.asExprOf[Int]}) }
+        } else if ( tpe =:= TypeRepr.of[java.lang.Integer] ) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Integer]}.intValue) }
+          else '{ $out.writeVal(${m.asExprOf[java.lang.Integer]}.intValue) }
         } else if ( tpe <:< TypeRepr.of[Long]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Long]}) }
           else '{ $out.writeVal(${m.asExprOf[Long]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Long] ) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Long]}.longValue) }
           else '{ $out.writeVal(${m.asExprOf[java.lang.Long]}.longValue) }
-        } else if (tpe =:= TypeRepr.of[Float] || tpe =:= TypeRepr.of[java.lang.Float] ) {
+        } else if (tpe =:= TypeRepr.of[Float] ) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Float]}) }
           else '{ $out.writeVal(${m.asExprOf[Float]}) }
-        } else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[java.lang.Double] ) {
+        } else if (tpe =:= TypeRepr.of[java.lang.Float] ) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Float]}.floatValue) }
+          else '{ $out.writeVal(${m.asExprOf[java.lang.Float]}.floatValue) }
+        } else if (tpe =:= TypeRepr.of[Double]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[Double]}) }
           else '{ $out.writeVal(${m.asExprOf[Double]}) }
+        } else if (tpe =:= TypeRepr.of[java.lang.Double] ) {
+          if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Double]}.doubleValue) }
+          else '{ $out.writeVal(${m.asExprOf[Double]}.doubleValue) }
         } else if (tpe =:= TypeRepr.of[BigInt]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[BigInt]}) }
           else '{ $out.writeVal(${m.asExprOf[BigInt]})  }
