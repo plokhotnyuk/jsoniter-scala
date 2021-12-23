@@ -291,6 +291,10 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vv = v.valueOrAbort
             val vx = x.valueOrAbort
             Some(vx.withDiscriminatorFieldName(vv))
+          case '{ (${x}:CodecMakerConfig).withUseScalaEnumValueId($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withUseScalaEnumValueId(vv))
           case '{ CodecMakerConfig } =>
             Some(CodecMakerConfig)
           case other =>
@@ -715,10 +719,10 @@ object JsonCodecMaker {
           fail(s"for scala2enum type reference is expected, we have ${tpe}")
       }
 
-      def findScala2EnumerationById[C <: AnyRef: Type](tpe: TypeRepr, i: Expr[Int]): Expr[Option[C]] =
+      def findScala2EnumerationById[C <: AnyRef: Type](tpe: TypeRepr, i: Expr[Int])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.id == $i) }.asExprOf[Option[C]]
 
-      def findScala2EnumerationByName[C <: AnyRef : Type](tpe: TypeRepr, name: Expr[String]): Expr[Option[C]] =
+      def findScala2EnumerationByName[C <: AnyRef : Type](tpe: TypeRepr, name: Expr[String])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
   
 
@@ -733,8 +737,9 @@ object JsonCodecMaker {
           case v: ImplicitSearchSuccess =>
             Some(v.tree)
           case f: ImplicitSearchFailure =>
-            if (traceFlag) {
-               report.info(s"failed implicit search for ${typeToSearch.show}: ${f.explanation}")
+            if (traceFlag && false) {
+              // TODO: trace flags with different aspects
+              report.info(s"failed implicit search for ${typeToSearch.show}: ${f.explanation}")
             }
             None
 
@@ -1612,14 +1617,22 @@ object JsonCodecMaker {
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         if (!implCodec.isEmpty) '{ ${implCodec.get}.nullValue }.asExprOf[C]  
-        else if (tpe =:= TypeRepr.of[Boolean] || tpe =:= TypeRepr.of[java.lang.Boolean]) Literal(BooleanConstant(false)).asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Byte] || tpe =:= TypeRepr.of[java.lang.Byte]) Literal(ByteConstant(0)).asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Char] || tpe =:= TypeRepr.of[java.lang.Character]) '{ '\u0000' }.asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Short] || tpe =:= TypeRepr.of[java.lang.Short]) Literal(ShortConstant(0)).asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Int] || tpe =:= TypeRepr.of[java.lang.Integer]) Literal(IntConstant(0)).asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Long] || tpe =:= TypeRepr.of[java.lang.Long]) Literal(LongConstant(0)).asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Float] || tpe =:= TypeRepr.of[java.lang.Float]) Literal(FloatConstant(0f)).asExprOf[C]
-        else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[java.lang.Double]) Literal(DoubleConstant(0d)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Boolean]) Literal(BooleanConstant(false)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Boolean]) '{java.lang.Boolean.valueOf(false)}.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Byte]) Literal(ByteConstant(0)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Byte]) '{ java.lang.Byte.valueOf(0.toByte) }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Char]) '{ '\u0000' }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Character]) '{  java.lang.Character.valueOf('\u0000') }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Short] ) Literal(ShortConstant(0)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Short]) '{ java.lang.Short.valueOf(0.toShort) }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Int]) Literal(IntConstant(0)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Integer]) '{ java.lang.Integer.valueOf(0) }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Long] ) Literal(LongConstant(0)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Long]) '{java.lang.Long(0L)}.asExprOf[C] 
+        else if (tpe =:= TypeRepr.of[Float]) Literal(FloatConstant(0f)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Float]) '{ java.lang.Float.valueOf(0f) }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Double]) Literal(DoubleConstant(0d)).asExprOf[C]
+        else if (tpe =:= TypeRepr.of[java.lang.Double]) '{ java.lang.Double.valueOf(0d) }.asExprOf[C]
         else if (isOption(tpe)) '{ None }.asExprOf[C]
         else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ mutable.BitSet.empty }.asExprOf[C]
         else if (tpe <:< TypeRepr.of[BitSet]) withNullValueFor(tpe)( '{ BitSet.empty }.asExprOf[C] )
@@ -2358,7 +2371,7 @@ object JsonCodecMaker {
                     val i = $in.readStringAsInt()
                     var x = $ec.get(i)
                     if (x eq null) {
-                      x =  ${findScala2EnumerationById(tpe, 'i)}.getOrElse($in.enumValueError(i.toString))
+                      x =  ${findScala2EnumerationById[C & AnyRef](tpe, 'i)}.getOrElse($in.enumValueError(i.toString))
                       $ec.put(i, x)
                     }
                     x
@@ -2371,7 +2384,7 @@ object JsonCodecMaker {
                     val i = $in.readInt()
                     var x = $ec.get(i)
                     if (x eq null) {
-                      x = ${findScala2EnumerationById(tpe, 'i)}.getOrElse($in.decodeError("illegal enum value " + i))
+                      x = ${findScala2EnumerationById[C & AnyRef](tpe, 'i)}.getOrElse($in.decodeError("illegal enum value " + i))
                       $ec.put(i, x)
                     }
                     x
@@ -2385,7 +2398,7 @@ object JsonCodecMaker {
                   val s = $in.readString(null)
                   var x = $ec.get(s)
                   if ( ${ 'x.asExprOf[AnyRef] } eq null) {
-                    x = ${findScala2EnumerationByName(tpe,'s)}.getOrElse($in.enumValueError(s.length))
+                    x = ${findScala2EnumerationByName[C & AnyRef](tpe,'s)}.getOrElse($in.enumValueError(s.length))
                     $ec.put(s, x)
                   }
                   x
