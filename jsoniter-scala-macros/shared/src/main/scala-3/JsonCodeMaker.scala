@@ -835,14 +835,14 @@ object JsonCodecMaker {
       }
       
 
-      case class EnumValueInfo(value: Symbol, name: String, transformed: Boolean)
+      case class JavaEnumValueInfo(value: Symbol, name: String, transformed: Boolean)
 
-      val enumValueInfos = mutable.LinkedHashMap.empty[TypeRepr, Seq[EnumValueInfo]]
+      val javaEnumValueInfos = mutable.LinkedHashMap.empty[TypeRepr, Seq[JavaEnumValueInfo]]
 
       def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
 
     
-      def javaEnumValues(tpe: TypeRepr): Seq[EnumValueInfo] = enumValueInfos.getOrElseUpdate(tpe, {
+      def javaEnumValues(tpe: TypeRepr): Seq[JavaEnumValueInfo] = javaEnumValueInfos.getOrElseUpdate(tpe, {
         tpe.classSymbol match
           case Some(classSym) =>
         
@@ -852,7 +852,7 @@ object JsonCodecMaker {
                  case Left((msg,expr)) => fail(msg)
                  case Right(optResult) => optResult.getOrElse(name)
               }
-              EnumValueInfo(sym, transformed, name!=transformed)
+              JavaEnumValueInfo(sym, transformed, name!=transformed)
             }
 
             val nameCollisions = duplicated(values.map(_.name))
@@ -868,11 +868,12 @@ object JsonCodecMaker {
       })
 
       
-      def genReadEnumValue[E:Type](enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Expr[E], in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[E] = {
-        val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
-        val length: EnumValueInfo => Int = _.name.length
-
-        def genReadCollisions(es: collection.Seq[EnumValueInfo]): Expr[E] = {
+      def genReadEnumValue[E:Type](enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Expr[E], in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[E] = {
+        
+        def nameHashCode(e:JavaEnumValueInfo): Int = 
+          JsonReader.toHashCode(e.name.toCharArray, e.name.length)
+        
+        def genReadCollisions(es: collection.Seq[JavaEnumValueInfo]): Expr[E] = {
           es.foldRight(unexpectedEnumValueHandler) {  (e, acc) =>
             '{ 
               if ($in.isCharBufEqualsTo($l,${Expr(e.name)}))  {
@@ -882,11 +883,11 @@ object JsonCodecMaker {
           }
         }
 
-        if (enumValues.size <= 8 && enumValues.map(length).sum <= 64) 
+        if (enumValues.size <= 8 && enumValues.map(_.name.length).sum <= 64) 
           genReadCollisions(enumValues)
         else {
       
-          val cases = groupByOrdered(enumValues)(hashCode).map{ case (hash, fs) =>
+          val cases = groupByOrdered(enumValues)(nameHashCode).map{ case (hash, fs) =>
             val sym = Symbol.newBind(Symbol.spliceOwner, "b"+hash, Flags.EmptyFlags, TypeRepr.of[Int])
             CaseDef(Bind(sym, Expr(hash).asTerm),None, genReadCollisions(fs).asTerm )
           } :+ {
