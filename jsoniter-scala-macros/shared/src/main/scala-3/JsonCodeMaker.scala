@@ -1064,7 +1064,11 @@ object JsonCodecMaker {
             } else $in.readNullOrTokenError($default, '[')
         }.asExprOf[C]
 
-      def genReadMap[B:Type,C:Type](newBuilder: Expr[B], readKV: Expr[B]=> UpdateOp, result: Expr[B]=>Expr[C], in: Expr[JsonReader], default: Expr[C]): Expr[C] =
+      def genReadMap[B:Type,C:Type](newBuilder: Expr[B], 
+                                    readKV: Quotes ?=> Expr[B]=> UpdateOp, 
+                                    result: Quotes ?=> Expr[B]=>Expr[C], 
+                                    in: Expr[JsonReader], 
+                                    default: Expr[C])(using Quotes): Expr[C] =
         '{  if ($in.isNextToken('{')) {
               if ($in.isNextToken('}')) $default
               else {
@@ -1097,7 +1101,7 @@ object JsonCodecMaker {
                                 readKV: Expr[B] => UpdateOp, 
                                 result: Expr[B] => Expr[C], 
                                 in: Expr[JsonReader],
-                                default: Expr[C]): Expr[C] =
+                                default: Expr[C])(using Quotes): Expr[C] =
         '{ if ($in.isNextToken('[')) {
               if ($in.isNextToken(']')) $default
               else {
@@ -1129,15 +1133,11 @@ object JsonCodecMaker {
 
 
       @tailrec
-      def genWriteKey[A:Type](x: Expr[A], types: List[TypeRepr], out: Expr[JsonWriter]): Expr[Unit] = {
+      def genWriteKey[A:Type](x: Expr[A], types: List[TypeRepr], out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
         val tpe = types.head.widen
         val implKeyCodec = findImplicitKeyCodec(types)
         if (!implKeyCodec.isEmpty) '{ ${implKeyCodec.get.asExprOf[JsonKeyCodec[A]]}.encodeKey($x, $out) }
-        else if (isValueClass(tpe)) {
-          genWriteKey(  Select.unique( x.asTerm, valueClassValue(tpe).name).asExprOf[A], 
-                       valueClassValueType(tpe) :: types,
-                       out)
-        } else if (tpe =:= TypeRepr.of[Boolean]) {
+        else if (tpe =:= TypeRepr.of[Boolean]) {
           '{ $out.writeKey(${x.asExprOf[Boolean]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Boolean]) {
           '{ $out.writeKey(${x.asExprOf[java.lang.Boolean]}) }
@@ -1204,7 +1204,14 @@ object JsonCodecMaker {
         } else if (tpe =:= TypeRepr.of[ZoneId]) {
           '{ $out.writeKey(${x.asExprOf[ZoneId]}) }
         } else if (tpe =:= TypeRepr.of[ZoneOffset]) {
-           '{ $out.writeKey(${x.asExprOf[ZoneOffset]}) }
+           '{ $out.writeKey(${x.asExprOf[ZoneOffset]}) }  
+        } else if (isValueClass(tpe)) {
+            val ktpe = valueClassValueType(tpe)
+            ktpe.asType match 
+              case '[kt] => genWriteKey[kt]( Select.unique( x.asTerm, valueClassValue(tpe).name).asExprOf[kt], 
+                                valueClassValueType(tpe) :: types,
+                                out)
+              case _ => fail(s"Can't determiate type for ${ktpe}")
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) '{ $out.writeKey(${x.asExprOf[Enumeration#Value]}.id) }
           else '{ $out.writeKey($x.toString) }
@@ -1238,11 +1245,11 @@ object JsonCodecMaker {
         } else cannotFindKeyCodecError(tpe)
       }
 
-      def genWriteConstantKey(name: String, out: Expr[JsonWriter]): Expr[Unit] =
+      def genWriteConstantKey(name: String, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         if (isEncodingRequired(name)) '{ $out.writeKey(${Expr(name)}) }
         else '{ $out.writeNonEscapedAsciiKey(${Expr(name)}) }
 
-      def genWriteConstantVal(value: String, out: Expr[JsonWriter]): Expr[Unit] =
+      def genWriteConstantVal(value: String, out: Expr[JsonWriter])(using Quotes): Expr[Unit] =
         if (isEncodingRequired(value)) '{ $out.writeVal(${Expr(value)}) }
         else '{ $out.writeNonEscapedAsciiVal(${Expr(value)}) }
 
@@ -1256,8 +1263,8 @@ object JsonCodecMaker {
 
 
       def genWriteMapScala213[T1:Type,T2:Type](x: Expr[collection.Map[T1,T2]], 
-                              writeKey: (Expr[JsonWriter], Expr[T1]) => Expr[Unit], 
-                              writeVal: (Expr[JsonWriter], Expr[T2]) => Expr[Unit],
+                              writeKey: Quotes ?=> (Expr[JsonWriter], Expr[T1]) => Expr[Unit], 
+                              writeVal: Quotes ?=> (Expr[JsonWriter], Expr[T2]) => Expr[Unit],
                               out: Expr[JsonWriter]
                               )(using Quotes): Expr[Unit] =
         '{  $out.writeObjectStart()
@@ -1269,8 +1276,8 @@ object JsonCodecMaker {
         }
 
       def genWriteMapAsArrayScala213[T1:Type,T2:Type](x: Expr[collection.Map[T1,T2]], 
-                              writeKey: (Expr[JsonWriter], Expr[T1]) => Expr[Unit], 
-                              writeVal: (Expr[JsonWriter], Expr[T2]) => Expr[Unit],
+                              writeKey: Quotes ?=> (Expr[JsonWriter], Expr[T1]) => Expr[Unit], 
+                              writeVal: Quotes ?=> (Expr[JsonWriter], Expr[T2]) => Expr[Unit],
                               out: Expr[JsonWriter] 
                               )(using Quotes): Expr[Unit] = 
         '{  $out.writeArrayStart()
@@ -1672,7 +1679,13 @@ object JsonCodecMaker {
                case '[t1] => 
                   Expr.summon[ClassTag[t1]] match
                     case Some(ct1) =>
-                      withNullValueFor(tpe)('{ Array.empty[t1](using $ct1) }.asExprOf[C] )
+                      try {
+                        withNullValueFor[Array[t1]](tpe)('{ Array.empty[t1](using $ct1) } ).asExprOf[C]
+                      } catch {
+                        case ex: Throwable =>
+                          println(s"hande array expr exception:  tpe = ${tpe.show}, C=${Type.show[C]}, t1 = ${Type.show[t1]}")
+                          throw ex;
+                      }
                     case _ => fail(s"No classtag found from ${Type.show[t1]}")
                case other =>
                   fail(s"Can't determinate type for ${other}") 
@@ -1694,7 +1707,11 @@ object JsonCodecMaker {
           }
         } else if (tpe =:= TypeRepr.of[Unit]) {
           '{ () }.asExprOf[C]
-        } else '{ null }.asExprOf[C]
+        } else if (tpe <:< TypeRepr.of[AnyRef]) {
+          '{ null }.asExprOf[C]
+        } else {
+          fail(s"Can't deduce null value for ${tpe.show}")
+        }
       }
 
       case class ReadDiscriminator(valDef: ValDef) {
@@ -2176,23 +2193,23 @@ object JsonCodecMaker {
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
             case ('[t1], '[t2]) =>
-              val tDefault = default.asExprOf[mutable.Map[t1,t2]]
+              val tDefault = default.asExprOf[C & mutable.Map[t1,t2]]
               val emptyMap = TypeApply(
                                Select.unique(scalaCollectionCompanion(tpe),"empty"),
                                List(TypeTree.of[t1], TypeTree.of[t2])
-              ).asExprOf[mutable.Map[t1,t2]]  
-              val newBuilder = '{ if ($tDefault.isEmpty) $tDefault else $emptyMap }.asExprOf[mutable.Map[t1,t2]]
+              ).asExprOf[C & mutable.Map[t1,t2]]  
+              val newBuilder = '{ if ($tDefault.isEmpty) $tDefault else $emptyMap }.asExprOf[C & mutable.Map[t1,t2]]
               val readVal2 = genReadVal[t2](tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, None, in)
               if (cfg.mapAsArray) {
                 val readVal1 = genReadVal[t1](tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, None, in)
-                genReadMapAsArray[mutable.Map[t1,t2],mutable.Map[t1,t2]](newBuilder, 
+                genReadMapAsArray[C & mutable.Map[t1,t2],C & mutable.Map[t1,t2]](newBuilder, 
                     x => Update('{ $x.update($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }) }),
                     identity,
                     in,
                     tDefault
                 ).asExprOf[C]
               } else 
-                genReadMap[mutable.Map[t1,t2],mutable.Map[t1,t2]](newBuilder, 
+                genReadMap[C & mutable.Map[t1,t2], C & mutable.Map[t1,t2]](newBuilder, 
                     x => Update('{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) }),
                     identity,
                     in,
@@ -2368,7 +2385,7 @@ object JsonCodecMaker {
               val t1ClassTag = Expr.summon[ClassTag[t1]] match
                 case Some(tag) => tag
                 case None => fail(s"Can't find ClassTag for ${tpe.show}")
-              def growArray(x: Expr[Array[t1]], i: Expr[Int]): Expr[Array[t1]] =
+              def growArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
                   if (newArrayOnChange) {
                     '{ val x1 = new Array[t1]($i << 1)(using $t1ClassTag)
                         _root_.java.lang.System.arraycopy($x, 0, x1, 0, $i)
@@ -2376,7 +2393,8 @@ object JsonCodecMaker {
                       }
                   } else
                     genArraysCopyOf[t1](tpe1, x, '{ $i << 1 } )
-              def shrinkArray(x: Expr[Array[t1]], i: Expr[Int]): Expr[Array[t1]] =
+              
+              def shrinkArray(x: Expr[Array[t1]], i: Expr[Int])(using Quotes): Expr[Array[t1]] =
                   if (newArrayOnChange) {
                     '{  val x1 = new Array[t1]($i)(using $t1ClassTag)
                         _root_.java.lang.System.arraycopy($x, 0, x1, 0, $i)
@@ -2384,20 +2402,23 @@ object JsonCodecMaker {
                     }
                   } else
                     genArraysCopyOf[t1](tpe1, x, i)
-              genReadArray( '{new Array[t1](16)(using $t1ClassTag) },
+
+              val tDefault = default.asExprOf[Array[t1]]
+
+              genReadArray[Array[t1],Array[t1]]( '{new Array[t1](16)(using $t1ClassTag) },
                         (x, i) => 
                             ConditionalAssignmentAndUpdate('{($i == $x.length)},
                                     growArray(x,i).asTerm,
                                     '{ $x($i) = 
-                                            ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types).asExprOf[t1], isStringified, None, in)}
+                                            ${genReadVal[t1](tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, None, in)}
                                     }
                             ),
-                        default,
+                        tDefault,
                         (x,i) => '{
                           if ($i == $x.length) $x else ${shrinkArray(x, i)}
-                        }.asExprOf[C],
+                        }.asExprOf[Array[t1]],
                         in
-              )
+              ).asExprOf[C]
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
           if (cfg.useScalaEnumValueId) {
             val ec = withScalaEnumCacheFor(tpe).asExprOf[ConcurrentHashMap[Int,C & AnyRef]]
@@ -2684,14 +2705,15 @@ object JsonCodecMaker {
                         }
                     }
                   } else if (isOption(f.resolvedTpe) && cfg.transientNone) {
-                    typeArg1(f.resolvedTpe).asType match
+                    val tpe1 = typeArg1(f.resolvedTpe)
+                    tpe1.asType match
                       case '[t1] =>
                         '{ 
                             val v = ${ Select(x.asTerm, f.field).asExprOf[Option[t1]]  }
                             if ((v ne None) && v != ${d.asExprOf[ft]}) {
                                 ${genWriteConstantKey(f.mappedName, out)}
                                 //val vg = v.get
-                                ${genWriteVal( '{v.get} , typeArg1(f.resolvedTpe) :: types, f.isStringified, None, out)}
+                                ${genWriteVal( '{v.get} , tpe1 :: types, f.isStringified, None, out)}
                             }
                         }
                       case _ =>
@@ -2895,22 +2917,26 @@ object JsonCodecMaker {
         } else if (isValueClass(tpe)) {
           genWriteVal( Select(m.asTerm, valueClassValue(tpe)).asExpr, valueClassValueType(tpe) :: types, isStringified, None, out)
         } else if (isOption(tpe)) {
-          '{ $m match {
-                case Some(x) => ${genWriteVal('x, typeArg1(tpe) :: types, isStringified, None, out)}
-                case None => $out.writeNull()
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              '{ ${m.asExprOf[Option[t1]]} match {
+                    case Some(x) => ${genWriteVal[t1]('x, typeArg1(tpe) :: types, isStringified, None, out)}
+                    case None => $out.writeNull()
+                }
               }
-          }
+            case _ =>   fail(s"Can't get type ${tpe1}")
         } else if (tpe <:< TypeRepr.of[immutable.IntMap[_]] || tpe <:< TypeRepr.of[mutable.LongMap[_]] ||
             tpe <:< TypeRepr.of[immutable.LongMap[_]]) withEncoderFor(methodKey, m.asTerm, out) { (out,x) =>
             val tpe1 = typeArg1(tpe); 
             tpe1.asType match
               case '[t1] =>  
-                val writeVal2: ((Expr[JsonWriter], Expr[t1]) => Expr[Unit]) = { (out, v) =>
+                def writeVal2(out: Expr[JsonWriter], v: Expr[t1])(using Quotes) = { 
                   genWriteVal[t1](v, tpe1 :: types, isStringified, None, out)
                 }
                 if (tpe <:< TypeRepr.of[immutable.IntMap] ) {
                   if (cfg.mapAsArray) {
-                    def writeVal1(out: Expr[JsonWriter], k: Expr[Int]): Expr[Unit] = {
+                    def writeVal1(out: Expr[JsonWriter], k: Expr[Int])(using Quotes): Expr[Unit] = {
                       if (isStringified) {
                         '{ $out.writeValAsString($k) }
                       } else {
@@ -2919,11 +2945,12 @@ object JsonCodecMaker {
                     }
                     genWriteMapAsArrayScala213[Int,t1](x.asExprOf[immutable.IntMap[t1]], writeVal1, writeVal2, out)
                   } else {
-                    genWriteMapScala213[Int,t1](x.asExprOf[immutable.IntMap[t1]], (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
+                    genWriteMapScala213[Int,t1](x.asExprOf[immutable.IntMap[t1]], 
+                              (out, k) => '{ $out.writeKey($k) }, writeVal2, out)
                   }  
                 } else { // Long key
                   if (cfg.mapAsArray) {
-                    def writeVal1(out: Expr[JsonWriter], k: Expr[Long]): Expr[Unit] = {
+                    def writeVal1(out: Expr[JsonWriter], k: Expr[Long])(using Quotes): Expr[Unit] = {
                       if (isStringified) {
                         '{ $out.writeValAsString(${k}) }
                       } else {
@@ -2942,7 +2969,7 @@ object JsonCodecMaker {
           val tpe2 = typeArg2(tpe).widen
           (tpe1.asType, tpe2.asType) match
             case ( '[t1], '[t2]) =>
-              val writeVal2: ((Expr[JsonWriter], Expr[t2]) => Expr[Unit]) = { (out, v) =>
+              def writeVal2(out: Expr[JsonWriter], v: Expr[t2])(using Quotes): Expr[Unit] = { 
                 genWriteVal[t2](v, tpe2 :: types, isStringified, None, out)
               }
               if (cfg.mapAsArray) {
@@ -2951,10 +2978,16 @@ object JsonCodecMaker {
                     writeVal2,
                     out)
               } else {
-                genWriteMapScala213[t1,t2](x.asExprOf[collection.Map[t1,t2]], 
+                try {
+                  genWriteMapScala213[t1,t2](x.asExprOf[collection.Map[t1,t2]], 
                     (out: Expr[JsonWriter], k: Expr[t1]) => genWriteKey[t1](k, tpe1 :: types, out), 
                     writeVal2,
                     out)
+                }catch{
+                  case ex: Throwable =>
+                    println(s"Catched exception during wtieMap, t1=${tpe1.show}, t2=${tpe2.show}")
+                    throw ex;
+                }
               }
             case _ =>
               fail(s"Can't get types for ${tpe1}, ${tpe2}")
