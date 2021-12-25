@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 
 import scala.language.implicitConversions
-import scala.annotation.{StaticAnnotation, tailrec}
+import scala.annotation.{StaticAnnotation, tailrec, compileTimeOnly}
 import scala.annotation.meta.field
 import scala.collection.{BitSet, immutable, mutable}
 import scala.collection.mutable.Growable
@@ -102,8 +102,8 @@ class CodecMakerConfig(
   inline def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
     copy(fieldNameMapper = FieldNameFunctionWrapper(fieldNameMapper))
 
-  inline def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig =
-    copy(javaEnumValueNameMapper = FieldNameFunctionWrapper(javaEnumValueNameMapper))
+  @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")  
+  def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
   inline def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
     copy(adtLeafClassNameMapper = FieldNameFunctionWrapper({ case x => adtLeafClassNameMapper(x) }))
@@ -295,12 +295,21 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vv = v.valueOrAbort
             val vx = x.valueOrAbort
             Some(vx.withUseScalaEnumValueId(vv))
+          case '{ (${x}:CodecMakerConfig).withIsStringified($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withIsStringified(vv))  
           case '{ CodecMakerConfig } =>
             Some(CodecMakerConfig)
+          case '{ (${x}:CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
+            val vv = FieldNameExprFunctionWrapper(v)
+            val vx = x.valueOrAbort
+            Some(vx.copy(javaEnumValueNameMapper = vv))
           case other =>
             report.error(s"Can't interpret ${other.show} as constant expression, tree=${other.asTerm}")
             None
      }
+  
 
 }
 
@@ -853,10 +862,7 @@ object JsonCodecMaker {
         
             val values = classSym.children.map{ sym =>
               val name = sym.name
-              val transformed = cfg.javaEnumValueNameMapper.apply(name) match {
-                 case Left((msg,expr)) => fail(msg)
-                 case Right(optResult) => optResult.getOrElse(name)
-              }
+              val transformed = cfg.javaEnumValueNameMapper.apply(name).getOrElse(name)
               JavaEnumValueInfo(sym, transformed, name!=transformed)
             }
 
@@ -905,7 +911,7 @@ object JsonCodecMaker {
       }
 
       
-      def genReadKey[T:Type](types: List[TypeRepr], in: Expr[JsonReader]): Expr[T] = {
+      def genReadKey[T:Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
         val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(types)
         if (!implKeyCodec.isEmpty)  '{ ${implKeyCodec.get}.decodeKey($in) }.asExprOf[T]
@@ -1225,7 +1231,7 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeKey(${matchTerm.asExprOf[String]}) }
             else '{ $out.writeNonEscapedAsciiKey(${matchTerm.asExprOf[String]}) }
           } else {
-            val nameExpr = Select.unique(x.asTerm, "name").asExprOf[String]
+            val nameExpr = Apply(Select.unique(x.asTerm, "name"), List()).asExprOf[String]
             if (encodingRequired) '{ $out.writeKey(${nameExpr}) }
             else '{ $out.writeNonEscapedAsciiKey(${nameExpr})  }
           }
@@ -1378,9 +1384,7 @@ object JsonCodecMaker {
             if (annotationOption.exists(_.transient)) fieldInfos
             else {
               val mappedName = annotationOption.fold{ 
-                cfg.fieldNameMapper(name) match
-                  case Left((message, expr)) => fail("Can't interpret fieldNameMapper:"+message)
-                  case Right(optValue) => optValue.getOrElse(name)
+                cfg.fieldNameMapper(name).getOrElse(name)
               }(_.partiallyMappedName)
               //val getter = getters.find(_.name == symbol.name).getOrElse {
               //  println(s"!!!fail (name - parameters: ):getters = $getters, name=${symbol.name}")
@@ -1429,9 +1433,7 @@ object JsonCodecMaker {
           } else {
               tpe.typeSymbol.fullName
           }
-          cfg.adtLeafClassNameMapper(adtClassNames) match
-            case Left((message,expr)) => fail("can't appy adtLefClasssNameMapper:"+message)
-            case Right(v) => v.getOrElse(fail(s"discriminator is not defined for ${tpe.show}"))
+          cfg.adtLeafClassNameMapper(adtClassNames).getOrElse(fail(s"discriminator is not defined for ${tpe.show}"))
         }
       }
 
@@ -2214,7 +2216,7 @@ object JsonCodecMaker {
                                      List(TypeTree.of[t1], TypeTree.of[t2])
                               ).asExprOf[C & mutable.Map[t1,t2]]  
               val newBuilder = '{ if ($tDefault.isEmpty) $tDefault else $emptyMap }.asExprOf[C & mutable.Map[t1,t2]]
-              val readVal2 = genReadVal[t2](tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, None, in)
+              def readVal2(using Quotes) = genReadVal[t2](tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, None, in)
               if (cfg.mapAsArray) {
                 val readVal1 = genReadVal[t1](tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, None, in)
                 genReadMapAsArray[C & mutable.Map[t1,t2],C & mutable.Map[t1,t2]](newBuilder, 
@@ -2257,17 +2259,18 @@ object JsonCodecMaker {
                   if (cfg.mapAsArray) {
                       def readVal1(using Quotes) = 
                         genReadVal[t1](tpe1 :: types, genNullValue(tpe1 :: types).asExprOf[t1], isStringified, None, in)
-                      val readKV = (qctx:Quotes) ?=> (x:Expr[mutable.Builder[(t1,t2),collection.Map[t1,t2]]]) => 
+                      def readKV(using Quotes)(x:Expr[mutable.Builder[(t1,t2),collection.Map[t1,t2]]]) =
                                         Update('{ $x.addOne(($readVal1, 
                                                                 { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }))
                                         })
                       genReadMapAsArray(newBuilder, readKV, (b) => '{ $b.result() }, in, default).asExprOf[C]
                   } else {
                       def readKey(using Quotes) = genReadKey[t1](tpe1 :: types, in)
-                      val readKV = (qctx: Quotes) ?=> (x: Expr[mutable.Builder[(t1,t2), C & collection.Map[t1,t2]]]) => 
+                      def readKV(using Quotes)(x: Expr[mutable.Builder[(t1,t2), C & collection.Map[t1,t2]]]) = 
                                Update('{ $x.addOne(($readKey, $readVal2)) })
                       genReadMap[mutable.Builder[(t1,t2),C & collection.Map[t1,t2]],C & collection.Map[t1,t2]](newBuilder, 
-                            readKV, (b) => '{ $b.result() }, 
+                            readKV, 
+                            (b) => '{ $b.result() }, 
                             in, default.asExprOf[ C & collection.Map[t1,t2]]
                       ).asExprOf[C]                      
                   }
@@ -2899,7 +2902,7 @@ object JsonCodecMaker {
           else '{ $out.writeVal(${m.asExprOf[Double]}) }
         } else if (tpe =:= TypeRepr.of[java.lang.Double] ) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[java.lang.Double]}.doubleValue) }
-          else '{ $out.writeVal(${m.asExprOf[Double]}.doubleValue) }
+          else '{ $out.writeVal(${m.asExprOf[java.lang.Double]}.doubleValue) }
         } else if (tpe =:= TypeRepr.of[BigInt]) {
           if (isStringified) '{ $out.writeValAsString(${m.asExprOf[BigInt]}) }
           else '{ $out.writeVal(${m.asExprOf[BigInt]})  }
