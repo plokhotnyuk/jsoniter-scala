@@ -468,6 +468,7 @@ object JsonCodecMaker {
     Impl.makeWithSpecifiedConfig[A]('config)
   }
 
+
   object Impl {
     def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
       tryMake(CodecMakerConfig)
@@ -493,6 +494,7 @@ object JsonCodecMaker {
             }
             cfg
       }
+
 
     private[this] def tryMake[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
       try {
@@ -634,6 +636,47 @@ object JsonCodecMaker {
       */ 
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
+         def collectRecursively(symbol: Symbol): Seq[Symbol] = {
+            val flags = symbol.flags
+            val leafSymbols = if (flags.is(Flags.Sealed)) {
+                              symbol.children.flatMap(s => collectRecursively(s))  
+                            } else {
+                              Seq()
+                            }
+            if ( !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Enum)
+               ) {
+              leafSymbols :+ symbol
+            } else {
+              leafSymbols
+            }
+         }
+
+         def symbolType(symbol:Symbol): TypeRepr = {
+           if (symbol.isTerm) {
+             Ref(symbol).tpe
+           } else if (symbol.isType) {
+             TypeIdent(symbol).tpe
+           } else {
+            fail(
+              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them\n" +
+              s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.\n" +
+              s"failed symbol: $symbol  (fullName=${symbol.fullName})\n" 
+            )
+           }
+         }  
+
+
+         val leafSymbols = collectRecursively(adtBaseTpe.typeSymbol)
+         val retval = leafSymbols.map(symbolType)
+
+         if (traceFlag) {
+            println(s"adtLeafClasses for ${adtBaseTpe.show}: symbols: ${leafSymbols}, types: ${retval.map(_.show)} ")
+         }
+
+         retval
+      }
+
+      def adtLeafClasses1(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
 
         def collectRecursively(symbol: Symbol): Seq[TypeRepr] = {
           val leafTpes = if (symbol.flags.is(Flags.Sealed)) {
@@ -646,8 +689,6 @@ object JsonCodecMaker {
             val flags = symbol.flags 
             if (flags.is(Flags.Enum)) {
                 leafTpes
-            } else if (symbol == defn.NullClass || symbol == defn.NothingClass || symbol == defn.UnitClass ) {
-                leafTpes
             } else if (!flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && symbol.isClassDef) {
                 // tpe used for 'as seen from'
                 //  mb - use class 'this'or package
@@ -655,6 +696,11 @@ object JsonCodecMaker {
                 // not work
                 //val tpe = adtBaseTpe.memberType(symbol)
                 // use antipattern
+                if (symbol.name=="DDD") {
+                  println("DDD after leat")
+                  println("module flags:  "+flags.is(Flags.Module))
+                }
+
                 val tpe: TypeRepr = symbol.tree match
                   case tpt: TypeTree => tpt.tpe
                   case cl: ClassDef =>
@@ -663,7 +709,7 @@ object JsonCodecMaker {
                       case None => 
                         val viaConstructor = cl.constructor.returnTpt.tpe
                         if (viaConstructor.typeSymbol == symbol) {
-                          println(s"collect recursivly: tpe by consturtor= ${viaConstructor.show}")
+                          println(s"collect recursivly: tpe by consturtor= ${viaConstructor.show}, symbol.name=${symbol.name}")
                           viaConstructor
                         } else {
                             fail(s"Can't find self type for classdef ${symbol}, fullName:${symbol.fullName}\n"+
@@ -702,6 +748,8 @@ object JsonCodecMaker {
             } 
             if (symbol.isTerm) {
               println("isTerm: "+symbol)
+              val termRpe = Ref(symbol).tpe
+              println("Ref(symbol).tpe: ")
               List(Ref(symbol).tpe)
             }else{
               if (symbol.flags.is(Flags.Enum)) {
@@ -761,7 +809,6 @@ object JsonCodecMaker {
       val inferredKeyCodecs: mutable.Map[TypeRepr, Option[Expr[JsonKeyCodec[?]]] ] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[TypeRepr, Option[Expr[JsonValueCodec[?]]]] = mutable.Map.empty
 
-
       def inferImplicitValue(typeToSearch: TypeRepr): Option[Term] = 
         Implicits.search(typeToSearch) match
           case v: ImplicitSearchSuccess =>
@@ -779,10 +826,13 @@ object JsonCodecMaker {
           if (!tpe.typeSymbol.flags.is(Flags.Enum)) {
             val recursiveIdx = nested.indexOf(tpe)
             if (recursiveIdx >=0 ) {
-              fail(s"Recursive type(s) detected: ${nested.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")}. " +
-              "Please consider using a custom implicitly accessible codec for this type to control the level of " +
-              s"recursion or turn on the '${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
-              "will not exceed the thread stack size.")
+              fail(
+                s"Recursive type(s) detected: ${nested.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")}. " +
+                 "Please consider using a custom implicitly accessible codec for this type to control the level of " +
+                s"recursion or turn on the '${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
+                 "will not exceed the thread stack size.\n" +
+                s"all types: ${types.map(_.show)}" 
+              )
             }
           }
         }
@@ -2025,7 +2075,7 @@ object JsonCodecMaker {
                      in: Expr[JsonReader]
                      )(using Quotes): Expr[C] = {
         if (traceFlag) {
-          println(s"genReadVal[${Type.show[C]}]")
+          println(s"genReadVal[${Type.show[C]}], types=${types.map(_.show)}")
         }
         val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
@@ -2606,13 +2656,13 @@ object JsonCodecMaker {
           }
           val length: TypeRepr => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
-          println(s"2601: leafClasses = ${leafClasses.map(_.show)}")
+          println(s"2659: leafClasses = ${leafClasses.map(_.show)}")
           val discriminatorError = cfg.discriminatorFieldName.fold(
                                        '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
           def genReadLeafClass[S:Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
             if (traceFlag) {
-              println(s"genReadLeafClass ${Type.show[S]}")
+              println(s"genReadLeafClass ${Type.show[S]}, types=${types.map(_.show)}")
             }
             //val discriminator = cfg.discriminatorFieldName.map( fieldName => Discriminator(fieldName, skipDiscriminatorField))
             val optLeafDiscriminator = cfg.discriminatorFieldName.map{ fieldName =>
@@ -2621,30 +2671,18 @@ object JsonCodecMaker {
               ReadDiscriminator(valDef)
             } 
             if (areEqual(subTpe, tpe)) 
-                genReadNonAbstractScalaClass(types, optLeafDiscriminator, in, genNullValue[S](subTpe :: types))
+                genReadNonAbstractScalaClass(types, optLeafDiscriminator, in, genNullValue[S](types))
             else 
                 genReadVal[S](subTpe :: types, genNullValue[S](subTpe :: types), isStringified, optLeafDiscriminator, in)
 
           def genReadCollisions(subTpes: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
+            if (traceFlag) {
+              println(s"genReadCollisions: ${subTpes.map(_.show)} ")
+            }
             val s0: Term = discriminatorError.asTerm
             subTpes.foldRight(s0) { (subTpe, acc) =>
-                try {
-                  subTpe.asType match
-                    case '[st] =>
-                      //println(s"resolved ${subTpe}")
-                }catch{
-                  case ex: Throwable =>
-                    println(s"can't resolve tpe: ${subTpe} "+ Position.ofMacroExpansion)
-                    val pos = Position.ofMacroExpansion
-                    println(s"souceFile: ${pos.sourceFile}, line: ${pos.startLine}, code: ${pos.sourceCode}")
-                    println(s"tpe=${tpe}, show: ${tpe.show}")
-                    println(s"tpe.classSymbol=${tpe.classSymbol}")
-                    println(s"tpe.typeSymbol.tree=${tpe.typeSymbol.tree.show}")
-                    throw ex;
-                }
                 subTpe.widen.asType match
                   case '[st] =>
-                    println(s"subTpe=${subTpe}, subTpe.widen = ${subTpe.widen.show}")
                     def readVal(using Quotes): Expr[st] = {
                       if (cfg.discriminatorFieldName.isDefined) {
                         '{ $in.rollbackToMark()
@@ -2654,12 +2692,15 @@ object JsonCodecMaker {
                           Ref(subTpe.termSymbol).asExprOf[st]
                       } else genReadLeafClass[st](subTpe)
                     }
-                    val r = '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExprOf[st]} }
+                    val r = '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExpr} }
                     r.asTerm 
                   case _ => fail(s"Can't extract type for ${subTpe}")
             }
 
           def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
+            if (traceFlag) {
+              println(s"genReadSubclassesBlock: leafClasses = ${leafClasses.map(_.show)} ")
+            }
             if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) 
               genReadCollisions(leafClasses, l)
             else {
@@ -2671,15 +2712,8 @@ object JsonCodecMaker {
               val scrutinee = '{ $in.charBufToHashCode($l): @scala.annotation.switch }.asTerm
               Match(scrutinee, (cases :+ lastCase).toList)
             }
-          try {
-            checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
-          }catch{
-            case ex: Throwable =>
-              println("leafClasses = "+leafClasses) 
-              println("cfg.discriminatorFieldName="+cfg.discriminatorFieldName)
-              ex.printStackTrace()
-              throw ex;
-          }
+
+          checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
           cfg.discriminatorFieldName match {
             case None =>
               val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.flags.is(Flags.Module))
