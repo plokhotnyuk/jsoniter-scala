@@ -309,9 +309,19 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vx = x.valueOrAbort
             Some(vx.copy(fieldNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
-            val vv = FieldNameExprFunctionWrapper(v)
-            val vx = x.valueOrAbort
-            Some(vx.copy(javaEnumValueNameMapper = vv))
+            try {
+              println("before creating fieldNameExprFunctionWrapper")
+              val vv = FieldNameExprFunctionWrapper(v)
+              println("after creating fieldNameExprFunctionWrapper")             
+              val vx = x.valueOrAbort
+              val r = Some(vx.copy(javaEnumValueNameMapper = vv))
+              println("after copy")     
+              r
+            }catch{
+              case ex: Throwable =>
+                ex.printStackTrace()
+                throw ex;
+            }
           case '{ (${x}:CodecMakerConfig).withAdtLeafClassNameMapper($v) } =>
             val vv = FieldNameExprFunctionWrapper( '{ { case x => $v(x) } } )
             val vx = x.valueOrAbort
@@ -379,7 +389,6 @@ object CodecMakerConfig extends CodecMakerConfig(
   
 
 }
-
 
 
 object JsonCodecMaker {
@@ -1000,8 +1009,15 @@ object JsonCodecMaker {
         
             val values = classSym.children.map{ sym =>
               val name = sym.name
-              val transformed = cfg.javaEnumValueNameMapper.apply(name).getOrElse(name)
-              JavaEnumValueInfo(sym, transformed, name!=transformed)
+              try {
+                val transformed = cfg.javaEnumValueNameMapper.apply(name).getOrElse(name)
+                JavaEnumValueInfo(sym, transformed, name!=transformed)
+              }catch{
+                case ex: Throwable =>
+                  println(s"exception duing transforming JavaEnumValieNameMapper: ${ex.getMessage} ")
+                  ex.printStackTrace()
+                  throw ex
+              }
             }
 
             val nameCollisions = duplicated(values.map(_.name))
@@ -2723,7 +2739,6 @@ object JsonCodecMaker {
           }
           val length: TypeRepr => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
-          println(s"2659: leafClasses = ${leafClasses.map(_.show)}")
           val discriminatorError = cfg.discriminatorFieldName.fold(
                                        '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
