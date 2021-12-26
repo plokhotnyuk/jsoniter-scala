@@ -99,14 +99,17 @@ class CodecMakerConfig(
     val allowRecursiveTypes: Boolean,
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean) {
-  inline def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig =
-    copy(fieldNameMapper = FieldNameFunctionWrapper(fieldNameMapper))
 
+  @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodec.make functions")  
+  def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
+    
   @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")  
   def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
-  inline def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
-    copy(adtLeafClassNameMapper = FieldNameFunctionWrapper({ case x => adtLeafClassNameMapper(x) }))
+  @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")  
+  def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
+    ???
+    //copy(adtLeafClassNameMapper = FieldNameFunctionWrapper({ case x => adtLeafClassNameMapper(x) }))
 
   def withDiscriminatorFieldName(discriminatorFieldName: Option[String]): CodecMakerConfig =
     copy(discriminatorFieldName = discriminatorFieldName)
@@ -230,7 +233,7 @@ object CodecMakerConfig extends CodecMakerConfig(
        def unapply(x: Expr[CodecMakerConfig])(using Quotes):Option[CodecMakerConfig] =
         import quotes.reflect._
         x match 
-          case '{ new CodecMakerConfig(
+          case '{ CodecMakerConfig(
                         $exprFieldNameMapper, 
                         $exprJavaEnumValueNameMapper, 
                         $exprAdtLeafClassNameMapper,
@@ -301,10 +304,74 @@ object CodecMakerConfig extends CodecMakerConfig(
             Some(vx.withIsStringified(vv))  
           case '{ CodecMakerConfig } =>
             Some(CodecMakerConfig)
+          case '{ (${x}:CodecMakerConfig).withFieldNameMapper($v) } =>
+            val vv = FieldNameExprFunctionWrapper(v)
+            val vx = x.valueOrAbort
+            Some(vx.copy(fieldNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
             val vv = FieldNameExprFunctionWrapper(v)
             val vx = x.valueOrAbort
             Some(vx.copy(javaEnumValueNameMapper = vv))
+          case '{ (${x}:CodecMakerConfig).withAdtLeafClassNameMapper($v) } =>
+            val vv = FieldNameExprFunctionWrapper( '{ { case x => $v(x) } } )
+            val vx = x.valueOrAbort
+            Some(vx.copy(adtLeafClassNameMapper = vv))
+          case '{ (${x}:CodecMakerConfig).withRequireDiscriminatorFirst($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.copy(requireDiscriminatorFirst = vv))
+          case '{ (${x}:CodecMakerConfig).withMapAsArray($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withMapAsArray(vv))  
+          case '{ (${x}:CodecMakerConfig).withSkipUnexpectedFields($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withSkipUnexpectedFields(vv))  
+          case '{ (${x}:CodecMakerConfig).withTransientDefault($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withTransientDefault(vv))      
+          case '{ (${x}:CodecMakerConfig).withTransientEmpty($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withTransientEmpty(vv))  
+          case '{ (${x}:CodecMakerConfig).withTransientNone($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withTransientNone(vv))  
+          case '{ (${x}:CodecMakerConfig).withRequireCollectionFields($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withRequireCollectionFields(vv))
+          case '{ (${x}:CodecMakerConfig).withBigDecimalPrecision($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withBigDecimalPrecision(vv))
+          case '{ (${x}:CodecMakerConfig).withBigDecimalScaleLimit($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withBigDecimalScaleLimit(vv))
+          case '{ (${x}:CodecMakerConfig).withBigDecimalDigitsLimit($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withBigDecimalDigitsLimit(vv))
+          case '{ (${x}:CodecMakerConfig).withBigIntDigitsLimit($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.copy(bigIntDigitsLimit = vv))
+          case '{ (${x}:CodecMakerConfig).withBitSetValueLimit($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withBitSetValueLimit(vv))
+          case '{ (${x}:CodecMakerConfig).withMapMaxInsertNumber($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withMapMaxInsertNumber(vv))    
+          case '{ (${x}:CodecMakerConfig).withSetMaxInsertNumber($v) } =>
+            val vv = v.valueOrAbort
+            val vx = x.valueOrAbort
+            Some(vx.withSetMaxInsertNumber(vv))
           case other =>
             report.error(s"Can't interpret ${other.show} as constant expression, tree=${other.asTerm}")
             None
@@ -3295,7 +3362,7 @@ object JsonCodecMaker {
       
            
       if (traceFlag || true) {  // TODO: insert flag from macro context
-        report.info(s"Generated JSON codec for type '$rootTpe':\n${codec.show}", Position.ofMacroExpansion)
+        report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       }
       codec.asExprOf[JsonValueCodec[A]]
     }
