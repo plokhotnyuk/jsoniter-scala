@@ -1465,8 +1465,8 @@ object JsonCodecMaker {
         // TODO: write testcase
         a match {
           case Apply(_, List(param) ) =>
-            val evaluatedParam = CompileTimeEval.evalTerm(param, Map.empty, None)
-            evaluatedParam match
+            val evaluatedParam = CompileTimeEval.evalExpr[String](param.asExprOf[String])
+            evaluatedParam.asTerm match
               case Literal(StringConstant(s)) => s
               case other =>
                 fail(s"Cannot evaluate a parameter of the '@named' annotation in type '${tpe.show}: ${param}'.")
