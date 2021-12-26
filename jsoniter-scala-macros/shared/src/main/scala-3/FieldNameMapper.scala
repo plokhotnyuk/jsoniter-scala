@@ -57,8 +57,8 @@ object FieldNameFunctionWrapper {
 
 class CompileTimeEvalException(message: String, 
                                expr: Expr[Any],
-                               reason: Exception = null
-                               ) extends RuntimeException(message)
+                               reason: Throwable = null
+                               ) extends RuntimeException(message, reason)
 
 object CompileTimeEval {
 
@@ -138,6 +138,7 @@ object CompileTimeEval {
         case block@Block(statements, exprs) =>
           evalBlock(block, bindings, optDefault)
         case lt@Literal(_) => lt
+        case Typed(expr,tpt) => evalTerm(expr,bindings, optDefault)
         case other =>
           throw CompileTimeEvalException(s"Unsupported constant expression: $other", ft.asExpr)
     } 
@@ -226,7 +227,7 @@ object CompileTimeEval {
       case Select(qual, memberName) =>
         val qualSym = qual.symbol
         if (qualSym.flags.is(Flags.Module)) {
-          if (qualSym.fullName.equals("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodeMaker")) {
+          if (qualSym.fullName.equals("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker")) {
             // TODO: test
             applyJsonCodeMakerField(applyTerm, memberName, evaluatedArgs)
           } else {
@@ -348,6 +349,7 @@ object CompileTimeEval {
                                                   qualSym: quotes.reflect.Symbol, 
                                                   memberName: String, 
                                                   args: List[quotes.reflect.Term]): quotes.reflect.Term = {
+    println(s"applyJavaReflectionModuleField: qualSym.fullName=${qualSym.fullName}")
     val module = retrieveRuntimeModule(applyTerm, qualSym) 
     javaReflectionCall(applyTerm, module, memberName, args)
   }
@@ -367,6 +369,99 @@ object CompileTimeEval {
     javaReflectionCall(applyTerm, jvmQual, memberName, args) 
   }
 
+  class JvmReflectionMethodCallException(msg: String, ex: Exception) extends RuntimeException(msg, ex) 
+
+  sealed trait JvmReflectionMethodCall {
+    def process(): AnyRef
+
+    protected def retrieveArgTypes(args: Array[AnyRef]): Array[java.lang.Class[?]] = {
+      val argsTypes = new Array[Class[?]](args.length)
+      var i=0
+      while(i < argsTypes.length) {
+          argsTypes(i) = args(i).getClass()
+          i = i+1
+      }
+      argsTypes
+    }
+
+  }
+
+  case class DirectJvmReflectionMethodCall(obj: AnyRef, name: String, args: Array[AnyRef]) extends JvmReflectionMethodCall
+  {
+
+    def process(): AnyRef = {
+      val argsTypes = retrieveArgTypes(args)
+      val method = try {
+          obj.getClass.getMethod(name, argsTypes: _*)
+      } catch {
+          case ex: NoSuchMethodException => 
+            throw JvmReflectionMethodCallException(s"Can't find methid $name of object ${obj} (class ${obj.getClass}) with argumentTypes: ${argsTypes.toList}", ex)
+          case ex: SecurityException =>
+            throw JvmReflectionMethodCallException(s"Can't get method $name of object ${obj} (class ${obj.getClass}", ex)
+      }
+
+      val result = try {
+          method.invoke(obj, args: _*)
+      } catch {
+          case ex: Exception =>
+            throw JvmReflectionMethodCallException(s"Can't invoke methid $name of object ${obj}", ex)
+      }
+
+      result
+    }
+  }
+
+  sealed trait PrependedArgumentJvmReflectionMethodCall extends JvmReflectionMethodCall {
+
+     def prependArgument(obj: AnyRef, args: Array[AnyRef]): Array[AnyRef] = {
+       val retval = new Array[AnyRef](args.length + 1)
+       retval(0) = obj
+       System.arraycopy(args,0,retval,1,args.length)
+       retval
+     }
+
+  }  
+  
+  case class HelperObjectJvmReflectionMethodCall(helperObj: AnyRef, obj: AnyRef, name: String, args: Array[AnyRef]) extends PrependedArgumentJvmReflectionMethodCall {
+
+    def process(): AnyRef = {
+      val nArgs = prependArgument(obj, args)
+      val argsTypes = retrieveArgTypes(nArgs)
+      val method = try {
+          helperObj.getClass().getMethod(name, argsTypes: _*)
+      } catch {
+          case ex: NoSuchMethodException => 
+            throw JvmReflectionMethodCallException(s"Can't find method $name of object ${helperObj} (class ${helperObj.getClass}) with argumentTypes: ${argsTypes.toList}", ex)
+          case ex: SecurityException =>
+            throw JvmReflectionMethodCallException(s"Can't get method $name of object ${helperObj} (class ${helperObj.getClass}", ex)
+      }
+
+      val result = try {
+          method.invoke(helperObj, nArgs: _*)
+      } catch {
+          case ex: Exception =>
+            throw JvmReflectionMethodCallException(s"Can't invoke methid $name of object ${helperObj} (class ${helperObj.getClass})", ex)
+      }
+
+      result
+    }
+
+  }
+
+  case class StringConcatJvmReflectionMethodCall(obj: String, args: Array[AnyRef]) extends JvmReflectionMethodCall {
+
+    def process(): AnyRef = {
+      var r = obj
+      var i = 0
+      while(i < args.length) {
+        r = r.concat(args(i).toString)
+        i = i + 1
+      }
+      r
+    }
+
+  }
+  
 
   def javaReflectionCall(using Quotes)(term: quotes.reflect.Term,
                                        qual: AnyRef, 
@@ -375,34 +470,33 @@ object CompileTimeEval {
       import quotes.reflect._
       val preparedArgs = args.map(t => termToJvm(t)).toArray
 
-      val qualClass = qual.getClass
-    
-      val argsTypes = new Array[Class[?]](preparedArgs.length)
-      var i=0
-      while(i < argsTypes.length) {
-          argsTypes(i) = preparedArgs(i).getClass()
-          i = i+1
-      }
-      val method = try {
-          qualClass.getMethod(name, argsTypes: _*)
-      } catch {
-          case ex: NoSuchMethodException => 
-            throw CompileTimeEvalException(s"Can't find methid $name of object ${qual} with argumentTypes: ${argsTypes.toList}", term.asExpr, ex)
-          case ex: SecurityException =>
-            throw CompileTimeEvalException(s"Can't get method $name of object ${qual}", term.asExpr, ex)
-      }
+      val call = prepareJvmReflectionMethodCall(term, qual, name, preparedArgs)
 
       val result = try {
-          method.invoke(qual, preparedArgs: _*)
+          call.process()
       } catch {
-          case ex: Exception =>
-            throw CompileTimeEvalException(s"Can't invoke methid $name of object ${qual}", term.asExpr, ex)
+          case ex: JvmReflectionMethodCallException =>
+            throw CompileTimeEvalException(ex.getMessage, term.asExpr, ex.getCause)
       }
 
       jvmToTerm(term, result)
 
   }
 
+
+  def  prepareJvmReflectionMethodCall(using Quotes)(t: quotes.reflect.Term, x: AnyRef,  name: String, args:Array[AnyRef]): JvmReflectionMethodCall = {
+    name match
+      case "+" =>
+        if (x.isInstanceOf[java.lang.String]) {
+          StringConcatJvmReflectionMethodCall(x.asInstanceOf[java.lang.String], args)
+        } else if (x.isInstanceOf[java.lang.Integer] || x.isInstanceOf[java.lang.Long]) {
+          HelperObjectJvmReflectionMethodCall(x,x,"sum", args)
+        } else {
+          throw CompileTimeEvalException(s"Can't find substitute for opeation $name of object ${x} (class ${x.getClass})", t.asExpr)
+        }
+      case _ =>
+        DirectJvmReflectionMethodCall(x,name, args)
+  }
 
   def jvmToTerm(using Quotes)(applyTerm: quotes.reflect.Term, obj: AnyRef): quotes.reflect.Term = {
     import quotes.reflect._
@@ -439,7 +533,7 @@ object CompileTimeEval {
 
   def termToJvm(using Quotes)(x: quotes.reflect.Term): AnyRef = {
     import quotes.reflect._
-    x.tpe match
+    x match
       case Literal(StringConstant(v)) => v
       case Literal(BooleanConstant(v)) => java.lang.Boolean.valueOf(v)
       case Literal(CharConstant(v)) => java.lang.Character.valueOf(v)
