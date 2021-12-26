@@ -516,7 +516,13 @@ object JsonCodecMaker {
     
       val traceFlag: Boolean = true  // TODO: add to confg 
 
-      def fail(msg: String): Nothing = report.throwError(msg, Position.ofMacroExpansion )
+      def fail(msg: String): Nothing = {
+        if (false & traceFlag) {
+          println(s"fail: $msg");
+          Thread.dumpStack()
+        }
+        report.throwError(msg, Position.ofMacroExpansion )
+      }
 
       def warn(msg: String): Unit = report.warning(msg, Position.ofMacroExpansion )
 
@@ -547,8 +553,6 @@ object JsonCodecMaker {
             fail(s"expected that ${tpe} is an AppliedType")
 
       def areEqual(tpe1: TypeRepr, tpe2: TypeRepr): Boolean = tpe1 =:= tpe2
-
-      //val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
       def isTuple(tpe: TypeRepr): Boolean = (tpe <:< TypeRepr.of[Tuple])
 
@@ -642,6 +646,8 @@ object JsonCodecMaker {
             val flags = symbol.flags 
             if (flags.is(Flags.Enum)) {
                 leafTpes
+            } else if (symbol == defn.NullClass || symbol == defn.NothingClass || symbol == defn.UnitClass ) {
+                leafTpes
             } else if (!flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && symbol.isClassDef) {
                 // tpe used for 'as seen from'
                 //  mb - use class 'this'or package
@@ -649,16 +655,29 @@ object JsonCodecMaker {
                 // not work
                 //val tpe = adtBaseTpe.memberType(symbol)
                 // use antipattern
-                val tpe = symbol.tree match
+                val tpe: TypeRepr = symbol.tree match
                   case tpt: TypeTree => tpt.tpe
-                  case cl: ClassDef => 
-                    val x = cl.self match
+                  case cl: ClassDef =>
+                    cl.self match
                       case Some(clSelf) => clSelf.tpt.tpe
-                      case None => fail(s"Can't find self time for classdef ${symbol}")
-                    x
+                      case None => 
+                        val viaConstructor = cl.constructor.returnTpt.tpe
+                        if (viaConstructor.typeSymbol == symbol) {
+                          println(s"collect recursivly: tpe by consturtor= ${viaConstructor.show}")
+                          viaConstructor
+                        } else {
+                            fail(s"Can't find self type for classdef ${symbol}, fullName:${symbol.fullName}\n"+
+                              s"tree = ${symbol.tree.show}\n"+
+                              s"constructor return type= ${cl.constructor.returnTpt.tpe.show}"
+                            )
+                        }
                   case _ => // todo: 
                     enclosingClassTpe.memberType(symbol)
-                leafTpes :+ tpe
+                if (tpe =:= TypeRepr.of[scala.Nothing] || tpe =:= TypeRepr.of[Unit] || tpe =:= TypeRepr.of[Null]) {
+                  Seq()
+                } else {        
+                  leafTpes :+ tpe
+                }
             } else if (flags.is(Flags.Abstract) && flags.is(Flags.Sealed)) {
                 leafTpes
             } else {
@@ -701,6 +720,8 @@ object JsonCodecMaker {
         val classes = collectRecursively(adtBaseTpe.typeSymbol).distinct
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
           "Please add them or provide a custom implicitly accessible codec for the ADT base.")
+
+        println(s"adtReadClassesRetval: ${classes.map(_.show)}")
         classes
       }
 
@@ -758,7 +779,7 @@ object JsonCodecMaker {
           if (!tpe.typeSymbol.flags.is(Flags.Enum)) {
             val recursiveIdx = nested.indexOf(tpe)
             if (recursiveIdx >=0 ) {
-              fail(s"Recursive type(s) detected: ${nested.take(recursiveIdx + 1).reverse.mkString("'", "', '", "'")}. " +
+              fail(s"Recursive type(s) detected: ${nested.take(recursiveIdx + 1).map(_.show).reverse.mkString("'", "', '", "'")}. " +
               "Please consider using a custom implicitly accessible codec for this type to control the level of " +
               s"recursion or turn on the '${Type.show[CodecMakerConfig]}.allowRecursiveTypes' for the trusted input that " +
               "will not exceed the thread stack size.")
@@ -869,9 +890,11 @@ object JsonCodecMaker {
             val nameCollisions = duplicated(values.map(_.name))
             if (nameCollisions.nonEmpty) {
                val formattedCollisions = nameCollisions.mkString("'", "', '", "'")
-                fail(s"Duplicated JSON value(s) defined for '$tpe': $formattedCollisions. Values are derived from value " +
+                fail(s"Duplicated JSON value(s) defined for '${tpe.show}': $formattedCollisions. Values are derived from value " +
                      s"names of the enum that are mapped by the '${Type.show[CodecMakerConfig]}.javaEnumValueNameMapper' function. " +
-                     s"Result values should be unique per enum class.")
+                     s"Result values should be unique per enum class.\n" +
+                     s"all names: ${values}"
+                     )
             }
             values
           case None =>
@@ -879,7 +902,7 @@ object JsonCodecMaker {
       })
 
       
-      def genReadEnumValue[E:Type](enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Expr[E], in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[E] = {
+      def genReadJavaEnumValue[E:Type](enumValues: Seq[JavaEnumValueInfo], unexpectedEnumValueHandler: Expr[E], in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[E] = {
         
         def nameHashCode(e:JavaEnumValueInfo): Int = 
           JsonReader.toHashCode(e.name.toCharArray, e.name.length)
@@ -974,7 +997,7 @@ object JsonCodecMaker {
         } else if (isJavaEnum(tpe)) {
           '{
             val l = ${in}.readKeyAsCharBuf()
-            ${genReadEnumValue(javaEnumValues(tpe), '{ $in.enumValueError(l) }, in, 'l)}
+            ${genReadJavaEnumValue(javaEnumValues(tpe), '{ $in.enumValueError(l) }, in, 'l)}
           }.asExprOf[T]
         } else if (isConstType(tpe)) {
           tpe match {
@@ -1309,11 +1332,11 @@ object JsonCodecMaker {
         // TODO: write testcase
         a match {
           case Apply(_, List(param) ) =>
-            param match
+            val evaluatedParam = CompileTimeEval.evalTerm(param, Map.empty, None)
+            evaluatedParam match
               case Literal(StringConstant(s)) => s
               case other =>
-                // TODO: mini-eval
-                fail(s"Cannot evaluate a parameter of the '@named' annotation in type '$tpe'.")
+                fail(s"Cannot evaluate a parameter of the '@named' annotation in type '${tpe.show}: ${param}'.")
           case _ => 
             fail(s"Invalid named annotation ${a.show}")
         }
@@ -2325,11 +2348,11 @@ object JsonCodecMaker {
             case '[t1] =>
               val builder = TypeApply( Select.unique( scalaCollectionCompanion(tpe), "newBuilder" ),
                                        List(TypeTree.of[t1])
-              ).asExprOf[mutable.Builder[t1,immutable.Set[t1]]]
-              genReadSet[mutable.Builder[t1,immutable.Set[t1]],immutable.Set[t1]]( builder,
-                      (b) => Update(genReadValForGrowable[mutable.Builder[t1,immutable.Set[t1]], t1](
+              ).asExprOf[mutable.Builder[t1,collection.Set[t1] & C]]
+              genReadSet[mutable.Builder[t1,collection.Set[t1] & C],collection.Set[t1] & C]( builder,
+                      (b) => Update(genReadValForGrowable[mutable.Builder[t1,collection.Set[t1] & C], t1](
                                 tpe1 :: types, isStringified, b, in)), 
-                      default.asExprOf[immutable.Set[t1]],
+                      default.asExprOf[collection.Set[t1] & C],
                       (b) => '{ $b.result() },     
                       in
                   ).asExprOf[C]
@@ -2497,7 +2520,7 @@ object JsonCodecMaker {
             '{  if ($in.isNextToken('"')) {
                    $in.rollbackToken()
                    val l = $in.readStringAsCharBuf()
-                   ${genReadEnumValue(javaEnumValues(tpe), '{$in.enumValueError(l)}, in, 'l) }
+                   ${genReadJavaEnumValue(javaEnumValues(tpe), '{$in.enumValueError(l)}, in, 'l) }
                 } else $in.readNullOrTokenError($default, '"')
             }
         } else if (tpe.typeSymbol.flags.is(Flags.Module) && tpe.isSingleton) withDecoderFor(methodKey, default, in) { (in, default) =>
@@ -2583,6 +2606,7 @@ object JsonCodecMaker {
           }
           val length: TypeRepr => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
+          println(s"2601: leafClasses = ${leafClasses.map(_.show)}")
           val discriminatorError = cfg.discriminatorFieldName.fold(
                                        '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
@@ -2620,10 +2644,11 @@ object JsonCodecMaker {
                 }
                 subTpe.widen.asType match
                   case '[st] =>
+                    println(s"subTpe=${subTpe}, subTpe.widen = ${subTpe.widen.show}")
                     def readVal(using Quotes): Expr[st] = {
                       if (cfg.discriminatorFieldName.isDefined) {
                         '{ $in.rollbackToMark()
-                             ${genReadLeafClass(subTpe)}
+                             ${genReadLeafClass[st](subTpe)}
                          }
                       } else if (subTpe.typeSymbol.flags.is(Flags.Module) && subTpe.isSingleton || subTpe.typeSymbol.flags.is(Flags.Enum)) {
                           Ref(subTpe.termSymbol).asExprOf[st]
