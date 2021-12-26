@@ -191,7 +191,7 @@ object CompileTimeEval {
         case ex:CompileTimeEvalException =>
           if (true) {
             // TODO: debug flag.
-            println(s"in ${ft.show}")
+            println(s"in ${ft.show}, tree=${ft}")
           }
           throw ex
       } 
@@ -273,8 +273,27 @@ object CompileTimeEval {
     private def evalApply(applyTerm: Apply, 
                   bindings: Map[Symbol, Term]): Term = {
       val evaluatedArgs = applyTerm.args.map(x => evalTerm(x,bindings,None))
-      val retval: Option[Term] = None
-      applyTerm.fun match
+      evalApply2(applyTerm, applyTerm.fun, evaluatedArgs, bindings)
+    }
+
+
+    private def evalApply2(posTerm:Term, fun: Term, args: List[Term], bindings: Map[Symbol, Term]): Term = {
+      fun match
+        case Inlined(origin, inlineBindings, body) =>
+          evalApply2(posTerm, body, args, addBindings(posTerm,bindings,inlineBindings))  
+        case Select(qual, memberName) =>
+          evalApplySelect(posTerm, qual, memberName, args, bindings)
+        case other =>
+          val funSym = other.symbol
+          if (funSym.flags.is(Flags.Module)) {
+            // TODO: test
+            applyJavaReflectModule(posTerm, funSym, args)
+          } else {
+            throw new CompileTimeEvalException(s"expeted that $funSym is module", posTerm.asExpr)
+          }
+
+      /*
+      fun match
         case Select(qual, memberName) =>
           if (memberName == "isDefinedAt" || memberName == "apply") {
             qual match
@@ -285,21 +304,21 @@ object CompileTimeEval {
                 val nestQualSym = nestQual.symbol
                 if (nestQualSym.flags.is(Flags.Module)) {
                   if (nestQualSym.fullName == "com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker") {
-                    applyJsonCodeMakerField(applyTerm, nestMember, memberName, evaluatedArgs)      
+                    applyJsonCodeMakerField(posTerm, nestMember, memberName, args)      
                   } else {
-                    val module = retrieveRuntimeModule(applyTerm, nestQualSym)
-                    val obj = retrieveRuntimeField(applyTerm, module, nestMember)
-                    javaReflectionCall(applyTerm, obj, memberName, evaluatedArgs)  
+                    val module = retrieveRuntimeModule(posTerm, nestQualSym)
+                    val obj = retrieveRuntimeField(posTerm, module, nestMember)
+                    javaReflectionCall(posTerm, obj, memberName, args)  
                   }
                 } else {
-                  throw new CompileTimeEvalException(s"expeted that $nestQual is module", applyTerm.asExpr)
+                  throw new CompileTimeEvalException(s"expeted that $nestQual is module", posTerm.asExpr)
                 }
               case _ =>
                 // TODO: test  (Function instance passed as module)
                 if (qual.symbol.flags.is(Flags.Module)) {
-                  applyJavaReflectedModuleField(applyTerm, qual.symbol, memberName, evaluatedArgs)
+                  applyJavaReflectedModuleField(posTerm, qual.symbol, memberName, args)
                 } else {
-                  throw new CompileTimeEvalException(s"expected that $qual is module", applyTerm.asExpr)
+                  throw new CompileTimeEvalException(s"expected that $qual is module", posTerm.asExpr)
                 }
           } else {
             val qualSym = qual.symbol
@@ -307,28 +326,168 @@ object CompileTimeEval {
               if (qualSym.fullName.equals("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker")) {
                 // call of member fiedl without isDefined or Apply.
                 //  in principle, this is impossible for correct terms, but prorgram 
-                applyJsonCodeMakerField(applyTerm, memberName, "apply", evaluatedArgs)
+                applyJsonCodeMakerField(posTerm, memberName, "apply", args)
               } else {
                 // TODO: test
-                applyJavaReflectedModuleField(applyTerm, qualSym, memberName, evaluatedArgs)
+                applyJavaReflectedModuleField(posTerm, qualSym, memberName, args)
               }  
             } else if (isPrimitiveOrString(qual)) {
               // TODO: test
               val evaluatedQual = evalTerm(qual,bindings,None)
-              applyPrimitiveOrStringField(applyTerm, evaluatedQual, memberName, evaluatedArgs)
+              applyPrimitiveOrStringField(posTerm, evaluatedQual, memberName, args)
             } else {
-              throw new CompileTimeEvalException(s"expeted that $qual is module or primitive", applyTerm.asExpr)
+              throw new CompileTimeEvalException(s"expeted that $qual is module or primitive", posTerm.asExpr)
             }
           }
         case other =>
           val funSym = other.symbol
           if (funSym.flags.is(Flags.Module)) {
             // TODO: test
-            applyJavaReflectModule(applyTerm, funSym, evaluatedArgs)
+            applyJavaReflectModule(posTerm, funSym, args)
           } else {
-            throw new CompileTimeEvalException(s"expeted that $funSym is module", applyTerm.asExpr)
+            throw new CompileTimeEvalException(s"expeted that $funSym is module", posTerm.asExpr)
+          }
+      */
+    }
+
+    private def evalApplySelect(posTerm: Term, qual: Term, memberName: String, args: List[Term], bindings: Map[Symbol,Term]): Term = {
+      
+      def runIsDefinedAt(fun: Term): Boolean =
+        evalApplySelect(posTerm, fun, "isDefinedAt", args, bindings) match
+          case Literal(BooleanConstant(v)) => v
+          case other => throw new CompileTimeEvalException(
+            s"expected that isDefined returns boolean, we have ${other}\n"+
+            s"fun = ${fun.show}"
+            , posTerm.asExpr)
+    
+    
+      qual match
+        case Inlined(origin, inlineBindings, body) =>
+          evalApplySelect(body, body, memberName,  args, addBindings(posTerm,bindings,inlineBindings))
+        case Select(qual1, name1) =>
+          if (qual1.symbol.fullName == "com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker") {
+            applyJsonCodeMakerField(posTerm, name1, memberName, args)
+          } else {
+            // this is the same as default, mb use guard 
+            val ref = evalQualJvm(qual, bindings)
+            val jvmResult = javaReflectionCall(posTerm, ref,  memberName, args)
+            jvmToTerm(posTerm, jvmResult)
+          }
+        case Lambda(params, body) =>
+          if (memberName == "apply") {
+            // beta-reduce
+            //  (todo: pass symbol instead using Select.unique)
+            val nApply = Select.unique(qual,"apply").appliedToArgs(args)
+            Term.betaReduce(nApply) match
+              case Some(term) => evalTerm(term,bindings,None)
+              case None => throw new CompileTimeEvalException(s"Can't beta-reduce ${nApply}", posTerm.asExpr)
+          } else {
+            throw new CompileTimeEvalException(s"expeted that lambda call memeber name is 'apply', we have $memberName", posTerm.asExpr)
+          }
+        case Apply(TypeApply(Select(frs,"andThen"),List(stringTpt)),List(snd)) =>
+          if (memberName == "isDefinedAt") {
+            if (runIsDefinedAt(frs)) {
+              val r1 = evalApplySelect(posTerm, frs, "apply", args, bindings)
+              evalApplySelect(posTerm, snd, "isDefinedAt", List(r1), bindings)
+            } else {
+              Literal(BooleanConstant(false))
+            }
+          } else if (memberName == "apply") {
+            val r1 = evalApplySelect(posTerm, frs, "apply", args, bindings)
+            evalApplySelect(posTerm, snd, "apply", List(r1), bindings)
+          } else {
+            throw new CompileTimeEvalException(s"expeted that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
+          }
+        case Apply(TypeApply(Select(frs,"orElse"),List(stringTpt)),List(snd)) =>
+          if (memberName == "isDefinedAt") {
+            if (runIsDefinedAt(frs)) {
+              Literal(BooleanConstant(true))
+            } else {
+              evalApplySelect(posTerm, snd, "isDefinedAt", args, bindings)
+            }
+          } else if (memberName == "apply") {
+            if (runIsDefinedAt(frs)) {
+              evalApplySelect(posTerm, frs, "apply", args, bindings)
+            } else {
+              evalApplySelect(posTerm, snd, "apply", args, bindings)
+            }
+          } else {
+            throw new CompileTimeEvalException(s"expeted that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
+          }
+        case other =>
+          try {
+            val ref = evalQualJvm(qual, bindings)
+            val jvmResult = javaReflectionCall(posTerm, ref,  memberName, args)
+            jvmToTerm(posTerm, jvmResult)
+          }catch{
+            case ex: Throwable =>
+              println(s"exception during reflectionCall, retrace, qual=$qual")
+              val ref = evalQualJvm(qual, bindings, true)
+              println(s"ref = $ref")
+              throw ex;
           }
     }
+      
+    
+    private def evalQualJvm(qual: Term, bindings: Map[Symbol, Term], trace: Boolean = false): AnyRef = {
+      if (trace) {
+        println(s"evalQualJvn, qual=${qual}")
+      }
+      if (qual.symbol.flags.is(Flags.Module)) {
+        if (trace) {
+          println("evalQualJvm: module")
+        }
+        retrieveRuntimeModule(qual, qual.symbol)
+      } else {
+        qual match 
+          case Inlined(origin, inlineBindings, body) =>
+            if (trace) {
+              println("inlined")
+            }
+            evalQualJvm(body, addBindings(body,bindings,inlineBindings))
+          case id@Ident(_) =>
+            bindings.get(id.symbol) match
+              case Some(value) => 
+                val r1 = evalTerm(value,bindings,None)
+                termToJvm(r1)
+              case None =>
+                throw new CompileTimeEvalException(s"Can't interpret '${id.show}' as constant expression", qual.asExpr)
+          case Select(qual1, name) =>
+            val ref1 = evalQualJvm(qual1, bindings)
+            retrieveRuntimeField(qual, ref1, name)
+          case Apply(Select(qual1,name),args) =>
+            if (trace) {
+              println(s"evalQualJvm: reduceApply. qual1=${qual1}")
+            }
+            val ref1 = evalQualJvm(qual1, bindings, trace)
+            if (trace) {
+              println(s"evalQualJvm: after reduceApply. ref1=${ref1} (class ${ref1.getClass})")
+            }
+            val r = javaReflectionCall(qual, ref1, name, args)
+            if (trace) {
+              println(s"after javaReflectionCall, r=$r")
+            }
+            r
+          case If(cond, ifTrue, ifFalse) =>
+            if (evalCondition(cond,bindings)) {
+              evalQualJvm(ifTrue, bindings)
+            } else {
+              evalQualJvm(ifFalse, bindings)
+            }
+          case _ =>
+            // this can be constant expression
+            val t = evalTerm(qual, bindings, None)
+            if (trace) {
+               println(s"before termToJvm, t=$t")
+            }
+            val r = termToJvm(t)
+            if (trace) {
+               println(s"after termToJvm, r=$r (class = ${r.getClass})")
+            }
+            r
+      }
+    }
+
 
     private def evalCondition(term: Term, bindings: Map[Symbol, Term]): Boolean =
       evalTerm(term, bindings, None) match
@@ -430,8 +589,15 @@ object CompileTimeEval {
     private def retrieveRuntimeField(applyTerm: Term, obj: AnyRef, name: String): AnyRef =  {
       // field is scala field, we search access method with the same name
       // TODO: error handling
-      val method = obj.getClass.getMethod(name)
-      method.invoke(obj) 
+      try {
+        val method = obj.getClass.getMethod(name)
+        method.invoke(obj)
+      }catch{
+        case ex: NoSuchMethodException =>
+          // try field
+          val field = obj.getClass.getField(name)
+          field.get(obj)
+      } 
     }
   
 
@@ -441,7 +607,8 @@ object CompileTimeEval {
                                       args: List[Term]): Term = {
       println(s"applyJavaReflectionModuleField: qualSym.fullName=${qualSym.fullName}")
       val module = retrieveRuntimeModule(applyTerm, qualSym) 
-      javaReflectionCall(applyTerm, module, memberName, args)
+      val jvmResult = javaReflectionCall(applyTerm, module, memberName, args)
+      jvmToTerm(applyTerm, jvmResult)
     }
 
     private def applyJavaReflectModule(applyTerm: Term , 
@@ -456,25 +623,13 @@ object CompileTimeEval {
                                     memberName: String, 
                                     args: List[Term]): Term = {
       val jvmQual = termToJvm(qual)
-      javaReflectionCall(applyTerm, jvmQual, memberName, args) 
+      val jvmResult = javaReflectionCall(applyTerm, jvmQual, memberName, args)
+      jvmToTerm(applyTerm, jvmResult) 
     }
 
     
-    private[QuoteScope] sealed trait ApplyFun
-    private[QuoteScope] object ApplyFun {
-      case class CallIsDefined(fun: ApplyFun, module: AnyRef) extends ApplyFun
-      case class CallApply(fun: ApplyFun, module: AnyRef) extends ApplyFun
-      case class Module(fullName: String) extends ApplyFun
-      case class FieldOf(fun: ApplyFun, name: String) extends ApplyFun
-      case class AndThen(frs: ApplyFun, snd: ApplyFun) extends ApplyFun
-      case class ApplyLambda(lambda: Block) extends ApplyFun
-    }
-    
-
-    private def evalApplyFun(posTerm: Term, fun: Term, value: Term, bindigns: Map[Symbol,Term]): ApplyFun =
-     ???
-
-
+ 
+      
     class JvmReflectionMethodCallException(msg: String, ex: Exception) extends RuntimeException(msg, ex) 
 
     sealed trait JvmReflectionMethodCall {
@@ -571,7 +726,7 @@ object CompileTimeEval {
     private def javaReflectionCall(term: Term,
                                        qual: AnyRef, 
                                        name: String, 
-                                       args:List[Term]): Term = {
+                                       args:List[Term]): AnyRef = {
       val preparedArgs = args.map(t => termToJvm(t)).toArray
       val call = prepareJvmReflectionMethodCall(term, qual, name, preparedArgs)
       val result = try {
@@ -580,7 +735,7 @@ object CompileTimeEval {
           case ex: JvmReflectionMethodCallException =>
             throw CompileTimeEvalException(ex.getMessage, term.asExpr, ex.getCause)
       }
-      jvmToTerm(term, result)
+      result
     }
 
 
@@ -641,6 +796,8 @@ object CompileTimeEval {
         case Literal(LongConstant(v)) => java.lang.Long.valueOf(v)
         case Literal(FloatConstant(v)) => java.lang.Float.valueOf(v)
         case Literal(DoubleConstant(v)) => java.lang.Double.valueOf(v)
+        case id@Ident(name) if (id.symbol.flags.is(Flags.Module)) =>
+          retrieveRuntimeModule(x, id.symbol)
         case other =>
           throw CompileTimeEvalException(s"Can't interpret ${x} as primitive (type-${x.tpe.widen.show})",x.asExpr)
     }
