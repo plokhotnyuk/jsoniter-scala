@@ -1888,6 +1888,13 @@ object JsonCodecMaker {
           '{ () }.asExprOf[C]
         } else if (tpe <:< TypeRepr.of[AnyRef]) {
           '{ null }.asExprOf[C]
+        } else if (tpe <:< TypeRepr.of[AnyVal]) {
+          val tpe1 = valueClassValueType(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              val nullVal = genNullValue[t1](tpe1::types)
+              Apply(Select.unique(New(Inferred(tpe)),"<init>"),List(nullVal.asTerm)).asExprOf[C]
+            case _ => fail(s"Can't get type of ${tpe1.show}")
         } else {
           fail(s"Can't deduce null value for ${tpe.show}")
         }
