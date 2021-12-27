@@ -976,23 +976,14 @@ object JsonCodecMaker {
       //val scalaEnumCacheTries = mutable.LinkedHashMap.empty[TypeRepr, Expr[ConcurrentHashMap[Int|String,_]]]
       val scalaEnumCaches = mutable.LinkedHashMap.empty[TypeRepr, ValDef]
 
-      def withScalaEnumCacheFor(tpe: TypeRepr): Term  = {
-        val keyTpe = if (cfg.useScalaEnumValueId) TypeRepr.of[Int] else TypeRepr.of[String]
-        tpe.asType match
-          case '[t] =>
-            keyTpe.asType match
-              case '[kt] =>
-                val valDef = scalaEnumCaches.getOrElseUpdate( tpe, {
-                  val ec = '{ new _root_.java.util.concurrent.ConcurrentHashMap[kt, t]  }
-                  val name = s"ec${scalaEnumCaches.size}"
-                  val sym = Symbol.newVal(Symbol.spliceOwner, name, ec.asTerm.tpe.widen, Flags.EmptyFlags, Symbol.noSymbol)
-                  ValDef(sym,Some(ec.asTerm.changeOwner(sym)))
-                })
-                Ref(valDef.symbol)
-              case _ =>
-                fail(s"Can't determinate type for ${keyTpe.show}")
-          case _ =>
-            fail(s"Can't determinate type for ${tpe.show}")
+      def withScalaEnumCacheFor[K:Type,T:Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K,T]]  = {
+          val valDef = scalaEnumCaches.getOrElseUpdate( tpe, {
+              val ec = '{ new _root_.java.util.concurrent.ConcurrentHashMap[K, T]  }
+              val name = s"ec${scalaEnumCaches.size}"
+              val sym = Symbol.newVal(Symbol.spliceOwner, name, TypeRepr.of[ConcurrentHashMap[K,T]], Flags.EmptyFlags, Symbol.noSymbol)
+              ValDef(sym,Some(ec.asTerm.changeOwner(sym)))
+          })
+          Ref(valDef.symbol).asExprOf[ConcurrentHashMap[K,T]]
       }
       
 
@@ -1053,7 +1044,6 @@ object JsonCodecMaker {
         if (enumValues.size <= 8 && enumValues.map(_.name.length).sum <= 64) 
           genReadCollisions(enumValues)
         else {
-      
           val cases = groupByOrdered(enumValues)(nameHashCode).map{ case (hash, fs) =>
             val sym = Symbol.newBind(Symbol.spliceOwner, "b"+hash, Flags.EmptyFlags, TypeRepr.of[Int])
             CaseDef(Bind(sym, Expr(hash).asTerm),None, genReadCollisions(fs).asTerm )
@@ -1061,7 +1051,6 @@ object JsonCodecMaker {
             //val sym = Symbol.newBind(Symbol.spliceOwner, "nofFound", Flags.EmptyFlags, TypeRepr.of[E])
             CaseDef(Wildcard(), None, unexpectedEnumValueHandler.asTerm)
           }
-          
           Match('{ ${in}.charBufToHashCode($l) }.asTerm, cases.toList ).asExprOf[E]
         }
       }
@@ -1103,26 +1092,25 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[ZoneId]) '{ $in.readKeyAsZoneId() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[ZoneOffset]) '{ $in.readKeyAsZoneOffset() }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
-          val ec = withScalaEnumCacheFor(tpe)
           if (cfg.useScalaEnumValueId) {
-            val ecTyped = {ec.asExprOf[ConcurrentHashMap[Int,Enumeration#Value]]} 
+            val ec = withScalaEnumCacheFor[Int, T & Enumeration#Value](tpe)
             '{
               val i = ${in}.readKeyAsInt()
-              var x = ${ecTyped}.get(i)
+              var x = ${ec}.get(i)
               if (x eq null) {
-                x = ${scala2EnumerationObject(tpe).asExprOf[Enumeration]}.values.iterator.find(_.id == i).getOrElse($in.enumValueError(i.toString))
-                ${ecTyped}.put(i, x)
+                x = ${findScala2EnumerationById[T & Enumeration#Value](tpe, 'i)}.getOrElse($in.enumValueError(i.toString))
+                ${ec}.put(i, x)
               }
               x
             }.asExprOf[T]
           } else {
-            val ecTyped = {ec.asExprOf[ConcurrentHashMap[String,Enumeration#Value]]}
+            val ec = withScalaEnumCacheFor[String, T & Enumeration#Value](tpe)
             '{
               val s = $in.readKeyAsString()
-              var x = $ecTyped.get(s)
+              var x = $ec.get(s)
               if (x eq null) {
-                  x = ${scala2EnumerationObject(tpe).asExprOf[Enumeration]}.values.iterator.find(_.toString == s).getOrElse($in.enumValueError(s.length))
-                  $ecTyped.put(s, x)
+                  x = ${findScala2EnumerationByName[T & Enumeration#Value](tpe, 's)}.getOrElse($in.enumValueError(s.length))
+                  $ec.put(s, x)
               }
               x
             }.asExprOf[T]
@@ -1821,9 +1809,27 @@ object JsonCodecMaker {
                   fail(s"Can't determinate type for ${tpe.show}")
         } else if (tpe <:< TypeRepr.of[::[_]]) '{ null }.asExprOf[C]
         else if (tpe <:<  TypeRepr.of[List[_]] || tpe =:=  TypeRepr.of[Seq[_]]) '{ Nil }.asExprOf[C]
-        else if (tpe <:<  TypeRepr.of[immutable.IntMap[_]] || tpe <:<  TypeRepr.of[immutable.LongMap[_]] ||
+        else if (tpe <:<  TypeRepr.of[collection.SortedSet[_]]) withNullValueFor[C](tpe) {
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              Expr.summon[Ordering[t1]] match
+                case Some(ordering) =>
+                  Apply(
+                    TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))),
+                    List(ordering.asTerm)
+                  ).asExprOf[C]
+                case None => fail(s"can't resolve Ordering[${tpe1.show}]")
+            case _ => fail(s"Can't determinate type for ${tpe.show}")
+        } else if (tpe <:<  TypeRepr.of[immutable.IntMap[_]] || tpe <:<  TypeRepr.of[immutable.LongMap[_]] ||
           tpe <:<  TypeRepr.of[immutable.Seq[_]] || tpe <:<  TypeRepr.of[Set[_]]) withNullValueFor[C](tpe) {
-            TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
+            try {
+              TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
+            } catch {
+              case ex: Exception =>
+                println(s"exception during getting empty for ${tpe.show}")
+                throw ex
+            }
         } else if (tpe <:< TypeRepr.of[immutable.SortedMap[_,_]] ) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -2461,13 +2467,23 @@ object JsonCodecMaker {
                       else $in.arrayEndOrCommaError()
                     }
                   } else $in.readNullOrTokenError($default, '[')
-              }.asExprOf[C]
+              }.asExprOf[C]       
         } else if (tpe <:< TypeRepr.of[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
                val tDefault = default.asExprOf[mutable.Set[t1]]
-               val emptySet = TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(TypeTree.of[t1])).asExprOf[mutable.Set[t1]]
+               val emptySetNoOrdering = TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(TypeTree.of[t1]))
+               val emptySet = (
+                if (tpe <:< TypeRepr.of[mutable.SortedSet[_]]) {
+                  Expr.summon[Ordering[t1]] match
+                    case Some(ordering) =>
+                      Apply(emptySetNoOrdering, List(ordering.asTerm))
+                    case None =>
+                      fail(s"Can't find Ordering[${tpe1.show}]")  
+                } else {
+                  emptySetNoOrdering
+                }).asExprOf[mutable.Set[t1]]
                genReadSet[mutable.Set[t1], mutable.Set[t1]](
                    '{ if ($tDefault.isEmpty) $tDefault else $emptySet },
                     (x) => Update(genReadValForGrowable[mutable.Set[t1],t1](tpe1 :: types, isStringified, x, in)),
@@ -2479,9 +2495,17 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              val builder = TypeApply( Select.unique( scalaCollectionCompanion(tpe), "newBuilder" ),
-                                       List(TypeTree.of[t1])
-              ).asExprOf[mutable.Builder[t1,collection.Set[t1] & C]]
+              val builderNoOrdering = TypeApply( Select.unique( scalaCollectionCompanion(tpe), "newBuilder" ),
+                                                 List(TypeTree.of[t1])
+                                      )                         
+              val builder = (if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) {
+                Expr.summon[Ordering[t1]] match
+                  case Some(ordering) =>
+                    Apply(builderNoOrdering,List(ordering.asTerm))
+                  case None => fail(s"Can't find Ordering[${tpe.show}]")
+              } else {
+                builderNoOrdering
+              }).asExprOf[mutable.Builder[t1,collection.Set[t1] & C]]
               genReadSet[mutable.Builder[t1,collection.Set[t1] & C],collection.Set[t1] & C]( builder,
                       (b) => Update(genReadValForGrowable[mutable.Builder[t1,collection.Set[t1] & C], t1](
                                 tpe1 :: types, isStringified, b, in)), 
@@ -2608,14 +2632,14 @@ object JsonCodecMaker {
               ).asExprOf[C]
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default) =>
           if (cfg.useScalaEnumValueId) {
-            val ec = withScalaEnumCacheFor(tpe).asExprOf[ConcurrentHashMap[Int,C & AnyRef]]
+            val ec = withScalaEnumCacheFor[Int, C & Enumeration#Value](tpe)
             if (isStringified) {
               '{ if ($in.isNextToken('"')) {
                     $in.rollbackToken()
                     val i = $in.readStringAsInt()
                     var x = $ec.get(i)
                     if (x eq null) {
-                      x =  ${findScala2EnumerationById[C & AnyRef](tpe, 'i)}.getOrElse($in.enumValueError(i.toString))
+                      x =  ${findScala2EnumerationById[C & Enumeration#Value](tpe, 'i)}.getOrElse($in.enumValueError(i.toString))
                       $ec.put(i, x)
                     }
                     x
@@ -2628,7 +2652,7 @@ object JsonCodecMaker {
                     val i = $in.readInt()
                     var x = $ec.get(i)
                     if (x eq null) {
-                      x = ${findScala2EnumerationById[C & AnyRef](tpe, 'i)}.getOrElse($in.decodeError("illegal enum value " + i))
+                      x = ${findScala2EnumerationById[C & Enumeration#Value](tpe, 'i)}.getOrElse($in.decodeError("illegal enum value " + i))
                       $ec.put(i, x)
                     }
                     x
@@ -2636,13 +2660,13 @@ object JsonCodecMaker {
               }
             }
           } else {
-            val ec = withScalaEnumCacheFor(tpe).asExprOf[ConcurrentHashMap[String,C]]
+            val ec = withScalaEnumCacheFor[String, C & Enumeration#Value](tpe)
             '{  if ($in.isNextToken('"')) {
                   $in.rollbackToken()
                   val s = $in.readString(null)
                   var x = $ec.get(s)
                   if ( ${ 'x.asExprOf[AnyRef] } eq null) {
-                    x = ${findScala2EnumerationByName[C & AnyRef](tpe,'s)}.getOrElse($in.enumValueError(s.length))
+                    x = ${findScala2EnumerationByName[C & Enumeration#Value](tpe,'s)}.getOrElse($in.enumValueError(s.length))
                     $ec.put(s, x)
                   }
                   x
