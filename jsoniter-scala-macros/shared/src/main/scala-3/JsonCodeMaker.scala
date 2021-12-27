@@ -861,7 +861,11 @@ object JsonCodecMaker {
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ref(tpe.typeSymbol.companionModule)
         else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
 
+      def scalaCollectionEmptyNoArgs(cTpe: TypeRepr, eTpe:TypeRepr): Term =
+        TypeApply(Select.unique(scalaCollectionCompanion(cTpe),"empty"),List(Inferred(eTpe)))
+
  
+
       def scala2EnumerationObject(tpe: TypeRepr): Expr[scala.Enumeration] = tpe match {
         case TypeRef(ct, name) =>
           if (ct.isSingleton) {
@@ -1815,21 +1819,12 @@ object JsonCodecMaker {
             case '[t1] =>
               Expr.summon[Ordering[t1]] match
                 case Some(ordering) =>
-                  Apply(
-                    TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))),
-                    List(ordering.asTerm)
-                  ).asExprOf[C]
+                  Apply(scalaCollectionEmptyNoArgs(tpe,tpe1),List(ordering.asTerm)).asExprOf[C]
                 case None => fail(s"can't resolve Ordering[${tpe1.show}]")
             case _ => fail(s"Can't determinate type for ${tpe.show}")
         } else if (tpe <:<  TypeRepr.of[immutable.IntMap[_]] || tpe <:<  TypeRepr.of[immutable.LongMap[_]] ||
           tpe <:<  TypeRepr.of[immutable.Seq[_]] || tpe <:<  TypeRepr.of[Set[_]]) withNullValueFor[C](tpe) {
-            try {
-              TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
-            } catch {
-              case ex: Exception =>
-                println(s"exception during getting empty for ${tpe.show}")
-                throw ex
-            }
+              scalaCollectionEmptyNoArgs(tpe,typeArg1(tpe)).asExprOf[C]
         } else if (tpe <:< TypeRepr.of[immutable.SortedMap[_,_]] ) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
@@ -1851,8 +1846,27 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
             TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
                       List(Inferred(typeArg1(tpe)),Inferred(typeArg2(tpe)))).asExprOf[C]
+        } else if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]] || tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
+            val tpe1 = typeArg1(tpe)
+            tpe1.asType match
+              case '[t1] =>
+                Expr.summon[ClassTag[t1]] match
+                  case Some(classTag) =>
+                    Apply(
+                      TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
+                                List(Inferred(typeArg1(tpe)))),
+                      List(classTag.asTerm)).asExprOf[C]
+                  case None =>
+                    fail(s"Can't find instance of ClassTag[${tpe1.show}]")
+              case _ => fail(s"Can't get type for ${tpe1.show}")  
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) 
-            TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
+            try {
+              TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
+            }catch{
+              case ex: Throwable =>
+                println(s"failed generation of empty for ${tpe.show}")
+                throw ex
+            }
         else if (tpe <:< TypeRepr.of[Array[_]]) 
              typeArg1(tpe).asType match
                case '[t1] => 
@@ -1865,7 +1879,7 @@ object JsonCodecMaker {
                           println(s"hande array expr exception:  tpe = ${tpe.show}, C=${Type.show[C]}, t1 = ${Type.show[t1]}")
                           throw ex;
                       }
-                    case _ => fail(s"No classtag found from ${Type.show[t1]}")
+                    case _ => fail(s"No classtag found for ${Type.show[t1]}")
                case other =>
                   fail(s"Can't determinate type for ${other}") 
         else if (tpe.isSingleton) 
@@ -2374,7 +2388,7 @@ object JsonCodecMaker {
                      default.asExprOf[immutable.LongMap[t1]]
                   ).asExprOf[C]
               }
-        } else if (tpe <:< TypeRepr.of[mutable.Map[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[mutable.Map[_, _]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           (tpe1.asType, tpe2.asType) match
@@ -2401,7 +2415,7 @@ object JsonCodecMaker {
                     in,
                     tDefault
                 ).asExprOf[C]
-        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           tpe1.widen.asType match
@@ -2475,11 +2489,11 @@ object JsonCodecMaker {
                     }
                   } else $in.readNullOrTokenError($default, '[')
               }.asExprOf[C]       
-        } else if (tpe <:< TypeRepr.of[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[mutable.Set[_] with mutable.Builder[_, _]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-               val tDefault = default.asExprOf[mutable.Set[t1]]
+               val tDefault = default.asExprOf[C & mutable.Set[t1]]
                val emptySetNoOrdering = TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(TypeTree.of[t1]))
                val emptySet = (
                 if (tpe <:< TypeRepr.of[mutable.SortedSet[_]]) {
@@ -2490,8 +2504,8 @@ object JsonCodecMaker {
                       fail(s"Can't find Ordering[${tpe1.show}]")  
                 } else {
                   emptySetNoOrdering
-                }).asExprOf[mutable.Set[t1]]
-               genReadSet[mutable.Set[t1], mutable.Set[t1]](
+                }).asExprOf[C & mutable.Set[t1]]
+               genReadSet[C & mutable.Set[t1], C & mutable.Set[t1]](
                    '{ if ($tDefault.isEmpty) $tDefault else $emptySet },
                     (x) => Update(genReadValForGrowable[mutable.Set[t1],t1](tpe1 :: types, isStringified, x, in)),
                     tDefault,
@@ -2521,7 +2535,7 @@ object JsonCodecMaker {
                       in
                   ).asExprOf[C]
             case _ => fail(s"can't find type for ${tpe1.show}")
-        } else if (tpe <:< TypeRepr.of[::[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[::[_]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match {
             case '[t1] =>
@@ -2548,7 +2562,7 @@ object JsonCodecMaker {
               }.asExprOf[C]
             case _ => fail(s"can't determinate type for ${tpe1.show}")
           }
-        } else if (tpe <:< TypeRepr.of[List[_]] || tpe =:= TypeRepr.of[Seq[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[List[_]] || tpe =:= TypeRepr.of[Seq[_]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>       
@@ -2560,31 +2574,57 @@ object JsonCodecMaker {
                 in
               ).asExprOf[C]
             case _ => fail(s"can't determinate type for ${tpe1.show}")
-        } else if (tpe <:< TypeRepr.of[mutable.Iterable[_] with mutable.Builder[_, _]]) withDecoderFor(methodKey, default, in) { (in, default) => 
+        } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[_]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              val tDefault = default.asExprOf[ C & mutable.Iterable[t1]  ]
-              val emptyCollection = TypeApply(
-                Select.unique(scalaCollectionCompanion(tpe),"empty"),
-                List(Inferred(tpe1))
-              ).asExprOf[ C & mutable.Iterable[t1]]
-              val builder = '{ if ($tDefault.isEmpty) $tDefault else ${emptyCollection} }.asExprOf[mutable.Iterable[t1] with mutable.Builder[t1,C]]
-              genReadArray[mutable.Iterable[t1] with mutable.Builder[t1,C], mutable.Iterable[t1]](builder,
-                  (x, i) => Update(genReadValForGrowable[mutable.Iterable[t1] with mutable.Builder[t1, C],t1](tpe1 :: types, isStringified, x, in)),
-                  tDefault,
+              val tDefault = default.asExprOf[mutable.ListBuffer[t1]]
+              val builder = '{ if ($tDefault.isEmpty) $tDefault else mutable.ListBuffer.empty[t1] }
+              genReadArray[mutable.ListBuffer[t1],mutable.ListBuffer[t1]](builder,
+                (x,i) => Update(genReadValForGrowable[mutable.ListBuffer[t1],t1](tpe1 :: types, isStringified, x, in)),
+                tDefault,
+                (x,i) => x,
+                in
+              ).asExprOf[C]
+            case _ => ???  
+        } else if (tpe <:< TypeRepr.of[mutable.Iterable[_] with mutable.Growable[_]]) withDecoderFor[C](methodKey, default, in) { (in, default) => 
+          val tpe1 = typeArg1(tpe)
+          tpe1.asType match
+            case '[t1] =>
+              val emptyCollection = {
+                if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]| tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
+                  Expr.summon[ClassTag[t1]] match
+                    case Some(t1ClassTag) => Apply(scalaCollectionEmptyNoArgs(tpe,tpe1),List(t1ClassTag.asTerm))
+                    case None => fail(s"Can't find ClassTag[${tpe1.show}]")
+                } else {
+                  scalaCollectionEmptyNoArgs(tpe,tpe1)
+                }
+              }.asExprOf[ C & mutable.Growable[t1] ]
+              val builder = '{ if (${default.asExprOf[Iterable[_]]}.isEmpty) $default else ${emptyCollection} }.asExprOf[ C & mutable.Growable[t1]]
+              genReadArray[ C & mutable.Growable[t1], C](builder,
+                  (x, i) => Update(genReadValForGrowable[ mutable.Growable[t1],t1](tpe1 :: types, isStringified, x, in)),
+                  default,
                   (x, i) => x,
                   in
               ).asExprOf[C]
             case _ => fail(s"can't determinate type for ${tpe1.show}")
-        } else if (tpe <:< TypeRepr.of[Iterable[_]]) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (tpe <:< TypeRepr.of[Iterable[_]]) withDecoderFor[C](methodKey, default, in) { (in, default) =>
           val tpe1 = typeArg1(tpe)
           tpe1.asType match 
             case '[t1] => 
-              val builder: Expr[mutable.Builder[t1,C]] = TypeApply(
-                Select.unique(scalaCollectionCompanion(tpe),"newBuilder"),
-                List(TypeTree.of[t1])
-              ).asExprOf[mutable.Builder[t1,C]]
+              val builderNoArgs =  TypeApply(
+                    Select.unique(scalaCollectionCompanion(tpe),"newBuilder"),
+                    List(TypeTree.of[t1])
+                )
+              val builder: Expr[mutable.Builder[t1,C]] = {
+                if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]) {
+                  Expr.summon[ClassTag[t1]] match
+                    case Some(t1ClassTag) => Apply(builderNoArgs,List(t1ClassTag.asTerm))
+                    case None => fail(s"Can't find ClassTag[${tpe1.show}]")
+                } else {
+                  builderNoArgs
+                }
+              }.asExprOf[mutable.Builder[t1,C]]
               genReadArray[mutable.Builder[t1,C],C](builder,
                        (x,i) => Update(genReadValForGrowable(tpe1 :: types, isStringified, x, in)), 
                        default,
