@@ -42,7 +42,7 @@ object LowLevelQuoteUtil {
           if (tree.symbol.exists) {
             if (tree.symbol.maybeOwner.exists) {
               if (tree.symbol.owner != owner) {
-                if (traceFlag) {
+                if (false & traceFlag) {
                   println(s"owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}, fixing")
                 }
                 mismatch = true
@@ -94,7 +94,7 @@ object LowLevelQuoteUtil {
             case _ =>
               val r = if (mismatch) {
                 if (traceFlag) {
-                  println(s"fixing mismatch for ${tree}")
+                  println(s"fixing mismatch for ${tree.show}")
                 }
                 tree.changeOwner(owner)
               } else tree
