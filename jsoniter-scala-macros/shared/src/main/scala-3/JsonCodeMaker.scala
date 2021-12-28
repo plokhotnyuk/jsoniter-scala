@@ -678,8 +678,12 @@ object JsonCodecMaker {
                 case Refinement(parent, name, info) =>
                     Refinement(substituteMap(parent),name,substituteMap(info))
                 case AppliedType(tycon, args) =>
-                    // assume that we have no type-lambdas in our definitions.
-                    tycon.appliedTo(args.map(substituteMap))
+                    tycon match
+                      case TypeLambda(params,bounds,body) =>
+                        fail("HKT support is not implemented")
+                      case _ =>
+                        // assume that we have no type-lambdas in our definitions.
+                        tycon.appliedTo(args.map(substituteMap))
                 case AnnotatedType(underlying, annotated) =>
                     AnnotatedType(substituteMap(underlying), annotated)
                 case AndType(rhs, lhs) =>
@@ -1304,8 +1308,8 @@ object JsonCodecMaker {
         }
 
       def genReadMapAsArray[B:Type,C:Type](newBuilder: Expr[B], 
-                                readKV: Expr[B] => UpdateOp, 
-                                result: Expr[B] => Expr[C], 
+                                readKV: Quotes ?=> Expr[B] => UpdateOp, 
+                                result: Quotes ?=> Expr[B] => Expr[C], 
                                 in: Expr[JsonReader],
                                 default: Expr[C])(using Quotes): Expr[C] =
         '{ if ($in.isNextToken('[')) {
@@ -1637,6 +1641,22 @@ object JsonCodecMaker {
                 }  else {
                   originFieldType
                 }
+                fieldType match
+                  case TypeLambda(name,bounds,body) =>
+                    fail(s"Hight-kinded types are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
+                  case TypeBounds(low, hi) =>  
+                    fail(s"Type bounds are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
+                  case _ =>
+                try {
+                   fieldType.asType match
+                    case '[ft] =>
+                }catch{
+                  case ex: Throwable =>
+                    println(s"Can't get type for ${fieldType.show}")
+                    println(s"tpe = ${tpe.show} (${tpe}) , originFieldType=${originFieldType.show}, typeParams = ${typeParams}")
+                    println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
+                    throw ex
+                }
                 val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isStringified, fieldInfos.length) 
                 fieldInfos.addOne(newFieldInfo)
              }              
@@ -1907,14 +1927,7 @@ object JsonCodecMaker {
                           case ex: IllegalStateException =>
                             f(in.asExprOf[JsonReader], defaultTerm.asExprOf[A],Some(ex.getMessage))
                         }
-                        try {
-                          Some(res.changeOwner(sym))
-                        } catch {
-                          case ex: Throwable =>
-                            println("Catched exception during changeOwner in decodeMethodCreation: "+ex.getMessage);
-                            ex.printStackTrace()
-                            throw ex;
-                        }
+                        Some(res1)
                       case _ =>
                         fail(s"expected that ${default} is term")
               })  
@@ -2277,9 +2290,6 @@ object JsonCodecMaker {
           // all owners shoule be from top Symbol.spliceOwner,
           // because vals are created with this owner Symbol.spiceOwner
           val nextTerm = next.changeOwner(Symbol.spliceOwner)
-          if (traceFlag) {
-            LowLevelQuoteUtil.checkOwner(nextTerm.asInstanceOf[quotes.reflect.Term],Symbol.spliceOwner.asInstanceOf[quotes.reflect.Symbol])
-          }
           Block(
             readVars.toList ++
             paramVars.toList ++
@@ -2300,9 +2310,6 @@ object JsonCodecMaker {
             ${Block(checkReqVars.map(_.asTerm), construct).changeOwner(Symbol.spliceOwner).asExprOf[A]}
           }.asTerm)
 
-        if (traceFlag) {
-          LowLevelQuoteUtil.checkOwner(readNonEmpty.asInstanceOf[quotes.reflect.Term],Symbol.spliceOwner.asInstanceOf[quotes.reflect.Symbol])
-        }
             
         /*
         val retval = '{  
@@ -2315,10 +2322,6 @@ object JsonCodecMaker {
                           readNonEmpty,
                          '{ $in.readNullOrTokenError($default, '{')  }.asTerm.changeOwner(Symbol.spliceOwner)
                        )
-
-        if (traceFlag) {
-          LowLevelQuoteUtil.checkOwner(retval.asInstanceOf[quotes.reflect.Term],Symbol.spliceOwner.asInstanceOf[quotes.reflect.Symbol])
-        }
         
         retval.asExprOf[A]
 
