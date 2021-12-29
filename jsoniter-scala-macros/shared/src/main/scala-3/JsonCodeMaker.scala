@@ -624,7 +624,7 @@ object JsonCodecMaker {
         tpe match
           case AppliedType(base, args) => args.head.dealias
           case _ =>
-            fail(s"expected that ${tpe} is an AppliedType")
+            fail(s"expected that ${tpe.show} is an AppliedType", throwFlag = true)
 
       def typeArg2(tpe: TypeRepr): TypeRepr =
         tpe match
@@ -632,9 +632,9 @@ object JsonCodecMaker {
             if (args.length > 1) {
               args(1).dealias
             } else 
-              fail(s"expected that ${tpe} have at least two arguments")
+              fail(s"expected that ${tpe.show} have at least two arguments")
           case _ =>
-            fail(s"expected that ${tpe} is an AppliedType")
+            fail(s"expected that ${tpe.show} is an AppliedType")
 
       def areEqual(tpe1: TypeRepr, tpe2: TypeRepr): Boolean = tpe1 =:= tpe2
 
@@ -2023,9 +2023,10 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[java.lang.Double]) '{ java.lang.Double.valueOf(0d) }.asExprOf[C]
         else if (isOption(tpe)) '{ None }.asExprOf[C]
         else if (tpe <:< TypeRepr.of[mutable.BitSet]) '{ mutable.BitSet.empty }.asExprOf[C]
-        else if (tpe <:< TypeRepr.of[BitSet]) withNullValueFor(tpe)( '{ BitSet.empty }.asExprOf[C] )
+        else if (tpe <:< TypeRepr.of[immutable.BitSet]) withNullValueFor(tpe)( '{ immutable.BitSet.empty }.asExprOf[C] )
+        else if (tpe <:< TypeRepr.of[collection.BitSet]) withNullValueFor(tpe)( '{ collection.BitSet.empty }.asExprOf[C] )
         else if (tpe <:< TypeRepr.of[mutable.LongMap[_]]) {
-            typeArg1(tpe).asType match
+            typeArg1(tpe).widen.asType match
                 case '[targ] =>
                   '{ mutable.LongMap.empty[targ] }.asExprOf[C]
                 case _ =>
@@ -2244,9 +2245,21 @@ object JsonCodecMaker {
             (field.symbol.name, tmpVar)
         }.toMap
 
-        val construct = Apply(Select.unique(New(Inferred(tpe)),"<init>"),
+        val construct = try {
+          println(s"genReadNonAbstractScalaClass:costruct primary constructor, tpe=${tpe.show} ($tpe), classInfo=${classInfo}")
+          tpe.classSymbol match
+            case Some(classSymbol) => println(s"classSymbol = $classSymbol")
+            case None =>  println("no classSymbol")
+          Apply(Select.unique(New(Inferred(tpe)),"<init>"),
                               classInfo.fields.zipWithIndex.map{ case (f,i) => Ref(readVars(i).symbol)}.toList
-                        )
+          )
+        } catch {
+          case ex: Throwable =>
+            println(s"error during constructing instance. tpe=${tpe.show} ($tpe)")
+            println(s"classInfo=$classInfo")
+            ex.printStackTrace()
+            throw ex
+        }
         //val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
         //val readVars = classInfo.fields.map { f =>
         //  q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe :: types))}"
