@@ -98,7 +98,7 @@ object LowLevelQuoteUtil {
                 }
                 tree.changeOwner(owner)
               } else tree
-              super.transformTerm(tree)(owner)
+              super.transformTerm(r)(owner)
           }
         }
 
@@ -152,7 +152,7 @@ object LowLevelQuoteUtil {
             if (tree.symbol.owner != owner) {
               foundInvalidOwner = true
               topLevelFound = true
-              println(s"owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
+              println(s"checkOwner: owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
               if (!wasException) {
                   wasException = true
                   throw new IllegalStateException(s"invlid owner, expected: ${owner}, have ${tree.symbol.owner}")
@@ -162,7 +162,7 @@ object LowLevelQuoteUtil {
             if (tree.symbol.exists) {
               if (tree.symbol.maybeOwner.exists) {
                 if (tree.symbol.maybeOwner != owner) {
-                  println(s"owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
+                  println(s"checkOwner: owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
                   foundInvalidOwner = true
                   topLevelFound = true
                 }
