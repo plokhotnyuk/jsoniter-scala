@@ -1524,9 +1524,14 @@ object JsonCodecMaker {
       }
 
       
-      case class FieldInfo(symbol: Symbol, mappedName: String,  getterOrField: FieldInfo.GetterOrField,
-                           defaultValue: Option[Term], resolvedTpe: TypeRepr, 
-                           isStringified: Boolean, fieldIndex: Int) {
+      case class FieldInfo(symbol: Symbol, 
+                           mappedName: String,  
+                           getterOrField: FieldInfo.GetterOrField,
+                           defaultValue: Option[Term], 
+                           resolvedTpe: TypeRepr,
+                           isTransient: Boolean, 
+                           isStringified: Boolean, 
+                           fieldIndex: Int) {
 
         def genGet(obj:Term):Term =
            getterOrField match
@@ -1545,7 +1550,9 @@ object JsonCodecMaker {
          case object NoField extends GetterOrField
       }
 
-      case class ClassInfo(tpe: TypeRepr, fields: IndexedSeq[FieldInfo])
+      case class ClassInfo(tpe: TypeRepr, allFields: IndexedSeq[FieldInfo]) {
+        def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
+      }
 
       val classInfos = mutable.LinkedHashMap.empty[TypeRepr, ClassInfo]
 
@@ -1570,10 +1577,28 @@ object JsonCodecMaker {
         }
 
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"expected that ${tpe.show} has classSymbol"))
-
+        
         //lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
         //val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
         val fields = tpeClassSym.fieldMembers
+        val fieldsWithDefaultValues = fields.filter(_.flags.is(Flags.HasDefault))
+        val defaultValues: IndexedSeq[Term] = if (fieldsWithDefaultValues.isEmpty) {
+           IndexedSeq.empty
+        } else {
+           val companion = tpe.typeSymbol.companionClass
+           // old way
+           val body = companion.tree.asInstanceOf[ClassDef].body
+           val defDefs = body.filter{ x =>
+             x match 
+              case DefDef(name, _, _, _) =>
+                name.startsWith("$lessinit$greater$default")
+              case _ => false
+           }
+           val r = defDefs.map(x => Ref(x.symbol))
+           println(s"found default values: $r")
+           r.toIndexedSeq
+        }
+
         val annotations = tpeClassSym.fieldMembers.collect {
           case m: Symbol if hasSupportedAnnotation(m) =>
             val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
@@ -1592,18 +1617,17 @@ object JsonCodecMaker {
         }.toMap
         val primaryConstructor = getPrimaryConstructor(tpe)
 
-
         def createFieldInfos(params:List[Symbol], typeParams:List[Symbol]): IndexedSeq[FieldInfo] = {
           val fieldInfos: ArrayBuffer[FieldInfo] = ArrayBuffer.empty
+          var defaultValueIndex = 0
           for{ (symbol, i) <- params.zipWithIndex } {
-             val name = symbol.name
-             val annotationOption = annotations.get(name)
-             if (!annotationOption.exists(_.transient)) {
-                val mappedName = annotationOption.fold{ 
+              val name = symbol.name
+              val annotationOption = annotations.get(name)
+              val mappedName = annotationOption.fold{ 
                   cfg.fieldNameMapper(name).getOrElse(name)
-                }(_.partiallyMappedName)
+              }(_.partiallyMappedName)
               
-                val getterOrField = {
+              val getterOrField = {
                   val field = tpeClassSym.fieldMember(name)
                   if (field.exists) {
                     FieldInfo.Field(field)
@@ -1618,15 +1642,20 @@ object JsonCodecMaker {
                       FieldInfo.Getter(getters.head)
                     }    
                   }
-                }
-
-                val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
-                                  tpeClassSym.methodMember("$lessinit$greater$default$"+(i+1)
-                                  ).headOption.map(Ref(_))
-                } else None
-                val isStringified = annotationOption.exists(_.stringified)
-                val originFieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ???
-                val fieldType = if (! typeParams.isEmpty ) {
+              }
+       
+              val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
+                                    val tmp = defaultValues(defaultValueIndex)
+                                    defaultValueIndex += 1
+                                    Some(tmp)
+                                    //TODO: check
+                                    //val companion = tpe.typeSymbol.companionModule
+                                    //tpeClassSym.methodMember("$lessinit$greater$default$"+(i+1)
+              } else None
+              val isStringified = annotationOption.exists(_.stringified)
+              val isTransient = annotationOption.exists(_.transient)
+              val originFieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ???
+              val fieldType = if (! typeParams.isEmpty ) {
                   tpe match {
                     case AppliedType(base, types) =>
                       // we assume, that type-params for primart constructor are thr same as class type params
@@ -1642,10 +1671,10 @@ object JsonCodecMaker {
 
                       originFieldType
                   }
-                }  else {
+              }  else {
                   originFieldType
-                }
-                fieldType match
+              }
+              fieldType match
                   case TypeLambda(name,bounds,body) =>
                     fail(s"Hight-kinded types are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
                   case TypeBounds(low, hi) =>  
@@ -1661,19 +1690,18 @@ object JsonCodecMaker {
                         s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
                       )
                     }
-                try {
+              try {
                    fieldType.asType match
                     case '[ft] =>
-                }catch{
+              }catch{
                   case ex: Throwable =>
                     println(s"Can't get type for ${fieldType.show}")
                     println(s"tpe = ${tpe.show} (${tpe}) , originFieldType=${originFieldType.show}, typeParams = ${typeParams}")
                     println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
                     throw ex
-                }
-                val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isStringified, fieldInfos.length) 
-                fieldInfos.addOne(newFieldInfo)
-             }              
+              }
+              val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldInfos.length) 
+              fieldInfos.addOne(newFieldInfo)              
           }
           fieldInfos.toIndexedSeq
         }
@@ -1868,7 +1896,7 @@ object JsonCodecMaker {
             case '[t1] =>
               val x1 = x1t.asExprOf[Array[t1]]
               val x2 = x2t.asExprOf[Array[t1]]
-              def arrEquals(i:Expr[Int]):Expr[Boolean] = withEqualsFor[t1](tpe1, '{ $x1($i) }, '{ $x2($i) })(
+              def arrEquals(i:Expr[Int])(using Quotes):Expr[Boolean] = withEqualsFor[t1](tpe1, '{ $x1($i) }, '{ $x2($i) })(
                 (x1, x2) => genArrayEquals(tpe1, x1, x2)
               )
               '{ ($x1 eq $x2) || (($x1 ne null) && ($x2 ne null) && {
@@ -2160,15 +2188,15 @@ object JsonCodecMaker {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
-          val names = classInfo.fields.map(_.mappedName)
+          val names = classInfo.nonTransientFields.map(_.mappedName)
           if (!useDiscriminator) names
           else names :+ n
         })
-        val required: Set[String] = classInfo.fields.collect {
+        val required: Set[String] = classInfo.nonTransientFields.collect {
           case f if !(f.symbol.flags.is(Flags.HasDefault) || isOption(f.resolvedTpe) ||
             (isCollection(f.resolvedTpe) && !cfg.requireCollectionFields)) => f.mappedName
         }.toSet
-        val paramVarNum = classInfo.fields.size
+        val paramVarNum = classInfo.nonTransientFields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
 
@@ -2196,7 +2224,7 @@ object JsonCodecMaker {
         */
         
         def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
-          classInfo.fields.find(_.mappedName == name) match
+          classInfo.nonTransientFields.find(_.mappedName == name) match
             case None => fail(s"field ${name} is not found in fields for ${classInfo}")
             case Some(fi) =>
                 val n = Ref(paramVars(fi.fieldIndex >> 5).symbol).asExprOf[Int]
@@ -2214,8 +2242,8 @@ object JsonCodecMaker {
         val checkReqVars: List[Expr[Unit]] = {
           if (required.isEmpty) Nil
           else {
-            val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.fields.map(_.mappedName))
-            val reqMasks = classInfo.fields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
+            val nameByIndex = withFieldsByIndexFor(tpe)(classInfo.nonTransientFields.map(_.mappedName))
+            val reqMasks = classInfo.nonTransientFields.grouped(32).toSeq.map(_.zipWithIndex.foldLeft(0) { case (acc, (f, i)) =>
               if (required(f.mappedName)) acc | (1 << i)
               else acc
             })
@@ -2232,7 +2260,7 @@ object JsonCodecMaker {
           }
         }
 
-        val readVars: Seq[ValDef] = classInfo.fields.map { f =>
+        val readVars: Seq[ValDef] = classInfo.nonTransientFields.map { f =>
             val name = "_"+f.symbol.name
             val sym = Symbol.newVal(Symbol.spliceOwner, name, f.resolvedTpe, Flags.Mutable, Symbol.noSymbol)
             f.resolvedTpe.asType match
@@ -2241,7 +2269,7 @@ object JsonCodecMaker {
               case _ =>
                 fail(s"Can't determinate type for ${f.resolvedTpe}")
         }
-        val readVarsMap = (classInfo.fields zip readVars).map{ case (field, tmpVar) =>
+        val readVarsMap = (classInfo.nonTransientFields zip readVars).map{ case (field, tmpVar) =>
             (field.symbol.name, tmpVar)
         }.toMap
 
@@ -2255,7 +2283,22 @@ object JsonCodecMaker {
               TypeApply(Select.unique(New(Inferred(tpe)),"<init>"),typeParams.map(x => Inferred(x)))
             case _ =>
               Select.unique(New(Inferred(tpe)),"<init>")
-          Apply(constructor,classInfo.fields.zipWithIndex.map{ case (f,i) => Ref(readVars(i).symbol)}.toList )
+
+          var nonTransientFieldIndex = 0    
+          val constructorParams: IndexedSeq[Term] = classInfo.allFields.foldLeft(IndexedSeq.empty){ (params, fieldInfo) =>
+            val v = if (fieldInfo.isTransient) {
+              fieldInfo.defaultValue match
+                case Some(value) => value
+                case None =>
+                      fail(s"Transient field ${fieldInfo.symbol.name} in class ${tpe.show} have no default value")
+            } else {
+              val rv = readVars(nonTransientFieldIndex).symbol
+              nonTransientFieldIndex += 1
+              Ref(rv)
+            }
+            params.appended(v)
+          }
+          Apply(constructor,constructorParams.toList )
         } catch {
           case ex: Throwable =>
             println(s"error during constructing instance. tpe=${tpe.show} ($tpe)")
@@ -2269,9 +2312,12 @@ object JsonCodecMaker {
         //}
         val fiHashCode: (FieldInfo => Int) = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
         val fiLength: (FieldInfo => Int) = _.mappedName.length
-        val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
-          if (!useDiscriminator) classInfo.fields
-          else classInfo.fields :+ FieldInfo(Symbol.noSymbol, n, FieldInfo.NoField, None, TypeRepr.of[String], isStringified = true, classInfo.fields.length)
+        val readFields = cfg.discriminatorFieldName.fold(classInfo.nonTransientFields) { n =>
+          if (!useDiscriminator) classInfo.nonTransientFields
+          else classInfo.nonTransientFields :+ FieldInfo(Symbol.noSymbol, n, 
+                       FieldInfo.NoField, None, TypeRepr.of[String], 
+                       isTransient = false, isStringified = true, 
+                       classInfo.nonTransientFields.length)
         }
 
         def genReadCollisions(fs: collection.Seq[FieldInfo], tmpVars: Map[String,ValDef], discriminator: Option[ReadDiscriminator], l:Expr[Int])(using Quotes): Expr[Unit] =
@@ -3207,17 +3253,26 @@ object JsonCodecMaker {
       def genWriteNonAbstractScalaClass[T](x: Expr[T], types: List[TypeRepr], optDiscriminator: Option[WriteDiscriminator], out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
-        val writeFields = classInfo.fields.map { f =>
+        val writeFields = classInfo.nonTransientFields.map { f =>
           val fDefault = if (cfg.transientDefault) f.defaultValue else None
           f.resolvedTpe.widen.asType match {
             case '[ft] =>
               fDefault match {
                 case Some(d) =>
                   if (f.resolvedTpe <:< TypeRepr.of[Iterable[?]] && cfg.transientEmpty) {
-                    val tpe1 = typeArg1(f.resolvedTpe.widen)
+                    val tpe1 = typeArg1Of[Iterable](f.resolvedTpe.widen)
                     tpe1.widen.asType match
                       case '[t1] =>
-                        '{  val v = ${f.genGet(x.asTerm).asExprOf[Iterable[t1]]}
+                        '{  val v = ${
+                               try {
+                                 f.genGet(x.asTerm).asExprOf[Iterable[t1]]
+                                }catch{
+                                  case ex: Exception =>
+                                    val ftpe = f.genGet(x.asTerm).tpe
+                                    println(s"esception catched, ftpe = ${ftpe.show}, ftpe.widen=${ftpe.widen.show}, t1=${tpe1.widen.show}, f.resolvedTpe = ${f.resolvedTpe.show}")
+                                    throw ex
+                                }
+                            }
                             if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
                               ${genWriteConstantKey(f.mappedName, out)}
                               ${genWriteVal[Iterable[t1]]('v, f.resolvedTpe.widen :: types, f.isStringified, None, out)}
@@ -3239,7 +3294,7 @@ object JsonCodecMaker {
                       case _ =>
                         fail(s"Can't get type agument for ${f.resolvedTpe.show}")
                   } else if (f.resolvedTpe <:< TypeRepr.of[Array[?]]) {
-                    def cond(v:Expr[Array[?]]): Expr[Boolean] =
+                    def cond(v:Expr[Array[?]])(using Quotes): Expr[Boolean] =
                       val da = d.asExprOf[Array[?]]
                       if (cfg.transientEmpty) {
                         '{ $v.length > 0 && !${withEqualsFor(f.resolvedTpe, v, da)( (x1,x2) => genArrayEquals(f.resolvedTpe, x1, x2))} }
