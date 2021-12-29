@@ -2246,13 +2246,16 @@ object JsonCodecMaker {
         }.toMap
 
         val construct = try {
-          println(s"genReadNonAbstractScalaClass:costruct primary constructor, tpe=${tpe.show} ($tpe), classInfo=${classInfo}")
-          tpe.classSymbol match
-            case Some(classSymbol) => println(s"classSymbol = $classSymbol")
-            case None =>  println("no classSymbol")
-          Apply(Select.unique(New(Inferred(tpe)),"<init>"),
-                              classInfo.fields.zipWithIndex.map{ case (f,i) => Ref(readVars(i).symbol)}.toList
-          )
+          //println(s"genReadNonAbstractScalaClass:costruct primary constructor, tpe=${tpe.show} ($tpe), classInfo=${classInfo}")
+          //tpe.classSymbol match
+          //  case Some(classSymbol) => println(s"classSymbol = $classSymbol")
+          //  case None =>  println("no classSymbol")  
+          val constructor = tpe match
+            case AppliedType(tycon, typeParams) =>
+              TypeApply(Select.unique(New(Inferred(tpe)),"<init>"),typeParams.map(x => Inferred(x)))
+            case _ =>
+              Select.unique(New(Inferred(tpe)),"<init>")
+          Apply(constructor,classInfo.fields.zipWithIndex.map{ case (f,i) => Ref(readVars(i).symbol)}.toList )
         } catch {
           case ex: Throwable =>
             println(s"error during constructing instance. tpe=${tpe.show} ($tpe)")
