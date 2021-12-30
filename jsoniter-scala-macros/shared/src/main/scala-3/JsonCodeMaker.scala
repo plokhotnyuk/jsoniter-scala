@@ -2277,11 +2277,11 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val nullVal = genNullValue[t1](tpe1::types)
-              val constructorNoTypes = Select.unique(New(Inferred(tpe)),"<init>"
+              val constructorNoTypes = Select.unique(New(Inferred(tpe)),"<init>")
               val constructor = tpe match
                 case AppliedType(tycon, targs) =>
-                  TypeApply(constructorNoTypes, targs)
-                casse _ => constructorNoTypes
+                  TypeApply(constructorNoTypes, targs.map(Inferred(_)))
+                case _ => constructorNoTypes
               Apply(constructor,List(nullVal.asTerm)).asExprOf[C]
             case _ => fail(s"Can't get type of ${tpe1.show}")    
         } else {
@@ -2705,7 +2705,13 @@ object JsonCodecMaker {
           tpe1.widen.asType match
             case '[t1] =>
               val readVal = genReadVal[t1](tpe1::types, genNullValue[t1](tpe1::types), isStringified, false, in)
-              Apply(Select.unique(New(Inferred(tpe)),"<init>"),List(readVal.asTerm)).asExprOf[C]
+              //TODO: generate-constructor-call from arg as a function
+              val constructorNoTArgs = Select.unique(New(Inferred(tpe)),"<init>")
+              val constructor = tpe match
+                case AppliedType(tycon,targs) =>
+                  TypeApply(constructorNoTArgs, targs.map(Inferred(_)))
+                case _ => constructorNoTArgs
+              Apply(constructor,List(readVal.asTerm)).asExprOf[C]
             case _ =>
               fail(s"can't determinate type for ${tpe1.show}.")
         } else if (isOption(tpe)) {
