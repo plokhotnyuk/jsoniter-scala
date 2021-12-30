@@ -110,12 +110,10 @@ object LowLevelQuoteUtil {
 
    }
 
+   /*
    def findAnyOwner(using Quotes)(tree: quotes.reflect.Tree): Option[quotes.reflect.Symbol] = {
     import quotes.reflect.*
-    if (tree.symbol.exists  && tree.symbol.maybeOwner.exists) {
-        Some(tree.symbol.owner)
-    }else{
-      tree match {
+    tree match {
         case td:Definition => Some(td.symbol.owner)
         case Block(statements, exp) =>
           statements.find(x => findAnyOwner(x).isDefined) match {
@@ -128,11 +126,10 @@ object LowLevelQuoteUtil {
           findAnyOwner(cond).orElse(findAnyOwner(a)).orElse(findAnyOwner(b))
         case _ =>
           ???
-      }
-    }    
-      
+    }      
 
    }
+   */
 
    def checkOwner(using Quotes)(term: quotes.reflect.Term, ownerToCheck: quotes.reflect.Symbol, traceFlag: Boolean = true, throwFlag: Boolean = true, onlyFirst: Boolean = false): Boolean = {
     import quotes.reflect.*    
@@ -159,15 +156,6 @@ object LowLevelQuoteUtil {
               }     
             }
           case _ =>
-            if (tree.symbol.exists) {
-              if (tree.symbol.maybeOwner.exists) {
-                if (tree.symbol.maybeOwner != owner) {
-                  println(s"checkOwner: owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
-                  foundInvalidOwner = true
-                  topLevelFound = true
-                }
-              }
-            }
         try {    
           if (!foundInvalidOwner) {
             traverseTreeChildren(tree)(owner)

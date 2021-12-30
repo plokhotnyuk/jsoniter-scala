@@ -210,7 +210,14 @@ object CompileTimeEval {
       }
       result match
         case Some(value) => value
-        case None => optDefault.getOrElse( throw CompileTimeEvalException("MatchFailed and no default", t.asExpr) )
+        case None => optDefault.getOrElse( 
+          throw CompileTimeEvalException(
+            s"Match failed and no default: scrutinee=${scrutinee}\n" +
+            s"match: ${t.asExpr}\n" +
+            s"bindings: ${bindings}"
+            , t.asExpr
+          ) 
+      )
     }
 
     private def evalCaseDef(m: Term,
