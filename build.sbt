@@ -50,7 +50,8 @@ lazy val commonSettings = Seq(
       )
     } else Seq(
         "-Xcheck-macros", "-Ycheck:all", "-Yprint-syms",
-        // "-Ydebug-error", // many stack traces, really many stack traces.
+        //"-Ydebug-error", // many stack traces, really many stack traces.
+        "--explain"
       )
   },
   compileOrder := CompileOrder.JavaThenScala,
