@@ -1008,7 +1008,7 @@ object JsonCodecMaker {
 
       def scalaCollectionCompanion(tpe: TypeRepr): Term =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ref(tpe.typeSymbol.companionModule)
-        else fail(s"Unsupported type '$tpe'. Please consider using a custom implicitly accessible codec for it.")
+        else fail(s"Unsupported type '${tpe.show}'. Please consider using a custom implicitly accessible codec for it.", throwFlag = true)
 
       def scalaCollectionEmptyNoArgs(cTpe: TypeRepr, eTpe:TypeRepr): Term =
         TypeApply(Select.unique(scalaCollectionCompanion(cTpe),"empty"),List(Inferred(eTpe)))
@@ -1210,7 +1210,7 @@ object JsonCodecMaker {
 
       
       def genReadKey[T:Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
-        val tpe = types.head
+        val tpe = types.head.simplified
         val implKeyCodec = findImplicitKeyCodec(types)
         if (!implKeyCodec.isEmpty)  '{ ${implKeyCodec.get}.decodeKey($in) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Boolean] || tpe =:= TypeRepr.of[java.lang.Boolean])  '{ ${in}.readKeyAsBoolean() }.asExprOf[T]
@@ -1437,7 +1437,7 @@ object JsonCodecMaker {
 
       @tailrec
       def genWriteKey[A:Type](x: Expr[A], types: List[TypeRepr], out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
-        val tpe = types.head.widen
+        val tpe = types.head.widen.simplified
         val implKeyCodec = findImplicitKeyCodec(types)
         if (!implKeyCodec.isEmpty) '{ ${implKeyCodec.get.asExprOf[JsonKeyCodec[A]]}.encodeKey($x, $out) }
         else if (tpe =:= TypeRepr.of[Boolean]) {
@@ -2146,7 +2146,7 @@ object JsonCodecMaker {
     
 
       def genNullValue[C:Type](types: List[TypeRepr])(using Quotes): Expr[C] = {
-        val tpe = types.head
+        val tpe = types.head.dealias.simplified
         val implCodec = findImplicitValueCodec(types)
         if (!implCodec.isEmpty) '{ ${implCodec.get}.nullValue }.asExprOf[C]  
         else if (tpe =:= TypeRepr.of[Boolean]) Literal(BooleanConstant(false)).asExprOf[C]
@@ -2204,9 +2204,15 @@ object JsonCodecMaker {
                 case _ => fail(s"can't resolve Ordering[${tpe1.show}]")
             case _ => fail(s"can't resolve ${tpe.show} to type")
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
+          try {
               TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
                         List(Inferred(typeArg1(tpe)), Inferred(typeArg2(tpe)))
               ).asExprOf[C]
+          }catch{
+            case ex: Throwable =>
+              println(s"exception during creating of companion for ${tpe.show}")
+              throw ex
+          }
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
             TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
                       List(Inferred(typeArg1(tpe)),Inferred(typeArg2(tpe)))).asExprOf[C]
@@ -2272,7 +2278,7 @@ object JsonCodecMaker {
             case '[t1] =>
               val nullVal = genNullValue[t1](tpe1::types)
               Apply(Select.unique(New(Inferred(tpe)),"<init>"),List(nullVal.asTerm)).asExprOf[C]
-            case _ => fail(s"Can't get type of ${tpe1.show}")
+            case _ => fail(s"Can't get type of ${tpe1.show}")    
         } else {
           val isTypeParam = tpe.typeSymbol.isTypeParam
           println(s"${tpe.show}: typeParam = ${isTypeParam}")
@@ -2299,8 +2305,6 @@ object JsonCodecMaker {
                   in: Expr[JsonReader],
                   default: Expr[A],
                   )(using Quotes): Expr[A] = {
-
-
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
@@ -2603,7 +2607,7 @@ object JsonCodecMaker {
         if (traceFlag) {
           println(s"genReadVal[${Type.show[C]}], types=${types.map(_.show)}")
         }
-        val tpe = types.head
+        val tpe = types.head.dealias.simplified
         val implCodec = findImplicitValueCodec(types)
         val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), useDiscriminator)
         val decodeMethodSym = decodeMethodSyms.get(methodKey)
@@ -3525,7 +3529,7 @@ object JsonCodecMaker {
 
  
       def genWriteVal[T:Type](m: Expr[T], types: List[TypeRepr], isStringified: Boolean, optWriteDiscriminator: Option[WriteDiscriminator], out: Expr[JsonWriter])(using Quotes): Expr[Unit]= {
-        val tpe = types.head
+        val tpe = types.head.dealias.simplified
         val implCodec = findImplicitValueCodec(types)
         val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
         val encodeMethodSym = encodeMethodSyms.get(methodKey)
