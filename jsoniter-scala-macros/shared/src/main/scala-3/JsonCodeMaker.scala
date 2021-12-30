@@ -671,8 +671,18 @@ object JsonCodecMaker {
                 case TermRef(repr,name) =>
                   TermRef(substituteMap(repr),name) 
                 case ti@TypeRef(repr, name) =>
-                  // TypRef have no unapply, hope for the best
-                  tpe
+                  if (ti.typeSymbol.isTypeParam) {
+                    println(s"typeRef isTypeParam, isAliasType=${ti.typeSymbol.isAliasType}")
+                    val sym = ti.typeSymbol
+                    println(s"ti.typeSymbol=${ti.typeSymbol}, get-attemot=${symTypeMaps.get(sym)}")
+                    val rSym = repr.typeSymbol
+                    symTypeMaps.get(sym) match
+                      case Some(tpe1) => tpe1
+                      case _ => tpe
+                  } else {
+                    // TypRef have no unapply, hope for the best 
+                    tpe
+                  }
                 case SuperType(thisTpe,superTpe) =>
                     SuperType(substituteMap(thisTpe), substituteMap(superTpe))
                 case Refinement(parent, name, info) =>
@@ -767,45 +777,114 @@ object JsonCodecMaker {
       } 
       */ 
 
+      def getTypeTypeParams(typeSymbol: Symbol): List[Symbol] = {
+        val constructor = typeSymbol.primaryConstructor
+        if (constructor.exists) {
+          constructor.paramSymss.headOption match
+            case Some(params) =>
+              if (params.nonEmpty && params.forall(_.isTypeParam)) 
+                  params
+              else List.empty
+            case None =>
+              // impossble ?
+              List.empty  
+        } else {
+            // hope, that the order is the same as constructor
+            typeSymbol.typeMembers.filter(_.isTypeParam)
+        }
+      }
+
+
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
-         def collectRecursively(symbol: Symbol): Seq[Symbol] = {
+ 
+          var debug = false
+          if (adtBaseTpe.typeSymbol.fullName == "scala.util.Either") {
+            debug = true
+          }
+
+          val (baseTyCon, baseTypeArgs) = adtBaseTpe match
+            case AppliedType(tycon, args) => (tycon, args.toIndexedSeq)
+            case _ => (adtBaseTpe, IndexedSeq.empty[TypeRepr])
+
+          val baseTypeParams = getTypeTypeParams(adtBaseTpe.typeSymbol).toIndexedSeq
+            
+          if (debug) {
+             println(s"baseTypeParams = ${baseTypeParams}, baseTypeArgs = ${baseTypeArgs}")
+          }
+
+          def collectRecursively(symbol: Symbol, tpe:TypeRepr): Seq[(Symbol,TypeRepr)] = {
             val flags = symbol.flags
             val leafSymbols = if (flags.is(Flags.Sealed)) {
-                              symbol.children.flatMap(s => collectRecursively(s))  
+                              symbol.children.flatMap{s =>
+                                if (debug) {
+                                  println(s"children $s, isClassConstructor=${s.isClassConstructor}")
+                                  val primaryConstructor = s.primaryConstructor
+                                  val typeMembers = s.typeMembers
+                                  val typeParams = typeMembers.filter(_.isTypeParam)
+                                  println(s"primaryConstructor=${primaryConstructor}, typeMembers=${typeMembers}, typeParams=${typeParams}")
+                                } 
+                                val tpe: TypeRepr = if (s.isType) {
+                                  val sTypeParams = getTypeTypeParams(s)
+                                  var prevBaseIndex = 0
+                                  // currently scala3 symbols naviagting not supports applied types.
+                                  // we use convention, then when we automatically convert the adt tree, then
+                                  // top-level ADT  should contain all type parameters of the child adt-s which
+                                  //  should use the same names in all adt-s
+                                  val tArgs = sTypeParams.map{ tParam =>
+                                    val index = baseTypeParams.indexWhere(_.name == tParam.name, prevBaseIndex)
+                                    if (index == -1) {
+                                      val overallIndex = baseTypeParams.indexWhere(_.name == tParam.name)
+                                      if (overallIndex == -1) {
+                                        fail(
+                                          s" subtype ${TypeIdent(s).show} of type ${adtBaseTpe.show} have typeParameter with name ${tParam.name} which is not in a type parameter of base class\n"+
+                                          "It's unclear how to solve this automaticall, please provide a custom implicitly accessible codec for the ADT base."
+                                        )
+                                      } else {
+                                        fail(
+                                          s" subtype ${TypeIdent(s).show} of type ${adtBaseTpe.show} have typeParameters with different order of names\n"+
+                                          s"It's unclear how to solve this automaticall, please provide a custom implicitly accessible codec for the ADT base.\n"        
+                                        )
+                                      }
+                                    }
+                                    prevBaseIndex = index
+                                    baseTypeArgs(index)
+                                  }
+                                  val ti = TypeIdent(s).tpe
+                                  if (tArgs.isEmpty) {
+                                    ti
+                                  } else {
+                                    ti.appliedTo(tArgs)
+                                  }
+                                } else if (s.isTerm) {
+                                  Ref(s).tpe
+                                } else {
+                                  fail(
+                                    "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them\n" +
+                                    s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.\n" +
+                                    s"failed symbol: $s  (fullName=${s.fullName})\n"
+                                  )                   
+                                }
+                                collectRecursively(s,tpe)
+                              }
                             } else {
                               Seq()
                             }
             if ( !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Enum)
                ) {
-              leafSymbols :+ symbol
+              leafSymbols :+ (symbol, tpe)
             } else {
               leafSymbols
             }
-         }
+          }
 
-         def symbolType(symbol:Symbol): TypeRepr = {
-           if (symbol.isTerm) {
-             Ref(symbol).tpe
-           } else if (symbol.isType) {
-             TypeIdent(symbol).tpe
-           } else {
-            fail(
-              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them\n" +
-              s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.\n" +
-              s"failed symbol: $symbol  (fullName=${symbol.fullName})\n" 
-            )
-           }
-         }  
+          val leafSymbols = collectRecursively(adtBaseTpe.typeSymbol, adtBaseTpe)
+          val retval = leafSymbols.map(_._2)
 
-
-         val leafSymbols = collectRecursively(adtBaseTpe.typeSymbol)
-         val retval = leafSymbols.map(symbolType)
-
-         if (traceFlag) {
+          if (traceFlag) {
             println(s"adtLeafClasses for ${adtBaseTpe.show}: symbols: ${leafSymbols}, types: ${retval.map(_.show)} ")
-         }
+          }
 
-         retval
+          retval
       }
 
       def adtLeafClasses1(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
@@ -1535,7 +1614,7 @@ object JsonCodecMaker {
 
         def genGet(obj:Term):Term =
            getterOrField match
-              case FieldInfo.Getter(getter) =>  Apply(Select(obj,getter),List())  // ???
+              case FieldInfo.Getter(getter) =>  Select(obj,getter)  // ???
               case FieldInfo.Field(field) => Select(obj, field)
               case FieldInfo.NoField => 
                 // TODO: better description
@@ -1582,7 +1661,7 @@ object JsonCodecMaker {
         //val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
         val fields = tpeClassSym.fieldMembers
         val fieldsWithDefaultValues = fields.filter(_.flags.is(Flags.HasDefault))
-        val defaultValues: IndexedSeq[Term] = if (fieldsWithDefaultValues.isEmpty) {
+        val defaultValues: IndexedSeq[Symbol] = if (fieldsWithDefaultValues.isEmpty) {
            IndexedSeq.empty
         } else {
            val companion = tpe.typeSymbol.companionClass
@@ -1594,7 +1673,7 @@ object JsonCodecMaker {
                 name.startsWith("$lessinit$greater$default")
               case _ => false
            }
-           val r = defDefs.map(x => Ref(x.symbol))
+           val r = defDefs.map(x => x.symbol)
            println(s"found default values: $r")
            r.toIndexedSeq
         }
@@ -1645,9 +1724,25 @@ object JsonCodecMaker {
               }
        
               val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
-                                    val tmp = defaultValues(defaultValueIndex)
+                                    val methodSymbol = defaultValues(defaultValueIndex)
                                     defaultValueIndex += 1
-                                    Some(tmp)
+                                    println(s"symbbol: ${methodSymbol}")
+                                    println(s"symbbol tree: ${methodSymbol.tree.show}")
+                                    println(s"symbol paramss: ${methodSymbol.paramSymss}")
+
+                                    val companion = Ref(tpeClassSym.companionModule)
+                                    val methodCallNoTArgs = Select(companion, methodSymbol)
+                                    val methodCall = methodSymbol.paramSymss match
+                                      case Nil => methodCallNoTArgs
+                                      case List(params) if (params.exists(_.isTypeParam)) =>
+                                        tpe match
+                                          case AppliedType(tycon, args) =>
+                                            TypeApply(methodCallNoTArgs, args.map(Inferred(_)))
+                                          case _ =>
+                                            fail(s"expected that ${tpe.show} is an applied type") 
+                                      case other =>
+                                        fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
+                                    Some(methodCall)
                                     //TODO: check
                                     //val companion = tpe.typeSymbol.companionModule
                                     //tpeClassSym.methodMember("$lessinit$greater$default$"+(i+1)
@@ -1665,10 +1760,9 @@ object JsonCodecMaker {
                           fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
                       }
                     case TypeRef(repr,name) =>
-                      println(s"typeref: repr=$repr, name=$name")
+                      println(s"tpe = typeref: repr=($repr), name=$name")
                       originFieldType
                     case _ =>
-
                       originFieldType
                   }
               }  else {
@@ -1681,10 +1775,18 @@ object JsonCodecMaker {
                     fail(s"Type bounds are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
                   case _ =>
                     if (fieldType.typeSymbol.isTypeParam) {
-                      //tpe match
-                      //  case TypeRef(ref, name ) =>
-                      //    println(s" tpe is TypeRef($ref,$name)")
-                      //  case _ =>
+                      fieldType match
+                        case TypeRef(repr, name ) =>
+                          println(s" fieldType is TypeRef(${repr.show},$name) ($fieldType)")
+                          println(s"find-attempt: ${typeParams.find(_ == fieldType.typeSymbol)}")
+                          println(s"originFieldType: ${originFieldType}")
+                          println(s"origin-find-attempt: ${typeParams.find(_ == fieldType.typeSymbol)}")
+                          val typeArgs = tpe match
+                            case AppliedType(tycon, args) => args
+                            case _ => ???
+                          val symTypeMaps = typeParams.zip(typeArgs).toMap
+                          println(s"get in map: ${symTypeMaps.get(originFieldType.typeSymbol)}")
+                        case _ =>
                       fail(
                         s"fieldType ${fieldType.show} isTypeParam, probaly error in substituyion\n" +
                         s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
@@ -3216,7 +3318,7 @@ object JsonCodecMaker {
                       val l = $in.readStringAsCharBuf()
                       ${genReadSubclassesBlock(leafModuleClasses, 'l).asExprOf[C]}
                     } else $in.readNullOrTokenError($default, '"')
-                }
+                }.asExprOf[C]
               }
             case Some(discrFieldName) =>
               if (cfg.requireDiscriminatorFirst) {
@@ -3308,6 +3410,18 @@ object JsonCodecMaker {
                         }
                     }
                   } else {
+                    if (! (d.tpe <:< f.resolvedTpe.widen) ) {
+                      // TODO: move this check to intialization
+                      fail(s"default value for field ${f.symbol} of class ${tpe.show} have type ${d.tpe} but field type is ${f.resolvedTpe.show}")
+                    }
+                    val dExpr = try {
+                       d.asExprOf[ft] 
+                    }catch{
+                       case ex: Throwable =>
+                        println(s"ft=${f.resolvedTpe.widen.show}, d=${d.show}, tpe=${tpe.show}, f.symbol=${f.symbol}")
+                        println(s"tpeDef = ${tpe.classSymbol.get.tree.show}")
+                        throw ex;
+                    }
                     '{
                         val v = ${ f.genGet(x.asTerm).asExprOf[ft] }
                         if (v != ${d.asExprOf[ft]}) {
