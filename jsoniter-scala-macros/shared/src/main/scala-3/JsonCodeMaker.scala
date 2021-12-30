@@ -1614,7 +1614,7 @@ object JsonCodecMaker {
 
         def genGet(obj:Term):Term =
            getterOrField match
-              case FieldInfo.Getter(getter) =>  Select(obj,getter)  // ???
+              case FieldInfo.Getter(getter) =>  Select(obj,getter)  
               case FieldInfo.Field(field) => Select(obj, field)
               case FieldInfo.NoField => 
                 // TODO: better description
@@ -2679,7 +2679,7 @@ object JsonCodecMaker {
           fail("Unit can't be read")
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
-          tpe1.asType match
+          tpe1.widen.asType match
             case '[t1] =>
               val readVal = genReadVal[t1](tpe1::types, genNullValue[t1](tpe1::types), isStringified, false, in)
               Apply(Select.unique(New(Inferred(tpe)),"<init>"),List(readVal.asTerm)).asExprOf[C]
@@ -2687,7 +2687,7 @@ object JsonCodecMaker {
               fail(s"can't determinate type for ${tpe1.show}.")
         } else if (isOption(tpe)) {
           val tpe1 = typeArg1(tpe)
-          tpe1.asType match
+          tpe1.widen.asType match
             case '[t1] =>
               val readVal1 = genReadVal[t1](tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in) 
               '{ if ($in.isNextToken('n')) $in.readNullOrError($default, "expected value or null")
@@ -3365,7 +3365,7 @@ object JsonCodecMaker {
                     val tpe1 = typeArg1Of[Iterable](f.resolvedTpe.widen)
                     tpe1.widen.asType match
                       case '[t1] =>
-                        '{  val v = ${
+                        '{  val v3368 = ${
                                try {
                                  f.genGet(x.asTerm).asExprOf[Iterable[t1]]
                                 }catch{
@@ -3375,11 +3375,11 @@ object JsonCodecMaker {
                                     throw ex
                                 }
                             }
-                            if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
+                            if (!v3368.isEmpty && v3368 != ${d.asExprOf[ft]}) {
                               ${genWriteConstantKey(f.mappedName, out)}
-                              ${genWriteVal[Iterable[t1]]('v, f.resolvedTpe.widen :: types, f.isStringified, None, out)}
+                              ${genWriteVal[Iterable[t1]]('v3368, TypeRepr.of[Iterable[t1]] :: types, f.isStringified, None, out)}
                             }
-                        }
+                        }.asExprOf[Unit]
                       case _ => fail(s"Can't get type agument for ${tpe1.widen}")
                   } else if (isOption(f.resolvedTpe) && cfg.transientNone) {
                     val tpe1 = typeArg1(f.resolvedTpe)
@@ -3515,7 +3515,14 @@ object JsonCodecMaker {
         val implCodec = findImplicitValueCodec(types)
         val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
         val encodeMethodSym = encodeMethodSyms.get(methodKey)
-        if (!implCodec.isEmpty) '{ ${implCodec.get.asExprOf[JsonValueCodec[T]]}.encodeValue($m, $out) }
+        if (!implCodec.isEmpty) 
+          try {
+            '{ ${implCodec.get.asExprOf[JsonValueCodec[T]]}.encodeValue($m, $out) }
+          }catch{
+            case ex: Throwable =>
+              println(s"exception in genWriteVal with impl code, tpe=${tpe.show}, implCodec.get = ${implCodec.get}")
+              throw ex;
+          }
         else if (encodeMethodSym.isDefined)  {
             val methodRef = Ref(encodeMethodSym.get)
             Apply(methodRef, List( m.asTerm, out.asTerm)).asExprOf[Unit]
