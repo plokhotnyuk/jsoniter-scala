@@ -256,6 +256,16 @@ object GADT2 {
   case class CopyOver(src: Seq[_root_.scala.Byte], path: String) extends GADT2[Int]
 }
 
+
+sealed trait Fruit[T <: Fruit[T]] extends Product with Serializable
+
+final case class Apple(family: String) extends Fruit[Apple]
+
+final case class Orange(color: Int) extends Fruit[Orange]
+
+case class Basket[T <: Fruit[T]](fruits: List[T])
+
+
 class JsonCodecMakerSpec extends VerifyingSpec {
 
   val codecOfPrimitives: JsonValueCodec[Primitives] = make
@@ -1841,14 +1851,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "serialize and deserialize ADTs with self-recursive (aka F-bounded) types without discriminators" in {
-      sealed trait Fruit[T <: Fruit[T]] extends Product with Serializable
-
-      final case class Apple(family: String) extends Fruit[Apple]
-
-      final case class Orange(color: Int) extends Fruit[Orange]
-
-      case class Basket[T <: Fruit[T]](fruits: List[T])
-
       val oneFruit: Basket[Apple] = Basket(List(Apple("golden")))
       val twoFruits: Basket[Apple] = oneFruit.copy(fruits = oneFruit.fruits :+ Apple("red"))
       assert(intercept[TestFailedException](assertCompiles {
