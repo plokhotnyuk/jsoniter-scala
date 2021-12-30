@@ -485,8 +485,15 @@ object JsonCodecMaker {
     * @param fullClassName the name to transform
     * @return a transformed name or the same name if no transformation is required
     */
-  def simpleClassName(fullClassName: String): String =
-    fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
+  def simpleClassName(fullClassName: String): String = {
+    val lastComponent = fullClassName.substring(Math.max(fullClassName.lastIndexOf('.') + 1, 0))
+    var localPrefixIndex = 0
+    while(lastComponent.startsWith("_$",localPrefixIndex)) {
+      localPrefixIndex +=2
+    }
+    val retval = lastComponent.substring(localPrefixIndex)
+    retval
+  }
 
   /**
     * Derives a codec for JSON values for the specified type `A`.
@@ -573,11 +580,18 @@ object JsonCodecMaker {
 
 
     private[this] def tryMake[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
+      import quotes.reflect._
       try {
         make[A](cfg)
       } catch {
         case ex: scala.quoted.runtime.StopMacroExpansion =>
           throw ex
+        case ex: CompileTimeEvalException =>
+          report.error(ex.getMessage,ex.expr)
+          if (ex.throwFlag) {
+            ex.printStackTrace()
+          }
+          report.errorAndAbort("Can't evaluate compile-time expression")
         case NonFatal(ex) =>
           println(s"catched exception during macro expansion: $ex: msg=${ex.getMessage}")
           ex.printStackTrace()
@@ -765,7 +779,6 @@ object JsonCodecMaker {
         if (sym.isClassDef) sym else getEnclosingClass(sym.owner)
 
     
-      // TODO: explorr collection adtLeafClasses via mirror.
 
       val enclosingClassTpe = getEnclosingClass(Symbol.spliceOwner).tree match
         case cl: ClassDef => cl.constructor.returnTpt.tpe
@@ -794,6 +807,7 @@ object JsonCodecMaker {
         }
       }
 
+      // TODO: explore yet one variant with mirrors.
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
  
@@ -878,7 +892,7 @@ object JsonCodecMaker {
           }
 
           val leafSymbols = collectRecursively(adtBaseTpe.typeSymbol, adtBaseTpe)
-          val retval = leafSymbols.map(_._2)
+          val retval = leafSymbols.map(_._2).distinct
 
           if (traceFlag) {
             println(s"adtLeafClasses for ${adtBaseTpe.show}: symbols: ${leafSymbols}, types: ${retval.map(_.show)} ")
