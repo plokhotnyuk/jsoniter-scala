@@ -2277,7 +2277,12 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val nullVal = genNullValue[t1](tpe1::types)
-              Apply(Select.unique(New(Inferred(tpe)),"<init>"),List(nullVal.asTerm)).asExprOf[C]
+              val constructorNoTypes = Select.unique(New(Inferred(tpe)),"<init>"
+              val constructor = tpe match
+                case AppliedType(tycon, targs) =>
+                  TypeApply(constructorNoTypes, targs)
+                casse _ => constructorNoTypes
+              Apply(constructor,List(nullVal.asTerm)).asExprOf[C]
             case _ => fail(s"Can't get type of ${tpe1.show}")    
         } else {
           val isTypeParam = tpe.typeSymbol.isTypeParam
@@ -3534,13 +3539,7 @@ object JsonCodecMaker {
         val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
         val encodeMethodSym = encodeMethodSyms.get(methodKey)
         if (!implCodec.isEmpty) 
-          try {
             '{ ${implCodec.get.asExprOf[JsonValueCodec[T]]}.encodeValue($m, $out) }
-          }catch{
-            case ex: Throwable =>
-              println(s"exception in genWriteVal with impl code, tpe=${tpe.show}, implCodec.get = ${implCodec.get}")
-              throw ex;
-          }
         else if (encodeMethodSym.isDefined)  {
             val methodRef = Ref(encodeMethodSym.get)
             Apply(methodRef, List( m.asTerm, out.asTerm)).asExprOf[Unit]
