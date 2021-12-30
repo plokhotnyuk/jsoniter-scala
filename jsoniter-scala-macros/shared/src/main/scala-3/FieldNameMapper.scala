@@ -55,10 +55,11 @@ object FieldNameFunctionWrapper {
 
 }
 
-class CompileTimeEvalException(message: String, 
-                               expr: Expr[Any],
-                               reason: Throwable = null
-                               ) extends RuntimeException(message, reason)
+case class CompileTimeEvalException(message: String, 
+                                  expr: Expr[Any],
+                                  reason: Throwable = null,
+                                  throwFlag: Boolean = false
+                             ) extends RuntimeException(message, reason)
 
 object CompileTimeEval {
 
@@ -213,8 +214,9 @@ object CompileTimeEval {
         case None => optDefault.getOrElse( 
           throw CompileTimeEvalException(
             s"Match failed and no default: scrutinee=${scrutinee}\n" +
-            s"match: ${t.asExpr}\n" +
-            s"bindings: ${bindings}"
+            s"match: ${t.show}\n" +
+            s"bindings: ${bindings}\n" +
+            s"match tree: ${t}\n" 
             , t.asExpr
           ) 
       )
