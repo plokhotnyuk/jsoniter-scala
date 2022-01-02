@@ -871,8 +871,19 @@ object JsonCodecMaker {
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
 
+        var debug = false
+        if (adtBaseTpe.typeSymbol.name == "AdtBase") {
+          debug = true;
+        }
+
         def collectRecursively(tpe:TypeRepr): Seq[TypeRepr] = {
-          val flags = tpe.typeSymbol.flags
+          val typeSymbol = tpe.typeSymbol
+          val flags = typeSymbol.flags
+          if (typeSymbol.name == "AdtBase") {
+            println(s"collectRecurs to adtBase, flags.isAbstract = ${flags.is(Flags.Abstract)}, ")
+            println(s"adtBase, isAbstractType = ${typeSymbol.isAbstractType}, trait = ${flags.is(Flags.Trait)} ")
+
+          }
           val leafSymbols = if (flags.is(Flags.Sealed)) {
             adtChildren(tpe).flatMap( child => 
                if (child.typeSymbol.flags.is(Flags.Sealed)) {
@@ -884,7 +895,8 @@ object JsonCodecMaker {
           } else {
             Seq.empty[TypeRepr]
           }
-          if ( !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Enum)) {
+          if ( !typeSymbol.isAbstractType && !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && 
+               !flags.is(Flags.Enum) && !flags.is(Flags.Trait)) {
             leafSymbols :+ tpe
           } else {
             leafSymbols
@@ -892,6 +904,9 @@ object JsonCodecMaker {
         }
 
         val leafSymbols = collectRecursively(adtBaseTpe)
+        if (debug) {
+          println(s"adtLeafClasses: leafSymbols = ${leafSymbols}")
+        }
         val retval = leafSymbols.distinct
 
         retval 
@@ -1160,9 +1175,12 @@ object JsonCodecMaker {
                           primaryConstructor: Symbol, 
                           allFields: IndexedSeq[FieldInfo]) {
        
-         def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
+        def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
 
-         def genNew(args: List[Term]): Term =
+        def genNew(args: List[Term]): Term =
+          if (!primaryConstructor.isClassConstructor) {
+            throw new IllegalStateException(s"attempt to genenrate new for non-class for ${tpe.show}")
+          }  
            val constructorNoTypes = Select(New(Inferred(tpe)),primaryConstructor)
            val constructor = tpe match
                case AppliedType(tycon, targs) =>
