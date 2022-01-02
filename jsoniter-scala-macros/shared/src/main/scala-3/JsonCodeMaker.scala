@@ -674,10 +674,9 @@ object JsonCodecMaker {
         //}
         //
         // now let's write own minimial approximation, 
-        //  without support of type-lambdas and recursive types
-        val symTypeMaps = from.zip(to).toMap
+        val symTypeMap = from.zip(to).toMap
         def substituteMap(tpe:TypeRepr): TypeRepr = {
-          symTypeMaps.get(tpe.typeSymbol) match
+          symTypeMap.get(tpe.typeSymbol) match
             case Some(tpe) => tpe
             case _ =>
               tpe match
@@ -688,9 +687,9 @@ object JsonCodecMaker {
                   if (ti.typeSymbol.isTypeParam) {
                     println(s"typeRef isTypeParam, isAliasType=${ti.typeSymbol.isAliasType}")
                     val sym = ti.typeSymbol
-                    println(s"ti.typeSymbol=${ti.typeSymbol}, get-attemot=${symTypeMaps.get(sym)}")
+                    println(s"ti.typeSymbol=${ti.typeSymbol}, get-attemot=${symTypeMap.get(sym)}")
                     val rSym = repr.typeSymbol
-                    symTypeMaps.get(sym) match
+                    symTypeMap.get(sym) match
                       case Some(tpe1) => tpe1
                       case _ => tpe
                   } else {
@@ -702,12 +701,7 @@ object JsonCodecMaker {
                 case Refinement(parent, name, info) =>
                     Refinement(substituteMap(parent),name,substituteMap(info))
                 case AppliedType(tycon, args) =>
-                    tycon match
-                      case TypeLambda(params,bounds,body) =>
-                        fail("HKT support is not implemented")
-                      case _ =>
-                        // assume that we have no type-lambdas in our definitions.
-                        tycon.appliedTo(args.map(substituteMap))
+                    substituteMap(tycon).appliedTo(args.map(x => substituteMap(x)))
                 case AnnotatedType(underlying, annotated) =>
                     AnnotatedType(substituteMap(underlying), annotated)
                 case AndType(rhs, lhs) =>
@@ -720,6 +714,22 @@ object JsonCodecMaker {
                     )
                 case ByNameType(underlying) =>
                     ByNameType(substituteMap(underlying))
+                case tl@TypeLambda(names,bounds,body) =>
+                    var paramValues: Map[Symbol,TypeRepr] = Map.empty
+                    for((n,i) <- names.zipWithIndex) {
+                       val isym = tl.param(i).typeSymbol
+                       symTypeMap.get(isym) match
+                        case None => 
+                        case Some(tree) => 
+                          paramValues = paramValues.updated(isym,tree)
+                    }
+                    if (paramValues.size == names.size) {
+                      substituteMap(body)
+                    } else if (paramValues.size == 0) {
+                      TypeLambda(names, _ => bounds, _ => substituteMap(body))  
+                    } else {
+                      fail(s"partial type lambda applications are not suported, tpe: ${tpe.show}")
+                    }
                 case r: RecursiveType =>
                     fail(s"recurive types are not supported, use derivation-based transformer(${r.show} during transform of ${tpe.show})")
                 case l: LambdaType =>
@@ -730,27 +740,14 @@ object JsonCodecMaker {
       end substituteTypes
    
           
-
-      /*
-      def resolveConcreteType(tpe: TypeRepr, mtpe: TypeRepr): TypeRepr = {    
-        val tpeTypeParams = tpe match
-          case AppliedType(main, params) => params
-          case _ => Nil
-        if (tpeTypeParams.isEmpty) mtpe
-        else substituteTypes(mtpe, tpeTypeParams, tpe.typeArgs)
-      }
-      */
-      
-
-      //def methodType(tpe: TypeRepr, m: Symbol): TypeRepr =
-        //resolveConcreteType(tpe, m.returnType.dealias)
-
-      //def paramType(tpe: TypeRepr, p: Symbol): TypeRepr = ??? // resolveConcreteType(tpe, p.typeSignature.dealias)
-
       def valueClassValueType(tpe: TypeRepr): TypeRepr = 
         try {
           val field = tpe.typeSymbol.fieldMembers(0)
-          tpe.memberType(field)
+          val r = tpe.memberType(field)
+          if (r.typeSymbol.isTypeParam) {
+            throw new RuntimeException(s"generation of value-class member as type-param, r=$r")
+          }
+          r
         }catch{
           case NonFatal(ex) =>
             println(s"error getting valueType for ${tpe.show}")
@@ -790,213 +787,117 @@ object JsonCodecMaker {
       } 
       */ 
 
-      def getTypeTypeParams(typeSymbol: Symbol): List[Symbol] = {
-        val constructor = typeSymbol.primaryConstructor
-        if (constructor.exists) {
-          constructor.paramSymss.headOption match
-            case Some(params) =>
-              if (params.nonEmpty && params.forall(_.isTypeParam)) 
-                  params
-              else List.empty
-            case None =>
-              // impossble ?
-              List.empty  
-        } else {
-            // hope, that the order is the same as constructor
-            typeSymbol.typeMembers.filter(_.isTypeParam)
-        }
-      }
-
+    
       // TODO: explore yet one variant with mirrors.
 
-      def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
- 
-          var debug = false
-          if (adtBaseTpe.typeSymbol.fullName == "scala.util.Either") {
-            debug = true
-          }
+      def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = {
 
-          val (baseTyCon, baseTypeArgs) = adtBaseTpe match
-            case AppliedType(tycon, args) => (tycon, args.toIndexedSeq)
-            case _ => (adtBaseTpe, IndexedSeq.empty[TypeRepr])
-
-          val baseTypeParams = getTypeTypeParams(adtBaseTpe.typeSymbol).toIndexedSeq
-            
-          if (debug) {
-             println(s"baseTypeParams = ${baseTypeParams}, baseTypeArgs = ${baseTypeArgs}")
-          }
-
-          def collectRecursively(symbol: Symbol, tpe:TypeRepr): Seq[(Symbol,TypeRepr)] = {
-            val flags = symbol.flags
-            val leafSymbols = if (flags.is(Flags.Sealed)) {
-                              symbol.children.flatMap{s =>
-                                if (debug) {
-                                  println(s"children $s, isClassConstructor=${s.isClassConstructor}")
-                                  val primaryConstructor = s.primaryConstructor
-                                  val typeMembers = s.typeMembers
-                                  val typeParams = typeMembers.filter(_.isTypeParam)
-                                  println(s"primaryConstructor=${primaryConstructor}, typeMembers=${typeMembers}, typeParams=${typeParams}")
-                                } 
-                                val tpe: TypeRepr = if (s.isType) {
-                                  val sTypeParams = getTypeTypeParams(s)
-                                  var prevBaseIndex = 0
-                                  // currently scala3 symbols naviagting not supports applied types.
-                                  // we use convention, then when we automatically convert the adt tree, then
-                                  // top-level ADT  should contain all type parameters of the child adt-s which
-                                  //  should use the same names in all adt-s
-                                  val tArgs = sTypeParams.map{ tParam =>
-                                    val index = baseTypeParams.indexWhere(_.name == tParam.name, prevBaseIndex)
-                                    if (index == -1) {
-                                      val overallIndex = baseTypeParams.indexWhere(_.name == tParam.name)
-                                      if (overallIndex == -1) {
-                                        fail(
-                                          s" subtype ${TypeIdent(s).show} of type ${adtBaseTpe.show} have typeParameter with name ${tParam.name} which is not in a type parameter of base class\n"+
-                                          "It's unclear how to solve this automaticall, please provide a custom implicitly accessible codec for the ADT base."
-                                        )
-                                      } else {
-                                        fail(
-                                          s" subtype ${TypeIdent(s).show} of type ${adtBaseTpe.show} have typeParameters with different order of names\n"+
-                                          s"It's unclear how to solve this automaticall, please provide a custom implicitly accessible codec for the ADT base.\n"        
-                                        )
-                                      }
-                                    }
-                                    prevBaseIndex = index
-                                    baseTypeArgs(index)
-                                  }
-                                  val ti = TypeIdent(s).tpe
-                                  if (tArgs.isEmpty) {
-                                    ti
-                                  } else {
-                                    ti.appliedTo(tArgs)
-                                  }
-                                } else if (s.isTerm) {
-                                  Ref(s).tpe
-                                } else {
-                                  fail(
-                                    "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them\n" +
-                                    s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.\n" +
-                                    s"failed symbol: $s  (fullName=${s.fullName})\n"
-                                  )                   
-                                }
-                                collectRecursively(s,tpe)
-                              }
-                            } else {
-                              Seq()
-                            }
-            if ( !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Enum)
-               ) {
-              leafSymbols :+ (symbol, tpe)
-            } else {
-              leafSymbols
-            }
-          }
-
-          val leafSymbols = collectRecursively(adtBaseTpe.typeSymbol, adtBaseTpe)
-          val retval = leafSymbols.map(_._2).distinct
-
-          if (traceFlag) {
-            println(s"adtLeafClasses for ${adtBaseTpe.show}: symbols: ${leafSymbols}, types: ${retval.map(_.show)} ")
-          }
-
-          retval
-      }
-
-      def adtLeafClasses1(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
-
-        def collectRecursively(symbol: Symbol): Seq[TypeRepr] = {
-          val leafTpes = if (symbol.flags.is(Flags.Sealed)) {
-                               symbol.children.flatMap{ s =>
-                                      println(s"collectRecursively: child=$s")
-                                      collectRecursively(s)
-                               }
-                            }  else Seq()
-          if (symbol.isType) {
-            val flags = symbol.flags 
-            if (flags.is(Flags.Enum)) {
-                leafTpes
-            } else if (!flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && symbol.isClassDef) {
-                // tpe used for 'as seen from'
-                //  mb - use class 'this'or package
-                //
-                // not work
-                //val tpe = adtBaseTpe.memberType(symbol)
-                // use antipattern
-                if (symbol.name=="DDD") {
-                  println("DDD after leat")
-                  println("module flags:  "+flags.is(Flags.Module))
-                }
-
-                val tpe: TypeRepr = symbol.tree match
-                  case tpt: TypeTree => tpt.tpe
-                  case cl: ClassDef =>
-                    cl.self match
-                      case Some(clSelf) => clSelf.tpt.tpe
-                      case None => 
-                        val viaConstructor = cl.constructor.returnTpt.tpe
-                        if (viaConstructor.typeSymbol == symbol) {
-                          println(s"collect recursivly: tpe by consturtor= ${viaConstructor.show}, symbol.name=${symbol.name}")
-                          viaConstructor
-                        } else {
-                            fail(s"Can't find self type for classdef ${symbol}, fullName:${symbol.fullName}\n"+
-                              s"tree = ${symbol.tree.show}\n"+
-                              s"constructor return type= ${cl.constructor.returnTpt.tpe.show}"
-                            )
-                        }
-                  case _ => // todo: 
-                    enclosingClassTpe.memberType(symbol)
-                if (tpe =:= TypeRepr.of[scala.Nothing] || tpe =:= TypeRepr.of[Unit] || tpe =:= TypeRepr.of[Null]) {
-                  Seq()
-                } else {        
-                  leafTpes :+ tpe
-                }
-            } else if (flags.is(Flags.Abstract) && flags.is(Flags.Sealed)) {
-                leafTpes
-            } else {
-                if (flags.is(Flags.Abstract)) {
-                    fail(
-                      "Only sealed intermediate traits or abstract classes are supported. Please consider using of them\n" +
-                      s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.\n" +
-                      s"failed symbol: $symbol\n"    
-                    )
-                } else {
-                    fail(
-                       "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them\n" +
-                      s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base.\n" +
-                      s"failed symbol: $symbol\n" 
-                    )
-                }
-              }
-          } else {
-            // case object.
-            if (symbol.isClassDef) {
-              println("isClassDef: "+symbol)
-            } 
-            if (symbol.isTerm) {
-              println("isTerm: "+symbol)
-              val termRpe = Ref(symbol).tpe
-              println("Ref(symbol).tpe: ")
-              List(Ref(symbol).tpe)
-            }else{
-              if (symbol.flags.is(Flags.Enum)) {
-                println("enumFlag is set for "+symbol)
-              }
-              println(s"flags:${symbol.flags}, moduleClass: ${symbol.moduleClass}, companionClass=${symbol.companionClass} ")
-              fail(s"expectd that ${symbol} is a type or term")
-            }
-          }
-        }  
-
-        if (adtBaseTpe.typeSymbol.flags.is(Flags.Enum)) {
-          println(s"adtBaseTpe: isEnum = true for ${adtBaseTpe.typeSymbol}")
+        def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
+                                  binding: Map[String,TypeRepr]):Map[String,TypeRepr] = {
+          // todo: check for paramRef instead ?
+          if (fromNudeChildTarg.typeSymbol.isTypeParam) then
+            val paramName = fromNudeChildTarg.typeSymbol.name
+            binding.get(paramName) match
+                case None => binding.updated(paramName, parentTarg)
+                case Some(oldBinding) =>
+                        if( oldBinding =:= parentTarg) then
+                          binding
+                        else
+                          fail(s"type parameter ${paramName} in class ${child.name} appeared in the constructor of $tpe two times differently, "+
+                               s" with ${oldBinding.show} and ${parentTarg.show}")       
+          else
+            if (fromNudeChildTarg <:< parentTarg) then
+              // assupe parentTag is covariant,
+              // TODO: get covariance from tycon type parameters.
+              binding
+            else
+              (fromNudeChildTarg, parentTarg)  match
+                  case (AppliedType(ctycon ,ctargs), AppliedType(ptycon, ptargs) ) =>
+                    val binding1 = resolveParentTypeArg(child,ctycon,ptycon,binding)
+                    ctargs.zip(ptargs).foldLeft(binding1){ (b,e) =>
+                      resolveParentTypeArg(child,e._1,e._2,b)
+                    }
+                  case other =>
+                    fail(s"failed unification of type parameters of ${tpe.show} from child ${child} - ${fromNudeChildTarg.show} and ${parentTarg.show}")
         }
-               
-        val classes = collectRecursively(adtBaseTpe.typeSymbol).distinct
-        if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
-          "Please add them or provide a custom implicitly accessible codec for the ADT base.")
 
-        println(s"adtReadClassesRetval: ${classes.map(_.show)}")
-        classes
+        def resolveParentTypeArgs(child: Symbol, nudeChildParentTags: List[TypeRepr], parentTags: List[TypeRepr], binding: Map[String, TypeRepr]): Map[String, TypeRepr] =
+          nudeChildParentTags.zip(parentTags).foldLeft(binding){ (s,e) =>
+              resolveParentTypeArg(child, e._1, e._2, s)
+          }
+
+        val targs = tpe match
+          case AppliedType(tycon, args) => args
+          case _ => List.empty[TypeRepr]
+
+        tpe.typeSymbol.children.map{ s =>
+          if (s.isType) {
+            val nudeSubtype = TypeIdent(s).tpe
+            val tpeFromChild = nudeSubtype.baseType(tpe.typeSymbol)
+            val tpeArgsFromChild = tpeFromChild match
+              case AppliedType(parentTycon, parentArgs) => parentArgs
+              case other => List.empty[TypeRepr]
+          
+            val constructor = s.primaryConstructor
+            nudeSubtype.memberType(constructor) match
+              case MethodType(_,_,resTp) => resTp
+              case PolyType(names, bounds, resPolyTp) =>
+                val tpBinding = resolveParentTypeArgs(s,tpeArgsFromChild,targs,Map.empty[String,TypeRepr])
+                val ctArgs = names.map{ name =>
+                  tpBinding.get(name) match
+                    case Some(tp) => tp
+                    case None => fail(s"type parameter $name of $s can't be deduced from type arguments of ${tpe.show}")
+                }
+                val polyRes = resPolyTp match
+                  case MethodType(_,_,resTp) => resTp
+                  case other => other // hope we have no multiple typed param lists yet.
+                if (!ctArgs.isEmpty) then
+                  polyRes.appliedTo(ctArgs)
+                else
+                  polyRes
+              case other => fail(s"primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
+          } else if (s.isTerm) {
+            Ref(s).tpe 
+          } else {
+            fail(
+              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them\n" +
+              s"for ADT with base '${tpe.show}' or provide a custom implicitly accessible codec for the ADT base.\n" +
+              s"failed symbol: $s  (fullName=${s.fullName})\n"
+            )      
+          }
+        }                       
+
       }
+
+      def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
+
+        def collectRecursively(tpe:TypeRepr): Seq[TypeRepr] = {
+          val flags = tpe.typeSymbol.flags
+          val leafSymbols = if (flags.is(Flags.Sealed)) {
+            adtChildren(tpe).flatMap( child => 
+               if (child.typeSymbol.flags.is(Flags.Sealed)) {
+                 adtChildren(child)
+               } else {
+                 Seq.empty[TypeRepr]
+               }
+            )
+          } else {
+            Seq.empty[TypeRepr]
+          }
+          if ( !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Enum)) {
+            leafSymbols :+ tpe
+          } else {
+            leafSymbols
+          }          
+        }
+
+        val leafSymbols = collectRecursively(adtBaseTpe)
+        val retval = leafSymbols.distinct
+
+        retval 
+      }
+ 
+
 
       def companion(tpe: TypeRepr): Symbol = {
         tpe.typeSymbol.moduleClass
@@ -1223,6 +1124,13 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[java.lang.Double]) '{ $in.readKeyAsDouble() }.asExprOf[T]
         else if (isValueClass(tpe)) {
                 val newObjInit = Select.unique(New(Inferred(tpe)),"<init>") 
+                /*
+                val newObjTypedInit = tpe match
+                  case AppliedType(tycom, args) =>
+                    TypeApply(newObjInit, args.map(Inferred(_)))
+                  case _ =>
+                    newObjInit
+                */
                 Apply(newObjInit,List( genReadKey(valueClassValueType(tpe)::types, in).asTerm)).asExprOf[T]
         } else if (tpe =:= TypeRepr.of[String]) '{ $in.readKeyAsString() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigInt]) '{ $in.readKeyAsBigInt(${Expr(cfg.bigIntDigitsLimit)}) }.asExprOf[T]
@@ -1622,17 +1530,40 @@ object JsonCodecMaker {
                            getterOrField: FieldInfo.GetterOrField,
                            defaultValue: Option[Term], 
                            resolvedTpe: TypeRepr,
+                           //targs: List[TypeRepr],
                            isTransient: Boolean, 
                            isStringified: Boolean, 
                            fieldIndex: Int) {
 
         def genGet(obj:Term):Term =
-           getterOrField match
+          val r = getterOrField match
               case FieldInfo.Getter(getter) =>  Select(obj,getter)  
               case FieldInfo.Field(field) => Select(obj, field)
               case FieldInfo.NoField => 
                 // TODO: better description
                 fail(s"getter is called for ${mappedName}")
+          if (r.tpe.typeSymbol.isTypeParam) {
+            throw new RuntimeException(s"r.tpe.typeSymbol is typeParam, obj=${obj}")
+          }
+          r.tpe match
+            case TypeRef(base,"A") =>
+              base match 
+                case ThisType(tref) =>
+                  if (tref.typeSymbol.name == "FirstOrderType") {
+                    ???
+                  }
+                case _ =>
+            case _ =>
+          r
+
+          
+        def optTypeSelect(obj: Term, fieldOrGetter: Symbol): Term =
+          obj.tpe match
+            case AppliedType(tycon, args) =>
+              TypeApply(Select(obj,fieldOrGetter),args.map(Inferred(_)))
+            case _ =>
+              Select(obj,fieldOrGetter)
+              
 
       }
 
@@ -1763,16 +1694,21 @@ object JsonCodecMaker {
               } else None
               val isStringified = annotationOption.exists(_.stringified)
               val isTransient = annotationOption.exists(_.transient)
+
+                // dotty error here -- don't show that this type is applied.
               val originFieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ???
+              val targs: List[TypeRepr] = tpe match
+                case AppliedType(base,targs) => targs
+                case _ => List.empty
               val fieldType = if (! typeParams.isEmpty ) {
                   tpe match {
-                    case AppliedType(base, types) =>
-                      // we assume, that type-params for primart constructor are thr same as class type params
-                      if (types.length == typeParams.length) {
-                          substituteTypes(originFieldType,typeParams,types)
-                      } else {
-                          fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
-                      }
+                    case AppliedType(base, targs) =>
+                          // we assume, that type-params for primart constructor are thr same as class type params
+                          if (targs.length == typeParams.length) {
+                              substituteTypes(originFieldType,typeParams,targs)
+                          } else {
+                              fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
+                          }
                     case TypeRef(repr,name) =>
                       println(s"tpe = typeref: repr=($repr), name=$name")
                       originFieldType
@@ -1783,24 +1719,16 @@ object JsonCodecMaker {
                   originFieldType
               }
               fieldType match
-                  case TypeLambda(name,bounds,body) =>
-                    fail(s"Hight-kinded types are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
+                  case TypeLambda(tpName,bounds,body) =>
+                    fail(
+                      s"Hight-kinded types are not supported for type ${tpe.show} with field type for '${name}' (symbol=$symbol) : ${fieldType.show}"+
+                      s"originFieldType = $originFieldType,  typeParams=$typeParams, "
+                    )
+
                   case TypeBounds(low, hi) =>  
                     fail(s"Type bounds are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
                   case _ =>
                     if (fieldType.typeSymbol.isTypeParam) {
-                      fieldType match
-                        case TypeRef(repr, name ) =>
-                          println(s" fieldType is TypeRef(${repr.show},$name) ($fieldType)")
-                          println(s"find-attempt: ${typeParams.find(_ == fieldType.typeSymbol)}")
-                          println(s"originFieldType: ${originFieldType}")
-                          println(s"origin-find-attempt: ${typeParams.find(_ == fieldType.typeSymbol)}")
-                          val typeArgs = tpe match
-                            case AppliedType(tycon, args) => args
-                            case _ => ???
-                          val symTypeMaps = typeParams.zip(typeArgs).toMap
-                          println(s"get in map: ${symTypeMaps.get(originFieldType.typeSymbol)}")
-                        case _ =>
                       fail(
                         s"fieldType ${fieldType.show} isTypeParam, probaly error in substituyion\n" +
                         s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
@@ -2120,7 +2048,7 @@ object JsonCodecMaker {
           case None =>
             val name = "e" + encodeMethodSyms.size
             val mt = MethodType(List("x","out"))(
-                _ => List(methodKey.tpe.widen, TypeRepr.of[JsonWriter]),
+                _ => List( TypeRepr.of[A] /*methodKey.tpe.widen*/, TypeRepr.of[JsonWriter]),
                 _ => TypeRepr.of[Unit]
             )
             val sym = Symbol.newMethod(Symbol.spliceOwner, name, mt)
@@ -2130,6 +2058,13 @@ object JsonCodecMaker {
                 case List(List(x,out)) =>
                   x match
                     case xTerm: Term => 
+                      val x = try {
+                        xTerm.asExprOf[A]
+                      }catch{
+                        case ex: Throwable =>
+                          println(s"Exception during asting of x to A: A=${TypeRepr.of[A].show}, xTerm.tpe=${xTerm.tpe}, xTerm.tpe.widen=${xTerm.tpe.widen}, methodKey.tpe.widen=${methodKey.tpe.widen}")
+                          throw ex;
+                      }
                       val res = f(out.asExprOf[JsonWriter],xTerm.asExprOf[A]).asTerm
                       val res1 = res.changeOwner(sym)
                       //val res1 = LowLevelQuoteUtil.deepChangeOwner(res.asInstanceOf[quotes.reflect.Term],sym.asInstanceOf[quotes.reflect.Symbol], traceFlag && false).asInstanceOf[Term]
@@ -3688,7 +3623,7 @@ object JsonCodecMaker {
                   }
                 }
               case _ => ???
-        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withEncoderFor(methodKey, m, out) { (out,x) =>
+        } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withEncoderFor[T](methodKey, m, out) { (out,x) =>
           // TODO: this can be 
           val tpe1 = typeArg1(tpe).widen
           val tpe2 = typeArg2(tpe).widen
@@ -3716,7 +3651,7 @@ object JsonCodecMaker {
               }
             case _ =>
               fail(s"Can't get types for ${tpe1}, ${tpe2}")
-        } else if (tpe <:< TypeRepr.of[BitSet]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[BitSet]) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           genWriteArray[Int](x.asExprOf[BitSet],
             (out, x1) => {
                if (isStringified) '{ $out.writeValAsString(${x1}) }
@@ -3724,12 +3659,20 @@ object JsonCodecMaker {
             },
             out
           )
-        } else if (tpe <:< TypeRepr.of[List[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[List[_]]) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.widen.asType match
             case '[t1] =>
+              val tx = try {
+                x.asExprOf[List[t1]]
+              }catch{
+                case ex: Throwable =>
+                  println(s"exception during casting of ${x} to ${Type.show[List[t1]]}")
+                  println(s"x.tpe=${x.asTerm.tpe}, x.tpe.widen=${x.asTerm.tpe.widen.show}, tpe=${tpe.show}, T=${Type.show[T]}")
+                  throw ex
+              }
               '{ $out.writeArrayStart()
-                  var l: _root_.scala.collection.immutable.List[t1] = ${x.asExprOf[List[t1]]}
+                  var l: _root_.scala.collection.immutable.List[t1] = $tx
                   while (!l.isEmpty) {
                     ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
                     l = l.tail
@@ -3737,7 +3680,7 @@ object JsonCodecMaker {
                   $out.writeArrayEnd()
               }
             case _ => fail(s"Can't get types ${tpe1}")
-        } else if (tpe <:< TypeRepr.of[IndexedSeq[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[IndexedSeq[_]]) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)  // better typeArg
           tpe1.widen.asType match
             case '[t1] =>
@@ -3753,7 +3696,7 @@ object JsonCodecMaker {
                 $out.writeArrayEnd()
               }
             case _ => fail(s"Can't get types ${tpe1}")
-        } else if (tpe <:< TypeRepr.of[Iterable[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[Iterable[_]]) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1Of[Iterable](tpe)
           tpe1.widen.asType match
             case '[t1] =>
@@ -3762,7 +3705,7 @@ object JsonCodecMaker {
                   out
               )
             case _ => fail(s"Can't get types ${tpe1}")
-        } else if (tpe <:< TypeRepr.of[Array[_]]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[Array[_]]) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           val tpe1 = typeArg1(tpe)
           tpe1.widen.asType match
             case '[t1] =>
@@ -3778,13 +3721,13 @@ object JsonCodecMaker {
                 $out.writeArrayEnd()
               }
             case _ => fail(s"Can't get types ${tpe1}")
-        } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           val tx = x.asExprOf[Enumeration#Value]
           if (cfg.useScalaEnumValueId) {
             if (isStringified) '{ $out.writeValAsString($tx.id) }
             else '{ $out.writeVal($tx.id) }
           } else '{ $out.writeVal($tx.toString) }
-        } else if (isJavaEnum(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (isJavaEnum(tpe)) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
@@ -3800,7 +3743,7 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeVal($tx.name) }
             else '{ $out.writeNonEscapedAsciiVal( $tx.name) }
           }
-        } else if (tpe.typeSymbol.flags.is(Flags.Module)) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (tpe.typeSymbol.flags.is(Flags.Module)) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           '{
               $out.writeObjectStart()
               ${ 
@@ -3811,13 +3754,17 @@ object JsonCodecMaker {
               }
               $out.writeObjectEnd()
           }
-        } else if (isTuple(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (isTuple(tpe)) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           tpe match
             case AppliedType(base, typeArgs) =>
               val writeFields = typeArgs.zipWithIndex.map { case (ta, i) =>
-                val name = "_" + (i + 1)
-                val t = Select.unique(x.asTerm,name)
-                genWriteVal(t.asExpr, ta.dealias :: types, isStringified, None, out)
+                ta.asType match
+                  case '[type_ta] =>
+                    val name = "_" + (i + 1)
+                    val t = Select.unique(x.asTerm,name)
+                    genWriteVal[type_ta](t.asExprOf[type_ta], ta.dealias :: types, isStringified, None, out)
+                  case _ =>
+                    fail(s"Can't deduce type for ${ta.show}")
               }
               val block = Block(
                 '{ $out.writeArrayStart() }.asTerm :: writeFields.map(_.asTerm).toList,
@@ -3825,11 +3772,11 @@ object JsonCodecMaker {
               )
               block.asExprOf[Unit]
             case _ => fail(s"exprected that ${tpe.show} should be AppliedType")    
-        } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (isSealedClass(tpe)) withEncoderFor[T](methodKey, m, out) { (out, x) =>
           def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator], vx: Term): Expr[Unit] = {
             subTpe.asType match
               case '[st] =>
-                if (subTpe != tpe) { // TODO: check chanr to =:=
+                if (!(subTpe =:= tpe)) { 
                   genWriteVal[st](vx.asExprOf[st], subTpe :: types, isStringified, discriminator, out)
                 } else {
                   genWriteNonAbstractScalaClass(vx.asExprOf[st], types, discriminator, out)
@@ -3868,7 +3815,7 @@ object JsonCodecMaker {
               }
           }) :+ CaseDef(Literal(NullConstant()),  None, '{ $out.writeNull() }.asTerm )
           Match(x.asTerm, writeSubclasses.toList).asExprOf[Unit]
-        } else if (isNonAbstractScalaClass(tpe)) withEncoderFor(methodKey, m, out) { (out,x) =>
+        } else if (isNonAbstractScalaClass(tpe)) withEncoderFor[T](methodKey, m, out) { (out,x) =>
           genWriteNonAbstractScalaClass[T](x.asExprOf[T], types, optWriteDiscriminator, out)
         } else if (isConstType(tpe)) getWriteConstType(tpe, m.asTerm, isStringified, out)
         else cannotFindValueCodecError(tpe)
