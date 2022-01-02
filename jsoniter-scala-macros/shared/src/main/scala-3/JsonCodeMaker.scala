@@ -898,7 +898,6 @@ object JsonCodecMaker {
       }
  
 
-
       def companion(tpe: TypeRepr): Symbol = {
         tpe.typeSymbol.moduleClass
       }
@@ -1574,8 +1573,20 @@ object JsonCodecMaker {
          case object NoField extends GetterOrField
       }
 
-      case class ClassInfo(tpe: TypeRepr, allFields: IndexedSeq[FieldInfo]) {
-        def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
+      case class ClassInfo(tpe: TypeRepr,
+                           primaryConstructor: Symbol, 
+                           allFields: IndexedSeq[FieldInfo]) {
+        
+          def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
+
+          def genNew(args: List[Term]): Term =
+            val constructorNoTypes = Select(New(Inferred(tpe)),primaryConstructor)
+            val constructor = tpe match
+                case AppliedType(tycon, targs) =>
+                  TypeApply(constructorNoTypes, targs.map(Inferred(_)))
+                case _ => constructorNoTypes
+            Apply(constructor,args)
+
       }
 
       val classInfos = mutable.LinkedHashMap.empty[TypeRepr, ClassInfo]
@@ -1753,7 +1764,7 @@ object JsonCodecMaker {
         def isTypeParamsList(symbols:List[Symbol]):Boolean =
           symbols.exists(_.isTypeParam)
 
-        ClassInfo(tpe, primaryConstructor.paramSymss match {
+        ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
           case Nil =>
             fail(s"'${tpe.show}' has a primary constructor without parameters lists (impossible ?). ")
           case params::Nil =>
@@ -1773,67 +1784,6 @@ object JsonCodecMaker {
 
       })
 
-        /*
-        ClassInfo(tpe, primaryConstructor.paramSymss.filter(!_.exists(_.isTypeParam)) match {
-          case params :: Nil =>   params.foldLeft(IndexedSeq.empty[FieldInfo]){ (fieldInfos, symbol) =>
-            //val symbol = p.asTerm
-            //val name = decodeName(symbol)
-            val name = symbol.name
-            val annotationOption = annotations.get(name)
-            if (annotationOption.exists(_.transient)) fieldInfos
-            else {
-              val mappedName = annotationOption.fold{ 
-                cfg.fieldNameMapper(name).getOrElse(name)
-              }(_.partiallyMappedName)
-              //val getter = getters.find(_.name == symbol.name).getOrElse {
-              //  println(s"!!!fail (name - parameters: ):getters = $getters, name=${symbol.name}")
-              //  fail(s"'$name' parameter of '$tpe' should be defined as 'val' or 'var' in the primary constructor.")
-              //}
-
-              val getterOrField = {
-                val field = tpeClassSym.fieldMember(name)
-                if (field.exists) {
-                  FieldInfo.Field(field)
-                } else {
-                  val getters = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor))
-                  if (getters.isEmpty) {
-                    fail(s"field and getter not found: '$name' parameter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
-                  } else {
-                    // TODO: check length ?  when we have both reader and writer.
-                    // TODO: enable and check.
-                    //getters.filter(_.paramSymss == List(List()))
-                    FieldInfo.Getter(getters.head)
-                  }    
-                }
-              }
-
-              
-              val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
-                // TODO: probably here is bug with transient 
-                //  mn. hold
-                tpeClassSym.methodMember("$lessinit$greater$default$"+(fieldInfos.length)).headOption.map(Ref(_))
-                  //declarations.find(_.name.startsWith("$lessinit$greater$default"))
-              } else None
-                // TODO: find way to get default value of the parameter.  
-                //  currently this is not possible in scala3: see https://github.com/lampepfl/dotty/discussions/14078
-                //  
-                //if (symbol.isParamWithDefault) Some(q"$module.${TermName("$lessinit$greater$default$" + (i + 1))}")
-                //else None
-              val isStringified = annotationOption.exists(_.stringified)
-              val fieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ??? 
-              val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isStringified, fieldInfos.length) 
-              fieldInfos.appended(newFieldInfo)
-            }
-          }
-          case _ => fail(s"'${tpe.show}' has a primary constructor with multiple parameter lists. " +
-            "Please consider using a custom implicitly accessible codec for this type.\n" +
-            s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n"+
-            s"filtered: ${primaryConstructor.paramSymss.filter(!_.exists(_.isTypeParam))}"
-            )
-            // TODO:  check type-params,
-        })
-      })
-      */
 
       def unexpectedFieldHandler(in: Expr[JsonReader], l:Expr[Int])(using Quotes): Expr[Unit] =
         if (cfg.skipUnexpectedFields) '{ $in.skip() }
@@ -2334,16 +2284,6 @@ object JsonCodecMaker {
         }.toMap
 
         val construct = try {
-          //println(s"genReadNonAbstractScalaClass:costruct primary constructor, tpe=${tpe.show} ($tpe), classInfo=${classInfo}")
-          //tpe.classSymbol match
-          //  case Some(classSymbol) => println(s"classSymbol = $classSymbol")
-          //  case None =>  println("no classSymbol")  
-          val constructor = tpe match
-            case AppliedType(tycon, typeParams) =>
-              TypeApply(Select.unique(New(Inferred(tpe)),"<init>"),typeParams.map(x => Inferred(x)))
-            case _ =>
-              Select.unique(New(Inferred(tpe)),"<init>")
-
           var nonTransientFieldIndex = 0    
           val constructorParams: IndexedSeq[Term] = classInfo.allFields.foldLeft(IndexedSeq.empty){ (params, fieldInfo) =>
             val v = if (fieldInfo.isTransient) {
@@ -2358,7 +2298,7 @@ object JsonCodecMaker {
             }
             params.appended(v)
           }
-          Apply(constructor,constructorParams.toList )
+          classInfo.genNew(constructorParams.toList)
         } catch {
           case ex: Throwable =>
             println(s"error during constructing instance. tpe=${tpe.show} ($tpe)")
