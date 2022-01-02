@@ -265,6 +265,16 @@ final case class Orange(color: Int) extends Fruit[Orange]
 
 case class Basket[T <: Fruit[T]](fruits: List[T])
 
+case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
+
+object HKField {
+      sealed trait Foo[A[_]] extends Product with Serializable
+
+      case class Bar[A[_]](a: A[Int]) extends Foo[A]
+
+      case class Baz[A[_]](a: A[String]) extends Foo[A]
+}
+
 
 class JsonCodecMakerSpec extends VerifyingSpec {
 
@@ -1982,7 +1992,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         case "a" => "value"
       }), Right("VVV"), """{"type":"Right","value":"VVV"}""")
 
-      case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
+      // dotty bug
+      //  TODO:  extract and submit to dotty.
+      //   for now, let's move up,
+      //case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
       verifySerDeser(make[FirstOrderType[Int, String]],
         FirstOrderType[Int, String](1, "VVV", Some(1), List("WWW")),
@@ -1990,6 +2003,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[FirstOrderType[Id[Int], Id[String]]],
         FirstOrderType[Id[Int], Id[String]](Id[Int](1), Id[String]("VVV"), Some(Id[Int](2)), List(Id[String]("WWW"))),
         """{"a":1,"b":"VVV","oa":2,"bs":["WWW"]}""")
+        
     }
     "don't generate codecs for first-order types that are specified using 'Any' type parameter" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -2020,11 +2034,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
+      /*
       sealed trait Foo[A[_]] extends Product with Serializable
 
       case class Bar[A[_]](a: A[Int]) extends Foo[A]
 
       case class Baz[A[_]](a: A[String]) extends Foo[A]
+      */
+      import HKField._
 
       val codecOfFooForOption = make[Foo[Option]]
       verifySerDeser(codecOfFooForOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""")

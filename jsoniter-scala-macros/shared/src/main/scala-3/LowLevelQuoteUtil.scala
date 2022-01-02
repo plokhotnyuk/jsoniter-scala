@@ -15,6 +15,7 @@ object LowLevelQuoteUtil {
     import quotes.reflect.*  
 
     val mapper = new TreeMap() {
+
         override def transformTree(tree: Tree)(owner: Symbol):Tree = {
           try {
             super.transformTree(tree)(owner)
@@ -38,43 +39,31 @@ object LowLevelQuoteUtil {
         }
 
         override def transformTerm(tree:Term)(owner: Symbol):Term = {
-          var mismatch = false
-          if (tree.symbol.exists) {
-            if (tree.symbol.maybeOwner.exists) {
-              if (tree.symbol.owner != owner) {
-                if (false & traceFlag) {
-                  println(s"owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}, fixing")
-                }
-                mismatch = true
-              }
-            }
-          }
-      
+        
           tree match {
             case Inlined(orgin, bindings, body) =>
               if (bindings.isEmpty) {
                 transformTerm(body)(owner)
               } else {
-                val r = if (mismatch) {
-                  if (traceFlag) {
-                    println(s"fixing mismatch for $tree")
-                  }
-                  tree.changeOwner(owner)
-                } else tree
-                super.transformTerm(r)(owner)
+                super.transformTerm(tree)(owner)
               }
             case bl@Block(statements, expr) =>
               var needTopLevelChange = false
+              var incorrectSymbols: List[Symbol] = Nil
               for{ s <- statements } {
                 s match {
                   case d: Definition =>
                     if (d.symbol.owner != owner) {
+                      incorrectSymbols = d.symbol::incorrectSymbols
                       needTopLevelChange = true
                     }
                   case other =>
                 }
               }
               val r = if (needTopLevelChange) {
+                         if (traceFlag) {
+                           print(s"fixing owners for ${incorrectSymbols.mkString(",")}")
+                         }
                          bl.changeOwner(owner)
                       } else bl
               val nStatements = r.statements.map{ s =>
@@ -91,16 +80,19 @@ object LowLevelQuoteUtil {
                            transformTerm(ifTrue)(owner),
                            transformTerm(ifFalse)(owner)
               )
+            //case tt: TypeTree => 
+              // should not be here.
+              //  TODO: catch and report to dotty  
             case _ =>
-              val r = if (mismatch) {
-                if (traceFlag) {
-                  println(s"fixing mismatch for ${tree.show}")
-                }
-                tree.changeOwner(owner)
-              } else tree
-              super.transformTerm(r)(owner)
+              super.transformTerm(tree)(owner)
           }
         }
+
+        override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree = {
+          // don't navigate over types.
+          tree
+        }
+       
 
         def checkInvalidOwner(term: Term, owner: Symbol):Boolean =
           checkOwner(term, owner, traceFlag, false, true) 
@@ -110,6 +102,7 @@ object LowLevelQuoteUtil {
 
    }
 
+ 
    /*
    def findAnyOwner(using Quotes)(tree: quotes.reflect.Tree): Option[quotes.reflect.Symbol] = {
     import quotes.reflect.*
