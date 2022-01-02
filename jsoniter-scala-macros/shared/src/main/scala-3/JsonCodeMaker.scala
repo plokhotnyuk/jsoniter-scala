@@ -1680,28 +1680,52 @@ object JsonCodecMaker {
               }
        
               val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
+                                    /*
                                     val methodSymbol = defaultValues(defaultValueIndex)
                                     defaultValueIndex += 1
                                     println(s"symbbol: ${methodSymbol}")
                                     println(s"symbbol tree: ${methodSymbol.tree.show}")
                                     println(s"symbol paramss: ${methodSymbol.paramSymss}")
 
-                                    val companion = Ref(tpeClassSym.companionModule)
-                                    val methodCallNoTArgs = Select(companion, methodSymbol)
-                                    val methodCall = methodSymbol.paramSymss match
-                                      case Nil => methodCallNoTArgs
+                                    val companion = Ref(tpe.typeSymbol.companionModule)
+                                    val dvSelectNoTArgs = companion.select(methodSymbol)
+                                    val dvSelect = methodSymbol.paramSymss match
+                                      case Nil => dvSelectNoTArgs
                                       case List(params) if (params.exists(_.isTypeParam)) =>
                                         tpe match
                                           case AppliedType(tycon, args) =>
-                                            TypeApply(methodCallNoTArgs, args.map(Inferred(_)))
+                                            TypeApply(dvSelectNoTArgs, args.map(Inferred(_)))
                                           case _ =>
                                             fail(s"expected that ${tpe.show} is an applied type") 
                                       case other =>
                                         fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
-                                    Some(methodCall)
+                                    Some(dvSelect)
+                                    */
                                     //TODO: check
-                                    //val companion = tpe.typeSymbol.companionModule
-                                    //tpeClassSym.methodMember("$lessinit$greater$default$"+(i+1)
+                                    val companionModule = tpe.typeSymbol.companionModule
+                                    val companionClass = tpe.typeSymbol.companionClass
+                                    val dvMembers = companionClass.methodMember("$lessinit$greater$default$"+(i+1))
+                                    if (dvMembers.isEmpty) {
+                                      fail(s"Can't find default value for ${symbol} in class ${tpe.show}")
+                                    }
+                                    val methodSymbol = dvMembers.head
+                                    val dvSelectNoTArgs = Ref(companionModule).select(methodSymbol)
+                                    val dvSelect = methodSymbol.paramSymss match
+                                      case Nil => dvSelectNoTArgs
+                                      case List(params) if (params.exists(_.isTypeParam)) =>
+                                        tpe match
+                                          case AppliedType(tycon, args) =>
+                                            TypeApply(dvSelectNoTArgs, args.map(Inferred(_)))
+                                          case _ =>
+                                            fail(s"expected that ${tpe.show} is an applied type") 
+                                      case other =>
+                                        fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
+                                    if (tpe.typeSymbol.name=="Transient") {
+                                        println(s"for Transient companion, tpe=${tpe.show} companionClass = ${companionClass}, members=${companionClass.methodMembers}")
+                                        println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
+                                    }    
+                                    Some(dvSelect)
+
               } else None
               val isStringified = annotationOption.exists(_.stringified)
               val isTransient = annotationOption.exists(_.transient)

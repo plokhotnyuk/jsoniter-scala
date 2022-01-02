@@ -275,6 +275,10 @@ object HKField {
       case class Baz[A[_]](a: A[String]) extends Foo[A]
 }
 
+case class Transient(@transient transient: String = "default", required: String) {
+  val ignored: String = s"$required-$transient"
+}
+
 
 class JsonCodecMakerSpec extends VerifyingSpec {
 
@@ -1518,9 +1522,11 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
+      /*
       case class Transient(@transient transient: String = "default", required: String) {
         val ignored: String = s"$required-$transient"
       }
+      */
 
       val codecOfTransient = make[Transient]
       verifySer(codecOfTransient, Transient(required = "VVV"), """{"required":"VVV"}""")
