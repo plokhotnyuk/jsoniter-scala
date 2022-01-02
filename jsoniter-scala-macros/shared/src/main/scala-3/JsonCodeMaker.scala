@@ -573,7 +573,7 @@ object JsonCodecMaker {
             report.errorAndAbort(s"Cannot evaluate a parameter of the 'make' macro call for type '${Type.show[A]}'. ")
           case Some(cfg) =>
             if (cfg.requireCollectionFields && cfg.transientEmpty) {
-              report.throwError("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
+              report.errorAndAbort("'requireCollectionFields' and 'transientEmpty' cannot be 'true' simultaneously")
             }
             cfg
       }
@@ -1040,14 +1040,12 @@ object JsonCodecMaker {
         
 
       
-      //val scalaEnumCacheNames = mutable.LinkedHashMap.empty[TypeRepr, ValDef]
-      //val scalaEnumCacheTries = mutable.LinkedHashMap.empty[TypeRepr, Expr[ConcurrentHashMap[Int|String,_]]]
-      val scalaEnumCaches = mutable.LinkedHashMap.empty[TypeRepr, ValDef]
+      val scala2EnumerationCaches = mutable.LinkedHashMap.empty[TypeRepr, ValDef]
 
-      def withScalaEnumCacheFor[K:Type,T:Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K,T]]  = {
-          val valDef = scalaEnumCaches.getOrElseUpdate( tpe, {
+      def withScala2EnumerationCacheFor[K:Type,T:Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K,T]]  = {
+          val valDef = scala2EnumerationCaches.getOrElseUpdate( tpe, {
               val ec = '{ new _root_.java.util.concurrent.ConcurrentHashMap[K, T]  }
-              val name = s"ec${scalaEnumCaches.size}"
+              val name = s"ec${scala2EnumerationCaches.size}"
               val sym = Symbol.newVal(Symbol.spliceOwner, name, TypeRepr.of[ConcurrentHashMap[K,T]], Flags.EmptyFlags, Symbol.noSymbol)
               ValDef(sym,Some(ec.asTerm.changeOwner(sym)))
           })
@@ -1414,7 +1412,7 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[ZoneOffset]) '{ $in.readKeyAsZoneOffset() }.asExprOf[T]
         else if (tpe <:< TypeRepr.of[Enumeration#Value]) {
           if (cfg.useScalaEnumValueId) {
-            val ec = withScalaEnumCacheFor[Int, T & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationCacheFor[Int, T & Enumeration#Value](tpe)
             '{
               val i = ${in}.readKeyAsInt()
               var x = ${ec}.get(i)
@@ -1425,7 +1423,7 @@ object JsonCodecMaker {
               x
             }.asExprOf[T]
           } else {
-            val ec = withScalaEnumCacheFor[String, T & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationCacheFor[String, T & Enumeration#Value](tpe)
             '{
               val s = $in.readKeyAsString()
               var x = $ec.get(s)
@@ -2993,7 +2991,7 @@ object JsonCodecMaker {
         } else if (tpe <:< TypeRepr.of[Enumeration#Value]) withDecoderFor(methodKey, default, in) { (in, default, throwFlag) =>
           checkDebugThrow(throwFlag)
           if (cfg.useScalaEnumValueId) {
-            val ec = withScalaEnumCacheFor[Int, C & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationCacheFor[Int, C & Enumeration#Value](tpe)
             if (isStringified) {
               '{ if ($in.isNextToken('"')) {
                     $in.rollbackToken()
@@ -3021,7 +3019,7 @@ object JsonCodecMaker {
               }
             }
           } else {
-            val ec = withScalaEnumCacheFor[String, C & Enumeration#Value](tpe)
+            val ec = withScala2EnumerationCacheFor[String, C & Enumeration#Value](tpe)
             '{  if ($in.isNextToken('"')) {
                   $in.rollbackToken()
                   val s = $in.readString(null)
@@ -3795,7 +3793,7 @@ object JsonCodecMaker {
                                           (mathContexts.values.toList: List[Statement]) ++
                                           (nullValues.values.toList: List[Statement]) ++
                                           (equalsMethods.values.toList: List[Statement]) ++
-                                          (scalaEnumCaches.values.toList: List[Statement]) ++
+                                          (scala2EnumerationCaches.values.toList: List[Statement]) ++
                                           (fieldIndexAccessors.values.toList: List[Statement]) ++
                                           (decodeMethodDefs.values.toList: List[Statement]) ++
                                           (encodeMethodDefs.values.toList: List[Statement]) 
