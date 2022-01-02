@@ -1122,7 +1122,10 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[Float] || tpe =:= TypeRepr.of[java.lang.Float]) '{ $in.readKeyAsFloat() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[java.lang.Double]) '{ $in.readKeyAsDouble() }.asExprOf[T]
         else if (isValueClass(tpe)) {
-                val newObjInit = Select.unique(New(Inferred(tpe)),"<init>") 
+                val newObjInit = Select.unique(New(Inferred(tpe)),"<init>")
+                if (!newObjInit.symbol.isClassConstructor) {
+                  throw new RuntimeException("Call of non-consturctir")
+                } 
                 /*
                 val newObjTypedInit = tpe match
                   case AppliedType(tycom, args) =>
@@ -1617,6 +1620,7 @@ object JsonCodecMaker {
         //val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
         val fields = tpeClassSym.fieldMembers
         val fieldsWithDefaultValues = fields.filter(_.flags.is(Flags.HasDefault))
+        /*
         val defaultValues: IndexedSeq[Symbol] = if (fieldsWithDefaultValues.isEmpty) {
            IndexedSeq.empty
         } else {
@@ -1633,6 +1637,7 @@ object JsonCodecMaker {
            println(s"found default values: $r")
            r.toIndexedSeq
         }
+        */
 
         val annotations = tpeClassSym.fieldMembers.collect {
           case m: Symbol if hasSupportedAnnotation(m) =>
@@ -2604,13 +2609,8 @@ object JsonCodecMaker {
           tpe1.widen.asType match
             case '[t1] =>
               val readVal = genReadVal[t1](tpe1::types, genNullValue[t1](tpe1::types), isStringified, false, in)
-              //TODO: generate-constructor-call from arg as a function
-              val constructorNoTArgs = Select.unique(New(Inferred(tpe)),"<init>")
-              val constructor = tpe match
-                case AppliedType(tycon,targs) =>
-                  TypeApply(constructorNoTArgs, targs.map(Inferred(_)))
-                case _ => constructorNoTArgs
-              Apply(constructor,List(readVal.asTerm)).asExprOf[C]
+              val tpeClassInfo = getClassInfo(tpe)
+              tpeClassInfo.genNew(List(readVal.asTerm)).asExprOf[C]
             case _ =>
               fail(s"can't determinate type for ${tpe1.show}.")
         } else if (isOption(tpe)) {
@@ -3823,13 +3823,14 @@ object JsonCodecMaker {
             }*/
 
 
-          val needDefs: List[Statement] = (decodeMethodDefs.values.toList: List[Statement]) ++
-                                          (encodeMethodDefs.values.toList: List[Statement]) ++
-                                          (fieldIndexAccessors.values.toList: List[Statement]) ++
-                                          (equalsMethods.values.toList: List[Statement]) ++
-                                          (nullValues.values.toList: List[Statement]) ++
+          val needDefs: List[Statement] = 
                                           (mathContexts.values.toList: List[Statement]) ++
-                                          (scalaEnumCaches.values.toList: List[Statement])
+                                          (nullValues.values.toList: List[Statement]) ++
+                                          (equalsMethods.values.toList: List[Statement]) ++
+                                          (scalaEnumCaches.values.toList: List[Statement]) ++
+                                          (fieldIndexAccessors.values.toList: List[Statement]) ++
+                                          (decodeMethodDefs.values.toList: List[Statement]) ++
+                                          (encodeMethodDefs.values.toList: List[Statement]) 
           
           val retBlock = Block(
               needDefs,
