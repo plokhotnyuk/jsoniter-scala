@@ -1108,6 +1108,252 @@ object JsonCodecMaker {
         }
       }
 
+      case class FieldInfo(symbol: Symbol, 
+                           mappedName: String,  
+                           getterOrField: FieldInfo.GetterOrField,
+                           defaultValue: Option[Term], 
+                           resolvedTpe: TypeRepr,
+                           //targs: List[TypeRepr],
+                           isTransient: Boolean, 
+                           isStringified: Boolean, 
+                           fieldIndex: Int) {
+
+        def genGet(obj:Term):Term =
+          val r = getterOrField match
+              case FieldInfo.Getter(getter) =>  Select(obj,getter)  
+              case FieldInfo.Field(field) => Select(obj, field)
+              case FieldInfo.NoField => 
+                // TODO: better description
+                fail(s"getter is called for ${mappedName}")
+          if (r.tpe.typeSymbol.isTypeParam) {
+            throw new RuntimeException(s"r.tpe.typeSymbol is typeParam, obj=${obj}")
+          }
+          r.tpe match
+            case TypeRef(base,"A") =>
+              base match 
+                case ThisType(tref) =>
+                  if (tref.typeSymbol.name == "FirstOrderType") {
+                    ???
+                  }
+                case _ =>
+            case _ =>
+          r
+
+          
+        def optTypeSelect(obj: Term, fieldOrGetter: Symbol): Term =
+          obj.tpe match
+            case AppliedType(tycon, args) =>
+              TypeApply(Select(obj,fieldOrGetter),args.map(Inferred(_)))
+            case _ =>
+              Select(obj,fieldOrGetter)
+              
+      }
+
+      object FieldInfo {
+        sealed trait GetterOrField
+        case class Getter(symbol: Symbol) extends GetterOrField
+        case class Field(symbol: Symbol) extends GetterOrField
+        case object NoField extends GetterOrField
+      }
+
+      case class ClassInfo(tpe: TypeRepr,
+                          primaryConstructor: Symbol, 
+                          allFields: IndexedSeq[FieldInfo]) {
+       
+         def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
+
+         def genNew(args: List[Term]): Term =
+           val constructorNoTypes = Select(New(Inferred(tpe)),primaryConstructor)
+           val constructor = tpe match
+               case AppliedType(tycon, targs) =>
+                 TypeApply(constructorNoTypes, targs.map(Inferred(_)))
+               case _ => constructorNoTypes
+           Apply(constructor,args)
+
+      }
+
+      val classInfos = mutable.LinkedHashMap.empty[TypeRepr, ClassInfo]
+
+      def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
+
+        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
+
+        def getPrimaryConstructor(tpe: TypeRepr): Symbol = 
+          tpe.classSymbol match 
+            case None => 
+              fail(s"Cannot find a primary constructor for '$tpe'")
+            case Some(sym) =>
+              val retval = sym.primaryConstructor
+              if (!retval.exists) {
+                fail(s"Cannot find a primary constructor for '$tpe'")
+              }
+              retval
+     
+        def hasSupportedAnnotation(m: Symbol): Boolean = {
+          m.annotations.exists(a => a.tpe <:< TypeRepr.of[named] || a.tpe <:< TypeRepr.of[transient] ||
+            a.tpe <:< TypeRepr.of[stringified])
+        }
+
+        val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"expected that ${tpe.show} has classSymbol"))
+        
+        //lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
+        //val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
+        val fields = tpeClassSym.fieldMembers
+        val fieldsWithDefaultValues = fields.filter(_.flags.is(Flags.HasDefault))
+
+        val annotations = tpeClassSym.fieldMembers.collect {
+          case m: Symbol if hasSupportedAnnotation(m) =>
+            val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
+            val named = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[named])
+            if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named]}' defined for '$name' of '$tpe'.")
+            val trans = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[transient])
+            if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient]}' defined for '$name' of '$tpe'.")
+            val strings = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[stringified])
+            if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified]}' defined for '$name' of '$tpe'.")
+            if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
+              warn(s"Both '${Type.show[transient]}' and '${Type.show[named]}' or " +
+                s"'${Type.show[transient]}' and '${Type.show[stringified]}' defined for '$name' of '$tpe'.")
+            }
+            val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
+            (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
+        }.toMap
+        val primaryConstructor = getPrimaryConstructor(tpe)
+
+        def createFieldInfos(params:List[Symbol], typeParams:List[Symbol]): IndexedSeq[FieldInfo] = {
+          val fieldInfos: ArrayBuffer[FieldInfo] = ArrayBuffer.empty
+          var defaultValueIndex = 0
+          for{ (symbol, i) <- params.zipWithIndex } {
+              val name = symbol.name
+              val annotationOption = annotations.get(name)
+              val mappedName = annotationOption.fold{ 
+                  cfg.fieldNameMapper(name).getOrElse(name)
+              }(_.partiallyMappedName)
+              
+              val getterOrField = {
+                  val field = tpeClassSym.fieldMember(name)
+                  if (field.exists) {
+                    FieldInfo.Field(field)
+                  } else {
+                    val getters = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor))
+                    if (getters.isEmpty) {
+                      fail(s"field and getter not found: '$name' parameter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
+                    } else {
+                      // TODO: check length ?  when we have both reader and writer.
+                      // TODO: enable and check.
+                      //getters.filter(_.paramSymss == List(List()))
+                      FieldInfo.Getter(getters.head)
+                    }    
+                  }
+              }
+       
+              val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
+                                    val companionModule = tpe.typeSymbol.companionModule
+                                    val companionClass = tpe.typeSymbol.companionClass
+                                    val dvMembers = companionClass.methodMember("$lessinit$greater$default$"+(i+1))
+                                    if (dvMembers.isEmpty) {
+                                      fail(s"Can't find default value for ${symbol} in class ${tpe.show}")
+                                    }
+                                    val methodSymbol = dvMembers.head
+                                    val dvSelectNoTArgs = Ref(companionModule).select(methodSymbol)
+                                    val dvSelect = methodSymbol.paramSymss match
+                                      case Nil => dvSelectNoTArgs
+                                      case List(params) if (params.exists(_.isTypeParam)) =>
+                                        tpe match
+                                          case AppliedType(tycon, args) =>
+                                            TypeApply(dvSelectNoTArgs, args.map(Inferred(_)))
+                                          case _ =>
+                                            fail(s"expected that ${tpe.show} is an applied type") 
+                                      case other =>
+                                        fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
+                                    if (tpe.typeSymbol.name=="Transient") {
+                                        println(s"for Transient companion, tpe=${tpe.show} companionClass = ${companionClass}, members=${companionClass.methodMembers}")
+                                        println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
+                                    }    
+                                    Some(dvSelect)
+
+              } else None
+              val isStringified = annotationOption.exists(_.stringified)
+              val isTransient = annotationOption.exists(_.transient)
+
+                // dotty error here -- don't show that this type is applied.
+              val originFieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ???
+              val targs: List[TypeRepr] = tpe match
+                case AppliedType(base,targs) => targs
+                case _ => List.empty
+              val fieldType = if (! typeParams.isEmpty ) {
+                  tpe match {
+                    case AppliedType(base, targs) =>
+                          // we assume, that type-params for primart constructor are thr same as class type params
+                          if (targs.length == typeParams.length) {
+                              substituteTypes(originFieldType,typeParams,targs)
+                          } else {
+                              fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
+                          }
+                    case TypeRef(repr,name) =>
+                      println(s"tpe = typeref: repr=($repr), name=$name")
+                      originFieldType
+                    case _ =>
+                      originFieldType
+                  }
+              }  else {
+                  originFieldType
+              }
+              fieldType match
+                  case TypeLambda(tpName,bounds,body) =>
+                    fail(
+                      s"Hight-kinded types are not supported for type ${tpe.show} with field type for '${name}' (symbol=$symbol) : ${fieldType.show}"+
+                      s"originFieldType = $originFieldType,  typeParams=$typeParams, "
+                    )
+
+                  case TypeBounds(low, hi) =>  
+                    fail(s"Type bounds are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
+                  case _ =>
+                    if (fieldType.typeSymbol.isTypeParam) {
+                      fail(
+                        s"fieldType ${fieldType.show} isTypeParam, probaly error in substituyion\n" +
+                        s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
+                      )
+                    }
+              try {
+                   fieldType.asType match
+                    case '[ft] =>
+              }catch{
+                  case ex: Throwable =>
+                    println(s"Can't get type for ${fieldType.show}")
+                    println(s"tpe = ${tpe.show} (${tpe}) , originFieldType=${originFieldType.show}, typeParams = ${typeParams}")
+                    println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
+                    throw ex
+              }
+              val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldInfos.length) 
+              fieldInfos.addOne(newFieldInfo)              
+          }
+          fieldInfos.toIndexedSeq
+        }
+        
+        def isTypeParamsList(symbols:List[Symbol]):Boolean =
+          symbols.exists(_.isTypeParam)
+
+        ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
+          case Nil =>
+            fail(s"'${tpe.show}' has a primary constructor without parameters lists (impossible ?). ")
+          case params::Nil =>
+            if (!isTypeParamsList(params)) {
+               createFieldInfos(params,List.empty)              
+            } else {
+               createFieldInfos(List.empty, params)
+            } 
+          case typeParams::params::Nil if (isTypeParamsList(typeParams)) =>
+            createFieldInfos(params, typeParams)
+          case _ =>
+            fail(s"'${tpe.show}' has a primary constructor with multiple parameter lists. " +
+            "Please consider using a custom implicitly accessible codec for this type.\n" +
+            s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n"
+            )
+        })
+
+      })
+
+
       
       def genReadKey[T:Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
         val tpe = types.head.simplified
@@ -1122,18 +1368,12 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[Float] || tpe =:= TypeRepr.of[java.lang.Float]) '{ $in.readKeyAsFloat() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[java.lang.Double]) '{ $in.readKeyAsDouble() }.asExprOf[T]
         else if (isValueClass(tpe)) {
-                val newObjInit = Select.unique(New(Inferred(tpe)),"<init>")
-                if (!newObjInit.symbol.isClassConstructor) {
-                  throw new RuntimeException("Call of non-consturctir")
-                } 
-                /*
-                val newObjTypedInit = tpe match
-                  case AppliedType(tycom, args) =>
-                    TypeApply(newObjInit, args.map(Inferred(_)))
-                  case _ =>
-                    newObjInit
-                */
-                Apply(newObjInit,List( genReadKey(valueClassValueType(tpe)::types, in).asTerm)).asExprOf[T]
+          val tpe1 = valueClassValueType(tpe)
+          tpe1.widen.asType match
+            case '[t1] =>
+                val readT1 = genReadKey[t1](tpe1::types, in)
+                val tpeClassInfo = getClassInfo(tpe)
+                tpeClassInfo.genNew(List(readT1.asTerm)).asExprOf[T]
         } else if (tpe =:= TypeRepr.of[String]) '{ $in.readKeyAsString() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigInt]) '{ $in.readKeyAsBigInt(${Expr(cfg.bigIntDigitsLimit)}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigDecimal]) {
@@ -1526,292 +1766,6 @@ object JsonCodecMaker {
         }
       }
 
-      
-      case class FieldInfo(symbol: Symbol, 
-                           mappedName: String,  
-                           getterOrField: FieldInfo.GetterOrField,
-                           defaultValue: Option[Term], 
-                           resolvedTpe: TypeRepr,
-                           //targs: List[TypeRepr],
-                           isTransient: Boolean, 
-                           isStringified: Boolean, 
-                           fieldIndex: Int) {
-
-        def genGet(obj:Term):Term =
-          val r = getterOrField match
-              case FieldInfo.Getter(getter) =>  Select(obj,getter)  
-              case FieldInfo.Field(field) => Select(obj, field)
-              case FieldInfo.NoField => 
-                // TODO: better description
-                fail(s"getter is called for ${mappedName}")
-          if (r.tpe.typeSymbol.isTypeParam) {
-            throw new RuntimeException(s"r.tpe.typeSymbol is typeParam, obj=${obj}")
-          }
-          r.tpe match
-            case TypeRef(base,"A") =>
-              base match 
-                case ThisType(tref) =>
-                  if (tref.typeSymbol.name == "FirstOrderType") {
-                    ???
-                  }
-                case _ =>
-            case _ =>
-          r
-
-          
-        def optTypeSelect(obj: Term, fieldOrGetter: Symbol): Term =
-          obj.tpe match
-            case AppliedType(tycon, args) =>
-              TypeApply(Select(obj,fieldOrGetter),args.map(Inferred(_)))
-            case _ =>
-              Select(obj,fieldOrGetter)
-              
-
-      }
-
-      object FieldInfo {
-         sealed trait GetterOrField
-         case class Getter(symbol: Symbol) extends GetterOrField
-         case class Field(symbol: Symbol) extends GetterOrField
-         case object NoField extends GetterOrField
-      }
-
-      case class ClassInfo(tpe: TypeRepr,
-                           primaryConstructor: Symbol, 
-                           allFields: IndexedSeq[FieldInfo]) {
-        
-          def nonTransientFields: Seq[FieldInfo] = allFields.filter(! _.isTransient)
-
-          def genNew(args: List[Term]): Term =
-            val constructorNoTypes = Select(New(Inferred(tpe)),primaryConstructor)
-            val constructor = tpe match
-                case AppliedType(tycon, targs) =>
-                  TypeApply(constructorNoTypes, targs.map(Inferred(_)))
-                case _ => constructorNoTypes
-            Apply(constructor,args)
-
-      }
-
-      val classInfos = mutable.LinkedHashMap.empty[TypeRepr, ClassInfo]
-
-      def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
-
-        case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
-
-        def getPrimaryConstructor(tpe: TypeRepr): Symbol = 
-          tpe.classSymbol match 
-            case None => 
-              fail(s"Cannot find a primary constructor for '$tpe'")
-            case Some(sym) =>
-              val retval = sym.primaryConstructor
-              if (!retval.exists) {
-                fail(s"Cannot find a primary constructor for '$tpe'")
-              }
-              retval
-     
-        def hasSupportedAnnotation(m: Symbol): Boolean = {
-          m.annotations.exists(a => a.tpe <:< TypeRepr.of[named] || a.tpe <:< TypeRepr.of[transient] ||
-            a.tpe <:< TypeRepr.of[stringified])
-        }
-
-        val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"expected that ${tpe.show} has classSymbol"))
-        
-        //lazy val module = companion(tpe).asModule // don't lookup for the companion when there are no default values for constructor params
-        //val getters = tpeClassSym.methodMembers.collect{ case m: Symbol if m.flags.is(Flags.FieldAccessor) && m.paramSymss.isEmpty => m }
-        val fields = tpeClassSym.fieldMembers
-        val fieldsWithDefaultValues = fields.filter(_.flags.is(Flags.HasDefault))
-        /*
-        val defaultValues: IndexedSeq[Symbol] = if (fieldsWithDefaultValues.isEmpty) {
-           IndexedSeq.empty
-        } else {
-           val companion = tpe.typeSymbol.companionClass
-           // old way
-           val body = companion.tree.asInstanceOf[ClassDef].body
-           val defDefs = body.filter{ x =>
-             x match 
-              case DefDef(name, _, _, _) =>
-                name.startsWith("$lessinit$greater$default")
-              case _ => false
-           }
-           val r = defDefs.map(x => x.symbol)
-           println(s"found default values: $r")
-           r.toIndexedSeq
-        }
-        */
-
-        val annotations = tpeClassSym.fieldMembers.collect {
-          case m: Symbol if hasSupportedAnnotation(m) =>
-            val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
-            val named = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[named])
-            if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named]}' defined for '$name' of '$tpe'.")
-            val trans = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[transient])
-            if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient]}' defined for '$name' of '$tpe'.")
-            val strings = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[stringified])
-            if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified]}' defined for '$name' of '$tpe'.")
-            if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
-              warn(s"Both '${Type.show[transient]}' and '${Type.show[named]}' or " +
-                s"'${Type.show[transient]}' and '${Type.show[stringified]}' defined for '$name' of '$tpe'.")
-            }
-            val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
-            (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
-        }.toMap
-        val primaryConstructor = getPrimaryConstructor(tpe)
-
-        def createFieldInfos(params:List[Symbol], typeParams:List[Symbol]): IndexedSeq[FieldInfo] = {
-          val fieldInfos: ArrayBuffer[FieldInfo] = ArrayBuffer.empty
-          var defaultValueIndex = 0
-          for{ (symbol, i) <- params.zipWithIndex } {
-              val name = symbol.name
-              val annotationOption = annotations.get(name)
-              val mappedName = annotationOption.fold{ 
-                  cfg.fieldNameMapper(name).getOrElse(name)
-              }(_.partiallyMappedName)
-              
-              val getterOrField = {
-                  val field = tpeClassSym.fieldMember(name)
-                  if (field.exists) {
-                    FieldInfo.Field(field)
-                  } else {
-                    val getters = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor))
-                    if (getters.isEmpty) {
-                      fail(s"field and getter not found: '$name' parameter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
-                    } else {
-                      // TODO: check length ?  when we have both reader and writer.
-                      // TODO: enable and check.
-                      //getters.filter(_.paramSymss == List(List()))
-                      FieldInfo.Getter(getters.head)
-                    }    
-                  }
-              }
-       
-              val defaultValue = if (symbol.flags.is(Flags.HasDefault)) {
-                                    /*
-                                    val methodSymbol = defaultValues(defaultValueIndex)
-                                    defaultValueIndex += 1
-                                    println(s"symbbol: ${methodSymbol}")
-                                    println(s"symbbol tree: ${methodSymbol.tree.show}")
-                                    println(s"symbol paramss: ${methodSymbol.paramSymss}")
-
-                                    val companion = Ref(tpe.typeSymbol.companionModule)
-                                    val dvSelectNoTArgs = companion.select(methodSymbol)
-                                    val dvSelect = methodSymbol.paramSymss match
-                                      case Nil => dvSelectNoTArgs
-                                      case List(params) if (params.exists(_.isTypeParam)) =>
-                                        tpe match
-                                          case AppliedType(tycon, args) =>
-                                            TypeApply(dvSelectNoTArgs, args.map(Inferred(_)))
-                                          case _ =>
-                                            fail(s"expected that ${tpe.show} is an applied type") 
-                                      case other =>
-                                        fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
-                                    Some(dvSelect)
-                                    */
-                                    //TODO: check
-                                    val companionModule = tpe.typeSymbol.companionModule
-                                    val companionClass = tpe.typeSymbol.companionClass
-                                    val dvMembers = companionClass.methodMember("$lessinit$greater$default$"+(i+1))
-                                    if (dvMembers.isEmpty) {
-                                      fail(s"Can't find default value for ${symbol} in class ${tpe.show}")
-                                    }
-                                    val methodSymbol = dvMembers.head
-                                    val dvSelectNoTArgs = Ref(companionModule).select(methodSymbol)
-                                    val dvSelect = methodSymbol.paramSymss match
-                                      case Nil => dvSelectNoTArgs
-                                      case List(params) if (params.exists(_.isTypeParam)) =>
-                                        tpe match
-                                          case AppliedType(tycon, args) =>
-                                            TypeApply(dvSelectNoTArgs, args.map(Inferred(_)))
-                                          case _ =>
-                                            fail(s"expected that ${tpe.show} is an applied type") 
-                                      case other =>
-                                        fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
-                                    if (tpe.typeSymbol.name=="Transient") {
-                                        println(s"for Transient companion, tpe=${tpe.show} companionClass = ${companionClass}, members=${companionClass.methodMembers}")
-                                        println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
-                                    }    
-                                    Some(dvSelect)
-
-              } else None
-              val isStringified = annotationOption.exists(_.stringified)
-              val isTransient = annotationOption.exists(_.transient)
-
-                // dotty error here -- don't show that this type is applied.
-              val originFieldType = tpe.memberType(symbol)       // paramType(tpe, symbol) -- ???
-              val targs: List[TypeRepr] = tpe match
-                case AppliedType(base,targs) => targs
-                case _ => List.empty
-              val fieldType = if (! typeParams.isEmpty ) {
-                  tpe match {
-                    case AppliedType(base, targs) =>
-                          // we assume, that type-params for primart constructor are thr same as class type params
-                          if (targs.length == typeParams.length) {
-                              substituteTypes(originFieldType,typeParams,targs)
-                          } else {
-                              fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
-                          }
-                    case TypeRef(repr,name) =>
-                      println(s"tpe = typeref: repr=($repr), name=$name")
-                      originFieldType
-                    case _ =>
-                      originFieldType
-                  }
-              }  else {
-                  originFieldType
-              }
-              fieldType match
-                  case TypeLambda(tpName,bounds,body) =>
-                    fail(
-                      s"Hight-kinded types are not supported for type ${tpe.show} with field type for '${name}' (symbol=$symbol) : ${fieldType.show}"+
-                      s"originFieldType = $originFieldType,  typeParams=$typeParams, "
-                    )
-
-                  case TypeBounds(low, hi) =>  
-                    fail(s"Type bounds are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
-                  case _ =>
-                    if (fieldType.typeSymbol.isTypeParam) {
-                      fail(
-                        s"fieldType ${fieldType.show} isTypeParam, probaly error in substituyion\n" +
-                        s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
-                      )
-                    }
-              try {
-                   fieldType.asType match
-                    case '[ft] =>
-              }catch{
-                  case ex: Throwable =>
-                    println(s"Can't get type for ${fieldType.show}")
-                    println(s"tpe = ${tpe.show} (${tpe}) , originFieldType=${originFieldType.show}, typeParams = ${typeParams}")
-                    println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
-                    throw ex
-              }
-              val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldInfos.length) 
-              fieldInfos.addOne(newFieldInfo)              
-          }
-          fieldInfos.toIndexedSeq
-        }
-        
-        def isTypeParamsList(symbols:List[Symbol]):Boolean =
-          symbols.exists(_.isTypeParam)
-
-        ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
-          case Nil =>
-            fail(s"'${tpe.show}' has a primary constructor without parameters lists (impossible ?). ")
-          case params::Nil =>
-            if (!isTypeParamsList(params)) {
-               createFieldInfos(params,List.empty)              
-            } else {
-               createFieldInfos(List.empty, params)
-            } 
-          case typeParams::params::Nil if (isTypeParamsList(typeParams)) =>
-            createFieldInfos(params, typeParams)
-          case _ =>
-            fail(s"'${tpe.show}' has a primary constructor with multiple parameter lists. " +
-            "Please consider using a custom implicitly accessible codec for this type.\n" +
-            s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n"
-            )
-        })
-
-      })
 
 
       def unexpectedFieldHandler(in: Expr[JsonReader], l:Expr[Int])(using Quotes): Expr[Unit] =
@@ -2191,12 +2145,8 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val nullVal = genNullValue[t1](tpe1::types)
-              val constructorNoTypes = Select.unique(New(Inferred(tpe)),"<init>")
-              val constructor = tpe match
-                case AppliedType(tycon, targs) =>
-                  TypeApply(constructorNoTypes, targs.map(Inferred(_)))
-                case _ => constructorNoTypes
-              Apply(constructor,List(nullVal.asTerm)).asExprOf[C]
+              val tpeClassInfo = getClassInfo(tpe)
+              tpeClassInfo.genNew(List(nullVal.asTerm)).asExprOf[C]
             case _ => fail(s"Can't get type of ${tpe1.show}")    
         } else {
           val isTypeParam = tpe.typeSymbol.isTypeParam
