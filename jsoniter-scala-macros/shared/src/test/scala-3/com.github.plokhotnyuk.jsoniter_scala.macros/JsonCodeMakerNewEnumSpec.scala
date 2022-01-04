@@ -22,6 +22,10 @@ enum MediaType(val value: Long, name: String) {
   case `application/jpeg` extends MediaType(3L, "application/jpeg")
 }
 
+// TODO:
+//   Enum ADT  (Color from example)
+//   Enum ADT with type parameters
+//   ordinal flag (create config param)
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
 
