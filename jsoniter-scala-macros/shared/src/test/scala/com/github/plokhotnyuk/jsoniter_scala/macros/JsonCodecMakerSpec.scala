@@ -1873,7 +1873,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       assert(intercept[TestFailedException](assertCompiles {
         """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
       }).getMessage.contains {
-        """do not conform to method copy's type parameter bounds [T <: Fruit[T]]"""
+        //"""do not conform to method copy's type parameter bounds [T <: Fruit[T]]"""
+        """do not conform to method copy's type parameter bounds [T <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[T]]"""
       })
       verifySerDeser(make[Basket[Apple]], twoFruits,
         """{"fruits":[{"family":"golden"},{"family":"red"}]}""")

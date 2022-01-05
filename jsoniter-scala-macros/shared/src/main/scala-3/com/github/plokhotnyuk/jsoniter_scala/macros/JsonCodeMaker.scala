@@ -290,7 +290,6 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vv = v.valueOrAbort
             val vx = x.valueOrAbort
             Some(vx.withAllowRecursiveTypes(vv))
-<<<<<<< HEAD:jsoniter-scala-macros/shared/src/main/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMaker.scala
           case '{ (${x}:CodecMakerConfig).withDiscriminatorFieldName($v) } =>
             val vv = v.valueOrAbort
             val vx = x.valueOrAbort
@@ -303,8 +302,6 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vv = v.valueOrAbort
             val vx = x.valueOrAbort
             Some(vx.withIsStringified(vv))  
-=======
->>>>>>> parent of 1f9141f9 ( in new quotes we can live without NamespacePollutions):jsoniter-scala-macros/shared/src/main/scala-3/JsonCodeMaker.scala
           case '{ CodecMakerConfig } =>
             Some(CodecMakerConfig)
           case '{ (${x}:CodecMakerConfig).withFieldNameMapper($v) } =>
@@ -1936,13 +1933,7 @@ object JsonCodecMaker {
         val refDef = decodeMethodSyms.get(methodKey) match
           case Some(sym) => Ref(sym)
           case None =>
-<<<<<<< HEAD:jsoniter-scala-macros/shared/src/main/scala-3/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodeMaker.scala
             val name = "d" + decodeMethodSyms.size
-=======
-            val name = "d" + decodeMethodDefs.size
-            println(s"With decoded for $name, type=${Type.show[A]}, tpe=${TypeRepr.of[A]}, methodKey=${methodKey}")
-            println(s"methodKey,hashCode = ${methodKey.hashCode}")
->>>>>>> parent of 1f9141f9 ( in new quotes we can live without NamespacePollutions):jsoniter-scala-macros/shared/src/main/scala-3/JsonCodeMaker.scala
             val mt = MethodType(List("in","defaultValue"))(
                 _ => List(TypeRepr.of[JsonReader], methodKey.tpe),
                 _ => TypeRepr.of[A]

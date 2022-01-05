@@ -55,7 +55,15 @@ lazy val commonSettings = Seq(
       )
   },
   compileOrder := CompileOrder.JavaThenScala,
-  Test / testOptions += Tests.Argument("-oDF"),
+  Compile/unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+     case Some((2,_)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
+     case _ => List.empty
+  }),
+  Test/unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+     case Some((2,_)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
+     case _ => Seq.empty
+  }),
+  Test/testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
   publishTo := sonatypePublishToBundle.value,
