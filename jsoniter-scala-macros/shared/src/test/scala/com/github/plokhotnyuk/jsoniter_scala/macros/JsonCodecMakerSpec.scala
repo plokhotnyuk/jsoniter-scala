@@ -869,10 +869,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """{"VVV":null,"WWW":1}""")
     }
     "don't generate codecs when options are used as keys in maps" in {
-      assert(intercept[TestFailedException](assertCompiles {
+      val message = intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[Map[Option[Int], Option[String]]]"
-      }).getMessage.contains {
-        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'Option[Int]'"
+      }).getMessage 
+      assert(message.contains {
+        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec"
+      })
+      assert(message.contains {
+        "Option[Int]"
       })
     }
     "serialize case classes with empty options as null when the transientNone flag is off" in {
