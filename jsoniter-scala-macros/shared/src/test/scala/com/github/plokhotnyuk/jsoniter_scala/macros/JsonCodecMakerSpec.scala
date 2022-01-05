@@ -1892,12 +1892,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize ADTs with self-recursive (aka F-bounded) types without discriminators" in {
       val oneFruit: Basket[Apple] = Basket(List(Apple("golden")))
       val twoFruits: Basket[Apple] = oneFruit.copy(fruits = oneFruit.fruits :+ Apple("red"))
-      assert(intercept[TestFailedException](assertCompiles {
+      val message = intercept[TestFailedException](assertCompiles {
         """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
-      }).getMessage.contains {
-        //"""do not conform to method copy's type parameter bounds [T <: Fruit[T]]"""
-        """do not conform to method copy's type parameter bounds [T <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[T]]"""
-      })
+      }).getMessage
+      if (ScalaVersionCheck.isScala2) {
+        assert(message.contains("""do not conform to method copy's type parameter bounds [T <: Fruit[T]]"""))
+      } else if (ScalaVersionCheck.isScala3) {
+        assert(message.contains("Apple") && message.contains("Orange"))
+      } else {
+        assert(false)
+      }
       verifySerDeser(make[Basket[Apple]], twoFruits,
         """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
       verifySerDeser(make[Basket[Orange]], Basket(List(Orange(1), Orange(2))),
