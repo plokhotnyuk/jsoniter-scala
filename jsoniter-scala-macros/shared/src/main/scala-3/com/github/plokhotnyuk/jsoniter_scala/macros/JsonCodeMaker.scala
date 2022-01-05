@@ -309,19 +309,9 @@ object CodecMakerConfig extends CodecMakerConfig(
             val vx = x.valueOrAbort
             Some(vx.copy(fieldNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
-            try {
-              println("before creating fieldNameExprFunctionWrapper")
-              val vv = FieldNameExprFunctionWrapper(v)
-              println("after creating fieldNameExprFunctionWrapper")             
-              val vx = x.valueOrAbort
-              val r = Some(vx.copy(javaEnumValueNameMapper = vv))
-              println("after copy")     
-              r
-            }catch{
-              case ex: Throwable =>
-                ex.printStackTrace()
-                throw ex;
-            }
+            val vv = FieldNameExprFunctionWrapper(v)
+            val vx = x.valueOrAbort
+            Some(vx.copy(javaEnumValueNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withAdtLeafClassNameMapper($v) } =>
             val vv = FieldNameExprFunctionWrapper( '{ { case x => $v(x) } } )
             val vx = x.valueOrAbort
@@ -685,9 +675,7 @@ object JsonCodecMaker {
                   TermRef(substituteMap(repr),name) 
                 case ti@TypeRef(repr, name) =>
                   if (ti.typeSymbol.isTypeParam) {
-                    println(s"typeRef isTypeParam, isAliasType=${ti.typeSymbol.isAliasType}")
                     val sym = ti.typeSymbol
-                    println(s"ti.typeSymbol=${ti.typeSymbol}, get-attemot=${symTypeMap.get(sym)}")
                     val rSym = repr.typeSymbol
                     symTypeMap.get(sym) match
                       case Some(tpe1) => tpe1
@@ -741,20 +729,9 @@ object JsonCodecMaker {
    
           
       def valueClassValueType(tpe: TypeRepr): TypeRepr = 
-        try {
           val field = tpe.typeSymbol.fieldMembers(0)
-          val r = tpe.memberType(field)
-          if (r.typeSymbol.isTypeParam) {
-            throw new RuntimeException(s"generation of value-class member as type-param, r=$r")
-          }
-          r
-        }catch{
-          case NonFatal(ex) =>
-            println(s"error getting valueType for ${tpe.show}")
-            println(s"tpe.typeSymbol.fieldMembers = ${tpe.typeSymbol.fieldMembers}")
-            throw ex
-        }
-
+          tpe.memberType(field)
+        
 
       def isNonAbstractScalaClass(tpe: TypeRepr): Boolean =
         tpe.classSymbol match
@@ -871,19 +848,9 @@ object JsonCodecMaker {
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
 
-        var debug = false
-        if (adtBaseTpe.typeSymbol.name == "AdtBase") {
-          debug = true;
-        }
-
         def collectRecursively(tpe:TypeRepr): Seq[TypeRepr] = {
           val typeSymbol = tpe.typeSymbol
           val flags = typeSymbol.flags
-          if (typeSymbol.name == "AdtBase") {
-            println(s"collectRecurs to adtBase, flags.isAbstract = ${flags.is(Flags.Abstract)}, ")
-            println(s"adtBase, isAbstractType = ${typeSymbol.isAbstractType}, trait = ${flags.is(Flags.Trait)} ")
-
-          }
           val leafSymbols = if (flags.is(Flags.Sealed)) {
             adtChildren(tpe).flatMap( child => 
                if (child.typeSymbol.flags.is(Flags.Sealed)) {
@@ -904,11 +871,7 @@ object JsonCodecMaker {
         }
 
         val leafSymbols = collectRecursively(adtBaseTpe)
-        if (debug) {
-          println(s"adtLeafClasses: leafSymbols = ${leafSymbols}")
-        }
         val retval = leafSymbols.distinct
-
         retval 
       }
  
@@ -1281,10 +1244,6 @@ object JsonCodecMaker {
                                             fail(s"expected that ${tpe.show} is an applied type") 
                                       case other =>
                                         fail(s"default method for ${symbol.name} of class ${tpe.show} have complex parameter list: ${methodSymbol.paramSymss}")
-                                    if (tpe.typeSymbol.name=="Transient") {
-                                        println(s"for Transient companion, tpe=${tpe.show} companionClass = ${companionClass}, members=${companionClass.methodMembers}")
-                                        println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
-                                    }    
                                     Some(dvSelect)
 
               } else None
@@ -1306,7 +1265,6 @@ object JsonCodecMaker {
                               fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
                           }
                     case TypeRef(repr,name) =>
-                      println(s"tpe = typeref: repr=($repr), name=$name")
                       originFieldType
                     case _ =>
                       originFieldType
@@ -1330,16 +1288,6 @@ object JsonCodecMaker {
                         s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
                       )
                     }
-              try {
-                   fieldType.asType match
-                    case '[ft] =>
-              }catch{
-                  case ex: Throwable =>
-                    println(s"Can't get type for ${fieldType.show}")
-                    println(s"tpe = ${tpe.show} (${tpe}) , originFieldType=${originFieldType.show}, typeParams = ${typeParams}")
-                    println(s"Position: ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
-                    throw ex
-              }
               val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldInfos.length) 
               fieldInfos.addOne(newFieldInfo)              
           }
@@ -2007,13 +1955,7 @@ object JsonCodecMaker {
                 case List(List(x,out)) =>
                   x match
                     case xTerm: Term => 
-                      val x = try {
-                        xTerm.asExprOf[A]
-                      }catch{
-                        case ex: Throwable =>
-                          println(s"Exception during asting of x to A: A=${TypeRepr.of[A].show}, xTerm.tpe=${xTerm.tpe}, xTerm.tpe.widen=${xTerm.tpe.widen}, methodKey.tpe.widen=${methodKey.tpe.widen}")
-                          throw ex;
-                      }
+                      val x = xTerm.asExprOf[A]
                       val res = f(out.asExprOf[JsonWriter],xTerm.asExprOf[A]).asTerm
                       val res1 = res.changeOwner(sym)
                       //val res1 = LowLevelQuoteUtil.deepChangeOwner(res.asInstanceOf[quotes.reflect.Term],sym.asInstanceOf[quotes.reflect.Symbol], traceFlag && false).asInstanceOf[Term]
@@ -2088,15 +2030,9 @@ object JsonCodecMaker {
                 case _ => fail(s"can't resolve Ordering[${tpe1.show}]")
             case _ => fail(s"can't resolve ${tpe.show} to type")
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
-          try {
-              TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
+            TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
                         List(Inferred(typeArg1(tpe)), Inferred(typeArg2(tpe)))
-              ).asExprOf[C]
-          }catch{
-            case ex: Throwable =>
-              println(s"exception during creating of companion for ${tpe.show}")
-              throw ex
-          }
+            ).asExprOf[C]
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
             TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),
                       List(Inferred(typeArg1(tpe)),Inferred(typeArg2(tpe)))).asExprOf[C]
@@ -2114,13 +2050,7 @@ object JsonCodecMaker {
                     fail(s"Can't find instance of ClassTag[${tpe1.show}]")
               case _ => fail(s"Can't get type for ${tpe1.show}")  
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) 
-            try {
-              TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
-            }catch{
-              case ex: Throwable =>
-                println(s"failed generation of empty for ${tpe.show}")
-                throw ex
-            }
+            TypeApply(Select.unique(scalaCollectionCompanion(tpe),"empty"),List(Inferred(typeArg1(tpe)))).asExprOf[C]
         else if (tpe <:< TypeRepr.of[Array[_]]) 
              typeArg1(tpe).asType match
                case '[t1] => 
@@ -2166,7 +2096,6 @@ object JsonCodecMaker {
             case _ => fail(s"Can't get type of ${tpe1.show}")    
         } else {
           val isTypeParam = tpe.typeSymbol.isTypeParam
-          println(s"${tpe.show}: typeParam = ${isTypeParam}")
           fail(s"Can't deduce null value for ${tpe.show} tree($tpe)", throwFlag = true)
         }
       }
@@ -2196,9 +2125,6 @@ object JsonCodecMaker {
         }
 
         def genReadLeafClass[S:Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
-          if (traceFlag) {
-            println(s"genReadLeafClass ${Type.show[S]}, types=${types.map(_.show)}")
-          }
           //val discriminator = cfg.discriminatorFieldName.map( fieldName => Discriminator(fieldName, skipDiscriminatorField))
           //val optLeafDiscriminator = cfg.discriminatorFieldName.map{ fieldName =>
           //  val sym = Symbol.newVal(Symbol.spliceOwner, "pd", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
@@ -2211,9 +2137,6 @@ object JsonCodecMaker {
               genReadVal[S](subTpe :: types, genNullValue[S](subTpe :: types), isStringified, cfg.discriminatorFieldName.isDefined, in)
 
         def genReadCollisions(subTpes: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
-          if (traceFlag) {
-            println(s"genReadCollisions: ${subTpes.map(_.show)} ")
-          }
           val s0: Term = discriminatorError.asTerm
           subTpes.foldRight(s0) { (subTpe, acc) =>
               subTpe.widen.asType match
@@ -2234,9 +2157,6 @@ object JsonCodecMaker {
           }
 
         def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
-          if (traceFlag) {
-            println(s"genReadSubclassesBlock: leafClasses = ${leafClasses.map(_.show)} ")
-          }
           if (leafClasses.size <= 8 && leafClasses.map(t => discriminatorValue(t).length).sum <= 64) 
             genReadCollisions(leafClasses, l)
           else {
@@ -2321,9 +2241,6 @@ object JsonCodecMaker {
                   default: Expr[A],
                   )(using Quotes): Expr[A] = {
         val tpe = types.head
-        if (traceFlag) {
-          println(s"genReadNonAbstractScalaClass[${tpe.show}]")
-        }
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
           val names = classInfo.nonTransientFields.map(_.mappedName)
@@ -3310,14 +3227,7 @@ object JsonCodecMaker {
                       // TODO: move this check to intialization
                       fail(s"polymorphic expression cannot be instantiated to expected type: default value for field ${f.symbol} of class ${tpe.show} have type ${d.tpe.show} but field type is ${f.resolvedTpe.show}")
                     }
-                    val dExpr = try {
-                       d.asExprOf[ft] 
-                    }catch{
-                       case ex: Throwable =>
-                        println(s"ft=${f.resolvedTpe.widen.show}, d=${d.show}, tpe=${tpe.show}, f.symbol=${f.symbol}")
-                        println(s"tpeDef = ${tpe.classSymbol.get.tree.show}")
-                        throw ex;
-                    }
+                    val dExpr = d.asExprOf[ft] 
                     '{
                         val v = ${ f.genGet(x.asTerm).asExprOf[ft] }
                         if (v != ${d.asExprOf[ft]}) {
@@ -3543,13 +3453,7 @@ object JsonCodecMaker {
                         '{ $out.writeVal(${k}) }
                       }
                     }
-                    try{
-                      genWriteMapAsArrayScala213[Long,t1](x.asExprOf[collection.Map[Long,t1]], writeVal1, writeVal2, out)
-                    }catch{
-                      case ex: Throwable =>
-                        println(s"tpe=${tpe.show}, x=${x}, x.asTerm.tpe=${x.asTerm.tpe.show}, x.asTerm.tpe.widen = ${x.asTerm.tpe.widen.show}")
-                        throw ex
-                    }
+                    genWriteMapAsArrayScala213[Long,t1](x.asExprOf[collection.Map[Long,t1]], writeVal1, writeVal2, out)
                   } else {
                     genWriteMapScala213[Long,t1](x.asExprOf[collection.Map[Long,t1]], (out, k) => '{ $out.writeKey(${k}) }, writeVal2, out)
                   }
@@ -3570,16 +3474,10 @@ object JsonCodecMaker {
                     writeVal2,
                     out)
               } else {
-                try {
-                  genWriteMapScala213[t1,t2](x.asExprOf[collection.Map[t1,t2]], 
+                genWriteMapScala213[t1,t2](x.asExprOf[collection.Map[t1,t2]], 
                     (out: Expr[JsonWriter], k: Expr[t1]) => genWriteKey[t1](k, tpe1 :: types, out), 
                     writeVal2,
                     out)
-                }catch{
-                  case ex: Throwable =>
-                    println(s"Catched exception during wtieMap, t1=${tpe1.show}, t2=${tpe2.show}")
-                    throw ex;
-                }
               }
             case _ =>
               fail(s"Can't get types for ${tpe1}, ${tpe2}")
@@ -3595,14 +3493,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           tpe1.widen.asType match
             case '[t1] =>
-              val tx = try {
-                x.asExprOf[List[t1]]
-              }catch{
-                case ex: Throwable =>
-                  println(s"exception during casting of ${x} to ${Type.show[List[t1]]}")
-                  println(s"x.tpe=${x.asTerm.tpe}, x.tpe.widen=${x.asTerm.tpe.widen.show}, tpe=${tpe.show}, T=${Type.show[T]}")
-                  throw ex
-              }
+              val tx = x.asExprOf[List[t1]]
               '{ $out.writeArrayStart()
                   var l: _root_.scala.collection.immutable.List[t1] = $tx
                   while (!l.isEmpty) {
