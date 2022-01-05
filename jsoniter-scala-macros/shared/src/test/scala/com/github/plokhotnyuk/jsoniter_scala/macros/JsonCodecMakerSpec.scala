@@ -281,6 +281,7 @@ case class Transient(@transient transient: String = "default", required: String)
 
 
 class JsonCodecMakerSpec extends VerifyingSpec {
+  import NamespacePollutions._
 
   val codecOfPrimitives: JsonValueCodec[Primitives] = make
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make
