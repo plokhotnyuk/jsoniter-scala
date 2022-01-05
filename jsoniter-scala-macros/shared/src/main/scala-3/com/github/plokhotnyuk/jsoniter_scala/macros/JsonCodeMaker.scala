@@ -1221,14 +1221,14 @@ object JsonCodecMaker {
           case m: Symbol if hasSupportedAnnotation(m) =>
             val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
             val named = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[named])
-            if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named]}' defined for '$name' of '$tpe'.")
+            if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
             val trans = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[transient])
-            if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient]}' defined for '$name' of '$tpe'.")
+            if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient].show}' defined for '$name' of '${tpe.show}'.")
             val strings = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[stringified])
-            if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified]}' defined for '$name' of '$tpe'.")
+            if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
             if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
               warn(s"Both '${Type.show[transient]}' and '${Type.show[named]}' or " +
-                s"'${Type.show[transient]}' and '${Type.show[stringified]}' defined for '$name' of '$tpe'.")
+                s"'${Type.show[transient]}' and '${Type.show[stringified]}' defined for '$name' of '${tpe.show}'.")
             }
             val partiallyMappedName = namedValueOpt(named.headOption, tpe).getOrElse(name)
             (name, FieldAnnotations(partiallyMappedName, trans.nonEmpty, strings.nonEmpty))
@@ -1813,9 +1813,9 @@ object JsonCodecMaker {
         if (collisions.nonEmpty) {
           val formattedCollisions = collisions.mkString("'", "', '", "'")
           fail(s"Duplicated JSON key(s) defined for '${tpe.show}': $formattedCollisions. Keys are derived from field names of " +
-            s"the class that are mapped by the '${TypeRepr.of[CodecMakerConfig]}.fieldNameMapper' function or can be overridden " +
-            s"by '${TypeRepr.of[named]}' annotation(s). Result keys should be unique and should not match with a key for the " +
-            s"discriminator field that is specified by the '${TypeRepr.of[CodecMakerConfig]}.discriminatorFieldName' option.")
+            s"the class that are mapped by the '${TypeRepr.of[CodecMakerConfig].show}.fieldNameMapper' function or can be overridden " +
+            s"by '${TypeRepr.of[named].show}' annotation(s). Result keys should be unique and should not match with a key for the " +
+            s"discriminator field that is specified by the '${TypeRepr.of[CodecMakerConfig].show}.discriminatorFieldName' option.")
         }
       }
 
@@ -3308,7 +3308,7 @@ object JsonCodecMaker {
                   } else {
                     if (! (d.tpe <:< f.resolvedTpe.widen) ) {
                       // TODO: move this check to intialization
-                      fail(s"default value for field ${f.symbol} of class ${tpe.show} have type ${d.tpe} but field type is ${f.resolvedTpe.show}")
+                      fail(s"polymorphic expression cannot be instantiated to expected type: default value for field ${f.symbol} of class ${tpe.show} have type ${d.tpe.show} but field type is ${f.resolvedTpe.show}")
                     }
                     val dExpr = try {
                        d.asExprOf[ft] 
