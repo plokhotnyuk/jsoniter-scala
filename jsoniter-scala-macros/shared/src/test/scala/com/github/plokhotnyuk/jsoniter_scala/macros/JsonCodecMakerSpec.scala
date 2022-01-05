@@ -1264,11 +1264,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[1,2,-1]""", "illegal value for bit set, offset: 0x00000006")
     }
     "don't generate codecs for maps with not supported types of keys" in {
-      assert(intercept[TestFailedException](assertCompiles {
+      val message = intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[Map[_root_.java.util.Date,String]]"""
-      }).getMessage.contains {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'java.util.Date'."""
-      })
+      }).getMessage
+      if (ScalaVersionCheck.isScala2) {
+        assert(message.contains{
+          """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'java.util.Date'."""
+        }) 
+      } else if (ScalaVersionCheck.isScala3) {
+        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."""
+      } else {
+        assert(message === "Invalid Scala Version")
+      }
     }
     "serialize and deserialize with keys defined as is by fields" in {
       verifySerDeser(make[CamelPascalSnakeKebabCases], CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),

@@ -1044,7 +1044,7 @@ object JsonCodecMaker {
 
       def withScala2EnumerationCacheFor[K:Type,T:Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K,T]]  = {
           val valDef = scala2EnumerationCaches.getOrElseUpdate( tpe, {
-              val ec = '{ new _root_.java.util.concurrent.ConcurrentHashMap[K, T]  }
+              val ec = '{ new java.util.concurrent.ConcurrentHashMap[K, T]  }
               val name = s"ec${scala2EnumerationCaches.size}"
               val sym = Symbol.newVal(Symbol.spliceOwner, name, TypeRepr.of[ConcurrentHashMap[K,T]], Flags.EmptyFlags, Symbol.noSymbol)
               ValDef(sym,Some(ec.asTerm.changeOwner(sym)))
