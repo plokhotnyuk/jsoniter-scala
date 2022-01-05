@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 
 
 class JsonCodecMakerJVMSpec extends VerifyingSpec {
+  import NamespacePollutions._
 
   "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize recursive structures with an implicit codec using a minimal thread stack" in {
