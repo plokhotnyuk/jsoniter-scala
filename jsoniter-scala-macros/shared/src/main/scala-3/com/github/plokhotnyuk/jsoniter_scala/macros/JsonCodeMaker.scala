@@ -653,7 +653,7 @@ object JsonCodecMaker {
 
       
       
-      def substituteTypes(tpe: TypeRepr, from: List[Symbol], to: List[TypeRepr]): TypeRepr =
+      def substituteTypeParams(tpe: TypeRepr, from: List[Symbol], to: List[TypeRepr]): TypeRepr =
         // origini substitute-types in @experimanta annotations.
         //
         // this will be enabled when feature will no longer experimental.
@@ -666,43 +666,42 @@ object JsonCodecMaker {
         // now let's write own minimial approximation, 
         val symTypeMap = from.zip(to).toMap
         def substituteMap(tpe:TypeRepr): TypeRepr = {
-          symTypeMap.get(tpe.typeSymbol) match
-            case Some(tpe) => tpe
-            case _ =>
-              tpe match
-                case ConstantType(c) => tpe
-                case TermRef(repr,name) =>
-                  TermRef(substituteMap(repr),name) 
-                case ti@TypeRef(repr, name) =>
-                  if (ti.typeSymbol.isTypeParam) {
-                    val sym = ti.typeSymbol
-                    val rSym = repr.typeSymbol
-                    symTypeMap.get(sym) match
+          println(s"substituteMap: tpe=${tpe.show}, tpe.typeSymbol=${tpe.typeSymbol}")
+          tpe match
+            case ConstantType(c) => tpe
+            case TermRef(repr,name) =>
+              TermRef(substituteMap(repr),name) 
+            case ti@TypeRef(repr, name) =>
+              if (ti.typeSymbol.isTypeParam) {
+                  val sym = ti.typeSymbol
+                  symTypeMap.get(sym) match
                       case Some(tpe1) => tpe1
                       case _ => tpe
-                  } else {
+              } else {
                     // TypRef have no unapply, hope for the best 
                     tpe
-                  }
-                case SuperType(thisTpe,superTpe) =>
-                    SuperType(substituteMap(thisTpe), substituteMap(superTpe))
-                case Refinement(parent, name, info) =>
-                    Refinement(substituteMap(parent),name,substituteMap(info))
-                case AppliedType(tycon, args) =>
-                    substituteMap(tycon).appliedTo(args.map(x => substituteMap(x)))
-                case AnnotatedType(underlying, annotated) =>
-                    AnnotatedType(substituteMap(underlying), annotated)
-                case AndType(rhs, lhs) =>
-                    AndType(substituteMap(rhs), substituteMap(lhs))
-                case OrType(rhs, lhs) =>
-                    OrType(substituteMap(rhs), substituteMap(lhs))
-                case MatchType(bound, scrutinee, cases) =>
-                    MatchType(substituteMap(bound), substituteMap(scrutinee),
+              }
+            case SuperType(thisTpe,superTpe) =>
+              SuperType(substituteMap(thisTpe), substituteMap(superTpe))
+            case Refinement(parent, name, info) =>
+              Refinement(substituteMap(parent),name,substituteMap(info))
+            case AppliedType(tycon, args) =>
+              println(s"substitutrTypes: AppliedType, tycon=$tycon, args=$args")
+              println(s"substitutrTypes: tyCon.isTypeParam = ${tycon.typeSymbol.isTypeParam}")
+              substituteMap(tycon).appliedTo(args.map(x => substituteMap(x)))
+            case AnnotatedType(underlying, annotated) =>
+              AnnotatedType(substituteMap(underlying), annotated)
+            case AndType(rhs, lhs) =>
+              AndType(substituteMap(rhs), substituteMap(lhs))
+            case OrType(rhs, lhs) =>
+              OrType(substituteMap(rhs), substituteMap(lhs))
+            case MatchType(bound, scrutinee, cases) =>
+              MatchType(substituteMap(bound), substituteMap(scrutinee),
                           cases.map(substituteMap)
-                    )
-                case ByNameType(underlying) =>
+              )
+            case ByNameType(underlying) =>
                     ByNameType(substituteMap(underlying))
-                case tl@TypeLambda(names,bounds,body) =>
+            case tl@TypeLambda(names,bounds,body) =>
                     var paramValues: Map[Symbol,TypeRepr] = Map.empty
                     for((n,i) <- names.zipWithIndex) {
                        val isym = tl.param(i).typeSymbol
@@ -718,14 +717,13 @@ object JsonCodecMaker {
                     } else {
                       fail(s"partial type lambda applications are not suported, tpe: ${tpe.show}")
                     }
-                case r: RecursiveType =>
+            case r: RecursiveType =>
                     fail(s"recurive types are not supported, use derivation-based transformer(${r.show} during transform of ${tpe.show})")
-                case l: LambdaType =>
+            case l: LambdaType =>
                     fail(s"lambda types are not supported, use derivation-based transformer for this class(${l.show} during transform of ${tpe.show})")
-            case _ => tpe    
         }
         substituteMap(tpe)
-      end substituteTypes
+      end substituteTypeParams
    
           
       def valueClassValueType(tpe: TypeRepr): TypeRepr = 
@@ -769,6 +767,12 @@ object JsonCodecMaker {
 
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = {
 
+        val debug = true // (tpe.typeSymbol.name == "Z")
+
+        if (debug) {
+          println(s"adtChildred(${tpe.show})")
+        }
+
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
                                   binding: Map[String,TypeRepr]):Map[String,TypeRepr] = {
           // todo: check for paramRef instead ?
@@ -803,13 +807,30 @@ object JsonCodecMaker {
               resolveParentTypeArg(child, e._1, e._2, s)
           }
 
+        def isHK(ctArgs: List[TypeRepr]): Boolean =
+          ctArgs.exists{ tpe =>
+            tpe match
+              case TypeLambda(name, bounds, body) => true
+              case _ => false
+          }  
+
+
         val targs = tpe match
           case AppliedType(tycon, args) => args
           case _ => List.empty[TypeRepr]
 
         tpe.typeSymbol.children.map{ s =>
+          if (debug) {
+            println(s"checking subtype $s")
+          }
           if (s.isType) {
+            if (debug) {
+              println(s"$s isType")
+            }
             val nudeSubtype = TypeIdent(s).tpe
+            if (debug) {
+              println(s"nudeSubtype is ${nudeSubtype.show} (${nudeSubtype})")
+            }
             val tpeFromChild = nudeSubtype.baseType(tpe.typeSymbol)
             val tpeArgsFromChild = tpeFromChild match
               case AppliedType(parentTycon, parentArgs) => parentArgs
@@ -827,9 +848,28 @@ object JsonCodecMaker {
                 }
                 val polyRes = resPolyTp match
                   case MethodType(_,_,resTp) => resTp
-                  case other => other // hope we have no multiple typed param lists yet.
+                  case other =>
+                    println(s"non-method-tye polyRes: ${other}") 
+                    other // hope we have no multiple typed param lists yet.
                 if (!ctArgs.isEmpty) then
-                  polyRes.appliedTo(ctArgs)
+                  if (debug) {
+                    println(s"polyRes=${polyRes}, ctArgs=${ctArgs}")
+                  }
+                  polyRes match
+                    case AppliedType(base, polyArgs) =>
+                      if (debug) {
+                        for(a <- polyArgs) {
+                          println(s"polyArg: $a")
+                        }
+                      }
+                      if (false && isHK(ctArgs))
+                        polyRes.appliedTo(ctArgs)
+                      else 
+                        base.appliedTo(ctArgs)
+                    case AnnotatedType(AppliedType(base, polyArgs), annot) =>
+                      AnnotatedType(base.appliedTo(ctArgs), annot)
+                    case _ => 
+                      polyRes.appliedTo(ctArgs)
                 else
                   polyRes
               case other => fail(s"primary constructior for ${tpe.show} is not MethodType or PolyType but $other")
@@ -856,7 +896,7 @@ object JsonCodecMaker {
                if (child.typeSymbol.flags.is(Flags.Sealed)) {
                  adtChildren(child)
                } else {
-                 Seq.empty[TypeRepr]
+                 Seq(child)
                }
             )
           } else {
@@ -1155,6 +1195,10 @@ object JsonCodecMaker {
 
       def getClassInfo(tpe: TypeRepr): ClassInfo = classInfos.getOrElseUpdate(tpe, {
 
+        if (traceFlag) {
+          println(s"create ClassInfo for ${tpe.show}")
+        } 
+
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
 
         def getPrimaryConstructor(tpe: TypeRepr): Symbol = 
@@ -1182,12 +1226,23 @@ object JsonCodecMaker {
 
         val annotations = tpeClassSym.fieldMembers.collect {
           case m: Symbol if hasSupportedAnnotation(m) =>
+            if (traceFlag) {
+              println(s"hasSupportedAnnotations for ${m} of class ${tpeClassSym.fullName} at : ${m.annotations}")
+              val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])  
+              println(s"named:  ${named}, len = ${named.length}")         
+              println(s"pos:  ${Position.ofMacroExpansion.sourceFile}:${Position.ofMacroExpansion.startLine}")
+            }
             val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
-            val named = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[named])
-            if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
-            val trans = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[transient])
+            val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])
+            if (named.size > 1) {
+              if (traceFlag) {
+                println("named: failing");
+              }
+              fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
+            }
+            val trans = m.annotations.filter(_.tpe =:= TypeRepr.of[transient])
             if (trans.size > 1) warn(s"Duplicated '${TypeRepr.of[transient].show}' defined for '$name' of '${tpe.show}'.")
-            val strings = m.annotations.filter(_.tpe.widen =:= TypeRepr.of[stringified])
+            val strings = m.annotations.filter(_.tpe =:= TypeRepr.of[stringified])
             if (strings.size > 1) warn(s"Duplicated '${TypeRepr.of[stringified].show}' defined for '$name' of '${tpe.show}'.")
             if ((named.nonEmpty || strings.nonEmpty) && trans.size == 1) {
               warn(s"Both '${Type.show[transient]}' and '${Type.show[named]}' or " +
@@ -1260,7 +1315,8 @@ object JsonCodecMaker {
                     case AppliedType(base, targs) =>
                           // we assume, that type-params for primart constructor are thr same as class type params
                           if (targs.length == typeParams.length) {
-                              substituteTypes(originFieldType,typeParams,targs)
+                              println(s"substitutrTypes, originFieldType=${originFieldType}, targs=${targs.map(_.show)}, typeParams=${typeParams}, tpHashes ${typeParams.map(_.hashCode)}")
+                              substituteTypeParams(originFieldType,typeParams,targs)
                           } else {
                               fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
                           }
@@ -1273,10 +1329,22 @@ object JsonCodecMaker {
                   originFieldType
               }
               fieldType match
-                  case TypeLambda(tpName,bounds,body) =>
+                  case tl@TypeLambda(tlNames,tlBounds,tlBody) =>
+                    originFieldType match
+                      case AppliedType(originBase, originTargs) =>
+                        println(s"originBase = $originBase")
+                        println(s"originBase.typeSymbol.isType = ${originBase.typeSymbol.isType}")
+                        println(s"originBase = $originBase")
+                        println(s"tlNames = ${tlNames}")
+                        println("originBase.typeSymbol.isType")
+                        if (originBase.typeSymbol.isTypeParam) {
+                          val cft = fieldType.appliedTo(originTargs)
+                          println(s"cft = ${cft.show}")
+                        } else ???
                     fail(
-                      s"Hight-kinded types are not supported for type ${tpe.show} with field type for '${name}' (symbol=$symbol) : ${fieldType.show}"+
-                      s"originFieldType = $originFieldType,  typeParams=$typeParams, "
+                      s"Hight-kinded types are not supported for type ${tpe.show} with field type for '${name}' (symbol=$symbol) : ${fieldType.show}\n"+
+                      s"originFieldType = ${originFieldType.show},  constructor typeParams=$typeParams, ",
+                      throwFlag = true
                     )
 
                   case TypeBounds(low, hi) =>  
@@ -2115,6 +2183,9 @@ object JsonCodecMaker {
       def genReadSealedClass[A:Type](types: List[TypeRepr], in: Expr[JsonReader], default: Expr[A], isStringified: Boolean)(using Quotes): Expr[A] = {
         val tpe = types.head
         val leafClasses = adtLeafClasses(tpe)
+        if (traceFlag) {
+          println(s"genReadSealedClass ${tpe.show}, leafClasses: ${leafClasses.map(_.show)}")
+        }
         val discriminatorError = cfg.discriminatorFieldName.fold(
                                      '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
