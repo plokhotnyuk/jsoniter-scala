@@ -1375,10 +1375,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs for ADT leaf case classes that have duplicated @named annotation" in {
       val message = intercept[TestFailedException](assertCompiles {
         """sealed trait Z
-          |@named("x") @named("y") case class DuplicatedNamed1(z: Int) extends Z
+          |@named("x") @named("y") case class DuplicatedNamed(z: Int) extends Z
           |JsonCodecMaker.make[Z]""".stripMargin
       }).getMessage
-      println(s"mmessage = $message")
       assert(message.contains {
         """Duplicated 'com.github.plokhotnyuk.jsoniter_scala.macros.named' defined for 'DuplicatedNamed'."""
       })
