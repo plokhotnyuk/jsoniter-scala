@@ -1895,7 +1895,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
       }).getMessage
       if (ScalaVersionCheck.isScala2) {
-        assert(message.contains("""do not conform to method copy's type parameter bounds [T <: Fruit[T]]"""))
+        assert(message.contains("""do not conform to method copy's type parameter bounds"""))
       } else if (ScalaVersionCheck.isScala3) {
         assert(message.contains("Apple") && message.contains("Orange"))
       } else {
