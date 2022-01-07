@@ -2198,6 +2198,12 @@ object JsonCodecMaker {
         if (traceFlag) {
           println(s"genReadSealedClass ${tpe.show}, leafClasses: ${leafClasses.map(_.show)}")
         }
+        if (leafClasses.isEmpty) {
+          fail(
+            s"Cannot find leaf classes for ADT base '${tpe.show}'. Please add them or provide a custom implicitly " +
+             "accessible codec for the ADT base."
+          )
+        }
         val discriminatorError = cfg.discriminatorFieldName.fold(
                                      '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 

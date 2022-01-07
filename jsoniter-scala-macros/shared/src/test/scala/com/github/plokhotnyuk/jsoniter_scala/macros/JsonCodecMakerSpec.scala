@@ -1857,10 +1857,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """sealed trait X extends Product with Serializable
-          |JsonCodecMaker.make[X]""".stripMargin
+        """sealed trait X1859 extends Product with Serializable
+          |JsonCodecMaker.make[X1859]""".stripMargin
       }).getMessage.contains {
-        """Cannot find leaf classes for ADT base 'X'. Please add them or provide a custom implicitly
+        """Cannot find leaf classes for ADT base 'X1859'. Please add them or provide a custom implicitly
           |accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
