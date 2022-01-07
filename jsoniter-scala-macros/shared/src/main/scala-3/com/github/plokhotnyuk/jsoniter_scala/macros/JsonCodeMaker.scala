@@ -736,7 +736,7 @@ object JsonCodecMaker {
           case None => false
           case Some(sym) =>
               val flags = sym.flags
-              !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined)
+              !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) && !flags.is(Flags.Trait)
 
       def isSealedClass(tpe: TypeRepr): Boolean = 
         tpe.typeSymbol.flags.is(Flags.Sealed)
@@ -898,6 +898,11 @@ object JsonCodecMaker {
                } else {
                  Seq(child)
                }
+            )
+          } else if (flags.is(Flags.Abstract) || flags.is(Flags.Trait)) {
+            fail(
+              "Only sealed traits or sealed abstract classes are supported. Please consider using of them " +
+              s"for type ${tpe.show} in ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
             )
           } else {
             Seq.empty[TypeRepr]
@@ -1785,7 +1790,7 @@ object JsonCodecMaker {
         fail(s"No implicit '${TypeRepr.of[JsonKeyCodec[_]].show}' defined for '${tpe.show}'.")
 
       def cannotFindValueCodecError(tpe: TypeRepr): Nothing =
-        fail(if (tpe.typeSymbol.flags.is(Flags.Abstract)) {
+        fail(if (tpe.typeSymbol.flags.is(Flags.Abstract) || tpe.typeSymbol.flags.is(Flags.Trait)) {
           "Only sealed traits or abstract classes are supported as an ADT base. " +
             s"Please consider sealing the '${tpe.show}' or provide a custom implicitly accessible codec for it."
         } else s"No implicit '${TypeRepr.of[JsonValueCodec[_]].show}' defined for '${tpe.show}'.")
