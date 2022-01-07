@@ -1134,7 +1134,7 @@ object JsonCodecMaker {
                            //targs: List[TypeRepr],
                            isTransient: Boolean, 
                            isStringified: Boolean, 
-                           fieldIndex: Int) {
+                           nonTransientFieldIndex: Int) {
 
         def genGet(obj:Term):Term =
           val r = getterOrField match
@@ -1257,6 +1257,7 @@ object JsonCodecMaker {
 
         def createFieldInfos(params:List[Symbol], typeParams:List[Symbol]): IndexedSeq[FieldInfo] = {
           val fieldInfos: ArrayBuffer[FieldInfo] = ArrayBuffer.empty
+          var nonTransientFieldIndex = 0
           var defaultValueIndex = 0
           for{ (symbol, i) <- params.zipWithIndex } {
               val name = symbol.name
@@ -1358,8 +1359,11 @@ object JsonCodecMaker {
                         s"tpe: ${tpe.show} ($tpe),  originFieldType: ${originFieldType.show} (${originFieldType}), typeParams: ${typeParams},",
                       )
                     }
-              val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, fieldInfos.length) 
-              fieldInfos.addOne(newFieldInfo)              
+              val newFieldInfo = FieldInfo(symbol, mappedName, getterOrField, defaultValue, fieldType, isTransient, isStringified, nonTransientFieldIndex) 
+              fieldInfos.addOne(newFieldInfo)
+              if (!isTransient) {
+                nonTransientFieldIndex += 1
+              }
           }
           fieldInfos.toIndexedSeq
         }
@@ -2354,8 +2358,8 @@ object JsonCodecMaker {
           classInfo.nonTransientFields.find(_.mappedName == name) match
             case None => fail(s"field ${name} is not found in fields for ${classInfo}")
             case Some(fi) =>
-                val n = Ref(paramVars(fi.fieldIndex >> 5).symbol).asExprOf[Int]
-                val m = Expr(1 << fi.fieldIndex)
+                val n = Ref(paramVars(fi.nonTransientFieldIndex >> 5).symbol).asExprOf[Int]
+                val m = Expr(1 << fi.nonTransientFieldIndex)
                 '{
                   if (($m & $n) != 0) {
                     ${ Assign(n.asTerm, '{  $n ^ $m }.asTerm ).asExprOf[Unit] }
