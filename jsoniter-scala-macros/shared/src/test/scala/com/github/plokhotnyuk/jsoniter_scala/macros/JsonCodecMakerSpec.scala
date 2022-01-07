@@ -1428,15 +1428,24 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
           |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
       })
-      assert(intercept[TestFailedException](assertCompiles {
+      val hkfRecMessage = intercept[TestFailedException](assertCompiles {
         """case class HigherKindedType[F[_]](f: F[Int], fs: F[HigherKindedType[F]])
           |JsonCodecMaker.make[HigherKindedType[Option]]""".stripMargin
-      }).getMessage.contains {
-        """Recursive type(s) detected: 'HigherKindedType[Option]', 'Option[HigherKindedType[Option]]'. Please consider
+      }).getMessage
+      assert(hkfRecMessage.contains("Recursive type(s) detected"))
+      if (ScalaVersionCheck.isScala2) {
+        assert(hkfRecMessage.contains("HigherKindedType[Option]"))
+        assert(hkfRecMessage.contains("Option[HigherKindedType[Option]]"))
+      } else {
+        assert(hkfRecMessage.contains("HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]"))
+        assert(hkfRecMessage.contains("Option[HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]]"))
+      }
+      assert(hkfRecMessage.contains{
+        """Please consider
           |using a custom implicitly accessible codec for this type to control the level of recursion or turn on the
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
           |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
-      })
+      }) 
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfRecursive,

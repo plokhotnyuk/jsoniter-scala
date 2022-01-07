@@ -991,6 +991,7 @@ object JsonCodecMaker {
           // TODO: Unclear why, ask
           None
         } else if (areEqual(tpe, rootTpe)) {
+          checkRecursionInTypes(types)
           None
         } else {
           // Todo: unclear
@@ -1010,6 +1011,7 @@ object JsonCodecMaker {
           None
         } else if (areEqual(tpe, rootTpe)) {
           // TODO:  Unclear why. ask 
+          checkRecursionInTypes(types)
           None
         } else {
           // Todo: unclear
@@ -1781,7 +1783,7 @@ object JsonCodecMaker {
       def cannotFindValueCodecError(tpe: TypeRepr): Nothing =
         fail(if (tpe.typeSymbol.flags.is(Flags.Abstract)) {
           "Only sealed traits or abstract classes are supported as an ADT base. " +
-            s"Please consider sealing the '$tpe' or provide a custom implicitly accessible codec for it."
+            s"Please consider sealing the '${tpe.show}' or provide a custom implicitly accessible codec for it."
         } else s"No implicit '${TypeRepr.of[JsonValueCodec[_]].show}' defined for '${tpe.show}'.")
 
       def namedValueOpt(namedAnnotation: Option[Term], tpe: TypeRepr): Option[String] = namedAnnotation.map { a =>
@@ -1797,7 +1799,6 @@ object JsonCodecMaker {
             fail(s"Invalid named annotation ${a.show}")
         }
       }
-
 
 
       def unexpectedFieldHandler(in: Expr[JsonReader], l:Expr[Int])(using Quotes): Expr[Unit] =
