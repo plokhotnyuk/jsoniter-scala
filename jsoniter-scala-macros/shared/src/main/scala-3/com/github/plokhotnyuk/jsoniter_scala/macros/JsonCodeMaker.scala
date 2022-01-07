@@ -1822,8 +1822,10 @@ object JsonCodecMaker {
               case TermRef(qual, name) => name
               case _  =>
                 fail(s"expected that $tpe is a TermRef") 
+          } else if (tpe.isSingleton && tpe.typeSymbol.flags.is(Flags.Module)) {
+            tpe.termSymbol.fullName
           } else {
-              tpe.typeSymbol.fullName
+            tpe.typeSymbol.fullName
           }
           cfg.adtLeafClassNameMapper(adtClassNames).getOrElse(fail(s"discriminator is not defined for ${tpe.show}"))
         }
