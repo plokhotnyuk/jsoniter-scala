@@ -1797,12 +1797,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "don't generate codecs for non sealed traits or abstract classes as an ADT base" in {
       assert(intercept[TestFailedException](assertCompiles {
-        """trait X
-          |case class A(i: Int) extends X
-          |case object B extends X
-          |JsonCodecMaker.make[X]""".stripMargin
+        """trait X1799
+          |case class A1799(i: Int) extends X1799
+          |case object B1799 extends X1799
+          |JsonCodecMaker.make[X1799]""".stripMargin
       }).getMessage.contains {
-        """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'X' or
+        """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'X1799' or
           |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
       })
       assert(intercept[TestFailedException](assertCompiles {
@@ -1816,28 +1816,44 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "don't generate codecs for ADTs that have intermediate non-sealed traits or abstract classes" in {
-      assert(intercept[TestFailedException](assertCompiles {
+      val bxClassMessage = intercept[TestFailedException](assertCompiles {
         """sealed trait X
           |sealed abstract class AX extends X
           |abstract class BX extends X
           |case class A(i: Int) extends AX
           |case object B extends BX
           |JsonCodecMaker.make[X]""".stripMargin
-      }).getMessage.contains {
-        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
-          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-      })
-      assert(intercept[TestFailedException](assertCompiles {
+      }).getMessage
+      if (ScalaVersionCheck.isScala2) {
+        assert(bxClassMessage.contains {
+          """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+            |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+        })
+      } else {
+        assert(bxClassMessage.contains {
+          """Only sealed traits or abstract classes are supported as an ADT base. Please
+             |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
+        })
+      }
+      val bxTraitMessage = intercept[TestFailedException](assertCompiles {
         """sealed trait X
           |sealed trait AX extends X
           |trait BX extends X
           |case class A(i: Int) extends AX
           |case object B extends BX
           |JsonCodecMaker.make[X]""".stripMargin
-      }).getMessage.contains {
+      }).getMessage
+      if (ScalaVersionCheck.isScala2) {
+        assert(bxTraitMessage.contains {
         """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
           |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-      })
+        })
+      } else {
+        assert(bxTraitMessage.contains {
+        """Only sealed traits or abstract classes are supported as an ADT base. Please
+          |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
+        })
+      }
     }
     "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
