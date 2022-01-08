@@ -2182,7 +2182,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       
     }
     "don't generate codecs when all generic type parameters cannot be resolved" in {
-      assert(intercept[TestFailedException](assertCompiles {
+      val message = intercept[TestFailedException](assertCompiles {
         """sealed trait Foo[F[_]] extends Product with Serializable
           |case class FooImpl[F[_], A](fa: F[A], as: Vector[A]) extends Foo[F]
           |sealed trait Bar[A] extends Product with Serializable
@@ -2190,8 +2190,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object Qux extends Bar[String]
           |val v = FooImpl[Bar, String](Qux, Vector.empty[String])
           |val c = make[Foo[Bar]]""".stripMargin
-      }).getMessage.contains {
-        "Cannot resolve generic type(s) for `FooImpl[F,A]`. Please provide a custom implicitly accessible codec for it."
+      }).getMessage
+      assert(message.contains("FooImpl"))
+      assert(message.contains {
+        "Please provide a custom implicitly accessible codec"
       })
     }
     "don't generate codecs that cannot parse own output" in {
@@ -2202,11 +2204,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "don't generate codecs for unsupported classes like java.util.Date" in {
-      assert(intercept[TestFailedException](assertCompiles {
+      val message = intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[_root_.java.util.Date]"
-      }).getMessage.contains {
-        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[_]' defined for 'java.util.Date'."
-      })
+      }).getMessage
+      assert(message.contains { "No implicit " })
+      assert(message.contains { "com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec" })
+      assert(message.contains { " defined for "})
+      assert(message.contains { "java.util.Date" })
     }
   }
   "deserialize using the nullValue of codecs that are injected by implicits" in {
