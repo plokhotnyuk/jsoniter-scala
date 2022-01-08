@@ -2066,13 +2066,21 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         
     }
     "don't generate codecs for first-order types that are specified using 'Any' type parameter" in {
-      assert(intercept[TestFailedException](assertCompiles {
+      val message = intercept[TestFailedException](assertCompiles {
         """case class FirstOrder[A](a: A)
           |JsonCodecMaker.make[FirstOrder[_]]""".stripMargin
-      }).getMessage.contains {
-        """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Any' or
-          |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-      })
+      }).getMessage
+      if (ScalaVersionCheck.isScala2) {
+        assert(message.contains {
+          """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Any' or
+            |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
+        })
+      } else {
+        assert(message.contains {
+          """Type bounds are not supported for type 'FirstOrder[_ >: scala.Nothing <: scala.Any]' with field type
+          |for a '_ >: scala.Nothing <: scala.Any'""".stripMargin.replace('\n', ' ')
+        })
+      }
     }
     "serialize and deserialize arrays of generic types" in {
       sealed trait GADT[A] extends Product with Serializable
@@ -2129,12 +2137,26 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}")
     }
-    "don't generate codecs for classes without a primary constructor" in {
-      assert(intercept[TestFailedException](assertCompiles {
-        "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
-      }).getMessage.contains {
-        "Cannot find a primary constructor for 'Infinite.this.<local child>'"
-      })
+    if (ScalaVersionCheck.isScala2) {
+      "don't generate codecs for classes without a primary constructor" in {
+        assert(intercept[TestFailedException](assertCompiles {
+          "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
+        }).getMessage.contains {
+          "Cannot find a primary constructor for 'Infinite.this.<local child>'"
+        })
+      }
+    } else if (ScalaVersionCheck.isScala3) {
+      "don't generate codecs for local childs" in {
+        assert(intercept[TestFailedException](assertCompiles {
+          "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
+        }).getMessage.contains {
+          "Local child symbols are not supported"
+        })
+      }
+    } else {
+      "invalid ScalaVersionCheck" in {
+        assert(false)
+      }
     }
     "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {

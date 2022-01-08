@@ -826,11 +826,21 @@ object JsonCodecMaker {
           if (s.isType) {
             if (debug) {
               println(s"$s isType")
+              println(s"s.isAnonimousClass=${s.isAnonymousClass}")
+              println(s"s.isRefinementClass=${s.isRefinementClass}")
+              println(s"s.name=${s.name}")   
+              println(s"s.local=${s.flags.is(Flags.Local)}")   
+              println(s"s.isTerm=${s.isTerm}")
+            }
+            // problem - we have no other way to find this other rthrn name
+            if (s.name == "<local child>") {
+              fail(s"Local child symbols are not supported, please consider change '${tpe.show}' or implement a custom implicitly accessible codec")
             }
             val nudeSubtype = TypeIdent(s).tpe
             if (debug) {
               println(s"nudeSubtype is ${nudeSubtype.show} (${nudeSubtype})")
             }
+
             val tpeFromChild = nudeSubtype.baseType(tpe.typeSymbol)
             val tpeArgsFromChild = tpeFromChild match
               case AppliedType(parentTycon, parentArgs) => parentArgs
@@ -896,7 +906,7 @@ object JsonCodecMaker {
                if (child.typeSymbol.flags.is(Flags.Sealed)) {
                  adtChildren(child)
                } else {
-                 Seq(child)
+                  Seq(child)
                }
             )
           } else if (flags.is(Flags.Abstract) || flags.is(Flags.Trait)) {
@@ -1278,7 +1288,13 @@ object JsonCodecMaker {
                   } else {
                     val getters = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor))
                     if (getters.isEmpty) {
-                      fail(s"field and getter not found: '$name' parameter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
+                      // Scala3 not set FieldAcces flag for val parameters of constructor
+                      val namedMembers = tpeClassSym.methodMember(name).filter(_.paramSymss==Nil)
+                      if (namedMembers.isEmpty) {
+                        fail(s"field and getter not found: '$name' parameter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")                  
+                      } else {
+                        FieldInfo.Getter(namedMembers.head)
+                      }
                     } else {
                       // TODO: check length ?  when we have both reader and writer.
                       // TODO: enable and check.
@@ -1323,7 +1339,6 @@ object JsonCodecMaker {
                     case AppliedType(base, targs) =>
                           // we assume, that type-params for primart constructor are thr same as class type params
                           if (targs.length == typeParams.length) {
-                              println(s"substitutrTypes, originFieldType=${originFieldType}, targs=${targs.map(_.show)}, typeParams=${typeParams}, tpHashes ${typeParams.map(_.hashCode)}")
                               substituteTypeParams(originFieldType,typeParams,targs)
                           } else {
                               fail(s"length of type-parameters of aplied type and type parameters of primiary constructors are different for ${tpe.show}")
@@ -1356,7 +1371,7 @@ object JsonCodecMaker {
                     )
 
                   case TypeBounds(low, hi) =>  
-                    fail(s"Type bounds are not supported for type ${tpe.show} with field type for ${name} ${fieldType.show}")
+                    fail(s"Type bounds are not supported for type '${tpe.show}' with field type for ${name} '${fieldType.show}'")
                   case _ =>
                     if (fieldType.typeSymbol.isTypeParam) {
                       fail(
