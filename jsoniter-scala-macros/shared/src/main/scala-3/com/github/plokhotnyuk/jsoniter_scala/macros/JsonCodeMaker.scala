@@ -784,7 +784,7 @@ object JsonCodecMaker {
                         if( oldBinding =:= parentTarg) then
                           binding
                         else
-                          fail(s"type parameter ${paramName} in class ${child.name} appeared in the constructor of $tpe two times differently, "+
+                          fail(s"type parameter ${paramName} in class ${child.name} appeared in the constructor of ${tpe.show} two times differently, "+
                                s" with ${oldBinding.show} and ${parentTarg.show}")       
           else
             if (fromNudeChildTarg <:< parentTarg) then
@@ -854,12 +854,11 @@ object JsonCodecMaker {
                 val ctArgs = names.map{ name =>
                   tpBinding.get(name) match
                     case Some(tp) => tp
-                    case None => fail(s"type parameter $name of $s can't be deduced from type arguments of ${tpe.show}")
+                    case None => fail(s"type parameter $name of $s can't be deduced from type arguments of ${tpe.show}. Please provide a custom implicitly accessible codec for if")
                 }
                 val polyRes = resPolyTp match
                   case MethodType(_,_,resTp) => resTp
                   case other =>
-                    println(s"non-method-tye polyRes: ${other}") 
                     other // hope we have no multiple typed param lists yet.
                 if (!ctArgs.isEmpty) then
                   if (debug) {
@@ -1284,16 +1283,23 @@ object JsonCodecMaker {
               val getterOrField = {
                   val field = tpeClassSym.fieldMember(name)
                   if (field.exists) {
+                    if (field.flags.is(Flags.PrivateLocal)) {
+                      fail(s"field '$name' in class '${tpe.show}' is private. It should be defined as 'val' or 'var' in the primary constructor.")
+                    }
                     FieldInfo.Field(field)
                   } else {
-                    val getters = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor))
+                    val getters = tpeClassSym.methodMember(name).filter(_.flags.is(Flags.CaseAccessor | Flags.FieldAccessor | Flags.ParamAccessor))
                     if (getters.isEmpty) {
                       // Scala3 not set FieldAcces flag for val parameters of constructor
                       val namedMembers = tpeClassSym.methodMember(name).filter(_.paramSymss==Nil)
                       if (namedMembers.isEmpty) {
                         fail(s"field and getter not found: '$name' parameter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")                  
                       } else {
-                        FieldInfo.Getter(namedMembers.head)
+                        namedMembers.head.privateWithin match
+                          case Some(sym) =>
+                            fail(s"getter is private: '$name' paramter of '${tpe.show}' should be defined as 'val' or 'var' in the primary constructor.")
+                          case None =>  
+                            FieldInfo.Getter(namedMembers.head)
                       }
                     } else {
                       // TODO: check length ?  when we have both reader and writer.
