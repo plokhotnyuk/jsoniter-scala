@@ -107,10 +107,8 @@ class CodecMakerConfig(
   def withJavaEnumValueNameMapper(javaEnumValueNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
 
   @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")  
-  def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig =
-    ???
-    //copy(adtLeafClassNameMapper = FieldNameFunctionWrapper({ case x => adtLeafClassNameMapper(x) }))
-
+  def withAdtLeafClassNameMapper(adtLeafClassNameMapper: String => String): CodecMakerConfig = ???
+ 
   def withDiscriminatorFieldName(discriminatorFieldName: Option[String]): CodecMakerConfig =
     copy(discriminatorFieldName = discriminatorFieldName)
 
@@ -2295,22 +2293,7 @@ object JsonCodecMaker {
           val rhs = Literal(IntConstant(if (i == lastParamVarIndex) lastParamVarBits else -1))
           ValDef(sym, Some(rhs))
         } 
-        
-        /*
-        val checkAndResetFieldPresenceFlags:Map[String, Expr[Int] => Expr[Unit]] = {
-          classInfo.fields.zipWithIndex.map { case (f, i) =>
-            var n = Ref(paramVars(i >> 5).symbol).asExprOf[Int]
-            val m = Expr(1 << i)
-            (f.mappedName, (l:Expr[Int]) => '{ 
-              if (($n & $m) != 0) 
-                ${Assign(n.asTerm , '{ $n ^ $m }.asTerm).asExprOf[Unit]} 
-              else 
-                $in.duplicatedKeyError($l) 
-            } )
-          }.toMap
-        }
-        */
-        
+                
         def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
           classInfo.nonTransientFields.find(_.mappedName == name) match
             case None => fail(s"field ${name} is not found in fields for ${classInfo}")
@@ -2324,8 +2307,6 @@ object JsonCodecMaker {
                     $in.duplicatedKeyError($l)
                   }
                 }
-        
-         
          
         val checkReqVars: List[Expr[Unit]] = {
           if (required.isEmpty) Nil
@@ -3704,7 +3685,6 @@ object JsonCodecMaker {
       val codec = rootTpe.asType match {
         case '[rootType] =>
           
-          
           val codec = 
               Apply(
                 TypeApply(
@@ -3754,8 +3734,8 @@ object JsonCodecMaker {
           retBlock
       }
       
-           
-      if (traceFlag || true) {  // TODO: insert flag from macro context
+      val printCodec = Expr.summon[JsonCodecMakerSettings.PrintCodec].isDefined     
+      if (printCodec) {  
         report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       }
       codec.asExprOf[JsonValueCodec[A]]

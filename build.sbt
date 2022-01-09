@@ -50,9 +50,10 @@ lazy val commonSettings = Seq(
         //"-Xmacro-settings:print-codecs"
       )
     } else Seq(
-        "-Xcheck-macros", "-Ycheck:all", "-Yprint-syms",
+        "-Xcheck-macros",
+        // "-Ycheck:all", "-Yprint-syms",
         //"-Ydebug-error", // many stack traces, really many stack traces.
-        "--explain"
+        //"--explain"
       )
   },
   compileOrder := CompileOrder.JavaThenScala,
