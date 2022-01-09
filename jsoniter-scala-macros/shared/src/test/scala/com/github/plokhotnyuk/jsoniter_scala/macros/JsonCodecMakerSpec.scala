@@ -11,6 +11,9 @@ import org.scalatest.exceptions.TestFailedException
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
+//given JsonCodecMakerSettings.PrintCodec with {}
+
+
 case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
