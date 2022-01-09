@@ -3673,58 +3673,29 @@ object JsonCodecMaker {
         else cannotFindValueCodecError(tpe)
       }
 
-        
-
       val codec = rootTpe.asType match {
         case '[rootType] =>
-          
-          val codec = 
-              Apply(
-                TypeApply(
-                  Select.unique('{JsonFunValueCodec}.asTerm, "apply"),
-                  List(TypeTree.of[rootType])
-                ),
-                List(
-                  genNullValue[rootType](rootTpe :: Nil).asTerm,
-                  '{ (in: JsonReader, default: rootType) => 
-                            ${genReadVal[rootType](rootTpe :: Nil, 'default, cfg.isStringified, false, 'in)}
-                  }.asTerm,
-                  '{
-                     (x: rootType, out: JsonWriter) =>
-                             ${genWriteVal[rootType]('x, rootTpe::Nil, cfg.isStringified, None, 'out)}
-                  }.asTerm
-                )
-              )
-          
-            /*
-            new JsonValueCodec[rootType] {
-               def nullValue: rootType = ${genNullValue[rootType](rootTpe :: Nil)}
-               
-               def decodeValue(in: JsonReader, default: rootType): rootType = {
-                  ${genReadVal(rootTpe :: Nil, 'default, cfg.isStringified, None, 'in)}
-               }
+          val codec =
+            '{
+              new JsonValueCodec[rootType] {
+                def nullValue: rootType = ${genNullValue[rootType](rootTpe :: Nil)}
 
-               def encodeValue(x: rootType, out: JsonWriter): Unit = {
-                 ${genWriteVal('x, rootTpe::Nil, cfg.isStringified, None, 'out)}
-               }
-            }*/
+                def decodeValue(in: JsonReader, default: rootType): rootType =
+                  ${genReadVal[rootType](rootTpe :: Nil, 'default, cfg.isStringified, false, 'in)}
 
-
-          val needDefs: List[Statement] = 
-                                          (mathContexts.values.toList: List[Statement]) ++
-                                          (nullValues.values.toList: List[Statement]) ++
-                                          (equalsMethods.values.toList: List[Statement]) ++
-                                          (scala2EnumerationCaches.values.toList: List[Statement]) ++
-                                          (fieldIndexAccessors.values.toList: List[Statement]) ++
-                                          (decodeMethodDefs.values.toList: List[Statement]) ++
-                                          (encodeMethodDefs.values.toList: List[Statement]) 
-          
-          val retBlock = Block(
-              needDefs,
-              codec
-            ).asExprOf[JsonValueCodec[rootType]]
-          
-          retBlock
+                def encodeValue(x: rootType, out: JsonWriter): Unit =
+                  ${genWriteVal[rootType]('x, rootTpe::Nil, cfg.isStringified, None, 'out)}
+              }
+            }.asTerm
+          val needDefs: List[Statement] =
+            (mathContexts.values.toList: List[Statement]) ++
+            (nullValues.values.toList: List[Statement]) ++
+            (equalsMethods.values.toList: List[Statement]) ++
+            (scala2EnumerationCaches.values.toList: List[Statement]) ++
+            (fieldIndexAccessors.values.toList: List[Statement]) ++
+            (decodeMethodDefs.values.toList: List[Statement]) ++
+            (encodeMethodDefs.values.toList: List[Statement])
+          Block(needDefs, codec).asExprOf[JsonValueCodec[rootType]]
       }
       
       val printCodec = Expr.summon[JsonCodecMakerSettings.PrintCodec].isDefined     
@@ -3753,6 +3724,4 @@ object JsonCodecMaker {
       val seen = new mutable.HashSet[A]
       x => !seen.add(x)
     }
-
-
 }
