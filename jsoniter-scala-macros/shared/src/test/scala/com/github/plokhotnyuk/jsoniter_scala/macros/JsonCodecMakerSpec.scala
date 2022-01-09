@@ -874,6 +874,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           _root_.scala.None),
         """{}""")
     }
+    "serialize and deserialize top-level options using null for None values" in {
+      val codecOfOptionOfInt = make[Option[Int]]
+      verifySerDeser(codecOfOptionOfInt, _root_.scala.None, "null")
+      verifySerDeser(codecOfOptionOfInt, Some(1), "1")
+
+      case class Inner(a: Int, b: _root_.scala.Boolean, c: String)
+
+      val codecOfOptionOfInner = make[Option[Inner]]
+      verifySerDeser(codecOfOptionOfInner, _root_.scala.None, "null")
+      verifySerDeser(codecOfOptionOfInner, Some(Inner(1, b = true, "VVV")), """{"a":1,"b":true,"c":"VVV"}""")
+    }
     "serialize and deserialize options in collections using null for None values" in {
       verifySerDeser(make[Array[Option[Int]]], _root_.scala.Array(_root_.scala.None, Some(1)), "[null,1]")
       verifySerDeser(make[List[Option[Int]]], List(Some(1), _root_.scala.None), "[1,null]")
