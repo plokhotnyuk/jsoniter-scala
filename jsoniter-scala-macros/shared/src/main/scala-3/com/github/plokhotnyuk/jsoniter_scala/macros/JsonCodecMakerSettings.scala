@@ -18,8 +18,4 @@ object JsonCodecMakerSettings {
    *```
    **/
   class PrintCodec
-
-  class EnableTrace 
-
-
 }
