@@ -33,9 +33,9 @@ jobs:
         shell: bash
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 100
+          fetch-depth: 300
       - name: Fetch tags
-        run: git fetch --depth=100 origin +refs/tags/*:refs/tags/*
+        run: git fetch --depth=300 origin +refs/tags/*:refs/tags/*
       - uses: coursier/cache-action@v6.3
       - uses: olafurpg/setup-scala@v13
         with:
