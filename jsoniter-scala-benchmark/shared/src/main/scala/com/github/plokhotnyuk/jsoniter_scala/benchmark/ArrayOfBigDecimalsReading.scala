@@ -12,8 +12,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Decoder
-//import com.rallyhealth.weejson.v1.jackson.FromJson
-//import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -60,10 +60,10 @@ class ArrayOfBigDecimalsReading extends ArrayOfBigDecimalsBenchmark {
 
   @Benchmark
   def uPickle(): Array[BigDecimal] = read[Array[BigDecimal]](jsonBytes)
-/* FIXME: weePickle rounding mantissa to 16 digits
+
   @Benchmark
   def weePickle(): Array[BigDecimal] = FromJson(jsonBytes).transform(ToScala[Array[BigDecimal]])
-*/
+
   @Benchmark
   def zioJson(): Array[BigDecimal] = new String(jsonBytes, UTF_8).fromJson[Array[BigDecimal]].fold(sys.error, identity)
 }

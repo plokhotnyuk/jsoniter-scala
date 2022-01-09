@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.ZoneId
 import com.avsystem.commons.serialization.json._
-import com.evolutiongaming.jsonitertool.PlayJsonJsoniter
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.AVSystemCodecs._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BorerJsonEncodersDecoders._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers._
@@ -49,7 +48,11 @@ class ArrayOfZoneIdsReading extends ArrayOfZoneIdsBenchmark {
   def playJson(): Array[ZoneId] = Json.parse(jsonBytes).as[Array[ZoneId]]
 
   @Benchmark
-  def playJsonJsoniter(): Array[ZoneId] = PlayJsonJsoniter.deserialize(jsonBytes).fold(throw _, _.as[Array[ZoneId]])
+  def playJsonJsoniter(): Array[ZoneId] = {
+    import com.evolutiongaming.jsonitertool.PlayJsonJsoniter._
+
+    deserialize(jsonBytes).fold(throw _, _.as[Array[ZoneId]])
+  }
 
   @Benchmark
   def sprayJson(): Array[ZoneId] = JsonParser(jsonBytes).convertTo[Array[ZoneId]]

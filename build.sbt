@@ -47,11 +47,25 @@ lazy val commonSettings = Seq(
       }) ++ Seq(
         "-target:jvm-1.8",
         "-Xmacro-settings:" + sys.props.getOrElse("macro.settings", "none")
+        //"-Xmacro-settings:print-codecs"
       )
-    } else Seq()
+    } else Seq(
+        "-Xcheck-macros",
+        // "-Ycheck:all", "-Yprint-syms",
+        //"-Ydebug-error", // many stack traces, really many stack traces.
+        //"--explain"
+      )
   },
   compileOrder := CompileOrder.JavaThenScala,
-  Test / testOptions += Tests.Argument("-oDF"),
+  Compile/unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+     case Some((2,_)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
+     case _ => List.empty
+  }),
+  Test/unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+     case Some((2,_)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
+     case _ => Seq.empty
+  }),
+  Test/testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
   publishTo := sonatypePublishToBundle.value,
@@ -115,7 +129,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.0", "2.13.7", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("3.1.1-RC2", "2.13.7", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -157,12 +171,19 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("2.13.7", "2.12.15", "2.11.12"),
-    libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.beachape" %%% "enumeratum" % "1.6.1" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+    crossScalaVersions := Seq("3.1.1-RC2","2.13.7", "2.12.15", "2.11.12"),
+    libraryDependencies ++= (
+      Seq(
+        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+      ) ++ (
+      if (scalaVersion.value.startsWith("2")) 
+        Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value,
+            "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+            "com.beachape" %%% "enumeratum" % "1.6.1" % Test
+        )
+      else
+        Seq.empty
+      )
     )
   )
 
@@ -189,7 +210,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.0", "2.13.7", "2.12.15"),
+    crossScalaVersions := Seq("3.1.1-RC2", "2.13.7", "2.12.15"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1" % Test,
@@ -225,29 +246,29 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("2.13.7"),
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio-json" % "0.2.0-M3",
-      "com.evolutiongaming" %% "play-json-jsoniter" % "0.9.3",
-      "com.rallyhealth" %% "weepickle-v1" % "1.6.0",
+      "com.evolutiongaming" %% "play-json-jsoniter" % "0.10.0",
+      "com.rallyhealth" %% "weepickle-v1" % "1.7.1",
       "io.bullet" %%% "borer-derivation" % "1.7.2",
       "pl.iterators" %% "kebs-spray-json" % "1.9.3",
       "io.spray" %% "spray-json" % "1.3.6",
       "com.avsystem.commons" %%% "commons-core" % "2.5.1",
-      "com.lihaoyi" %%% "upickle" % "1.4.2",
+      "com.lihaoyi" %%% "upickle" % "1.4.4",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.9",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.13.0",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0",
-      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.13.0",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.13.1",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.1",
+      "com.fasterxml.jackson.module" % "jackson-module-afterburner" % "2.13.1",
       "io.circe" %%% "circe-generic-extras" % "0.14.1",
       "io.circe" %%% "circe-generic" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1",
       "com.typesafe.play" %% "play-json" % "2.9.2",
       "org.julienrf" %% "play-json-derived-codecs" % "10.0.2",
       "ai.x" %% "play-json-extensions" % "0.42.0",
-      "io.github.kag0" %% "ninny" % "0.4.0",
+      "io.github.kag0" %% "ninny" % "0.5.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
-      "org.openjdk.jmh" % "jmh-core" % "1.32",
-      "org.openjdk.jmh" % "jmh-generator-asm" % "1.32",
-      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.32",
-      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.32",
+      "org.openjdk.jmh" % "jmh-core" % "1.34",
+      "org.openjdk.jmh" % "jmh-generator-asm" % "1.34",
+      "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.34",
+      "org.openjdk.jmh" % "jmh-generator-reflection" % "1.34",
       "org.scalatest" %%% "scalatest" % "3.2.10" % Test
     )
   )

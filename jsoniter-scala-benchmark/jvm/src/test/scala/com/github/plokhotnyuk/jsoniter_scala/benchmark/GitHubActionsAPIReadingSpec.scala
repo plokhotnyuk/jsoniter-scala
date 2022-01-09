@@ -11,6 +11,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.circeJsoniter() shouldBe benchmark.obj
       benchmark.jacksonScala() shouldBe benchmark.obj
       benchmark.jsoniterScala() shouldBe benchmark.obj
+      benchmark.ninnyJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
@@ -24,6 +25,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.circeJsoniter())
       intercept[Throwable](b.jacksonScala())
       intercept[Throwable](b.jsoniterScala())
+      intercept[Throwable](b.ninnyJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.weePickle())
       intercept[Throwable](b.zioJson())

@@ -9,8 +9,8 @@ import com.github.plokhotnyuk.jsoniter_scala.benchmark.SprayFormats._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import io.circe.Decoder
-//import com.rallyhealth.weejson.v1.jackson.FromJson
-//import com.rallyhealth.weepickle.v1.WeePickle.ToScala
+import com.rallyhealth.weejson.v1.jackson.FromJson
+import com.rallyhealth.weepickle.v1.WeePickle.ToScala
 import io.circe.parser._
 import org.openjdk.jmh.annotations.Benchmark
 import play.api.libs.json.Json
@@ -55,10 +55,10 @@ class ArrayOfFloatsReading extends ArrayOfFloatsBenchmark {
 
   @Benchmark
   def uPickle(): Array[Float] = read[Array[Float]](jsonBytes)
-/* FIXME: weePickle parses 1.199999988079071 as 1.2f instead of 1.1999999f
+
   @Benchmark
   def weePickle(): Array[Float] = FromJson(jsonBytes).transform(ToScala[Array[Float]])
-*/
+
   @Benchmark
   def zioJson(): Array[Float] = new String(jsonBytes, UTF_8).fromJson[Array[Float]].fold(sys.error, identity)
 }
