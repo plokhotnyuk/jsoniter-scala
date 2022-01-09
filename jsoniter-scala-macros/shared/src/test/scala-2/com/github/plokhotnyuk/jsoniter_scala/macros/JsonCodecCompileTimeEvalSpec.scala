@@ -1,13 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
-
 import org.scalatest.exceptions.TestFailedException
 
-
 class JsonCodecCompileTimeEvalSpec extends VerifyingSpec {
-  import NamespacePollutions._
 
   "Compile-time eval in generated codec" should {
         
