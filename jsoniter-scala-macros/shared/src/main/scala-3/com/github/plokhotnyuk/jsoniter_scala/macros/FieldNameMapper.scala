@@ -15,6 +15,9 @@ class FieldNameExprFunctionWrapper(fun: Expr[PartialFunction[String,String]]) ex
       CompileTimeEval.evalApplyString(fun, input)
 
 
+case class FromExprException(name: String, expr:Expr[Any]) extends RuntimeException
+
+
 object FieldNameMapper {
 
 
