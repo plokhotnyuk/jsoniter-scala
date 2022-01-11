@@ -58,13 +58,9 @@ object FieldNameFunctionWrapper {
 
 }
 
-case class CompileTimeEvalException(message: String, 
-                                  expr: Expr[Any],
-                                  reason: Throwable = null,
-                                  throwFlag: Boolean = false
-                             ) extends RuntimeException(message, reason)
-
-object CompileTimeEval {
+private[macros] object CompileTimeEval {
+  case class CompileTimeEvalException(message: String, expr: Expr[Any], reason: Throwable = null)
+    extends RuntimeException(message, reason)
 
   def evalApplyString(fun: Expr[PartialFunction[String,String]], input:String)(using Quotes): Option[String] = {
     val bubble = new QuoteScope()
@@ -75,10 +71,6 @@ object CompileTimeEval {
     val bubble = new QuoteScope()
     bubble.evalExpr(expr)
   }
-
-  //def evalTerm(using Quotes)(ft: quotes.reflect.Term, bindings: Map[Symbol, Term], optDefault: Option[Term]): Term = {
-  //}
-
 
   class QuoteScope(using Quotes) {
 

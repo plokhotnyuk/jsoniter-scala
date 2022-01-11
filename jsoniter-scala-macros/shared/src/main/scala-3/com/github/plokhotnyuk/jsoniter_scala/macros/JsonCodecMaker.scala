@@ -6,6 +6,7 @@ import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.macros.CompileTimeEval._
 
 import scala.language.implicitConversions
 import scala.annotation.{StaticAnnotation, tailrec, compileTimeOnly}
@@ -575,10 +576,7 @@ object JsonCodecMaker {
         case ex: scala.quoted.runtime.StopMacroExpansion =>
           throw ex
         case ex: CompileTimeEvalException =>
-          report.error(ex.getMessage,ex.expr)
-          if (ex.throwFlag) {
-            ex.printStackTrace()
-          }
+          report.error(ex.getMessage, ex.expr)
           report.errorAndAbort("Can't evaluate compile-time expression")
         case NonFatal(ex) =>
           println(s"catched exception during macro expansion: $ex: msg=${ex.getMessage}")
