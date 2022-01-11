@@ -1,61 +1,46 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-
 import scala.quoted._
 import scala.util._
 
-sealed trait FieldNameMapper:
+sealed trait NameMapper:
     def apply(input: String)(using Quotes): Option[String]
 
-class FieldNameFunctionWrapper(fun: PartialFunction[String, String]) extends FieldNameMapper:
+class PartialFunctionWrapper(fun: PartialFunction[String, String]) extends NameMapper:
     def apply(input:String)(using Quotes): Option[String] = fun.lift(input)
 
-class FieldNameExprFunctionWrapper(fun: Expr[PartialFunction[String,String]]) extends FieldNameMapper:
-    def apply(input:String)(using Quotes): Option[String] = 
+class ExprPartialFunctionWrapper(fun: Expr[PartialFunction[String,String]]) extends NameMapper:
+    def apply(input:String)(using Quotes): Option[String] =
       CompileTimeEval.evalApplyString(fun, input)
-
 
 case class FromExprException(name: String, expr:Expr[Any]) extends RuntimeException
 
+object NameMapper {
+  inline given Conversion[PartialFunction[String,String], NameMapper] = PartialFunctionWrapper(_)
 
-object FieldNameMapper {
+  inline given Conversion[Function[String,String], NameMapper] =
+    f => PartialFunctionWrapper( {case x => f(x) })
 
-
-  inline given Conversion[PartialFunction[String,String], FieldNameMapper] = FieldNameFunctionWrapper(_)
-
-  inline given Conversion[Function[String,String], FieldNameMapper] = 
-    f => FieldNameFunctionWrapper( {case x => f(x) })
-
-
-  given FromExpr[FieldNameMapper] with {
-
-    def unapply(x: Expr[FieldNameMapper])(using Quotes): Option[FieldNameMapper] =
+  given FromExpr[NameMapper] with {
+    def unapply(x: Expr[NameMapper])(using Quotes): Option[NameMapper] =
       import quotes.reflect._
-      if (x.asTerm.tpe <:< TypeRepr.of[FieldNameFunctionWrapper] ) {
-        FieldNameFunctionWrapper.toExprWrapper(x.asExprOf[FieldNameFunctionWrapper])
-      } else if (x.asTerm.tpe <:< TypeRepr.of[FieldNameExprFunctionWrapper]) {
-        //x match {
-        //  case '{ FieldNameExprFunctionWrapper($fun) } =>
-        //}
+      if (x.asTerm.tpe <:< TypeRepr.of[PartialFunctionWrapper] ) {
+        PartialFunctionWrapper.toExprWrapper(x.asExprOf[PartialFunctionWrapper])
+      } else if (x.asTerm.tpe <:< TypeRepr.of[ExprPartialFunctionWrapper]) {
         throw new FromExprException("Double application of FromExpr ",x)
       } else {
         throw new FromExprException("FieldNameMapper", x)
       }
-           
   }
-
 }
 
-
-object FieldNameFunctionWrapper {
-
-  def toExprWrapper(x: Expr[FieldNameFunctionWrapper])(using Quotes): Option[FieldNameExprFunctionWrapper] =
+object PartialFunctionWrapper {
+  def toExprWrapper(x: Expr[PartialFunctionWrapper])(using Quotes): Option[ExprPartialFunctionWrapper] =
     x match
-      case '{ FieldNameFunctionWrapper($fun) } =>
-        Some(FieldNameExprFunctionWrapper(fun))
+      case '{ PartialFunctionWrapper($fun) } =>
+        Some(ExprPartialFunctionWrapper(fun))
       case _ =>
         throw new FromExprException("FieldNameExpr",x)
-
 }
 
 private[macros] object CompileTimeEval {
@@ -155,42 +140,26 @@ private[macros] object CompileTimeEval {
           termToOptString(termResult)
       
 
-    private def evalTerm(ft: quotes.reflect.Term, bindings: Map[Symbol, Term], 
-                             optDefault: Option[Term]): Term = {
+    private def evalTerm(ft: quotes.reflect.Term, bindings: Map[Symbol, Term], optDefault: Option[Term]): Term = {
       import quotes.reflect._
-      try{
-        ft match {
-          case Inlined(origin, inlineBindings, body) =>
-            evalTerm(body, addBindings(ft,bindings,inlineBindings), optDefault)
-          case id@Ident(_) =>
-            bindings.get(id.symbol) match
-              case Some(term) => evalTerm(term, bindings, optDefault)
-              case None => throw CompileTimeEvalException(s"Unknown symbol: $id, bindigns=${bindings}", ft.asExpr)
-          case m@Match(scrutinee, caseDefs ) =>
-              evalMatch(m, bindings, optDefault)
-          case If(cond, ifTrue, ifFalse) =>
-              if (evalCondition(cond, bindings)) {
-                evalTerm(ifTrue, bindings, optDefault)
-              } else {
-               evalTerm(ifFalse, bindings, optDefault)
-              }
-          case app@Apply(fun, args) =>
-              evalApply(app,bindings)
-          case block@Block(statements, exprs) =>
-              evalBlock(block, bindings, optDefault)
-          case lt@Literal(_) => lt
-          case Typed(expr,tpt) => evalTerm(expr,bindings, optDefault)
-          case other =>
-              throw CompileTimeEvalException(s"Unsupported constant expression: $other", ft.asExpr)
-        }
-      }catch{
-        case ex:CompileTimeEvalException =>
-          if (true) {
-            // TODO: debug flag.
-            println(s"in ${ft.show}, tree=${ft}")
-          }
-          throw ex
-      } 
+
+      ft match {
+        case Inlined(origin, inlineBindings, body) =>
+          evalTerm(body, addBindings(ft, bindings, inlineBindings), optDefault)
+        case id@Ident(_) =>
+          bindings.get(id.symbol) match
+            case Some(term) => evalTerm(term, bindings, optDefault)
+            case None => throw CompileTimeEvalException(s"Unknown symbol: $id, bindigns=${bindings}", ft.asExpr)
+        case m@Match(scrutinee, caseDefs ) => evalMatch(m, bindings, optDefault)
+        case If(cond, ifTrue, ifFalse) =>
+          if (evalCondition(cond, bindings)) evalTerm(ifTrue, bindings, optDefault)
+          else evalTerm(ifFalse, bindings, optDefault)
+        case app@Apply(fun, args) => evalApply(app,bindings)
+        case block@Block(statements, exprs) => evalBlock(block, bindings, optDefault)
+        case lt@Literal(_) => lt
+        case Typed(expr,tpt) => evalTerm(expr,bindings, optDefault)
+        case other => throw CompileTimeEvalException(s"Unsupported constant expression: $other", ft.asExpr)
+      }
     }
 
     private def evalMatch(t: Match, 
@@ -416,7 +385,7 @@ private[macros] object CompileTimeEval {
               evalApplySelect(posTerm, snd, "apply", args, bindings)
             }
           } else {
-            throw new CompileTimeEvalException(s"expeted that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
+            throw new CompileTimeEvalException(s"expected that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
           }
         case other =>
           try {
