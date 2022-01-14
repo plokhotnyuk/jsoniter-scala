@@ -1,6 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import scala.quoted.*
+import scala.quoted._
 
 private[macros] object LowLevelQuoteUtil {
 
@@ -12,7 +12,7 @@ private[macros] object LowLevelQuoteUtil {
     * and over
     **/
   def deepChangeOwner(using Quotes)(tree: quotes.reflect.Tree, owner: quotes.reflect.Symbol, traceFlag: Boolean): quotes.reflect.Tree = {
-    import quotes.reflect.*
+    import quotes.reflect._
 
     val mapper = new TreeMap {
       override def transformTree(tree: Tree)(owner: Symbol):Tree =
@@ -79,7 +79,7 @@ private[macros] object LowLevelQuoteUtil {
    }
 
   def checkOwner(using Quotes)(term: quotes.reflect.Term, ownerToCheck: quotes.reflect.Symbol, traceFlag: Boolean = true, throwFlag: Boolean = true, onlyFirst: Boolean = false): Boolean = {
-    import quotes.reflect.*
+    import quotes.reflect._
 
     var topLevelFound = false
     val treeTraverser = new TreeTraverser() {

@@ -2,9 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.lang.Character._
 import java.time._
-
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
-
 import scala.annotation.{StaticAnnotation, tailrec}
 import scala.annotation.meta.field
 import scala.collection.{BitSet, immutable, mutable}

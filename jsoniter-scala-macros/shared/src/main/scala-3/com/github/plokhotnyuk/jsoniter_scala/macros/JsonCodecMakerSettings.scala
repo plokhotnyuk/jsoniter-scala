@@ -10,7 +10,7 @@ import scala.compiletime._
 object JsonCodecMakerSettings {
 
   /**
-   * use to enable printing of codec during compilation:
+   * Use to enable printing of codec during compilation:
    *```
    *given JsonCodecMakerSetting.PrintCodec
    *
@@ -20,8 +20,12 @@ object JsonCodecMakerSettings {
   class PrintCodec
 
   /**
-   * use to print additional debug code during generation.
-   * Used internally
+   * Use to print additional debug code during derivation of codecs
+    *```
+    *given JsonCodecMakerSetting.Trace
+    *
+    *val codec = CodecMakerConfig[MyClass]
+    *```
    **/
   class Trace
 }
