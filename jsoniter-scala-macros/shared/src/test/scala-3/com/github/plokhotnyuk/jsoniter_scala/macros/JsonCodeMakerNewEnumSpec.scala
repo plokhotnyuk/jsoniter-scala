@@ -3,14 +3,11 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
-
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
-
 
 enum TrafficLight {
   case Red, Yellow, Green
@@ -33,7 +30,6 @@ enum Color(val rgb: Int):
 //   ordinal flag (create config param)
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
-
   "JsonCodecMakerNeEnum.make generate codes which" should {
     "serialize and deserialize Scala3 enums" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(None)),
@@ -57,13 +53,8 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
     }
 
     "serialize and deserialize Scala3 enums with parameters" in {
-      //given JsonCodecMakerSettings.PrintCodec with {}
-      //given JsonCodecMakerSettings.Trace with {}
       verifySerDeser(make[List[Color]](CodecMakerConfig),
           List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
-
     }
   }
-
 }
-
