@@ -3,16 +3,13 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.util.{Objects, UUID}
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
-
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
 //given JsonCodecMakerSettings.PrintCodec with {}
-
 
 case class UserId(id: String) extends AnyVal
 
@@ -38,9 +35,11 @@ object UserId2 {
 
 object OrderId2 {
   type Opaque = Base with Tag
+
   type Base = Any {
     type Hack
   }
+
   trait Tag
 
   object Opaque {
@@ -57,11 +56,12 @@ object OrderId2 {
 case class Id[A](id: A) extends AnyVal
 
 sealed trait Weapon extends Product with Serializable
-object Weapon {
-  final case object Axe extends Weapon
-  final case object Sword extends Weapon
-}
 
+object Weapon {
+  case object Axe extends Weapon
+
+  case object Sword extends Weapon
+}
 
 case class Primitives(b: Byte, s: Short, i: Int, l: Long, bl: Boolean, ch: Char, dbl: Double, f: Float)
 
@@ -280,11 +280,6 @@ object HKField {
 
       case class Baz[A[_]](a: A[String]) extends Foo[A]
 }
-
-case class Transient(@transient transient: String = "default", required: String) {
-  val ignored: String = s"$required-$transient"
-}
-
 
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
@@ -1561,11 +1556,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       })
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
-      /*
       case class Transient(@transient transient: String = "default", required: String) {
         val ignored: String = s"$required-$transient"
       }
-      */
 
       val codecOfTransient = make[Transient]
       verifySer(codecOfTransient, Transient(required = "VVV"), """{"required":"VVV"}""")
@@ -2058,9 +2051,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         case "a" => "value"
       }), Right("VVV"), """{"type":"Right","value":"VVV"}""")
 
-      // dotty bug
-      //  TODO:  extract and submit to dotty.
-      //   for now, let's move up,
+      //FIXME: dotty bug - extract and submit to dotty. For now, let's move up:
       //case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
       verifySerDeser(make[FirstOrderType[Int, String]],
@@ -2069,7 +2060,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[FirstOrderType[Id[Int], Id[String]]],
         FirstOrderType[Id[Int], Id[String]](Id[Int](1), Id[String]("VVV"), Some(Id[Int](2)), List(Id[String]("WWW"))),
         """{"a":1,"b":"VVV","oa":2,"bs":["WWW"]}""")
-        
     }
     "don't generate codecs for first-order types that are specified using 'Any' type parameter" in {
       val message = intercept[TestFailedException](assertCompiles {
@@ -2108,7 +2098,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
-      /*
+      /* FIXME: dotty bug - extract and submit to dotty. For now, let's move up:
       sealed trait Foo[A[_]] extends Product with Serializable
 
       case class Bar[A[_]](a: A[Int]) extends Foo[A]

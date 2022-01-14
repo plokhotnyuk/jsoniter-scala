@@ -6,6 +6,7 @@ import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.macros.CompileTimeEval._
 
 import scala.language.implicitConversions
 import scala.annotation.{StaticAnnotation, tailrec, compileTimeOnly}
@@ -78,9 +79,9 @@ final class stringified extends StaticAnnotation
  *                                values
   */
 class CodecMakerConfig(
-    val fieldNameMapper: FieldNameMapper,
-    val javaEnumValueNameMapper: FieldNameMapper,
-    val adtLeafClassNameMapper: FieldNameMapper,
+    val fieldNameMapper: NameMapper,
+    val javaEnumValueNameMapper: NameMapper,
+    val adtLeafClassNameMapper: NameMapper,
     val discriminatorFieldName: Option[String],
     val isStringified: Boolean,
     val mapAsArray: Boolean,
@@ -100,7 +101,7 @@ class CodecMakerConfig(
     val requireDiscriminatorFirst: Boolean,
     val useScalaEnumValueId: Boolean) {
 
-  @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodec.make functions")  
+  @compileTimeOnly("withFieldNameMapper should be used only inside JsonCodec.make functions")
   def withFieldNameMapper(fieldNameMapper: PartialFunction[String, String]): CodecMakerConfig = ???
     
   @compileTimeOnly("withJavaEnumValueNameMapper should be used only inside JsonCodec.make functions")  
@@ -154,9 +155,9 @@ class CodecMakerConfig(
   def withUseScalaEnumValueId(useScalaEnumValueId: Boolean): CodecMakerConfig =
     copy(useScalaEnumValueId = useScalaEnumValueId)
 
-  def copy(fieldNameMapper: FieldNameMapper = fieldNameMapper,
-                         javaEnumValueNameMapper: FieldNameMapper = javaEnumValueNameMapper,
-                         adtLeafClassNameMapper: FieldNameMapper = adtLeafClassNameMapper,
+  def copy(fieldNameMapper: NameMapper = fieldNameMapper,
+                         javaEnumValueNameMapper: NameMapper = javaEnumValueNameMapper,
+                         adtLeafClassNameMapper: NameMapper = adtLeafClassNameMapper,
                          discriminatorFieldName: Option[String] = discriminatorFieldName,
                          isStringified: Boolean = isStringified,
                          mapAsArray: Boolean = mapAsArray,
@@ -303,15 +304,15 @@ object CodecMakerConfig extends CodecMakerConfig(
           case '{ CodecMakerConfig } =>
             Some(CodecMakerConfig)
           case '{ (${x}:CodecMakerConfig).withFieldNameMapper($v) } =>
-            val vv = FieldNameExprFunctionWrapper(v)
+            val vv = ExprPartialFunctionWrapper(v)
             val vx = x.valueOrAbort
             Some(vx.copy(fieldNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
-            val vv = FieldNameExprFunctionWrapper(v)
+            val vv = ExprPartialFunctionWrapper(v)
             val vx = x.valueOrAbort
             Some(vx.copy(javaEnumValueNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withAdtLeafClassNameMapper($v) } =>
-            val vv = FieldNameExprFunctionWrapper( '{ { case x => $v(x) } } )
+            val vv = ExprPartialFunctionWrapper( '{ { case x => $v(x) } } )
             val vx = x.valueOrAbort
             Some(vx.copy(adtLeafClassNameMapper = vv))
           case '{ (${x}:CodecMakerConfig).withRequireDiscriminatorFirst($v) } =>
@@ -575,10 +576,7 @@ object JsonCodecMaker {
         case ex: scala.quoted.runtime.StopMacroExpansion =>
           throw ex
         case ex: CompileTimeEvalException =>
-          report.error(ex.getMessage,ex.expr)
-          if (ex.throwFlag) {
-            ex.printStackTrace()
-          }
+          report.error(ex.getMessage, ex.expr)
           report.errorAndAbort("Can't evaluate compile-time expression")
         case NonFatal(ex) =>
           println(s"catched exception during macro expansion: $ex: msg=${ex.getMessage}")
