@@ -592,7 +592,7 @@ object JsonCodecMaker {
     private[this] def make[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
     
-      val traceFlag: Boolean = true  // TODO: add to confg 
+      val traceFlag: Boolean = Expr.summon[JsonCodecMakerSettings.Trace].isDefined     
 
       def fail(msg: String, throwFlag: Boolean = false): Nothing = {
         if (throwFlag) {
@@ -2143,6 +2143,9 @@ object JsonCodecMaker {
 
       def genReadSealedClass[A:Type](types: List[TypeRepr], in: Expr[JsonReader], default: Expr[A], isStringified: Boolean)(using Quotes): Expr[A] = {
         val tpe = types.head
+        if (traceFlag) {
+          println(s"genReadSealedClass[${tpe.show}], discriminatorFieldName=${cfg.discriminatorFieldName}")
+        }
         val leafClasses = adtLeafClasses(tpe)
         if (leafClasses.isEmpty) {
           fail(
@@ -2150,6 +2153,14 @@ object JsonCodecMaker {
              "accessible codec for the ADT base."
           )
         }
+
+        val currentDiscriminator =
+          if (tpe.typeSymbol.flags.is(Flags.Enum) &&  tpe.typeSymbol.children.forall(_.isTerm) ) {
+                None
+          } else {
+            cfg.discriminatorFieldName
+          }
+
         val discriminatorError = cfg.discriminatorFieldName.fold(
                                      '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
 
@@ -2160,12 +2171,6 @@ object JsonCodecMaker {
         }
 
         def genReadLeafClass[S:Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
-          //val discriminator = cfg.discriminatorFieldName.map( fieldName => Discriminator(fieldName, skipDiscriminatorField))
-          //val optLeafDiscriminator = cfg.discriminatorFieldName.map{ fieldName =>
-          //  val sym = Symbol.newVal(Symbol.spliceOwner, "pd", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
-          //  val valDef = ValDef(sym,Some(Literal(BooleanConstant(true)).changeOwner(sym)))
-          //  ReadDiscriminator(valDef)
-          //} 
           if (areEqual(subTpe, tpe)) 
               genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue[S](types))
           else 
@@ -2176,14 +2181,14 @@ object JsonCodecMaker {
           subTpes.foldRight(s0) { (subTpe, acc) =>
               subTpe.widen.asType match
                 case '[st] =>
+
                   def readVal(using Quotes): Expr[st] = {
-                    if (cfg.discriminatorFieldName.isDefined) {
+                    if (currentDiscriminator.isDefined) {
                       '{ $in.rollbackToMark()
                            ${genReadLeafClass[st](subTpe)}
                        }
-                    } else if (subTpe.typeSymbol.flags.is(Flags.Module) && subTpe.isSingleton || 
-                               subTpe.typeSymbol.flags.is(Flags.Enum) && subTpe.isSingleton) {
-                        Ref(subTpe.termSymbol).asExprOf[st]
+                    } else if (isModuleOrEnumValue(subTpe)) {
+                      Ref(subTpe.termSymbol).asExprOf[st]    
                     } else genReadLeafClass[st](subTpe)
                   }
                   val r = '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExpr} }
@@ -2206,11 +2211,11 @@ object JsonCodecMaker {
 
         def isModuleOrEnumValue(stpe:TypeRepr): Boolean = {
           stpe.typeSymbol.flags.is(Flags.Module) ||
-          stpe.isSingleton && stpe.termSymbol.flags.is(Flags.Enum)
+          stpe.isSingleton && stpe.termSymbol.flags.is(Flags.Enum) 
         }
 
         checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
-        cfg.discriminatorFieldName match {
+        currentDiscriminator match {
           case None =>
             val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(isModuleOrEnumValue)
             if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
@@ -2276,6 +2281,9 @@ object JsonCodecMaker {
                   default: Expr[A],
                   )(using Quotes): Expr[A] = {
         val tpe = types.head
+        if (traceFlag) {
+          println(s"genReadNonAbstractScalaClass[${tpe.show}]")
+        }
         val classInfo = getClassInfo(tpe)
         checkFieldNameCollisions(tpe, cfg.discriminatorFieldName.fold(Seq.empty[String]) { n =>
           val names = classInfo.nonTransientFields.map(_.mappedName)
