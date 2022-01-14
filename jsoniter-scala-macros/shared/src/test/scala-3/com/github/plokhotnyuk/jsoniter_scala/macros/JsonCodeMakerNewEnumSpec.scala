@@ -51,6 +51,18 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
       verifySerDeser[List[MediaType]](make[List[MediaType]],
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
     }
+<<<<<<< HEAD
+=======
+
+    "serialize and deserialize Scala3 enums with parameters" in {
+      //given JsonCodecMakerSettings.PrintCodec with {}
+      //given JsonCodecMakerSettings.Trace with {}
+      verifySerDeser(make[List[Color]](CodecMakerConfig),
+          List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
+
+    }
+  }
+>>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
 
     "serialize and deserialize Scala3 enums with parameters" in {
       verifySerDeser(make[List[Color]](CodecMakerConfig),

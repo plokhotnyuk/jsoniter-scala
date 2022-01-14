@@ -1794,6 +1794,19 @@ object JsonCodecMaker {
           fail(s"Cannot find leaf classes for ADT base '${tpe.show}'. Please add them or provide a custom " +
             "implicitly accessible codec for the ADT base.")
         }
+<<<<<<< HEAD
+=======
+
+        val currentDiscriminator =
+          if (tpe.typeSymbol.flags.is(Flags.Enum) &&  tpe.typeSymbol.children.forall(_.isTerm) ) {
+                None
+          } else {
+            cfg.discriminatorFieldName
+          }
+
+        val discriminatorError = cfg.discriminatorFieldName.fold(
+                                     '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
+>>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
 
         val currentDiscriminator =
           if (tpe.typeSymbol.flags.is(Flags.Enum) && tpe.typeSymbol.children.forall(_.isTerm)) None
@@ -1807,6 +1820,7 @@ object JsonCodecMaker {
           JsonReader.toHashCode(cs, cs.length)
         }
 
+<<<<<<< HEAD
         def genReadLeafClass[S: Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
           if (areEqual(subTpe, tpe))
             genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue[S](types))
@@ -1829,6 +1843,32 @@ object JsonCodecMaker {
 
                 '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExpr} }.asTerm
               case _ => failTypeMatch(subTpe.widen)
+=======
+        def genReadLeafClass[S:Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
+          if (areEqual(subTpe, tpe)) 
+              genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue[S](types))
+          else 
+              genReadVal[S](subTpe :: types, genNullValue[S](subTpe :: types), isStringified, cfg.discriminatorFieldName.isDefined, in)
+
+        def genReadCollisions(subTpes: collection.Seq[TypeRepr], l:Expr[Int])(using Quotes): Term =
+          val s0: Term = discriminatorError.asTerm
+          subTpes.foldRight(s0) { (subTpe, acc) =>
+              subTpe.widen.asType match
+                case '[st] =>
+
+                  def readVal(using Quotes): Expr[st] = {
+                    if (currentDiscriminator.isDefined) {
+                      '{ $in.rollbackToMark()
+                           ${genReadLeafClass[st](subTpe)}
+                       }
+                    } else if (isModuleOrEnumValue(subTpe)) {
+                      Ref(subTpe.termSymbol).asExprOf[st]    
+                    } else genReadLeafClass[st](subTpe)
+                  }
+                  val r = '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExpr} }
+                  r.asTerm 
+                case _ => failTypeMatch(subTpe.widen)
+>>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
           }
 
         def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Term =
@@ -1844,8 +1884,15 @@ object JsonCodecMaker {
             Match(scrutinee, (cases :+ lastCase).toList)
           }
 
+<<<<<<< HEAD
         def isModuleOrEnumValue(stpe: TypeRepr): Boolean =
           stpe.typeSymbol.flags.is(Flags.Module) || stpe.isSingleton && stpe.termSymbol.flags.is(Flags.Enum)
+=======
+        def isModuleOrEnumValue(stpe:TypeRepr): Boolean = {
+          stpe.typeSymbol.flags.is(Flags.Module) ||
+          stpe.isSingleton && stpe.termSymbol.flags.is(Flags.Enum) 
+        }
+>>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
 
         checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
         currentDiscriminator match {
