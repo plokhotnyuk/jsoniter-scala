@@ -22,6 +22,11 @@ enum MediaType(val value: Long, name: String) {
   case `application/jpeg` extends MediaType(3L, "application/jpeg")
 }
 
+enum Color(val rgb: Int):
+  case Red   extends Color(0xFF0000)
+  case Green extends Color(0x00FF00)
+  case Blue  extends Color(0x0000FF)
+
 // TODO:
 //   Enum ADT  (Color from example)
 //   Enum ADT with type parameters
@@ -49,6 +54,14 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
 
       verifySerDeser[List[MediaType]](make[List[MediaType]],
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
+    }
+
+    "serialize and deserialize Scala3 enums with parameters" in {
+      //given JsonCodecMakerSettings.PrintCodec with {}
+      //given JsonCodecMakerSettings.Trace with {}
+      verifySerDeser(make[List[Color]](CodecMakerConfig),
+          List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
+
     }
   }
 

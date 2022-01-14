@@ -18,4 +18,10 @@ object JsonCodecMakerSettings {
    *```
    **/
   class PrintCodec
+
+  /**
+   * use to print additional debug code during generation.
+   * Used internally
+   **/
+  class Trace
 }
