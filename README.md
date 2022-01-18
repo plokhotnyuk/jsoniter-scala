@@ -137,7 +137,7 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Using black box macros only for codec generation ensures that your types will never be changed
 - Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs`
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Releases for different Scala versions: 2.11, 2.12, 2.13
+- Releases for different Scala versions: 2.11, 2.12, 2.13, and 3
 - Suppressing of all WartRemover warnings for generated codecs  
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
