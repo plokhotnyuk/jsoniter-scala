@@ -1468,7 +1468,7 @@ object JsonCodecMaker {
         }
       }
 
-      def unexpectedFieldHandler(in: Expr[JsonReader], l: Expr[Int])(using Quotes): Expr[Unit] =
+      def unexpectedFieldHandler(in: Expr[JsonReader], l :Expr[Int])(using Quotes): Expr[Unit] =
         if (cfg.skipUnexpectedFields) '{ $in.skip() }
         else '{ $in.unexpectedKeyError($l) }
 
@@ -1481,7 +1481,8 @@ object JsonCodecMaker {
             if (tpe.typeSymbol.flags.is(Flags.Enum)) {
               tpe match
                 case TermRef(qual, name) => name
-                case _  => fail(s"Expected that ${tpe.show} is a TermRef")
+                case TypeRef(qual, name) => name // ADT
+                case _  => fail(s"Expected that ${tpe.show} is a TermRef or TypeRef")
             } else if (tpe.isSingleton && tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName // FIXME: This check fixes names. Should it be reported as Dotty bug?
             else tpe.typeSymbol.fullName
           cfg.adtLeafClassNameMapper(adtClassNames).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
@@ -1794,19 +1795,6 @@ object JsonCodecMaker {
           fail(s"Cannot find leaf classes for ADT base '${tpe.show}'. Please add them or provide a custom " +
             "implicitly accessible codec for the ADT base.")
         }
-<<<<<<< HEAD
-=======
-
-        val currentDiscriminator =
-          if (tpe.typeSymbol.flags.is(Flags.Enum) &&  tpe.typeSymbol.children.forall(_.isTerm) ) {
-                None
-          } else {
-            cfg.discriminatorFieldName
-          }
-
-        val discriminatorError = cfg.discriminatorFieldName.fold(
-                                     '{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
->>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
 
         val currentDiscriminator =
           if (tpe.typeSymbol.flags.is(Flags.Enum) && tpe.typeSymbol.children.forall(_.isTerm)) None
@@ -1820,30 +1808,6 @@ object JsonCodecMaker {
           JsonReader.toHashCode(cs, cs.length)
         }
 
-<<<<<<< HEAD
-        def genReadLeafClass[S: Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
-          if (areEqual(subTpe, tpe))
-            genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue[S](types))
-          else
-            genReadVal[S](subTpe :: types, genNullValue[S](subTpe :: types), isStringified, cfg.discriminatorFieldName.isDefined, in)
-
-        def genReadCollisions(subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Term =
-          subTpes.foldRight(discriminatorError.asTerm) { (subTpe, acc) =>
-            subTpe.widen.asType match
-              case '[st] =>
-                def readVal(using Quotes): Expr[st] = {
-                  if (currentDiscriminator.isDefined) {
-                    '{
-                      $in.rollbackToMark()
-                      ${genReadLeafClass[st](subTpe)}
-                     }
-                  } else if (isModuleOrEnumValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
-                  else genReadLeafClass[st](subTpe)
-                }
-
-                '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExpr} }.asTerm
-              case _ => failTypeMatch(subTpe.widen)
-=======
         def genReadLeafClass[S:Type](subTpe: TypeRepr)(using Quotes): Expr[S] =
           if (areEqual(subTpe, tpe)) 
               genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue[S](types))
@@ -1855,20 +1819,20 @@ object JsonCodecMaker {
           subTpes.foldRight(s0) { (subTpe, acc) =>
               subTpe.widen.asType match
                 case '[st] =>
-
                   def readVal(using Quotes): Expr[st] = {
-                    if (currentDiscriminator.isDefined) {
+                    if (isEnumValue(subTpe)) {
+                      Ref(subTpe.termSymbol).asExprOf[st]
+                    } else if (currentDiscriminator.isDefined) {
                       '{ $in.rollbackToMark()
                            ${genReadLeafClass[st](subTpe)}
                        }
-                    } else if (isModuleOrEnumValue(subTpe)) {
+                    } else if (isModuleValue(subTpe)) {
                       Ref(subTpe.termSymbol).asExprOf[st]    
                     } else genReadLeafClass[st](subTpe)
                   }
                   val r = '{ if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal else ${acc.asExpr} }
                   r.asTerm 
                 case _ => failTypeMatch(subTpe.widen)
->>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
           }
 
         def genReadSubclassesBlock(leafClasses: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Term =
@@ -1884,42 +1848,90 @@ object JsonCodecMaker {
             Match(scrutinee, (cases :+ lastCase).toList)
           }
 
-<<<<<<< HEAD
-        def isModuleOrEnumValue(stpe: TypeRepr): Boolean =
-          stpe.typeSymbol.flags.is(Flags.Module) || stpe.isSingleton && stpe.termSymbol.flags.is(Flags.Enum)
-=======
-        def isModuleOrEnumValue(stpe:TypeRepr): Boolean = {
-          stpe.typeSymbol.flags.is(Flags.Module) ||
+        def isEnumValue(stpe: TypeRepr): Boolean =  {
           stpe.isSingleton && stpe.termSymbol.flags.is(Flags.Enum) 
         }
->>>>>>> 339abfb8 ( support scala3 non-adt enums with parameters)
+
+        def isModuleValue(stpe: TypeRepr): Boolean =  {
+          stpe.typeSymbol.flags.is(Flags.Module) 
+        }
+
+        def isModuleOrEnumValue(stpe:TypeRepr): Boolean = {
+          isModuleValue(stpe) || isEnumValue(stpe)
+        }
 
         checkDiscriminatorValueCollisions(tpe, leafClasses.map(discriminatorValue))
-        currentDiscriminator match {
-          case None =>
+
+        def genReadJsObjClass(objClasses: Seq[TypeRepr], useCurrentToken: Boolean)(using Quotes): Expr[A] = {
+          
+          def checkToken(using Quotes):Expr[Boolean] = {
+              if (useCurrentToken) {
+                 '{ $in.isCurrentToken('{') }
+              } else {
+                 '{ $in.isNextToken('{') }
+              }
+          }
+
+          def setMark(using Quotes): Expr[Unit] = {
+            if (useCurrentToken) {
+              '{
+                $in.rollbackToken()
+                $in.setMark()
+              }
+            } else {
+              '{  $in.setMark() }
+            }
+          }
+
+          currentDiscriminator match
+            case None =>
+              '{
+                if (${checkToken}) {
+                  val l = $in.readKeyAsCharBuf()
+                  val r = ${genReadSubclassesBlock(objClasses, 'l).asExprOf[A]}
+                  if ($in.isNextToken('}')) r 
+                  else $in.objectEndOrCommaError()
+                } else $in.readNullOrError($default, "expected '\"' or '{' or null")
+              }
+            case Some(discrFieldName) =>
+              if (cfg.requireDiscriminatorFirst) {
+                '{
+                  ${setMark}
+                  if ($in.isNextToken('{')) {
+                    if (${Expr(discrFieldName)}.equals($in.readKeyAsString())) {
+                      val l = $in.readStringAsCharBuf()
+                      ${genReadSubclassesBlock(objClasses, 'l).asExprOf[A]}
+                    } else $in.decodeError("expected key: \"" + ${Expr(discrFieldName)} + '"')
+                  } else $in.readNullOrTokenError($default, '{')
+                }
+              } else {
+                '{
+                  ${setMark}
+                  if ($in.isNextToken('{')) {
+                    if ($in.skipToKey(${Expr(discrFieldName)})) {                      
+                      val l = $in.readStringAsCharBuf()
+                      ${genReadSubclassesBlock(objClasses, 'l).asExprOf[A]}
+                    } else $in.requiredFieldError(${Expr(discrFieldName)})
+                  } else $in.readNullOrTokenError($default, '{')
+                }
+              }
+        }
+
+        
+        if (currentDiscriminator == None || tpe.typeSymbol.flags.is(Flags.Enum)) {
             val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(isModuleOrEnumValue)
             if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
               '{
-                if ($in.isNextToken('"')) {
-                  $in.rollbackToken()
-                  val l = $in.readStringAsCharBuf()
-                  ${genReadSubclassesBlock(leafModuleClasses, 'l).asExprOf[A]}
-                } else if ($in.isCurrentToken('{')) {
-                  val l = $in.readKeyAsCharBuf()
-                  val r = ${genReadSubclassesBlock(leafCaseClasses, 'l).asExprOf[A]}
-                  if ($in.isNextToken('}')) r
-                  else $in.objectEndOrCommaError()
-                } else $in.readNullOrError($default, "expected '\"' or '{' or null")
+                  if ($in.isNextToken('"')) {
+                    $in.rollbackToken()
+                    val l = $in.readStringAsCharBuf()
+                    ${genReadSubclassesBlock(leafModuleClasses, 'l).asExprOf[A]}
+                  } else {
+                    ${genReadJsObjClass(leafCaseClasses, true)}
+                  }  
               }.asExprOf[A]
             } else if (leafCaseClasses.nonEmpty) {
-              '{
-                if ($in.isNextToken('{')) {
-                  val l = $in.readKeyAsCharBuf()
-                  val r = ${genReadSubclassesBlock(leafCaseClasses, 'l).asExprOf[A]}
-                  if ($in.isNextToken('}')) r
-                  else $in.objectEndOrCommaError()
-                } else $in.readNullOrTokenError($default, '{')
-              }.asExprOf[A]
+              genReadJsObjClass(leafCaseClasses, false)
             } else {
               '{
                 if ($in.isNextToken('"')) {
@@ -1929,29 +1941,10 @@ object JsonCodecMaker {
                 } else $in.readNullOrTokenError($default, '"')
               }.asExprOf[A]
             }
-          case Some(discrFieldName) =>
-            if (cfg.requireDiscriminatorFirst) {
-              '{
-                $in.setMark()
-                if ($in.isNextToken('{')) {
-                  if (${Expr(discrFieldName)}.equals($in.readKeyAsString())) {
-                    val l = $in.readStringAsCharBuf()
-                    ${genReadSubclassesBlock(leafClasses, 'l).asExprOf[A]}
-                  } else $in.decodeError("expected key: \"" + ${Expr(discrFieldName)} + '"')
-                } else $in.readNullOrTokenError($default, '{')
-              }
-            } else {
-              '{
-                $in.setMark()
-                if ($in.isNextToken('{')) {
-                  if ($in.skipToKey(${Expr(discrFieldName)})) {
-                    val l = $in.readStringAsCharBuf()
-                    ${genReadSubclassesBlock(leafClasses, 'l).asExprOf[A]}
-                  } else $in.requiredFieldError(${Expr(discrFieldName)})
-                } else $in.readNullOrTokenError($default, '{')
-              }
-            }
+        } else {
+          genReadJsObjClass(leafClasses, false)
         }
+                
       }
 
       def genReadNonAbstractScalaClass[A: Type](types: List[TypeRepr], useDiscriminator: Boolean, in: Expr[JsonReader],
@@ -2180,6 +2173,9 @@ object JsonCodecMaker {
       def genReadVal[C: Type](types: List[TypeRepr], default: Expr[C], isStringified: Boolean,
                               useDiscriminator: Boolean, in: Expr[JsonReader])(using Quotes): Expr[C] = {
         val tpe = types.head.dealias.simplified
+        if (traceFlag) {
+          println(s"genReadVal, tpe=${tpe.show}, useDiscriminator=${useDiscriminator}")
+        }
         val implCodec = findImplicitValueCodec(types)
         val methodKey = DecoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), useDiscriminator)
         val decodeMethodSym = decodeMethodSyms.get(methodKey)
@@ -2716,6 +2712,9 @@ object JsonCodecMaker {
                                            out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
         val tpe = types.head
         val classInfo = getClassInfo(tpe)
+        if (traceFlag) {
+          println(s"genWriteNonAbstractScalaClass[${tpe.show}]")
+        }
         val writeFields = classInfo.nonTransientFields.map { f =>
           val fDefault = if (cfg.transientDefault) f.defaultValue else None
           f.resolvedTpe.widen.asType match {
@@ -2855,8 +2854,11 @@ object JsonCodecMaker {
                                out: Expr[JsonWriter])(using Quotes): Expr[Unit]= {
         val tpe = types.head.dealias.simplified
         val implCodec = findImplicitValueCodec(types)
-        val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)),
-          optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
+        if (traceFlag) {
+          println(s"genWriteVal(${tpe.show})")
+        }
+        val methodKey = EncoderMethodKey(tpe, isStringified && (isCollection(tpe) || isOption(tpe)), 
+            optWriteDiscriminator.map(x => (x.fieldName, x.fieldValue)))
         val encodeMethodSym = encodeMethodSyms.get(methodKey)
         if (!implCodec.isEmpty) '{ ${implCodec.get.asExprOf[JsonValueCodec[T]]}.encodeValue($m, $out) }
         else if (encodeMethodSym.isDefined) Apply(Ref(encodeMethodSym.get), List(m.asTerm, out.asTerm)).asExprOf[Unit]
@@ -3106,21 +3108,43 @@ object JsonCodecMaker {
           val tx = x.asExprOf[scala.reflect.Enum]
           // here we know, that ordinals in enums are started from 0 in the same order od childer 
           // TODO: document this in dotty
-          val caseDefs = adtChildren(tpe).zipWithIndex.map { case (subTpe, i) =>
-            CaseDef(Literal(IntConstant(i)), None,
-              (if (subTpe.isSingleton) {
-                if (false)  { // TODO: add scalaEnumOrdinal
-                  if (cfg.isStringified) '{ $out.writeValAsString(${Expr(i)}) }
-                  else '{ $out.writeVal(${Expr(i)}) }
-                } else '{ $out.writeVal(${Expr(subTpe.termSymbol.name)}) }
-              } else {
-                val discriminator =
-                  if (false) WriteDiscriminator("ordinal", i.toString)  // TODO: add ability to use int as discriminator
-                  else WriteDiscriminator("name", subTpe.typeSymbol.name)
-                subTpe.asType match
-                  case '[st] => genWriteNonAbstractScalaClass[st]('{ $x.asInstanceOf[st] }, types, Some(discriminator), out)
-                  case _ =>failTypeMatch(subTpe)
-              }).asTerm)
+          val caseDefs = adtChildren(tpe).zipWithIndex.map{ case (subTpe,i) =>
+            CaseDef(Literal(IntConstant(i)),
+                    None,
+                    (if (subTpe.isSingleton) {
+                      if (false)  { // TODO: add scalaEnumOrdinal
+                          if (cfg.isStringified) {
+                            '{ $out.writeValAsString(${Expr(i)}) }
+                          } else {
+                            '{ $out.writeVal(${Expr(i)}) }
+                          }
+                      } else {
+                         '{ $out.writeVal(${Expr(subTpe.termSymbol.name)}) }
+                      }
+                    } else {
+                      subTpe.asType match
+                        case '[st] =>
+                          cfg.discriminatorFieldName match
+                            case Some(discriminatorFieldName) =>
+                              val discriminator = if (false) {
+                              // TODO: add ability to use int as discriminator
+                                WriteDiscriminator(discriminatorFieldName, i.toString)
+                              } else {
+                                WriteDiscriminator(discriminatorFieldName, subTpe.typeSymbol.name)
+                              }
+                              genWriteNonAbstractScalaClass[st]('{ $x.asInstanceOf[st] },subTpe::types, Some(discriminator), out)
+                            case None =>
+                              '{
+                                $out.writeObjectStart()
+                                ${genWriteConstantKey(subTpe.typeSymbol.name, out)}
+                                ${genWriteNonAbstractScalaClass[st]('{ $x.asInstanceOf[st] },subTpe::types, None, out)}
+                                $out.writeObjectEnd()
+                              }
+                        case _ =>
+                          failTypeMatch(subTpe)
+                          
+                    }).asTerm
+            )
           }
           Match('{ $tx.ordinal }.asTerm, caseDefs.toList).asExprOf[Unit]
         } else if (isSealedClass(tpe)) withEncoderFor[T](methodKey, m, out) { (out, x) =>
