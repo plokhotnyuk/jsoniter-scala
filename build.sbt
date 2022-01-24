@@ -139,7 +139,7 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
       )
       case _ => Seq(
         "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.10.0" % Test,
-        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+        "org.scalatest" %%% "scalatest" % "3.2.11" % Test
       )
     })
   )
@@ -174,7 +174,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("3.1.1-RC2","2.13.8", "2.12.15", "2.11.12"),
     libraryDependencies ++= (
       Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+        "org.scalatest" %%% "scalatest" % "3.2.11" % Test
       ) ++ (
       if (scalaVersion.value.startsWith("2")) 
         Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value,
@@ -214,7 +214,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
     )
   )
 
@@ -269,7 +269,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.34",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.34",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.34",
-      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
     )
   )
 
