@@ -59,11 +59,11 @@ lazy val commonSettings = Seq(
   compileOrder := CompileOrder.JavaThenScala,
   Compile / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
-    case _ => List.empty
+    case _ => List()
   }),
   Test / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
-    case _ => Seq.empty
+    case _ => Seq()
   }),
   Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
@@ -170,19 +170,17 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(publishSettings)
   .settings(
     crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15", "2.11.12"),
-    libraryDependencies ++= (
-      Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.11" % Test
-      ) ++ (
-      if (scalaVersion.value.startsWith("2")) 
-        Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value,
-            "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-            "com.beachape" %%% "enumeratum" % "1.6.1" % Test
+    libraryDependencies ++= Seq(
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
+    ) ++ {
+      if (scalaVersion.value.startsWith("2.")) {
+        Seq(
+          "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+          "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+          "com.beachape" %%% "enumeratum" % "1.6.1" % Test
         )
-      else
-        Seq.empty
-      )
-    )
+      } else Seq()
+    }
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm

@@ -1,41 +1,34 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.time._
-import java.util.{Objects, UUID}
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
-import org.scalatest.exceptions.TestFailedException
-
-import scala.annotation.switch
-import scala.util.hashing.MurmurHash3
-
 
 sealed trait TrafficLight extends enumeratum.EnumEntry
+
 object TrafficLight extends enumeratum.Enum[TrafficLight] {
   case object Red extends TrafficLight
+
   case object Yellow extends TrafficLight
+
   case object Green extends TrafficLight
 
   val values = findValues
 }
 
 sealed abstract class MediaType(val value: Long, name: String) extends enumeratum.values.LongEnumEntry
+
 case object MediaType extends enumeratum.values.LongEnum[MediaType] {
   case object `text/json` extends MediaType(1L, "text/json")
+
   case object `text/html` extends MediaType(2L, "text/html")
+
   case object `application/jpeg` extends MediaType(3L, "application/jpeg")
 
   val values = findValues
 }
 
-
-
-class JsonCodecMakerEnumeratum213Spec extends VerifyingSpec {
-  import NamespacePollutions._
-
-  "JsonCodecMaker.make enumeratum support generate codes which" should {
+class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
+  "JsonCodecMaker.make generates codecs which" should {
     "serialize and deserialize Enumeratum enums" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
@@ -58,4 +51,3 @@ class JsonCodecMakerEnumeratum213Spec extends VerifyingSpec {
     }
   }
 }
-

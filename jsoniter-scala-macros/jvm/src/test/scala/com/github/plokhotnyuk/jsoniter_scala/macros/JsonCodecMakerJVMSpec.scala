@@ -7,7 +7,7 @@ import scala.annotation.tailrec
 class JsonCodecMakerJVMSpec extends VerifyingSpec {
   import NamespacePollutions._
 
-  "JsonCodecMaker.make generate codes which" should {
+  "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize recursive structures with an implicit codec using a minimal thread stack" in {
       case class Nested(n: Option[Nested] = _root_.scala.None)
 

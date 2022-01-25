@@ -6,10 +6,10 @@ case class LiteralTypes(s: "VVV", b: true, c: '1', i: 2, l: 3L, f: 4.0f, d: 5.0)
 
 case class LiteralAnyVal(v: 7) extends AnyVal
 
-class JsonCodecMaker213Spec extends VerifyingSpec {
+class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
   import NamespacePollutions._
 
-  "JsonCodecMaker213.make generate codes which" should {
+  "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize types that have back-quoted constructor params with identical prefixes" in {
       case class ScalaBug8831(`o-o`: String, o: String)
 

@@ -68,7 +68,7 @@ private[macros] object CompileTimeEval {
             } else throw CompileTimeEvalException(s"Can't case ${a.show} to (String, String)", a)
           }
           None
-        case _ => throw CompileTimeEvalException(s"map ${m.show} should be a constrictoor literal, we have ${m.asTerm}", m)
+        case _ => throw CompileTimeEvalException(s"Map ${m.show} should be a constrictoor literal, we have ${m.asTerm}", m)
 
     def evalExpr[T: Type](expr: Expr[T]): Expr[T] = evalTerm(expr.asTerm, Map.empty, None).asExprOf[T]
   
@@ -216,7 +216,7 @@ private[macros] object CompileTimeEval {
         evalApplySelect(posTerm, fun, "isDefinedAt", args, bindings) match
           case Literal(BooleanConstant(v)) => v
           case other => throw new CompileTimeEvalException(
-            s"expected that isDefined returns boolean, we have ${other}\nfun = ${fun.show}", posTerm.asExpr)
+            s"Expected that isDefined returns boolean, we have ${other}\nfun = ${fun.show}", posTerm.asExpr)
 
       qual match
         case Inlined(origin, inlineBindings, body) =>
@@ -232,7 +232,7 @@ private[macros] object CompileTimeEval {
               case Some(term) => evalTerm(term, bindings, None)
               case None => throw new CompileTimeEvalException(s"Can't beta-reduce ${nApply}", posTerm.asExpr)
           } else {
-            throw new CompileTimeEvalException(s"expeted that lambda call memeber name is 'apply', we have $memberName", posTerm.asExpr)
+            throw new CompileTimeEvalException(s"Expected that lambda call memeber name is 'apply', we have $memberName", posTerm.asExpr)
           }
         case Apply(TypeApply(Select(frs, "andThen"), List(stringTpt)), List(snd)) =>
           if (memberName == "isDefinedAt") {
@@ -244,7 +244,7 @@ private[macros] object CompileTimeEval {
             val r1 = evalApplySelect(posTerm, frs, "apply", args, bindings)
             evalApplySelect(posTerm, snd, "apply", List(r1), bindings)
           } else {
-            throw new CompileTimeEvalException(s"expeted that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
+            throw new CompileTimeEvalException(s"Expected that parial function methods are 'isDefinedAt' and 'apply', we have $memberName", posTerm.asExpr)
           }
         case Apply(TypeApply(Select(frs, "orElse"), List(stringTpt)), List(snd)) =>
           if (memberName == "isDefinedAt") {
@@ -433,15 +433,15 @@ private[macros] object CompileTimeEval {
           obj.getClass.getMethod(name, argsTypes: _*)
         } catch {
           case ex: NoSuchMethodException => 
-            throw JvmReflectionMethodCallException(s"Can't find method $name of object ${obj} (class ${obj.getClass}) with argumentTypes: ${argsTypes.toList}", ex)
+            throw JvmReflectionMethodCallException(s"Can't find method $name of object $obj (class ${obj.getClass}) with argument types: ${argsTypes.toList}", ex)
           case ex: SecurityException =>
-            throw JvmReflectionMethodCallException(s"Can't get method $name of object ${obj} (class ${obj.getClass}", ex)
+            throw JvmReflectionMethodCallException(s"Can't get method $name of object $obj (class ${obj.getClass})", ex)
         }
         try {
           method.invoke(obj, args: _*)
         } catch {
           case ex: Exception =>
-            throw JvmReflectionMethodCallException(s"Can't invoke methid $name of object ${obj}", ex)
+            throw JvmReflectionMethodCallException(s"Can't invoke method $name of object $obj (class ${obj.getClass})", ex)
         }
       }
     }
@@ -464,15 +464,15 @@ private[macros] object CompileTimeEval {
           helperObj.getClass().getMethod(name, argsTypes: _*)
         } catch {
           case ex: NoSuchMethodException => 
-            throw JvmReflectionMethodCallException(s"Can't find method $name of object ${helperObj} (class ${helperObj.getClass}) with argumentTypes: ${argsTypes.toList}", ex)
+            throw JvmReflectionMethodCallException(s"Can't find method $name of object ${helperObj} (class ${helperObj.getClass}) with argument types: ${argsTypes.toList}", ex)
           case ex: SecurityException =>
-            throw JvmReflectionMethodCallException(s"Can't get method $name of object ${helperObj} (class ${helperObj.getClass}", ex)
+            throw JvmReflectionMethodCallException(s"Can't get method $name of object ${helperObj} (class ${helperObj.getClass})", ex)
         }
         try {
           method.invoke(helperObj, nArgs: _*)
         } catch {
           case ex: Exception =>
-            throw JvmReflectionMethodCallException(s"Can't invoke methid $name of object ${helperObj} (class ${helperObj.getClass})", ex)
+            throw JvmReflectionMethodCallException(s"Can't invoke method $name of object ${helperObj} (class ${helperObj.getClass})", ex)
         }
       }
     }
@@ -550,7 +550,7 @@ private[macros] object CompileTimeEval {
         case id@Ident(name) if (id.symbol.flags.is(Flags.Module)) =>
           retrieveRuntimeModule(x, id.symbol)
         case _ =>
-          throw CompileTimeEvalException(s"Can't interpret ${x} as primitive (type-${x.tpe.widen.show})", x.asExpr)
+          throw CompileTimeEvalException(s"Can't interpret ${x} as primitive (type ${x.tpe.widen.show})", x.asExpr)
 
     private def termToOptString(x: Term): Option[String] =
       x match

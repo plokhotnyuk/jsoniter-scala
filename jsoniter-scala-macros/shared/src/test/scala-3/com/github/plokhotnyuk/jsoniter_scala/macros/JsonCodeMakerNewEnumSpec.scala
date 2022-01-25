@@ -86,7 +86,7 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
         List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"type":"Mix","mix":0}]""")
     }
     "serialize and deserialize Scala3 enums ADT defined with `derives` keyword" in {
-      sealed trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
+      trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
 
       object DefaultJsonValueCodec {
         inline def derived[A]: DefaultJsonValueCodec[A] = new DefaultJsonValueCodec[A] {

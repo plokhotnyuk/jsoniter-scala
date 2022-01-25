@@ -262,7 +262,6 @@ object GADT2 {
   case class CopyOver(src: Seq[_root_.scala.Byte], path: String) extends GADT2[Int]
 }
 
-
 sealed trait Fruit[T <: Fruit[T]] extends Product with Serializable
 
 final case class Apple(family: String) extends Fruit[Apple]
@@ -274,11 +273,11 @@ case class Basket[T <: Fruit[T]](fruits: List[T])
 case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
 object HKField {
-      sealed trait Foo[A[_]] extends Product with Serializable
+  sealed trait Foo[A[_]] extends Product with Serializable
 
-      case class Bar[A[_]](a: A[Int]) extends Foo[A]
+  case class Bar[A[_]](a: A[Int]) extends Foo[A]
 
-      case class Baz[A[_]](a: A[String]) extends Foo[A]
+  case class Baz[A[_]](a: A[String]) extends Foo[A]
 }
 
 class JsonCodecMakerSpec extends VerifyingSpec {
@@ -304,7 +303,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None))
   val codecOfADTList3: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withRequireDiscriminatorFirst(false).withBigIntDigitsLimit(20001))
 
-  "JsonCodecMaker.make generate codes which" should {
+  "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""")
@@ -883,13 +882,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "don't generate codecs when options are used as keys in maps" in {
       val message = intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[Map[Option[Int], Option[String]]]"
-      }).getMessage 
-      assert(message.contains {
-        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec"
-      })
-      assert(message.contains {
-        "Option[Int]"
-      })
+      }).getMessage
+      assert(message.contains("No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec"))
+      assert(message.contains("Option[Int]"))
     }
     "serialize case classes with empty options as null when the transientNone flag is off" in {
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
@@ -1279,15 +1274,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val message = intercept[TestFailedException](assertCompiles {
         """JsonCodecMaker.make[Map[_root_.java.util.Date,String]]"""
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(message.contains{
+      assert(message.contains {
+        if (ScalaVersionCheck.isScala2) {
           """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'java.util.Date'."""
-        }) 
-      } else if (ScalaVersionCheck.isScala3) {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."""
-      } else {
-        assert(message === "Invalid Scala Version")
-      }
+        } else {
+          """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."""
+        }
+      })
     }
     "serialize and deserialize with keys defined as is by fields" in {
       verifySerDeser(make[CamelPascalSnakeKebabCases], CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),
@@ -1452,12 +1445,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         assert(hkfRecMessage.contains("HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]"))
         assert(hkfRecMessage.contains("Option[HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]]"))
       }
-      assert(hkfRecMessage.contains{
+      assert(hkfRecMessage.contains {
         """Please consider
           |using a custom implicitly accessible codec for this type to control the level of recursion or turn on the
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
           |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
-      }) 
+      })
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfRecursive,
@@ -1834,17 +1827,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object B extends BX
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(bxClassMessage.contains {
+      assert(bxClassMessage.contains {
+        if (ScalaVersionCheck.isScala2) {
           """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
             |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-        })
-      } else {
-        assert(bxClassMessage.contains {
+        } else {
           """Only sealed traits or abstract classes are supported as an ADT base. Please
-             |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        })
-      }
+            |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
+        }
+      })
       val bxTraitMessage = intercept[TestFailedException](assertCompiles {
         """sealed trait X
           |sealed trait AX extends X
@@ -1853,17 +1844,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object B extends BX
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(bxTraitMessage.contains {
-        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
-          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-        })
-      } else {
-        assert(bxTraitMessage.contains {
-        """Only sealed traits or abstract classes are supported as an ADT base. Please
-          |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        })
-      }
+      assert(bxTraitMessage.contains {
+        if (ScalaVersionCheck.isScala2) {
+          """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+            |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+        } else {
+          """Only sealed traits or abstract classes are supported as an ADT base. Please
+            |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
+        }
+      })
     }
     "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -1922,10 +1911,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       }).getMessage
       if (ScalaVersionCheck.isScala2) {
         assert(message.contains("""do not conform to method copy's type parameter bounds"""))
-      } else if (ScalaVersionCheck.isScala3) {
-        assert(message.contains("Apple") && message.contains("Orange"))
       } else {
-        assert(false)
+        assert(message.contains("Apple") && message.contains("Orange"))
       }
       verifySerDeser(make[Basket[Apple]], twoFruits,
         """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
@@ -2066,17 +2053,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """case class FirstOrder[A](a: A)
           |JsonCodecMaker.make[FirstOrder[_]]""".stripMargin
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(message.contains {
+      assert(message.contains {
+        if (ScalaVersionCheck.isScala2) {
           """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Any' or
             |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        })
-      } else {
-        assert(message.contains {
+        } else {
           """Type bounds are not supported for type 'FirstOrder[_ >: scala.Nothing <: scala.Any]' with field type
-          |for a '_ >: scala.Nothing <: scala.Any'""".stripMargin.replace('\n', ' ')
-        })
-      }
+            |for a '_ >: scala.Nothing <: scala.Any'""".stripMargin.replace('\n', ' ')
+        }
+      })
     }
     "serialize and deserialize arrays of generic types" in {
       sealed trait GADT[A] extends Product with Serializable
@@ -2133,26 +2118,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}")
     }
-    if (ScalaVersionCheck.isScala2) {
-      "don't generate codecs for classes without a primary constructor" in {
-        assert(intercept[TestFailedException](assertCompiles {
-          "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
-        }).getMessage.contains {
+    "don't generate codecs for classes without a primary constructor" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
+      }).getMessage.contains {
+        if (ScalaVersionCheck.isScala2) {
           "Cannot find a primary constructor for 'Infinite.this.<local child>'"
-        })
-      }
-    } else if (ScalaVersionCheck.isScala3) {
-      "don't generate codecs for local childs" in {
-        assert(intercept[TestFailedException](assertCompiles {
-          "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
-        }).getMessage.contains {
+        } else {
           "Local child symbols are not supported"
-        })
-      }
-    } else {
-      "invalid ScalaVersionCheck" in {
-        assert(false)
-      }
+        }
+      })
     }
     "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -2169,13 +2144,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |JsonCodecMaker.make[ParamHasNoAccessor]""".stripMargin
       }).getMessage
       assert(message.contains('a'))
-      assert(message.contains {
-        "'ParamHasNoAccessor'"
-      })
-      assert(message.contains {
-        "should be defined as 'val' or 'var' in the primary constructor."
-      })
-      
+      assert(message.contains("'ParamHasNoAccessor'"))
+      assert(message.contains("should be defined as 'val' or 'var' in the primary constructor."))
     }
     "don't generate codecs when all generic type parameters cannot be resolved" in {
       val message = intercept[TestFailedException](assertCompiles {
@@ -2188,9 +2158,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |val c = make[Foo[Bar]]""".stripMargin
       }).getMessage
       assert(message.contains("FooImpl"))
-      assert(message.contains {
-        "Please provide a custom implicitly accessible codec"
-      })
+      assert(message.contains("Please provide a custom implicitly accessible codec"))
     }
     "don't generate codecs that cannot parse own output" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -2203,10 +2171,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val message = intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[_root_.java.util.Date]"
       }).getMessage
-      assert(message.contains { "No implicit " })
-      assert(message.contains { "com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec" })
-      assert(message.contains { " defined for "})
-      assert(message.contains { "java.util.Date" })
+      assert(message.contains("No implicit "))
+      assert(message.contains("com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec"))
+      assert(message.contains(" defined for "))
+      assert(message.contains("java.util.Date"))
     }
   }
   "deserialize using the nullValue of codecs that are injected by implicits" in {

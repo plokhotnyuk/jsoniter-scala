@@ -12,7 +12,7 @@ object TwitterAPI {
     expanded_url: String,
     display_url: String,
     @transientDefault indices: Seq[Int] = Nil)
-  
+
   @dropDefault
   case class Url(@transientDefault urls: Seq[Urls] = Nil)
 
