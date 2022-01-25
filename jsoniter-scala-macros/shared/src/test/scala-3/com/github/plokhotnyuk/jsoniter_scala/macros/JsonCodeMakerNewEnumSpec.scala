@@ -24,17 +24,17 @@ enum Color(val rgb: Int):
   case Green extends Color(0x00FF00)
   case Blue  extends Color(0x0000FF)
 
-
 enum ColorADT(val rgb: Int):
   case Red   extends ColorADT(0xFF0000)
   case Green extends ColorADT(0x00FF00)
   case Blue  extends ColorADT(0x0000FF)
   case Mix(mix: Int) extends ColorADT(mix)
 
-
 enum Planet(mass: Double, radius: Double):
   private final val G = 6.67300E-11
+
   def surfaceGravity = G * mass / (radius * radius)
+
   def surfaceWeight(otherMass: Double) = otherMass * surfaceGravity
 
   case Mercury extends Planet(3.303e+23, 2.4397e6)
@@ -52,7 +52,7 @@ end Planet
 //   ordinal flag (create config param)
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
-  "JsonCodecMakerNeEnum.make generate codes which" should {
+  "JsonCodecMaker.make generate codes which" should {
     "serialize and deserialize Scala3 enums" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
@@ -76,21 +76,17 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
 
     "serialize and deserialize Scala3 enums with parameters" in {
       verifySerDeser(make[List[Color]](CodecMakerConfig),
-          List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
-
+        List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
     }
 
     "serialize and deserialize Scala3 enums with multiple parameters" in {
       verifySerDeser(make[List[Planet]](CodecMakerConfig),
-          List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
-
+        List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
     }
 
     "serialize and deserialize Scala3 enums ADT" in {
       verifySerDeser(make[List[ColorADT]](CodecMakerConfig),
-          List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"type":"Mix","mix":0}]""")
+        List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"type":"Mix","mix":0}]""")
     }
-
   }
- 
 }

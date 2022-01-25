@@ -58,14 +58,14 @@ lazy val commonSettings = Seq(
   },
   compileOrder := CompileOrder.JavaThenScala,
   Compile / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
-     case _ => List.empty
+    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
+    case _ => List.empty
   }),
   Test / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
-     case _ => Seq.empty
+    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
+    case _ => Seq.empty
   }),
-  Test/testOptions += Tests.Argument("-oDF"),
+  Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
   publishTo := sonatypePublishToBundle.value,
@@ -96,8 +96,6 @@ lazy val publishSettings = Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
-    val Some((scalaMajor, _)) = CrossVersion.partialVersion(scalaVersion.value)
-
     def isCheckingRequired: Boolean = {
       val Array(newMajor, _, _) = version.value.split('.')
       val Array(oldMajor, _, _) = oldVersion.split('.')
