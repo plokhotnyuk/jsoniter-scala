@@ -52,7 +52,7 @@ end Planet
 //   ordinal flag (create config param)
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
-  "JsonCodecMaker.make generate codes which" should {
+  "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize Scala3 enums" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
@@ -73,20 +73,33 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
       verifySerDeser[List[MediaType]](make[List[MediaType]],
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
     }
-
     "serialize and deserialize Scala3 enums with parameters" in {
       verifySerDeser(make[List[Color]](CodecMakerConfig),
         List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
     }
-
     "serialize and deserialize Scala3 enums with multiple parameters" in {
       verifySerDeser(make[List[Planet]](CodecMakerConfig),
         List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
     }
-
     "serialize and deserialize Scala3 enums ADT" in {
       verifySerDeser(make[List[ColorADT]](CodecMakerConfig),
         List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"type":"Mix","mix":0}]""")
+    }
+    "serialize and deserialize Scala3 enums ADT defined with `derives` keyword" in {
+      sealed trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
+
+      object DefaultJsonValueCodec {
+        inline def derived[A]: DefaultJsonValueCodec[A] = new DefaultJsonValueCodec[A] {
+          private val impl = JsonCodecMaker.make[A](CodecMakerConfig.withDiscriminatorFieldName(Some("name")))
+          export impl._
+        }
+      }
+
+      enum TestEnum derives DefaultJsonValueCodec:
+        case Value1
+        case Value2(string: String)
+
+      verifySerDeser(summon[JsonValueCodec[TestEnum]], TestEnum.Value2("VVV"), """{"name":"Value2","string":"VVV"}""")
     }
   }
 }
