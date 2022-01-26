@@ -1753,7 +1753,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""")
     }
-    "serialize and deserialize ADTs with leafs that have mixed traits that extends the same base" in {
+    "serialize and deserialize ADTs with leaves that have mixed traits that extends the same base" in {
       sealed trait Base extends Product with Serializable
 
       sealed trait Base2 extends Base
@@ -1765,7 +1765,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[List[Base]], List(A(1), B("VVV")),
         """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
-    "serialize and deserialize ADTs with leafs that have a mixed trait hierarchy that makes a diamond" in {
+    "serialize and deserialize ADTs with leaves that have a mixed trait hierarchy that makes a diamond" in {
       sealed trait Base extends Product with Serializable
 
       sealed trait Base1 extends Base
@@ -1778,6 +1778,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(make[List[Base]], List(A(1), B("VVV")),
         """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+    }
+    "serialize and deserialize case class that have a field named as discriminator" in {
+      case class Foo(hint: String)
+
+      verifySerDeser(JsonCodecMaker.make[Foo](CodecMakerConfig.withDiscriminatorFieldName(Some("hint"))),
+        Foo("a"), """{"hint":"a"}""")
     }
     "throw parse exception in case of duplicated discriminator field" in {
       verifyDeserError(codecOfADTList1, """[{"type":"AAA","a":1,"type":"AAA"}]""",

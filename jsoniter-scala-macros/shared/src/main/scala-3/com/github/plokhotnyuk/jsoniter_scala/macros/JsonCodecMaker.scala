@@ -2038,11 +2038,13 @@ object JsonCodecMaker {
              '{ if ($in.isCharBufEqualsTo($l, ${Expr(f.mappedName)})) $readValue else $acc }
           }
 
-        // discrimintator should be created in splice with all other 
-        val discriminator = cfg.discriminatorFieldName.map { fieldName =>
-           val sym = Symbol.newVal(Symbol.spliceOwner, "pd", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
-           ReadDiscriminator(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym))))
-        }
+        val discriminator =
+          if (useDiscriminator) {
+            cfg.discriminatorFieldName.map { fieldName =>
+              val sym = Symbol.newVal(Symbol.spliceOwner, "pd", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+              ReadDiscriminator(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym))))
+            }
+          } else None
         val optDiscriminatorVar = discriminator.map(_.valDef)
 
         def readFieldsBlock(l: Expr[Int])(using Quotes): Expr[Unit] =
