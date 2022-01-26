@@ -1752,7 +1752,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           q"""out.writeArrayStart()
               var l: _root_.scala.collection.immutable.List[$tpe1] = x
-              while (!l.isEmpty) {
+              while (l ne _root_.scala.Nil) {
                 ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
                 l = l.tail
               }

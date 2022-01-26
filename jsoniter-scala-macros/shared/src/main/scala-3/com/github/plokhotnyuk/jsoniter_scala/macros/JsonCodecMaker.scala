@@ -2706,10 +2706,10 @@ object JsonCodecMaker {
                     tpe1.widen.asType match
                       case '[t1] =>
                         '{
-                          val v3229 = ${f.genGet(x.asTerm).asExprOf[Iterable[t1]]}
-                          if (!v3229.isEmpty && v3229 != ${d.asExprOf[ft]}) {
+                          val v = ${f.genGet(x.asTerm).asExprOf[Iterable[t1]]}
+                          if (!v.isEmpty && v != ${d.asExprOf[ft]}) {
                             ${genWriteConstantKey(f.mappedName, out)}
-                            ${genWriteVal[Iterable[t1]]('v3229, TypeRepr.of[Iterable[t1]] :: types, f.isStringified, None, out)}
+                            ${genWriteVal[Iterable[t1]]('v, TypeRepr.of[Iterable[t1]] :: types, f.isStringified, None, out)}
                           }
                         }.asExprOf[Unit]
                       case _ => fail(s"Can't get type agument for ${tpe1.widen}")
@@ -2784,9 +2784,8 @@ object JsonCodecMaker {
                     }
                   } else {
                     '{ 
-                      val v = ${ f.genGet(x.asTerm).asExprOf[ft] }
                       ${genWriteConstantKey(f.mappedName, out)}
-                      ${genWriteVal('v, f.resolvedTpe :: types, f.isStringified, None, out)}
+                      ${genWriteVal(f.genGet(x.asTerm).asExprOf[ft], f.resolvedTpe :: types, f.isStringified, None, out)}
                     }
                   }
               }
@@ -2986,7 +2985,7 @@ object JsonCodecMaker {
               '{
                 $out.writeArrayStart()
                 var l: _root_.scala.collection.immutable.List[t1] = $tx
-                while (!l.isEmpty) {
+                while (l ne _root_.scala.Nil) {
                   ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
                   l = l.tail
                 }
