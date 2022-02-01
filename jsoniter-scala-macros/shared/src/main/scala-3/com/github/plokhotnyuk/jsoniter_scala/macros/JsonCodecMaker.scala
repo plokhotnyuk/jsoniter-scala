@@ -576,7 +576,7 @@ object JsonCodecMaker {
 
       def isTuple(tpe: TypeRepr): Boolean = (tpe <:< TypeRepr.of[Tuple])
 
-      def isValueClass(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[AnyVal]
+      def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && tpe <:< TypeRepr.of[AnyVal]
 
       def valueClassValue(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
 
@@ -1749,11 +1749,9 @@ object JsonCodecMaker {
                 case Some(ct1) => withNullValueFor[Array[t1]](tpe)('{ Array.empty[t1](using $ct1) } ).asExprOf[C]
                 case _ => fail(s"No ClassTag found for ${Type.show[t1]}")
             case _ => failTypeMatch(tpe1)
-        else if (tpe.isSingleton) Ref(tpe.termSymbol).asExprOf[C]
-        else if (tpe <:< TypeRepr.of[AnyRef]) '{ null }.asExprOf[C]
         else if (isConstType(tpe)) {
           tpe match {
-            case ConstantType(StringConstant(v)) => Literal(StringConstant(v)).asExprOf[C] 
+            case ConstantType(StringConstant(v)) => Literal(StringConstant(v)).asExprOf[C]
             case ConstantType(BooleanConstant(v)) => Literal(BooleanConstant(v)).asExprOf[C]
             case ConstantType(ByteConstant(v)) => Literal(ByteConstant(v)).asExprOf[C]
             case ConstantType(CharConstant(v)) => Literal(CharConstant(v)).asExprOf[C]
@@ -1764,7 +1762,9 @@ object JsonCodecMaker {
             case ConstantType(DoubleConstant(v)) => Literal(DoubleConstant(v)).asExprOf[C]
             case _ => cannotFindValueCodecError(tpe)
           }
-        } else if (tpe =:= TypeRepr.of[Unit]) '{ () }.asExprOf[C]
+        } else if (tpe.isSingleton) Ref(tpe.termSymbol).asExprOf[C]
+        else if (tpe <:< TypeRepr.of[AnyRef]) '{ null }.asExprOf[C]
+        else if (tpe =:= TypeRepr.of[Unit]) '{ () }.asExprOf[C]
         else if (tpe <:< TypeRepr.of[AnyRef]) '{ null }.asExprOf[C]
         else if (tpe <:< TypeRepr.of[AnyVal]) {
           val tpe1 = valueClassValueType(tpe)
@@ -2300,7 +2300,7 @@ object JsonCodecMaker {
                   x => Update('{ $x.update($readKey, { if ($in.isNextToken(',')) $readVal else $in.commaError() }) }),
                   identity, in, default.asExprOf[mutable.LongMap[t1]]).asExprOf[C]
               } else {
-                genReadMap[mutable.LongMap[t1],mutable.LongMap[t1]](newBuilder,
+                genReadMap[mutable.LongMap[t1], mutable.LongMap[t1]](newBuilder,
                   x => Update('{ $x.update($in.readKeyAsLong(), $readVal) }), identity, in,
                   default.asExprOf[mutable.LongMap[t1]]).asExprOf[C]
               }
@@ -2337,7 +2337,7 @@ object JsonCodecMaker {
 
               if (cfg.mapAsArray) {
                 val readVal1 = genReadVal[t1](tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-                genReadMapAsArray[C & mutable.Map[t1, t2],C & mutable.Map[t1, t2]](newBuilder,
+                genReadMapAsArray[C & mutable.Map[t1, t2], C & mutable.Map[t1, t2]](newBuilder,
                   x => Update('{ $x.update($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }) }),
                   identity, in, tDefault).asExprOf[C]
               } else {
@@ -2368,7 +2368,7 @@ object JsonCodecMaker {
                     def readVal1(using Quotes) =
                       genReadVal[t1](tpe1 :: types, genNullValue[t1](tpe1 :: types).asExprOf[t1], isStringified, false, in)
 
-                    def readKV(using Quotes)(x:Expr[mutable.Builder[(t1, t2),collection.Map[t1, t2]]]) =
+                    def readKV(using Quotes)(x:Expr[mutable.Builder[(t1, t2), collection.Map[t1, t2]]]) =
                       Update('{ $x.addOne(($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }))})
 
                     genReadMapAsArray(newBuilder, readKV, (b) => '{ $b.result() }, in, default).asExprOf[C]
@@ -2379,7 +2379,7 @@ object JsonCodecMaker {
                       Update('{ $x.addOne(($readKey, $readVal2)) })
 
                     genReadMap[mutable.Builder[(t1, t2), C & collection.Map[t1, t2]], C & collection.Map[t1, t2]](newBuilder,
-                      readKV, (b) => '{ $b.result() }, in, default.asExprOf[ C & collection.Map[t1, t2]]).asExprOf[C]
+                      readKV, (b) => '{ $b.result() }, in, default.asExprOf[C & collection.Map[t1, t2]]).asExprOf[C]
                   }
                 case _ => failTypeMatch(tpe2)
             case _ => failTypeMatch(tpe1)
@@ -2443,7 +2443,7 @@ object JsonCodecMaker {
                     case None => fail(s"Can't find Ordering[${tpe.show}]")
                 } else builderNoOrdering).asExprOf[mutable.Builder[t1, collection.Set[t1] & C]]
               genReadSet[mutable.Builder[t1, collection.Set[t1] & C], collection.Set[t1] & C](builder,
-                b => Update(genReadValForGrowable[mutable.Builder[t1,collection.Set[t1] & C], t1](tpe1 :: types, isStringified, b, in)),
+                b => Update(genReadValForGrowable[mutable.Builder[t1, collection.Set[t1] & C], t1](tpe1 :: types, isStringified, b, in)),
                 default.asExprOf[collection.Set[t1] & C], b => '{ $b.result() }, in).asExprOf[C]
             case _ => failTypeMatch(tpe1)
         } else if (tpe <:< TypeRepr.of[::[_]]) withDecoderFor[C](methodKey, default, in) { (in, default, throwFlag) =>
@@ -2506,13 +2506,13 @@ object JsonCodecMaker {
               val emptyCollection = {
                 if (tpe <:< TypeRepr.of[mutable.ArraySeq[_]]| tpe <:< TypeRepr.of[mutable.UnrolledBuffer[_]]) {
                   Expr.summon[ClassTag[t1]] match
-                    case Some(t1ClassTag) => Apply(scalaCollectionEmptyNoArgs(tpe,tpe1),List(t1ClassTag.asTerm))
+                    case Some(t1ClassTag) => Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(t1ClassTag.asTerm))
                     case None => fail(s"Can't find ClassTag[${tpe1.show}]")
                 } else scalaCollectionEmptyNoArgs(tpe,tpe1)
               }.asExprOf[C & mutable.Growable[t1]]
-              val builder = '{ if (${default.asExprOf[Iterable[_]]}.isEmpty) $default else ${emptyCollection} }.asExprOf[ C & mutable.Growable[t1]]
+              val builder = '{ if (${default.asExprOf[Iterable[_]]}.isEmpty) $default else ${emptyCollection} }.asExprOf[C & mutable.Growable[t1]]
               genReadArray[C & mutable.Growable[t1], C](builder,
-                (x, i) => Update(genReadValForGrowable[ mutable.Growable[t1],t1](tpe1 :: types, isStringified, x, in)),
+                (x, i) => Update(genReadValForGrowable[mutable.Growable[t1], t1](tpe1 :: types, isStringified, x, in)),
                 default, (x, i) => x, in).asExprOf[C]
             case _ => fail(s"can't determinate type for ${tpe1.show}")
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) withDecoderFor[C](methodKey, default, in) { (in, default, throwFlag) =>
