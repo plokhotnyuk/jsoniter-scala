@@ -10,11 +10,6 @@ class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
   import NamespacePollutions._
 
   "JsonCodecMaker.make generate codecs which" should {
-    "serialize and deserialize types that have back-quoted constructor params with identical prefixes" in {
-      case class ScalaBug8831(`o-o`: String, o: String)
-
-      verifySerDeser(make[ScalaBug8831], ScalaBug8831("VVV", "WWW"), """{"o-o":"VVV","o":"WWW"}""")
-    }
     "serialize and deserialize case class with literal types" in {
       verifySerDeser(make[LiteralTypes],
         LiteralTypes("VVV", true, '1', 2, 3L, 4.0f, 5.0),
