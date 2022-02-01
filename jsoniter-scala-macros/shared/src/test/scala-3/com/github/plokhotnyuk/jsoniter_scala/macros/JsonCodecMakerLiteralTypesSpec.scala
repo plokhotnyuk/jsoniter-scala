@@ -48,7 +48,7 @@ class JsonCodecMakerLiteralTypesSpec extends VerifyingSpec {
       verifyDeserError(make[4.0f], "0.0", "expected value: 4.0, offset: 0x00000002")
       verifyDeserError(make[5.0], "0.0", "expected value: 5.0, offset: 0x00000002")
     }
-/*
+/* FIXME: Fix literal type support for collections
     "serialize and deserialize literal types as keys" in {
       verifySerDeser(make[Map["VVV", Int]], Map["VVV", Int](("VVV", 0)), "{\"VVV\":0}")
       verifySerDeser(make[Map[true, Int]], Map[true, Int]((true, 0)), "{\"true\":0}")
