@@ -2,10 +2,12 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.util.{Objects, UUID}
+import java.util.{Locale, Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
+
+import java.time.format.DateTimeFormatter
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
@@ -646,6 +648,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Array[ZonedDateTime]],
         _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:01Z")),
         "[\"2020-04-10T10:07:00Z\",\"2020-04-10T10:07:01Z\"]")
+      implicit val customCodecOfLocalDateTime: JsonValueCodec[LocalDateTime] = new JsonValueCodec[LocalDateTime] {
+        private val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ENGLISH)
+
+        val nullValue: LocalDateTime = null
+
+        def decodeValue(in: JsonReader, default: LocalDateTime): LocalDateTime =
+          LocalDateTime.parse(in.readString(null), formatter)
+
+        def encodeValue(x: LocalDateTime, out: JsonWriter): _root_.scala.Unit =
+          out.writeNonEscapedAsciiVal(formatter.format(x))
+      }
+      verifySerDeser(make[Array[LocalDateTime]],
+        _root_.scala.Array(LocalDateTime.parse("2022-02-02T11:22"), LocalDateTime.parse("2022-03-01T22:33")),
+        "[\"02/02/2022 11:22\",\"01/03/2022 22:33\"]")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
