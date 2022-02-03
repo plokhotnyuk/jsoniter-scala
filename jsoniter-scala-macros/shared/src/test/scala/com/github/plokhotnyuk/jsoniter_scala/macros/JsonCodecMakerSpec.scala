@@ -6,7 +6,6 @@ import java.util.{Locale, Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
-
 import java.time.format.DateTimeFormatter
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3

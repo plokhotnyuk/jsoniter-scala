@@ -28,6 +28,8 @@ case object MediaType extends enumeratum.values.LongEnum[MediaType] {
 }
 
 class JsonCodecMakerEnumeratumSpec extends VerifyingSpec {
+  import NamespacePollutions._
+
   "JsonCodecMaker.make generates codecs which" should {
     "serialize and deserialize Enumeratum enums" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),

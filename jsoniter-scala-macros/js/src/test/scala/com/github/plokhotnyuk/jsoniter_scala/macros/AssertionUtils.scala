@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.io.{PrintWriter, StringWriter}
-
 import org.scalatest.Assertions
 
 object AssertionUtils extends Assertions {

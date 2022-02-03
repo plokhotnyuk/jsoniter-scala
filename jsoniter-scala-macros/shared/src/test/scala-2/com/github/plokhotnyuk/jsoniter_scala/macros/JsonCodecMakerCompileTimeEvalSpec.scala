@@ -3,6 +3,8 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import org.scalatest.exceptions.TestFailedException
 
 class JsonCodecMakerCompileTimeEvalSpec extends VerifyingSpec {
+  import NamespacePollutions._
+
   "JsonCodecMaker.make" should {
     "don't generate codecs when a parameter of the 'make' call depends on not yet compiled code" in {
       assert(intercept[TestFailedException](assertCompiles {
