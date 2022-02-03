@@ -648,7 +648,18 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Array[ZonedDateTime]],
         _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:01Z")),
         "[\"2020-04-10T10:07:00Z\",\"2020-04-10T10:07:01Z\"]")
-      implicit val customCodecOfLocalDateTime: JsonValueCodec[LocalDateTime] = new JsonValueCodec[LocalDateTime] {
+
+      case class FruitStore(
+        bar: String,
+        opensAt: Option[LocalDateTime], // Uses default codec
+        closesAt: Option[LocalDateTime], // Uses default codec
+        fruits: Seq[Fruit])
+
+      case class Fruit(
+        bar: String,
+        expiresAt: Option[LocalDateTime]) // This field needs to use the special codec
+
+      val customCodecOfLocalDateTime: JsonValueCodec[LocalDateTime] = new JsonValueCodec[LocalDateTime] {
         private val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ENGLISH)
 
         val nullValue: LocalDateTime = null
@@ -659,9 +670,17 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         def encodeValue(x: LocalDateTime, out: JsonWriter): _root_.scala.Unit =
           out.writeNonEscapedAsciiVal(formatter.format(x))
       }
-      verifySerDeser(make[Array[LocalDateTime]],
-        _root_.scala.Array(LocalDateTime.parse("2022-02-02T11:22"), LocalDateTime.parse("2022-03-01T22:33")),
-        "[\"02/02/2022 11:22\",\"01/03/2022 22:33\"]")
+      implicit val fruitCodec: JsonValueCodec[Fruit] = {
+        implicit val overrideCodecOfLocalDateTime = customCodecOfLocalDateTime
+
+        make[Fruit]
+      }
+
+      verifySerDeser(make[FruitStore],
+        FruitStore("FRESH", Some(LocalDateTime.parse("2022-02-02T11:22")),
+          Some(LocalDateTime.parse("2022-03-01T22:33")),
+          Seq(Fruit("apple", Some(LocalDateTime.parse("2022-03-01T22:33"))))),
+        """{"bar":"FRESH","opensAt":"2022-02-02T11:22","closesAt":"2022-03-01T22:33","fruits":[{"bar":"apple","expiresAt":"01/03/2022 22:33"}]}""")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
