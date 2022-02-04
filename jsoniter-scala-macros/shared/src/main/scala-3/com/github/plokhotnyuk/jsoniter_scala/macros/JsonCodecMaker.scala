@@ -484,7 +484,7 @@ object JsonCodecMaker {
     Impl.makeWithSpecifiedConfig[A]('config)
   }
 
-  object Impl {
+  private[macros] object Impl {
     def makeWithDefaultConfig[A: Type](using Quotes): Expr[JsonValueCodec[A]] = tryMake(CodecMakerConfig)
 
     def makeWithoutDiscriminator[A: Type](using Quotes): Expr[JsonValueCodec[A]] =
