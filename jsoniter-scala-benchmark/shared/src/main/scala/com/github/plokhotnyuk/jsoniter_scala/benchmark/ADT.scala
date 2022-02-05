@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, key}
 import zio.json.jsonDiscriminator
 
-@jsonDiscriminator("type")
 @discriminator("type")
 @flatten("type")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -14,6 +13,7 @@ import zio.json.jsonDiscriminator
   new Type(value = classOf[X], name = "X"),
   new Type(value = classOf[Y], name = "Y"),
   new Type(value = classOf[Z], name = "Z")))
+@jsonDiscriminator("type")
 sealed trait ADTBase extends Product with Serializable
 
 @key("X")

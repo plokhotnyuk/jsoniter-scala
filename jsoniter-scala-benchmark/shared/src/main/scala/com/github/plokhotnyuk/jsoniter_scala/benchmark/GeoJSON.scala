@@ -9,7 +9,6 @@ import zio.json.jsonDiscriminator
 import scala.collection.immutable.IndexedSeq
 
 object GeoJSON {
-  @jsonDiscriminator("type")
   @discriminator("type")
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -21,10 +20,11 @@ object GeoJSON {
     new Type(value = classOf[Polygon], name = "Polygon"),
     new Type(value = classOf[MultiPolygon], name = "MultiPolygon"),
     new Type(value = classOf[GeometryCollection], name = "GeometryCollection")))
+  @jsonDiscriminator("type")
   sealed trait Geometry extends Product with Serializable
 
-  @jsonDiscriminator("type")
   @discriminator("type")
+  @jsonDiscriminator("type")
   sealed trait SimpleGeometry extends Geometry
 
   @key("Point")
@@ -48,17 +48,17 @@ object GeoJSON {
   @key("GeometryCollection")
   case class GeometryCollection(geometries: IndexedSeq[SimpleGeometry]) extends Geometry
 
-  @jsonDiscriminator("type")
   @discriminator("type")
   @flatten("type")
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonSubTypes(Array(
     new Type(value = classOf[Feature], name = "Feature"),
     new Type(value = classOf[FeatureCollection], name = "FeatureCollection")))
+  @jsonDiscriminator("type")
   sealed trait GeoJSON extends Product with Serializable
 
-  @jsonDiscriminator("type")
   @discriminator("type")
+  @jsonDiscriminator("type")
   sealed trait SimpleGeoJSON extends GeoJSON
 
   @key("Feature")

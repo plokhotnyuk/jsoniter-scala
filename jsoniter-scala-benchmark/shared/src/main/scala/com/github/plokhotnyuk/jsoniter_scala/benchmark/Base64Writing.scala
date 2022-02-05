@@ -71,6 +71,6 @@ class Base64Writing extends Base64Benchmark {
   def zioJson(): Array[Byte] = {
     import zio.json._
 
-    obj.toJson(base64C3c).getBytes(UTF_8)
+    obj.toJson(base64C3c.encoder).getBytes(UTF_8)
   }
 }

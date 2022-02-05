@@ -67,11 +67,12 @@ class NestedStructsWriting extends NestedStructsBenchmark {
 
   @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
-
+/* FIXME: zio-json throws java.lang.NullPointerException: Cannot invoke "zio.json.JsonEncoder.isNothing(Object)" because "this.A$1" is null
   @Benchmark
   def zioJson(): Array[Byte] = {
     import zio.json._
 
     obj.toJson.getBytes(UTF_8)
   }
+*/
 }

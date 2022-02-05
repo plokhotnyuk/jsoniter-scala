@@ -65,5 +65,5 @@ class Base64Reading extends Base64Benchmark {
   def weePickle(): Array[Byte] = FromJson(jsonBytes).transform(ToScala[Array[Byte]])
 
   @Benchmark
-  def zioJson(): Array[Byte] = new String(jsonBytes, UTF_8).fromJson[Array[Byte]](base64C3c).fold(sys.error, identity)
+  def zioJson(): Array[Byte] = new String(jsonBytes, UTF_8).fromJson[Array[Byte]](base64C3c.decoder).fold(sys.error, identity)
 }
