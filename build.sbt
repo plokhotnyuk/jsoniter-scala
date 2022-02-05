@@ -51,16 +51,16 @@ lazy val commonSettings = Seq(
         //"-Xmacro-settings:print-codecs"
       )
     } else Seq(
-        "-Xcheck-macros",
-        // "-Ycheck:all", "-Yprint-syms",
-        //"-Ydebug-error", // many stack traces, really many stack traces.
-        //"--explain"
-      )
+      "-Xcheck-macros",
+      // "-Ycheck:all", "-Yprint-syms",
+      //"-Ydebug-error", // many stack traces, really many stack traces.
+      //"--explain"
+    )
   },
   compileOrder := CompileOrder.JavaThenScala,
   Compile / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
-    case _ => List()
+    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toSeq.map(f => file(f.getPath + "-2"))
+    case _ => Seq()
   }),
   Test / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
@@ -78,6 +78,20 @@ lazy val commonSettings = Seq(
       "scm:git@github.com:plokhotnyuk/jsoniter-scala.git"
     )
   )
+)
+
+lazy val jsSettings = Seq(
+  scalaJSLinkerConfig ~= {
+    _.withSemantics({
+      _.optimized
+        .withProductionMode(true)
+        .withAsInstanceOfs(CheckedBehavior.Unchecked)
+        .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
+    }).withClosureCompiler(true)
+      .withESFeatures(_.withESVersion(ESVersion.ES5_1))
+      .withModuleKind(ModuleKind.CommonJSModule)
+  },
+  coverageEnabled := false // FIXME: Too slow coverage test running
 )
 
 lazy val noPublishSettings = Seq(
@@ -149,22 +163,12 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
+  .settings(jsSettings)
   .settings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.3.0"
-    ),
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    coverageEnabled := false // FIXME: Too slow coverage test running
+    )
   )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
@@ -190,19 +194,7 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
 
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
-  .settings(
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    coverageEnabled := false // FIXME: Unexpected compilation error
-  )
+  .settings(jsSettings)
 
 lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -221,19 +213,7 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
 lazy val `jsoniter-scala-circeJVM` = `jsoniter-scala-circe`.jvm
 
 lazy val `jsoniter-scala-circeJS` = `jsoniter-scala-circe`.js
-  .settings(
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    coverageEnabled := false // FIXME: Unexpected compilation error
-  )
+  .settings(jsSettings)
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -245,7 +225,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.8"),
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-json" % "0.2.0-M3",
+      "dev.zio" %%% "zio-json" % "0.3.0-RC3",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.10.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.7.2",
       "io.bullet" %%% "borer-derivation" % "1.7.2",
@@ -278,19 +258,8 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)
+  .settings(jsSettings)
   .settings(
-    libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.10.0",
-    scalaJSUseMainModuleInitializer := true,
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-    },
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     Test / test := {}, // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
-    coverageEnabled := false // FIXME: Disabled `jsoniter-scala-benchmarkJS` tests
   )
