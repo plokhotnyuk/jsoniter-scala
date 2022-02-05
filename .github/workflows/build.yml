@@ -21,7 +21,7 @@ jobs:
       matrix:
         java:
           - zulu@1.17
-          - graalvm-ce-java11@21
+          - graalvm-ce-java11
           - zulu@1.8
         os:
           - ubuntu-latest
@@ -45,6 +45,6 @@ jobs:
         with:
           node-version: 14
       - name: Compile, test and check binary compatibility
-        if: ${{ !(matrix.java == 'zulu@1.17' && matrix.os == 'macOS-latest') }}
-        run: "sbt -batch clean +test +mimaReportBinaryIssues"
+        if: ${{ !(matrix.java == 'zulu@1.17' && matrix.os == 'macOS-latest' || matrix.os == 'windows-latest') }}
+        run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash
