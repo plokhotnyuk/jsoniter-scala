@@ -26,6 +26,7 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
+          - windows-latest
       fail-fast: false
     steps:
       - name: Configure git
@@ -44,5 +45,6 @@ jobs:
         with:
           node-version: 14
       - name: Compile, test and check binary compatibility
+        if: ${{ !(matrix.java == 'zulu@1.17' && matrix.os == 'macOS-latest') }}
         run: "sbt -batch clean +test +mimaReportBinaryIssues"
         shell: bash
