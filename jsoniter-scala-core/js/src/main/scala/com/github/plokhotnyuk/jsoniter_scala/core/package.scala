@@ -49,7 +49,7 @@ package object core {
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
-    * @throws java.lang.NullPointerException if any `codec`, `in` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
     * @throws java.lang.Throwable if some error was thrown by f() call
     */
   def scanJsonValuesFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)(f: A => Boolean)
@@ -73,7 +73,7 @@ package object core {
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also if a low-level I/O problem (unexpected end-of-input, network error) occurs
     *                             while some input bytes are expected
-    * @throws java.lang.NullPointerException if any `codec`, `in` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `in` or `config` is null
     * @throws java.lang.Throwable if some error was thrown by f() call
     */
   def scanJsonArrayFromStream[@sp A](in: InputStream, config: ReaderConfig = ReaderConfig)(f: A => Boolean)
@@ -93,7 +93,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also in case if end of input is detected while some input bytes are expected
-    * @throws java.lang.NullPointerException if any `codec`, `buf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     */
   def readFromArray[@sp A](buf: Array[Byte], config: ReaderConfig = ReaderConfig)
                           (implicit codec: JsonValueCodec[A]): A = {
@@ -172,7 +172,7 @@ package object core {
   /**
     * Deserialize JSON content from a string into a value of given `A` type.
     *
-    * While it is less efficient than parsing from a byte array using pooled readers but it can be safely used
+    * While it is less efficient than parsing from a string using pooled readers but it can be safely used
     * internally in custom codecs when previous call of this method is not finished in this thread.
     *
     * @tparam A type of the value to parse

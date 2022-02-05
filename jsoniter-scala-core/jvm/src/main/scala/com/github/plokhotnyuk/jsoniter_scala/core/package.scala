@@ -112,7 +112,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains malformed UTF-8 bytes, invalid JSON content or
     *                             the input JSON structure does not match structure that expected for result type,
     *                             also in case if end of input is detected while some input bytes are expected
-    * @throws java.lang.NullPointerException if any of  `codec`, `buf` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `buf` or `config` is null
     * @throws java.lang.ArrayIndexOutOfBoundsException if the `to` is greater than `buf` length or negative,
     *                                                  or `from` is greater than `to` or negative
     */
@@ -157,7 +157,7 @@ package object core {
     * @throws JsonReaderException if underlying input contains invalid JSON content or the input JSON structure does not
     *                             match structure that expected for the result type, also in case if end of input is
     *                             detected while some input characters are expected
-    * @throws java.lang.NullPointerException if the `codec`, `s` or `config` is null
+    * @throws java.lang.NullPointerException if any of `codec`, `s` or `config` is null
     */
   def readFromString[A](s: String, config: ReaderConfig = ReaderConfig)(implicit codec: JsonValueCodec[A]): A =
     readerPool.get.read(codec, s, config)
@@ -298,7 +298,7 @@ package object core {
     * @return a string with `x` serialized to JSON
     * @throws JsonWriterException if the value to serialize contains strings, double or float values which cannot be
     *                             properly encoded
-    * @throws java.lang.NullPointerException if the `codec` or `config` is null
+    * @throws java.lang.NullPointerException if any of `x`, `codec` or `config` is null
     */
   def writeToStringReentrant[@sp A](x: A, config: WriterConfig = WriterConfig)(implicit codec: JsonValueCodec[A]): String =
     new JsonWriter(buf = new Array[Byte](32), limit = 32).writeToStringWithoutBufReallocation(codec, x, config)
