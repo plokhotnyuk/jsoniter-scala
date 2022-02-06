@@ -6,7 +6,7 @@ private[macros] object LowLevelQuoteUtil {
 
    /**
     * When we mix generation via trees and via quotes, we can have incorrect owners inside tree,
-    * when tree with owner Symbol.currentOwner was inserted inside quote in other scope. 
+    * when tree with owner Symbol.currentOwner was inserted inside quote in other scope.
     *
     * We call deepChangeOwner when all val-s which defined in term is not used outside term
     * and over
@@ -15,7 +15,7 @@ private[macros] object LowLevelQuoteUtil {
     import quotes.reflect._
 
     val mapper = new TreeMap {
-      override def transformTree(tree: Tree)(owner: Symbol):Tree =
+      override def transformTree(tree: Tree)(owner: Symbol): Tree =
         try super.transformTree(tree)(owner)
         catch {
           case ex: IllegalStateException =>
@@ -34,7 +34,7 @@ private[macros] object LowLevelQuoteUtil {
           case _ => super.transformStatement(tree)(owner)
         }
 
-      override def transformTerm(tree:Term)(owner: Symbol):Term =
+      override def transformTerm(tree: Term)(owner: Symbol): Term =
         tree match {
           case Inlined(orgin, bindings, body) =>
             if (bindings.isEmpty) transformTerm(body)(owner)
@@ -46,7 +46,7 @@ private[macros] object LowLevelQuoteUtil {
               s match {
                 case d: Definition =>
                   if (d.symbol.owner != owner) {
-                    incorrectSymbols = d.symbol::incorrectSymbols
+                    incorrectSymbols = d.symbol :: incorrectSymbols
                     needTopLevelChange = true
                   }
                 case other =>
@@ -64,7 +64,7 @@ private[macros] object LowLevelQuoteUtil {
               }
             }
             val nExpr = transformTerm(r.expr)(owner)
-            Block.copy(r)(nStatements,nExpr)
+            Block.copy(r)(nStatements, nExpr)
           case tif@If(cond, ifTrue, ifFalse) =>
             If.copy(tif)(transformTerm(cond)(owner), transformTerm(ifTrue)(owner), transformTerm(ifFalse)(owner))
           case _ =>
@@ -73,7 +73,7 @@ private[macros] object LowLevelQuoteUtil {
 
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree = tree // don't navigate over types.
 
-      def checkInvalidOwner(term: Term, owner: Symbol):Boolean = checkOwner(term, owner, traceFlag, false, true)
+      def checkInvalidOwner(term: Term, owner: Symbol): Boolean = checkOwner(term, owner, traceFlag, false, true)
     }
     mapper.transformTree(tree)(owner)
    }
@@ -103,7 +103,7 @@ private[macros] object LowLevelQuoteUtil {
             }
           case _ =>
         }
-        try {    
+        try {
           if (!foundInvalidOwner) {
             traverseTreeChildren(tree)(owner)
           }

@@ -55,10 +55,10 @@ private[macros] object CompileTimeEval {
       if (fun.asTerm.tpe <:< TypeRepr.of[Map[String, String]]) {
         evalApplyStringMap(fun.asExprOf[Map[String, String]], input)
       } else evalApplyStringTerm(fun.asTerm, input, Map.empty)
- 
+
     def evalApplyStringMap(m: Expr[Map[String, String]], input: String): Option[String] =
       m match
-        case '{  Map(${Varargs(args)}) } =>
+        case '{ Map(${Varargs(args)}) } =>
           for (a <- args) {
             if (a.asTerm.tpe <:<  TypeRepr.of[(String, String)]) {
               val kv = a.asExprOf[(String, String)]
@@ -71,7 +71,7 @@ private[macros] object CompileTimeEval {
         case _ => throw CompileTimeEvalException(s"Map ${m.show} should be a constrictoor literal, we have ${m.asTerm}", m)
 
     def evalExpr[T: Type](expr: Expr[T]): Expr[T] = evalTerm(expr.asTerm, Map.empty, None).asExprOf[T]
-  
+
     private def evalApplyStringTerm(ft: Term, input: String, bindings: Map[Symbol, Term]): Option[String] =
       ft match
         case Inlined(oring, inlineBindings, body) =>
@@ -80,10 +80,10 @@ private[macros] object CompileTimeEval {
           val inputLiteral = Literal(StringConstant(input))
           val nullTerm = Literal(NullConstant())
           val termResult = ft match
-            case Lambda(params, body) => 
+            case Lambda(params, body) =>
               params match
                 case List(param) => evalTerm(body, bindings.updated(param.symbol, inputLiteral), Some(nullTerm))
-                case _ => 
+                case _ =>
                   throw CompileTimeEvalException(s"Expected that partial function have one parameter ${ft.show}", ft.asExpr)
             case other =>
               if (ft.tpe <:< TypeRepr.of[PartialFunction[_, _]]) {
@@ -110,7 +110,7 @@ private[macros] object CompileTimeEval {
                 }
                 evalApply(applyTerm, bindings)
               } else {
-                throw CompileTimeEvalException(s"PartialFunction[String, String] or Function[String, String] is required, we have ${ft.tpe.show}",ft.asExpr)
+                throw CompileTimeEvalException(s"PartialFunction[String, String] or Function[String, String] is required, we have ${ft.tpe.show}", ft.asExpr)
               }
           termToOptString(termResult)
 
@@ -143,7 +143,7 @@ private[macros] object CompileTimeEval {
       while (!cases.isEmpty && result.isEmpty) {
         val c = cases.head
         cases = cases.tail
-        result = evalCaseDef(t, c, scrutinee, bindings, optDefault) 
+        result = evalCaseDef(t, c, scrutinee, bindings, optDefault)
       }
       result match
         case Some(value) => value
@@ -152,9 +152,9 @@ private[macros] object CompileTimeEval {
 
     private def evalCaseDef(m: Term, caseDef: CaseDef, scrutinee: Term, bindings: Map[Symbol, Term],
                             optDefault: Option[Term]): Option[Term] =
-      evalCaseDefPattern(m, caseDef.pattern, scrutinee, bindings).flatMap{ newBinding =>
+      evalCaseDefPattern(m, caseDef.pattern, scrutinee, bindings).flatMap { newBinding =>
         caseDef.guard match
-          case Some(guard) => 
+          case Some(guard) =>
             if (evalCondition(guard, newBinding)) Some(evalTerm(caseDef.rhs, newBinding, optDefault))
             else None
           case None =>
@@ -165,14 +165,14 @@ private[macros] object CompileTimeEval {
                                    bindings: Map[Symbol, Term]):  Option[Map[Symbol, Term]] = {
       pattern match
         case TypedOrTest(v, tpt) =>
-          evalCaseDefPattern(m, v, scrutinee, bindings).flatMap{ newBinding =>
+          evalCaseDefPattern(m, v, scrutinee, bindings).flatMap { newBinding =>
             if (scrutinee.tpe <:< tpt.tpe) Some(newBinding)
             else None
           }
         case b@Bind(name, tree) =>
-          evalCaseDefPattern(m, tree, scrutinee, bindings).map{ newBindings =>
+          evalCaseDefPattern(m, tree, scrutinee, bindings).map { newBindings =>
             tree match
-              case ct:Term => newBindings.updated(b.symbol, ct)
+              case ct: Term => newBindings.updated(b.symbol, ct)
               case _ => newBindings.updated(b.symbol, scrutinee)
           }
         case Unapply(fun, implicits, patterns) =>
@@ -184,22 +184,22 @@ private[macros] object CompileTimeEval {
           while (!c.isEmpty) {
             val h = c.head
             c = c.tail
-            retval = evalCaseDefPattern(m, h, scrutinee, bindings)      
+            retval = evalCaseDefPattern(m, h, scrutinee, bindings)
           }
           retval
         case Wildcard() =>
           Some(bindings.updated(pattern.symbol, scrutinee))
-        case lit@Literal(constant) => 
+        case lit@Literal(constant) =>
           if (evalLitEquals(lit, scrutinee, bindings)) Some(bindings)
           else None
         case other =>
           throw CompileTimeEvalException(s"Pattern ${other} is not supported in compile-time evaluation", m.asExpr)
-    }  
+    }
 
     private def evalApply(applyTerm: Apply, bindings: Map[Symbol, Term]): Term =
       evalApply2(applyTerm, applyTerm.fun, applyTerm.args.map(x => evalTerm(x, bindings, None)), bindings)
 
-    private def evalApply2(posTerm:Term, fun: Term, args: List[Term], bindings: Map[Symbol, Term]): Term =
+    private def evalApply2(posTerm: Term, fun: Term, args: List[Term], bindings: Map[Symbol, Term]): Term =
       fun match
         case Inlined(origin, inlineBindings, body) =>
           evalApply2(posTerm, body, args, addBindings(posTerm, bindings, inlineBindings))
@@ -258,7 +258,7 @@ private[macros] object CompileTimeEval {
           }
         case other =>
           try {
-            jvmToTerm(posTerm, javaReflectionCall(posTerm, evalQualJvm(qual, bindings),  memberName, args))
+            jvmToTerm(posTerm, javaReflectionCall(posTerm, evalQualJvm(qual, bindings), memberName, args))
           } catch {
             case ex: Throwable =>
               // TODO: introduce some tracing flag
@@ -275,13 +275,13 @@ private[macros] object CompileTimeEval {
         if (trace) println("evalQualJvm: module")
         retrieveRuntimeModule(qual, qual.symbol)
       } else {
-        qual match 
+        qual match
           case Inlined(origin, inlineBindings, body) =>
             if (trace) println("inlined")
             evalQualJvm(body, addBindings(body, bindings, inlineBindings))
           case id@Ident(_) =>
             bindings.get(id.symbol) match
-              case Some(value) => 
+              case Some(value) =>
                 val r1 = evalTerm(value, bindings, None)
                 termToJvm(r1)
               case None =>
@@ -331,12 +331,12 @@ private[macros] object CompileTimeEval {
     private def evalLitEquals(lhs: Literal, rhs: Term, bindings: Map[Symbol, Term] ): Boolean =
       rhs match
         case Literal(rconst) => lhs.constant.value == rconst.value
-        case _ => 
+        case _ =>
           evalTerm(rhs, bindings, None) match
             case Literal(rconst) => lhs.constant.value == rconst.value
             case other => false // throw evaluation exception ?
 
-    private def addBindings(m: Term, x: Map[Symbol, Term], bindings:List[Definition]): Map[Symbol, Term] = {
+    private def addBindings(m: Term, x: Map[Symbol, Term], bindings: List[Definition]): Map[Symbol, Term] = {
       var r = x
       var c = bindings
       while (!c.isEmpty) {
@@ -354,8 +354,8 @@ private[macros] object CompileTimeEval {
           optRhs match
             case Some(rhs) => x.updated(vd.symbol, rhs)
             case None => x
-        case other => 
-          throw CompileTimeEvalException(s"Definitions other then ValDefs is not supported, we have $other ",m.asExpr)
+        case other =>
+          throw CompileTimeEvalException(s"Definitions other then ValDefs is not supported, we have $other ", m.asExpr)
 
     private def applyJsonCodeMakerField(t: Term, fieldName: String, operation: String, args: List[Term] ): Term = {
       val arg = termToString(args.head)
@@ -376,7 +376,7 @@ private[macros] object CompileTimeEval {
 
     private def retrieveRuntimeModule(applyTerm: Term, sym: Symbol): AnyRef =  {
       val className = sym.fullName + "$"  // assume that java and scala encoding are same.
-      val clazz = java.lang.Class.forName(className) 
+      val clazz = java.lang.Class.forName(className)
       val moduleField = try {
         clazz.getField("MODULE$")
       } catch{
@@ -409,13 +409,13 @@ private[macros] object CompileTimeEval {
     private def applyPrimitiveOrStringField(applyTerm: Term, qual: Term, memberName: String, args: List[Term]): Term =
       jvmToTerm(applyTerm, javaReflectionCall(applyTerm, termToJvm(qual), memberName, args))
 
-    class JvmReflectionMethodCallException(msg: String, ex: Exception) extends RuntimeException(msg, ex) 
+    class JvmReflectionMethodCallException(msg: String, ex: Exception) extends RuntimeException(msg, ex)
 
     sealed trait JvmReflectionMethodCall {
       def process(): AnyRef
 
-      protected def retrieveArgTypes(args: Array[AnyRef]): Array[java.lang.Class[?]] = {
-        val argsTypes = new Array[Class[?]](args.length)
+      protected def retrieveArgTypes(args: Array[AnyRef]): Array[java.lang.Class[_]] = {
+        val argsTypes = new Array[Class[_]](args.length)
         var i = 0
         while (i < argsTypes.length) {
           argsTypes(i) = args(i).getClass()
@@ -432,7 +432,7 @@ private[macros] object CompileTimeEval {
         val method = try {
           obj.getClass.getMethod(name, argsTypes: _*)
         } catch {
-          case ex: NoSuchMethodException => 
+          case ex: NoSuchMethodException =>
             throw JvmReflectionMethodCallException(s"Can't find method $name of object $obj (class ${obj.getClass}) with argument types: ${argsTypes.toList}", ex)
           case ex: SecurityException =>
             throw JvmReflectionMethodCallException(s"Can't get method $name of object $obj (class ${obj.getClass})", ex)
@@ -454,7 +454,7 @@ private[macros] object CompileTimeEval {
         retval
       }
     }
-  
+
     case class HelperObjectJvmReflectionMethodCall(helperObj: AnyRef, obj: AnyRef, name: String,
                                                    args: Array[AnyRef]) extends PrependedArgumentJvmReflectionMethodCall {
       def process(): AnyRef = {
@@ -463,7 +463,7 @@ private[macros] object CompileTimeEval {
         val method = try {
           helperObj.getClass().getMethod(name, argsTypes: _*)
         } catch {
-          case ex: NoSuchMethodException => 
+          case ex: NoSuchMethodException =>
             throw JvmReflectionMethodCallException(s"Can't find method $name of object ${helperObj} (class ${helperObj.getClass}) with argument types: ${argsTypes.toList}", ex)
           case ex: SecurityException =>
             throw JvmReflectionMethodCallException(s"Can't get method $name of object ${helperObj} (class ${helperObj.getClass})", ex)
@@ -493,7 +493,7 @@ private[macros] object CompileTimeEval {
       val preparedArgs = args.map(t => termToJvm(t)).toArray
       val call = prepareJvmReflectionMethodCall(term, qual, name, preparedArgs)
       try {
-          call.process()
+        call.process()
       } catch {
           case ex: JvmReflectionMethodCallException =>
             throw CompileTimeEvalException(ex.getMessage, term.asExpr, ex.getCause)
@@ -511,11 +511,11 @@ private[macros] object CompileTimeEval {
             throw CompileTimeEvalException(s"Can't find substitute for opeation $name of object ${x} (class ${x.getClass})", t.asExpr)
           }
         case _ =>
-          DirectJvmReflectionMethodCall(x,name, args)
+          DirectJvmReflectionMethodCall(x, name, args)
 
     private def jvmToTerm(applyTerm: Term, obj: AnyRef): Term =
       if (obj.isInstanceOf[String]) {
-        Literal(StringConstant(obj.asInstanceOf[String])) 
+        Literal(StringConstant(obj.asInstanceOf[String]))
       } else if (obj.asInstanceOf[java.lang.Boolean]) {
         Literal(BooleanConstant(obj.asInstanceOf[java.lang.Boolean].booleanValue()))
       } else if (obj.isInstanceOf[java.lang.Character]) {

@@ -1306,7 +1306,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "don't generate codecs for maps with not supported types of keys" in {
       val message = intercept[TestFailedException](assertCompiles {
-        """JsonCodecMaker.make[Map[_root_.java.util.Date,String]]"""
+        """JsonCodecMaker.make[Map[_root_.java.util.Date, String]]"""
       }).getMessage
       assert(message.contains {
         if (ScalaVersionCheck.isScala2) {

@@ -4,7 +4,7 @@ import scala.compiletime._
 
 /**
  * Object contains compile-time settings for JsonCodeMaker generator.
- * To activate settings, add appropriative implicit object to the current 
+ * To activate settings, add appropriative implicit object to the current
  * compilation context
  **/
 object JsonCodecMakerSettings {
