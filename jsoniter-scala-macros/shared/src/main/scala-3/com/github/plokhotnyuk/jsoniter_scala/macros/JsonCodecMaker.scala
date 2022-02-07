@@ -533,11 +533,6 @@ object JsonCodecMaker {
 
       def checkDebugThrow(optMsg: Option[String]): Unit = if (optMsg.isDefined) throw new RuntimeException(optMsg.get)
 
-      def typeArg1Of[T[_]: Type](tpe: TypeRepr): TypeRepr = // TODO: test and use instead of typeArg
-        tpe.baseType(TypeRepr.of[T].typeSymbol) match
-          case AppliedType(base, args) => args.head
-          case _ => fail(s"Type ${tpe.show} not having baseType of ${TypeRepr.of[T].show}")
-
       def typeArg1(tpe: TypeRepr): TypeRepr =
         tpe match
           case AppliedType(base, args) => args.head.dealias
@@ -551,7 +546,7 @@ object JsonCodecMaker {
           case _ =>
             fail(s"Expected that ${tpe.show} is an AppliedType")
 
-      def areEqual(tpe1: TypeRepr, tpe2: TypeRepr): Boolean = tpe1 =:= tpe2
+      def areEqual(tpe1: TypeRepr, tpe2: TypeRepr): Boolean = tpe1.typeSymbol.fullName == tpe2.typeSymbol.fullName
 
       def isTuple(tpe: TypeRepr): Boolean = (tpe <:< TypeRepr.of[Tuple])
 
@@ -759,6 +754,13 @@ object JsonCodecMaker {
           fail(s"For scala2enum type reference is expected, we have ${tpe}")
       }
 
+      def summonOrdering(tpe: TypeRepr): Term =
+        tpe.asType match
+          case '[t] =>
+            Expr.summon[Ordering[t]] match
+              case Some(ordering) => ordering.asTerm
+              case None => fail(s"Can't summon Ordering[${tpe.show}]")
+
       def findScala2EnumerationById[C <: AnyRef: Type](tpe: TypeRepr, i: Expr[Int])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.id == $i) }.asExprOf[Option[C]]
 
@@ -817,13 +819,13 @@ object JsonCodecMaker {
       val mathContexts = mutable.LinkedHashMap.empty[Int, ValDef]
 
       def withMathContextFor(precision: Int): Expr[MathContext] =
-        if (precision == java.math.MathContext.DECIMAL128.getPrecision) '{ _root_.java.math.MathContext.DECIMAL128 }
-        else if (precision == java.math.MathContext.DECIMAL64.getPrecision) '{ _root_.java.math.MathContext.DECIMAL64 }
-        else if (precision == java.math.MathContext.DECIMAL32.getPrecision) '{ _root_.java.math.MathContext.DECIMAL32 }
-        else if (precision == java.math.MathContext.UNLIMITED.getPrecision) '{ _root_.java.math.MathContext.UNLIMITED }
+        if (precision == java.math.MathContext.DECIMAL128.getPrecision) '{ java.math.MathContext.DECIMAL128 }
+        else if (precision == java.math.MathContext.DECIMAL64.getPrecision) '{ java.math.MathContext.DECIMAL64 }
+        else if (precision == java.math.MathContext.DECIMAL32.getPrecision) '{ java.math.MathContext.DECIMAL32 }
+        else if (precision == java.math.MathContext.UNLIMITED.getPrecision) '{ java.math.MathContext.UNLIMITED }
         else {
           val valDef = mathContexts.getOrElseUpdate(precision, {
-            val mc = '{ new java.math.MathContext(${Expr(cfg.bigDecimalPrecision)}, _root_.java.math.RoundingMode.HALF_EVEN) }
+            val mc = '{ new java.math.MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }
             val name = "mc" + mathContexts.size
             val sym = Symbol.newVal(Symbol.spliceOwner, name, TypeRepr.of[MathContext], Flags.EmptyFlags, Symbol.noSymbol)
             ValDef(sym, Some(mc.asTerm.changeOwner(sym)))
@@ -1071,8 +1073,8 @@ object JsonCodecMaker {
             createFieldInfos(params, typeParams)
           case _ =>
             fail(s"'${tpe.show}' has a primary constructor with multiple parameter lists. " +
-            "Please consider using a custom implicitly accessible codec for this type.\n" +
-            s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n")
+              "Please consider using a custom implicitly accessible codec for this type.\n" +
+              s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n")
         })
       })
 
@@ -1552,21 +1554,21 @@ object JsonCodecMaker {
                 })
               }
         } else if (tpe1 <:< TypeRepr.of[Boolean]) {
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Boolean]]}, ${x2t.asExprOf[Array[Boolean]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Boolean]]}, ${x2t.asExprOf[Array[Boolean]]}) }
         } else if (tpe1 <:< TypeRepr.of[Byte]) {
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Byte]]}, ${x2t.asExprOf[Array[Byte]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Byte]]}, ${x2t.asExprOf[Array[Byte]]}) }
         } else if (tpe1 <:< TypeRepr.of[AnyRef]){
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[AnyRef]]}, ${x2t.asExprOf[Array[AnyRef]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[AnyRef]]}, ${x2t.asExprOf[Array[AnyRef]]}) }
         } else if (tpe1 <:< TypeRepr.of[Short]){
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Short]]}, ${x2t.asExprOf[Array[Short]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Short]]}, ${x2t.asExprOf[Array[Short]]}) }
         } else if (tpe1 <:< TypeRepr.of[Int]){
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Int]]}, ${x2t.asExprOf[Array[Int]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Int]]}, ${x2t.asExprOf[Array[Int]]}) }
         } else if (tpe1 <:< TypeRepr.of[Float]){
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Float]]}, ${x2t.asExprOf[Array[Float]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Float]]}, ${x2t.asExprOf[Array[Float]]}) }
         } else if (tpe1 <:< TypeRepr.of[Double]){
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Double]]}, ${x2t.asExprOf[Array[Double]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Double]]}, ${x2t.asExprOf[Array[Double]]}) }
         } else if (tpe1 <:< TypeRepr.of[Char]){
-          '{ _root_.java.util.Arrays.equals(${x1t.asExprOf[Array[Char]]}, ${x2t.asExprOf[Array[Char]]}) }
+          '{ java.util.Arrays.equals(${x1t.asExprOf[Array[Char]]}, ${x2t.asExprOf[Array[Char]]}) }
         } else fail(s"Can't generate array of type ${tpe1.show}")
       }
 
@@ -1671,23 +1673,14 @@ object JsonCodecMaker {
         else if (tpe <:<  TypeRepr.of[List[_]] || tpe =:=  TypeRepr.of[Seq[_]]) '{ Nil }.asExprOf[T]
         else if (tpe <:<  TypeRepr.of[collection.SortedSet[_]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              Expr.summon[Ordering[t1]] match
-                case Some(ordering) => Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(ordering.asTerm)).asExprOf[T]
-                case None => fail(s"Can't summon Ordering[${tpe1.show}]")
+          Apply(scalaCollectionEmptyNoArgs(tpe, tpe1), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:<  TypeRepr.of[immutable.IntMap[_]] || tpe <:<  TypeRepr.of[immutable.LongMap[_]] ||
             tpe <:< TypeRepr.of[mutable.LongMap[_]] || tpe <:<  TypeRepr.of[immutable.Seq[_]] ||
             tpe <:<  TypeRepr.of[Set[_]]) withNullValueFor(tpe) {
           scalaCollectionEmptyNoArgs(tpe, typeArg1(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) withNullValueFor(tpe) {
           val tpe1 = typeArg1(tpe)
-          tpe1.asType match
-            case '[t1] =>
-              Expr.summon[Ordering[t1]] match
-                case Some(ordering) =>
-                  Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(ordering.asTerm)).asExprOf[T]
-                case _ => fail(s"Can't summon Ordering[${tpe1.show}]")
+          Apply(scalaMapEmptyNoArgs(tpe, tpe1, typeArg2(tpe)), List(summonOrdering(tpe1))).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[immutable.Map[_, _]]) withNullValueFor(tpe) {
           scalaMapEmptyNoArgs(tpe, typeArg1(tpe), typeArg2(tpe)).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) {
@@ -2292,13 +2285,9 @@ object JsonCodecMaker {
             case ('[t1], '[t2]) =>
               val builderNoApply =
                 TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1], TypeTree.of[t2]))
-              val newBuilder = {
-                if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) { // TODO: add withOrderfingFoe
-                  Expr.summon[Ordering[t1]] match
-                    case Some(ordering) => Apply(builderNoApply, List(ordering.asTerm))
-                    case _ => fail(s"Can't summon Ordering[${tpe1.show}]")
-                } else builderNoApply
-              }.asExprOf[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]
+              val newBuilder =
+                (if (tpe <:< TypeRepr.of[immutable.SortedMap[_, _]]) Apply(builderNoApply, List(summonOrdering(tpe1))) // TODO: add withOrderfingFoe
+                else builderNoApply).asExprOf[mutable.Builder[(t1, t2), T & collection.Map[t1, t2]]]
 
               def readVal2(using Quotes) =
                 genReadVal(tpe2 :: types, genNullValue[t2](tpe2 :: types), isStringified, false, in)
@@ -2334,7 +2323,7 @@ object JsonCodecMaker {
                   if (v < 0 || v >= ${Expr(cfg.bitSetValueLimit)}) $in.decodeError("illegal value for bit set")
                   val xi = v >>> 6
                   if (xi >= x.length) {
-                    x = _root_.java.util.Arrays.copyOf(x, _root_.java.lang.Integer.highestOneBit(xi) << 1)
+                    x = java.util.Arrays.copyOf(x, java.lang.Integer.highestOneBit(xi) << 1)
                   }
                   x(xi) |= 1L << v
                   $in.isNextToken(',')
@@ -2358,11 +2347,8 @@ object JsonCodecMaker {
               val tDefault = default.asExprOf[T & mutable.Set[t1]]
               val emptySetNoOrdering = scalaCollectionEmptyNoArgs(tpe, tpe1)
               val emptySet =
-                (if (tpe <:< TypeRepr.of[mutable.SortedSet[_]]) {
-                  Expr.summon[Ordering[t1]] match
-                    case Some(ordering) => Apply(emptySetNoOrdering, List(ordering.asTerm))
-                    case None => fail(s"Can't summon Ordering[${tpe1.show}]")
-                } else emptySetNoOrdering).asExprOf[T & mutable.Set[t1]]
+                (if (tpe <:< TypeRepr.of[mutable.SortedSet[_]]) Apply(emptySetNoOrdering, List(summonOrdering(tpe1)))
+                else emptySetNoOrdering).asExprOf[T & mutable.Set[t1]]
               genReadSet[T & mutable.Set[t1], T & mutable.Set[t1]]('{ if ($tDefault.isEmpty) $tDefault else $emptySet },
                 x => Update(genReadValForGrowable[mutable.Set[t1], t1](tpe1 :: types, isStringified, x, in)),
                 tDefault, identity, in).asExprOf[T]
@@ -2374,11 +2360,8 @@ object JsonCodecMaker {
               val builderNoOrdering =
                 TypeApply(Select.unique(scalaCollectionCompanion(tpe), "newBuilder"), List(TypeTree.of[t1]))
               val builder =
-                (if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) {
-                  Expr.summon[Ordering[t1]] match
-                    case Some(ordering) => Apply(builderNoOrdering, List(ordering.asTerm))
-                    case None => fail(s"Can't summon Ordering[${tpe1.show}]")
-                } else builderNoOrdering).asExprOf[mutable.Builder[t1, T & collection.Set[t1]]]
+                (if (tpe <:< TypeRepr.of[collection.SortedSet[_]]) Apply(builderNoOrdering, List(summonOrdering(tpe1)))
+                else builderNoOrdering).asExprOf[mutable.Builder[t1, T & collection.Set[t1]]]
               genReadSet[mutable.Builder[t1, T & collection.Set[t1]], T & collection.Set[t1]](builder,
                 b => Update(genReadValForGrowable[mutable.Builder[t1, T & collection.Set[t1]], t1](tpe1 :: types, isStringified, b, in)),
                 default.asExprOf[T & collection.Set[t1]], b => '{ $b.result() }, in).asExprOf[T]
@@ -2399,12 +2382,12 @@ object JsonCodecMaker {
                     else $in.decodeError("expected non-empty JSON array")
                   } else {
                     $in.rollbackToken()
-                    val x = new _root_.scala.collection.mutable.ListBuffer[t1]
+                    val x = new mutable.ListBuffer[t1]
                     while ({
                       ${readVal('x)}
                       $in.isNextToken(',')
                     }) ()
-                    if ($in.isCurrentToken(']')) x.toList.asInstanceOf[_root_.scala.collection.immutable.::[t1]]
+                    if ($in.isCurrentToken(']')) x.toList.asInstanceOf[::[t1]]
                     else $in.arrayEndOrCommaError()
                   }
                 } else {
@@ -2418,7 +2401,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              genReadArray[mutable.ListBuffer[t1], List[t1]]('{ new _root_.scala.collection.mutable.ListBuffer[t1] },
+              genReadArray[mutable.ListBuffer[t1], List[t1]]('{ new mutable.ListBuffer[t1] },
                 (x, i) => Update(genReadValForGrowable[mutable.ListBuffer[t1], t1](tpe1 :: types, isStringified, x, in)),
                 default.asExprOf[List[t1]], (x, i) => '{ $x.toList }, in).asExprOf[T]
         } else if (tpe <:< TypeRepr.of[mutable.ListBuffer[_]]) withDecoderFor(methodKey, default, in) { (in, default, throwFlag) =>
@@ -2482,7 +2465,7 @@ object JsonCodecMaker {
                 if (newArrayOnChange) {
                   '{
                     val x1 = new Array[t1]($i << 1)(using $t1ClassTag)
-                    _root_.java.lang.System.arraycopy($x, 0, x1, 0, $i)
+                    java.lang.System.arraycopy($x, 0, x1, 0, $i)
                     x1
                   }
                 } else genArraysCopyOf[t1](tpe1, x, '{ $i << 1 })
@@ -2491,7 +2474,7 @@ object JsonCodecMaker {
                 if (newArrayOnChange) {
                   '{
                     val x1 = new Array[t1]($i)(using $t1ClassTag)
-                    _root_.java.lang.System.arraycopy($x, 0, x1, 0, $i)
+                    java.lang.System.arraycopy($x, 0, x1, 0, $i)
                     x1
                   }
                 } else genArraysCopyOf[t1](tpe1, x, i)
@@ -2628,7 +2611,7 @@ object JsonCodecMaker {
               fDefault match {
                 case Some(d) =>
                   if (f.resolvedTpe <:< TypeRepr.of[Iterable[_]] && cfg.transientEmpty) {
-                    val tpe1 = typeArg1Of[Iterable](f.resolvedTpe)
+                    val tpe1 = typeArg1(f.resolvedTpe.baseType(TypeRepr.of[Iterable[_]].typeSymbol))
                     tpe1.asType match
                       case '[t1] =>
                         '{
@@ -2899,8 +2882,8 @@ object JsonCodecMaker {
               val tx = x.asExprOf[List[t1]]
               '{
                 $out.writeArrayStart()
-                var l: _root_.scala.collection.immutable.List[t1] = $tx
-                while (l ne _root_.scala.Nil) {
+                var l: List[t1] = $tx
+                while (l ne Nil) {
                   ${genWriteVal('{ l.head }, tpe1 :: types, isStringified, None, out)}
                   l = l.tail
                 }
