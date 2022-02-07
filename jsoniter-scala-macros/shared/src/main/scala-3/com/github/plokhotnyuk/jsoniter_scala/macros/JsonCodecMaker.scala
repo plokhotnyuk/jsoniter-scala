@@ -1079,7 +1079,7 @@ object JsonCodecMaker {
       })
 
       def genReadKey[T: Type](types: List[TypeRepr], in: Expr[JsonReader])(using Quotes): Expr[T] = {
-        val tpe = types.head.simplified
+        val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(types)
         if (!implKeyCodec.isEmpty)  '{ ${implKeyCodec.get}.decodeKey($in) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Boolean] || tpe =:= TypeRepr.of[java.lang.Boolean])  '{ ${in}.readKeyAsBoolean() }.asExprOf[T]
@@ -1301,7 +1301,7 @@ object JsonCodecMaker {
 
       @tailrec
       def genWriteKey[T: Type](x: Expr[T], types: List[TypeRepr], out: Expr[JsonWriter])(using Quotes): Expr[Unit] = {
-        val tpe = types.head.simplified
+        val tpe = types.head
         val implKeyCodec = findImplicitKeyCodec(types)
         if (!implKeyCodec.isEmpty) '{ ${implKeyCodec.get.asExprOf[JsonKeyCodec[T]]}.encodeKey($x, $out) }
         else if (tpe =:= TypeRepr.of[Boolean]) '{ $out.writeKey(${x.asExprOf[Boolean]}) }
@@ -1533,7 +1533,7 @@ object JsonCodecMaker {
 
       def genArrayEquals[T: Type](tpe: TypeRepr, x1t: Expr[T], x2t: Expr[T]): Expr[Boolean] = {
         val tpe1 =
-          tpe.simplified match
+          tpe match
             case AppliedType(tp, param) => param.head
             case _ => fail(s"Expected that ${tpe.show} is an applied type")
         if (tpe1 <:< TypeRepr.of[Array[_]]) {
@@ -1648,7 +1648,7 @@ object JsonCodecMaker {
       }
 
       def genNullValue[T: Type](types: List[TypeRepr])(using Quotes): Expr[T] = {
-        val tpe = types.head.simplified
+        val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         if (!implCodec.isEmpty) '{ ${implCodec.get}.nullValue }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Boolean]) Literal(BooleanConstant(false)).asExprOf[T]
@@ -2109,7 +2109,7 @@ object JsonCodecMaker {
 
       def genReadVal[T: Type](types: List[TypeRepr], default: Expr[T], isStringified: Boolean,
                               useDiscriminator: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = {
-        val tpe = types.head.simplified
+        val tpe = types.head
         if (traceFlag) {
           println(s"genReadVal, tpe=${tpe.show}, useDiscriminator=${useDiscriminator}")
         }
@@ -2785,7 +2785,7 @@ object JsonCodecMaker {
       def genWriteVal[T: Type](m: Expr[T], types: List[TypeRepr], isStringified: Boolean,
                                optWriteDiscriminator: Option[WriteDiscriminator],
                                out: Expr[JsonWriter])(using Quotes): Expr[Unit]= {
-        val tpe = types.head.simplified
+        val tpe = types.head
         val implCodec = findImplicitValueCodec(types)
         if (traceFlag) {
           println(s"genWriteVal(${tpe.show})")
