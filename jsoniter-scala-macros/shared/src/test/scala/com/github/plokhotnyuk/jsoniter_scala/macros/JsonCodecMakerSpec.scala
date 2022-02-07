@@ -16,6 +16,15 @@ case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
 
+object Alias {
+  type I = Int
+  type S = String
+
+  case class UserId(id: S) extends AnyVal
+
+  case class OrderId(value: I) extends AnyVal
+}
+
 object UserId2 {
   type Opaque = Base with Tag
   type Base = Any {
@@ -884,6 +893,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize stringified top-level value classes" in {
       verifySerDeser(make[OrderId](CodecMakerConfig.withIsStringified(true)), OrderId(123123), "\"123123\"")
+    }
+    "serialize and deserialize value classes with type aliases" in {
+      verifySerDeser(make[Alias.UserId], Alias.UserId("123abc"), "\"123abc\"")
+      verifySerDeser(make[Alias.OrderId], Alias.OrderId(123123), "123123")
     }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,

@@ -564,19 +564,15 @@ object JsonCodecMaker {
       def decodeName(s: Symbol): String = s.name
 
       def substituteTypeParams(tpe: TypeRepr, from: List[Symbol], to: List[TypeRepr]): TypeRepr = {
-        // origini substitute-types in @experimanta annotations.
-        //
-        // this will be enabled when feature will no longer experimental.
-        //(scala 3.2 ?)
-        //import scala.language.experimental
-        //try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
-        //  fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
-        //}
-        //
-        // now let's write own minimial approximation,
+        // origin substitute-types in @experimantal annotations
+        // this will be enabled when feature will no longer experimental (scala 3.2 ?)
+        // import scala.language.experimental
+        // try tpe.substituteTypes(from, to) catch { case NonFatal(_) =>
+        //   fail(s"Cannot resolve generic type(s) for `$tpe`. Please provide a custom implicitly accessible codec for it.")
+        // }
         val symTypeMap = from.zip(to).toMap
 
-        def substituteMap(tpe: TypeRepr): TypeRepr = {
+        def substituteMap(tpe: TypeRepr): TypeRepr =
           tpe match
             case ConstantType(c) => tpe
             case TermRef(repr, name) => TermRef(substituteMap(repr), name)
@@ -611,11 +607,11 @@ object JsonCodecMaker {
               fail(s"Recurive types are not supported, use a custom implicitly accessible codec (${r.show} during transform of ${tpe.show})")
             case l: LambdaType =>
               fail(s"Lambda types are not supported, use a custom implicitly accessible codec (${l.show} during transform of ${tpe.show})")
-        }
+
         substituteMap(tpe)
       }
 
-      def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(tpe.typeSymbol.fieldMembers(0))
+      def valueClassValueType(tpe: TypeRepr): TypeRepr = tpe.memberType(tpe.typeSymbol.fieldMembers(0)).dealias
 
       def isNonAbstractScalaClass(tpe: TypeRepr): Boolean =
         tpe.classSymbol match
@@ -771,7 +767,7 @@ object JsonCodecMaker {
       def findScala2EnumerationByName[C <: AnyRef: Type](tpe: TypeRepr, name: Expr[String])(using Quotes): Expr[Option[C]] =
         '{ ${scala2EnumerationObject(tpe)}.values.iterator.find(_.toString == $name) }.asExprOf[Option[C]]
 
-      val rootTpe = TypeRepr.of[A]
+      val rootTpe = TypeRepr.of[A].dealias
       // TODO: not sure that types are normalized
       val inferredKeyCodecs: mutable.Map[TypeRepr, Option[Expr[JsonKeyCodec[_]]]] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[TypeRepr, Option[Expr[JsonValueCodec[_]]]] = mutable.Map.empty
@@ -1029,7 +1025,7 @@ object JsonCodecMaker {
             val isStringified = annotationOption.exists(_.stringified)
             val isTransient = annotationOption.exists(_.transient)
             // FIXME: dotty error here -- don't show that this type is applied.
-            val originFieldType = tpe.memberType(symbol) // paramType(tpe, symbol) -- ???
+            val originFieldType = tpe.memberType(symbol).dealias
             val targs: List[TypeRepr] = tpe match
               case AppliedType(base, targs) => targs
               case _ => Nil
@@ -1652,7 +1648,7 @@ object JsonCodecMaker {
       }
 
       def genNullValue[T: Type](types: List[TypeRepr])(using Quotes): Expr[T] = {
-        val tpe = types.head.dealias.simplified
+        val tpe = types.head.simplified
         val implCodec = findImplicitValueCodec(types)
         if (!implCodec.isEmpty) '{ ${implCodec.get}.nullValue }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Boolean]) Literal(BooleanConstant(false)).asExprOf[T]
@@ -2113,7 +2109,7 @@ object JsonCodecMaker {
 
       def genReadVal[T: Type](types: List[TypeRepr], default: Expr[T], isStringified: Boolean,
                               useDiscriminator: Boolean, in: Expr[JsonReader])(using Quotes): Expr[T] = {
-        val tpe = types.head.dealias.simplified
+        val tpe = types.head.simplified
         if (traceFlag) {
           println(s"genReadVal, tpe=${tpe.show}, useDiscriminator=${useDiscriminator}")
         }
@@ -2789,7 +2785,7 @@ object JsonCodecMaker {
       def genWriteVal[T: Type](m: Expr[T], types: List[TypeRepr], isStringified: Boolean,
                                optWriteDiscriminator: Option[WriteDiscriminator],
                                out: Expr[JsonWriter])(using Quotes): Expr[Unit]= {
-        val tpe = types.head.dealias.simplified
+        val tpe = types.head.simplified
         val implCodec = findImplicitValueCodec(types)
         if (traceFlag) {
           println(s"genWriteVal(${tpe.show})")
