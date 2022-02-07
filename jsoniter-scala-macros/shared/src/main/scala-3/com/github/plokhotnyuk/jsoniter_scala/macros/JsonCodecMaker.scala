@@ -1502,8 +1502,9 @@ object JsonCodecMaker {
               }
               val scrutinee = param match
                 case paramTerm: Term => paramTerm
-                case _ => fail("Exprected that param is term")
+                case _ => fail("Expected that param is term")
               Some(Match(scrutinee, cases.toList).changeOwner(sym))
+            case _ => fail("Expected a 1-param list")
           })
         })
         Ref(defDef.symbol)
@@ -1600,6 +1601,7 @@ object JsonCodecMaker {
                       }
                       Some(res1)
                     case _ => fail(s"Expected that ${default} is a term")
+                case _ => fail("Expected a 2-param list")
               })
             })
             sym
@@ -1634,6 +1636,7 @@ object JsonCodecMaker {
                   x match
                     case xTerm: Term => Some(f(out.asExprOf[JsonWriter], xTerm.asExprOf[T]).asTerm.changeOwner(sym))
                     case _ => fail(s"Expected that ${x} is a term")
+                case _ => fail("Expected a 2-param list")
               })
             })
             sym
@@ -2949,8 +2952,8 @@ object JsonCodecMaker {
           val es = javaEnumValues(tpe)
           val encodingRequired = es.exists(e => isEncodingRequired(e.name))
           if (es.exists(_.transformed)) {
-            val cases = es.map(e =>  CaseDef(Ref(e.value), None, Expr(e.name).asTerm)) :+
-              CaseDef(Wildcard(), None, '{ $out.encodeError("illegal enum value: " + ${x}) }.asTerm)
+            val cases = es.map(e => CaseDef(Ref(e.value), None, Expr(e.name).asTerm)) :+
+              CaseDef('{ null }.asTerm, None, '{ $out.encodeError("illegal enum value: null") }.asTerm)
             val matching = Match(x.asTerm, cases.toList).asExprOf[String]
             if (encodingRequired) '{ $out.writeVal($matching) }
             else '{ $out.writeNonEscapedAsciiVal($matching) }
