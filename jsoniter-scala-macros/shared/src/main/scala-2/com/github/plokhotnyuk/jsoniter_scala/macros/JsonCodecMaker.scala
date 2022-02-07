@@ -399,8 +399,6 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs(1).dealias
 
-      def areEqual(tpe1: Type, tpe2: Type): Boolean = tpe1.typeSymbol.fullName == tpe2.typeSymbol.fullName
-
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
@@ -509,7 +507,7 @@ object JsonCodecMaker {
             if (cfg.allowRecursiveTypes) -1
             else nestedTypes.indexOf(tpe)
           if (recursiveIdx < 0) {
-            if (areEqual(tpe, rootTpe)) EmptyTree
+            if (tpe =:= rootTpe) EmptyTree
             else if (isValueCodec) {
               inferredValueCodecs.getOrElseUpdate(tpe,
                 inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]"))
@@ -1499,7 +1497,7 @@ object JsonCodecMaker {
             .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
 
           def genReadLeafClass(subTpe: Type): Tree =
-            if (areEqual(subTpe, tpe)) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
+            if (subTpe =:= tpe) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
             else genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, skipDiscriminatorField)
 
           def genReadCollisions(subTpes: collection.Seq[Type]): Tree =

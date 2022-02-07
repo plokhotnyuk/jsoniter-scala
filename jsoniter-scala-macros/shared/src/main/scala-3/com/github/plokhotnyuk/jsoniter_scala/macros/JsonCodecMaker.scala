@@ -546,8 +546,6 @@ object JsonCodecMaker {
           case _ =>
             fail(s"Expected that ${tpe.show} is an AppliedType")
 
-      def areEqual(tpe1: TypeRepr, tpe2: TypeRepr): Boolean = tpe1.typeSymbol.fullName == tpe2.typeSymbol.fullName
-
       def isTuple(tpe: TypeRepr): Boolean = (tpe <:< TypeRepr.of[Tuple])
 
       def isValueClass(tpe: TypeRepr): Boolean = !isConstType(tpe) && tpe <:< TypeRepr.of[AnyVal]
@@ -797,7 +795,7 @@ object JsonCodecMaker {
         if (nestedTypes.isEmpty) None
         else {
           checkRecursionInTypes(types)
-          if (areEqual(tpe, rootTpe)) None
+          if (tpe =:= rootTpe) None
           else inferredKeyCodecs.getOrElseUpdate(tpe, {
             inferImplicitValue(TypeRepr.of[JsonKeyCodec].appliedTo(tpe)).map(_.asExprOf[JsonKeyCodec[_]])
           })
@@ -809,7 +807,7 @@ object JsonCodecMaker {
         if (nestedTypes.isEmpty) None
         else {
           checkRecursionInTypes(types)
-          if (areEqual(tpe, rootTpe)) None
+          if (tpe =:= rootTpe) None
           else inferredValueCodecs.getOrElseUpdate(tpe, {
             inferImplicitValue(TypeRepr.of[JsonValueCodec].appliedTo(tpe)).map(_.asExprOf[JsonValueCodec[_]])
           })
@@ -1757,7 +1755,7 @@ object JsonCodecMaker {
         }
 
         def genReadLeafClass[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
-          if (areEqual(subTpe, tpe))
+          if (subTpe =:= tpe)
             genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue(types))
           else
             genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, cfg.discriminatorFieldName.isDefined, in)

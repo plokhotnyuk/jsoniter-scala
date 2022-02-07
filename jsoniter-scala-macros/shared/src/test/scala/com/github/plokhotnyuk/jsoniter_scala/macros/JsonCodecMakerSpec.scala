@@ -290,6 +290,16 @@ object HKField {
   case class Baz[A[_]](a: A[String]) extends Foo[A]
 }
 
+object KingDom {
+  sealed trait Human
+
+  object Human {
+    final case class Subject(name: String) extends Human
+
+    final case class King(name: String, reignOver: Iterable[Human]) extends Human
+  }
+}
+
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
 
@@ -1457,6 +1467,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Recursive](CodecMakerConfig.withAllowRecursiveTypes(true)),
         Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         "{\"s\":\"VVV\",\"bd\":1.1,\"l\":[1,2,3],\"m\":{\"S\":{\"s\":\"WWW\",\"bd\":2.2,\"l\":[4,5,6]}}}")
+      verifySerDeser(make[KingDom.Human](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        KingDom.Human.King(name = "John", reignOver = Seq(KingDom.Human.Subject("Joanna"))),
+        """{"type":"King","name":"John","reignOver":[{"type":"Subject","name":"Joanna"}]}""")
     }
     "don't generate codecs for recursive types by default" in {
       assert(intercept[TestFailedException](assertCompiles {
