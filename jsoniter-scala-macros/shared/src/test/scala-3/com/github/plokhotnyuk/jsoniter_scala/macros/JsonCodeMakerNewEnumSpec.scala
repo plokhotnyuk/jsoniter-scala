@@ -47,9 +47,21 @@ enum Planet(mass: Double, radius: Double):
   case Neptune extends Planet(1.024e+26, 2.4746e7)
 end Planet
 
-// TODO:
-//   Enum ADT with type parameters
-//   ordinal flag (create config param)
+enum GEnum[A]:
+  case IsDir(path: String) extends GEnum[Boolean]
+  case Exists(path: String) extends GEnum[Boolean]
+  case ReadBytes(path: String) extends GEnum[Seq[Byte]]
+  case CopyOver(src: Seq[Byte], path: String) extends GEnum[Int]
+
+enum FruitEnum[T <: FruitEnum[T]]:
+  case Apple(family: String) extends FruitEnum[Apple]
+  case Orange(color: Int) extends FruitEnum[Orange]
+
+case class FruitEnumBasket[T <: FruitEnum[T]](fruits: List[T])
+
+enum FooEnum[A[_]]:
+  case Bar[A[_]](a: A[Int]) extends FooEnum[A]
+  case Baz[A[_]](a: A[String]) extends FooEnum[A]
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
@@ -81,11 +93,35 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
       verifySerDeser(make[List[Planet]](CodecMakerConfig),
         List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
     }
-    "serialize and deserialize Scala3 enums ADT" in {
+    "serialize and deserialize Scala3 enum ADTs" in {
       verifySerDeser(make[List[ColorADT]](CodecMakerConfig),
         List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"type":"Mix","mix":0}]""")
     }
-    "serialize and deserialize Scala3 enums ADT defined with `derives` keyword" in {
+    "serialize and deserialize Scala3 generic enum ADTs" in {
+      verifySerDeser(make[Array[GEnum[_]]],
+        _root_.scala.Array[GEnum[_]](GEnum.Exists("WWW"), GEnum.ReadBytes("QQQ"), GEnum.CopyOver("AAA".getBytes.toSeq, "OOO")),
+        """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
+    }
+    "serialize and deserialize enum ADTs with self-recursive (aka F-bounded) types without discriminators" in {
+      val oneFruit: FruitEnumBasket[FruitEnum.Apple] = FruitEnumBasket(List(FruitEnum.Apple("golden")))
+      val twoFruits: FruitEnumBasket[FruitEnum.Apple] = oneFruit.copy(fruits = oneFruit.fruits :+ FruitEnum.Apple("red"))
+      val message = intercept[TestFailedException](assertCompiles {
+        """oneFruit.copy(fruits = oneFruit.fruits :+ FruitEnum.Orange(0))"""
+      }).getMessage
+      assert(message.contains("Apple") && message.contains("Orange"))
+      verifySerDeser(make[FruitEnumBasket[FruitEnum.Apple]], twoFruits,
+        """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
+      verifySerDeser(make[FruitEnumBasket[FruitEnum.Orange]], FruitEnumBasket(List(FruitEnum.Orange(1), FruitEnum.Orange(2))),
+        """{"fruits":[{"color":1},{"color":2}]}""")
+    }
+/* FIXME: add support of higher-kinded enum ADTs
+    "serialize and deserialize higher-kinded enum ADTs" in {
+      val codecOfFooForOption = make[FooEnum[Option]]
+      verifySerDeser(codecOfFooForOption, FooEnum.Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
+      verifySerDeser(codecOfFooForOption, FooEnum.Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
+    }
+*/
+    "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
       trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
 
       object DefaultJsonValueCodec {
