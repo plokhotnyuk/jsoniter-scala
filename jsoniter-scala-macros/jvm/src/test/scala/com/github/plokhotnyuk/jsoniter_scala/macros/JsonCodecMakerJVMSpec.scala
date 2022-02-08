@@ -14,7 +14,7 @@ class JsonCodecMakerJVMSpec extends VerifyingSpec {
       @tailrec
       def construct(d: Int = 1000000, n: Nested = Nested()): Nested =
         if (d <= 0) n
-        else construct(d - 1, Nested(Some(n)))
+        else construct(d - 1, Nested(_root_.scala.Some(n)))
 
       implicit val codecOfNestedStructs: JsonValueCodec[Nested] = make(CodecMakerConfig.withAllowRecursiveTypes(true))
       val bytes = ("{" + "\"n\":{" * 1000000 + "}" * 1000000 + "}").getBytes
