@@ -4,10 +4,10 @@ import java.lang.Character._
 import java.time._
 import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CompileTimeEval._
 import scala.language.implicitConversions
-import scala.annotation.{StaticAnnotation, tailrec, compileTimeOnly}
+import scala.annotation._
 import scala.annotation.meta.field
 import scala.collection.{BitSet, immutable, mutable}
 import scala.collection.mutable.Growable
@@ -1109,7 +1109,10 @@ object JsonCodecMaker {
         else if (tpe =:= TypeRepr.of[Float] || tpe =:= TypeRepr.of[java.lang.Float]) '{ $in.readKeyAsFloat() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[java.lang.Double]) '{ $in.readKeyAsDouble() }.asExprOf[T]
         else if (isValueClass(tpe)) {
-          getClassInfo(tpe).genNew(List(genReadKey(valueClassValueType(tpe) :: types, in).asTerm)).asExprOf[T]
+          val vtpe = valueClassValueType(tpe)
+          vtpe.asType match
+            case '[vt] =>
+              getClassInfo(tpe).genNew(List(genReadKey[vt](vtpe :: types, in).asTerm)).asExprOf[T]
         } else if (tpe =:= TypeRepr.of[String]) '{ $in.readKeyAsString() }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigInt]) '{ $in.readKeyAsBigInt(${Expr(cfg.bigIntDigitsLimit)}) }.asExprOf[T]
         else if (tpe =:= TypeRepr.of[BigDecimal]) {
@@ -1723,7 +1726,7 @@ object JsonCodecMaker {
         else if (tpe <:< TypeRepr.of[AnyVal]) {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
-            case '[t1] => getClassInfo(tpe).genNew(List(genNullValue(tpe1 :: types).asTerm)).asExprOf[T]
+            case '[t1] => getClassInfo(tpe).genNew(List(genNullValue[t1](tpe1 :: types).asTerm)).asExprOf[T]
         } else fail(s"Can't deduce null value for ${tpe.show} tree($tpe)")
       }
 
@@ -1757,9 +1760,9 @@ object JsonCodecMaker {
 
         def genReadLeafClass[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
           if (subTpe =:= tpe)
-            genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue(types))
+            genReadNonAbstractScalaClass(types, cfg.discriminatorFieldName.isDefined, in, genNullValue[T](types))
           else
-            genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, cfg.discriminatorFieldName.isDefined, in)
+            genReadVal(subTpe :: types, genNullValue[T](subTpe :: types), isStringified, cfg.discriminatorFieldName.isDefined, in)
 
         def genReadCollisions[T: Type](subTpes: collection.Seq[TypeRepr], l: Expr[Int])(using Quotes): Expr[T] =
           subTpes.foldRight(discriminatorError.asExprOf[T]) { (subTpe, acc) =>
@@ -1770,10 +1773,10 @@ object JsonCodecMaker {
                   else if (currentDiscriminator.isDefined) {
                     '{
                       $in.rollbackToMark()
-                      ${genReadLeafClass(subTpe)}
+                      ${genReadLeafClass[st](subTpe)}
                      }
                   } else if (isModuleValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
-                  else genReadLeafClass(subTpe)
+                  else genReadLeafClass[st](subTpe)
 
                 '{
                   if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) $readVal
@@ -1934,7 +1937,7 @@ object JsonCodecMaker {
           val sym = Symbol.newVal(Symbol.spliceOwner, "_" + f.symbol.name, f.resolvedTpe, Flags.Mutable, Symbol.noSymbol)
           f.resolvedTpe.asType match
             case '[ft] =>
-              ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue(f.resolvedTpe :: types).asTerm.changeOwner(sym))))
+              ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue[ft](f.resolvedTpe :: types).asTerm.changeOwner(sym))))
         }
         val readVarsMap = (classInfo.nonTransientFields.zip(readVars)).map { case (field, tmpVar) =>
           (field.symbol.name, tmpVar)
@@ -2067,7 +2070,7 @@ object JsonCodecMaker {
 
       def genReadValForGrowable[G <: Growable[V]: Type, V: Type](types: List[TypeRepr], isStringified: Boolean,
                                                                  x: Expr[G], in: Expr[JsonReader])(using Quotes): Expr[Unit] =
-          '{ $x.addOne(${genReadVal(types, genNullValue(types), isStringified, false, in)}) }
+          '{ $x.addOne(${genReadVal(types, genNullValue[V](types), isStringified, false, in)}) }
 
       def genArraysCopyOf[T: Type](tpe: TypeRepr, x: Expr[Array[T]], newLen: Expr[Int])(using Quotes): Expr[Array[T]] =
         if (tpe <:< TypeRepr.of[Boolean]) {
@@ -2184,13 +2187,13 @@ object JsonCodecMaker {
           val tpe1 = valueClassValueType(tpe)
           tpe1.asType match
             case '[t1] =>
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+              val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               getClassInfo(tpe).genNew(List(readVal.asTerm)).asExprOf[T]
         } else if (isOption(tpe)) {
           val tpe1 = typeArg1(tpe)
           tpe1.asType match
             case '[t1] =>
-              val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+              val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               '{
                 if ($in.isNextToken('n')) $in.readNullOrError($default, "expected value or null")
                 else {
@@ -2205,7 +2208,7 @@ object JsonCodecMaker {
             tpe1.asType match
               case '[t1] =>
                 val newBuilder = withNullValueFor(tpe)(scalaCollectionEmptyNoArgs(tpe, tpe1).asExprOf[immutable.IntMap[t1]])
-                val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+                val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
                 if (cfg.mapAsArray) {
                   val readKey =
                     if (cfg.isStringified) '{ $in.readStringAsInt() }
@@ -2228,7 +2231,7 @@ object JsonCodecMaker {
                 if ($tDefault.isEmpty) $tDefault
                 else ${emptyMap}
               }
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+              val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               if (cfg.mapAsArray) {
                 val readKey =
                   if (cfg.isStringified) '{ $in.readStringAsLong() }
@@ -2247,7 +2250,7 @@ object JsonCodecMaker {
           tpe1.asType match
             case '[t1] =>
               val newBuilder = withNullValueFor(tpe)(scalaCollectionEmptyNoArgs(tpe, tpe1).asExprOf[immutable.LongMap[t1]])
-              val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)
+              val readVal = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
               if (cfg.mapAsArray) {
                 val readKey =
                   if (cfg.isStringified) '{ $in.readStringAsLong() }
@@ -2278,7 +2281,7 @@ object JsonCodecMaker {
                   identity, in, tDefault).asExprOf[T]
               } else {
                 genReadMap[T & mutable.Map[t1, t2], T & mutable.Map[t1, t2]](newBuilder,
-                  x => Update('{ $x.update(${genReadKey(tpe1 :: types, in)}, $readVal2) }),
+                  x => Update('{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) }),
                   identity, in, tDefault).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withDecoderFor(methodKey, default, in) { (in, default, throwFlag) =>
@@ -2487,7 +2490,7 @@ object JsonCodecMaker {
               val tDefault = default.asExprOf[Array[t1]]
               genReadArray[Array[t1], Array[t1]]('{ new Array[t1](16)(using $t1ClassTag) },
                 (x, i) => ConditionalAssignmentAndUpdate('{ ($i == $x.length) }, growArray(x, i).asTerm, '{
-                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, false, in)}
+                  $x($i) = ${genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)}
                 }), tDefault, (x, i) => '{
                   if ($i == $x.length) $x
                   else ${shrinkArray(x, i)}
@@ -2568,7 +2571,7 @@ object JsonCodecMaker {
             tp.asType match
               case '[t] =>
                 val sym = Symbol.newVal(Symbol.spliceOwner, "_r" + (i + 1), tp, Flags.EmptyFlags, Symbol.noSymbol)
-                val nullVal = genNullValue(tp :: types)
+                val nullVal = genNullValue[t](tp :: types)
                 val rhs =
                   if (i == 0) genReadVal(tp :: types, nullVal, isStringified, false, in)
                   else {
@@ -3055,7 +3058,7 @@ object JsonCodecMaker {
       val codecDef =
         '{
           new JsonValueCodec[A] {
-            def nullValue: A = ${genNullValue(rootTpe :: Nil)}
+            def nullValue: A = ${genNullValue[A](rootTpe :: Nil)}
 
             def decodeValue(in: JsonReader, default: A): A =
               ${genReadVal(rootTpe :: Nil, 'default, cfg.isStringified, false, 'in)}
@@ -3073,7 +3076,8 @@ object JsonCodecMaker {
           decodeMethodDefs.values ++
           encodeMethodDefs.values
       val codec = Block(needDefs.toList, codecDef).asExprOf[JsonValueCodec[A]]
-      if (Expr.summon[CodecMakerConfig.PrintCodec].isDefined) { //TODO: add support of the `-Xmacro-settings:print-codecs` compiler option when it will be available for Scala 3
+      if (//TODO: uncomment after graduating from experimental API: CompilationInfo.XmacroSettings.contains("print-codecs") ||
+        Expr.summon[CodecMakerConfig.PrintCodec].isDefined) {
         report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       }
       codec
