@@ -216,114 +216,139 @@ object CodecMakerConfig extends CodecMakerConfig(
   allowRecursiveTypes = false, // to avoid stack overflow errors with untrusted input
   requireDiscriminatorFirst = true, // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
   useScalaEnumValueId = false) {
-    given FromExpr[CodecMakerConfig] with {
-      def extract[X: FromExpr](name: String, x: Expr[X])(using Quotes): X =
-        import quotes.reflect._
-        summon[FromExpr[X]].unapply(x).getOrElse(throw FromExprException(s"Can't parse ${name}: ${x.show}, tree: ${x.asTerm}", x))
 
-      def unapply(x: Expr[CodecMakerConfig])(using Quotes): Option[CodecMakerConfig] =
-        import quotes.reflect._
-        x match
-          case '{
-            CodecMakerConfig(
-              $exprFieldNameMapper,
-              $exprJavaEnumValueNameMapper,
-              $exprAdtLeafClassNameMapper,
-              $exprDiscriminatorFieldName,
-              $exprIsStringified,
-              $exprMapAsArray,
-              $exprSkipUnexpectedFields,
-              $exprTransientDefault,
-              $exprTransientEmpty,
-              $exprTransientNone,
-              $exprRequireCollectionFields,
-              $exprBigDecimalPrecision,
-              $exprBigDecimalScaleLimit,
-              $exprBigDecimalDigitsLimit,
-              $exprBigIntDigitsLimit,
-              $exprBitSetValueLimit,
-              $exprMapMaxInsertNumber,
-              $exprSetMaxInsertNumber,
-              $exprAllowRecursiveTypes,
-              $exprRequireDiscriminatorFirst,
-              $exprUseScalaEnumValueId)
-          } =>
-            try {
-              Some(CodecMakerConfig(
-                extract("fieldNameMapper", exprFieldNameMapper),
-                extract("javaEnumValueNameMapper", exprJavaEnumValueNameMapper),
-                extract("eadtLeafClassNameMapper", exprAdtLeafClassNameMapper),
-                extract("discriminatorFieldName", exprDiscriminatorFieldName),
-                extract("isStringified", exprIsStringified),
-                extract("mapAsArray", exprMapAsArray),
-                extract("skipUnexpectedFields", exprSkipUnexpectedFields),
-                extract("transientDefault", exprTransientDefault),
-                extract("transientEmpty", exprTransientEmpty),
-                extract("transientNone", exprTransientNone),
-                extract("requireCollectionFields", exprRequireCollectionFields),
-                extract("bigDecimalPrecision", exprBigDecimalPrecision),
-                extract("bigDecimalScaleLimit", exprBigDecimalScaleLimit),
-                extract("bigDecimalDigitsLimit", exprBigDecimalDigitsLimit),
-                extract("bigIntDigitsLimit", exprBigIntDigitsLimit),
-                extract("bitSetValueLimit", exprBitSetValueLimit),
-                extract("mapMaxInsertNumber", exprMapMaxInsertNumber),
-                extract("setMaxInsertNumber", exprSetMaxInsertNumber),
-                extract("allowRecursiveTypes", exprAllowRecursiveTypes),
-                extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
-                extract("useScalaEnumValueId", exprUseScalaEnumValueId)))
-            } catch {
-              case FromExprException(message, expr) =>
-                report.warning(message, expr)
-                None
-            }
-          case '{ (${x}: CodecMakerConfig).withAllowRecursiveTypes($v) } =>
-            Some(x.valueOrAbort.withAllowRecursiveTypes(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withDiscriminatorFieldName($v) } =>
-            Some(x.valueOrAbort.withDiscriminatorFieldName(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withUseScalaEnumValueId($v) } =>
-            Some(x.valueOrAbort.withUseScalaEnumValueId(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withIsStringified($v) } =>
-            Some(x.valueOrAbort.withIsStringified(v.valueOrAbort))
-          case '{ CodecMakerConfig } =>
-            Some(CodecMakerConfig)
-          case '{ (${x}: CodecMakerConfig).withFieldNameMapper($v) } =>
-            Some(x.valueOrAbort.copy(fieldNameMapper = ExprPartialFunctionWrapper(v)))
-          case '{ (${x}: CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
-            Some(x.valueOrAbort.copy(javaEnumValueNameMapper = ExprPartialFunctionWrapper(v)))
-          case '{ (${x}: CodecMakerConfig).withAdtLeafClassNameMapper($v) } =>
-            Some(x.valueOrAbort.copy(adtLeafClassNameMapper = ExprPartialFunctionWrapper('{ { case x => $v(x) } })))
-          case '{ (${x}: CodecMakerConfig).withRequireDiscriminatorFirst($v) } =>
-            Some(x.valueOrAbort.copy(requireDiscriminatorFirst = v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withMapAsArray($v) } =>
-            Some(x.valueOrAbort.withMapAsArray(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withSkipUnexpectedFields($v) } =>
-            Some(x.valueOrAbort.withSkipUnexpectedFields(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withTransientDefault($v) } =>
-            Some(x.valueOrAbort.withTransientDefault(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withTransientEmpty($v) } =>
-            Some(x.valueOrAbort.withTransientEmpty(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withTransientNone($v) } =>
-            Some(x.valueOrAbort.withTransientNone(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withRequireCollectionFields($v) } =>
-            Some(x.valueOrAbort.withRequireCollectionFields(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withBigDecimalPrecision($v) } =>
-            Some(x.valueOrAbort.withBigDecimalPrecision(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withBigDecimalScaleLimit($v) } =>
-            Some(x.valueOrAbort.withBigDecimalScaleLimit(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withBigDecimalDigitsLimit($v) } =>
-            Some(x.valueOrAbort.withBigDecimalDigitsLimit(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withBigIntDigitsLimit($v) } =>
-            Some(x.valueOrAbort.copy(bigIntDigitsLimit = v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withBitSetValueLimit($v) } =>
-            Some(x.valueOrAbort.withBitSetValueLimit(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withMapMaxInsertNumber($v) } =>
-            Some(x.valueOrAbort.withMapMaxInsertNumber(v.valueOrAbort))
-          case '{ (${x}: CodecMakerConfig).withSetMaxInsertNumber($v) } =>
-            Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
-          case other =>
-            report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
-            None
-     }
+  /**
+    * Use to enable printing of codec during compilation:
+    *
+    *{{{
+    *given CodecMakerConfig.PrintCodec with {}
+    *val codec = JsonCodecMaker.make[MyClass]
+    *}}}
+    **/
+  class PrintCodec
+
+  /**
+    * Use to print additional debug code during derivation of codecs:
+    *
+    *{{{
+    *given CodecMakerConfig.Trace with {}
+    *val codec = JsonCodecMaker.make[MyClass]
+    *}}}
+    **/
+  //class Trace
+
+  given FromExpr[CodecMakerConfig] with {
+    def extract[X: FromExpr](name: String, x: Expr[X])(using Quotes): X = {
+      import quotes.reflect._
+
+      summon[FromExpr[X]].unapply(x).getOrElse(throw FromExprException(s"Can't parse ${name}: ${x.show}, tree: ${x.asTerm}", x))
+    }
+
+    def unapply(x: Expr[CodecMakerConfig])(using Quotes): Option[CodecMakerConfig] = {
+      import quotes.reflect._
+
+      x match
+        case '{
+          CodecMakerConfig(
+            $exprFieldNameMapper,
+            $exprJavaEnumValueNameMapper,
+            $exprAdtLeafClassNameMapper,
+            $exprDiscriminatorFieldName,
+            $exprIsStringified,
+            $exprMapAsArray,
+            $exprSkipUnexpectedFields,
+            $exprTransientDefault,
+            $exprTransientEmpty,
+            $exprTransientNone,
+            $exprRequireCollectionFields,
+            $exprBigDecimalPrecision,
+            $exprBigDecimalScaleLimit,
+            $exprBigDecimalDigitsLimit,
+            $exprBigIntDigitsLimit,
+            $exprBitSetValueLimit,
+            $exprMapMaxInsertNumber,
+            $exprSetMaxInsertNumber,
+            $exprAllowRecursiveTypes,
+            $exprRequireDiscriminatorFirst,
+            $exprUseScalaEnumValueId)
+        } =>
+          try {
+            Some(CodecMakerConfig(
+              extract("fieldNameMapper", exprFieldNameMapper),
+              extract("javaEnumValueNameMapper", exprJavaEnumValueNameMapper),
+              extract("eadtLeafClassNameMapper", exprAdtLeafClassNameMapper),
+              extract("discriminatorFieldName", exprDiscriminatorFieldName),
+              extract("isStringified", exprIsStringified),
+              extract("mapAsArray", exprMapAsArray),
+              extract("skipUnexpectedFields", exprSkipUnexpectedFields),
+              extract("transientDefault", exprTransientDefault),
+              extract("transientEmpty", exprTransientEmpty),
+              extract("transientNone", exprTransientNone),
+              extract("requireCollectionFields", exprRequireCollectionFields),
+              extract("bigDecimalPrecision", exprBigDecimalPrecision),
+              extract("bigDecimalScaleLimit", exprBigDecimalScaleLimit),
+              extract("bigDecimalDigitsLimit", exprBigDecimalDigitsLimit),
+              extract("bigIntDigitsLimit", exprBigIntDigitsLimit),
+              extract("bitSetValueLimit", exprBitSetValueLimit),
+              extract("mapMaxInsertNumber", exprMapMaxInsertNumber),
+              extract("setMaxInsertNumber", exprSetMaxInsertNumber),
+              extract("allowRecursiveTypes", exprAllowRecursiveTypes),
+              extract("requireDiscriminatorFirst", exprRequireDiscriminatorFirst),
+              extract("useScalaEnumValueId", exprUseScalaEnumValueId)))
+          } catch {
+            case FromExprException(message, expr) =>
+              report.warning(message, expr)
+              None
+          }
+        case '{ (${x}: CodecMakerConfig).withAllowRecursiveTypes($v) } =>
+          Some(x.valueOrAbort.withAllowRecursiveTypes(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withDiscriminatorFieldName($v) } =>
+          Some(x.valueOrAbort.withDiscriminatorFieldName(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withUseScalaEnumValueId($v) } =>
+          Some(x.valueOrAbort.withUseScalaEnumValueId(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withIsStringified($v) } =>
+          Some(x.valueOrAbort.withIsStringified(v.valueOrAbort))
+        case '{ CodecMakerConfig } =>
+          Some(CodecMakerConfig)
+        case '{ (${x}: CodecMakerConfig).withFieldNameMapper($v) } =>
+          Some(x.valueOrAbort.copy(fieldNameMapper = ExprPartialFunctionWrapper(v)))
+        case '{ (${x}: CodecMakerConfig).withJavaEnumValueNameMapper($v) } =>
+          Some(x.valueOrAbort.copy(javaEnumValueNameMapper = ExprPartialFunctionWrapper(v)))
+        case '{ (${x}: CodecMakerConfig).withAdtLeafClassNameMapper($v) } =>
+          Some(x.valueOrAbort.copy(adtLeafClassNameMapper = ExprPartialFunctionWrapper('{ { case x => $v(x) } })))
+        case '{ (${x}: CodecMakerConfig).withRequireDiscriminatorFirst($v) } =>
+          Some(x.valueOrAbort.copy(requireDiscriminatorFirst = v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withMapAsArray($v) } =>
+          Some(x.valueOrAbort.withMapAsArray(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withSkipUnexpectedFields($v) } =>
+          Some(x.valueOrAbort.withSkipUnexpectedFields(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withTransientDefault($v) } =>
+          Some(x.valueOrAbort.withTransientDefault(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withTransientEmpty($v) } =>
+          Some(x.valueOrAbort.withTransientEmpty(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withTransientNone($v) } =>
+          Some(x.valueOrAbort.withTransientNone(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withRequireCollectionFields($v) } =>
+          Some(x.valueOrAbort.withRequireCollectionFields(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withBigDecimalPrecision($v) } =>
+          Some(x.valueOrAbort.withBigDecimalPrecision(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withBigDecimalScaleLimit($v) } =>
+          Some(x.valueOrAbort.withBigDecimalScaleLimit(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withBigDecimalDigitsLimit($v) } =>
+          Some(x.valueOrAbort.withBigDecimalDigitsLimit(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withBigIntDigitsLimit($v) } =>
+          Some(x.valueOrAbort.copy(bigIntDigitsLimit = v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withBitSetValueLimit($v) } =>
+          Some(x.valueOrAbort.withBitSetValueLimit(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withMapMaxInsertNumber($v) } =>
+          Some(x.valueOrAbort.withMapMaxInsertNumber(v.valueOrAbort))
+        case '{ (${x}: CodecMakerConfig).withSetMaxInsertNumber($v) } =>
+          Some(x.valueOrAbort.withSetMaxInsertNumber(v.valueOrAbort))
+        case other =>
+          report.error(s"Can't interpret ${other.show} as a constant expression, tree=$other")
+          None
+    }
+  }
 }
 
 object JsonCodecMaker {
@@ -513,7 +538,7 @@ object JsonCodecMaker {
           report.error(ex.getMessage, ex.expr)
           report.errorAndAbort("Can't evaluate compile-time expression")
         case NonFatal(ex) =>
-          if (Expr.summon[JsonCodecMakerSettings.Trace].isDefined) {
+          if (false/*Expr.summon[CodecMakerConfig.Trace].isDefined*/) {
             println(s"Catched exception during macro expansion: $ex: msg=${ex.getMessage}")
             ex.printStackTrace()
           }
@@ -524,7 +549,7 @@ object JsonCodecMaker {
     private[this] def make[A: Type](cfg: CodecMakerConfig)(using Quotes): Expr[JsonValueCodec[A]] = {
       import quotes.reflect._
 
-      val traceFlag: Boolean = Expr.summon[JsonCodecMakerSettings.Trace].isDefined
+      val traceFlag: Boolean = false //Expr.summon[CodecMakerConfig.Trace].isDefined
 
       def fail(msg: String): Nothing = report.errorAndAbort(msg, Position.ofMacroExpansion)
 
@@ -3048,7 +3073,7 @@ object JsonCodecMaker {
           decodeMethodDefs.values ++
           encodeMethodDefs.values
       val codec = Block(needDefs.toList, codecDef).asExprOf[JsonValueCodec[A]]
-      if (Expr.summon[JsonCodecMakerSettings.PrintCodec].isDefined) {
+      if (Expr.summon[CodecMakerConfig.PrintCodec].isDefined) { //TODO: add support of the `-Xmacro-settings:print-codecs` compiler option when it will be available for Scala 3
         report.info(s"Generated JSON codec for type '${rootTpe.show}':\n${codec.show}", Position.ofMacroExpansion)
       }
       codec

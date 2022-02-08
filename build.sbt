@@ -52,7 +52,8 @@ lazy val commonSettings = Seq(
       )
     } else Seq(
       "-Xcheck-macros",
-      // "-Ycheck:all", "-Yprint-syms",
+      //"-Ycheck:all",
+      //"-Yprint-syms",
       //"-Ydebug-error", // many stack traces, really many stack traces.
       //"--explain"
     )
@@ -120,8 +121,11 @@ lazy val publishSettings = Seq(
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
-  mimaBinaryIssueFilters := Seq( // internal API to ignore
-    ProblemFilters.exclude[DirectMissingMethodProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker#Impl.com$github$plokhotnyuk$jsoniter_scala$macros$JsonCodecMaker$Impl$$$_$fail$default$2$1")
+  mimaBinaryIssueFilters := Seq( // migrated diagnostic API
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$PrintCodec"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$Trace")
   ),
   mimaReportSignatureProblems := true
 )

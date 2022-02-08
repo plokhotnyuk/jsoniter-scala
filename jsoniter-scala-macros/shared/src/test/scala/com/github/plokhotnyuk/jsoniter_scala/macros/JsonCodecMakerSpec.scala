@@ -10,8 +10,6 @@ import java.time.format.DateTimeFormatter
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
-//given JsonCodecMakerSettings.PrintCodec with {}
-
 case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
@@ -302,6 +300,9 @@ object KingDom {
 
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
+
+  //given CodecMakerConfig.PrintCodec with {}
+  //implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
 
   val codecOfPrimitives: JsonValueCodec[Primitives] = make
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make

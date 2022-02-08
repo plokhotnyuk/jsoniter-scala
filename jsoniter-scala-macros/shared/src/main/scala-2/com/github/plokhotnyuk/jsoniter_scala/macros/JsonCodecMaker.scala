@@ -210,7 +210,28 @@ object CodecMakerConfig extends CodecMakerConfig(
   setMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
   allowRecursiveTypes = false, // to avoid stack overflow errors with untrusted input
   requireDiscriminatorFirst = true, // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
-  useScalaEnumValueId = false)
+  useScalaEnumValueId = false) {
+
+  /**
+    * Use to enable printing of codec during compilation:
+    *
+    *{{{
+    *implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
+    *val codec = JsonCodecMaker.make[MyClass]
+    *}}}
+    **/
+  class PrintCodec
+
+  /**
+    * Use to print additional debug code during derivation of codecs:
+    *
+    *{{{
+    *implicit val trace: CodecMakerConfig.Trace = new CodecMakerConfig.Trace {}
+    *val codec = JsonCodecMaker.make[MyClass]
+    *}}}
+    **/
+  //class Trace
+}
 
 object JsonCodecMaker {
   /**
@@ -497,9 +518,9 @@ object JsonCodecMaker {
       val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
       val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
 
-      def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
-        def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
+      def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
+      def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
         val tpe :: nestedTypes = types
         if (nestedTypes.isEmpty) EmptyTree
         else {
@@ -1853,7 +1874,8 @@ object JsonCodecMaker {
               }
               x
             }"""
-      if (c.settings.contains("print-codecs")) {
+      if (c.settings.contains("print-codecs") ||
+        inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.PrintCodec") != EmptyTree) {
         c.info(c.enclosingPosition, s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}", force = true)
       }
       c.Expr[JsonValueCodec[A]](codec)
