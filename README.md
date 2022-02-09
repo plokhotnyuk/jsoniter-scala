@@ -552,7 +552,7 @@ that is used in the Scala ecosystem.
 
 Double-check binary and source compatibility, including behavior, and release using the following command:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-8 -J-Xmx8g release
+sbt -java-home /usr/lib/jvm/zulu-8 -J-Xmx10g release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
