@@ -1895,9 +1895,8 @@ object JsonCodecMaker {
       m
     }.toSeq
 
-  private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] =
-    xs.filter {
-      val seen = new mutable.HashSet[A]
-      x => !seen.add(x)
-    }
+  private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = xs.filter {
+    val seen = new mutable.HashSet[A]
+    x => !seen.add(x)
+  }
 }
