@@ -108,7 +108,7 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
       val message = intercept[TestFailedException](assertCompiles {
         """oneFruit.copy(fruits = oneFruit.fruits :+ FruitEnum.Orange(0))"""
       }).getMessage
-      assert(message.contains("Apple") && message.contains("Orange"))
+      assert(message.contains("Found:    com.github.plokhotnyuk.jsoniter_scala.macros.FruitEnum.Orange\nRequired: com.github.plokhotnyuk.jsoniter_scala.macros.FruitEnum.Apple"))
       verifySerDeser(make[FruitEnumBasket[FruitEnum.Apple]], twoFruits,
         """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
       verifySerDeser(make[FruitEnumBasket[FruitEnum.Orange]], FruitEnumBasket(List(FruitEnum.Orange(1), FruitEnum.Orange(2))),

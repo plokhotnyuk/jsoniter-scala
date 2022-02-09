@@ -1981,20 +1981,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
       }).getMessage
       if (ScalaVersionCheck.isScala2) {
-        assert(message.contains("""do not conform to method copy's type parameter bounds"""))
+        assert(message.contains("inferred type arguments [com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: Product with Serializable]]] do not conform to method copy's type parameter bounds [T <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[T]]") ||
+          message.contains("inferred type arguments [com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: Product with java.io.Serializable]]] do not conform to method copy's type parameter bounds [T <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[T]]"))
       } else {
-        assert(message.contains("Apple") && message.contains("Orange"))
+        assert(message.contains("Found:    com.github.plokhotnyuk.jsoniter_scala.macros.Orange\nRequired: com.github.plokhotnyuk.jsoniter_scala.macros.Apple"))
       }
-      verifySerDeser(make[Basket[Apple]], twoFruits,
-        """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
+      verifySerDeser(make[Basket[Apple]], twoFruits, """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
       verifySerDeser(make[Basket[Orange]], Basket(List(Orange(1), Orange(2))),
         """{"fruits":[{"color":1},{"color":2}]}""")
     }
-    "serialize and deserialize when the root codec defined as an impicit val" in {
-      implicit val implicitRootCodec: JsonValueCodec[Int] = make
-      verifySerDeser(implicitRootCodec, 1, "1")
+    "serialize and deserialize dependent codecs which use implicit val" in {
+      implicit val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig.withIsStringified(true))
+      verifySerDeser(make[List[Int]], List(1, 2), "[\"1\",\"2\"]")
     }
-    "serialize and deserialize dependent codecs which use lazy val to don't depend on order of definition" in {
+    "serialize and deserialize dependent codecs which use implicit lazy val to don't depend on order of definition" in {
       verifySerDeser(make[List[Int]], List(1, 2), "[\"1\",\"2\"]")
       implicit lazy val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig.withIsStringified(true))
     }
