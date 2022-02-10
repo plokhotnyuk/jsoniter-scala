@@ -9,20 +9,18 @@ import org.scalatest.exceptions.TestFailedException
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
-enum TrafficLight {
+enum TrafficLight:
   case Red, Yellow, Green
-}
-
-enum MediaType(val value: Long, name: String) {
-  case `text/json` extends MediaType(1L, "text/json")
-  case `text/html` extends MediaType(2L, "text/html")
-  case `application/jpeg` extends MediaType(3L, "application/jpeg")
-}
 
 enum Color(val rgb: Int):
   case Red   extends Color(0xFF0000)
   case Green extends Color(0x00FF00)
   case Blue  extends Color(0x0000FF)
+
+enum MediaType(val value: Long, name: String):
+  case `text/json` extends MediaType(1L, "text/json")
+  case `text/html` extends MediaType(2L, "text/html")
+  case `application/jpeg` extends MediaType(3L, "application/jpeg")
 
 enum ColorADT(val rgb: Int):
   case Red   extends ColorADT(0xFF0000)
@@ -30,12 +28,12 @@ enum ColorADT(val rgb: Int):
   case Blue  extends ColorADT(0x0000FF)
   case Mix(mix: Int) extends ColorADT(mix)
 
-enum Planet(mass: Double, radius: Double):
+enum Planet(mass: Double, radius: Double) {
   private final val G = 6.67300E-11
 
-  def surfaceGravity = G * mass / (radius * radius)
+  def surfaceGravity: Double = G * mass / (radius * radius)
 
-  def surfaceWeight(otherMass: Double) = otherMass * surfaceGravity
+  def surfaceWeight(otherMass: Double): Double = otherMass * surfaceGravity
 
   case Mercury extends Planet(3.303e+23, 2.4397e6)
   case Venus   extends Planet(4.869e+24, 6.0518e6)
@@ -45,7 +43,7 @@ enum Planet(mass: Double, radius: Double):
   case Saturn  extends Planet(5.688e+26, 6.0268e7)
   case Uranus  extends Planet(8.686e+25, 2.5559e7)
   case Neptune extends Planet(1.024e+26, 2.4746e7)
-end Planet
+}
 
 enum GEnum[A]:
   case IsDir(path: String) extends GEnum[Boolean]
@@ -68,7 +66,16 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
     "serialize and deserialize Scala3 enums" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
-
+    }
+    "serialize and deserialize Scala3 enums with parameters" in {
+      verifySerDeser(make[List[Color]](CodecMakerConfig),
+        List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
+    }
+    "serialize and deserialize Scala3 enums with multiple parameters" in {
+      verifySerDeser(make[List[Planet]](CodecMakerConfig),
+        List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
+    }
+    "serialize and deserialize Scala3 enums with multiple parameters using custom codec" in {
       implicit val codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
         override val nullValue: MediaType = null
 
@@ -84,14 +91,6 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
 
       verifySerDeser[List[MediaType]](make[List[MediaType]],
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
-    }
-    "serialize and deserialize Scala3 enums with parameters" in {
-      verifySerDeser(make[List[Color]](CodecMakerConfig),
-        List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
-    }
-    "serialize and deserialize Scala3 enums with multiple parameters" in {
-      verifySerDeser(make[List[Planet]](CodecMakerConfig),
-        List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
     }
     "serialize and deserialize Scala3 enum ADTs" in {
       verifySerDeser(make[List[ColorADT]](CodecMakerConfig),

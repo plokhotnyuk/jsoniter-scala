@@ -184,15 +184,14 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15", "2.11.12"),
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest" % "3.2.11" % Test
-    ) ++ {
-      if (scalaVersion.value.startsWith("2.")) {
-        Seq(
-          "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-          "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-          "com.beachape" %%% "enumeratum" % "1.6.1" % Test
-        )
-      } else Seq()
-    }
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq(
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "com.beachape" %%% "enumeratum" % "1.6.1" % Test
+      )
+      case _ => Seq()
+    })
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
