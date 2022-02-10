@@ -114,13 +114,11 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
       verifySerDeser(make[FruitEnumBasket[FruitEnum.Orange]], FruitEnumBasket(List(FruitEnum.Orange(1), FruitEnum.Orange(2))),
         """{"fruits":[{"color":1},{"color":2}]}""")
     }
-/* FIXME: add support of higher-kinded enum ADTs
     "serialize and deserialize higher-kinded enum ADTs" in {
       val codecOfFooForOption = make[FooEnum[Option]]
       verifySerDeser(codecOfFooForOption, FooEnum.Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
       verifySerDeser(codecOfFooForOption, FooEnum.Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
     }
-*/
     "serialize and deserialize Scala3 enum ADTs defined with `derives` keyword" in {
       trait DefaultJsonValueCodec[A] extends JsonValueCodec[A]
 

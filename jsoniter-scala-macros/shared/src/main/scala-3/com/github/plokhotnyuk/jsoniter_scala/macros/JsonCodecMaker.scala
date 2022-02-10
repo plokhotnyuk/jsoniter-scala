@@ -530,13 +530,9 @@ object JsonCodecMaker {
         case AppliedType(_, typeArgs) => typeArgs.map(_.dealias)
         case _ => Nil
 
-      def typeArg1(tpe: TypeRepr): TypeRepr = typeArgs(tpe) match
-        case typeArgs if typeArgs ne Nil => typeArgs.head
-        case _ => fail(s"Expected that ${tpe.show} is an applied type")
+      def typeArg1(tpe: TypeRepr): TypeRepr = typeArgs(tpe).head
 
-      def typeArg2(tpe: TypeRepr): TypeRepr = typeArgs(tpe) match
-        case typeArgs if typeArgs.size > 1 => typeArgs.tail.head
-        case _ => fail(s"Expected that ${tpe.show} is an applied type with at least two type arguments")
+      def typeArg2(tpe: TypeRepr): TypeRepr = typeArgs(tpe).tail.head
 
       def isTuple(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Tuple]
 
@@ -572,7 +568,7 @@ object JsonCodecMaker {
           case ByNameType(underlying) => ByNameType(substituteMap(underlying))
           case tl@TypeLambda(names, bounds, body) =>
             var paramValues = Map.empty[Symbol, TypeRepr]
-            for ((n, i) <- names.zipWithIndex) {
+            names.zipWithIndex.foreach { case (n, i) =>
               val isym = tl.param(i).typeSymbol
               symTypeMap.get(isym).foreach(tree => paramValues = paramValues.updated(isym, tree))
             }
@@ -604,9 +600,8 @@ object JsonCodecMaker {
         if (sym.isClassDef) sym
         else getEnclosingClass(sym.owner)
 
-      val enclosingClassTpe = getEnclosingClass(Symbol.spliceOwner).tree match
-        case cl: ClassDef => cl.constructor.returnTpt.tpe
-        case _ => fail("Cannot get definition of enclosing class")
+      val enclosingClassTpe =
+        getEnclosingClass(Symbol.spliceOwner).tree.asInstanceOf[ClassDef].constructor.returnTpt.tpe
 
       def adtChildren(tpe: TypeRepr): Seq[TypeRepr] = { // TODO: explore yet one variant with mirrors
         def resolveParentTypeArg(child: Symbol, fromNudeChildTarg: TypeRepr, parentTarg: TypeRepr,
@@ -916,7 +911,7 @@ object JsonCodecMaker {
         def createFieldInfos(params: List[Symbol], typeParams: List[Symbol]): IndexedSeq[FieldInfo] = {
           val fieldInfos = new ArrayBuffer[FieldInfo]
           var nonTransientFieldIndex = 0
-          for ((symbol, i) <- params.zipWithIndex) {
+          params.zipWithIndex.foreach { case (symbol, i) =>
             val name = symbol.name
             val annotationOption = annotations.get(name)
             val mappedName = annotationOption.fold(cfg.fieldNameMapper(name).getOrElse(name))(_.partiallyMappedName)
@@ -1355,7 +1350,8 @@ object JsonCodecMaker {
             tpe match
               case TermRef(_, name) => name
               case TypeRef(_, name) => name // ADT
-              case _ => fail(s"Expected that ${tpe.show} is a TermRef or TypeRef")
+              case AppliedType(base, _) => base.typeSymbol.fullName
+              case _ => fail(s"Unsupported enum type: '${tpe.show}', tree=$tpe")
           } else if (isModuleValue(tpe)) tpe.termSymbol.fullName // FIXME: This check fixes names. Should it be reported as Dotty bug?
           else tpe.typeSymbol.fullName
         }).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
@@ -1393,15 +1389,14 @@ object JsonCodecMaker {
         Ref(fieldIndexAccessors.getOrElseUpdate(tpe, { // [Int => String], we don't want eta-expand without reason, so let this will be just index
           val mt = MethodType(List("i"))(_ => List(TypeRepr.of[Int]), _ => TypeRepr.of[String])
           val sym = Symbol.newMethod(Symbol.spliceOwner, "f" + fieldIndexAccessors.size, mt)
-          DefDef(sym, {
-            case List(List(param)) =>
-              val paramTerm = param match
-                case term: Term => term
-                case _ => fail(s"Expected that $param is term")
-              val cases = f.zipWithIndex
-                .map { case (n, i) => CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n))) }
-              Some(Match(paramTerm, cases.toList).changeOwner(sym))
-            case _ => fail("Expected a 1-param list")
+          DefDef(sym, params => {
+            val List(List(param)) = params
+            val paramTerm = param match
+              case term: Term => term
+              case _ => fail(s"Expected that $param is term")
+            val cases = f.zipWithIndex
+              .map { case (n, i) => CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n))) }
+            Some(Match(paramTerm, cases.toList).changeOwner(sym))
           })
         }).symbol)
 
@@ -1412,9 +1407,9 @@ object JsonCodecMaker {
         Apply(Ref(equalsMethods.getOrElseUpdate(tpe, {
           val mt = MethodType(List("x1", "x2"))(_ => List(tpe, tpe), _ => TypeRepr.of[Boolean])
           val sym = Symbol.newMethod(Symbol.spliceOwner, "q" + equalsMethods.size, mt)
-          DefDef(sym, {
-            case List(List(x1, x2)) => Some(f(x1.asExprOf[T], x2.asExprOf[T]).asTerm.changeOwner(sym))
-            case _ => fail(s"Expected 2 params for method $sym")
+          DefDef(sym, params => {
+            val List(List(x1, x2)) = params
+            Some(f(x1.asExprOf[T], x2.asExprOf[T]).asTerm.changeOwner(sym))
           })
         }).symbol), List(arg1.asTerm, arg2.asTerm)).asExprOf[Boolean]
 
@@ -1471,17 +1466,16 @@ object JsonCodecMaker {
           val sym = Symbol.newMethod(Symbol.spliceOwner, "d" + decodeMethodSyms.size, mt)
           decodeMethodDefs.getOrElseUpdate(methodKey, {
             decodeMethodSyms.update(methodKey, sym)
-            DefDef(sym, {
-              case List(List(in, default)) =>
-                val defaultExpr = default.asExprOf[T]
-                val res = f(in.asExprOf[JsonReader], defaultExpr, None).asTerm.asInstanceOf[quotes.reflect.Term]
-                val sym1 = sym.asInstanceOf[quotes.reflect.Symbol]
-                val res1 = LowLevelQuoteUtil.deepChangeOwner(res, sym1, false /* TODO: rewise the flag */).asInstanceOf[Term]
-                if (traceFlag) try LowLevelQuoteUtil.checkOwner(res1.asInstanceOf[quotes.reflect.Term], sym1) catch {
-                  case ex: IllegalStateException => f(in.asExprOf[JsonReader], defaultExpr, Some(ex.getMessage))
-                }
-                Some(res1)
-              case _ => fail("Expected a 2-param list")
+            DefDef(sym, params => {
+              val List(List(in, default)) = params
+              val defaultExpr = default.asExprOf[T]
+              val res = f(in.asExprOf[JsonReader], defaultExpr, None).asTerm.asInstanceOf[quotes.reflect.Term]
+              val sym1 = sym.asInstanceOf[quotes.reflect.Symbol]
+              val res1 = LowLevelQuoteUtil.deepChangeOwner(res, sym1, false /* TODO: rewise the flag */).asInstanceOf[Term]
+              if (traceFlag) try LowLevelQuoteUtil.checkOwner(res1.asInstanceOf[quotes.reflect.Term], sym1) catch {
+                case ex: IllegalStateException => f(in.asExprOf[JsonReader], defaultExpr, Some(ex.getMessage))
+              }
+              Some(res1)
             })
           })
           sym
@@ -1508,9 +1502,9 @@ object JsonCodecMaker {
             val sym = Symbol.newMethod(Symbol.spliceOwner, "e" + encodeMethodSyms.size, mt)
             val funDefDef = encodeMethodDefs.getOrElseUpdate(methodKey, {
               encodeMethodSyms.update(methodKey, sym)
-              DefDef(sym, {
-                case List(List(x, out)) => Some(f(out.asExprOf[JsonWriter], x.asExprOf[T]).asTerm.changeOwner(sym))
-                case _ => fail("Expected a 2-param list")
+              DefDef(sym, params => {
+                val List(List(x, out)) = params
+                Some(f(out.asExprOf[JsonWriter], x.asExprOf[T]).asTerm.changeOwner(sym))
               })
             })
             sym
@@ -2242,7 +2236,6 @@ object JsonCodecMaker {
                 else $emptyCollection
               }.asExprOf[T & mutable.Growable[t1]], (x, _) => Update(genReadValForGrowable(tpe1 :: types, isStringified, x, in)),
                 default, (x, _) => x, in).asExprOf[T]
-            case _ => fail(s"can't determinate type for ${tpe1.show}")
         } else if (tpe <:< TypeRepr.of[Iterable[_]]) withDecoderFor(methodKey, default, in) { (in, default, throwFlag) =>
           checkDebugThrow(throwFlag)
           val tpe1 = typeArg1(tpe)
