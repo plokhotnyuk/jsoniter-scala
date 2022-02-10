@@ -466,7 +466,7 @@ object JsonCodecMaker {
                 if (classSymbol.typeParams.isEmpty) classSymbol.toType
                 else substituteTypes(classSymbol.toType, classSymbol.typeParams, tpe.typeArgs)
               if (isSealedClass(subTpe)) collectRecursively(subTpe)
-              else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
+              else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
               else fail(if (s.isAbstract) {
                 "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
                   s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
@@ -477,7 +477,7 @@ object JsonCodecMaker {
             }
             if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
             else leafTpes
-          } else Seq.empty
+          } else Nil
 
         val classes = collectRecursively(adtBaseTpe).distinct
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
@@ -515,8 +515,8 @@ object JsonCodecMaker {
 
       val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
       val rootTpe = weakTypeOf[A].dealias
-      val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
-      val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
+      val inferredKeyCodecs = mutable.Map.empty[Type, Tree]
+      val inferredValueCodecs = mutable.Map.empty[Type, Tree]
 
       def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
@@ -545,8 +545,8 @@ object JsonCodecMaker {
         }
       }
 
-      val mathContextNames = mutable.LinkedHashMap.empty[Int, TermName]
-      val mathContextTrees = mutable.LinkedHashMap.empty[Int, Tree]
+      val mathContextNames = new mutable.LinkedHashMap[Int, TermName]
+      val mathContextTrees = new mutable.LinkedHashMap[Int, Tree]
 
       def withMathContextFor(precision: Int): Tree =
         if (precision == java.math.MathContext.DECIMAL128.getPrecision) q"_root_.java.math.MathContext.DECIMAL128"
@@ -560,8 +560,8 @@ object JsonCodecMaker {
           Ident(mathContextName)
         }
 
-      val scalaEnumCacheNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val scalaEnumCacheTries = mutable.LinkedHashMap.empty[Type, Tree]
+      val scalaEnumCacheNames = new mutable.LinkedHashMap[Type, TermName]
+      val scalaEnumCacheTries = new mutable.LinkedHashMap[Type, Tree]
 
       def withScalaEnumCacheFor(tpe: Type): Tree = {
         val keyTpe = if (cfg.useScalaEnumValueId) tq"Int" else tq"String"
@@ -574,7 +574,7 @@ object JsonCodecMaker {
 
       case class EnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
-      val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
+      val enumValueInfos = new mutable.LinkedHashMap[Type, Seq[EnumValueInfo]]
 
       def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
 
@@ -605,16 +605,14 @@ object JsonCodecMaker {
       })
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
-        val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
-        val length: EnumValueInfo => Int = _.name.length
-
         def genReadCollisions(es: collection.Seq[EnumValueInfo]): Tree =
           es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
-        if (enumValues.size <= 8 && enumValues.map(length).sum <= 64) genReadCollisions(enumValues)
+        if (enumValues.size <= 8 && enumValues.foldLeft(0)(_ + _.name.length) <= 64) genReadCollisions(enumValues)
         else {
+          val hashCode = (e: EnumValueInfo) => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
             cq"$hash => ${genReadCollisions(fs)}"
           } :+ cq"_ => $unexpectedEnumValueHandler"
@@ -904,7 +902,7 @@ object JsonCodecMaker {
 
       case class ClassInfo(tpe: Type, fields: Seq[FieldInfo])
 
-      val classInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
+      val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
@@ -998,8 +996,8 @@ object JsonCodecMaker {
         }
       }
 
-      val nullValueNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val nullValueTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val nullValueNames = new mutable.LinkedHashMap[Type, TermName]
+      val nullValueTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withNullValueFor(tpe: Type)(f: => Tree): Tree = {
         val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("c" + nullValueNames.size))
@@ -1007,8 +1005,8 @@ object JsonCodecMaker {
         Ident(nullValueName)
       }
 
-      val fieldNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val fieldTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val fieldNames = new mutable.LinkedHashMap[Type, TermName]
+      val fieldTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val fieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
@@ -1020,8 +1018,8 @@ object JsonCodecMaker {
         Ident(fieldName)
       }
 
-      val equalsMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val equalsMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val equalsMethodNames = new mutable.LinkedHashMap[Type, TermName]
+      val equalsMethodTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
         val equalsMethodName = equalsMethodNames.getOrElseUpdate(tpe, TermName("q" + equalsMethodNames.size))
@@ -1048,8 +1046,8 @@ object JsonCodecMaker {
 
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
-      val decodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
-      val decodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
+      val decodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
+      val decodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethodNames.getOrElseUpdate(methodKey, TermName("d" + decodeMethodNames.size))
@@ -1058,8 +1056,8 @@ object JsonCodecMaker {
         q"$decodeMethodName(in, $arg)"
       }
 
-      val encodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
-      val encodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
+      val encodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
+      val encodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encodeMethodNames.getOrElseUpdate(methodKey, TermName("e" + encodeMethodNames.size))
@@ -1156,8 +1154,6 @@ object JsonCodecMaker {
         val readVars = classInfo.fields.map { f =>
           q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(genNullValue(f.resolvedTpe :: types))}"
         }
-        val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
-        val length: FieldInfo => Int = _.mappedName.length
         val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
           if (discriminator.isEmpty) classInfo.fields
           else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true)
@@ -1175,8 +1171,10 @@ object JsonCodecMaker {
           }
 
         val readFieldsBlock =
-          if (readFields.size <= 8 && readFields.map(length).sum <= 64) genReadCollisions(readFields)
-          else {
+          if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
+            genReadCollisions(readFields)
+          } else {
+            val hashCode = (f: FieldInfo) => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
               cq"$hash => ${genReadCollisions(fs)}"
             } :+ cq"_ => $unexpectedFieldHandler"
@@ -1210,27 +1208,27 @@ object JsonCodecMaker {
           q"""if (in.readString(null) != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
         case ConstantType(Constant(v: Boolean)) =>
           if (isStringified) q"""if (in.readStringAsBoolean() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readBoolean() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readBoolean() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Byte)) =>
           if (isStringified) q"""if (in.readStringAsByte() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readByte() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readByte() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Char)) =>
           q"""if (in.readChar() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
         case ConstantType(Constant(v: Short)) =>
           if (isStringified) q"""if (in.readStringAsShort() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readShort() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readShort() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Int)) =>
           if (isStringified) q"""if (in.readStringAsInt() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readInt() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readInt() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Long)) =>
           if (isStringified) q"""if (in.readStringAsLong() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readLong() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readLong() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Float)) =>
           if (isStringified) q"""if (in.readStringAsFloat() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readFloat() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readFloat() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Double)) =>
           if (isStringified) q"""if (in.readStringAsDouble() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readDouble() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readDouble() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case _ => cannotFindValueCodecError(tpe)
       }
 
@@ -1508,11 +1506,6 @@ object JsonCodecMaker {
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {
-          val hashCode: Type => Int = t => {
-            val cs = discriminatorValue(t).toCharArray
-            JsonReader.toHashCode(cs, cs.length)
-          }
-          val length: Type => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
           val discriminatorError = cfg.discriminatorFieldName
             .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
@@ -1533,8 +1526,13 @@ object JsonCodecMaker {
             }
 
           def genReadSubclassesBlock(leafClasses: collection.Seq[Type]): Tree =
-            if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) genReadCollisions(leafClasses)
-            else {
+            if (leafClasses.size <= 8 && leafClasses.foldLeft(0)(_ + discriminatorValue(_).length) <= 64) {
+              genReadCollisions(leafClasses)
+            } else {
+              val hashCode = (t: Type) => {
+                val cs = discriminatorValue(t).toCharArray
+                JsonReader.toHashCode(cs, cs.length)
+              }
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
                 val checkNameAndReadValue = genReadCollisions(ts)
                 cq"$hash => $checkNameAndReadValue"
@@ -1890,7 +1888,7 @@ object JsonCodecMaker {
   }
 
   private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] =
-    xs.foldLeft(mutable.LinkedHashMap.empty[K, ArrayBuffer[A]]) { (m, x) =>
+    xs.foldLeft(new mutable.LinkedHashMap[K, ArrayBuffer[A]]) { (m, x) =>
       m.getOrElseUpdate(f(x), new ArrayBuffer[A]) += x
       m
     }.toSeq
