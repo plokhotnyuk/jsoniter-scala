@@ -1819,6 +1819,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""")
     }
+    "serialize and deserialize ADTs with deeply nested hierarchies" in {
+      sealed trait Base extends Product with Serializable
+
+      sealed trait Base2 extends Base
+
+      sealed trait Base3 extends Base2
+
+      sealed abstract class Base4 extends Base3
+
+      sealed abstract class Base5 extends Base4
+
+      final case class A(a: Int) extends Base3
+
+      final case class B(b: String) extends Base5
+
+      verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+    }
     "serialize and deserialize ADTs with leaves that have mixed traits that extends the same base" in {
       sealed trait Base extends Product with Serializable
 
@@ -1828,8 +1845,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       final case class B(b: String) extends Base with Base2
 
-      verifySerDeser(make[List[Base]], List(A(1), B("VVV")),
-        """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+      verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
     "serialize and deserialize ADTs with leaves that have a mixed trait hierarchy that makes a diamond" in {
       sealed trait Base extends Product with Serializable
@@ -1842,8 +1858,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       final case class B(b: String) extends Base1 with Base2
 
-      verifySerDeser(make[List[Base]], List(A(1), B("VVV")),
-        """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+      verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
     "serialize and deserialize case class that have a field named as discriminator" in {
       case class Foo(hint: String)
@@ -1900,13 +1915,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage
       assert(bxClassMessage.contains {
-        if (ScalaVersionCheck.isScala2) {
-          """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
-            |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-        } else {
-          """Only sealed traits or abstract classes are supported as an ADT base. Please
-            |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        }
+        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
       val bxTraitMessage = intercept[TestFailedException](assertCompiles {
         """sealed trait X
@@ -1917,13 +1927,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage
       assert(bxTraitMessage.contains {
-        if (ScalaVersionCheck.isScala2) {
-          """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
-            |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-        } else {
-          """Only sealed traits or abstract classes are supported as an ADT base. Please
-            |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        }
+        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs for ADT bases without leaf classes" in {
@@ -2206,7 +2211,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """case class MultiListOfArgs(i: Int)(l: Long)
           |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
       }).getMessage.contains {
-        """'MultiListOfArgs' has a primary constructor with multiple parameter lists.
+        """'MultiListOfArgs' hasn't a primary constructor with one parameter list.
           |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
       })
     }

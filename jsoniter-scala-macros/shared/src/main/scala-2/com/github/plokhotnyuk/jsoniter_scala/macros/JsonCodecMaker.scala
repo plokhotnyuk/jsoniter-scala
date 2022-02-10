@@ -955,7 +955,7 @@ object JsonCodecMaker {
               Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
             }
           }
-          case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
+          case _ => fail(s"'$tpe' hasn't a primary constructor with one parameter list. " +
             "Please consider using a custom implicitly accessible codec for this type.")
         })
       })

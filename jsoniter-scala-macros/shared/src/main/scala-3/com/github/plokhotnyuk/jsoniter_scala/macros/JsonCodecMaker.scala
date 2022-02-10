@@ -674,21 +674,20 @@ object JsonCodecMaker {
 
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
         def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
-          val typeSymbol = tpe.typeSymbol
-          val flags = typeSymbol.flags
-          val leafSymbols = if (flags.is(Flags.Sealed)) {
-            adtChildren(tpe).flatMap { child =>
-              if (child.typeSymbol.flags.is(Flags.Sealed)) adtChildren(child)
-              else child :: Nil
-            }
-          } else if (flags.is(Flags.Abstract) || flags.is(Flags.Trait)) {
-            fail("Only sealed traits or sealed abstract classes are supported. Please consider using of them " +
-              s"for type ${tpe.show} in ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible " +
-              s"codec for the ADT base.")
-          } else Nil
-          if (!typeSymbol.isAbstractType && !flags.is(Flags.Abstract) && !flags.is(Flags.JavaDefined) &&
-              !flags.is(Flags.Enum) && !flags.is(Flags.Trait)) leafSymbols :+ tpe
-          else leafSymbols
+          val leafTpes = adtChildren(tpe).flatMap { subTpe =>
+            val isEnum = subTpe.typeSymbol.flags.is(Flags.Enum)
+            if (isSealedClass(subTpe) && !isEnum) collectRecursively(subTpe)
+            else if (isNonAbstractScalaClass(subTpe) || isEnum) subTpe :: Nil
+            else fail(if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
+              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
+                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
+            } else {
+              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
+                s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
+            })
+          }
+          if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
+          else leafTpes
 
         val classes = collectRecursively(adtBaseTpe).distinct
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '${adtBaseTpe.show}'. " +
@@ -702,6 +701,12 @@ object JsonCodecMaker {
 
       def isCollection(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Array[_]]
 
+      def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
+
+      def isEnumValue(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Enum) && tpe.isSingleton
+
+      def isModuleValue(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Module) && tpe.isSingleton
+
       def scalaCollectionCompanion(tpe: TypeRepr): Term =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ref(tpe.typeSymbol.companionModule)
         else fail(s"Unsupported type '${tpe.show}'. Please consider using a custom implicitly accessible codec for it.")
@@ -712,8 +717,8 @@ object JsonCodecMaker {
       def scalaMapEmptyNoArgs(cTpe: TypeRepr, kTpe: TypeRepr, vTpe: TypeRepr): Term =
         TypeApply(Select.unique(scalaCollectionCompanion(cTpe), "empty"), List(Inferred(kTpe), Inferred(vTpe)))
 
-      def scala2EnumerationObject(tpe: TypeRepr): Expr[scala.Enumeration] = tpe match
-        case TypeRef(ct, _) if ct.isSingleton => Ref(ct.termSymbol).asExprOf[scala.Enumeration]
+      def scala2EnumerationObject(tpe: TypeRepr): Expr[Enumeration] = tpe match
+        case TypeRef(ct, _) if ct.isSingleton => Ref(ct.termSymbol).asExprOf[Enumeration]
         case _ => fail(s"For scala2enum type reference to singleton term is expected, we have ${tpe.show}")
 
       def summonOrdering(tpe: TypeRepr): Term = tpe.asType match
@@ -798,14 +803,6 @@ object JsonCodecMaker {
       case class JavaEnumValueInfo(value: Symbol, name: String, transformed: Boolean)
 
       val javaEnumValueInfos = new mutable.LinkedHashMap[TypeRepr, Seq[JavaEnumValueInfo]]
-
-      def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
-
-      def isEnumValue(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Enum) && tpe.isSingleton
-
-      def isModuleValue(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Module) && tpe.isSingleton
-
-      def isModuleOrEnumValue(tpe: TypeRepr): Boolean = isModuleValue(tpe) || isEnumValue(tpe)
 
       def javaEnumValues(tpe: TypeRepr): Seq[JavaEnumValueInfo] = javaEnumValueInfos.getOrElseUpdate(tpe, {
         tpe.classSymbol match
@@ -969,7 +966,7 @@ object JsonCodecMaker {
             } else originFieldType
             fieldType match
               case tl@TypeLambda(_, _, _) => fail(s"Hight-kinded types are not supported for type ${tpe.show} " +
-                  s"with field type for '$name' (symbol=$symbol) : ${fieldType.show}, originFieldType = " +
+                  s"with field type for '$name' (symbol=$symbol) : ${fieldType.show}, originFieldType=" +
                   s"${originFieldType.show}, constructor typeParams=$typeParams, ")
               case TypeBounds(_, _) => fail(s"Type bounds are not supported for type '${tpe.show}' with field " +
                   s"type for $name '${fieldType.show}'")
@@ -991,11 +988,10 @@ object JsonCodecMaker {
         def isTypeParamsList(symbols: List[Symbol]): Boolean = symbols.exists(_.isTypeParam)
 
         ClassInfo(tpe, primaryConstructor, primaryConstructor.paramSymss match {
-          case Nil => fail(s"'${tpe.show}' has a primary constructor without parameters lists (impossible ?). ")
           case typeParams :: Nil if isTypeParamsList(typeParams) => createFieldInfos(Nil, typeParams)
           case params :: Nil => createFieldInfos(params, Nil)
           case typeParams :: params :: Nil if isTypeParamsList(typeParams) => createFieldInfos(params, typeParams)
-          case _ => fail(s"'${tpe.show}' has a primary constructor with multiple parameter lists. " +
+          case _ => fail(s"'${tpe.show}' hasn't a primary constructor with one parameter list. " +
               "Please consider using a custom implicitly accessible codec for this type.\n" +
               s"primaryConstructor.paramSymss = ${primaryConstructor.paramSymss}\n")
         })
@@ -1402,9 +1398,8 @@ object JsonCodecMaker {
               val paramTerm = param match
                 case term: Term => term
                 case _ => fail(s"Expected that $param is term")
-              val cases = f.zipWithIndex.map { case (n, i) =>
-                CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n)))
-              }
+              val cases = f.zipWithIndex
+                .map { case (n, i) => CaseDef(Literal(IntConstant(i)), None, Literal(StringConstant(n))) }
               Some(Match(paramTerm, cases.toList).changeOwner(sym))
             case _ => fail("Expected a 1-param list")
           })
@@ -1688,7 +1683,7 @@ object JsonCodecMaker {
         }
 
         if (currentDiscriminator == None || tpe.typeSymbol.flags.is(Flags.Enum)) {
-          val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(isModuleOrEnumValue)
+          val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(tpe => isModuleValue(tpe) || isEnumValue(tpe))
           if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
             '{
               if ($in.isNextToken('"')) {
@@ -2096,12 +2091,11 @@ object JsonCodecMaker {
 
               if (cfg.mapAsArray) {
                 val readVal1 = genReadVal(tpe1 :: types, genNullValue[t1](tpe1 :: types), isStringified, false, in)
-                genReadMapAsArray[T & mutable.Map[t1, t2], T & mutable.Map[t1, t2]](newBuilder,
+                genReadMapAsArray(newBuilder,
                   x => Update('{ $x.update($readVal1, { if ($in.isNextToken(',')) $readVal2 else $in.commaError() }) }),
                   identity, in, tDefault).asExprOf[T]
               } else {
-                genReadMap[T & mutable.Map[t1, t2], T & mutable.Map[t1, t2]](newBuilder,
-                  x => Update('{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) }),
+                genReadMap(newBuilder, x => Update('{ $x.update(${genReadKey[t1](tpe1 :: types, in)}, $readVal2) }),
                   identity, in, tDefault).asExprOf[T]
               }
         } else if (tpe <:< TypeRepr.of[collection.Map[_, _]]) withDecoderFor(methodKey, default, in) { (in, default, throwFlag) =>
@@ -2711,7 +2705,7 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeVal($tx.name) }
             else '{ $out.writeNonEscapedAsciiVal($tx.name) }
           }
-        } else if (tpe.isSingleton && tpe.typeSymbol.flags.is(Flags.Enum)) {
+        } else if (isEnumValue(tpe)) {
           val tx = m.asExprOf[scala.reflect.Enum] // TODO: think about enumOrdinal option ?
           if (false) { // FIXME: useScalaEnumOrdinal ?
             if (isStringified) '{ $out.writeValAsString($tx.ordinal) }
@@ -2827,12 +2821,11 @@ object JsonCodecMaker {
     }
   }
 
-  private[this] def isEncodingRequired(s: String): Boolean = {
+  private[this] def isEncodingRequired(s: String): Boolean =
     val len = s.length
     var i = 0
     while (i < len && JsonWriter.isNonEscapedAscii(s.charAt(i))) i += 1
     i != len
-  }
 
   private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] =
     xs.foldLeft(new mutable.LinkedHashMap[K, ArrayBuffer[A]]) { (m, x) =>
