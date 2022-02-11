@@ -219,7 +219,6 @@ object CodecMakerConfig extends CodecMakerConfig(
 
   /**
     * Use to enable printing of codec during compilation:
-    *
     *{{{
     *given CodecMakerConfig.PrintCodec with {}
     *val codec = JsonCodecMaker.make[MyClass]
@@ -229,7 +228,6 @@ object CodecMakerConfig extends CodecMakerConfig(
 
   /**
     * Use to print additional debug code during derivation of codecs:
-    *
     *{{{
     *given CodecMakerConfig.Trace with {}
     *val codec = JsonCodecMaker.make[MyClass]
@@ -538,8 +536,6 @@ object JsonCodecMaker {
 
       def valueClassValue(tpe: TypeRepr): Symbol = tpe.typeSymbol.fieldMembers(0)
 
-      def decodeName(s: Symbol): String = s.name
-
       def substituteTypes(tpe: TypeRepr, from: List[Symbol], to: List[TypeRepr]): TypeRepr = {
         // origin substitute-types in @experimantal annotations
         // this will be enabled when feature will no longer experimental (scala 3.2 ?)
@@ -593,6 +589,9 @@ object JsonCodecMaker {
       def isConstType(tpe: TypeRepr): Boolean = tpe match
         case ConstantType(_) => true
         case _ => false
+
+      def isEnumOrModuleValue(tpe: TypeRepr): Boolean =
+        tpe.isSingleton && (tpe.typeSymbol.flags.is(Flags.Enum) || tpe.typeSymbol.flags.is(Flags.Module))
 
       def getEnclosingClass(sym: Symbol): Symbol =
         if (sym.isClassDef) sym
@@ -665,9 +664,9 @@ object JsonCodecMaker {
       def adtLeafClasses(adtBaseTpe: TypeRepr): Seq[TypeRepr] = {
         def collectRecursively(tpe: TypeRepr): Seq[TypeRepr] =
           val leafTpes = adtChildren(tpe).flatMap { subTpe =>
-            val isEnum = subTpe.typeSymbol.flags.is(Flags.Enum)
-            if (isSealedClass(subTpe) && !isEnum) collectRecursively(subTpe)
-            else if (isNonAbstractScalaClass(subTpe) || isEnum) subTpe :: Nil
+            if (isEnumOrModuleValue(subTpe)) subTpe :: Nil
+            else if (isSealedClass(subTpe)) collectRecursively(subTpe)
+            else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
             else fail(if (subTpe.typeSymbol.flags.is(Flags.Abstract) || subTpe.typeSymbol.flags.is(Flags.Trait) ) {
               "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
                 s"for ADT with base '${adtBaseTpe.show}' or provide a custom implicitly accessible codec for the ADT base."
@@ -692,10 +691,6 @@ object JsonCodecMaker {
       def isCollection(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[Iterable[_]] || tpe <:< TypeRepr.of[Array[_]]
 
       def isJavaEnum(tpe: TypeRepr): Boolean = tpe <:< TypeRepr.of[java.lang.Enum[_]]
-
-      def isEnumValue(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Enum) && tpe.isSingleton
-
-      def isModuleValue(tpe: TypeRepr): Boolean = tpe.typeSymbol.flags.is(Flags.Module) && tpe.isSingleton
 
       def scalaCollectionCompanion(tpe: TypeRepr): Term =
         if (tpe.typeSymbol.fullName.startsWith("scala.collection.")) Ref(tpe.typeSymbol.companionModule)
@@ -730,6 +725,9 @@ object JsonCodecMaker {
       def inferImplicitValue(typeToSearch: TypeRepr): Option[Term] = Implicits.search(typeToSearch) match
         case v: ImplicitSearchSuccess => Some(v.tree)
         case _ => None
+
+      def symbol(name: String, tpe: TypeRepr, flags: Flags = Flags.EmptyFlags): Symbol =
+        Symbol.newVal(Symbol.spliceOwner, name, tpe, flags, Symbol.noSymbol)
 
       def checkRecursionInTypes(types: List[TypeRepr]): Unit =
         if (!cfg.allowRecursiveTypes) {
@@ -777,8 +775,7 @@ object JsonCodecMaker {
         else if (precision == MathContext.UNLIMITED.getPrecision) '{ MathContext.UNLIMITED }
         else Ref(mathContexts.getOrElseUpdate(precision, {
           val mc = '{ new MathContext(${Expr(cfg.bigDecimalPrecision)}, java.math.RoundingMode.HALF_EVEN) }
-          val sym = Symbol.newVal(Symbol.spliceOwner, "mc" + mathContexts.size, TypeRepr.of[MathContext],
-            Flags.EmptyFlags, Symbol.noSymbol)
+          val sym = symbol("mc" + mathContexts.size, TypeRepr.of[MathContext])
           ValDef(sym, Some(mc.asTerm.changeOwner(sym)))
         }).symbol).asExprOf[MathContext]
 
@@ -786,10 +783,8 @@ object JsonCodecMaker {
 
       def withScala2EnumerationCacheFor[K: Type, T: Type](tpe: TypeRepr)(using Quotes): Expr[ConcurrentHashMap[K, T]] =
         Ref(scala2EnumerationCaches.getOrElseUpdate(tpe, {
-          val ec = '{ new java.util.concurrent.ConcurrentHashMap[K, T]  }
-          val mt = TypeRepr.of[ConcurrentHashMap[K, T]]
-          val sym = Symbol.newVal(Symbol.spliceOwner, "ec" + scala2EnumerationCaches.size, mt, Flags.EmptyFlags, Symbol.noSymbol)
-          ValDef(sym, Some(ec.asTerm.changeOwner(sym)))
+          val sym = symbol("ec" + scala2EnumerationCaches.size, TypeRepr.of[ConcurrentHashMap[K, T]])
+          ValDef(sym, Some('{ new java.util.concurrent.ConcurrentHashMap[K, T] }.asTerm.changeOwner(sym)))
         }).symbol).asExprOf[ConcurrentHashMap[K, T]]
 
       case class JavaEnumValueInfo(value: Symbol, name: String, transformed: Boolean)
@@ -888,7 +883,7 @@ object JsonCodecMaker {
         val tpeClassSym = tpe.classSymbol.getOrElse(fail(s"Expected that ${tpe.show} has classSymbol"))
         val fieldsWithDefaultValues = tpeClassSym.fieldMembers.filter(_.flags.is(Flags.HasDefault))
         val annotations = tpeClassSym.fieldMembers.collect { case m: Symbol if hasSupportedAnnotation(m) =>
-          val name = decodeName(m).trim // FIXME: Why is there a space at the end of field name?!
+          val name = m.name
           val named = m.annotations.filter(_.tpe =:= TypeRepr.of[named])
           if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '$name' of '${tpe.show}'.")
           val trans = m.annotations.filter(_.tpe =:= TypeRepr.of[transient])
@@ -950,7 +945,7 @@ object JsonCodecMaker {
             val fieldType = typeArgs(tpe) match
               case Nil => originFieldType
               case typeArgs =>
-                if (typeArgs.length != typeParams.length) // FIXME: here we assume, that type-params for primart constructor are thr same as class type params
+                if (typeArgs.length != typeParams.length) // FIXME: here we assume that type-params for the primary constructor are the same as class type params
                   fail("Length of type-parameters of an aplied type and type parameters of primiary " +
                     s"constructors are different for ${tpe.show}")
                 substituteTypes(originFieldType, typeParams, typeArgs)
@@ -1078,8 +1073,7 @@ object JsonCodecMaker {
         } else cannotFindKeyCodecError(tpe)
       }
 
-      // FIXME: type parameter here trigger dotty bug: see https://github.com/lampepfl/dotty/issues/14123
-      sealed trait UpdateOp
+      sealed trait UpdateOp // FIXME: type parameter here trigger dotty bug: see https://github.com/lampepfl/dotty/issues/14123
 
       case class Assignment(value: Term) extends UpdateOp
 
@@ -1341,14 +1335,14 @@ object JsonCodecMaker {
         val named = tpe.typeSymbol.annotations.filter(_.tpe =:= TypeRepr.of[named])
         if (named.size > 1) fail(s"Duplicated '${TypeRepr.of[named].show}' defined for '${tpe.show}'.")
         if (named.size > 0) namedValueOpt(named.headOption, tpe).get
-        else cfg.adtLeafClassNameMapper({ // enum discriminatores are by name (or ordinal ?)
+        else cfg.adtLeafClassNameMapper({
           if (tpe.typeSymbol.flags.is(Flags.Enum)) {
             tpe match
               case TermRef(_, name) => name
               case TypeRef(_, name) => name // ADT
               case AppliedType(base, _) => base.typeSymbol.fullName
               case _ => fail(s"Unsupported enum type: '${tpe.show}', tree=$tpe")
-          } else if (isModuleValue(tpe)) tpe.termSymbol.fullName // FIXME: This check fixes names. Should it be reported as Dotty bug?
+          } else if (tpe.typeSymbol.flags.is(Flags.Module)) tpe.termSymbol.fullName // FIXME: This check fixes names. Should it be reported as Dotty bug?
           else tpe.typeSymbol.fullName
         }).getOrElse(fail(s"Discriminator is not defined for ${tpe.show}"))
 
@@ -1375,7 +1369,7 @@ object JsonCodecMaker {
       val nullValues = new mutable.LinkedHashMap[TypeRepr, ValDef]
 
       def withNullValueFor[T: Type](tpe: TypeRepr)(f: => Expr[T]): Expr[T] = Ref(nullValues.getOrElseUpdate(tpe, {
-        val sym = Symbol.newVal(Symbol.spliceOwner, "c" + nullValues.size, tpe, Flags.EmptyFlags, Symbol.noSymbol)
+        val sym = symbol("c" + nullValues.size, tpe)
         ValDef(sym, Some(f.asTerm.changeOwner(sym)))
       }).symbol).asExprOf[T]
 
@@ -1587,9 +1581,7 @@ object JsonCodecMaker {
         val tpe = types.head
         if (traceFlag) println(s"genReadSealedClass[${tpe.show}], discriminatorFieldName=${cfg.discriminatorFieldName}")
         val leafClasses = adtLeafClasses(tpe)
-        val currentDiscriminator =
-          if (tpe.typeSymbol.flags.is(Flags.Enum) && tpe.typeSymbol.children.forall(_.isTerm)) None
-          else cfg.discriminatorFieldName
+        val currentDiscriminator = cfg.discriminatorFieldName
         val discriminatorError =
           cfg.discriminatorFieldName.fold('{ $in.discriminatorError() })(n => '{ $in.discriminatorValueError(${Expr(n)}) })
         def genReadLeafClass[T: Type](subTpe: TypeRepr)(using Quotes): Expr[T] =
@@ -1602,11 +1594,10 @@ object JsonCodecMaker {
             subTpe.asType match
               case '[st] => '{
                 if ($in.isCharBufEqualsTo($l, ${Expr(discriminatorValue(subTpe))})) ${
-                  if (isEnumValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
-                  else if (currentDiscriminator.isDefined) '{
+                  if (currentDiscriminator.isDefined) '{
                     $in.rollbackToMark()
                     ${genReadLeafClass[st](subTpe)}
-                  } else if (isModuleValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
+                  } else if (isEnumOrModuleValue(subTpe)) Ref(subTpe.termSymbol).asExprOf[st]
                   else genReadLeafClass[st](subTpe)
                 } else $acc
               }.asExprOf[T]
@@ -1635,10 +1626,11 @@ object JsonCodecMaker {
             if (useCurrentToken) '{ $in.isCurrentToken('{') }
             else '{ $in.isNextToken('{') }
 
-          def setMark(using Quotes): Expr[Unit] = if (useCurrentToken) '{
-            $in.rollbackToken()
-            $in.setMark()
-          } else '{ $in.setMark() }
+          def setMark(using Quotes): Expr[Unit] =
+            if (useCurrentToken) '{
+              $in.rollbackToken()
+              $in.setMark()
+            } else '{ $in.setMark() }
 
           currentDiscriminator match
             case None => '{
@@ -1669,8 +1661,8 @@ object JsonCodecMaker {
               }
         }
 
-        if (currentDiscriminator == None || tpe.typeSymbol.flags.is(Flags.Enum)) {
-          val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(tpe => isModuleValue(tpe) || isEnumValue(tpe))
+        if (currentDiscriminator == None) {
+          val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(tpe => isEnumOrModuleValue(tpe))
           if (leafModuleClasses.nonEmpty && leafCaseClasses.nonEmpty) {
             '{
               if ($in.isNextToken('"')) {
@@ -1707,13 +1699,11 @@ object JsonCodecMaker {
         val paramVarNum = classInfo.nonTransientFields.size
         val lastParamVarIndex = Math.max(0, (paramVarNum - 1) >> 5)
         val lastParamVarBits = -1 >>> -paramVarNum
-        val paramVars = (0 to lastParamVarIndex).map { i =>
-          val sym = Symbol.newVal(Symbol.spliceOwner, "p" + i, TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
-          ValDef(sym, Some(Literal(IntConstant {
+        val paramVars = (0 to lastParamVarIndex)
+          .map(i => ValDef(symbol("p" + i, TypeRepr.of[Int], Flags.Mutable), Some(Literal(IntConstant {
             if (i == lastParamVarIndex) lastParamVarBits
             else -1
-          })))
-        }
+          }))))
 
         def checkAndResetFieldPresenceFlag(name: String, l: Expr[Int])(using Quotes): Expr[Unit] =
           val fi = classInfo.nonTransientFields.find(_.mappedName == name)
@@ -1744,7 +1734,7 @@ object JsonCodecMaker {
             }.toList
           }
         val readVars = classInfo.nonTransientFields.map { f =>
-          val sym = Symbol.newVal(Symbol.spliceOwner, "_" + f.symbol.name, f.resolvedTpe, Flags.Mutable, Symbol.noSymbol)
+          val sym = symbol("_" + f.symbol.name, f.resolvedTpe, Flags.Mutable)
           f.resolvedTpe.asType match
             case '[ft] =>
               ValDef(sym, Some(f.defaultValue.getOrElse(genNullValue[ft](f.resolvedTpe :: types).asTerm.changeOwner(sym))))
@@ -1793,7 +1783,7 @@ object JsonCodecMaker {
         val discriminator =
           if (useDiscriminator) {
             cfg.discriminatorFieldName.map { fieldName =>
-              val sym = Symbol.newVal(Symbol.spliceOwner, "pd", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+              val sym = symbol("pd", TypeRepr.of[Boolean], Flags.Mutable)
               ReadDiscriminator(ValDef(sym, Some(Literal(BooleanConstant(true)).changeOwner(sym))))
             }
           } else None
@@ -2306,7 +2296,7 @@ object JsonCodecMaker {
               ${genReadJavaEnumValue(javaEnumValues(tpe), '{ $in.enumValueError(l) }, in, 'l) }
             } else $in.readNullOrTokenError($default, '"')
           }
-        } else if (isModuleValue(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
+        } else if (isEnumOrModuleValue(tpe)) withDecoderFor(methodKey, default, in) { (in, default) =>
           '{
             if ($in.isNextToken('{')) {
               $in.rollbackToken()
@@ -2320,7 +2310,7 @@ object JsonCodecMaker {
           indexedTypes.foreach { case (te, i) =>
             te.asType match
               case '[t] =>
-                val sym = Symbol.newVal(Symbol.spliceOwner, "_r" + (i + 1), te, Flags.EmptyFlags, Symbol.noSymbol)
+                val sym = symbol("_r" + (i + 1), te)
                 val nullVal = genNullValue[t](te :: types)
                 val rhs =
                   if (i == 0) genReadVal(te :: types, nullVal, isStringified, false, in)
@@ -2668,13 +2658,7 @@ object JsonCodecMaker {
             if (encodingRequired) '{ $out.writeVal($tx.name) }
             else '{ $out.writeNonEscapedAsciiVal($tx.name) }
           }
-        } else if (isEnumValue(tpe)) {
-          val tx = m.asExprOf[scala.reflect.Enum] // TODO: think about enumOrdinal option ?
-          if (false) { // FIXME: useScalaEnumOrdinal ?
-            if (isStringified) '{ $out.writeValAsString($tx.ordinal) }
-            else '{ $out.writeVal($tx.ordinal) }
-          } else '{ $out.writeVal($tx.toString) }
-        } else if (isModuleValue(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
+        } else if (isEnumOrModuleValue(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           '{
             $out.writeObjectStart()
             ${optWriteDiscriminator.fold('{})(_.write(out))}
@@ -2689,35 +2673,6 @@ object JsonCodecMaker {
           if (writeFields.isEmpty) fail(s"Expected that ${tpe.show} should be an applied type")
           Block('{ $out.writeArrayStart() }.asTerm :: writeFields.toList,
             '{ $out.writeArrayEnd() }.asTerm).asExprOf[Unit]
-        } else if (isSealedClass(tpe) && tpe.typeSymbol.flags.is(Flags.Enum)) withEncoderFor(methodKey, m, out) { (out, x) =>
-          val tx = x.asExprOf[scala.reflect.Enum]
-          // here we know, that ordinals in enums are started from 0 in the same order od childer
-          // TODO: document this in dotty
-          val caseDefs = adtChildren(tpe).zipWithIndex.map { case (subTpe, i) =>
-            CaseDef(Literal(IntConstant(i)),
-              None,
-              (if (subTpe.isSingleton) {
-                if (false) { // TODO: add scalaEnumOrdinal
-                  if (cfg.isStringified) '{ $out.writeValAsString(${Expr(i)}) }
-                  else '{ $out.writeVal(${Expr(i)}) }
-                } else '{ $out.writeVal(${Expr(subTpe.termSymbol.name)}) }
-              } else {
-                subTpe.asType match
-                  case '[st] => cfg.discriminatorFieldName match
-                    case Some(discriminatorFieldName) =>
-                      val discriminator =
-                        if (false) WriteDiscriminator(discriminatorFieldName, i.toString) // TODO: add ability to use int as discriminator
-                        else WriteDiscriminator(discriminatorFieldName, subTpe.typeSymbol.name)
-                      genWriteNonAbstractScalaClass('{ $x.asInstanceOf[st] }, subTpe :: types, Some(discriminator), out)
-                    case None =>'{
-                      $out.writeObjectStart()
-                      ${genWriteConstantKey(subTpe.typeSymbol.name, out)}
-                      ${genWriteNonAbstractScalaClass('{ $x.asInstanceOf[st] }, subTpe :: types, None, out)}
-                      $out.writeObjectEnd()
-                    }
-              }).asTerm)
-          }
-          Match('{ $tx.ordinal }.asTerm, caseDefs.toList).asExprOf[Unit]
         } else if (isSealedClass(tpe)) withEncoderFor(methodKey, m, out) { (out, x) =>
           def genWriteLeafClass(subTpe: TypeRepr, discriminator: Option[WriteDiscriminator], vx: Term): Expr[Unit] =
             subTpe.asType match
@@ -2727,7 +2682,7 @@ object JsonCodecMaker {
 
           val leafClasses = adtLeafClasses(tpe)
           val writeSubclasses = cfg.discriminatorFieldName.fold {
-            val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(_.typeSymbol.flags.is(Flags.Module))
+            val (leafModuleClasses, leafCaseClasses) = leafClasses.partition(x => isEnumOrModuleValue(x))
             leafCaseClasses.map { subTpe =>
               val vxSym = Symbol.newBind(Symbol.spliceOwner, "vx", Flags.EmptyFlags, subTpe)
               CaseDef(Bind(vxSym, Typed(Wildcard(), Inferred(subTpe))), None, '{

@@ -63,19 +63,24 @@ enum FooEnum[A[_]]:
 
 class JsonCodecMakerEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
-    "serialize and deserialize Scala3 enums" in {
+    "serialize and deserialize Scala3 enums with default discriminator" in {
+      verifySerDeser(make[List[TrafficLight]],
+        List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green),
+        """[{"type":"Red"},{"type":"Yellow"},{"type":"Green"}]""")
+    }
+    "serialize and deserialize Scala3 enums without discriminator" in {
       verifySerDeser(make[List[TrafficLight]](CodecMakerConfig.withDiscriminatorFieldName(None)),
         List(TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green), """["Red","Yellow","Green"]""")
     }
-    "serialize and deserialize Scala3 enums with parameters" in {
-      verifySerDeser(make[List[Color]](CodecMakerConfig),
-        List(Color.Red, Color.Red, Color.Green, Color.Blue), """["Red","Red","Green","Blue"]""")
+    "serialize and deserialize Scala3 enums with parameters without discriminator" in {
+      verifySerDeser(make[List[Color]](CodecMakerConfig.withDiscriminatorFieldName(None)),
+        List(Color.Red, Color.Green, Color.Blue), """["Red","Green","Blue"]""")
     }
-    "serialize and deserialize Scala3 enums with multiple parameters" in {
-      verifySerDeser(make[List[Planet]](CodecMakerConfig),
+    "serialize and deserialize Scala3 enums with multiple parameters without discriminator" in {
+      verifySerDeser(make[List[Planet]](CodecMakerConfig.withDiscriminatorFieldName(None)),
         List(Planet.Mercury, Planet.Mars), """["Mercury","Mars"]""")
     }
-    "serialize and deserialize Scala3 enums with multiple parameters using custom codec" in {
+    "serialize and deserialize Scala3 enums with multiple parameters using a custom codec" in {
       implicit val codecOfMediaType: JsonValueCodec[MediaType] = new JsonValueCodec[MediaType] {
         override val nullValue: MediaType = null
 
@@ -93,8 +98,8 @@ class JsonCodecMakerEnumSpec extends VerifyingSpec {
         List(MediaType.`text/json`, MediaType.`text/html`, MediaType.`application/jpeg`), """[1,2,3]""")
     }
     "serialize and deserialize Scala3 enum ADTs" in {
-      verifySerDeser(make[List[ColorADT]](CodecMakerConfig),
-        List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)), """["Red","Green",{"type":"Mix","mix":0}]""")
+      verifySerDeser(make[List[ColorADT]], List(ColorADT.Red, ColorADT.Green, ColorADT.Mix(0)),
+        """[{"type":"Red"},{"type":"Green"},{"type":"Mix","mix":0}]""")
     }
     "serialize and deserialize Scala3 generic enum ADTs" in {
       verifySerDeser(make[Array[GEnum[_]]],

@@ -103,7 +103,7 @@ case class JavaTypes(uuid: UUID)
 object LocationType extends Enumeration {
   type LocationType = Value
 
-  // bug in ScalaJS
+  //FIXME: bug in ScalaJS for the following declaration:
   //val IP, GPS: LocationType = Value
   val IP = Value("IP")
   val GPS = Value("GPS")
