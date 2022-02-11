@@ -4,14 +4,12 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
 import java.time.format.DateTimeFormatter
 import java.util.{Base64, UUID}
-
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
 import scala.util.Random
 
 class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {

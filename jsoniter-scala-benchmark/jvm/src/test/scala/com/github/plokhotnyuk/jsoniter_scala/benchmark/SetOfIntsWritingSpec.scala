@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.JsoniterScalaCodecs.setOfIntsCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
-
 import scala.collection.immutable.Set
 
 class SetOfIntsWritingSpec extends BenchmarkSpecBase {

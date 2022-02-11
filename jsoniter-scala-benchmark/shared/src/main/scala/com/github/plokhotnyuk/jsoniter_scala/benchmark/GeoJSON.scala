@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import com.rallyhealth.weepickle.v1.implicits.{discriminator, dropDefault, key}
 import zio.json.jsonDiscriminator
-
 import scala.collection.immutable.IndexedSeq
 
 object GeoJSON {

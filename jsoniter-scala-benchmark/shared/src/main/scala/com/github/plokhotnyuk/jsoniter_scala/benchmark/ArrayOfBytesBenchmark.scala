@@ -1,11 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.module.scala.ScalaObjectMapper
-import com.github.plokhotnyuk.jsoniter_scala.benchmark.JacksonSerDesers.createJacksonMapper
 import org.openjdk.jmh.annotations.{Param, Setup}
 
 abstract class ArrayOfBytesBenchmark extends CommonParams {

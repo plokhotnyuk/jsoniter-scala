@@ -339,12 +339,12 @@ object JsonCodecMaker {
   def make[A]: JsonValueCodec[A] = macro Impl.makeWithDefaultConfig[A]
 
   /**
-   * A replacement for the `make` call with the `CodecMakerConfig.withDiscriminatorFieldName(None)` configuration
-   * parameter.
-   *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @return an instance of the derived codec
-   */
+    * A replacement for the `make` call with the `CodecMakerConfig.withDiscriminatorFieldName(None)` configuration
+    * parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
   def makeWithoutDiscriminator[A]: JsonValueCodec[A] = macro Impl.makeWithoutDiscriminator[A]
 
   /**

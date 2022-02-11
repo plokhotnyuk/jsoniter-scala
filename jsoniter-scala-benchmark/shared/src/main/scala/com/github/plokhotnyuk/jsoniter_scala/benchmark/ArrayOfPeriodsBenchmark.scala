@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Period
-
 import org.openjdk.jmh.annotations.{Param, Setup}
 
 abstract class ArrayOfPeriodsBenchmark extends CommonParams {

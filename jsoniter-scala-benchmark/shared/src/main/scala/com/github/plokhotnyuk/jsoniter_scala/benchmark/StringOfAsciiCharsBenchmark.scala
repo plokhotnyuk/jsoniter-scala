@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.openjdk.jmh.annotations.{Param, Setup}
 

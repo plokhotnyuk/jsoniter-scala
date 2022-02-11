@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 import java.nio.charset.StandardCharsets.UTF_8
 import com.avsystem.commons.serialization.transparent
 import com.fasterxml.jackson.annotation.JsonValue
-
 import scala.annotation.meta.getter
 
 @transparent case class ByteVal(@(JsonValue @getter) a: Byte) extends AnyVal

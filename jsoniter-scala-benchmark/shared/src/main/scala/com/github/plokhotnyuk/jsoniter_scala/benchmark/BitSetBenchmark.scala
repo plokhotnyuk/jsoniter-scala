@@ -1,7 +1,6 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import org.openjdk.jmh.annotations.{Param, Setup}
-
 import scala.collection.immutable.BitSet
 
 abstract class BitSetBenchmark extends CommonParams {

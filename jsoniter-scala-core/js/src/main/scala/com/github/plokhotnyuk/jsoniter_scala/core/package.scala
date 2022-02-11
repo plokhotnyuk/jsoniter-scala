@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala
 import java.io.{InputStream, OutputStream}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
-
 import scala.{specialized => sp}
 
 package object core {

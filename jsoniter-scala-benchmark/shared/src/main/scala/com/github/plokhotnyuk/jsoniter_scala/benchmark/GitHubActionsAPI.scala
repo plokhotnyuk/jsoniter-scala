@@ -1,10 +1,8 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time.Instant
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.github.plokhotnyuk.jsoniter_scala.macros._
-
 import scala.collection.immutable.Seq
 
 object GitHubActionsAPI {

@@ -9,7 +9,6 @@ import io.circe._
 import io.circe.generic.extras._
 import io.circe.generic.extras.codec.UnwrappedCodec
 import io.circe.generic.extras.semiauto._
-
 import scala.collection.immutable.{BitSet, IntMap}
 import scala.collection.mutable
 import scala.util.Try

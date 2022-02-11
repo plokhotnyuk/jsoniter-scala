@@ -1,9 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import org.openjdk.jmh.annotations.{Param, Setup}
-
 import scala.collection.mutable
 
 abstract class ArrayBufferOfBooleansBenchmark extends CommonParams {

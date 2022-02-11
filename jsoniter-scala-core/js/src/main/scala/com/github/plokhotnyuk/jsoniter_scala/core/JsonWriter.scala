@@ -6,9 +6,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.{BufferOverflowException, ByteBuffer}
 import java.time._
 import java.util.UUID
-
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
-
 import scala.annotation.tailrec
 import scala.{specialized => sp}
 

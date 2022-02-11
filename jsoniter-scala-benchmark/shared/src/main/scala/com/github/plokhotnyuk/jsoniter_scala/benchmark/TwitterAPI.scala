@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.avsystem.commons.serialization.transientDefault
 import com.rallyhealth.weepickle.v1.implicits.dropDefault
-
 import scala.collection.immutable.Seq
 
 object TwitterAPI {

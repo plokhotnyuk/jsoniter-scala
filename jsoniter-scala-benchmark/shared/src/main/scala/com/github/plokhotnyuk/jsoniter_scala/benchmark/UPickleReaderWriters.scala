@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import upickle.AttributeTagged
 import upickle.core.Visitor
-
 import java.util.Base64
 import scala.reflect.ClassTag
 
