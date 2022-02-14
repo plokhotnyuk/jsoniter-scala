@@ -1,9 +1,9 @@
 resolvers += Resolver.sonatypeRepo("staging")
 
 val scalaJSVersion =
-  Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.8.0")
+  Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.9.0")
 
-addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.0.0")
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.1.0")
 addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "1.0.2")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % scalaJSVersion)
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.11")
