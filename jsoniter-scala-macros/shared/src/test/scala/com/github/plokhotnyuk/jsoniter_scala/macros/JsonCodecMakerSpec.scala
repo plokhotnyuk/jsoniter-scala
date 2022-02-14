@@ -103,7 +103,7 @@ case class JavaTypes(uuid: UUID)
 object LocationType extends Enumeration {
   type LocationType = Value
 
-  //FIXME: bug in ScalaJS for the following declaration:
+  //FIXME: Invalid codec derivation in dotty with ScalaJS for the following declaration:
   //val IP, GPS: LocationType = Value
   val IP = Value("IP")
   val GPS = Value("GPS")

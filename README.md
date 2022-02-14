@@ -310,8 +310,9 @@ java.lang.StackOverflowError
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 ```
-Also, [internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during compilation 
-of derived codecs for ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
+Also, unexpected compiler errors ([1](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) and [2](https://github.com/lampepfl/dotty/issues/12508))
+can happen during compilation of ADT definitions or their derived codecs if they are nested in some classes or functions
+like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48).
 
 Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
 _object_ (not a class) instead.
@@ -356,7 +357,7 @@ final class Level private (name: String, ordinal: Int) extends Enum[Level](name,
 a default option for Scala.js 1.0+.
 
 A workaround is using the following configuration for the compiler to produce ES 5.1 output:
-```
+```sbt
 scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
 ```
 
@@ -365,6 +366,25 @@ scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
 `Some(Some(None))` values will be normalized to `None`.
 
 A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
+
+8. Dotty with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+```scala
+object LocationType extends Enumeration {
+  type LocationType = Value
+
+  val IP, GPS: LocationType = Value
+}
+```
+
+Workaround is to redefine enums with explicit names:
+```scala
+object LocationType extends Enumeration {
+  type LocationType = Value
+
+  val IP = Value("IP")
+  val GPS = Value("GPS")
+}
+```
 
 ## How to develop
 
