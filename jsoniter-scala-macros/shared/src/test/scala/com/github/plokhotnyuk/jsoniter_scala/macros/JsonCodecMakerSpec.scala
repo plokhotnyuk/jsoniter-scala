@@ -1964,7 +1964,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object Data1 extends Data
           |val c = make[Data]""".stripMargin
       }).getMessage.contains {
-        "Data1" //FIXME: an error message with Scala 2.11.12 is "Data1 is already defined as (compiler-generated) case class companion object Data1"
+        """Duplicated discriminator defined for ADT base 'Data': 'Data1'. Values for leaf classes of ADT that are
+          |returned by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.adtLeafClassNameMapper'
+          |function should be unique.""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs for case classes with fields that the same name as discriminator name" in {

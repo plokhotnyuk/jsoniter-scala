@@ -137,7 +137,7 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Ability to print generated code for codecs using an implicit val of `CodecMakerConfig.PrintCodec` type in a scope of 
   codec derivation
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Releases for different Scala versions: 2.11, 2.12, 2.13, and 3.1
+- Releases for different Scala versions: 2.12, 2.13, and 3.1
 - Suppressing of all WartRemover warnings for generated codecs  
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
@@ -273,10 +273,10 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
 check the input length for other ways of parsing.
 
-2. Scalac 2.11 and earlier versions of Scalac 2.12 and 2.13 have a bug that affects case classes which have 2 fields 
-where the name of one is a prefix for another name that contains a character that should be encoded immediately after
-the prefix (like `o` and `o-o`). You will get compilation or runtime error, depending on the version of the compiler, 
-see details of the issue [here](https://github.com/scala/bug/issues/11212).
+2. Earlier versions of Scalac 2.12 and 2.13 have a bug that affects case classes which have 2 fields where the name of 
+one is a prefix for another name that contains a character that should be encoded immediately after the prefix (like 
+`o` and `o-o`). You will get compilation or runtime error, depending on the version of the compiler, see details of 
+the issue [here](https://github.com/scala/bug/issues/11212).
 
 Use latest versions of Scala 2.12 or 2.13 were the issue was fixed or move a definition of the field with encoded chars 
 (`o-o` in our case) to be after the field that is affected by the exception (after the `o` field) like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/df3a3e237ce61991e9f4e6c2c50516eb6e70ac45/jsoniter-scala-macros/shared/src/test/scala-2.11/com.github.plokhotnyuk.jsoniter_scala.macros/JsonCodecMaker211Spec.scala#L10).
@@ -399,7 +399,7 @@ sbt clean +test +mimaReportBinaryIssues
 ```
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
- for 2.11.x, 2.12.x, and 2.13.x versions of Scala.
+ for 2.12.x and 2.13.x versions of Scala.
 
 ### Run JVM benchmarks
 
