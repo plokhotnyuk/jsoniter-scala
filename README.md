@@ -327,7 +327,7 @@ _object_ (not a class) instead.
 [error]   called from core module analyzer
 ```
 
-The workaround is to split sources for JVM and JS and use Java enum emulation for JS.
+The workaround for Scala 2 is to split sources for JVM and JS and use Java enum emulation for JS.
 
 Code for JVM:
 ```java
@@ -353,21 +353,21 @@ object Level {
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
 
-6. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
-a default option for Scala.js 1.0+.
-
-A workaround is using the following configuration for the compiler to produce ES 5.1 output:
-```sbt
-scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
+For Scala 3 the workaround can be the same for JVM and JS:
+```scala
+enum Level extends Enum[Level] {
+  case HIGH
+  case LOW
+}
 ```
 
-7. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
+6. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
 `Some(Some(Some(x: String))))` values can be serialized and then parsed without lost of the info. `Some(None)` and 
 `Some(Some(None))` values will be normalized to `None`.
 
 A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
 
-8. Dotty with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+7. Dotty with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value

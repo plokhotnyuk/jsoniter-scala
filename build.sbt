@@ -89,7 +89,7 @@ lazy val jsSettings = Seq(
         .withAsInstanceOfs(CheckedBehavior.Unchecked)
         .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
     }).withClosureCompiler(true)
-      .withESFeatures(_.withESVersion(ESVersion.ES5_1))
+      .withESFeatures(_.withESVersion(ESVersion.ES2015))
       .withModuleKind(ModuleKind.CommonJSModule)
   },
   coverageEnabled := false // FIXME: Too slow coverage test running
@@ -262,7 +262,7 @@ lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)
   .settings(jsSettings)
   .settings(
-    scalaJSLinkerConfig ~= {_.withModuleKind(ModuleKind.NoModule) },
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.NoModule) },
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.10.0",
     scalaJSUseMainModuleInitializer := true,
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
