@@ -270,7 +270,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZonedDateTime])))
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZonedDateTime])))
     }
-    "write ZonedDateTime as a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK 8+ format" in {
+    "write ZonedDateTime as a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK format" in {
       def check(x: ZonedDateTime): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
@@ -304,7 +304,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       intercept[NullPointerException](withWriter(_.writeVal(null.asInstanceOf[ZoneId])))
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[ZoneId])))
     }
-    "write ZoneId as a string representation according to ISO-8601 format for timezone offset or JDK 8+ format for IANA timezone identifier" in {
+    "write ZoneId as a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
       def check(x: ZoneId): Unit = {
         val s = x.toString
         withWriter(_.writeVal(x)) shouldBe s""""$s""""

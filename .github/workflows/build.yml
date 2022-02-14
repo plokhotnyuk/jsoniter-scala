@@ -22,7 +22,6 @@ jobs:
         java:
           - zulu@1.17
           - graalvm-ce-java11
-          - zulu@1.8
         os:
           - ubuntu-latest
           - macOS-latest
