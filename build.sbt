@@ -136,6 +136,7 @@ lazy val `jsoniter-scala` = project.in(file("."))
   .aggregate(
     `jsoniter-scala-coreJVM`,
     `jsoniter-scala-coreJS`,
+    `jsoniter-scala-coreNative`,
     `jsoniter-scala-circeJVM`,
     `jsoniter-scala-circeJS`,
     `jsoniter-scala-macrosJVM`,
@@ -144,12 +145,11 @@ lazy val `jsoniter-scala` = project.in(file("."))
     `jsoniter-scala-benchmarkJS`
   )
 
-lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
+lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test,
       "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.11.0" % Test,
@@ -158,13 +158,27 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
+  .settings(
+    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15")
+  )
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
   .settings(jsSettings)
   .settings(
+    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
-      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
-      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.3.0"
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M1",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M1"
+    )
+  )
+
+lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
+  .settings(
+    crossScalaVersions := Seq("2.13.8", "2.12.15"),
+    nativeLinkStubs := true,
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M1",
+      "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M1"
     )
   )
 
