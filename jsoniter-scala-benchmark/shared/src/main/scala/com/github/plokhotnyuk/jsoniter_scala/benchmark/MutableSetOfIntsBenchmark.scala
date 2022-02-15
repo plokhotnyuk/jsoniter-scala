@@ -1,9 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import org.openjdk.jmh.annotations.{Param, Setup}
-
 import scala.collection.mutable
 
 abstract class MutableSetOfIntsBenchmark extends CommonParams {
@@ -16,7 +14,7 @@ abstract class MutableSetOfIntsBenchmark extends CommonParams {
 
   @Setup
   def setup(): Unit = {
-    obj = mutable.Set((1 to size).map(i => ((i * 1498724053) / Math.pow(10, i % 10)).toInt):_*)
+    obj = mutable.Set((1 to size).map(i => ((i * 1498724053) / Math.pow(10, i % 10)).toInt): _*)
     jsonString = obj.mkString("[", ",", "]")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)

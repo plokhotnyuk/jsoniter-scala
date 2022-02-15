@@ -1,5 +1,3 @@
 -Xmx4g
--XX:MaxMetaspaceSize=1g
--XX:ReservedCodeCacheSize=512m
--XX:+UseParallelGC
+-XX:+UseG1GC
 -Dfile.encoding=UTF8

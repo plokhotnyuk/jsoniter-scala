@@ -4,14 +4,12 @@ import java.math.MathContext
 import java.time._
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-
 import com.avsystem.commons.serialization.GenCodec
 import com.avsystem.commons.serialization.GenCodec._
 import SuitEnum.SuitEnum
 import com.avsystem.commons.serialization.json.JsonBinaryFormat.{Base64, HexString}
 import com.avsystem.commons.serialization.json.JsonOptions
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.BitMask.toBitMask
-
 import scala.collection.immutable.{BitSet, IntMap, Map}
 import scala.collection.mutable
 

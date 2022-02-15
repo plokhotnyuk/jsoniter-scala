@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import com.avsystem.commons.serialization.transientDefault
 import com.rallyhealth.weepickle.v1.implicits.dropDefault
-
 import scala.collection.immutable.Seq
 
 object TwitterAPI {
@@ -12,7 +11,7 @@ object TwitterAPI {
     expanded_url: String,
     display_url: String,
     @transientDefault indices: Seq[Int] = Nil)
-  
+
   @dropDefault
   case class Url(@transientDefault urls: Seq[Urls] = Nil)
 

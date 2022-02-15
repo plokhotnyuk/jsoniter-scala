@@ -3,7 +3,6 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers

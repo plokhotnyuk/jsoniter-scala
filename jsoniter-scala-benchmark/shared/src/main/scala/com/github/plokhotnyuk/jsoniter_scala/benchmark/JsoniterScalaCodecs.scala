@@ -2,16 +2,15 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.time._
 import java.util.UUID
-
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
-
 import scala.collection.immutable._
 import scala.collection.mutable
 
 object JsoniterScalaCodecs {
+  //implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
   val exceptionWithoutDumpConfig: ReaderConfig = ReaderConfig.withAppendHexDumpToParseException(false)
   val exceptionWithStacktraceConfig: ReaderConfig = ReaderConfig.withThrowReaderExceptionWithStackTrace(true)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)

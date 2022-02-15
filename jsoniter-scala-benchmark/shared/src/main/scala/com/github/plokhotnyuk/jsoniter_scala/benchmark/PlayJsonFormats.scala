@@ -11,7 +11,6 @@ import julienrf.json.derived.flat
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.libs.json.jackson.PlayJsonModule
-
 import java.util.Base64
 import scala.collection.immutable.{BitSet, IntMap, Map, Seq}
 import scala.collection.mutable

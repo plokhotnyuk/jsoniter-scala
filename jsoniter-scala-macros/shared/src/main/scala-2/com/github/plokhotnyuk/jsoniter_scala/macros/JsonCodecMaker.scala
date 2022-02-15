@@ -210,7 +210,28 @@ object CodecMakerConfig extends CodecMakerConfig(
   setMaxInsertNumber = 1024, // to limit attacks from untrusted input that exploit worst complexity for inserts
   allowRecursiveTypes = false, // to avoid stack overflow errors with untrusted input
   requireDiscriminatorFirst = true, // to avoid CPU overuse when the discriminator appears in the end of JSON objects, especially nested
-  useScalaEnumValueId = false)
+  useScalaEnumValueId = false) {
+
+  /**
+    * Use to enable printing of codec during compilation:
+    *
+    *{{{
+    *implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
+    *val codec = JsonCodecMaker.make[MyClass]
+    *}}}
+    **/
+  class PrintCodec
+
+  /**
+    * Use to print additional debug code during derivation of codecs:
+    *
+    *{{{
+    *implicit val trace: CodecMakerConfig.Trace = new CodecMakerConfig.Trace {}
+    *val codec = JsonCodecMaker.make[MyClass]
+    *}}}
+    **/
+  //class Trace
+}
 
 object JsonCodecMaker {
   /**
@@ -318,12 +339,12 @@ object JsonCodecMaker {
   def make[A]: JsonValueCodec[A] = macro Impl.makeWithDefaultConfig[A]
 
   /**
-   * A replacement for the `make` call with the `CodecMakerConfig.withDiscriminatorFieldName(None)` configuration
-   * parameter.
-   *
-   * @tparam A a type that should be encoded and decoded by the derived codec
-   * @return an instance of the derived codec
-   */
+    * A replacement for the `make` call with the `CodecMakerConfig.withDiscriminatorFieldName(None)` configuration
+    * parameter.
+    *
+    * @tparam A a type that should be encoded and decoded by the derived codec
+    * @return an instance of the derived codec
+    */
   def makeWithoutDiscriminator[A]: JsonValueCodec[A] = macro Impl.makeWithoutDiscriminator[A]
 
   /**
@@ -399,8 +420,6 @@ object JsonCodecMaker {
 
       def typeArg2(tpe: Type): Type = tpe.typeArgs(1).dealias
 
-      def areEqual(tpe1: Type, tpe2: Type): Boolean = tpe1.typeSymbol.fullName == tpe2.typeSymbol.fullName
-
       val tupleSymbols: Set[Symbol] = definitions.TupleClass.seq.toSet
 
       def isTuple(tpe: Type): Boolean = tupleSymbols(tpe.typeSymbol)
@@ -424,11 +443,9 @@ object JsonCodecMaker {
         else substituteTypes(mtpe, tpeTypeParams, tpe.typeArgs)
       }
 
-      def methodType(tpe: Type, m: MethodSymbol): Type = resolveConcreteType(tpe, m.returnType.dealias)
-
       def paramType(tpe: Type, p: TermSymbol): Type = resolveConcreteType(tpe, p.typeSignature.dealias)
 
-      def valueClassValueType(tpe: Type): Type = methodType(tpe, valueClassValueMethod(tpe))
+      def valueClassValueType(tpe: Type): Type = resolveConcreteType(tpe, valueClassValueMethod(tpe).returnType.dealias)
 
       def isNonAbstractScalaClass(tpe: Type): Boolean =
         tpe.typeSymbol.isClass && !tpe.typeSymbol.isAbstract && !tpe.typeSymbol.isJava
@@ -441,26 +458,25 @@ object JsonCodecMaker {
       }
 
       def adtLeafClasses(adtBaseTpe: Type): Seq[Type] = {
-        def collectRecursively(tpe: Type): Seq[Type] =
-          if (tpe.typeSymbol.isClass) {
-            val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.flatMap { s =>
-              val classSymbol = s.asClass
-              val subTpe =
-                if (classSymbol.typeParams.isEmpty) classSymbol.toType
-                else substituteTypes(classSymbol.toType, classSymbol.typeParams, tpe.typeArgs)
-              if (isSealedClass(subTpe)) collectRecursively(subTpe)
-              else if (isNonAbstractScalaClass(subTpe)) Seq(subTpe)
-              else fail(if (s.isAbstract) {
-                "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
-                  s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
-              } else {
-                "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
-                  s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
-              })
-            }
-            if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
-            else leafTpes
-          } else Seq.empty
+        def collectRecursively(tpe: Type): Seq[Type] = {
+          val leafTpes = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq.flatMap { s =>
+            val classSymbol = s.asClass
+            val subTpe =
+              if (classSymbol.typeParams.isEmpty) classSymbol.toType
+              else substituteTypes(classSymbol.toType, classSymbol.typeParams, tpe.typeArgs)
+            if (isSealedClass(subTpe)) collectRecursively(subTpe)
+            else if (isNonAbstractScalaClass(subTpe)) subTpe :: Nil
+            else fail(if (s.isAbstract) {
+              "Only sealed intermediate traits or abstract classes are supported. Please consider using of them " +
+                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+            } else {
+              "Only Scala classes & objects are supported for ADT leaf classes. Please consider using of them " +
+                s"for ADT with base '$adtBaseTpe' or provide a custom implicitly accessible codec for the ADT base."
+            })
+          }
+          if (isNonAbstractScalaClass(tpe)) leafTpes :+ tpe
+          else leafTpes
+        }
 
         val classes = collectRecursively(adtBaseTpe).distinct
         if (classes.isEmpty) fail(s"Cannot find leaf classes for ADT base '$adtBaseTpe'. " +
@@ -498,12 +514,12 @@ object JsonCodecMaker {
 
       val isScala213: Boolean = util.Properties.versionNumberString.startsWith("2.13.")
       val rootTpe = weakTypeOf[A].dealias
-      val inferredKeyCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
-      val inferredValueCodecs: mutable.Map[Type, Tree] = mutable.Map.empty
+      val inferredKeyCodecs = mutable.Map.empty[Type, Tree]
+      val inferredValueCodecs = mutable.Map.empty[Type, Tree]
+
+      def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
 
       def findImplicitCodec(types: List[Type], isValueCodec: Boolean): Tree = {
-        def inferImplicitValue(typeTree: Tree): Tree = c.inferImplicitValue(c.typecheck(typeTree, c.TYPEmode).tpe)
-
         val tpe :: nestedTypes = types
         if (nestedTypes.isEmpty) EmptyTree
         else {
@@ -511,7 +527,7 @@ object JsonCodecMaker {
             if (cfg.allowRecursiveTypes) -1
             else nestedTypes.indexOf(tpe)
           if (recursiveIdx < 0) {
-            if (areEqual(tpe, rootTpe)) EmptyTree
+            if (tpe =:= rootTpe) EmptyTree
             else if (isValueCodec) {
               inferredValueCodecs.getOrElseUpdate(tpe,
                 inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$tpe]"))
@@ -528,8 +544,8 @@ object JsonCodecMaker {
         }
       }
 
-      val mathContextNames = mutable.LinkedHashMap.empty[Int, TermName]
-      val mathContextTrees = mutable.LinkedHashMap.empty[Int, Tree]
+      val mathContextNames = new mutable.LinkedHashMap[Int, TermName]
+      val mathContextTrees = new mutable.LinkedHashMap[Int, Tree]
 
       def withMathContextFor(precision: Int): Tree =
         if (precision == java.math.MathContext.DECIMAL128.getPrecision) q"_root_.java.math.MathContext.DECIMAL128"
@@ -543,8 +559,8 @@ object JsonCodecMaker {
           Ident(mathContextName)
         }
 
-      val scalaEnumCacheNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val scalaEnumCacheTries = mutable.LinkedHashMap.empty[Type, Tree]
+      val scalaEnumCacheNames = new mutable.LinkedHashMap[Type, TermName]
+      val scalaEnumCacheTries = new mutable.LinkedHashMap[Type, Tree]
 
       def withScalaEnumCacheFor(tpe: Type): Tree = {
         val keyTpe = if (cfg.useScalaEnumValueId) tq"Int" else tq"String"
@@ -557,7 +573,7 @@ object JsonCodecMaker {
 
       case class EnumValueInfo(value: Tree, name: String, transformed: Boolean)
 
-      val enumValueInfos = mutable.LinkedHashMap.empty[Type, Seq[EnumValueInfo]]
+      val enumValueInfos = new mutable.LinkedHashMap[Type, Seq[EnumValueInfo]]
 
       def isJavaEnum(tpe: Type): Boolean = tpe <:< typeOf[java.lang.Enum[_]]
 
@@ -588,16 +604,14 @@ object JsonCodecMaker {
       })
 
       def genReadEnumValue(enumValues: Seq[EnumValueInfo], unexpectedEnumValueHandler: Tree): Tree = {
-        val hashCode: EnumValueInfo => Int = e => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
-        val length: EnumValueInfo => Int = _.name.length
-
         def genReadCollisions(es: collection.Seq[EnumValueInfo]): Tree =
           es.foldRight(unexpectedEnumValueHandler) { case (e, acc) =>
             q"if (in.isCharBufEqualsTo(l, ${e.name})) ${e.value} else $acc"
           }
 
-        if (enumValues.size <= 8 && enumValues.map(length).sum <= 64) genReadCollisions(enumValues)
+        if (enumValues.size <= 8 && enumValues.foldLeft(0)(_ + _.name.length) <= 64) genReadCollisions(enumValues)
         else {
+          val hashCode = (e: EnumValueInfo) => JsonReader.toHashCode(e.name.toCharArray, e.name.length)
           val cases = groupByOrdered(enumValues)(hashCode).map { case (hash, fs) =>
             cq"$hash => ${genReadCollisions(fs)}"
           } :+ cq"_ => $unexpectedEnumValueHandler"
@@ -887,7 +901,7 @@ object JsonCodecMaker {
 
       case class ClassInfo(tpe: Type, fields: Seq[FieldInfo])
 
-      val classInfos = mutable.LinkedHashMap.empty[Type, ClassInfo]
+      val classInfos = new mutable.LinkedHashMap[Type, ClassInfo]
 
       def getClassInfo(tpe: Type): ClassInfo = classInfos.getOrElseUpdate(tpe, {
         case class FieldAnnotations(partiallyMappedName: String, transient: Boolean, stringified: Boolean)
@@ -940,7 +954,7 @@ object JsonCodecMaker {
               Some(FieldInfo(symbol, mappedName, tmpName, getter, defaultValue, paramType(tpe, symbol), isStringified))
             }
           }
-          case _ => fail(s"'$tpe' has a primary constructor with multiple parameter lists. " +
+          case _ => fail(s"'$tpe' hasn't a primary constructor with one parameter list. " +
             "Please consider using a custom implicitly accessible codec for this type.")
         })
       })
@@ -981,8 +995,8 @@ object JsonCodecMaker {
         }
       }
 
-      val nullValueNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val nullValueTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val nullValueNames = new mutable.LinkedHashMap[Type, TermName]
+      val nullValueTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withNullValueFor(tpe: Type)(f: => Tree): Tree = {
         val nullValueName = nullValueNames.getOrElseUpdate(tpe, TermName("c" + nullValueNames.size))
@@ -990,21 +1004,21 @@ object JsonCodecMaker {
         Ident(nullValueName)
       }
 
-      val fieldNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val fieldTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val fieldNames = new mutable.LinkedHashMap[Type, TermName]
+      val fieldTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withFieldsFor(tpe: Type)(f: => Seq[String]): Tree = {
         val fieldName = fieldNames.getOrElseUpdate(tpe, TermName("f" + fieldNames.size))
         fieldTrees.getOrElseUpdate(tpe,
           q"""private[this] def $fieldName(i: Int): String =
                 (i: @_root_.scala.annotation.switch @_root_.scala.unchecked) match {
-                  case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n"}}
+                  case ..${f.zipWithIndex.map { case (n, i) => cq"$i => $n" }}
                 }""")
         Ident(fieldName)
       }
 
-      val equalsMethodNames = mutable.LinkedHashMap.empty[Type, TermName]
-      val equalsMethodTrees = mutable.LinkedHashMap.empty[Type, Tree]
+      val equalsMethodNames = new mutable.LinkedHashMap[Type, TermName]
+      val equalsMethodTrees = new mutable.LinkedHashMap[Type, Tree]
 
       def withEqualsFor(tpe: Type, arg1: Tree, arg2: Tree)(f: => Tree): Tree = {
         val equalsMethodName = equalsMethodNames.getOrElseUpdate(tpe, TermName("q" + equalsMethodNames.size))
@@ -1031,8 +1045,8 @@ object JsonCodecMaker {
 
       case class MethodKey(tpe: Type, isStringified: Boolean, discriminator: Tree)
 
-      val decodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
-      val decodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
+      val decodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
+      val decodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
 
       def withDecoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val decodeMethodName = decodeMethodNames.getOrElseUpdate(methodKey, TermName("d" + decodeMethodNames.size))
@@ -1041,8 +1055,8 @@ object JsonCodecMaker {
         q"$decodeMethodName(in, $arg)"
       }
 
-      val encodeMethodNames = mutable.LinkedHashMap.empty[MethodKey, TermName]
-      val encodeMethodTrees = mutable.LinkedHashMap.empty[MethodKey, Tree]
+      val encodeMethodNames = new mutable.LinkedHashMap[MethodKey, TermName]
+      val encodeMethodTrees = new mutable.LinkedHashMap[MethodKey, Tree]
 
       def withEncoderFor(methodKey: MethodKey, arg: Tree)(f: => Tree): Tree = {
         val encodeMethodName = encodeMethodNames.getOrElseUpdate(methodKey, TermName("e" + encodeMethodNames.size))
@@ -1051,7 +1065,7 @@ object JsonCodecMaker {
         q"$encodeMethodName($arg, out)"
       }
 
-      def nullValue(types: List[Type]): Tree = {
+      def genNullValue(types: List[Type]): Tree = {
         val tpe = types.head
         val implCodec = findImplicitCodec(types, isValueCodec = true)
         if (!implCodec.isEmpty) q"$implCodec.nullValue"
@@ -1137,10 +1151,8 @@ object JsonCodecMaker {
           }
         val construct = q"new $tpe(..${classInfo.fields.map(f => q"${f.symbol.name} = ${f.tmpName}")})"
         val readVars = classInfo.fields.map { f =>
-          q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(nullValue(f.resolvedTpe :: types))}"
+          q"var ${f.tmpName}: ${f.resolvedTpe} = ${f.defaultValue.getOrElse(genNullValue(f.resolvedTpe :: types))}"
         }
-        val hashCode: FieldInfo => Int = f => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
-        val length: FieldInfo => Int = _.mappedName.length
         val readFields = cfg.discriminatorFieldName.fold(classInfo.fields) { n =>
           if (discriminator.isEmpty) classInfo.fields
           else classInfo.fields :+ FieldInfo(null, n, null, null, null, null, isStringified = true)
@@ -1158,8 +1170,10 @@ object JsonCodecMaker {
           }
 
         val readFieldsBlock =
-          if (readFields.size <= 8 && readFields.map(length).sum <= 64) genReadCollisions(readFields)
-          else {
+          if (readFields.size <= 8 && readFields.foldLeft(0)(_ + _.mappedName.length) <= 64) {
+            genReadCollisions(readFields)
+          } else {
+            val hashCode = (f: FieldInfo) => JsonReader.toHashCode(f.mappedName.toCharArray, f.mappedName.length)
             val cases = groupByOrdered(readFields)(hashCode).map { case (hash, fs) =>
               cq"$hash => ${genReadCollisions(fs)}"
             } :+ cq"_ => $unexpectedFieldHandler"
@@ -1193,33 +1207,33 @@ object JsonCodecMaker {
           q"""if (in.readString(null) != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
         case ConstantType(Constant(v: Boolean)) =>
           if (isStringified) q"""if (in.readStringAsBoolean() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readBoolean() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readBoolean() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Byte)) =>
           if (isStringified) q"""if (in.readStringAsByte() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readByte() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readByte() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Char)) =>
           q"""if (in.readChar() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
         case ConstantType(Constant(v: Short)) =>
           if (isStringified) q"""if (in.readStringAsShort() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readShort() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readShort() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Int)) =>
           if (isStringified) q"""if (in.readStringAsInt() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readInt() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readInt() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Long)) =>
           if (isStringified) q"""if (in.readStringAsLong() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readLong() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readLong() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Float)) =>
           if (isStringified) q"""if (in.readStringAsFloat() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readFloat() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readFloat() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case ConstantType(Constant(v: Double)) =>
           if (isStringified) q"""if (in.readStringAsDouble() != $v) in.decodeError(${"expected value: \"" + v + '"'}); $v"""
-          else q"""if (in.readDouble() != $v) in.decodeError(${"expected value: " + v}); $v"""
+          else q"""if (in.readDouble() != $v) in.decodeError(${s"expected value: $v"}); $v"""
         case _ => cannotFindValueCodecError(tpe)
       }
 
       def genReadValForGrowable(types: List[Type], isStringified: Boolean): Tree =
-          if (isScala213) q"x.addOne(${genReadVal(types, nullValue(types), isStringified, EmptyTree)})"
-          else q"x += ${genReadVal(types, nullValue(types), isStringified, EmptyTree)}"
+          if (isScala213) q"x.addOne(${genReadVal(types, genNullValue(types), isStringified, EmptyTree)})"
+          else q"x += ${genReadVal(types, genNullValue(types), isStringified, EmptyTree)}"
 
       def genReadVal(types: List[Type], default: Tree, isStringified: Boolean, discriminator: Tree): Tree = {
         val tpe = types.head
@@ -1278,18 +1292,18 @@ object JsonCodecMaker {
           }
         } else if (isValueClass(tpe)) {
           val tpe1 = valueClassValueType(tpe)
-          q"new $tpe(${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)})"
+          q"new $tpe(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})"
         } else if (isOption(tpe)) {
           val tpe1 = typeArg1(tpe)
           q"""if (in.isNextToken('n')) in.readNullOrError($default, "expected value or null")
               else {
                 in.rollbackToken()
-                new _root_.scala.Some(${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)})
+                new _root_.scala.Some(${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)})
               }"""
         } else if (tpe <:< typeOf[immutable.IntMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
-          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
+          val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
             val readKey =
               if (cfg.isStringified) q"in.readStringAsInt()"
@@ -1300,7 +1314,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[mutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }"
-          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
+          val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
             val readKey =
               if (cfg.isStringified) q"in.readStringAsLong()"
@@ -1311,7 +1325,7 @@ object JsonCodecMaker {
         } else if (tpe <:< typeOf[immutable.LongMap[_]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val newBuilder = q"var x = ${withNullValueFor(tpe)(q"${scalaCollectionCompanion(tpe)}.empty[$tpe1]")}"
-          val readVal = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
+          val readVal = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
             val readKey =
               if (cfg.isStringified) q"in.readStringAsLong()"
@@ -1323,28 +1337,28 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val newBuilder = q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1, $tpe2] }"
-          val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2 :: types), isStringified, EmptyTree)
+          val readVal2 = genReadVal(tpe2 :: types, genNullValue(tpe2 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
-            val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
+            val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
             genReadMapAsArray(newBuilder, q"x.update($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() })")
           } else genReadMap(newBuilder, q"x.update(${genReadKey(tpe1 :: types)}, $readVal2)")
         } else if (tpe <:< typeOf[collection.Map[_, _]]) withDecoderFor(methodKey, default) {
           val tpe1 = typeArg1(tpe)
           val tpe2 = typeArg2(tpe)
           val newBuilder = q"{ val x = ${scalaCollectionCompanion(tpe)}.newBuilder[$tpe1, $tpe2] }"
-          val readVal2 = genReadVal(tpe2 :: types, nullValue(tpe2 :: types), isStringified, EmptyTree)
+          val readVal2 = genReadVal(tpe2 :: types, genNullValue(tpe2 :: types), isStringified, EmptyTree)
           if (cfg.mapAsArray) {
-            val readVal1 = genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)
+            val readVal1 = genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)
             val readKV =
               if (isScala213) q"x.addOne(($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
               else q"x += (($readVal1, { if (in.isNextToken(',')) $readVal2 else in.commaError() }))"
-            genReadMapAsArray(newBuilder, readKV,q"x.result()")
+            genReadMapAsArray(newBuilder, readKV, q"x.result()")
           } else {
             val readKey = genReadKey(tpe1 :: types)
             val readKV =
               if (isScala213) q"x.addOne(($readKey, $readVal2))"
               else q"x += (($readKey, $readVal2))"
-            genReadMap(newBuilder, readKV,q"x.result()")
+            genReadMap(newBuilder, readKV, q"x.result()")
           }
         } else if (tpe <:< typeOf[BitSet]) withDecoderFor(methodKey, default) {
           val readVal =
@@ -1392,7 +1406,7 @@ object JsonCodecMaker {
           genReadArray(q"{ val x = new _root_.scala.collection.mutable.ListBuffer[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified), q"x.toList")
         } else if (tpe <:< typeOf[mutable.Iterable[_] with mutable.Builder[_, _]] &&
-            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.11.x/2.12.x
+            !(tpe <:< typeOf[mutable.ArrayStack[_]])) withDecoderFor(methodKey, default) { //ArrayStack uses 'push' for '+=' in Scala 2.12.x
           val tpe1 = typeArg1(tpe)
           genReadArray(q"{ val x = if (default.isEmpty) default else ${scalaCollectionCompanion(tpe)}.empty[$tpe1] }",
             genReadValForGrowable(tpe1 :: types, isStringified))
@@ -1418,7 +1432,7 @@ object JsonCodecMaker {
             q"""var x = new $tpe(16)
                 var i = 0""",
             q"""if (i == x.length) x = $growArray
-                x(i) = ${genReadVal(tpe1 :: types, nullValue(tpe1 :: types), isStringified, EmptyTree)}
+                x(i) = ${genReadVal(tpe1 :: types, genNullValue(tpe1 :: types), isStringified, EmptyTree)}
                 i += 1""",
             q"if (i == x.length) x else $shrinkArray")
         } else if (tpe <:< typeOf[Enumeration#Value]) withDecoderFor(methodKey, default) {
@@ -1476,12 +1490,12 @@ object JsonCodecMaker {
           val indexedTypes = tpe.typeArgs.zipWithIndex
           val readFields = indexedTypes.tail.foldLeft[Tree] {
             val t = typeArg1(tpe)
-            q"val _1: $t = ${genReadVal(t :: types, nullValue(t :: types), isStringified, EmptyTree)}"
+            q"val _1: $t = ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}"
           }{ case (acc, (ta, i)) =>
             val t = ta.dealias
             q"""..$acc
                 val ${TermName("_" + (i + 1))}: $t =
-                  if (in.isNextToken(',')) ${genReadVal(t :: types, nullValue(t :: types), isStringified, EmptyTree)}
+                  if (in.isNextToken(',')) ${genReadVal(t :: types, genNullValue(t :: types), isStringified, EmptyTree)}
                   else in.commaError()"""
           }
           val params = indexedTypes.map { case (_, i) => TermName("_" + (i + 1)) }
@@ -1491,18 +1505,13 @@ object JsonCodecMaker {
                 else in.arrayEndError()
               } else in.readNullOrTokenError(default, '[')"""
         } else if (isSealedClass(tpe)) withDecoderFor(methodKey, default) {
-          val hashCode: Type => Int = t => {
-            val cs = discriminatorValue(t).toCharArray
-            JsonReader.toHashCode(cs, cs.length)
-          }
-          val length: Type => Int = t => discriminatorValue(t).length
           val leafClasses = adtLeafClasses(tpe)
           val discriminatorError = cfg.discriminatorFieldName
             .fold(q"in.discriminatorError()")(n => q"in.discriminatorValueError($n)")
 
           def genReadLeafClass(subTpe: Type): Tree =
-            if (areEqual(subTpe, tpe)) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
-            else genReadVal(subTpe :: types, nullValue(subTpe :: types), isStringified, skipDiscriminatorField)
+            if (subTpe =:= tpe) genReadNonAbstractScalaClass(types, skipDiscriminatorField)
+            else genReadVal(subTpe :: types, genNullValue(subTpe :: types), isStringified, skipDiscriminatorField)
 
           def genReadCollisions(subTpes: collection.Seq[Type]): Tree =
             subTpes.foldRight(discriminatorError) { case (subTpe, acc) =>
@@ -1516,8 +1525,13 @@ object JsonCodecMaker {
             }
 
           def genReadSubclassesBlock(leafClasses: collection.Seq[Type]): Tree =
-            if (leafClasses.size <= 8 && leafClasses.map(length).sum <= 64) genReadCollisions(leafClasses)
-            else {
+            if (leafClasses.size <= 8 && leafClasses.foldLeft(0)(_ + discriminatorValue(_).length) <= 64) {
+              genReadCollisions(leafClasses)
+            } else {
+              val hashCode = (t: Type) => {
+                val cs = discriminatorValue(t).toCharArray
+                JsonReader.toHashCode(cs, cs.length)
+              }
               val cases = groupByOrdered(leafClasses)(hashCode).map { case (hash, ts) =>
                 val checkNameAndReadValue = genReadCollisions(ts)
                 cq"$hash => $checkNameAndReadValue"
@@ -1752,7 +1766,7 @@ object JsonCodecMaker {
           val tpe1 = typeArg1(tpe)
           q"""out.writeArrayStart()
               var l: _root_.scala.collection.immutable.List[$tpe1] = x
-              while (!l.isEmpty) {
+              while (l ne _root_.scala.Nil) {
                 ..${genWriteVal(q"l.head", tpe1 :: types, isStringified, EmptyTree)}
                 l = l.tail
               }
@@ -1838,11 +1852,11 @@ object JsonCodecMaker {
         else cannotFindValueCodecError(tpe)
       }
 
-      val codec = 
+      val codec =
         q"""{
               @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.All"))
               val x = new _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[$rootTpe] {
-                def nullValue: $rootTpe = ${nullValue(rootTpe :: Nil)}
+                def nullValue: $rootTpe = ${genNullValue(rootTpe :: Nil)}
                 def decodeValue(in: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonReader, default: $rootTpe): $rootTpe =
                   ${genReadVal(rootTpe :: Nil, q"default", cfg.isStringified, EmptyTree)}
                 def encodeValue(x: $rootTpe, out: _root_.com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter): _root_.scala.Unit =
@@ -1857,7 +1871,8 @@ object JsonCodecMaker {
               }
               x
             }"""
-      if (c.settings.contains("print-codecs")) {
+      if (c.settings.contains("print-codecs") ||
+        inferImplicitValue(tq"_root_.com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.PrintCodec") != EmptyTree) {
         c.info(c.enclosingPosition, s"Generated JSON codec for type '$rootTpe':\n${showCode(codec)}", force = true)
       }
       c.Expr[JsonValueCodec[A]](codec)
@@ -1872,14 +1887,13 @@ object JsonCodecMaker {
   }
 
   private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] =
-    xs.foldLeft(mutable.LinkedHashMap.empty[K, ArrayBuffer[A]]) { (m, x) =>
+    xs.foldLeft(new mutable.LinkedHashMap[K, ArrayBuffer[A]]) { (m, x) =>
       m.getOrElseUpdate(f(x), new ArrayBuffer[A]) += x
       m
     }.toSeq
 
-  private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] =
-    xs.filter {
-      val seen = new mutable.HashSet[A]
-      x => !seen.add(x)
-    }
+  private[this] def duplicated[A](xs: collection.Seq[A]): collection.Seq[A] = xs.filter {
+    val seen = new mutable.HashSet[A]
+    x => !seen.add(x)
+  }
 }

@@ -7,7 +7,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.UserAPI._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
 import java.math.MathContext
 
 class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {

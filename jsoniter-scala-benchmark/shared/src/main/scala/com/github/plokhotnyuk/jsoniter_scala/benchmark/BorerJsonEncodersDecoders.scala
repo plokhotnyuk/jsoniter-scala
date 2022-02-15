@@ -1,10 +1,9 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.math.MathContext
-import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, MonthDay, OffsetDateTime, OffsetTime, Period, Year, YearMonth, ZoneId, ZoneOffset, ZonedDateTime}
+import java.time._
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-
 import com.github.plokhotnyuk.jsoniter_scala.benchmark.SuitEnum.SuitEnum
 import io.bullet.borer.{AdtEncodingStrategy, Codec, Decoder, Encoder, Reader, Writer}
 import io.bullet.borer.Borer.Error._

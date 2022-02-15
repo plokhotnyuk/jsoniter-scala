@@ -4,7 +4,7 @@
 [![Scala Steward](https://img.shields.io/badge/Scala_Steward-helping-brightgreen.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
 [![Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/plokhotnyuk/jsoniter-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.0.0.svg)](https://www.scala-js.org)
-[![Maven Central](https://img.shields.io/badge/maven--central-2.12.1-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
+[![Maven Central](https://img.shields.io/badge/maven--central-2.13.4-blue.svg)](https://search.maven.org/search?q=jsoniter-scala-macros)
 
 Scala macros that generate codecs for case classes, standard types, and collections to get maximum performance of JSON 
 parsing and serialization.
@@ -18,10 +18,9 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
-libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-9880H CPU @ 2.3GHz
-(max 4.8GHz), RAM 16Gb DDR4-2400, macOS Mojave 10.14.6, and latest versions of Amazon Corretto 8/11, OpenJDK 18
-(early-access build) [*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
-GraalVM CE 21.3 (dev build) for Java 11/16, GraalVM EE 21.2 (release) for Java 8/11/16.
+libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i7-8750H CPU @ 2.2GHz
+(max 4.1GHz), RAM 16Gb DDR4-2400, macOS Monterey 12.1, and latest versions of Azul Zulu 8/11/17[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+GraalVM CE/EE 22.0 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
 compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 5.1 with GCC
@@ -135,9 +134,10 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Both key and value codecs are specialized to work with primitives efficiently without boxing/unboxing
 - No extra buffering is required when parsing from `java.io.InputStream` or serializing to `java.io.OutputStream`
 - Using black box macros only for codec generation ensures that your types will never be changed
-- Ability to print all generated code for codecs using a custom scala compiler option: `-Xmacro-settings:print-codecs`
+- Ability to print generated code for codecs using an implicit val of `CodecMakerConfig.PrintCodec` type in a scope of 
+  codec derivation
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Releases for different Scala versions: 2.11, 2.12, 2.13, and 3
+- Releases for different Scala versions: 2.12, 2.13, and 3.1
 - Suppressing of all WartRemover warnings for generated codecs  
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
@@ -193,9 +193,9 @@ list of dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.12.1",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.4",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.12.1" % "compile-internal"
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.4" % "compile-internal"
 )
 ```
 
@@ -215,15 +215,25 @@ val user = readFromArray("""{"name":"John","devices":[{"id":1,"model":"HTC One X
 val json = writeToArray(User(name = "John", devices = Seq(Device(id = 2, model = "iPhone X"))))
 ```
 
-To see generated code for codecs add the following line to your sbt build file:
+To print generated code for codecs add the following line to the scope of the codec derivation before `make` call.
+
+For Scala 2.x:
+```scala
+implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {} 
+```
+
+For Scala 3:
+```scala
+given CodecMakerConfig.PrintCodec with {}
+```
+
+To print _all_ generated code add the following line to your `sbt` build file (for Scala 2.x only):
 ```sbt
 scalacOptions ++= Seq("-Xmacro-settings:print-codecs")
 ```
 
-Full code see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
+Full code of this `How to` section see in the [examples](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-examples/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/examples/Example01.scala)
 directory.
-
-Use [macrolizer](https://github.com/sirthias/macrolizer) to print the code for a selected macro call only.
 
 Also, you can use the following on-line services to generate an initial version of your data structures from JSON 
 samples: [json2caseclass](https://json2caseclass.cleverapps.io/), [json-to-scala-case-class](https://transform.now.sh/json-to-scala-case-class/), 
@@ -263,10 +273,10 @@ For all dependent projects it is recommended to use [sbt-updates plugin](https:/
 So if your system is sensitive for that and can accept untrusted input then avoid parsing with `java.io.InputStream` and
 check the input length for other ways of parsing.
 
-2. Scalac 2.11 and earlier versions of Scalac 2.12 and 2.13 have a bug that affects case classes which have 2 fields 
-where the name of one is a prefix for another name that contains a character that should be encoded immediately after
-the prefix (like `o` and `o-o`). You will get compilation or runtime error, depending on the version of the compiler, 
-see details of the issue [here](https://github.com/scala/bug/issues/11212).
+2. Earlier versions of Scalac 2.12 and 2.13 have a bug that affects case classes which have 2 fields where the name of 
+one is a prefix for another name that contains a character that should be encoded immediately after the prefix (like 
+`o` and `o-o`). You will get compilation or runtime error, depending on the version of the compiler, see details of 
+the issue [here](https://github.com/scala/bug/issues/11212).
 
 Use latest versions of Scala 2.12 or 2.13 were the issue was fixed or move a definition of the field with encoded chars 
 (`o-o` in our case) to be after the field that is affected by the exception (after the `o` field) like [here](https://github.com/plokhotnyuk/jsoniter-scala/blob/df3a3e237ce61991e9f4e6c2c50516eb6e70ac45/jsoniter-scala-macros/shared/src/test/scala-2.11/com.github.plokhotnyuk.jsoniter_scala.macros/JsonCodecMaker211Spec.scala#L10).
@@ -300,8 +310,9 @@ java.lang.StackOverflowError
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 	at scala.tools.nsc.transform.ExplicitOuter$OuterPathTransformer.outerPath(ExplicitOuter.scala:267)
 ```
-Also, [internal compiler error](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) can happen during compilation 
-of derived codecs for ADT definitions that are nested in some classes or functions like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48)
+Also, unexpected compiler errors ([1](https://github.com/plokhotnyuk/jsoniter-scala/issues/551) and [2](https://github.com/lampepfl/dotty/issues/12508))
+can happen during compilation of ADT definitions or their derived codecs if they are nested in some classes or functions
+like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b73efac6c5ecaa4c28c9d128f48).
 
 Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
 _object_ (not a class) instead.
@@ -316,7 +327,7 @@ _object_ (not a class) instead.
 [error]   called from core module analyzer
 ```
 
-The workaround is to split sources for JVM and JS and use Java enum emulation for JS.
+The workaround for Scala 2 is to split sources for JVM and JS and use Java enum emulation for JS.
 
 Code for JVM:
 ```java
@@ -342,19 +353,38 @@ object Level {
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
 
-6. Some kinds or versions of browsers can show low performance in runtime when the compiler emits ES 2015 that is 
-a default option for Scala.js 1.0+.
-
-A workaround is using the following configuration for the compiler to produce ES 5.1 output:
+For Scala 3 the workaround can be the same for JVM and JS:
+```scala
+enum Level extends Enum[Level] {
+  case HIGH
+  case LOW
+}
 ```
-scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
-```
 
-7. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
+6. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
 `Some(Some(Some(x: String))))` values can be serialized and then parsed without lost of the info. `Some(None)` and 
 `Some(Some(None))` values will be normalized to `None`.
 
 A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
+
+7. Dotty with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+```scala
+object LocationType extends Enumeration {
+  type LocationType = Value
+
+  val IP, GPS: LocationType = Value
+}
+```
+
+Workaround is to redefine enums with explicit names:
+```scala
+object LocationType extends Enumeration {
+  type LocationType = Value
+
+  val IP = Value("IP")
+  val GPS = Value("GPS")
+}
+```
 
 ## How to develop
 
@@ -369,14 +399,7 @@ sbt clean +test +mimaReportBinaryIssues
 ```
 
 BEWARE: jsoniter-scala is included into [Scala Community Build](https://github.com/scala/community-builds)
- for 2.11.x, 2.12.x, and 2.13.x versions of Scala.
- 
-### Printing of code generated by macros
-
-To see and check code generated by the `make` macro add the `-Dmacro.settings=print-codecs` option like here:
-```sh
-sbt -Dmacro.settings=print-codecs clean test
-```
+ for 2.12.x and 2.13.x versions of Scala.
 
 ### Run JVM benchmarks
 
@@ -549,7 +572,7 @@ that is used in the Scala ecosystem.
 
 Double-check binary and source compatibility, including behavior, and release using the following command:
 ```sh
-sbt -java-home /usr/lib/jvm/corretto-8 -J-Xmx8g release
+sbt -java-home /usr/lib/jvm/zulu-8 -J-Xmx10g release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on

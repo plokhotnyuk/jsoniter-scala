@@ -2,18 +2,26 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.util.{Objects, UUID}
+import java.util.{Locale, Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
+import java.time.format.DateTimeFormatter
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
-
-//given JsonCodecMakerSettings.PrintCodec with {}
 
 case class UserId(id: String) extends AnyVal
 
 case class OrderId(value: Int) extends AnyVal
+
+object Alias {
+  type I = Int
+  type S = String
+
+  case class UserId(id: S) extends AnyVal
+
+  case class OrderId(value: I) extends AnyVal
+}
 
 object UserId2 {
   type Opaque = Base with Tag
@@ -95,7 +103,7 @@ case class JavaTypes(uuid: UUID)
 object LocationType extends Enumeration {
   type LocationType = Value
 
-  // bug in ScalaJS
+  //FIXME: With Dotty + ScalaJS the `LocationType.GPS.toString` call returns "<Unknown name for enum field #1 of class class scala.Enumeration$Val>":
   //val IP, GPS: LocationType = Value
   val IP = Value("IP")
   val GPS = Value("GPS")
@@ -262,7 +270,6 @@ object GADT2 {
   case class CopyOver(src: Seq[_root_.scala.Byte], path: String) extends GADT2[Int]
 }
 
-
 sealed trait Fruit[T <: Fruit[T]] extends Product with Serializable
 
 final case class Apple(family: String) extends Fruit[Apple]
@@ -274,15 +281,28 @@ case class Basket[T <: Fruit[T]](fruits: List[T])
 case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
 object HKField {
-      sealed trait Foo[A[_]] extends Product with Serializable
+  sealed trait Foo[A[_]] extends Product with Serializable
 
-      case class Bar[A[_]](a: A[Int]) extends Foo[A]
+  case class Bar[A[_]](a: A[Int]) extends Foo[A]
 
-      case class Baz[A[_]](a: A[String]) extends Foo[A]
+  case class Baz[A[_]](a: A[String]) extends Foo[A]
+}
+
+object KingDom {
+  sealed trait Human
+
+  object Human {
+    final case class Subject(name: String) extends Human
+
+    final case class King(name: String, reignOver: Iterable[Human]) extends Human
+  }
 }
 
 class JsonCodecMakerSpec extends VerifyingSpec {
   import NamespacePollutions._
+
+  //given CodecMakerConfig.PrintCodec with {}
+  //implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
 
   val codecOfPrimitives: JsonValueCodec[Primitives] = make
   val codecOfStandardTypes: JsonValueCodec[StandardTypes] = make
@@ -304,7 +324,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
   val codecOfADTList2: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None))
   val codecOfADTList3: JsonValueCodec[List[AdtBase]] = make(CodecMakerConfig.withRequireDiscriminatorFirst(false).withBigIntDigitsLimit(20001))
 
-  "JsonCodecMaker.make generate codes which" should {
+  "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize case classes with primitives" in {
       verifySerDeser(codecOfPrimitives, Primitives(1.toByte, 2.toShort, 3, 4L, bl = true, 'V', 1.1, 2.2f),
         """{"b":1,"s":2,"i":3,"l":4,"bl":true,"ch":"V","dbl":1.1,"f":2.2}""")
@@ -487,7 +507,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         override def encodeKey(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
           case Level.LOW => out.writeKey(0)
           case Level.HIGH => out.writeKey(1)
-          case _ => out.encodeError("illegal enum value")
+          case null => out.encodeError("illegal enum value: null")
         }
       }
       verifySerDeser(make[Map[Level, Int]], Map(Level.HIGH -> 100), """{"1":100}""")
@@ -511,7 +531,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         override def encodeValue(x: Level, out: JsonWriter): _root_.scala.Unit = x match {
           case Level.LOW => out.writeVal(0)
           case Level.HIGH => out.writeVal(1)
-          case _ => out.encodeError("illegal enum value")
+          case null => out.encodeError("illegal enum value: null")
         }
 
         override def nullValue: Level = null.asInstanceOf[Level]
@@ -647,6 +667,39 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Array[ZonedDateTime]],
         _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:01Z")),
         "[\"2020-04-10T10:07:00Z\",\"2020-04-10T10:07:01Z\"]")
+
+      case class FruitStore(
+        bar: String,
+        opensAt: Option[LocalDateTime], // Uses default codec
+        closesAt: Option[LocalDateTime], // Uses default codec
+        fruits: Seq[Fruit])
+
+      case class Fruit(
+        bar: String,
+        expiresAt: Option[LocalDateTime]) // This field needs to use the special codec
+
+      val customCodecOfLocalDateTime: JsonValueCodec[LocalDateTime] = new JsonValueCodec[LocalDateTime] {
+        private val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ENGLISH)
+
+        val nullValue: LocalDateTime = null
+
+        def decodeValue(in: JsonReader, default: LocalDateTime): LocalDateTime =
+          LocalDateTime.parse(in.readString(null), formatter)
+
+        def encodeValue(x: LocalDateTime, out: JsonWriter): _root_.scala.Unit =
+          out.writeNonEscapedAsciiVal(formatter.format(x))
+      }
+      implicit val fruitCodec: JsonValueCodec[Fruit] = {
+        implicit val overrideCodecOfLocalDateTime = customCodecOfLocalDateTime
+
+        make[Fruit]
+      }
+
+      verifySerDeser(make[FruitStore],
+        FruitStore("FRESH", _root_.scala.Some(LocalDateTime.parse("2022-02-02T11:22")),
+          _root_.scala.Some(LocalDateTime.parse("2022-03-01T22:33")),
+          Seq(Fruit("apple", _root_.scala.Some(LocalDateTime.parse("2022-03-01T22:33"))))),
+        """{"bar":"FRESH","opensAt":"2022-02-02T11:22","closesAt":"2022-03-01T22:33","fruits":[{"bar":"apple","expiresAt":"01/03/2022 22:33"}]}""")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
@@ -852,6 +905,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize stringified top-level value classes" in {
       verifySerDeser(make[OrderId](CodecMakerConfig.withIsStringified(true)), OrderId(123123), "\"123123\"")
     }
+    "serialize and deserialize value classes with type aliases" in {
+      verifySerDeser(make[Alias.UserId], Alias.UserId("123abc"), "\"123abc\"")
+      verifySerDeser(make[Alias.OrderId], Alias.OrderId(123123), "123123")
+    }
     "serialize and deserialize case classes with options" in {
       verifySerDeser(codecOfOptions,
         Options(Option("VVV"), Option(BigInt(4)), Option(Set()), Option(1L), Option(_root_.java.lang.Long.valueOf(2L)),
@@ -865,31 +922,27 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     "serialize and deserialize top-level options using null for None values" in {
       val codecOfOptionOfInt = make[Option[Int]]
       verifySerDeser(codecOfOptionOfInt, _root_.scala.None, "null")
-      verifySerDeser(codecOfOptionOfInt, Some(1), "1")
+      verifySerDeser(codecOfOptionOfInt, _root_.scala.Some(1), "1")
 
       case class Inner(a: Int, b: _root_.scala.Boolean, c: String)
 
       val codecOfOptionOfInner = make[Option[Inner]]
       verifySerDeser(codecOfOptionOfInner, _root_.scala.None, "null")
-      verifySerDeser(codecOfOptionOfInner, Some(Inner(1, b = true, "VVV")), """{"a":1,"b":true,"c":"VVV"}""")
+      verifySerDeser(codecOfOptionOfInner, _root_.scala.Some(Inner(1, b = true, "VVV")), """{"a":1,"b":true,"c":"VVV"}""")
     }
     "serialize and deserialize options in collections using null for None values" in {
-      verifySerDeser(make[Array[Option[Int]]], _root_.scala.Array(_root_.scala.None, Some(1)), "[null,1]")
-      verifySerDeser(make[List[Option[Int]]], List(Some(1), _root_.scala.None), "[1,null]")
-      verifySerDeser(make[Set[Option[Int]]], Set(Some(1), _root_.scala.None), "[1,null]")
-      verifySerDeser(make[Map[String, Option[Int]]], Map("VVV" -> _root_.scala.None, "WWW" -> Some(1)),
+      verifySerDeser(make[Array[Option[Int]]], _root_.scala.Array(_root_.scala.None, _root_.scala.Some(1)), "[null,1]")
+      verifySerDeser(make[List[Option[Int]]], List(_root_.scala.Some(1), _root_.scala.None), "[1,null]")
+      verifySerDeser(make[Set[Option[Int]]], Set(_root_.scala.Some(1), _root_.scala.None), "[1,null]")
+      verifySerDeser(make[Map[String, Option[Int]]], Map("VVV" -> _root_.scala.None, "WWW" -> _root_.scala.Some(1)),
         """{"VVV":null,"WWW":1}""")
     }
     "don't generate codecs when options are used as keys in maps" in {
       val message = intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[Map[Option[Int], Option[String]]]"
-      }).getMessage 
-      assert(message.contains {
-        "No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec"
-      })
-      assert(message.contains {
-        "Option[Int]"
-      })
+      }).getMessage
+      assert(message.contains("No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec"))
+      assert(message.contains("Option[Int]"))
     }
     "serialize case classes with empty options as null when the transientNone flag is off" in {
       verifySerDeser(make[Options](CodecMakerConfig.withTransientNone(false)),
@@ -903,12 +956,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "serialize and deserialize top-level options" in {
       val codecOfStringOption = make[Option[String]]
-      verifySerDeser(codecOfStringOption, Some("VVV"), "\"VVV\"")
+      verifySerDeser(codecOfStringOption, _root_.scala.Some("VVV"), "\"VVV\"")
       verifySerDeser(codecOfStringOption, _root_.scala.None, "null")
     }
     "serialize and deserialize stringified top-level numeric options" in {
       val codecOfStringifiedOption = make[Option[BigInt]](CodecMakerConfig.withIsStringified(true))
-      verifySerDeser(codecOfStringifiedOption, Some(BigInt(123)), "\"123\"")
+      verifySerDeser(codecOfStringifiedOption, _root_.scala.Some(BigInt(123)), "\"123\"")
       verifySerDeser(codecOfStringifiedOption, _root_.scala.None, "null")
     }
     "throw parse exception in case of unexpected value for option" in {
@@ -921,12 +974,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfNestedOptions = make[NestedOptions]
       verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), "{}")
       verifyDeser(codecOfNestedOptions, NestedOptions(_root_.scala.None), "{\"x\":null}")
-      verifySerDeser(codecOfNestedOptions, NestedOptions(Some(Some(Some("VVV")))), "{\"x\":\"VVV\"}")
-      verifySer(codecOfNestedOptions, NestedOptions(Some(_root_.scala.None)), "{\"x\":null}") // FIXME: add support of intermediate nested options
-      verifySer(codecOfNestedOptions, NestedOptions(Some(Some(_root_.scala.None))), "{\"x\":null}") // FIXME: add support of intermediate nested options
+      verifySerDeser(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.Some(_root_.scala.Some("VVV")))),
+        "{\"x\":\"VVV\"}")
+      verifySer(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.None)),
+        "{\"x\":null}") // FIXME: add support of intermediate nested options
+      verifySer(codecOfNestedOptions, NestedOptions(_root_.scala.Some(_root_.scala.Some(_root_.scala.None))),
+        "{\"x\":null}") // FIXME: add support of intermediate nested options
     }
     "serialize and deserialize case classes with tuples" in {
-      verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, Some(LocationType.GPS))),
+      verifySerDeser(codecOfTuples, Tuples((1, 2.2, List('V')), ("VVV", 3, _root_.scala.Some(LocationType.GPS))),
         """{"t1":[1,2.2,["V"]],"t2":["VVV",3,"GPS"]}""")
     }
     "throw parse exception in case of unexpected number of JSON array values" in {
@@ -1277,17 +1333,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
     }
     "don't generate codecs for maps with not supported types of keys" in {
       val message = intercept[TestFailedException](assertCompiles {
-        """JsonCodecMaker.make[Map[_root_.java.util.Date,String]]"""
+        """JsonCodecMaker.make[Map[_root_.java.util.Date, String]]"""
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(message.contains{
+      assert(message.contains {
+        if (ScalaVersionCheck.isScala2) {
           """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_]' defined for 'java.util.Date'."""
-        }) 
-      } else if (ScalaVersionCheck.isScala3) {
-        """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."""
-      } else {
-        assert(message === "Invalid Scala Version")
-      }
+        } else {
+          """No implicit 'com.github.plokhotnyuk.jsoniter_scala.core.JsonKeyCodec[_ >: scala.Nothing <: scala.Any]' defined for '_root_.java.util.Date'."""
+        }
+      })
     }
     "serialize and deserialize with keys defined as is by fields" in {
       verifySerDeser(make[CamelPascalSnakeKebabCases], CamelPascalSnakeKebabCases(1, 2, 3, 4, 5, 6, 7, 8),
@@ -1417,6 +1471,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Recursive](CodecMakerConfig.withAllowRecursiveTypes(true)),
         Recursive("VVV", 1.1, List(1, 2, 3), Map('S' -> Recursive("WWW", 2.2, List(4, 5, 6), Map()))),
         "{\"s\":\"VVV\",\"bd\":1.1,\"l\":[1,2,3],\"m\":{\"S\":{\"s\":\"WWW\",\"bd\":2.2,\"l\":[4,5,6]}}}")
+      verifySerDeser(make[KingDom.Human](CodecMakerConfig.withAllowRecursiveTypes(true)),
+        KingDom.Human.King(name = "John", reignOver = Seq(KingDom.Human.Subject("Joanna"))),
+        """{"type":"King","name":"John","reignOver":[{"type":"Subject","name":"Joanna"}]}""")
     }
     "don't generate codecs for recursive types by default" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -1452,12 +1509,12 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         assert(hkfRecMessage.contains("HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]"))
         assert(hkfRecMessage.contains("Option[HigherKindedType[[A >: scala.Nothing <: scala.Any] => scala.Option[A]]]"))
       }
-      assert(hkfRecMessage.contains{
+      assert(hkfRecMessage.contains {
         """Please consider
           |using a custom implicitly accessible codec for this type to control the level of recursion or turn on the
           |'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.allowRecursiveTypes' for the trusted input
           |that will not exceed the thread stack size.""".stripMargin.replace('\n', ' ')
-      }) 
+      })
     }
     "serialize and deserialize indented by spaces and new lines if it was configured for writer" in {
       verifySerDeser(codecOfRecursive,
@@ -1490,9 +1547,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         "{\r \"s\":\t\"VVV\",\n\t\"bd\":\t1.1,\r  \"l\":\t[\r\t\t1,\r\t\t2,\r\t\t3\r\t],\r\t\"m\":\t{\n\t\t\"S\":\t{\r  \t\t\"s\":\t\t \t\"WWW\",\n\t\"bd\":\t2.2,\"l\":\t[\r\t\t4,\n\n\n5,\r\t\t6\r\t]\n}\r}\r}")
     }
     "throw the stack overflow error in case of serialization of a cyclic graph" in {
-      case class Cyclic(opt: Option[Cyclic])
+      case class Cyclic(var opt: Option[Cyclic])
 
-      lazy val cyclic: Cyclic = Cyclic(Option(cyclic))
+      val cyclic = Cyclic(_root_.scala.None)
+      cyclic.opt = _root_.scala.Some(cyclic)
       val codecOfCyclic = make[Cyclic](CodecMakerConfig.withAllowRecursiveTypes(true))
       val len = 10000000
       val cfg = WriterConfig.withPreferredBufSize(1)
@@ -1552,7 +1610,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       assert(intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[PolymorphicDefaults[String, Int]]"
       }).getMessage.contains {
-        "polymorphic expression cannot be instantiated to expected type"
+        if (ScalaVersionCheck.isScala2) "polymorphic expression cannot be instantiated to expected type"
+        else "Polymorphic expression cannot be instantiated to expected type"
       })
     }
     "don't serialize and deserialize transient and non constructor defined fields of case classes" in {
@@ -1651,7 +1710,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"AAA","a":1},{"type":"BBB","a":1},{"type":"CCC","a":1,"b":"VVV"},{"type":"DDD"}]""")
       verifySerDeser(codecOfADTList2, List(AAA(1), BBB(BigInt(1)), CCC(1, "VVV"), DDD),
         """[{"AAA":{"a":1}},{"BBB":{"a":1}},{"CCC":{"a":1,"b":"VVV"}},"DDD"]""")
-      verifySerDeser(make[List[AdtBase]](CodecMakerConfig.withDiscriminatorFieldName(Some("t"))),
+      verifySerDeser(make[List[AdtBase]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("t"))),
         List(CCC(2, "WWW"), CCC(1, "VVV")), """[{"t":"CCC","a":2,"b":"WWW"},{"t":"CCC","a":1,"b":"VVV"}]""")
       verifySerDeser(makeWithoutDiscriminator[List[Weapon]], List(Weapon.Axe, Weapon.Sword), """["Axe","Sword"]""")
       verifySerDeser(make[List[Weapon]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.None)),
@@ -1711,7 +1770,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       final case class B(c: String) extends Base
 
-      verifySerDeser(make[List[Base]](CodecMakerConfig.withDiscriminatorFieldName(Some("t")).withSkipUnexpectedFields(false)),
+      verifySerDeser(make[List[Base]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("t")).withSkipUnexpectedFields(false)),
         List(A(B("x")), B("x")), """[{"t":"A","b":{"c":"x"}},{"t":"B","c":"x"}]""")
       verifySerDeser(makeWithRequiredCollectionFieldsAndNameAsDiscriminatorFieldName[List[Base]],
         List(A(B("x")), B("x")), """[{"name":"A","b":{"c":"x"}},{"name":"B","c":"x"}]""")
@@ -1746,7 +1805,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       case class Б(с: String) extends База
 
-      verifySerDeser(make[List[База]](CodecMakerConfig.withDiscriminatorFieldName(Some("тип")).withSkipUnexpectedFields(false)),
+      verifySerDeser(make[List[База]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("тип")).withSkipUnexpectedFields(false)),
         List(А(Б("x")), Б("x")), """[{"тип":"А","б":{"с":"x"}},{"тип":"Б","с":"x"}]""")
     }
     "serialize and deserialize ADTs with Scala operators in names" in {
@@ -1756,11 +1815,28 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       case object `Europe/Paris` extends TimeZone
 
-      verifySerDeser(make[List[TimeZone]](CodecMakerConfig.withDiscriminatorFieldName(Some("zoneId"))),
+      verifySerDeser(make[List[TimeZone]](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("zoneId"))),
         List(`US/Alaska`, `Europe/Paris`),
         """[{"zoneId":"US/Alaska"},{"zoneId":"Europe/Paris"}]""")
     }
-    "serialize and deserialize ADTs with leafs that have mixed traits that extends the same base" in {
+    "serialize and deserialize ADTs with deeply nested hierarchies" in {
+      sealed trait Base extends Product with Serializable
+
+      sealed trait Base2 extends Base
+
+      sealed trait Base3 extends Base2
+
+      sealed abstract class Base4 extends Base3
+
+      sealed abstract class Base5 extends Base4
+
+      final case class A(a: Int) extends Base3
+
+      final case class B(b: String) extends Base5
+
+      verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+    }
+    "serialize and deserialize ADTs with leaves that have mixed traits that extends the same base" in {
       sealed trait Base extends Product with Serializable
 
       sealed trait Base2 extends Base
@@ -1769,10 +1845,9 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       final case class B(b: String) extends Base with Base2
 
-      verifySerDeser(make[List[Base]], List(A(1), B("VVV")),
-        """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+      verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
     }
-    "serialize and deserialize ADTs with leafs that have a mixed trait hierarchy that makes a diamond" in {
+    "serialize and deserialize ADTs with leaves that have a mixed trait hierarchy that makes a diamond" in {
       sealed trait Base extends Product with Serializable
 
       sealed trait Base1 extends Base
@@ -1783,8 +1858,13 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       final case class B(b: String) extends Base1 with Base2
 
-      verifySerDeser(make[List[Base]], List(A(1), B("VVV")),
-        """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+      verifySerDeser(make[List[Base]], List(A(1), B("VVV")), """[{"type":"A","a":1},{"type":"B","b":"VVV"}]""")
+    }
+    "serialize and deserialize case class that have a field named as discriminator" in {
+      case class Foo(hint: String)
+
+      verifySerDeser(JsonCodecMaker.make[Foo](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("hint"))),
+        Foo("a"), """{"hint":"a"}""")
     }
     "throw parse exception in case of duplicated discriminator field" in {
       verifyDeserError(codecOfADTList1, """[{"type":"AAA","a":1,"type":"AAA"}]""",
@@ -1834,17 +1914,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object B extends BX
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(bxClassMessage.contains {
-          """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
-            |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-        })
-      } else {
-        assert(bxClassMessage.contains {
-          """Only sealed traits or abstract classes are supported as an ADT base. Please
-             |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        })
-      }
+      assert(bxClassMessage.contains {
+        """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
+          |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
+      })
       val bxTraitMessage = intercept[TestFailedException](assertCompiles {
         """sealed trait X
           |sealed trait AX extends X
@@ -1853,17 +1926,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object B extends BX
           |JsonCodecMaker.make[X]""".stripMargin
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(bxTraitMessage.contains {
+      assert(bxTraitMessage.contains {
         """Only sealed intermediate traits or abstract classes are supported. Please consider using of them for ADT
           |with base 'X' or provide a custom implicitly accessible codec for the ADT base.""".stripMargin.replace('\n', ' ')
-        })
-      } else {
-        assert(bxTraitMessage.contains {
-        """Only sealed traits or abstract classes are supported as an ADT base. Please
-          |consider sealing the 'BX' or provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        })
-      }
+      })
     }
     "don't generate codecs for ADT bases without leaf classes" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -1898,14 +1964,16 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |case object Data1 extends Data
           |val c = make[Data]""".stripMargin
       }).getMessage.contains {
-        "Data1" //FIXME: an error message with Scala 2.11.12 is "Data1 is already defined as (compiler-generated) case class companion object Data1"
+        """Duplicated discriminator defined for ADT base 'Data': 'Data1'. Values for leaf classes of ADT that are
+          |returned by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.adtLeafClassNameMapper'
+          |function should be unique.""".stripMargin.replace('\n', ' ')
       })
     }
     "don't generate codecs for case classes with fields that the same name as discriminator name" in {
       assert(intercept[TestFailedException](assertCompiles {
         """sealed trait DuplicatedJsonName extends Product with Serializable
           |case class A(x: Int) extends DuplicatedJsonName
-          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig.withDiscriminatorFieldName(Some("x")))""".stripMargin
+          |JsonCodecMaker.make[DuplicatedJsonName](CodecMakerConfig.withDiscriminatorFieldName(_root_.scala.Some("x")))""".stripMargin
       }).getMessage.contains {
         """Duplicated JSON key(s) defined for 'A': 'x'. Keys are derived from field names of the class that are mapped
           |by the 'com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig.fieldNameMapper' function or can be
@@ -1921,22 +1989,20 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """oneFruit.copy(fruits = oneFruit.fruits :+ Orange(0))"""
       }).getMessage
       if (ScalaVersionCheck.isScala2) {
-        assert(message.contains("""do not conform to method copy's type parameter bounds"""))
-      } else if (ScalaVersionCheck.isScala3) {
-        assert(message.contains("Apple") && message.contains("Orange"))
+        assert(message.contains("inferred type arguments [com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: Product with Serializable]]] do not conform to method copy's type parameter bounds [T <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[T]]") ||
+          message.contains("inferred type arguments [com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[_ >: com.github.plokhotnyuk.jsoniter_scala.macros.Apple with com.github.plokhotnyuk.jsoniter_scala.macros.Orange <: Product with java.io.Serializable]]] do not conform to method copy's type parameter bounds [T <: com.github.plokhotnyuk.jsoniter_scala.macros.Fruit[T]]"))
       } else {
-        assert(false)
+        assert(message.contains("Found:    com.github.plokhotnyuk.jsoniter_scala.macros.Orange\nRequired: com.github.plokhotnyuk.jsoniter_scala.macros.Apple"))
       }
-      verifySerDeser(make[Basket[Apple]], twoFruits,
-        """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
+      verifySerDeser(make[Basket[Apple]], twoFruits, """{"fruits":[{"family":"golden"},{"family":"red"}]}""")
       verifySerDeser(make[Basket[Orange]], Basket(List(Orange(1), Orange(2))),
         """{"fruits":[{"color":1},{"color":2}]}""")
     }
-    "serialize and deserialize when the root codec defined as an impicit val" in {
-      implicit val implicitRootCodec: JsonValueCodec[Int] = make
-      verifySerDeser(implicitRootCodec, 1, "1")
+    "serialize and deserialize dependent codecs which use implicit val" in {
+      implicit val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig.withIsStringified(true))
+      verifySerDeser(make[List[Int]], List(1, 2), "[\"1\",\"2\"]")
     }
-    "serialize and deserialize dependent codecs which use lazy val to don't depend on order of definition" in {
+    "serialize and deserialize dependent codecs which use implicit lazy val to don't depend on order of definition" in {
       verifySerDeser(make[List[Int]], List(1, 2), "[\"1\",\"2\"]")
       implicit lazy val intCodec: JsonValueCodec[Int] = make(CodecMakerConfig.withIsStringified(true))
     }
@@ -2051,14 +2117,14 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         case "a" => "value"
       }), Right("VVV"), """{"type":"Right","value":"VVV"}""")
 
-      //FIXME: dotty bug - extract and submit to dotty. For now, let's move up:
+      //FIXME: dotty bug (see https://github.com/lampepfl/dotty/issues/12508). For now, let's move up:
       //case class FirstOrderType[A, B](a: A, b: B, oa: Option[A], bs: List[B])
 
       verifySerDeser(make[FirstOrderType[Int, String]],
-        FirstOrderType[Int, String](1, "VVV", Some(1), List("WWW")),
+        FirstOrderType[Int, String](1, "VVV", _root_.scala.Some(1), List("WWW")),
         """{"a":1,"b":"VVV","oa":1,"bs":["WWW"]}""")
       verifySerDeser(make[FirstOrderType[Id[Int], Id[String]]],
-        FirstOrderType[Id[Int], Id[String]](Id[Int](1), Id[String]("VVV"), Some(Id[Int](2)), List(Id[String]("WWW"))),
+        FirstOrderType[Id[Int], Id[String]](Id[Int](1), Id[String]("VVV"), _root_.scala.Some(Id[Int](2)), List(Id[String]("WWW"))),
         """{"a":1,"b":"VVV","oa":2,"bs":["WWW"]}""")
     }
     "don't generate codecs for first-order types that are specified using 'Any' type parameter" in {
@@ -2066,17 +2132,15 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """case class FirstOrder[A](a: A)
           |JsonCodecMaker.make[FirstOrder[_]]""".stripMargin
       }).getMessage
-      if (ScalaVersionCheck.isScala2) {
-        assert(message.contains {
+      assert(message.contains {
+        if (ScalaVersionCheck.isScala2) {
           """Only sealed traits or abstract classes are supported as an ADT base. Please consider sealing the 'Any' or
             |provide a custom implicitly accessible codec for it.""".stripMargin.replace('\n', ' ')
-        })
-      } else {
-        assert(message.contains {
+        } else {
           """Type bounds are not supported for type 'FirstOrder[_ >: scala.Nothing <: scala.Any]' with field type
-          |for a '_ >: scala.Nothing <: scala.Any'""".stripMargin.replace('\n', ' ')
-        })
-      }
+            |for a '_ >: scala.Nothing <: scala.Any'""".stripMargin.replace('\n', ' ')
+        }
+      })
     }
     "serialize and deserialize arrays of generic types" in {
       sealed trait GADT[A] extends Product with Serializable
@@ -2098,7 +2162,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
         """[{"type":"Exists","path":"WWW"},{"type":"ReadBytes","path":"QQQ"},{"type":"CopyOver","src":[65,65,65],"path":"OOO"}]""")
     }
     "serialize and deserialize higher-kinded types" in {
-      /* FIXME: dotty bug - extract and submit to dotty. For now, let's move up:
+      /* FIXME: dotty bug (see https://github.com/lampepfl/dotty/issues/12508). For now, let's move up:
       sealed trait Foo[A[_]] extends Product with Serializable
 
       case class Bar[A[_]](a: A[Int]) extends Foo[A]
@@ -2108,8 +2172,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       import HKField._
 
       val codecOfFooForOption = make[Foo[Option]]
-      verifySerDeser(codecOfFooForOption, Bar[Option](Some(1)), """{"type":"Bar","a":1}""")
-      verifySerDeser(codecOfFooForOption, Baz[Option](Some("VVV")), """{"type":"Baz","a":"VVV"}""")
+      verifySerDeser(codecOfFooForOption, Bar[Option](_root_.scala.Some(1)), """{"type":"Bar","a":1}""")
+      verifySerDeser(codecOfFooForOption, Baz[Option](_root_.scala.Some("VVV")), """{"type":"Baz","a":"VVV"}""")
     }
     "serialize and deserialize case classes with an auxiliary constructor using primary one" in {
       case class AuxiliaryConstructor(i: Int, s: String = "") {
@@ -2133,33 +2197,23 @@ class JsonCodecMakerSpec extends VerifyingSpec {
 
       verifySerDeser(PrivatePrimaryConstructor.codec, PrivatePrimaryConstructor("1"), "{\"i\":1}")
     }
-    if (ScalaVersionCheck.isScala2) {
-      "don't generate codecs for classes without a primary constructor" in {
-        assert(intercept[TestFailedException](assertCompiles {
-          "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
-        }).getMessage.contains {
+    "don't generate codecs for classes without a primary constructor" in {
+      assert(intercept[TestFailedException](assertCompiles {
+        "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
+      }).getMessage.contains {
+        if (ScalaVersionCheck.isScala2) {
           "Cannot find a primary constructor for 'Infinite.this.<local child>'"
-        })
-      }
-    } else if (ScalaVersionCheck.isScala3) {
-      "don't generate codecs for local childs" in {
-        assert(intercept[TestFailedException](assertCompiles {
-          "JsonCodecMaker.make[_root_.scala.concurrent.duration.Duration]"
-        }).getMessage.contains {
+        } else {
           "Local child symbols are not supported"
-        })
-      }
-    } else {
-      "invalid ScalaVersionCheck" in {
-        assert(false)
-      }
+        }
+      })
     }
     "don't generate codecs for case classes with multiple parameter lists in a primary constructor" in {
       assert(intercept[TestFailedException](assertCompiles {
         """case class MultiListOfArgs(i: Int)(l: Long)
           |JsonCodecMaker.make[MultiListOfArgs]""".stripMargin
       }).getMessage.contains {
-        """'MultiListOfArgs' has a primary constructor with multiple parameter lists.
+        """'MultiListOfArgs' hasn't a primary constructor with one parameter list.
           |Please consider using a custom implicitly accessible codec for this type.""".stripMargin.replace('\n', ' ')
       })
     }
@@ -2169,13 +2223,8 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |JsonCodecMaker.make[ParamHasNoAccessor]""".stripMargin
       }).getMessage
       assert(message.contains('a'))
-      assert(message.contains {
-        "'ParamHasNoAccessor'"
-      })
-      assert(message.contains {
-        "should be defined as 'val' or 'var' in the primary constructor."
-      })
-      
+      assert(message.contains("'ParamHasNoAccessor'"))
+      assert(message.contains("should be defined as 'val' or 'var' in the primary constructor."))
     }
     "don't generate codecs when all generic type parameters cannot be resolved" in {
       val message = intercept[TestFailedException](assertCompiles {
@@ -2188,9 +2237,7 @@ class JsonCodecMakerSpec extends VerifyingSpec {
           |val c = make[Foo[Bar]]""".stripMargin
       }).getMessage
       assert(message.contains("FooImpl"))
-      assert(message.contains {
-        "Please provide a custom implicitly accessible codec"
-      })
+      assert(message.contains("Please provide a custom implicitly accessible codec"))
     }
     "don't generate codecs that cannot parse own output" in {
       assert(intercept[TestFailedException](assertCompiles {
@@ -2203,10 +2250,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val message = intercept[TestFailedException](assertCompiles {
         "JsonCodecMaker.make[_root_.java.util.Date]"
       }).getMessage
-      assert(message.contains { "No implicit " })
-      assert(message.contains { "com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec" })
-      assert(message.contains { " defined for "})
-      assert(message.contains { "java.util.Date" })
+      assert(message.contains("No implicit "))
+      assert(message.contains("com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec"))
+      assert(message.contains(" defined for "))
+      assert(message.contains("java.util.Date"))
     }
   }
   "deserialize using the nullValue of codecs that are injected by implicits" in {

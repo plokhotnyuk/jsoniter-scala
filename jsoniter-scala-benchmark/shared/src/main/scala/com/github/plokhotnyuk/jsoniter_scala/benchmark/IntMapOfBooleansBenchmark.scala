@@ -1,9 +1,7 @@
 package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import org.openjdk.jmh.annotations.{Param, Setup}
-
 import scala.collection.immutable.IntMap
 
 abstract class IntMapOfBooleansBenchmark extends CommonParams {
@@ -18,7 +16,7 @@ abstract class IntMapOfBooleansBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = IntMap((1 to size).map { i =>
       (((i * 1498724053) / Math.pow(10, i % 10)).toInt, ((i * 1498724053) & 0x1) == 0)
-    }:_*)
+    }: _*)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)

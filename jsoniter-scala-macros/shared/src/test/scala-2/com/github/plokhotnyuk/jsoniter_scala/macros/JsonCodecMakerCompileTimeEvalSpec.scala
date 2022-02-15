@@ -2,10 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import org.scalatest.exceptions.TestFailedException
 
-class JsonCodecCompileTimeEvalSpec extends VerifyingSpec {
+class JsonCodecMakerCompileTimeEvalSpec extends VerifyingSpec {
+  import NamespacePollutions._
 
-  "Compile-time eval in generated codec" should {
-        
+  "JsonCodecMaker.make" should {
     "don't generate codecs when a parameter of the 'make' call depends on not yet compiled code" in {
       assert(intercept[TestFailedException](assertCompiles {
         """object A {
@@ -15,13 +15,12 @@ class JsonCodecCompileTimeEvalSpec extends VerifyingSpec {
           |}""".stripMargin
       }).getMessage.contains {
         """Cannot evaluate a parameter of the 'make' macro call for type
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecCompileTimeEvalSpec.A.B'.
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerCompileTimeEvalSpec.A.B'.
           |It should not depend on code from the same compilation module where the 'make' macro is called.
           |Use a separated submodule of the project to compile all such dependencies before their usage for
           |generation of codecs. Cause:""".stripMargin.replace('\n', ' ')
       })
     }
-
     "don't generate codecs when a parameter of the '@named' annotation depends on not yet compiled code" in {
       assert(intercept[TestFailedException](assertCompiles {
         """object A {
@@ -31,13 +30,11 @@ class JsonCodecCompileTimeEvalSpec extends VerifyingSpec {
           |}""".stripMargin
       }).getMessage.contains {
         """Cannot evaluate a parameter of the '@named' annotation in type
-          |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecCompileTimeEvalSpec.A.B'.
+          |'com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerCompileTimeEvalSpec.A.B'.
           |It should not depend on code from the same compilation module where the 'make' macro is called.
           |Use a separated submodule of the project to compile all such dependencies before their usage for
           |generation of codecs. Cause:""".stripMargin.replace('\n', ' ')
       })
     }
-
   }
-
 }

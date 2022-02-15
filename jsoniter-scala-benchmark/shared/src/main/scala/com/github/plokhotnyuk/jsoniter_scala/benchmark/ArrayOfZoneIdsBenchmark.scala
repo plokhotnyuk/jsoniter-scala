@@ -2,9 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.benchmark
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-
 import org.openjdk.jmh.annotations.{Param, Setup}
-
 import scala.jdk.CollectionConverters._
 
 abstract class ArrayOfZoneIdsBenchmark extends CommonParams {

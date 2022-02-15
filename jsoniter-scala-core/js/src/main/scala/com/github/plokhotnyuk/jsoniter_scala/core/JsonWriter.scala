@@ -6,9 +6,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.{BufferOverflowException, ByteBuffer}
 import java.time._
 import java.util.UUID
-
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter._
-
 import scala.annotation.tailrec
 import scala.{specialized => sp}
 
@@ -113,7 +111,7 @@ final class JsonWriter private[jsoniter_scala](
     }
     buf(pos) = '"'
     pos = writeString(x, 0, x.length, pos + 1, limit - 1, escapedChars)
-    if (pos + 3 > limit) pos = flushAndGrowBuf(3, pos)
+    if (pos + 3 >= limit) pos = flushAndGrowBuf(3, pos)
     buf = this.buf
     buf(pos) = '"'
     buf(pos + 1) = ':'
@@ -934,9 +932,12 @@ final class JsonWriter private[jsoniter_scala](
       val ch = s.charAt(from)
       buf(pos) = ch.toByte
       if (ch < 0x80 && escapedChars(ch) == 0) writeString(s, from + 1, to, pos + 1, posLim, escapedChars)
-      else if (config.escapeUnicode) writeEscapedString(s, from, to, pos, posLim - 12, escapedChars)
-      else writeEncodedString(s, from, to, pos, posLim - 6, escapedChars)
+      else writeEscapedOrEncodedString(s, from, pos, escapedChars)
     }
+
+  private[this] def writeEscapedOrEncodedString(s: String, from: Int, pos: Int, escapedChars: Array[Byte]): Int =
+    if (config.escapeUnicode) writeEscapedString(s, from, s.length, pos, limit - 13, escapedChars)
+    else writeEncodedString(s, from, s.length, pos, limit - 7, escapedChars)
 
   @tailrec
   private[this] def writeEncodedString(s: String, from: Int, to: Int, pos: Int, posLim: Int, escapedChars: Array[Byte]): Int =
@@ -2017,7 +2018,7 @@ final class JsonWriter private[jsoniter_scala](
     (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
   }
 
-  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Use Karatsuba technique for two positive ints
+  private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive ints
     val x2 = x & 0xFFFFFFFFL
     val y2 = y & 0xFFFFFFFFL
     val b = x2 * y2

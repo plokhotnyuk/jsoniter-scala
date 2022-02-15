@@ -21,11 +21,10 @@ jobs:
       matrix:
         java:
           - zulu@1.17
-          - graalvm-ce-java11@21
+          - graalvm-ce-java11
           - zulu@1.8
         os:
           - ubuntu-latest
-          - macOS-latest
       fail-fast: false
     steps:
       - name: Configure git
@@ -44,5 +43,5 @@ jobs:
         with:
           node-version: 14
       - name: Compile, test and check binary compatibility
-        run: "sbt -batch clean +test +mimaReportBinaryIssues"
+        run: "sbt -batch +test +mimaReportBinaryIssues"
         shell: bash

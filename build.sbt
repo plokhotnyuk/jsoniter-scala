@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import org.scalajs.linker.interface.{CheckedBehavior, ESVersion}
 import sbt._
 import scala.sys.process._
@@ -50,22 +51,23 @@ lazy val commonSettings = Seq(
         //"-Xmacro-settings:print-codecs"
       )
     } else Seq(
-        "-Xcheck-macros",
-        // "-Ycheck:all", "-Yprint-syms",
-        //"-Ydebug-error", // many stack traces, really many stack traces.
-        //"--explain"
-      )
+      "-Xcheck-macros",
+      //"-Ycheck:all",
+      //"-Yprint-syms",
+      //"-Ydebug-error", // many stack traces, really many stack traces.
+      //"--explain"
+    )
   },
   compileOrder := CompileOrder.JavaThenScala,
-  Compile/unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-     case Some((2,_)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + "-2"))
-     case _ => List.empty
+  Compile / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "main").toSeq.map(f => file(f.getPath + "-2"))
+    case _ => Seq()
   }),
-  Test/unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-     case Some((2,_)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
-     case _ => Seq.empty
+  Test / unmanagedSourceDirectories ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, _)) => CrossType.Full.sharedSrcDir(baseDirectory.value, "test").toSeq.map(f => file(f.getPath + "-2"))
+    case _ => Seq()
   }),
-  Test/testOptions += Tests.Argument("-oDF"),
+  Test / testOptions += Tests.Argument("-oDF"),
   sonatypeProfileName := "com.github.plokhotnyuk",
   versionScheme := Some("early-semver"),
   publishTo := sonatypePublishToBundle.value,
@@ -77,6 +79,20 @@ lazy val commonSettings = Seq(
       "scm:git@github.com:plokhotnyuk/jsoniter-scala.git"
     )
   )
+)
+
+lazy val jsSettings = Seq(
+  scalaJSLinkerConfig ~= {
+    _.withSemantics({
+      _.optimized
+        .withProductionMode(true)
+        .withAsInstanceOfs(CheckedBehavior.Unchecked)
+        .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
+    }).withClosureCompiler(true)
+      .withESFeatures(_.withESVersion(ESVersion.ES2015))
+      .withModuleKind(ModuleKind.CommonJSModule)
+  },
+  coverageEnabled := false // FIXME: Too slow coverage test running
 )
 
 lazy val noPublishSettings = Seq(
@@ -96,17 +112,21 @@ lazy val publishSettings = Seq(
     if (isPatch) "both" else "backward"
   },
   mimaPreviousArtifacts := {
-    val Some((scalaMajor, _)) = CrossVersion.partialVersion(scalaVersion.value)
-
     def isCheckingRequired: Boolean = {
       val Array(newMajor, _, _) = version.value.split('.')
       val Array(oldMajor, _, _) = oldVersion.split('.')
-      newMajor == oldMajor && scalaMajor == 2
+      newMajor == oldMajor
     }
 
     if (isCheckingRequired) Set(organization.value %% moduleName.value % oldVersion)
     else Set()
   },
+  mimaBinaryIssueFilters := Seq( // migrated diagnostic API
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$PrintCodec"),
+    ProblemFilters.exclude[MissingClassProblem]("com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSettings$Trace")
+  ),
   mimaReportSignatureProblems := true
 )
 
@@ -129,40 +149,23 @@ lazy val `jsoniter-scala-core` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1-RC2", "2.13.8", "2.12.15", "2.11.12"),
+    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test
-    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 11)) => Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.4-M1" % Test,
-        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.4.0-M1" % Test
-      )
-      case _ => Seq(
-        "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.10.0" % Test,
-        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
-      )
-    })
+      "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0" % Test,
+      "org.scalatestplus" %%% "scalacheck-1-15" % "3.2.11.0" % Test,
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
+    )
   )
 
 lazy val `jsoniter-scala-coreJVM` = `jsoniter-scala-core`.jvm
 
 lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
+  .settings(jsSettings)
   .settings(
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.3.0"
-    ),
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    coverageEnabled := false // FIXME: Too slow coverage test running
+    )
   )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
@@ -171,38 +174,22 @@ lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1-RC2","2.13.8", "2.12.15", "2.11.12"),
-    libraryDependencies ++= (
-      Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.10" % Test
-      ) ++ (
-      if (scalaVersion.value.startsWith("2")) 
-        Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value,
-            "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-            "com.beachape" %%% "enumeratum" % "1.6.1" % Test
-        )
-      else
-        Seq.empty
+    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
+    libraryDependencies ++= Seq(
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq(
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "com.beachape" %%% "enumeratum" % "1.6.1" % Test
       )
-    )
+      case _ => Seq()
+    })
   )
 
 lazy val `jsoniter-scala-macrosJVM` = `jsoniter-scala-macros`.jvm
 
 lazy val `jsoniter-scala-macrosJS` = `jsoniter-scala-macros`.js
-  .settings(
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    coverageEnabled := false // FIXME: Unexpected compilation error
-  )
+  .settings(jsSettings)
 
 lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -210,30 +197,18 @@ lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
-    crossScalaVersions := Seq("3.1.1-RC2", "2.13.8", "2.12.15"),
+    crossScalaVersions := Seq("3.1.1", "2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.1",
       "io.circe" %%% "circe-parser" % "0.14.1" % Test,
-      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
     )
   )
 
 lazy val `jsoniter-scala-circeJVM` = `jsoniter-scala-circe`.jvm
 
 lazy val `jsoniter-scala-circeJS` = `jsoniter-scala-circe`.js
-  .settings(
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    coverageEnabled := false // FIXME: Unexpected compilation error
-  )
+  .settings(jsSettings)
 
 lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -245,14 +220,14 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
     crossScalaVersions := Seq("2.13.8"),
     libraryDependencies ++= Seq(
-      "dev.zio" %%% "zio-json" % "0.2.0-M3",
+      "dev.zio" %%% "zio-json" % "0.3.0-RC3",
       "com.evolutiongaming" %% "play-json-jsoniter" % "0.10.0",
       "com.rallyhealth" %% "weepickle-v1" % "1.7.2",
       "io.bullet" %%% "borer-derivation" % "1.7.2",
       "pl.iterators" %% "kebs-spray-json" % "1.9.3",
       "io.spray" %% "spray-json" % "1.3.6",
-      "com.avsystem.commons" %%% "commons-core" % "2.5.1",
-      "com.lihaoyi" %%% "upickle" % "1.4.4",
+      "com.avsystem.commons" %%% "commons-core" % "2.5.4",
+      "com.lihaoyi" %%% "upickle" % "1.5.0",
       "com.dslplatform" %% "dsl-json-scala" % "1.9.9",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.13.1",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.1",
@@ -269,7 +244,7 @@ lazy val `jsoniter-scala-benchmark` = crossProject(JVMPlatform, JSPlatform)
       "org.openjdk.jmh" % "jmh-generator-asm" % "1.34",
       "org.openjdk.jmh" % "jmh-generator-bytecode" % "1.34",
       "org.openjdk.jmh" % "jmh-generator-reflection" % "1.34",
-      "org.scalatest" %%% "scalatest" % "3.2.10" % Test
+      "org.scalatest" %%% "scalatest" % "3.2.11" % Test
     )
   )
 
@@ -278,19 +253,11 @@ lazy val `jsoniter-scala-benchmarkJVM` = `jsoniter-scala-benchmark`.jvm
 
 lazy val `jsoniter-scala-benchmarkJS` = `jsoniter-scala-benchmark`.js
   .enablePlugins(JSDependenciesPlugin)
+  .settings(jsSettings)
   .settings(
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.NoModule) },
     libraryDependencies += "com.github.japgolly.scalajs-benchmark" %%% "benchmark" % "0.10.0",
     scalaJSUseMainModuleInitializer := true,
-    scalaJSLinkerConfig ~= {
-      _.withSemantics({
-        _.optimized
-          .withProductionMode(true)
-          .withAsInstanceOfs(CheckedBehavior.Unchecked)
-          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-      }).withClosureCompiler(true)
-        .withESFeatures(_.withESVersion(ESVersion.ES5_1))
-    },
     Compile / mainClass := Some("com.github.plokhotnyuk.jsoniter_scala.benchmark.Main"),
     Test / test := {}, // FIXME: Add and enable `jsoniter-scala-benchmarkJS` tests
-    coverageEnabled := false // FIXME: Disabled `jsoniter-scala-benchmarkJS` tests
   )
