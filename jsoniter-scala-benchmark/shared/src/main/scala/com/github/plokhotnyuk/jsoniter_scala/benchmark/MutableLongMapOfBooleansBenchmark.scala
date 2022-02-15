@@ -16,7 +16,7 @@ abstract class MutableLongMapOfBooleansBenchmark extends CommonParams {
   def setup(): Unit = {
     obj = mutable.LongMap((1 to size).map { i =>
       ((i * 6971258582664805397L) / Math.pow(10, i % 19).toLong, ((i * 1498724053) & 0x1) == 0)
-    }:_*)
+    }: _*)
     jsonString = obj.map(e => "\"" + e._1 + "\":" + e._2).mkString("{", ",", "}")
     jsonBytes = jsonString.getBytes(UTF_8)
     preallocatedBuf = new Array[Byte](jsonBytes.length + 100/*to avoid possible out of bounds error*/)

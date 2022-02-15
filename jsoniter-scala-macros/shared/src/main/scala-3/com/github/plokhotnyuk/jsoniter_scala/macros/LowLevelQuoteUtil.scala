@@ -16,60 +16,50 @@ private[macros] object LowLevelQuoteUtil {
 
     val mapper = new TreeMap {
       override def transformTree(tree: Tree)(owner: Symbol): Tree =
-        try super.transformTree(tree)(owner)
-        catch {
+        try super.transformTree(tree)(owner) catch {
           case ex: IllegalStateException =>
-            if (traceFlag) {
-              println(ex.getMessage())
-              println(s"tree=$tree")
-            }
+            if (traceFlag) println(s"${ex.getMessage()}\ntree=$tree")
             throw ex
         }
 
-      override def transformStatement(tree: Statement)(owner: Symbol): Statement =
-        tree match {
-          case d: Definition =>
-            if (d.symbol.owner != owner) throw new IllegalStateException("Invalid owner in definition.")
-            d
-          case _ => super.transformStatement(tree)(owner)
-        }
+      override def transformStatement(tree: Statement)(owner: Symbol): Statement = tree match {
+        case d: Definition =>
+          if (d.symbol.owner != owner) throw new IllegalStateException("Invalid owner in definition.")
+          d
+        case _ => super.transformStatement(tree)(owner)
+      }
 
-      override def transformTerm(tree: Term)(owner: Symbol): Term =
-        tree match {
-          case Inlined(orgin, bindings, body) =>
-            if (bindings.isEmpty) transformTerm(body)(owner)
-            else super.transformTerm(tree)(owner)
-          case bl@Block(statements, expr) =>
-            var needTopLevelChange = false
-            var incorrectSymbols: List[Symbol] = Nil
-            for (s <- statements) {
-              s match {
-                case d: Definition =>
-                  if (d.symbol.owner != owner) {
-                    incorrectSymbols = d.symbol :: incorrectSymbols
-                    needTopLevelChange = true
-                  }
-                case other =>
+      override def transformTerm(tree: Term)(owner: Symbol): Term = tree match {
+        case Inlined(orgin, bindings, body) =>
+          if (bindings.isEmpty) transformTerm(body)(owner)
+          else super.transformTerm(tree)(owner)
+        case bl@Block(statements, expr) =>
+          var needTopLevelChange = false
+          var incorrectSymbols: List[Symbol] = Nil
+          statements.foreach {
+            case d: Definition =>
+              if (d.symbol.owner != owner) {
+                incorrectSymbols = d.symbol :: incorrectSymbols
+                needTopLevelChange = true
               }
-            }
-            val r =
-              if (needTopLevelChange) {
-                 if (traceFlag) print(s"fixing owners for ${incorrectSymbols.mkString(",")}")
-                 bl.changeOwner(owner)
-              } else bl
-            val nStatements = r.statements.map { s =>
-              s match {
-                case t: Term => transformTerm(t)(owner)
-                case other => other
-              }
-            }
-            val nExpr = transformTerm(r.expr)(owner)
-            Block.copy(r)(nStatements, nExpr)
-          case tif@If(cond, ifTrue, ifFalse) =>
-            If.copy(tif)(transformTerm(cond)(owner), transformTerm(ifTrue)(owner), transformTerm(ifFalse)(owner))
-          case _ =>
-            super.transformTerm(tree)(owner)
-        }
+            case other =>
+          }
+          val r =
+            if (needTopLevelChange) {
+               if (traceFlag) print(s"fixing owners for ${incorrectSymbols.mkString(",")}")
+               bl.changeOwner(owner)
+            } else bl
+          val nStatements = r.statements.map {
+            case t: Term => transformTerm(t)(owner)
+            case other => other
+          }
+          val nExpr = transformTerm(r.expr)(owner)
+          Block.copy(r)(nStatements, nExpr)
+        case tif@If(cond, ifTrue, ifFalse) =>
+          If.copy(tif)(transformTerm(cond)(owner), transformTerm(ifTrue)(owner), transformTerm(ifFalse)(owner))
+        case _ =>
+          super.transformTerm(tree)(owner)
+      }
 
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree = tree // don't navigate over types.
 
@@ -93,9 +83,7 @@ private[macros] object LowLevelQuoteUtil {
             if (tree.symbol.owner != owner) {
               foundInvalidOwner = true
               topLevelFound = true
-              if (traceFlag) {
-                println(s"checkOwner: owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
-              }
+              if (traceFlag) println(s"checkOwner: owner mismatch for ${tree.show}, expectd owner: ${owner}, have ${tree.symbol.maybeOwner}")
               if (!wasException) {
                 wasException = true
                 throw new IllegalStateException(s"invlid owner, expected: ${owner}, have ${tree.symbol.owner}")
@@ -104,17 +92,11 @@ private[macros] object LowLevelQuoteUtil {
           case _ =>
         }
         try {
-          if (!foundInvalidOwner) {
-            traverseTreeChildren(tree)(owner)
-          }
+          if (!foundInvalidOwner) traverseTreeChildren(tree)(owner)
         } catch {
           case ex: IllegalStateException =>
-            if (traceFlag) {
-              println(s"in tree:  $tree\n")
-            }
-            if (throwFlag) {
-              throw ex
-            }
+            if (traceFlag) println(s"in tree:  $tree\n")
+            if (throwFlag) throw ex
         }
      }
     }
