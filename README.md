@@ -23,7 +23,7 @@ libraries using different JDK and GraalVM versions on the following environment:
 GraalVM CE/EE 22.0 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 5.1 with GCC
+compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 2015 with GCC
 optimizations applied.
 
 ## Contents
@@ -367,7 +367,7 @@ enum Level extends Enum[Level] {
 
 A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
 
-7. Dotty with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+7. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value
@@ -376,7 +376,7 @@ object LocationType extends Enumeration {
 }
 ```
 
-Workaround is to redefine enums with explicit names:
+Workaround is to redefine enums with explicit names (see: https://github.com/lampepfl/dotty/issues/14488):
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value
@@ -536,7 +536,7 @@ Other benchmarks with results for jsoniter-scala:
 
 Use JDK 11+ for building of `jsoniter-scala-benchmarkJS` module:
 ```sh
-sbt -java-home /usr/lib/jvm/openjdk-17 jsoniter-scala-benchmarkJS/fullOptJS
+sbt -java-home /usr/lib/jvm/zulu-17 jsoniter-scala-benchmarkJS/fullOptJS
 ```
 
 Then open the list of benchmarks in a browser:
