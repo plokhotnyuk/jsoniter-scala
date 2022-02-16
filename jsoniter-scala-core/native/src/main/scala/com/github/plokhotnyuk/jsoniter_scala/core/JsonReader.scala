@@ -21,7 +21,7 @@ final class JsonReader private[jsoniter_scala](
     private[this] var in: InputStream = null,
     private[this] var totalRead: Long = 0,
     private[this] var config: ReaderConfig = null) {
-  private[this] val zoneIds: HashMap[Key, ZoneId] = new HashMap
+  private[this] var zoneIds: HashMap[Key, ZoneId] = null
 
   def requiredFieldError(reqField: String): Nothing = {
     var i = appendString("missing required field \"", 0)
@@ -1051,7 +1051,11 @@ final class JsonReader private[jsoniter_scala](
       head = pos + 1
       if (mark == 0) from -= newMark
       val k = new Key(hash, buf, from, pos)
-      var zoneId = zoneIds.get(k)
+      var zoneId =
+        if (zoneIds eq null) {
+          zoneIds = new HashMap[Key, ZoneId]
+          null
+        } else zoneIds.get(k)
       if ((zoneId eq null) && {
         zoneId = ZoneId.of(k.toString)
         !zoneId.isInstanceOf[ZoneOffset] ||
