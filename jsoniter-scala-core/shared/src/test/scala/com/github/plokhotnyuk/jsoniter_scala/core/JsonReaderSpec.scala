@@ -4,7 +4,6 @@ import java.io.{ByteArrayInputStream, InputStream}
 import java.math.MathContext
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.time.format.DateTimeFormatter
 import java.util.{Base64, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader._
@@ -1475,8 +1474,6 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       reader("null").readYear(default) shouldBe default
     }
     "parse Year from a string representation according to ISO-8601 format" in {
-      val yearFormatter = DateTimeFormatter.ofPattern("uuuu")
-
       def check(s: String, ws: String): Unit = {
         val x = Year.parse(s)
         reader(s"""$ws"$s"""").readYear(null) shouldBe x
@@ -1489,7 +1486,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("2008", ws)
       }
       forAll(genYear, genWhitespaces, minSuccessful(10000)) { (x, ws) =>
-        check(x.format(yearFormatter), ws)
+        check(toISO8601(x), ws)
       }
     }
     "throw parsing exception for empty input and illegal or broken Year string" in {

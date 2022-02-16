@@ -2,11 +2,10 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.util.{Locale, Objects, UUID}
+import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
-import java.time.format.DateTimeFormatter
 import scala.annotation.switch
 import scala.util.hashing.MurmurHash3
 
@@ -667,39 +666,6 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       verifySerDeser(make[Array[ZonedDateTime]],
         _root_.scala.Array(ZonedDateTime.parse("2020-04-10T10:07:00Z"), ZonedDateTime.parse("2020-04-10T10:07:01Z")),
         "[\"2020-04-10T10:07:00Z\",\"2020-04-10T10:07:01Z\"]")
-
-      case class FruitStore(
-        bar: String,
-        opensAt: Option[LocalDateTime], // Uses default codec
-        closesAt: Option[LocalDateTime], // Uses default codec
-        fruits: Seq[Fruit])
-
-      case class Fruit(
-        bar: String,
-        expiresAt: Option[LocalDateTime]) // This field needs to use the special codec
-
-      val customCodecOfLocalDateTime: JsonValueCodec[LocalDateTime] = new JsonValueCodec[LocalDateTime] {
-        private val formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ENGLISH)
-
-        val nullValue: LocalDateTime = null
-
-        def decodeValue(in: JsonReader, default: LocalDateTime): LocalDateTime =
-          LocalDateTime.parse(in.readString(null), formatter)
-
-        def encodeValue(x: LocalDateTime, out: JsonWriter): _root_.scala.Unit =
-          out.writeNonEscapedAsciiVal(formatter.format(x))
-      }
-      implicit val fruitCodec: JsonValueCodec[Fruit] = {
-        implicit val overrideCodecOfLocalDateTime = customCodecOfLocalDateTime
-
-        make[Fruit]
-      }
-
-      verifySerDeser(make[FruitStore],
-        FruitStore("FRESH", _root_.scala.Some(LocalDateTime.parse("2022-02-02T11:22")),
-          _root_.scala.Some(LocalDateTime.parse("2022-03-01T22:33")),
-          Seq(Fruit("apple", _root_.scala.Some(LocalDateTime.parse("2022-03-01T22:33"))))),
-        """{"bar":"FRESH","opensAt":"2022-02-02T11:22","closesAt":"2022-03-01T22:33","fruits":[{"bar":"apple","expiresAt":"01/03/2022 22:33"}]}""")
     }
     "serialize and deserialize outer types using custom value codecs for opaque types" in {
       abstract class Foo {
@@ -1554,10 +1520,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfCyclic = make[Cyclic](CodecMakerConfig.withAllowRecursiveTypes(true))
       val len = 10000000
       val cfg = WriterConfig.withPreferredBufSize(1)
-      AssertionUtils.assertStackOverflow(verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      AssertionUtils.assertStackOverflow(verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      AssertionUtils.assertStackOverflow(verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
-      AssertionUtils.assertStackOverflow(verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
+      TestUtils.assertStackOverflow(verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      TestUtils.assertStackOverflow(verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      TestUtils.assertStackOverflow(verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
+      TestUtils.assertStackOverflow(verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""")

@@ -146,14 +146,25 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       bbuf.put(httpMessage)
       bbuf.position(10)
       assert(intercept[JsonReaderException](readFromByteBuffer(bbuf)(codec)).getMessage ==
-        """expected '{', offset: 0x00000000, buf:
-          |+----------+-------------------------------------------------+------------------+
-          ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
-          |+----------+-------------------------------------------------+------------------+
-          || 00000000 | 30 30 20 4f 4b 0a 43 6f 6e 74 65 6e 74 2d 54 79 | 00 OK.Content-Ty |
-          || 00000010 | 70 65 3a 20 61 70 70 6c 69 63 61 74 69 6f 6e 2f | pe: application/ |
-          || 00000020 | 6a 73 6f 6e 0a 43 6f 6e 74 65 6e 74 2d 4c 65 6e | json.Content-Len |
-          |+----------+-------------------------------------------------+------------------+""".stripMargin)
+        (if (TestUtils.isNative) {
+          """expected '{', offset: 0x0000000a, buf:
+            |+----------+-------------------------------------------------+------------------+
+            ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
+            |+----------+-------------------------------------------------+------------------+
+            || 00000000 | 48 54 54 50 2f 31 2e 30 20 32 30 30 20 4f 4b 0a | HTTP/1.0 200 OK. |
+            || 00000010 | 43 6f 6e 74 65 6e 74 2d 54 79 70 65 3a 20 61 70 | Content-Type: ap |
+            || 00000020 | 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 0a 43 | plication/json.C |
+            |+----------+-------------------------------------------------+------------------+""".stripMargin
+        } else {
+          """expected '{', offset: 0x00000000, buf:
+            |+----------+-------------------------------------------------+------------------+
+            ||          |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f | 0123456789abcdef |
+            |+----------+-------------------------------------------------+------------------+
+            || 00000000 | 30 30 20 4f 4b 0a 43 6f 6e 74 65 6e 74 2d 54 79 | 00 OK.Content-Ty |
+            || 00000010 | 70 65 3a 20 61 70 70 6c 69 63 61 74 69 6f 6e 2f | pe: application/ |
+            || 00000020 | 6a 73 6f 6e 0a 43 6f 6e 74 65 6e 74 2d 4c 65 6e | json.Content-Len |
+            |+----------+-------------------------------------------------+------------------+""".stripMargin
+        }))
       bbuf.position() shouldBe 11
     }
     "throw JsonReaderException if cannot parse input with message containing input offset & hex dump of affected part the array based byte buffer" in {
@@ -475,7 +486,10 @@ class PackageSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCheck
       val bbuf1 = ByteBuffer.allocateDirect(150)
       bbuf1.position(100)
       intercept[BufferOverflowException](writeToByteBuffer(user, bbuf1)(codec))
-      bbuf1.position() shouldBe 100
+      bbuf1.position() shouldBe {
+        if (TestUtils.isNative) 142
+        else 100
+      }
       val bbuf2 = ByteBuffer.wrap(new Array[Byte](150))
       bbuf2.position(100)
       intercept[BufferOverflowException](writeToByteBuffer(user, bbuf2)(codec))

@@ -138,4 +138,17 @@ object GenUtils {
   }
 
   def toHexEscaped(ch: Char): String = s"\\u${(ch.toInt | 0x10000).toHexString.substring(1)}"
+
+  def toISO8601(year: Year): String = {
+    val x = year.getValue
+    if (x > 9999) s"+$x"
+    else if (x > 999 && x <= 9999) x.toString
+    else if (x > 99 && x <= 999) s"0$x"
+    else if (x > 9 && x <= 99) s"00$x"
+    else if (x >= 0 && x <= 9) s"000$x"
+    else if (x >= -9 && x < 0) s"-000${-x}"
+    else if (x >= -99 && x < 9) s"-00${-x}"
+    else if (x >= -999 && x < 99) s"-0${-x}"
+    else x.toString
+  }
 }
