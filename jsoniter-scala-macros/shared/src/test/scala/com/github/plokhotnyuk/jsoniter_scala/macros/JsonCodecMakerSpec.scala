@@ -2,7 +2,7 @@ package com.github.plokhotnyuk.jsoniter_scala.macros
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.util.{Locale, Objects, UUID}
+import java.util.{Objects, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker._
 import org.scalatest.exceptions.TestFailedException
@@ -1520,10 +1520,10 @@ class JsonCodecMakerSpec extends VerifyingSpec {
       val codecOfCyclic = make[Cyclic](CodecMakerConfig.withAllowRecursiveTypes(true))
       val len = 10000000
       val cfg = WriterConfig.withPreferredBufSize(1)
-      AssertionUtils.assertStackOverflow(verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      AssertionUtils.assertStackOverflow(verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
-      AssertionUtils.assertStackOverflow(verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
-      AssertionUtils.assertStackOverflow(verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
+      TestUtils.assertStackOverflow(verifyDirectByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      TestUtils.assertStackOverflow(verifyHeapByteBufferSer(codecOfCyclic, cyclic, len, cfg, ""))
+      TestUtils.assertStackOverflow(verifyOutputStreamSer(codecOfCyclic, cyclic, cfg, ""))
+      TestUtils.assertStackOverflow(verifyArraySer(codecOfCyclic, cyclic, cfg, ""))
     }
     "serialize and deserialize UTF-8 keys and values of case classes without hex encoding" in {
       verifySerDeser(codecOfUTF8KeysAndValues, UTF8KeysAndValues("ვვვ"), """{"გასაღები":"ვვვ"}""")
