@@ -1447,7 +1447,7 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
+        java.lang.Double.parseDouble(new String(buf, offset, pos - offset))
       }
     }
 
@@ -1586,7 +1586,7 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
+        java.lang.Float.parseFloat(new String(buf, offset, pos - offset))
       }
     }
 
@@ -3372,5 +3372,5 @@ private class Key(val hash: Int, val bs: Array[Byte], val from: Int, val to: Int
     }
   }
 
-  override def toString: String = new String(bs, 0, from, to - from)
+  override def toString: String = new String(bs, from, to - from)
 }
