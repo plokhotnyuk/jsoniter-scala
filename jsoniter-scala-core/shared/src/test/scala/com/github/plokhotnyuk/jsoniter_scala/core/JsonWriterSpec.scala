@@ -2,7 +2,6 @@ package com.github.plokhotnyuk.jsoniter_scala.core
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time._
-import java.time.format.DateTimeFormatter
 import java.util.{Base64, UUID}
 import com.github.plokhotnyuk.jsoniter_scala.core.GenUtils._
 import org.scalacheck.Arbitrary.arbitrary
@@ -238,10 +237,8 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       intercept[NullPointerException](withWriter(_.writeKey(null.asInstanceOf[Year])))
     }
     "write Year as a string representation according to ISO-8601 format" in {
-      val yearFormatter = DateTimeFormatter.ofPattern("uuuu")
-
       def check(x: Year): Unit = {
-        val s = x.format(yearFormatter)
+        val s = toISO8601(x)
         withWriter(_.writeVal(x)) shouldBe s""""$s""""
         withWriter(_.writeKey(x)) shouldBe s""""$s":"""
       }

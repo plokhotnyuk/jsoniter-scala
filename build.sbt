@@ -175,7 +175,6 @@ lazy val `jsoniter-scala-coreJS` = `jsoniter-scala-core`.js
 lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
   .settings(
     crossScalaVersions := Seq("2.13.8", "2.12.15"),
-    nativeLinkStubs := true,
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M1",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M1"
