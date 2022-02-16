@@ -137,13 +137,14 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Ability to print generated code for codecs using an implicit val of `CodecMakerConfig.PrintCodec` type in a scope of 
   codec derivation
 - No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
-- Releases for different Scala versions: 2.12, 2.13, and 3.1
-- Suppressing of all WartRemover warnings for generated codecs  
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
 - Support of compilation to a native image by GraalVM
-- Support of Scala.js 1.0+
-  
+- Releases for different Scala versions: 2.12, 2.13, and 3.1
+- Support of Scala.js 1.0+ for all supported Scala versions
+- Support of Scala Native 0.4+ for Scala 2.12 and 2.13
+- Suppressing of all WartRemover warnings of generated codecs for Scala 2.12 and 2.13 
+
 There are configurable options that can be set in compile-time:
 - Ability to read/write numbers from/to string values
 - Skipping of unexpected fields or throwing of parse exceptions
@@ -192,7 +193,7 @@ Add the core library with a "compile" scope and the macros library with "compile
 list of dependencies:
 ```sbt
 libraryDependencies ++= Seq(
-  // Use the %%% operator instead of %% for Scala.js  
+  // Use the %%% operator instead of %% for Scala.js and Scala Native 
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.5",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.5" % "compile-internal"
