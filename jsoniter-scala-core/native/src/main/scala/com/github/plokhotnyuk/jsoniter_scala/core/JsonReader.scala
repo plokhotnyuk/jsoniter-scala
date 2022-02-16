@@ -1407,7 +1407,10 @@ final class JsonReader private[jsoniter_scala](
           val slop = 16 - digits
           (posMant * pow10(slop)) * pow10(exp.toInt - slop)
         } else toDouble(posMant, exp, from, newMark, pos)
-      if (isNeg) x = -x
+      if (isNeg) {
+        if (x == 0) x = -0.0d
+        else x = -x
+      }
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
@@ -1546,7 +1549,10 @@ final class JsonReader private[jsoniter_scala](
           (if (exp < 0) posMant / pow10Doubles(-exp.toInt)
           else posMant * pow10Doubles(exp.toInt)).toFloat
         } else toFloat(posMant, exp, from, newMark, pos)
-      if (isNeg) x = -x
+      if (isNeg) {
+        if (x == 0) x = -0.0f
+        else x = -x
+      }
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
