@@ -23,8 +23,8 @@ libraries using different JDK and GraalVM versions on the following environment:
 GraalVM CE/EE 22.0 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
-compares the same libraries on the same environment by the same code which is compiled by Scala.js to ES 2015 with GCC
-optimizations applied.
+compares the same libraries on the same environment by the same code which is compiled by Scala.js 1.9.0 to ES 2015 with
+GCC v20220202 optimizations applied.
 
 ## Contents
 
@@ -136,7 +136,9 @@ The library targets JDK 8+ and GraalVM 19+ (including compilation to native imag
 - Using black box macros only for codec generation ensures that your types will never be changed
 - Ability to print generated code for codecs using an implicit val of `CodecMakerConfig.PrintCodec` type in a scope of 
   codec derivation
-- No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library`
+- No dependencies on extra libraries in _runtime_ excluding Scala's `scala-library` (all platforms) and
+  `scala-java-time` (replacement of JDKs `java.time._` types for Scala.js and Scala Native)
+- Codecs and runtime configurations implement `java.io.Serializable` for easier usage in distributive computing
 - Support of shading to another package for locking on a particular released version
 - Patch versions are backward and forward compatible, minor versions are backward compatible
 - Support of compilation to a native image by GraalVM
@@ -301,8 +303,9 @@ and [here](https://github.com/plokhotnyuk/play/blob/master/src/main/scala/micros
 - use `sbt clean compile stage` or `sbt clean test stage` instead of just `sbt clean stage`, like in
 [this repo](https://github.com/hochgi/HTTP-stream-exercise/tree/jsoniter-2nd-round)
 
-4. [Scalac can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on `make` call 
-for ADTs with objects if the derivation call and the ADT definition are enclosed in the definition of some outer class:
+4. [Scala 2.12 and 2.13 can throw the following stack overflow exception](https://github.com/scala/bug/issues/11157) on
+`make` call for ADTs with objects if the derivation call and the ADT definition are enclosed in the definition of some 
+outer class:
 ```
 java.lang.StackOverflowError
     ...
@@ -318,7 +321,11 @@ like [here](https://github.com/plokhotnyuk/jsoniter-scala/commit/db52782e6c426b7
 Workaround is the same for both cases: don't enclose ADT definitions into outer _classes_ or _functions_, use the outer
 _object_ (not a class) instead.
 
-5. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
+5. Compile-time configuration for `make` calls in Scala 3 has limited support of possible expressions for name mapping.
+
+Please use examples of `CodecMakerConfig` usage from [unit tests](https://github.com/plokhotnyuk/jsoniter-scala/blob/master/jsoniter-scala-macros/shared/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala).   
+
+6. Scala.js doesn't support Java enums compiled from Java sources, so linking fails with errors like:
 ```
 [error] Referring to non-existent class com.github.plokhotnyuk.jsoniter_scala.macros.Level
 [error]   called from private com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMakerSpec.$anonfun$new$24()void
@@ -328,7 +335,8 @@ _object_ (not a class) instead.
 [error]   called from core module analyzer
 ```
 
-The workaround for Scala 2 is to split sources for JVM and JS and use Java enum emulation for JS.
+The workaround for Scala 2 is to split sources for JVM and other platforms and use Java enum emulation for Scala.js and
+Scala Native.
 
 Code for JVM:
 ```java
@@ -337,7 +345,7 @@ public enum Level {
 }
 ```
 
-Code for JS:
+Code for Scala.js and Scala Native:
 ```scala
 object Level {
   val HIGH: Level = new Level("HIGH", 0)
@@ -354,7 +362,7 @@ object Level {
 final class Level private (name: String, ordinal: Int) extends Enum[Level](name, ordinal)
 ```
 
-For Scala 3 the workaround can be the same for JVM and JS:
+For Scala 3 the workaround can be the same for all platforms:
 ```scala
 enum Level extends Enum[Level] {
   case HIGH
@@ -362,13 +370,13 @@ enum Level extends Enum[Level] {
 }
 ```
 
-6. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
+7. Nested option types like `Option[Option[Option[String]]]` are not supported for all values. Only `None` and 
 `Some(Some(Some(x: String))))` values can be serialized and then parsed without lost of the info. `Some(None)` and 
 `Some(Some(None))` values will be normalized to `None`.
 
 A workaround could be using of a custom codec, but it cannot be injected precisely for some specified class field yet.  
 
-7. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
+8. Scala 3 with Scala.js can derive invalid codecs on `make` call for simple Scala enum definitions like:
 ```scala
 object LocationType extends Enumeration {
   type LocationType = Value
