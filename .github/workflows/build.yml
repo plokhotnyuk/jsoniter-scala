@@ -25,8 +25,18 @@ jobs:
           - zulu@1.8
         os:
           - ubuntu-latest
+          - macOS-latest
+          - windows-latest
       fail-fast: false
     steps:
+      # Borrowed from scala-native GitHub action build configuration, see:
+      # https://github.com/scala-native/scala-native/blob/5aa434dfaa59e5d2b919505275394948af19b1ef/.github/actions/windows-setup-env/action.yml#L14-L26
+      - name: Configure Pagefile
+        if: ${{ (matrix.os == 'windows-latest') }}
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 4GB
+          maximum-size: 16GB
       - name: Configure git
         run: "git config --global core.autocrlf false"
         shell: bash
