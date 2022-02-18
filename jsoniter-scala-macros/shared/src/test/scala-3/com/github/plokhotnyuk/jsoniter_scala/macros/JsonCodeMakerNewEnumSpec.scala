@@ -61,7 +61,7 @@ enum FooEnum[A[_]]:
   case Bar[A[_]](a: A[Int]) extends FooEnum[A]
   case Baz[A[_]](a: A[String]) extends FooEnum[A]
 
-class JsonCodecMakerEnumSpec extends VerifyingSpec {
+class JsonCodecMakerNewEnumSpec extends VerifyingSpec {
   "JsonCodecMaker.make generate codecs which" should {
     "serialize and deserialize Scala3 enums" in {
       verifySerDeser(make[List[TrafficLight]],
