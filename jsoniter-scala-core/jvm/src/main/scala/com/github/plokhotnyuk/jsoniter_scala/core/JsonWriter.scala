@@ -1639,21 +1639,35 @@ final class JsonWriter private[jsoniter_scala](
     pos + 4
   }
 
+  private[this] def write5Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int =  {
+    val y0 = q0 * 429497L // James Anhalt's algorithm for 5 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    buf(pos) = ((y0 >>> 32).toInt + '0').toByte
+    val y1 = (y0 & 0xFFFFFFFFL) * 100
+    val d1 = ds((y1 >>> 32).toInt)
+    buf(pos + 1) = d1.toByte
+    buf(pos + 2) = (d1 >> 8).toByte
+    val y2 = (y1 & 0xFFFFFFFFL) * 100
+    val d2 = ds((y2 >>> 32).toInt)
+    buf(pos + 3) = d2.toByte
+    buf(pos + 4) = (d2 >> 8).toByte
+    pos + 5
+  }
+
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val q1 = (q0 * 109951163L >> 40).toInt // divide an 8-digit positive int by 10000
-    val q2 = q1 * 5243 >> 19 // divide a small positive int by 100
-    val d1 = ds(q2)
+    val y1 = q0 * 140737489L // James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
+    val d1 = ds((y1 >>> 47).toInt)
     buf(pos) = d1.toByte
     buf(pos + 1) = (d1 >> 8).toByte
-    val d2 = ds(q1 - q2 * 100)
+    val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
+    val d2 = ds((y2 >>> 47).toInt)
     buf(pos + 2) = d2.toByte
     buf(pos + 3) = (d2 >> 8).toByte
-    val r1 = q0 - q1 * 10000
-    val q3 = r1 * 5243 >> 19 // divide a small positive int by 100
-    val d3 = ds(q3)
+    val y3 = (y2 & 0x7FFFFFFFFFFFL) * 100
+    val d3 = ds((y3 >>> 47).toInt)
     buf(pos + 4) = d3.toByte
     buf(pos + 5) = (d3 >> 8).toByte
-    val d4 = ds(r1 - q3 * 100)
+    val y4 = (y3 & 0x7FFFFFFFFFFFL) * 100
+    val d4 = ds((y4 >>> 47).toInt)
     buf(pos + 6) = d4.toByte
     buf(pos + 7) = (d4 >> 8).toByte
     pos + 8
@@ -1662,7 +1676,7 @@ final class JsonWriter private[jsoniter_scala](
   private[this] def write18Digits(q0: Long, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
     val q1 = q0 / 100000000 // FIXME: Use Math.multiplyHigh(q0, 193428131138340668L) >>> 20 after dropping of JDK 8 support
     write8Digits((q0 - q1 * 100000000).toInt, {
-      val q2 = (q1 >> 8) * 1441151881 >> 49 // divide a small positive long by 100000000
+      val q2 = q1 * 1441151881 >>> 57 // divide a small positive long by 100000000
       write8Digits((q1 - q2 * 100000000).toInt, write2Digits(q2.toInt, pos, buf, ds), buf, ds)
     }, buf, ds)
   }
@@ -1685,11 +1699,7 @@ final class JsonWriter private[jsoniter_scala](
     } else if (q0 < 10000) {
       if (q0 < 1000) write3Digits(q0, pos, buf, digits)
       else write4Digits(q0, pos, buf, digits)
-    } else {
-      val q1 = q0 * 53688 >> 29 // divide a small positive int by 10000
-      buf(pos) = (q1 + '0').toByte
-      write4Digits(q0 - 10000 * q1, pos + 1, buf, digits)
-    }
+    } else write5Digits(q0, pos, buf, digits)
   }
 
   private[this] def writeInt(x: Int): Unit = count = {
