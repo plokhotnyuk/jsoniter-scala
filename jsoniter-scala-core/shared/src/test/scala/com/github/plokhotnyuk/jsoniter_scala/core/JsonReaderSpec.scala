@@ -722,7 +722,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val default = Duration.parse("P2DT3H4M")
       reader("null").readDuration(default) shouldBe default
     }
-    "parse Duration from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
+    "parse Duration from a string representation according to JDK format that is based on ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = Duration.parse(s)
         reader(s"""$ws"$s"""").readDuration(null) shouldBe x
@@ -1370,7 +1370,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val default = Period.parse("P1Y2M3D")
       reader("null").readPeriod(default) shouldBe default
     }
-    "parse Period from a string representation according to JDK 8+ format that is based on ISO-8601 format" in {
+    "parse Period from a string representation according to JDK format that is based on ISO-8601 format" in {
       def check(s: String, ws: String): Unit = {
         val x = Period.parse(s)
         reader(s"""$ws"$s"""").readPeriod(null) shouldBe x
@@ -1593,7 +1593,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val default = ZonedDateTime.parse("2008-01-20T07:24Z[UTC]")
       reader("null").readZonedDateTime(default) shouldBe default
     }
-    "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK 8+ format" in {
+    "parse ZonedDateTime from a string representation according to ISO-8601 format with optional IANA timezone identifier in JDK format" in {
       def check(s: String, ws: String): Unit = {
         val x = ZonedDateTime.parse(s)
         reader(s"""$ws"$s"""").readZonedDateTime(null) shouldBe x
@@ -1616,16 +1616,13 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         check("-999999999-01-01T00:00:00+18:00", ws)
         check("-999999999-01-01T00:00:00-18:00", ws)
         check("2018-03-25T02:30+01:00[Europe/Warsaw]", ws)
-        if (!TestUtils.isJDK8) {
-          //FIXME: Bug in JDK 8 at ZonedDateTime.parse, see https://bugs.openjdk.java.net/browse/JDK-8066982
-          check("2018-03-25T02:30+00:00[Europe/Warsaw]", ws)
-          check("2018-03-25T02:30+02:00[Europe/Warsaw]", ws)
-          check("2018-03-25T02:30+03:00[Europe/Warsaw]", ws)
-          check("2018-10-28T02:30+00:00[Europe/Warsaw]", ws)
-          check("2018-10-28T02:30+01:00[Europe/Warsaw]", ws)
-          check("2018-10-28T02:30+02:00[Europe/Warsaw]", ws)
-          check("2018-10-28T02:30+03:00[Europe/Warsaw]", ws)
-        }
+        check("2018-03-25T02:30+00:00[Europe/Warsaw]", ws)
+        check("2018-03-25T02:30+02:00[Europe/Warsaw]", ws)
+        check("2018-03-25T02:30+03:00[Europe/Warsaw]", ws)
+        check("2018-10-28T02:30+00:00[Europe/Warsaw]", ws)
+        check("2018-10-28T02:30+01:00[Europe/Warsaw]", ws)
+        check("2018-10-28T02:30+02:00[Europe/Warsaw]", ws)
+        check("2018-10-28T02:30+03:00[Europe/Warsaw]", ws)
       }
       forAll(genZonedDateTime, genWhitespaces, minSuccessful(10000))((x, ws) => {
         val s = x.toString
@@ -1729,7 +1726,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       val default = ZoneId.of("Europe/Warsaw")
       reader("null").readZoneId(default) shouldBe default
     }
-    "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK 8+ format for IANA timezone identifier" in {
+    "parse ZoneId from a string representation according to ISO-8601 format for timezone offset or JDK format for IANA timezone identifier" in {
       def check(s: String, ws: String): Unit = {
         val x = ZoneId.of(s)
         reader(s"""$ws"$s"""").readZoneId(null) shouldBe x

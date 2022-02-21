@@ -52,11 +52,11 @@ object GenUtils {
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
-    // FIXME: JDK 8 has bug in parsing and serialization of Duration with zero seconds and negative nanos,
+    // FIXME: Scala.js library for java.time._ has a bug in parsing and serialization of Duration with zero seconds and negative nanos,
     // see https://bugs.openjdk.java.net/browse/JDK-8054978
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    Gen.choose(if (TestUtils.isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
-    Gen.choose(if (TestUtils.isJDK8) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
+    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
+    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
   val genInstant: Gen[Instant] = for {
     epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
     nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)

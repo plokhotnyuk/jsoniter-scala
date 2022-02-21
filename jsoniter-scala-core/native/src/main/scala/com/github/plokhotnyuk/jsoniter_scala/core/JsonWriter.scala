@@ -1192,7 +1192,7 @@ final class JsonWriter private[jsoniter_scala](
       val effectiveTotalSecs =
         if (totalSecs < 0) (-nano >> 31) - totalSecs
         else totalSecs
-      val hours = effectiveTotalSecs / 3600 // FIXME: Use Math.multiplyHigh(x, 5247073869855161349L) >> 10 after dropping of JDK 8 support
+      val hours = effectiveTotalSecs / 3600 // FIXME: Use Math.multiplyHigh(effectiveTotalSecs >> 4, 655884233731895169L) >> 3 after dropping of JDK 8 support
       val secsOfHour = (effectiveTotalSecs - hours * 3600).toInt
       val minutes = secsOfHour * 17477 >> 20 // divide a small positive int by 60
       val seconds = secsOfHour - minutes * 60

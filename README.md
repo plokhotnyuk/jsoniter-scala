@@ -78,7 +78,7 @@ and run-time configuration instances, combined with compile-time annotations and
 representation of JSON providing a pretty printing option, provide a hex dump in the error message to speed up the
 view of an error context
 
-The library targets JDK 8+ and GraalVM 19+ (including compilation to native images) without any platform restrictions.
+The library targets JDK 11+ and GraalVM 22+ (including compilation to native images) without any platform restrictions.
 
 ## Features and limitations
 
@@ -456,7 +456,7 @@ sbt 'jsoniter-scala-benchmarkJVM/jmh:run -p size=1,10,100,1000 ArrayOf.*'
 To see throughput with the allocation rate of generated codecs run benchmarks with GC profiler using the following
 command:
 ```sh
-sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof gc -rf json -rff jdk8.json .*Reading.*'
+sbt 'jsoniter-scala-benchmarkJVM/jmh:run -prof gc .*Reading.*'
 ```
 
 Results that are stored in JSON can be easy plotted in [JMH Visualizer](https://jmh.morethan.io/) by drugging & dropping

@@ -1,9 +1,9 @@
 import scala.sys.process._
 import sbtrelease.ReleaseStateTransformations._
 
-lazy val ensureJDK8: ReleaseStep = { st: State =>
+lazy val ensureJDK11: ReleaseStep = { st: State =>
   val javaVersion = System.getProperty("java.specification.version")
-  if (javaVersion != "1.8") throw new IllegalStateException("Cancelling release, please use JDK 1.8")
+  if (javaVersion != "11") throw new IllegalStateException("Cancelling release, please use JDK 11")
   st
 }
 
@@ -23,7 +23,7 @@ lazy val updateVersionInReadme: ReleaseStep = { st: State =>
 releaseCrossBuild := false
 
 releaseProcess := Seq[ReleaseStep](
-  ensureJDK8,
+  ensureJDK11,
   checkSnapshotDependencies,
   inquireVersions,
   runClean,
