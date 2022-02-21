@@ -12,7 +12,7 @@ import scala.annotation.{switch, tailrec}
 import scala.{specialized => sp}
 
 final class JsonReader private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](16384),
+    private[this] var buf: Array[Byte] = new Array[Byte](32768),
     private[this] var head: Int = 0,
     private[this] var tail: Int = 0,
     private[this] var mark: Int = -1,

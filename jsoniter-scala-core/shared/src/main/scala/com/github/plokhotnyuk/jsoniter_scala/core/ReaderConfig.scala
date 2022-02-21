@@ -80,7 +80,7 @@ class ReaderConfig private (
 object ReaderConfig extends ReaderConfig(
   throwReaderExceptionWithStackTrace = false,
   appendHexDumpToParseException = true,
-  preferredBufSize = 16384,
+  preferredBufSize = 32768,
   preferredCharBufSize = 4096,
   checkForEndOfInput = true,
   hexDumpSize = 2)

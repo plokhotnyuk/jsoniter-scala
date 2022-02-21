@@ -11,9 +11,9 @@ import scala.annotation.tailrec
 import scala.{specialized => sp}
 
 final class JsonWriter private[jsoniter_scala](
-    private[this] var buf: Array[Byte] = new Array[Byte](16384),
+    private[this] var buf: Array[Byte] = new Array[Byte](32768),
     private[this] var count: Int = 0,
-    private[this] var limit: Int = 16384,
+    private[this] var limit: Int = 32768,
     private[this] var indention: Int = 0,
     private[this] var comma: Boolean = false,
     private[this] var disableBufGrowing: Boolean = false,

@@ -57,4 +57,4 @@ object WriterConfig extends WriterConfig(
   throwWriterExceptionWithStackTrace = false,
   indentionStep = 0,
   escapeUnicode = false,
-  preferredBufSize = 16384)
+  preferredBufSize = 32768)

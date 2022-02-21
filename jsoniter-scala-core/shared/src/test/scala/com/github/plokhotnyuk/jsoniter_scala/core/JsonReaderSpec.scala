@@ -20,7 +20,7 @@ class JsonReaderSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
     "have safe and handy defaults" in {
       ReaderConfig.throwReaderExceptionWithStackTrace shouldBe false
       ReaderConfig.appendHexDumpToParseException shouldBe true
-      ReaderConfig.preferredBufSize shouldBe 16384
+      ReaderConfig.preferredBufSize shouldBe 32768
       ReaderConfig.preferredCharBufSize shouldBe 4096
       ReaderConfig.hexDumpSize shouldBe 2
     }

@@ -17,7 +17,7 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
       WriterConfig.throwWriterExceptionWithStackTrace shouldBe false
       WriterConfig.indentionStep shouldBe 0
       WriterConfig.escapeUnicode shouldBe false
-      WriterConfig.preferredBufSize shouldBe 16384
+      WriterConfig.preferredBufSize shouldBe 32768
     }
     "throw exception in case for unsupported values of params" in {
       WriterConfig.withIndentionStep(0)
