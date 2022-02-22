@@ -175,7 +175,8 @@ lazy val `jsoniter-scala-coreNative` = `jsoniter-scala-core`.native
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.4.0-M1",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.4.0-M1"
-    )
+    ),
+    coverageEnabled := false
   )
 
 lazy val `jsoniter-scala-macros` = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -221,7 +222,8 @@ lazy val `jsoniter-scala-macrosNative` = `jsoniter-scala-macros`.native
     crossScalaVersions := Seq("2.13.8", "2.12.15"),
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    )
+    ),
+    coverageEnabled := false
   )
 
 lazy val `jsoniter-scala-circe` = crossProject(JVMPlatform, JSPlatform)
