@@ -58,6 +58,13 @@ class GitHubActionsAPIWriting extends GitHubActionsAPIBenchmark {
   }
 
   @Benchmark
+  def uPickle(): Array[Byte] = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    write(obj).getBytes(UTF_8)
+  }
+
+  @Benchmark
   def weePickle(): Array[Byte] = FromScala(obj).transform(ToJson.bytes)
 
   @Benchmark

@@ -55,6 +55,13 @@ class GitHubActionsAPIReading extends GitHubActionsAPIBenchmark {
   def sprayJson(): GitHubActionsAPI.Response = JsonParser(jsonBytes).convertTo[GitHubActionsAPI.Response]
 
   @Benchmark
+  def uPickle(): GitHubActionsAPI.Response = {
+    import com.github.plokhotnyuk.jsoniter_scala.benchmark.UPickleReaderWriters._
+
+    read[GitHubActionsAPI.Response](jsonBytes)
+  }
+
+  @Benchmark
   def weePickle(): GitHubActionsAPI.Response = FromJson(jsonBytes).transform(ToScala[GitHubActionsAPI.Response])
 
   @Benchmark

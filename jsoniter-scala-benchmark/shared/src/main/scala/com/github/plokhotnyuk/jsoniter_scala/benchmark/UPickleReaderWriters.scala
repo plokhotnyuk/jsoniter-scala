@@ -41,7 +41,13 @@ object UPickleReaderWriters extends AttributeTagged {
     ReadWriter.merge(macroRW[GeoJSON.Feature])
   implicit val geoJsonReadWriter: ReadWriter[GeoJSON.GeoJSON] =
     ReadWriter.merge(macroRW[GeoJSON.Feature], macroRW[GeoJSON.FeatureCollection])
-  implicit val googleMApsAPIReadWriter: ReadWriter[GoogleMapsAPI.DistanceMatrix] = {
+  implicit val gitHubActionsAPIFromTos: ReadWriter[GitHubActionsAPI.Response] = {
+    implicit val v1: ReadWriter[Boolean] =
+      ReadWriter.join(strReader(x => java.lang.Boolean.parseBoolean(x.toString)), strWriter[Boolean])
+    implicit val v2: ReadWriter[GitHubActionsAPI.Artifact] = macroRW
+    macroRW
+  }
+  implicit val googleMapsAPIReadWriter: ReadWriter[GoogleMapsAPI.DistanceMatrix] = {
     implicit val v1: ReadWriter[GoogleMapsAPI.Value] = macroRW
     implicit val v2: ReadWriter[GoogleMapsAPI.Elements] = macroRW
     implicit val v3: ReadWriter[GoogleMapsAPI.Rows] = macroRW

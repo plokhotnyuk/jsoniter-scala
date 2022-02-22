@@ -859,6 +859,7 @@ object Main {
       B("circe")(benchmark.circe()),
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
+      B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {
@@ -870,6 +871,7 @@ object Main {
       B("circeJsoniter")(benchmark.circeJsoniter()),
       B("jsoniterScala")(benchmark.jsoniterScala()),
       B("jsoniterScalaPrealloc")(benchmark.jsoniterScalaPrealloc()),
+      B("uPickle")(benchmark.uPickle()),
       B("zioJson")(benchmark.zioJson())
     ))
   }, {

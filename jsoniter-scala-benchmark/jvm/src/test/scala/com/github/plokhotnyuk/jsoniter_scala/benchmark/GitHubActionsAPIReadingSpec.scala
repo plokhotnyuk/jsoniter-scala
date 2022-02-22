@@ -13,6 +13,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       benchmark.jsoniterScala() shouldBe benchmark.obj
       benchmark.ninnyJson() shouldBe benchmark.obj
       benchmark.sprayJson() shouldBe benchmark.obj
+      benchmark.uPickle() shouldBe benchmark.obj
       benchmark.weePickle() shouldBe benchmark.obj
       benchmark.zioJson() shouldBe benchmark.obj
     }
@@ -28,6 +29,7 @@ class GitHubActionsAPIReadingSpec extends BenchmarkSpecBase {
       intercept[Throwable](b.ninnyJson())
       intercept[Throwable](b.sprayJson())
       intercept[Throwable](b.weePickle())
+      intercept[Throwable](b.uPickle())
       intercept[Throwable](b.zioJson())
     }
   }
