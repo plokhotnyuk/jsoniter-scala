@@ -2404,7 +2404,7 @@ final class JsonReader private[jsoniter_scala](
     if (pos + 36 < tail) {
       val ns = nibbles
       val buf = this.buf
-      val mostSigBits1: Long =
+      val mostSigBits1 =
         (ns(buf(pos) & 0xFF).toLong << 28) |
           ((ns(buf(pos + 1) & 0xFF) << 24) |
             (ns(buf(pos + 2) & 0xFF) << 20) |
@@ -2415,28 +2415,28 @@ final class JsonReader private[jsoniter_scala](
             ns(buf(pos + 7) & 0xFF))
       if (mostSigBits1 < 0) hexDigitError(pos)
       if (buf(pos + 8) != '-') tokenError('-', pos + 8)
-      val mostSigBits2: Int =
+      val mostSigBits2 =
         (ns(buf(pos + 9) & 0xFF) << 12) |
           (ns(buf(pos + 10) & 0xFF) << 8) |
           (ns(buf(pos + 11) & 0xFF) << 4) |
           ns(buf(pos + 12) & 0xFF)
       if (mostSigBits2 < 0) hexDigitError(pos + 9)
       if (buf(pos + 13) != '-') tokenError('-', pos + 13)
-      val mostSigBits3: Int =
+      val mostSigBits3 =
         (ns(buf(pos + 14) & 0xFF) << 12) |
           (ns(buf(pos + 15) & 0xFF) << 8) |
           (ns(buf(pos + 16) & 0xFF) << 4) |
           ns(buf(pos + 17) & 0xFF)
       if (mostSigBits3 < 0) hexDigitError(pos + 14)
       if (buf(pos + 18) != '-') tokenError('-', pos + 18)
-      val leastSigBits1: Int =
+      val leastSigBits1 =
         (ns(buf(pos + 19) & 0xFF) << 12) |
           (ns(buf(pos + 20) & 0xFF) << 8) |
           (ns(buf(pos + 21) & 0xFF) << 4) |
           ns(buf(pos + 22) & 0xFF)
       if (leastSigBits1 < 0) hexDigitError(pos + 19)
       if (buf(pos + 23) != '-') tokenError('-', pos + 23)
-      val leastSigBits2: Long =
+      val leastSigBits2 =
         ((ns(buf(pos + 24) & 0xFF) << 16) |
           (ns(buf(pos + 25) & 0xFF) << 12) |
           (ns(buf(pos + 26) & 0xFF) << 8) |

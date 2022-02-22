@@ -1049,13 +1049,13 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val d = lowerCaseHexDigits(b & 0xFF)
+    val ds = lowerCaseHexDigits(b & 0xFF)
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
     buf(pos + 3) = '0'
-    buf(pos + 4) = d.toByte
-    buf(pos + 5) = (d >> 8).toByte
+    buf(pos + 4) = ds.toByte
+    buf(pos + 5) = (ds >> 8).toByte
     pos + 6
   }
 
@@ -2012,10 +2012,8 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def rop(g1: Long, g0: Long, cp: Long): Long = {
-    val x1 = multiplyHigh(g0, cp)
-    val z = (g1 * cp >>> 1) + x1
-    val y1 = multiplyHigh(g1, cp)
-    (z >>> 63) + y1 | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
+    val z = (g1 * cp >>> 1) + multiplyHigh(g0, cp)
+    multiplyHigh(g1, cp) + (z >>> 63) | -(z & 0x7FFFFFFFFFFFFFFFL) >>> 63
   }
 
   private[this] def multiplyHigh(x: Long, y: Long): Long = { // Karatsuba technique for two positive ints
