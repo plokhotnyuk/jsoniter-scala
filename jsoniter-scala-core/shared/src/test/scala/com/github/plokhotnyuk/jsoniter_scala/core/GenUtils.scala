@@ -55,8 +55,8 @@ object GenUtils {
     // FIXME: Scala.js library for java.time._ has a bug in parsing and serialization of Duration with zero seconds and negative nanos,
     // see https://bugs.openjdk.java.net/browse/JDK-8054978
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
-    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofMillis),
-    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Int.MinValue, Int.MaxValue.toLong).map(Duration.ofNanos))
+    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofMillis),
+    Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofNanos))
   val genInstant: Gen[Instant] = for {
     epochSecond <- Gen.choose(Instant.MIN.getEpochSecond, Instant.MAX.getEpochSecond)
     nanoAdjustment <- Gen.choose(Long.MinValue, Long.MaxValue)
@@ -73,7 +73,8 @@ object GenUtils {
     hour <- Gen.choose(0, 23)
     minute <- Gen.choose(0, 59)
     second <- Gen.choose(0, 59)
-    nano <- Gen.choose(0, 999999999)
+    nano <- Gen.oneOf(Gen.choose(0, 999999999), Gen.choose(0, 999999).map(_ * 1000),
+      Gen.choose(0, 999).map(_ * 1000000))
   } yield LocalTime.of(hour, minute, second, nano)
   val genLocalDateTime: Gen[LocalDateTime] = for {
     localDate <- genLocalDate
