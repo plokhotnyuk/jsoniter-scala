@@ -867,7 +867,6 @@ final class JsonWriter private[jsoniter_scala](
 
   private[this] def writeUUID(mostSigBits: Long, leastSigBits: Long): Unit = count = {
     val ds = lowerCaseHexDigits
-    val vh = varHandleAsLong
     val pos = ensureBufCapacity(40) // 38 == (new java.util.UUID(0, 0)).toString.length + 2
     val buf = this.buf
     val mostSigBits1 = (mostSigBits >> 32).toInt
@@ -875,26 +874,26 @@ final class JsonWriter private[jsoniter_scala](
     val d2 = ds((mostSigBits1 >> 16) & 0xFF).toLong << 24
     val d3 = ds((mostSigBits1 >> 8) & 0xFF).toLong << 40
     val d4 = ds(mostSigBits1 & 0xFF)
-    vh.set(buf, pos, '"' | d1 | d2 | d3 | d4.toLong << 56)
+    ByteArrayAsLong.set(buf, pos, '"' | d1 | d2 | d3 | d4.toLong << 56)
     val mostSigBits2 = mostSigBits.toInt
     val d5 = ds(mostSigBits2 >>> 24) << 16
     val d6 = ds((mostSigBits2 >> 16) & 0xFF).toLong << 32
     val d7 = ds((mostSigBits2 >> 8) & 0xFF)
-    vh.set(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L) // 0x2D000000002D00L == '-'.toLong << 48 | '-' << 8
+    ByteArrayAsLong.set(buf, pos + 8, d4 >> 8 | d5 | d6 | d7.toLong << 56 | 0x2D000000002D00L) // 0x2D000000002D00L == '-'.toLong << 48 | '-' << 8
     val d8 = ds(mostSigBits2 & 0xFF) << 8
     val leastSigBits1 = (leastSigBits >> 32).toInt
     val d9 = ds(leastSigBits1 >>> 24).toLong << 32
     val d10 = ds((leastSigBits1 >> 16) & 0xFF).toLong << 48
-    vh.set(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000) // 0x2D000000 == '-' << 24
+    ByteArrayAsLong.set(buf, pos + 16, d7 >> 8 | d8 | d9 | d10 | 0x2D000000) // 0x2D000000 == '-' << 24
     val d11 = ds((leastSigBits1 >> 8) & 0xFF) << 8
     val d12 = ds(leastSigBits1 & 0xFF).toLong << 24
     val leastSigBits2 = leastSigBits.toInt
     val d13 = ds(leastSigBits2 >>> 24).toLong << 40
     val d14 = ds((leastSigBits2 >> 16) & 0xFF)
-    vh.set(buf, pos + 24, '-' | d11 | d12| d13 | d14.toLong << 56)
+    ByteArrayAsLong.set(buf, pos + 24, '-' | d11 | d12| d13 | d14.toLong << 56)
     val d15 = ds((leastSigBits2 >> 8) & 0xFF) << 8
     val d16 = ds(leastSigBits2 & 0xFF).toLong << 24
-    vh.set(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L) // 0x220000000000L == '"'.toLong << 40
+    ByteArrayAsLong.set(buf, pos + 32, d14 >> 8 | d15 | d16 | 0x220000000000L) // 0x220000000000L == '"'.toLong << 40
     pos + 38
   }
 
@@ -1186,13 +1185,12 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeBoolean(x: Boolean): Unit = count = {
-    val vh = varHandleAsLong
     val pos = ensureBufCapacity(8) // bytes in Long
     val buf = this.buf
     val v =
       if (x) 0x65757274L
       else 0x65736c6166L
-    vh.set(buf, pos, v)
+    ByteArrayAsLong.set(buf, pos, v)
     pos + 4 + (v >> 38).toInt
   }
 
@@ -1673,7 +1671,6 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def write8Digits(q0: Int, pos: Int, buf: Array[Byte], ds: Array[Short]): Int = {
-    val vh = varHandleAsLong
     val y1 = q0 * 140737489L // James Anhalt's algorithm for 8 digits: https://jk-jeon.github.io/posts/2022/02/jeaiii-algorithm/
     val y2 = (y1 & 0x7FFFFFFFFFFFL) * 100
     val y3 = (y2 & 0x7FFFFFFFFFFFL) * 100
@@ -1682,7 +1679,7 @@ final class JsonWriter private[jsoniter_scala](
     val d2 = ds((y2 >>> 47).toInt) << 16
     val d3 = ds((y3 >>> 47).toInt).toLong << 32
     val d4 = ds((y4 >>> 47).toInt).toLong << 48
-    vh.set(buf, pos, d1 | d2 | d3 | d4)
+    ByteArrayAsLong.set(buf, pos, d1 | d2 | d3 | d4)
     pos + 8
   }
 
@@ -2125,8 +2122,6 @@ final class JsonWriter private[jsoniter_scala](
 }
 
 object JsonWriter {
-  private final val varHandleAsLong: VarHandle =
-    MethodHandles.byteArrayViewVarHandle(classOf[Array[Long]], ByteOrder.LITTLE_ENDIAN)
   private final val isGraalVM: Boolean =
     Option(System.getProperty("java.vendor.version")).getOrElse(System.getProperty("java.vm.name")).contains("GraalVM") ||
       java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.contains("-XX:+UseJVMCICompiler")
