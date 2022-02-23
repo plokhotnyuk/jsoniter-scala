@@ -489,12 +489,12 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        s.toFloat shouldBe n // no data loss when parsing by JDK or JS
+        s.toFloat shouldBe n // no data loss when parsing by JVM, Native or JS Platform
         l should be <= es.length + {
           if (TestUtils.isJS) {
             if (es.indexOf('.') < 0) 3 // formatting differs from JS for floats represented as whole numbers
             else 0 // rounding and formatting isn't worse than in JS for floats represented in decimal or scientific notation
-          } else 0 // rounding and formatting isn't worse than in JDK
+          } else 0 // rounding and formatting isn't worse than in JVM or Native
         }
         i should be > 0 // has the '.' character inside
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character
@@ -606,13 +606,13 @@ class JsonWriterSpec extends AnyWordSpec with Matchers with ScalaCheckPropertyCh
         val s = withWriter(_.writeVal(n))
         val l = s.length
         val i = s.indexOf('.')
-        s.toDouble shouldBe n // no data loss when parsing by JDK or JS
+        s.toDouble shouldBe n // no data loss when parsing by JVM, Native or JS Platform
         l should be <= es.length + {
           if (TestUtils.isJS) {
             if (es.indexOf('.') < 0) 4 // formatting differs from JS for doubles represented as whole numbers
             else if (es.indexOf('e') < 0 && Math.abs(n) > 1) 3 // formatting differs from JS for doubles with positive exponents that are represented in decimal notation
             else 0 // rounding and formatting isn't worse than in JS for doubles represented in scientific notation
-          } else 0 // rounding and formatting isn't worse than in JDK
+          } else 0 // rounding and formatting isn't worse than in JVM or Native
         }
         i should be > 0 // has the '.' character inside
         Character.isDigit(s.charAt(i - 1)) shouldBe true // has a digit before the '.' character

@@ -28,7 +28,8 @@ object GenUtils {
   val genEscapedAsciiChar: Gen[Char] = Gen.oneOf(genMustBeEscapedAsciiChar, Gen.const('\u007f'))
   val genNonAsciiChar: Gen[Char] = Gen.choose('\u0100', '\uffff')
   val genWhitespaces: Gen[String] = Gen.choose(0, 99).map(whitespaces)
-  val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)), (1, Gen.choose(1, 1000)))
+  val genSize: Gen[Int] = Gen.frequency((9, Gen.choose(1, 10)), (3, Gen.choose(1, 100)),
+    (1, Gen.choose(1, 1000)))
   val genMathContext: Gen[MathContext] = for {
     precision <- genSize
     rounding <- Gen.oneOf(CEILING, DOWN, FLOOR, HALF_DOWN, HALF_EVEN, HALF_UP, UNNECESSARY, UP)
@@ -52,8 +53,8 @@ object GenUtils {
     Gen.choose(Long.MinValue / 86400, Long.MaxValue / 86400).map(Duration.ofDays),
     Gen.choose(Long.MinValue / 3600, Long.MaxValue / 3600).map(Duration.ofHours),
     Gen.choose(Long.MinValue / 60, Long.MaxValue / 60).map(Duration.ofMinutes),
-    // FIXME: Scala.js library for java.time._ has a bug in parsing and serialization of Duration with zero seconds and negative nanos,
-    // see https://bugs.openjdk.java.net/browse/JDK-8054978
+    // FIXME: Scala.js library for java.time._ has a bug in parsing and serialization of Duration with negative nanos
+    // ans seconds/minutes/hours, see: https://github.com/cquiroz/scala-java-time/issues/360
     Gen.choose(Long.MinValue, Long.MaxValue).map(Duration.ofSeconds),
     Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofMillis),
     Gen.choose(if (TestUtils.isNative || TestUtils.isJS) 0L else Long.MinValue, Long.MaxValue).map(Duration.ofNanos))
@@ -143,7 +144,6 @@ object GenUtils {
   def toISO8601(year: Year): String = {
     val x = year.getValue
     if (x > 9999) s"+$x"
-    else if (x > 999 && x <= 9999) x.toString
     else if (x > 99 && x <= 999) s"0$x"
     else if (x > 9 && x <= 99) s"00$x"
     else if (x >= 0 && x <= 9) s"000$x"
