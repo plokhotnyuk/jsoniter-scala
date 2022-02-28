@@ -123,34 +123,37 @@ final class JsonWriter private[jsoniter_scala](
     pos
   }
 
-  def writeNonEscapedAsciiKey(x: String): Unit = count = {
+  def writeNonEscapedAsciiKey(x: String): Unit = {
     if (x eq null) throw new NullPointerException
     val len = x.length
     val indention = this.indention
-    var pos = ensureBufCapacity(indention + len + 6)
-    val buf = this.buf
-    if (comma) {
-      comma = false
-      buf(pos) = ','
+    val required = indention + len + 6
+    if (required <= config.preferredBufSize) {
+      var pos = ensureBufCapacity(required)
+      val buf = this.buf
+      if (comma) {
+        comma = false
+        buf(pos) = ','
+        pos += 1
+        if (indention != 0) pos = writeIndention(buf, pos, indention)
+      }
+      buf(pos) = '"'
       pos += 1
-      if (indention != 0) pos = writeIndention(buf, pos, indention)
-    }
-    buf(pos) = '"'
-    pos += 1
-    var i = 0
-    while (i < len) {
-      buf(pos) = x.charAt(i).toByte
-      pos += 1
-      i += 1
-    }
-    buf(pos) = '"'
-    buf(pos + 1) = ':'
-    pos += 2
-    if (config.indentionStep > 0) {
-      buf(pos) = ' '
-      pos += 1
-    }
-    pos
+      var i = 0
+      while (i < len) {
+        buf(pos) = x.charAt(i).toByte
+        pos += 1
+        i += 1
+      }
+      buf(pos) = '"'
+      buf(pos + 1) = ':'
+      pos += 2
+      if (config.indentionStep > 0) {
+        buf(pos) = ' '
+        pos += 1
+      }
+      count = pos
+    } else writeLongNonEscapedAsciiKey(x)
   }
 
   def writeKey(x: Duration): Unit = {
@@ -287,27 +290,30 @@ final class JsonWriter private[jsoniter_scala](
     pos + 1
   }
 
-  def writeNonEscapedAsciiVal(x: String): Unit = count = {
+  def writeNonEscapedAsciiVal(x: String): Unit = {
     if (x eq null) throw new NullPointerException
     val len = x.length
     val indention = this.indention
-    var pos = ensureBufCapacity(indention + len + 4)
-    val buf = this.buf
-    if (comma) {
-      buf(pos) = ','
+    val required = indention + len + 4
+    if (required <= config.preferredBufSize) {
+      var pos = ensureBufCapacity(required)
+      val buf = this.buf
+      if (comma) {
+        buf(pos) = ','
+        pos += 1
+        if (indention != 0) pos = writeIndention(buf, pos, indention)
+      } else comma = true
+      buf(pos) = '"'
       pos += 1
-      if (indention != 0) pos = writeIndention(buf, pos, indention)
-    } else comma = true
-    buf(pos) = '"'
-    pos += 1
-    var i = 0
-    while (i < len) {
-      buf(pos) = x.charAt(i).toByte
-      pos += 1
-      i += 1
-    }
-    buf(pos) = '"'
-    pos + 1
+      var i = 0
+      while (i < len) {
+        buf(pos) = x.charAt(i).toByte
+        pos += 1
+        i += 1
+      }
+      buf(pos) = '"'
+      count = pos + 1
+    } else writeLongNonEscapedAsciiVal(x)
   }
 
   def writeVal(x: Duration): Unit = {
@@ -840,6 +846,51 @@ final class JsonWriter private[jsoniter_scala](
       remaining -= step
     }
     pos
+  }
+
+  private[this] def writeLongNonEscapedAsciiKey(x: String): Unit = {
+    writeOptionalCommaAndIndentionBeforeKey()
+    writeBytes('"')
+    var pos = count
+    var step = Math.max(config.preferredBufSize, limit - pos)
+    var remaining = x.length
+    var offset = 0
+    while (remaining > 0) {
+      step = Math.min(step, remaining)
+      if (pos + step > limit) pos = flushAndGrowBuf(step, pos)
+      val newOffset = offset + step
+      while (offset < newOffset) {
+        buf(pos) = x.charAt(offset).toByte
+        pos += 1
+        offset += 1
+      }
+      remaining -= step
+    }
+    count = pos
+    writeBytes('"')
+    writeColon()
+  }
+
+  private[this] def writeLongNonEscapedAsciiVal(x: String): Unit = {
+    writeOptionalCommaAndIndentionBeforeValue()
+    writeBytes('"')
+    var pos = count
+    var step = Math.max(config.preferredBufSize, limit - pos)
+    var remaining = x.length
+    var offset = 0
+    while (remaining > 0) {
+      step = Math.min(step, remaining)
+      if (pos + step > limit) pos = flushAndGrowBuf(step, pos)
+      val newOffset = offset + step
+      while (offset < newOffset) {
+        buf(pos) = x.charAt(offset).toByte
+        pos += 1
+        offset += 1
+      }
+      remaining -= step
+    }
+    count = pos
+    writeBytes('"')
   }
 
   private[this] def writeZoneId(x: ZoneId): Unit = count = {
