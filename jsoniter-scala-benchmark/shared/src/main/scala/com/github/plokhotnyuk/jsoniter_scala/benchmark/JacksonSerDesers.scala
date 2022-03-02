@@ -52,8 +52,7 @@ object JacksonSerDesers {
   val jacksonEscapeNonAsciiMapper: ObjectMapper with ClassTagExtensions = createJacksonMapper(escapeNonAscii = true)
   val jacksonByteArrayMapper: ObjectMapper with ClassTagExtensions = {
     val jm = createJacksonMapper()
-    jm.registerModule(new SimpleModule()
-      .addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
+    jm.registerModule(new SimpleModule().addSerializer(classOf[Array[Byte]], new ByteArraySerializer))
     jm
   }
 }

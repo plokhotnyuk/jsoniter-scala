@@ -10,34 +10,31 @@ import scala.collection.immutable._
 import scala.collection.mutable
 
 object JsoniterScalaCodecs {
-  //implicit val printCodec: CodecMakerConfig.PrintCodec = new CodecMakerConfig.PrintCodec {}
   val exceptionWithoutDumpConfig: ReaderConfig = ReaderConfig.withAppendHexDumpToParseException(false)
   val exceptionWithStacktraceConfig: ReaderConfig = ReaderConfig.withThrowReaderExceptionWithStackTrace(true)
   val tooLongStringConfig: ReaderConfig = ReaderConfig.withPreferredCharBufSize(1024 * 1024)
   val escapingConfig: WriterConfig = WriterConfig.withEscapeUnicode(true)
   val prettyConfig: WriterConfig = WriterConfig.withIndentionStep(2).withPreferredBufSize(32768)
-  val base16Codec: JsonValueCodec[Array[Byte]] = // don't define implicit for supported types
-    new JsonValueCodec[Array[Byte]] {
-      override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase16AsBytes(default)
+  val base16Codec: JsonValueCodec[Array[Byte]] = new JsonValueCodec[Array[Byte]] {
+    override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase16AsBytes(default)
 
-      override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase16Val(x, lowerCase = true)
+    override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase16Val(x, lowerCase = true)
 
-      override val nullValue: Array[Byte] = new Array[Byte](0)
-    }
-  val base64Codec: JsonValueCodec[Array[Byte]] = // don't define implicit for supported types
-    new JsonValueCodec[Array[Byte]] {
-      override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase64AsBytes(default)
+    override val nullValue: Array[Byte] = new Array[Byte](0)
+  }
+  val base64Codec: JsonValueCodec[Array[Byte]] = new JsonValueCodec[Array[Byte]] {
+    override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] = in.readBase64AsBytes(default)
 
-      override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase64Val(x, doPadding = true)
+    override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase64Val(x, doPadding = true)
 
-      override val nullValue: Array[Byte] = new Array[Byte](0)
-    }
+    override val nullValue: Array[Byte] = new Array[Byte](0)
+  }
   val bigDecimalCodec: JsonValueCodec[BigDecimal] =
     make(CodecMakerConfig.withBigDecimalDigitsLimit(Int.MaxValue).withBigDecimalScaleLimit(Int.MaxValue).withBigDecimalPrecision(0)) /* WARNING: It is an unsafe option for open systems */
   val bigIntCodec: JsonValueCodec[BigInt] =
     make(CodecMakerConfig.withBigIntDigitsLimit(Int.MaxValue)) // WARNING: It is an unsafe option for open systems
-  val intCodec: JsonValueCodec[Int] = make // don't define implicit for supported types
-  val stringCodec: JsonValueCodec[String] = make // don't define implicit for supported types
+  val intCodec: JsonValueCodec[Int] = make
+  val stringCodec: JsonValueCodec[String] = make
   implicit val adtCodec: JsonValueCodec[ADTBase] =
     make(CodecMakerConfig.withAllowRecursiveTypes(true)) // WARNING: It is an unsafe option for open systems
   implicit val anyValsCodec: JsonValueCodec[AnyVals] = make

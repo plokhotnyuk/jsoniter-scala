@@ -147,7 +147,6 @@ object BorerJsonEncodersDecoders {
       }
     })
 
-  def stringCodec[T](f: String => T): Codec[T] = Codec(
-    (w: Writer, value: T) => w.writeString(value.toString),
-    (r: Reader) => f(r.readString()))
+  def stringCodec[T](f: String => T): Codec[T] =
+    Codec((w: Writer, value: T) => w.writeString(value.toString), (r: Reader) => f(r.readString()))
 }

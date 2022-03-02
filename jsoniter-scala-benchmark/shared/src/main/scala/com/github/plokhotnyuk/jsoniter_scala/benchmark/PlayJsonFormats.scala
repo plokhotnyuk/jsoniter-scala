@@ -28,13 +28,12 @@ object PlayJsonFormats {
 
   def prettyPrintBytes(jsValue: JsValue): Array[Byte] = prettyPrintMapper.writeValueAsBytes(jsValue)
 
-  def stringFormat[A](name: String)(f: String => A): Format[A] =
-    new Format[A] {
-      override def reads(js: JsValue): JsResult[A] =
-        Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
+  def stringFormat[A](name: String)(f: String => A): Format[A] = new Format[A] {
+    override def reads(js: JsValue): JsResult[A] =
+      Try(JsSuccess(f(js.asInstanceOf[JsString].value))).getOrElse(JsError(s"expected.${name}string"))
 
-      override def writes(v: A): JsValue = JsString(v.toString)
-    }
+    override def writes(v: A): JsValue = JsString(v.toString)
+  }
 
   implicit val intKeyReads: KeyReads[Int] =
     (s: String) => Try(JsSuccess(s.toInt)).getOrElse(JsError("expected.intstring"))
@@ -47,7 +46,8 @@ object PlayJsonFormats {
       (m, p) => m += ((p._1, p._2))
     }))
 
-  implicit def mutableLongMapFormat[A](implicit mapReads: Reads[Map[Long, A]], aWrites: Writes[A]): Format[mutable.LongMap[A]] =
+  implicit def mutableLongMapFormat[A](implicit mapReads: Reads[Map[Long, A]],
+                                       aWrites: Writes[A]): Format[mutable.LongMap[A]] =
     new Format[mutable.LongMap[A]] {
       override def reads(js: JsValue): JsResult[mutable.LongMap[A]] =
         JsSuccess(js.as[Map[Long, A]].foldLeft(mutable.LongMap.empty[A]) { (m, p) =>
