@@ -1411,11 +1411,7 @@ final class JsonReader private[jsoniter_scala](
           val slop = 16 - digits
           (posMant * pow10(slop)) * pow10(exp.toInt - slop)
         } else toDouble(posMant, exp, from, newMark, pos)
-      if (isNeg) {
-        x =
-          if (x == 0) -0.0 // FIXME: remove after scala-native fix of the following issue: https://github.com/scala-native/scala-native/issues/2563
-          else -x
-      }
+      if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
@@ -1455,7 +1451,7 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
-        java.lang.Double.parseDouble(new String(buf, offset, pos - offset))  // FIXME: use the faster constructor after the following issue fix: https://github.com/scala-native/scala-native/issues/2562
+        java.lang.Double.parseDouble(new String(buf, 0, offset, pos - offset))
       }
     }
 
@@ -1554,11 +1550,7 @@ final class JsonReader private[jsoniter_scala](
           (if (exp < 0) posMant / pow10Doubles(-exp.toInt)
           else posMant * pow10Doubles(exp.toInt)).toFloat
         } else toFloat(posMant, exp, from, newMark, pos)
-      if (isNeg) {
-        x =
-          if (x == 0) -0.0f // FIXME: remove after scala-native fix of the following issue: https://github.com/scala-native/scala-native/issues/2563
-          else -x
-      }
+      if (isNeg) x = -x
       x
     } finally if (mark != 0 || oldMark < 0) mark = oldMark
   }
@@ -1598,7 +1590,7 @@ final class JsonReader private[jsoniter_scala](
       } else {
         var offset = from
         if (mark == 0) offset -= newMark
-        java.lang.Float.parseFloat(new String(buf, offset, pos - offset)) // FIXME: use the faster constructor after the following issue fix: https://github.com/scala-native/scala-native/issues/2562
+        java.lang.Float.parseFloat(new String(buf, 0, offset, pos - offset))
       }
     }
 
@@ -3384,5 +3376,5 @@ private class Key(val hash: Int, val bs: Array[Byte], val from: Int, val to: Int
     }
   }
 
-  override def toString: String = new String(bs, from, to - from)  // FIXME: use the faster constructor after the following issue fix: https://github.com/scala-native/scala-native/issues/2562
+  override def toString: String = new String(bs, 0, from, to - from)
 }

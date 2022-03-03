@@ -3,7 +3,7 @@ resolvers += Resolver.sonatypeRepo("staging")
 val scalaJSVersion =
   Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.9.0")
 val scalaNativeVersion =
-  Option(System.getenv("SCALANATIVE_VERSION")).getOrElse("0.4.3")
+  Option(System.getenv("SCALANATIVE_VERSION")).getOrElse("0.4.4")
 
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.1.0")
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.1.0")
