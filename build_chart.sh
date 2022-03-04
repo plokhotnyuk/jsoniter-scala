@@ -1,8 +1,6 @@
-echo 'var providedBenchmarks = ["Zulu 8", "Zulu 11", "Zulu 17", "GraalVM CE 11", "GraalVM CE 17", "GraalVM EE 11", "GraalVM EE 17"];
+echo 'var providedBenchmarks = ["Zulu 11", "Zulu 17", "GraalVM CE 11", "GraalVM CE 17", "GraalVM EE 11", "GraalVM EE 17"];
 var providedBenchmarkStore = {
-"Zulu 8":'
-jq -c . < zulu-8.json
-echo ', "Zulu 11":'
+"Zulu 11":'
 jq -c . < zulu-11.json
 echo ', "Zulu 17":'
 jq -c . < zulu-17.json
