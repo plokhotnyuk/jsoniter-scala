@@ -1769,7 +1769,7 @@ final class JsonReader private[jsoniter_scala](
   }
 
   // Based on the great idea of Eric Obermühlner to use a tree of smaller BigDecimals for parsing really big numbers
-  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK 8/11:
+  // with O(n^1.5) complexity instead of O(n^2) when using the constructor for the decimal representation from JDK:
   // https://github.com/eobermuhlner/big-math/commit/7a5419aac8b2adba2aa700ccf00197f97b2ad89f
   private[this] def toBigDecimal(buf: Array[Byte], offset: Int, limit: Int, isNeg: Boolean,
                                  scale: Int): java.math.BigDecimal = {
@@ -1824,7 +1824,7 @@ final class JsonReader private[jsoniter_scala](
                                     scale: Int): java.math.BigDecimal = {
     val len = limit - offset
     var x = 0L
-    val lenD9 = (len * 954437177L >> 33).toInt // divide a positive number by 9
+    val lenD9 = (len * 954437177L >> 33).toInt // divide a positive int by 9
     val firstBlockLimit = len - (lenD9 << 3) - lenD9 + offset // len % 9 + offset
     var pos = offset
     while (pos < firstBlockLimit) {

@@ -1100,13 +1100,13 @@ final class JsonWriter private[jsoniter_scala](
   }
 
   private[this] def writeEscapedUnicode(b: Byte, pos: Int, buf: Array[Byte]): Int = {
-    val ds = lowerCaseHexDigits(b & 0xFF)
+    val d = lowerCaseHexDigits(b & 0xFF)
     buf(pos) = '\\'
     buf(pos + 1) = 'u'
     buf(pos + 2) = '0'
     buf(pos + 3) = '0'
-    buf(pos + 4) = ds.toByte
-    buf(pos + 5) = (ds >> 8).toByte
+    buf(pos + 4) = d.toByte
+    buf(pos + 5) = (d >> 8).toByte
     pos + 6
   }
 
