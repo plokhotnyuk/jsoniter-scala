@@ -22,6 +22,7 @@ class BigDecimalWritingSpec extends BenchmarkSpecBase {
       toString(b.uPickle()) shouldBe b.jsonString
       //FIXME: weePickle serializes BigDecimal values as JSON strings
       //toString(b.weePickle()) shouldBe b.jsonString
+      toString(b.zioJson()) shouldBe b.jsonString
     }
   }
 }
