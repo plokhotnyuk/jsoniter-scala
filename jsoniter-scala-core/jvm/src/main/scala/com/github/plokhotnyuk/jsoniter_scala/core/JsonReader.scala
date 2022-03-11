@@ -484,9 +484,10 @@ final class JsonReader private[jsoniter_scala](
     else decodeError(msg)
 
   def readNullOrTokenError[@sp A](default: A, t: Byte): A =
-    if (default != null && isCurrentToken('n', head)) parseNullOrTokenError(default, t, head)
-    else if (default != null) tokenOrNullError(t)
-    else tokenError(t)
+    if (default != null) {
+      if (isCurrentToken('n', head)) parseNullOrTokenError(default, t, head)
+      else tokenOrNullError(t)
+    } else tokenError(t)
 
   def nextByte(): Byte = nextByte(head)
 
@@ -1423,13 +1424,13 @@ final class JsonReader private[jsoniter_scala](
       mant <<= shift
       exp -= shift
       val roundingError =
-        (if (m < 922337203685477580L) 2
-        else 20) << shift
+        (if (m < 922337203685477580L) 1
+        else 15) << shift
       val truncatedBitNum = Math.max(-1074 - exp, 11)
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
       val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) >= roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
+      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Double.longBitsToDouble {
         if (savedBitNum <= 0) mant = 0
         mant >>>= truncatedBitNum
         exp += truncatedBitNum
@@ -1562,13 +1563,13 @@ final class JsonReader private[jsoniter_scala](
       mant <<= shift
       exp -= shift
       val roundingError =
-        (if (m < 922337203685477580L) 2
-        else 20) << shift
+        (if (m < 922337203685477580L) 1
+        else 15) << shift
       val truncatedBitNum = Math.max(-149 - exp, 40)
       val savedBitNum = 64 - truncatedBitNum
       val mask = -1L >>> Math.max(savedBitNum, 0)
       val halfwayDiff = (mant & mask) - (mask >>> 1)
-      if (Math.abs(halfwayDiff) >= roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
+      if (Math.abs(halfwayDiff) > roundingError || savedBitNum <= 0) java.lang.Float.intBitsToFloat {
         if (savedBitNum <= 0) mant = 0
         mant >>>= truncatedBitNum
         exp += truncatedBitNum
