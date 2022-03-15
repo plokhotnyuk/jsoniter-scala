@@ -1,8 +1,14 @@
 package io.circe
 
-import java.nio.charset.StandardCharsets
-
 object StringUtil {
-  def toString[A](buf: Array[Byte], len: Int): String =
-    new String(buf, 1, len - 2, StandardCharsets.UTF_8)
+  def toString[A](buf: Array[Byte], len: Int): String = {
+    val end = len - 1
+    var s = ""
+    var i = 1
+    while (i < end) {
+      s += buf(i).toChar.toString
+      i += 1
+    }
+    s
+  }
 }
