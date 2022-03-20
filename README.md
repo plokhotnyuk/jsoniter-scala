@@ -18,8 +18,8 @@ serialization performance of jsoniter-scala with [AVSystem's scala-commons](http
 [play-json-jsoniter](https://github.com/evolution-gaming/play-json-tools/tree/master/play-json-jsoniter),
 [Spray-JSON](https://github.com/spray/spray-json), [uPickle](https://github.com/lihaoyi/upickle),
 [weePickle](https://github.com/rallyhealth/weePickle), and [zio-json](https://github.com/zio/zio-json) 
-libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i7-8750H CPU @ 2.2GHz
-(max 4.1GHz), RAM 16Gb DDR4-2400, macOS Monterey 12.1, and latest versions of Azul Zulu 8/11/17[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
+libraries using different JDK and GraalVM versions on the following environment: Intel® Core™ i9-11900H CPU @ 2.5GHz
+(max 4.9GHz), RAM 32Gb DDR4-3200, Ubuntu 21.10, and latest versions of Azul Zulu 11/17[*](https://docs.google.com/spreadsheets/d/1IxIvLoLlLb0bxUaRgSsaaRuXV0RUQ3I04vFqhDc2Bt8/edit?usp=sharing),
 GraalVM CE/EE 22.0 for Java 11/17.
 
 [**Latest results of benchmarks on browsers**](https://plokhotnyuk.github.io/jsoniter-scala/index-scalajs.html) that 
