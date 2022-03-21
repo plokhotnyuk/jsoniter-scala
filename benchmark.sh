@@ -5,4 +5,3 @@ sbt -batch -java-home /usr/lib/jvm/graalvm-ce-java17 -Dmacro.settings=print-code
 sbt -batch -java-home /usr/lib/jvm/graalvm-ce-java11 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -jvmArgsAppend "-Dgraal.UseBranchesWithin32ByteBoundary=true" -p size=128 -prof gc -rf json -rff graalvm-ce-java11.json .*' 2>&1 | tee graalvm-ce-java11.txt
 sbt -batch -java-home /usr/lib/jvm/zulu-17 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -p size=128 -prof gc -rf json -rff zulu-17.json .*' 2>&1 | tee zulu-17.txt
 sbt -batch -java-home /usr/lib/jvm/zulu-11 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -p size=128 -prof gc -rf json -rff zulu-11.json .*' 2>&1 | tee zulu-11.txt
-sbt -batch -java-home /usr/lib/jvm/zulu-8 -Dmacro.settings=print-codecs clean 'jsoniter-scala-benchmarkJVM/jmh:run -p size=128 -prof gc -rf json -rff zulu-8.json .*' 2>&1 | tee zulu-8.txt
