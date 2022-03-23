@@ -196,9 +196,9 @@ list of dependencies:
 ```sbt
 libraryDependencies ++= Seq(
   // Use the %%% operator instead of %% for Scala.js and Scala Native 
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.5",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.13.7",
   // Use the "provided" scope instead when the "compile-internal" scope is not supported  
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.5" % "compile-internal"
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.13.7" % "compile-internal"
 )
 ```
 
@@ -581,7 +581,7 @@ that is used in the Scala ecosystem.
 
 Double-check binary and source compatibility, including behavior, and release using the following command:
 ```sh
-sbt -java-home /usr/lib/jvm/zulu-8 -J-Xmx10g release
+sbt -java-home /usr/lib/jvm/zulu-11 -J-Xmx10g release
 ```
 
 Do not push changes to GitHub until promoted artifacts for the new version are not available for downloading on
